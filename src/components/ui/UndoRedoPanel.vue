@@ -10,7 +10,7 @@
       >
         ↶ Undo
       </button>
-      
+
       <button
         @click="$emit('redo')"
         :disabled="!canRedo"
@@ -23,11 +23,11 @@
       </button>
     </div>
   </template>
-  
+
   <script setup>
   import { computed } from 'vue'
-  import { isMobile } from '../../utils/helpers.js'
-  
+  import { isMobile } from '../../utils/helpers.ts'
+
   // Define props
   const props = defineProps({
     canUndo: {
@@ -39,13 +39,13 @@
       required: true
     }
   })
-  
+
   // Define emits
   const emit = defineEmits(['undo', 'redo'])
-  
+
   // Computed
   const isMobileDevice = computed(() => isMobile())
-  
+
   const panelStyle = computed(() => ({
     position: 'absolute',
     top: '10px',
@@ -59,7 +59,7 @@
     zIndex: 1000,
     backdropFilter: 'blur(10px)'
   }))
-  
+
   // Methods
   const getButtonStyle = (isEnabled) => ({
     padding: isMobileDevice.value ? '6px 10px' : '8px 12px',
@@ -74,13 +74,13 @@
     opacity: isEnabled ? 1 : 0.6,
     whiteSpace: 'nowrap'
   })
-  
+
   const handleMouseEnter = (event, isEnabled) => {
     if (isEnabled) {
       event.target.style.backgroundColor = '#e0e0e0'
     }
   }
-  
+
   const handleMouseLeave = (event, isEnabled) => {
     if (isEnabled) {
       event.target.style.backgroundColor = '#f0f0f0'
@@ -89,7 +89,7 @@
     }
   }
   </script>
-  
+
   <style scoped>
   /* Any additional styles if needed */
   </style>

@@ -48,7 +48,7 @@
 <script setup>
 import { computed } from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
-import { isMobile } from '../../utils/helpers.js'
+import { isMobile } from '../../utils/helpers.ts'
 
 // Define props
 const props = defineProps({
@@ -169,10 +169,10 @@ const getTextureButtonStyle = (texture, isActive) => ({
 const getTexturePreviewStyle = (texture) => ({
   width: '100%',
   height: '40px',
-  backgroundColor: `#${texture.color.toString(16).padStart(6, '0')}`,
+  backgroundColor: `#${ texture.color.toString(16).padStart(6, '0') }`,
   borderRadius: '4px',
   border: '1px solid #eee',
-  backgroundImage: texture.file ? `url(${texture.file})` : 'none',
+  backgroundImage: texture.file ? `url(${ texture.file })` : 'none',
   backgroundSize: 'cover',
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'center'

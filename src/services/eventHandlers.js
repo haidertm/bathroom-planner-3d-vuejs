@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers.js';
+import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers.ts';
 import { constrainToRoom, snapToWall } from '../utils/constraints.js';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions.js';
 

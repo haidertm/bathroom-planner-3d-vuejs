@@ -86,7 +86,7 @@ import { createModel } from './models/bathroomFixtures.js'
 
 // Utils
 import { constrainAllObjectsToRoom } from './utils/constraints.js'
-import { isMobile } from './utils/helpers.js'
+import { isMobile } from './utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from './composables/useUndoRedo.js'
@@ -385,7 +385,7 @@ watch([items, lastUpdateSource], ([newItems, updateSource]) => {
 
   // Only update scene for specific operations, NOT for drag operations
   if (updateSource !== 'drag') {
-    console.log(`Updating scene for ${updateSource} operation:`, newItems.length, 'items')
+    console.log(`Updating scene for ${ updateSource } operation:`, newItems.length, 'items')
     sceneManagerRef.value.updateBathroomItems(newItems, createModel)
   }
 }, { deep: true })
