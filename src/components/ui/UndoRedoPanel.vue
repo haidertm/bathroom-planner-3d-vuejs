@@ -48,7 +48,7 @@
   
   const panelStyle = computed(() => ({
     position: 'absolute',
-    top: '10px',
+    bottom: '50px',
     right: '10px',
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     padding: '10px',

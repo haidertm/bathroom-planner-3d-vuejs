@@ -1,11 +1,12 @@
 <template>
   <div :style="{ width: '98vw', height: '100vh', position: 'relative' }">
-    <Toolbar @add="addItem" />
-    <TexturePanel
+
+    <sidebar
+        @add="addItem"
         @floor-change="handleFloorChange"
         @wall-change="handleWallChange"
-        :current-floor="currentFloorTexture"
-        :current-wall="currentWallTexture"
+        :currentFloor="currentFloorTexture"
+        :currentWall="currentWallTexture"
     />
     <RoomSizePanel
         @room-size-change="handleRoomSizeChange"
@@ -76,6 +77,7 @@ import { isMobile } from './utils/helpers.js'
 
 // Composables
 import { useUndoRedo } from './composables/useUndoRedo.js'
+import Sidebar from "./components/ui/sidebar.vue";
 
 // Refs
 const mountRef = ref(null)
