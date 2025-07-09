@@ -261,15 +261,42 @@ export class EventHandlers {
 
       let newPosition = intersectPoint.add(this.dragOffset);
 
+      // DEBUG: Log room size refs
+      console.log('🔍 DRAG - Room size refs:', {
+        width: this.roomWidthRef.value,
+        height: this.roomHeightRef.value,
+        selectedObject: this.selectedObject.userData.type
+      });
+
+      // DEBUG: Log position before constraints
+      console.log('🔍 DRAG - Position before constraints:', {
+        x: newPosition.x,
+        z: newPosition.z
+      });
+
       // Constrain to room bounds using refs
       const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+
+      // DEBUG: Log constraint results
+      console.log('🔍 DRAG - Constraint results:', {
+        original: { x: newPosition.x, z: newPosition.z },
+        constrained: { x: constrainedPos.x, z: constrainedPos.z }
+      });
+
       newPosition.x = constrainedPos.x;
       newPosition.z = constrainedPos.z;
 
       // Apply wall snapping
       const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+
       newPosition.x = snappedPos.x;
       newPosition.z = snappedPos.z;
+
+      // DEBUG: Log final position
+      console.log('🔍 DRAG - Final position:', {
+        x: newPosition.x,
+        z: newPosition.z
+      });
 
       this.selectedObject.position.copy(newPosition);
 
@@ -409,6 +436,11 @@ export class EventHandlers {
         const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
         newPosition.x = constrainedPos.x;
         newPosition.z = constrainedPos.z;
+
+        // DEBUG: Log constraint application
+        console.log('🔍 Constraining object:', this.selectedObject.userData.type,
+          'from:', intersectPoint.add(this.dragOffset),
+          'to:', constrainedPos);
 
         const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
         newPosition.x = snappedPos.x;

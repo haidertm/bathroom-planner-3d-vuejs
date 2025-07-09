@@ -65,6 +65,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
+import { preloadModels, getModelCacheStatus } from './models/bathroomFixtures'
+import { constrainToRoom } from './utils/constraints'
 
 // Components
 import Toolbar from './components/ui/Toolbar.vue'
@@ -82,7 +84,7 @@ import { SceneManager } from './services/sceneManager.js'
 import { EventHandlers } from './services/eventHandlers.js'
 
 // Models
-import { createModel } from './models/bathroomFixtures.js'
+import { createModel } from './models/bathroomFixtures.ts'
 
 // Utils
 import { constrainAllObjectsToRoom } from './utils/constraints.js'
@@ -207,15 +209,27 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 
 const addItem = (type) => {
   const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
+
+  // Generate initial random position
+  const randomX = Math.random() * 4 - 2;
+  const randomZ = Math.random() * 4 - 2;
+
+  // FORCE constrain to room bounds
+  const constrainedPosition = constrainToRoom(
+      { x: randomX, y: defaults.height, z: randomZ },
+      roomWidth.value,
+      roomHeight.value
+  );
+
   const newItem = {
     id: generateUniqueId(),
     type,
-    position: [Math.random() * 4 - 2, defaults.height, Math.random() * 4 - 2],
+    position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z],
     rotation: 0,
     scale: defaults.scale
   }
 
-  console.log('newItem >>>', newItem)
+  console.log('🔍 Adding item:', type, 'at CONSTRAINED position:', newItem.position, 'room size:', roomWidth.value, 'x', roomHeight.value)
 
   const newItems = [...items.value, newItem]
   items.value = newItems
@@ -322,7 +336,7 @@ const setItems = (updaterOrArray) => {
 }
 
 // Initialize scene
-onMounted(() => {
+onMounted(async () => {
   // Initialize scene manager
   const sceneManager = markRaw(new SceneManager())
   sceneManagerRef.value = sceneManager
@@ -358,8 +372,22 @@ onMounted(() => {
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
 
-  // Load initial items
-  sceneManagerRef.value.updateBathroomItems(items.value, createModel)
+  // PRELOAD MODELS - This will load all models defined in constants
+  console.log('Starting model preloading...')
+  try {
+    await preloadModels()
+    console.log('Model preloading completed!')
+    console.log('Cache status:', getModelCacheStatus())
+  } catch (error) {
+    console.error('Error during model preloading:', error)
+  }
+
+  // Load initial items - NOW ASYNC
+  try {
+    await sceneManagerRef.value.updateBathroomItems(items.value)
+  } catch (error) {
+    console.error('Error loading initial items:', error)
+  }
 })
 
 // Watch for room geometry changes

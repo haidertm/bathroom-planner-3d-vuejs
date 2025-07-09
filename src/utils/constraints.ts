@@ -1,6 +1,20 @@
 import { CONSTRAINTS } from '../constants/dimensions.js';
 
-export const constrainToRoom = (position, roomWidth, roomHeight) => {
+export interface Position {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface BathroomItem {
+  id: number;
+  type: string;
+  position: [number, number, number];
+  rotation: number;
+  scale: number;
+}
+
+export const constrainToRoom = (position: Position, roomWidth: number, roomHeight: number) => {
   const maxX = (roomWidth / 2) - CONSTRAINTS.OBJECT_BUFFER;
   const maxZ = (roomHeight / 2) - CONSTRAINTS.OBJECT_BUFFER;
 
@@ -11,7 +25,7 @@ export const constrainToRoom = (position, roomWidth, roomHeight) => {
   };
 };
 
-export const snapToWall = (position, roomWidth, roomHeight) => {
+export const snapToWall = (position: Position, roomWidth: number, roomHeight: number) => {
   const snappedPos = { ...position };
   const roomSizeX = roomWidth / 2;
   const roomSizeZ = roomHeight / 2;
@@ -35,7 +49,7 @@ export const snapToWall = (position, roomWidth, roomHeight) => {
   return snappedPos;
 };
 
-export const constrainAllObjectsToRoom = (items, roomWidth, roomHeight) => {
+export const constrainAllObjectsToRoom = (items: BathroomItem[], roomWidth: number, roomHeight: number) => {
   const maxX = (roomWidth / 2) - CONSTRAINTS.OBJECT_BUFFER;
   const maxZ = (roomHeight / 2) - CONSTRAINTS.OBJECT_BUFFER;
 
