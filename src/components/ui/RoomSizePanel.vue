@@ -1,7 +1,7 @@
 <template>
     <div :style="panelStyle">
       <h4 :style="titleStyle">Room Settings</h4>
-      
+
       <div :style="controlGroupStyle">
         <label :style="labelStyle">
           Width: {{ roomWidth.toFixed(1) }}m
@@ -16,7 +16,7 @@
           />
         </label>
       </div>
-  
+
       <div :style="controlGroupStyle">
         <label :style="labelStyle">
           Height: {{ roomHeight.toFixed(1) }}m
@@ -31,7 +31,7 @@
           />
         </label>
       </div>
-  
+
       <div :style="controlGroupStyle">
         <label :style="checkboxLabelStyle">
           <input
@@ -43,7 +43,7 @@
           Show Grid
         </label>
       </div>
-  
+
       <div :style="controlGroupStyle">
         <label :style="checkboxLabelStyle">
           <input
@@ -55,7 +55,7 @@
           Smart Wall Hiding
         </label>
       </div>
-  
+
       <div :style="controlGroupStyle">
         <button
           @click="$emit('constrain-objects')"
@@ -68,12 +68,12 @@
       </div>
     </div>
   </template>
-  
+
   <script setup>
   import { computed } from 'vue'
   import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
   import { isMobile } from '../../utils/helpers.js'
-  
+
   // Define props
   const props = defineProps({
     roomWidth: {
@@ -93,13 +93,13 @@
       required: true
     }
   })
-  
+
   // Define emits
   const emit = defineEmits(['room-size-change', 'toggle-grid', 'constrain-objects', 'toggle-wall-culling'])
-  
+
   // Computed
   const isMobileDevice = computed(() => isMobile())
-  
+
   const panelStyle = computed(() => ({
     position: 'absolute',
     bottom: '10px',
@@ -112,25 +112,25 @@
     zIndex: 1000,
     backdropFilter: 'blur(10px)'
   }))
-  
+
   const titleStyle = computed(() => ({
     margin: '0 0 15px 0',
     fontSize: isMobileDevice.value ? '14px' : '16px',
     fontWeight: 'bold',
     color: '#333'
   }))
-  
+
   const controlGroupStyle = computed(() => ({
     marginBottom: '15px'
   }))
-  
+
   const labelStyle = computed(() => ({
     display: 'block',
     fontSize: isMobileDevice.value ? '12px' : '14px',
     color: '#666',
     marginBottom: '5px'
   }))
-  
+
   const checkboxLabelStyle = computed(() => ({
     display: 'flex',
     alignItems: 'center',
@@ -139,17 +139,17 @@
     color: '#666',
     cursor: 'pointer'
   }))
-  
+
   const sliderStyle = computed(() => ({
     width: '100%',
     marginTop: '5px',
     accentColor: '#4CAF50'
   }))
-  
+
   const checkboxStyle = computed(() => ({
     accentColor: '#4CAF50'
   }))
-  
+
   const buttonStyle = computed(() => ({
     width: '100%',
     padding: '10px',
@@ -162,19 +162,19 @@
     fontWeight: '500',
     transition: 'background-color 0.2s ease'
   }))
-  
+
   // Methods
   const updateWidth = (event) => {
     const newWidth = parseFloat(event.target.value)
     emit('room-size-change', newWidth, props.roomHeight)
   }
-  
+
   const updateHeight = (event) => {
     const newHeight = parseFloat(event.target.value)
     emit('room-size-change', props.roomWidth, newHeight)
   }
   </script>
-  
+
   <style scoped>
   /* Custom slider styles */
   input[type="range"] {
@@ -184,7 +184,7 @@
     background: #ddd;
     outline: none;
   }
-  
+
   input[type="range"]::-webkit-slider-thumb {
     appearance: none;
     width: 18px;
@@ -194,7 +194,7 @@
     cursor: pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
-  
+
   input[type="range"]::-moz-range-thumb {
     width: 18px;
     height: 18px;
