@@ -63,7 +63,7 @@
           @mouseenter="e => e.target.style.backgroundColor = '#45a049'"
           @mouseleave="e => e.target.style.backgroundColor = '#4CAF50'"
       >
-        Constrain Objects to Room
+        Snap Objects to Walls
       </button>
     </div>
   </div>
@@ -71,8 +71,8 @@
 
 <script setup>
 import { computed } from 'vue'
-import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
-import { isMobile } from '../../utils/helpers.ts'
+import { ROOM_DEFAULTS } from '../../constants/dimensions'
+import { isMobile } from '../../utils/helpers'
 
 // Define props
 const props = defineProps({
