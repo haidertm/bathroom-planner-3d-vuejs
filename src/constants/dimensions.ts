@@ -58,3 +58,16 @@ export const HEIGHT_LIMITS: HeightLimits = {
   MAX: 1.5,
   MIRROR_MAX: 2.5
 } as const;
+
+// Add model dimensions for better constraint handling
+export const MODEL_DIMENSIONS = {
+  Toilet: { width: 0.8, depth: 0.8, height: 0.8 },
+  Sink: { width: 0.6, depth: 0.5, height: 0.9 },
+  Bath: { width: 1.7, depth: 0.8, height: 0.6 },
+  Shower: { width: 0.8, depth: 0.8, height: 2.0 },
+  Radiator: { width: 0.7, depth: 0.2, height: 1.4 },
+  Mirror: { width: 0.8, depth: 0.05, height: 1.0 },
+  Door: { width: 0.8, depth: 0.1, height: 2.0 }
+};
+
+export type ComponentType = keyof typeof MODEL_DIMENSIONS;
