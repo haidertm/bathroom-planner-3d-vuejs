@@ -57,13 +57,13 @@ export class EventHandlers {
   private mouseStartY: number;
   private mouseX: number;
   private mouseY: number;
-  private mouseDownX: number;
-  private mouseDownY: number;
+  // private mouseDownX: number;
+  // private mouseDownY: number;
 
   // Touch variables
-  private touchStartX: number;
-  private touchStartY: number;
-  private touchStart: Touch | null;
+  // private touchStartX: number;
+  // private touchStartY: number;
+  // private touchStart: Touch | null;
   private lastTouchDistance: number;
   private lastTouchTime: number;
   private isTouchDevice: boolean;
@@ -110,13 +110,8 @@ export class EventHandlers {
     this.mouseStartY = 0;
     this.mouseX = 0;
     this.mouseY = 0;
-    this.mouseDownX = 0;
-    this.mouseDownY = 0;
 
     // Initialize touch variables
-    this.touchStartX = 0;
-    this.touchStartY = 0;
-    this.touchStart = null;
     this.lastTouchDistance = 0;
     this.lastTouchTime = 0;
     this.isTouchDevice = 'ontouchstart' in window;
@@ -138,7 +133,7 @@ export class EventHandlers {
     this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
-  private getIntersectedObject(mouse: MousePosition): IntersectionResult | null {
+  private getIntersectedObject(mouse: THREE.Vector2): IntersectionResult | null {
     this.raycaster.setFromCamera(mouse, this.camera);
 
     // Raycast against all objects, but filter results by visibility
@@ -228,12 +223,13 @@ export class EventHandlers {
   }
 
   private handleMouseDown(event: MouseEvent): void {
-    this.mouseDownX = event.clientX;
-    this.mouseDownY = event.clientY;
     this.mouseX = event.clientX;
     this.mouseY = event.clientY;
 
-    this.mouse = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+    // Convert mouse position to Three.js Vector2
+    const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+    this.mouse.set(mousePos.x, mousePos.y);
+
     const intersected = this.getIntersectedObject(this.mouse);
 
     // Clear previous selection if clicking on empty space or different object
@@ -288,7 +284,8 @@ export class EventHandlers {
   }
 
   private handleMouseMove(event: MouseEvent): void {
-    this.mouse = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+    const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+    this.mouse.set(mousePos.x, mousePos.y);
 
     if (this.isScaling && this.selectedObject) {
       // Scale object
@@ -417,7 +414,7 @@ export class EventHandlers {
     }
   }
 
-  private handleMouseUp(event: MouseEvent): void {
+  private handleMouseUp(): void {
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
       this.applyPendingUpdates();
@@ -448,11 +445,10 @@ export class EventHandlers {
 
     if (touches.length === 1) {
       const touch = touches[0];
-      this.touchStartX = touch.clientX;
-      this.touchStartY = touch.clientY;
-      this.touchStart = touch;
 
-      this.mouse = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      const touchPos = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      this.mouse.set(touchPos.x, touchPos.y);
+
       const intersected = this.getIntersectedObject(this.mouse);
 
       // Handle double tap to delete on mobile
@@ -507,7 +503,8 @@ export class EventHandlers {
 
     if (touches.length === 1) {
       const touch = touches[0];
-      this.mouse = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      const touchPos = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      this.mouse.set(touchPos.x, touchPos.y);
 
       if (this.isDragging && this.selectedObject) {
         this.raycaster.setFromCamera(this.mouse, this.camera);
@@ -588,9 +585,9 @@ export class EventHandlers {
     this.isHeightAdjusting = false;
     this.isScaling = false;
 
-    if (touches.length === 0) {
-      this.touchStart = null;
-    }
+    // if (touches.length === 0) {
+    //   this.touchStart = null;
+    // }
   }
 
   private handleResize(): void {
