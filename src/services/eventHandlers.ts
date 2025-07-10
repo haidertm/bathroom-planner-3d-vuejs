@@ -7,12 +7,6 @@ import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
 
-// Type definitions
-interface MousePosition {
-  x: number;
-  y: number;
-}
-
 interface IntersectionResult {
   object: THREE.Object3D;
   point: THREE.Vector3;
@@ -570,7 +564,6 @@ export class EventHandlers {
 
   private handleTouchEnd(event: TouchEvent): void {
     event.preventDefault();
-    const touches = event.touches;
 
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
@@ -584,10 +577,6 @@ export class EventHandlers {
     this.isObjectRotating = false;
     this.isHeightAdjusting = false;
     this.isScaling = false;
-
-    // if (touches.length === 0) {
-    //   this.touchStart = null;
-    // }
   }
 
   private handleResize(): void {
