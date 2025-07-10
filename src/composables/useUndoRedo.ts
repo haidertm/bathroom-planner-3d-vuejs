@@ -30,7 +30,7 @@ export function useUndoRedo<T extends UndoRedoState = UndoRedoState>(
   const maxHistorySize: number = config.maxHistorySize || 50;
 
   // Reactive state
-  const history: Ref<T[]> = ref<T[]>([]);
+  const history = ref([]) as Ref<T[]>;
   const currentIndex: Ref<number> = ref<number>(-1);
 
   // Computed properties

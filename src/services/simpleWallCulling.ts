@@ -114,7 +114,6 @@ export class SimpleWallCulling {
 
     // Get camera position
     const cameraPos = this.camera.position;
-    const roomCenter = new THREE.Vector3(0, 0, 0);
 
     // Calculate which walls should be hidden based on camera position
     const wallsToHide: WallToHide[] = [];
