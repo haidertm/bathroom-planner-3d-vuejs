@@ -15,18 +15,18 @@
       </div>
     </div>
   </template>
-  
+
   <script setup>
   import { computed } from 'vue'
   import { COMPONENTS } from '../../constants/components.js'
-  import { isMobile } from '../../utils/helpers.js'
-  
+  import { isMobile } from '../../utils/helpers.ts'
+
   // Define emits
   const emit = defineEmits(['add'])
-  
+
   // Computed styles
   const isMobileDevice = computed(() => isMobile())
-  
+
   const toolbarStyle = computed(() => ({
     position: 'absolute',
     top: '10px',
@@ -43,7 +43,7 @@
     backdropFilter: 'blur(10px)',
     flexWrap: isMobileDevice.value ? 'wrap' : 'nowrap'
   }))
-  
+
   const titleStyle = computed(() => ({
     margin: '0',
     fontSize: isMobileDevice.value ? '16px' : '18px',
@@ -53,14 +53,14 @@
     minWidth: isMobileDevice.value ? '100%' : 'auto',
     textAlign: isMobileDevice.value ? 'center' : 'left'
   }))
-  
+
   const buttonGroupStyle = computed(() => ({
     display: 'flex',
     gap: '8px',
     flexWrap: 'wrap',
     justifyContent: isMobileDevice.value ? 'center' : 'flex-start'
   }))
-  
+
   const buttonStyle = computed(() => ({
     padding: isMobileDevice.value ? '8px 12px' : '8px 16px',
     border: '1px solid #ccc',
@@ -73,7 +73,7 @@
     whiteSpace: 'nowrap'
   }))
   </script>
-  
+
   <style scoped>
   /* Any additional styles if needed */
   </style>

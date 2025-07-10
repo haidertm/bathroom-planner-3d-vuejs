@@ -1,23 +1,39 @@
 <template>
   <div :style="{ width: '98vw', height: '100vh', position: 'relative' }">
-
+    <Header
+        logo="/src/assets/logo.svg"
+        backgroundColor="#fff"
+        logoHeight="45px"
+    />
     <sidebar
-        @add="addItem"
+        v-if="showTexturePanel"
         @floor-change="handleFloorChange"
         @wall-change="handleWallChange"
-        :currentFloor="currentFloorTexture"
-        :currentWall="currentWallTexture"
-    />
-    <RoomSizePanel
-        @room-size-change="handleRoomSizeChange"
+        :current-floor="currentFloorTexture"
+        :current-wall="currentWallTexture"
+        @add="addItem"
+        @close="handleTextureClose"
         :room-width="roomWidth"
         :room-height="roomHeight"
         :show-grid="showGrid"
+        :wall-culling-enabled="wallCullingEnabled"
+        @room-size-change="handleRoomSizeChange"
         @toggle-grid="setShowGrid"
         @constrain-objects="constrainObjects"
-        :wall-culling-enabled="wallCullingEnabled"
         @toggle-wall-culling="handleWallCullingToggle"
     />
+
+    <!-- Toggle button for texture panel -->
+    <button
+        v-if="!showTexturePanel"
+        @click="handleShowTexturePanel"
+        :style="toggleButtonStyle"
+        title="Show Texture Panel"
+        @mouseenter="e => e.target.style.backgroundColor = '#e0e0e0'"
+        @mouseleave="e => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.95)'"
+    >
+      🎨 Textures
+    </button>
     <UndoRedoPanel
         @undo="handleUndo"
         @redo="handleRedo"
@@ -51,8 +67,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, shallowRef } from 'vue'
-import { markRaw } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
+
 // Components
 import Toolbar from './components/ui/Toolbar.vue'
 import TexturePanel from './components/ui/TexturePanel.vue'
@@ -73,17 +89,17 @@ import { createModel } from './models/bathroomFixtures.js'
 
 // Utils
 import { constrainAllObjectsToRoom } from './utils/constraints.js'
-import { isMobile } from './utils/helpers.js'
+import { isMobile } from './utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from './composables/useUndoRedo.js'
 import Sidebar from "./components/ui/sidebar.vue";
+import Header from "./components/ui/Header.vue";
 
-// Refs
+// Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
 const sceneManagerRef = shallowRef(null)
-const sceneManager = markRaw(new SceneManager())
-const eventHandlersRef = ref(null)
+const eventHandlersRef = shallowRef(null)
 const roomWidthRef = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeightRef = ref(ROOM_DEFAULTS.HEIGHT)
 
@@ -100,14 +116,14 @@ const getDefaultItems = () => {
   return [
     {
       id: 1001,
-      type: "Shower",
+      type: 'Shower',
       position: [-1.2, 0, -2.2], // Corner position
       rotation: 0,
       scale: 1.0
     },
     {
       id: 1003,
-      type: "Sink",
+      type: 'Sink',
       position: [0, 0, -2.65], // Center against back wall
       rotation: 0,
       scale: 1.0
@@ -116,6 +132,7 @@ const getDefaultItems = () => {
 }
 
 // Reactive state
+const showTexturePanel = ref(true)
 const items = ref(getDefaultItems())
 const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
@@ -124,11 +141,35 @@ const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
 const showGrid = ref(false)
 const wallCullingEnabled = ref(true)
 
+// ADD: Track when items are updated programmatically vs drag operations
+const lastUpdateSource = ref('initial')
+
 // Composables
 const { saveToHistory, undo, redo, canUndo, canRedo } = useUndoRedo()
 
 // Computed
 const isMobileDevice = computed(() => isMobile())
+
+const toggleButtonStyle = computed(() => ({
+  position: 'absolute',
+  top: isMobileDevice.value ? '80px' : '70px',
+  left: '10px',
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  padding: '12px 16px',
+  borderRadius: '8px',
+  border: '1px solid #ccc',
+  cursor: 'pointer',
+  fontSize: isMobileDevice.value ? '13px' : '14px',
+  fontWeight: '500',
+  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+  backdropFilter: 'blur(10px)',
+  zIndex: 1000,
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  whiteSpace: 'nowrap'
+}))
 
 const helpTextStyle = computed(() => ({
   position: 'absolute',
@@ -156,6 +197,7 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 
   const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight)
   items.value = constrainedItems
+  lastUpdateSource.value = 'roomSize'
 
   setTimeout(() => {
     saveToHistory({
@@ -182,6 +224,8 @@ const addItem = (type) => {
 
   const newItems = [...items.value, newItem]
   items.value = newItems
+  lastUpdateSource.value = 'add'
+
   saveToHistory({
     items: newItems,
     roomWidth: roomWidth.value,
@@ -200,6 +244,8 @@ const deleteItem = (itemId) => {
   console.log('Items after deletion:', newItems.map(item => ({ id: item.id, type: item.type })))
 
   items.value = newItems
+  lastUpdateSource.value = 'delete'
+
   saveToHistory({
     items: newItems,
     roomWidth: roomWidth.value,
@@ -217,6 +263,7 @@ const handleUndo = () => {
     roomHeight.value = prevState.roomHeight
     currentFloorTexture.value = prevState.currentFloorTexture
     currentWallTexture.value = prevState.currentWallTexture
+    lastUpdateSource.value = 'undo'
   }
 }
 
@@ -228,6 +275,7 @@ const handleRedo = () => {
     roomHeight.value = nextState.roomHeight
     currentFloorTexture.value = nextState.currentFloorTexture
     currentWallTexture.value = nextState.currentWallTexture
+    lastUpdateSource.value = 'redo'
   }
 }
 
@@ -246,31 +294,55 @@ const handleWallChange = (texture) => {
   currentWallTexture.value = WALL_TEXTURES.indexOf(texture)
 }
 
+const handleTextureClose = () => {
+  console.log('Texture panel closing')
+  showTexturePanel.value = false
+}
+
 const setShowGrid = (value) => {
   showGrid.value = value
+}
+
+const handleShowTexturePanel = () => {
+  console.log('Show texture panel')
+  showTexturePanel.value = true
 }
 
 const constrainObjects = () => {
   const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value)
   items.value = constrainedItems
+  lastUpdateSource.value = 'constrain'
+}
+
+// NEW: Custom setItems function that tracks update source
+const setItems = (updaterOrArray) => {
+  if (typeof updaterOrArray === 'function') {
+    // Handle function-based updates (React style)
+    items.value = updaterOrArray(items.value)
+  } else {
+    // Handle direct array assignment
+    items.value = updaterOrArray
+  }
+  lastUpdateSource.value = 'drag'
 }
 
 // Initialize scene
 onMounted(() => {
   // Initialize scene manager
+  const sceneManager = markRaw(new SceneManager())
   sceneManagerRef.value = sceneManager
-  const { scene, camera, renderer } = sceneManagerRef.value.initializeScene()
+  const { scene, camera, renderer } = sceneManager.initializeScene()
 
-  // Initialize event handlers
-  eventHandlersRef.value = new EventHandlers(
+  // Initialize event handlers and mark as raw to prevent reactivity
+  eventHandlersRef.value = markRaw(new EventHandlers(
       scene,
       camera,
       renderer,
       roomWidthRef,
       roomHeightRef,
-      (newItems) => { items.value = newItems },
+      setItems, // Use our custom setItems function
       deleteItem
-  )
+  ))
 
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
@@ -281,13 +353,18 @@ onMounted(() => {
   sceneManagerRef.value.setWallCullingEnabled(wallCullingEnabled.value)
 
   // Add canvas to DOM
-  mountRef.value.appendChild(renderer.domElement)
+  if (mountRef.value instanceof HTMLElement && renderer.domElement) {
+    mountRef.value.appendChild(renderer.domElement)
+  }
 
   // Add event listeners
   eventHandlersRef.value.addEventListeners()
 
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
+
+  // Load initial items
+  sceneManagerRef.value.updateBathroomItems(items.value, createModel)
 })
 
 // Watch for room geometry changes
@@ -307,11 +384,15 @@ watch([currentFloorTexture, currentWallTexture], () => {
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
 })
 
-// Watch for items changes
-watch(items, () => {
+// MODIFIED: Only update scene for non-drag operations
+watch([items, lastUpdateSource], ([newItems, updateSource]) => {
   if (!sceneManagerRef.value) return
 
-  sceneManagerRef.value.updateBathroomItems(items.value, createModel)
+  // Only update scene for specific operations, NOT for drag operations
+  if (updateSource !== 'drag') {
+    console.log(`Updating scene for ${ updateSource } operation:`, newItems.length, 'items')
+    sceneManagerRef.value.updateBathroomItems(newItems, createModel)
+  }
 }, { deep: true })
 
 // Cleanup

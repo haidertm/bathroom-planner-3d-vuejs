@@ -1,5 +1,12 @@
+export interface TextureConfig {
+  readonly name: string;
+  readonly file: string;
+  readonly color: number; // Hex color value
+  readonly scale: readonly [number, number]; // [x, y] scaling
+}
+
 // Custom texture definitions - supports both files and colors
-export const FLOOR_TEXTURES = [
+export const FLOOR_TEXTURES: readonly TextureConfig[] = [
   { name: 'White Tile', file: '', color: 0xf8f8f8, scale: [4, 4] },
   { name: 'Gray Tile', file: '/textures/floor_grey_tile.avif', color: 0xd0d0d0, scale: [4, 4] },
   { name: 'Metropolis Star', file: '/textures/floor_metropolis_star_black.webp', color: 0xf5f5dc, scale: [6, 6] },
@@ -9,7 +16,7 @@ export const FLOOR_TEXTURES = [
   { name: 'Stone', file: '', color: 0x888888, scale: [2, 2] }
 ];
 
-export const WALL_TEXTURES = [
+export const WALL_TEXTURES: readonly TextureConfig[] = [
   { name: 'Metro White Tile', file: '/textures/wall_metro_white_tile.png', color: 0xffffff, scale: [20, 12] },
   { name: 'White Paint', file: '', color: 0xffffff, scale: [1, 1] },
   { name: 'Light Blue', file: '', color: 0xe6f3ff, scale: [1, 1] },

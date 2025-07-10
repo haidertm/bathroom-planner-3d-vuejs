@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers.js';
+import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers.ts';
 import { constrainToRoom, snapToWall } from '../utils/constraints.js';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions.js';
 
@@ -42,6 +42,10 @@ export class EventHandlers {
     this.lastTouchTime = 0;
     this.isTouchDevice = 'ontouchstart' in window;
 
+    // ADD: Track if we're in a drag operation to prevent state updates
+    this.isDragOperation = false;
+    this.pendingUpdates = new Map(); // Store pending updates during drag
+
     // Bind methods
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -66,26 +70,12 @@ export class EventHandlers {
       .filter(intersect => intersect.object.visible)
       .sort((a, b) => a.distance - b.distance);
 
-    // Debug: log what visible objects we're hitting in order
-    const hitObjects = visibleIntersects.map(i => ({
-      type: i.object.userData.isWall ? 'wall' :
-        i.object.userData.isBathroomItem ? 'bathroom' :
-          i.object.userData.isFloor ? 'floor' : 'other',
-      distance: i.distance.toFixed(2),
-      position: `(${ i.object.position.x.toFixed(1) }, ${ i.object.position.z.toFixed(1) })`
-    }));
-
-    // if (hitObjects.length > 0) {
-    //   console.log('Visible intersects (closest first):', hitObjects);
-    // }
-
     // Process intersections in order of distance (closest first)
     for (let intersect of visibleIntersects) {
       const obj = intersect.object;
 
       // If it's a wall, block further object selection
       if (obj.userData.isWall) {
-        // console.log(`Hit wall at distance ${ intersect.distance.toFixed(2) } - BLOCKING all objects behind it`);
         return null; // Camera rotation
       }
 
@@ -96,13 +86,46 @@ export class EventHandlers {
       }
 
       if (bathroomObj.userData.isBathroomItem) {
-        // console.log(`SUCCESS: Hit bathroom object "${ bathroomObj.userData.type }" at distance ${ intersect.distance.toFixed(2) }`);
         return { object: bathroomObj, point: intersect.point };
       }
     }
 
-    // console.log('No valid object hit - triggering camera rotation');
     return null;
+  }
+
+  // NEW: Method to apply pending updates after drag ends
+  applyPendingUpdates() {
+    if (this.pendingUpdates.size === 0) return;
+
+    const updates = Array.from(this.pendingUpdates.entries());
+    this.pendingUpdates.clear();
+
+    // Apply all updates at once
+    this.setItems(prevItems => {
+      return prevItems.map(item => {
+        const update = updates.find(([itemId]) => itemId === item.id);
+        if (update) {
+          return { ...item, ...update[1] };
+        }
+        return item;
+      });
+    });
+  }
+
+  // NEW: Method to queue updates during drag operations
+  queueUpdate(itemId, updateData) {
+    if (this.isDragOperation) {
+      // Store the update for later application
+      this.pendingUpdates.set(itemId, {
+        ...this.pendingUpdates.get(itemId),
+        ...updateData
+      });
+    } else {
+      // Apply immediately if not dragging
+      this.setItems(prev => prev.map(item =>
+        item.id === itemId ? { ...item, ...updateData } : item
+      ));
+    }
   }
 
   // Added keyboard event handler for delete functionality
@@ -147,6 +170,7 @@ export class EventHandlers {
 
       if (event.button === 2) { // Right click for rotation
         this.isObjectRotating = true;
+        this.isDragOperation = true; // Mark as drag operation
         const rect = this.renderer.domElement.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -155,16 +179,19 @@ export class EventHandlers {
         this.renderer.domElement.style.cursor = 'crosshair';
       } else if (event.ctrlKey || event.metaKey) { // Ctrl/Cmd + click for height adjustment
         this.isHeightAdjusting = true;
+        this.isDragOperation = true; // Mark as drag operation
         this.heightStartY = this.selectedObject.position.y;
         this.mouseStartY = event.clientY;
         this.renderer.domElement.style.cursor = 'row-resize';
       } else if (event.altKey) { // Alt + click for scaling
         this.isScaling = true;
+        this.isDragOperation = true; // Mark as drag operation
         this.scaleStart = this.selectedObject.scale.x;
         this.mouseStartY = event.clientY;
         this.renderer.domElement.style.cursor = 'nw-resize';
       } else { // Left click for dragging
         this.isDragging = true;
+        this.isDragOperation = true; // Mark as drag operation
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
@@ -192,9 +219,8 @@ export class EventHandlers {
       this.selectedObject.scale.set(newScale, newScale, newScale);
 
       const itemId = this.selectedObject.userData.itemId;
-      this.setItems(prev => prev.map(item =>
-        item.id === itemId ? { ...item, scale: newScale } : item
-      ));
+      // Queue update instead of applying immediately
+      this.queueUpdate(itemId, { scale: newScale });
 
     } else if (this.isHeightAdjusting && this.selectedObject) {
       // Adjust object height
@@ -208,11 +234,10 @@ export class EventHandlers {
       this.selectedObject.position.y = newY;
 
       const itemId = this.selectedObject.userData.itemId;
-      this.setItems(prev => prev.map(item =>
-        item.id === itemId
-          ? { ...item, position: [this.selectedObject.position.x, newY, this.selectedObject.position.z] }
-          : item
-      ));
+      // Queue update instead of applying immediately
+      this.queueUpdate(itemId, {
+        position: [this.selectedObject.position.x, newY, this.selectedObject.position.z]
+      });
 
     } else if (this.isObjectRotating && this.selectedObject) {
       // Rotate object
@@ -225,9 +250,8 @@ export class EventHandlers {
       this.selectedObject.rotation.y = this.objectStartRotation + deltaAngle;
 
       const itemId = this.selectedObject.userData.itemId;
-      this.setItems(prev => prev.map(item =>
-        item.id === itemId ? { ...item, rotation: this.selectedObject.rotation.y } : item
-      ));
+      // Queue update instead of applying immediately
+      this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
     } else if (this.isDragging && this.selectedObject) {
       // Drag object
@@ -238,23 +262,22 @@ export class EventHandlers {
       let newPosition = intersectPoint.add(this.dragOffset);
 
       // Constrain to room bounds using refs
-      const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.current, this.roomHeightRef.current);
+      const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
       newPosition.x = constrainedPos.x;
       newPosition.z = constrainedPos.z;
 
       // Apply wall snapping
-      const snappedPos = snapToWall(newPosition, this.roomWidthRef.current, this.roomHeightRef.current);
+      const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
       newPosition.x = snappedPos.x;
       newPosition.z = snappedPos.z;
 
       this.selectedObject.position.copy(newPosition);
 
       const itemId = this.selectedObject.userData.itemId;
-      this.setItems(prev => prev.map(item =>
-        item.id === itemId
-          ? { ...item, position: [newPosition.x, newPosition.y, newPosition.z] }
-          : item
-      ));
+      // Queue update instead of applying immediately
+      this.queueUpdate(itemId, {
+        position: [newPosition.x, newPosition.y, newPosition.z]
+      });
 
     } else if (this.isRotating) {
       // Rotate camera
@@ -284,6 +307,12 @@ export class EventHandlers {
   }
 
   handleMouseUp(event) {
+    // Apply any pending updates before clearing drag state
+    if (this.isDragOperation) {
+      this.applyPendingUpdates();
+      this.isDragOperation = false;
+    }
+
     // Don't clear selection on mouse up - keep it selected for potential deletion
     this.isDragging = false;
     this.isRotating = false;
@@ -343,6 +372,7 @@ export class EventHandlers {
       if (intersected) {
         this.selectedObject = intersected.object;
         this.isDragging = true;
+        this.isDragOperation = true; // Mark as drag operation
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
@@ -376,22 +406,21 @@ export class EventHandlers {
         let newPosition = intersectPoint.add(this.dragOffset);
 
         // Constrain to room bounds using refs
-        const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.current, this.roomHeightRef.current);
+        const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
         newPosition.x = constrainedPos.x;
         newPosition.z = constrainedPos.z;
 
-        const snappedPos = snapToWall(newPosition, this.roomWidthRef.current, this.roomHeightRef.current);
+        const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
         newPosition.x = snappedPos.x;
         newPosition.z = snappedPos.z;
 
         this.selectedObject.position.copy(newPosition);
 
         const itemId = this.selectedObject.userData.itemId;
-        this.setItems(prev => prev.map(item =>
-          item.id === itemId
-            ? { ...item, position: [newPosition.x, newPosition.y, newPosition.z] }
-            : item
-        ));
+        // Queue update instead of applying immediately
+        this.queueUpdate(itemId, {
+          position: [newPosition.x, newPosition.y, newPosition.z]
+        });
       } else if (this.isRotating) {
         const deltaX = touch.clientX - this.mouseX;
         const deltaY = touch.clientY - this.mouseY;
@@ -425,6 +454,12 @@ export class EventHandlers {
   handleTouchEnd (event) {
     event.preventDefault();
     const touches = event.touches;
+
+    // Apply any pending updates before clearing drag state
+    if (this.isDragOperation) {
+      this.applyPendingUpdates();
+      this.isDragOperation = false;
+    }
 
     // Don't clear selection on touch end - keep it selected for potential deletion
     this.isDragging = false;
