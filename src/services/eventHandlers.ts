@@ -2,10 +2,9 @@
 import * as THREE from 'three';
 import type { Ref } from 'vue';
 import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers';
-import { constrainToRoom, snapToWall } from '../utils/constraints';
+import { constrainToRoom, snapToWall, type BathroomItem } from '../utils/constraints';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
-import type { BathroomItem } from '../utils/constraints';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -16,6 +15,7 @@ interface UpdateData {
   position?: [number, number, number];
   rotation?: number;
   scale?: number;
+
   [key: string]: any;
 }
 
@@ -32,6 +32,10 @@ export class EventHandlers {
   private roomHeightRef: Ref<number>;
   private setItems: SetItemsFunction;
   private deleteItem: DeleteItemFunction;
+
+  // Camera constraints - ADD THESE NEW PROPERTIES
+  private readonly MIN_CAMERA_HEIGHT = 0.5; // Minimum height above floor
+  private readonly MAX_PHI_ANGLE = Math.PI / 2 - 0.1; // Slightly less than horizontal to stay above floor
 
   // Interaction state
   private raycaster: THREE.Raycaster;
@@ -51,13 +55,8 @@ export class EventHandlers {
   private mouseStartY: number;
   private mouseX: number;
   private mouseY: number;
-  // private mouseDownX: number;
-  // private mouseDownY: number;
 
   // Touch variables
-  // private touchStartX: number;
-  // private touchStartY: number;
-  // private touchStart: Touch | null;
   private lastTouchDistance: number;
   private lastTouchTime: number;
   private isTouchDevice: boolean;
@@ -68,7 +67,7 @@ export class EventHandlers {
 
   // Note: Event handlers are defined as methods below and bound in constructor
 
-  constructor(
+  constructor (
     scene: THREE.Scene,
     camera: THREE.PerspectiveCamera,
     renderer: THREE.WebGLRenderer,
@@ -127,7 +126,7 @@ export class EventHandlers {
     this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
-  private getIntersectedObject(mouse: THREE.Vector2): IntersectionResult | null {
+  private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
     this.raycaster.setFromCamera(mouse, this.camera);
 
     // Raycast against all objects, but filter results by visibility
@@ -162,7 +161,7 @@ export class EventHandlers {
   }
 
   // Method to apply pending updates after drag ends
-  private applyPendingUpdates(): void {
+  private applyPendingUpdates (): void {
     if (this.pendingUpdates.size === 0) return;
 
     const updates = Array.from(this.pendingUpdates.entries());
@@ -181,7 +180,7 @@ export class EventHandlers {
   }
 
   // Method to queue updates during drag operations
-  private queueUpdate(itemId: number, updateData: UpdateData): void {
+  private queueUpdate (itemId: number, updateData: UpdateData): void {
     if (this.isDragOperation) {
       // Store the update for later application
       this.pendingUpdates.set(itemId, {
@@ -197,7 +196,7 @@ export class EventHandlers {
   }
 
   // Keyboard event handler for delete functionality
-  private handleKeyDown(event: KeyboardEvent): void {
+  private handleKeyDown (event: KeyboardEvent): void {
     // Delete selected object when Delete or Backspace key is pressed
     if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedObject) {
       event.preventDefault();
@@ -216,7 +215,7 @@ export class EventHandlers {
     }
   }
 
-  private handleMouseDown(event: MouseEvent): void {
+  private handleMouseDown (event: MouseEvent): void {
     this.mouseX = event.clientX;
     this.mouseY = event.clientY;
 
@@ -277,7 +276,7 @@ export class EventHandlers {
     }
   }
 
-  private handleMouseMove(event: MouseEvent): void {
+  private handleMouseMove (event: MouseEvent): void {
     const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
     this.mouse.set(mousePos.x, mousePos.y);
 
@@ -382,7 +381,7 @@ export class EventHandlers {
       });
 
     } else if (this.isRotating) {
-      // Rotate camera
+      // UPDATED: Rotate camera with floor constraint
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
 
@@ -390,9 +389,24 @@ export class EventHandlers {
       spherical.setFromVector3(this.camera.position);
       spherical.theta -= deltaX * 0.01;
       spherical.phi += deltaY * 0.01;
-      spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
 
+      // Constrain phi to prevent camera from going below floor
+      // phi = 0 is looking straight down from above
+      // phi = Math.PI/2 is looking horizontally
+      // We want to limit phi to keep camera above floor level
+      spherical.phi = Math.max(0.1, Math.min(this.MAX_PHI_ANGLE, spherical.phi));
+
+      // Apply the constrained position
       this.camera.position.setFromSpherical(spherical);
+
+      // Additional check: if camera somehow goes below minimum height, adjust it
+      if (this.camera.position.y < this.MIN_CAMERA_HEIGHT) {
+        const distance = this.camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
+        const newPhi = Math.acos(this.MIN_CAMERA_HEIGHT / distance);
+        spherical.phi = Math.min(spherical.phi, newPhi);
+        this.camera.position.setFromSpherical(spherical);
+      }
+
       this.camera.lookAt(0, 0, 0);
 
       this.mouseX = event.clientX;
@@ -408,7 +422,7 @@ export class EventHandlers {
     }
   }
 
-  private handleMouseUp(): void {
+  private handleMouseUp (): void {
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
       this.applyPendingUpdates();
@@ -424,16 +438,29 @@ export class EventHandlers {
     this.renderer.domElement.style.cursor = 'default';
   }
 
-  private handleContextMenu(event: MouseEvent): void {
+  private handleContextMenu (event: MouseEvent): void {
     event.preventDefault();
   }
 
-  private handleWheel(event: WheelEvent): void {
+  private handleWheel (event: WheelEvent): void {
+    // UPDATED: Constrain zoom to prevent going below floor
     const scale = event.deltaY > 0 ? 1.1 : 0.9;
-    this.camera.position.multiplyScalar(scale);
+    const newPosition = this.camera.position.clone().multiplyScalar(scale);
+
+    // Check if the new position would put camera below minimum height
+    if (newPosition.y >= this.MIN_CAMERA_HEIGHT) {
+      this.camera.position.copy(newPosition);
+    } else {
+      // If zooming in would put camera below floor, limit the zoom
+      // Calculate maximum scale that keeps camera above minimum height
+      const maxScale = this.MIN_CAMERA_HEIGHT / this.camera.position.y;
+      if (scale < maxScale) {
+        this.camera.position.multiplyScalar(maxScale);
+      }
+    }
   }
 
-  private handleTouchStart(event: TouchEvent): void {
+  private handleTouchStart (event: TouchEvent): void {
     event.preventDefault();
     const touches = event.touches;
 
@@ -491,7 +518,7 @@ export class EventHandlers {
     }
   }
 
-  private handleTouchMove(event: TouchEvent): void {
+  private handleTouchMove (event: TouchEvent): void {
     event.preventDefault();
     const touches = event.touches;
 
@@ -533,6 +560,7 @@ export class EventHandlers {
           position: [newPosition.x, newPosition.y, newPosition.z]
         });
       } else if (this.isRotating) {
+        // UPDATED: Touch camera rotation with floor constraint
         const deltaX = touch.clientX - this.mouseX;
         const deltaY = touch.clientY - this.mouseY;
 
@@ -540,9 +568,21 @@ export class EventHandlers {
         spherical.setFromVector3(this.camera.position);
         spherical.theta -= deltaX * 0.01;
         spherical.phi += deltaY * 0.01;
-        spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
 
+        // Same constraint as mouse rotation
+        spherical.phi = Math.max(0.1, Math.min(this.MAX_PHI_ANGLE, spherical.phi));
+
+        // Apply the constrained position
         this.camera.position.setFromSpherical(spherical);
+
+        // Additional check for minimum height
+        if (this.camera.position.y < this.MIN_CAMERA_HEIGHT) {
+          const distance = this.camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
+          const newPhi = Math.acos(this.MIN_CAMERA_HEIGHT / distance);
+          spherical.phi = Math.min(spherical.phi, newPhi);
+          this.camera.position.setFromSpherical(spherical);
+        }
+
         this.camera.lookAt(0, 0, 0);
 
         this.mouseX = touch.clientX;
@@ -562,7 +602,7 @@ export class EventHandlers {
     }
   }
 
-  private handleTouchEnd(event: TouchEvent): void {
+  private handleTouchEnd (event: TouchEvent): void {
     event.preventDefault();
 
     // Apply any pending updates before clearing drag state
@@ -579,13 +619,13 @@ export class EventHandlers {
     this.isScaling = false;
   }
 
-  private handleResize(): void {
+  private handleResize (): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  public addEventListeners(): void {
+  public addEventListeners (): void {
     this.renderer.domElement.addEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
@@ -604,7 +644,7 @@ export class EventHandlers {
     window.addEventListener('resize', this.handleResize);
   }
 
-  public removeEventListeners(): void {
+  public removeEventListeners (): void {
     this.renderer.domElement.removeEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.removeEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.removeEventListener('mouseup', this.handleMouseUp);
@@ -624,22 +664,22 @@ export class EventHandlers {
   }
 
   // Utility methods for external access
-  public getSelectedObject(): THREE.Object3D | null {
+  public getSelectedObject (): THREE.Object3D | null {
     return this.selectedObject;
   }
 
-  public clearSelection(): void {
+  public clearSelection (): void {
     if (this.selectedObject) {
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
     }
   }
 
-  public isDragOperationActive(): boolean {
+  public isDragOperationActive (): boolean {
     return this.isDragOperation;
   }
 
-  public getPendingUpdatesCount(): number {
+  public getPendingUpdatesCount (): number {
     return this.pendingUpdates.size;
   }
 }
