@@ -1,10 +1,89 @@
+// src/services/eventHandlers.ts
 import * as THREE from 'three';
-import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers.ts';
-import { constrainToRoom, snapToWall } from '../utils/constraints.js';
-import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions.js';
+import type { Ref } from 'vue';
+import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers';
+import { constrainToRoom, snapToWall } from '../utils/constraints';
+import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
+import type { ComponentType } from '../constants/components';
+import type { BathroomItem } from '../utils/constraints';
+
+// Type definitions
+interface MousePosition {
+  x: number;
+  y: number;
+}
+
+interface IntersectionResult {
+  object: THREE.Object3D;
+  point: THREE.Vector3;
+}
+
+interface UpdateData {
+  position?: [number, number, number];
+  rotation?: number;
+  scale?: number;
+  [key: string]: any;
+}
+
+// Function type definitions
+type SetItemsFunction = (updater: (items: BathroomItem[]) => BathroomItem[]) => void;
+type DeleteItemFunction = (itemId: number) => void;
 
 export class EventHandlers {
-  constructor (scene, camera, renderer, roomWidthRef, roomHeightRef, setItems, deleteItem) {
+  // Core Three.js objects
+  private scene: THREE.Scene;
+  private camera: THREE.Camera;
+  private renderer: THREE.WebGLRenderer;
+  private roomWidthRef: Ref<number>;
+  private roomHeightRef: Ref<number>;
+  private setItems: SetItemsFunction;
+  private deleteItem: DeleteItemFunction;
+
+  // Interaction state
+  private raycaster: THREE.Raycaster;
+  private mouse: THREE.Vector2;
+  private selectedObject: THREE.Object3D | null;
+  private isDragging: boolean;
+  private isRotating: boolean;
+  private isObjectRotating: boolean;
+  private isHeightAdjusting: boolean;
+  private isScaling: boolean;
+  private dragPlane: THREE.Plane;
+  private dragOffset: THREE.Vector3;
+  private rotationStartAngle: number;
+  private objectStartRotation: number;
+  private heightStartY: number;
+  private scaleStart: number;
+  private mouseStartY: number;
+  private mouseX: number;
+  private mouseY: number;
+  private mouseDownX: number;
+  private mouseDownY: number;
+
+  // Touch variables
+  private touchStartX: number;
+  private touchStartY: number;
+  private touchStart: Touch | null;
+  private lastTouchDistance: number;
+  private lastTouchTime: number;
+  private isTouchDevice: boolean;
+
+  // Drag operation tracking
+  private isDragOperation: boolean;
+  private pendingUpdates: Map<number, UpdateData>;
+
+  // Note: Event handlers are defined as methods below and bound in constructor
+
+  constructor(
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    renderer: THREE.WebGLRenderer,
+    roomWidthRef: Ref<number>,
+    roomHeightRef: Ref<number>,
+    setItems: SetItemsFunction,
+    deleteItem: DeleteItemFunction
+  ) {
+    // Assign core objects
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
@@ -13,7 +92,7 @@ export class EventHandlers {
     this.setItems = setItems;
     this.deleteItem = deleteItem;
 
-    // Interaction state
+    // Initialize interaction state
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
     this.selectedObject = null;
@@ -34,7 +113,7 @@ export class EventHandlers {
     this.mouseDownX = 0;
     this.mouseDownY = 0;
 
-    // Touch variables
+    // Initialize touch variables
     this.touchStartX = 0;
     this.touchStartY = 0;
     this.touchStart = null;
@@ -42,9 +121,9 @@ export class EventHandlers {
     this.lastTouchTime = 0;
     this.isTouchDevice = 'ontouchstart' in window;
 
-    // ADD: Track if we're in a drag operation to prevent state updates
+    // Initialize drag operation tracking
     this.isDragOperation = false;
-    this.pendingUpdates = new Map(); // Store pending updates during drag
+    this.pendingUpdates = new Map<number, UpdateData>();
 
     // Bind methods
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -59,7 +138,7 @@ export class EventHandlers {
     this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
-  getIntersectedObject (mouse) {
+  private getIntersectedObject(mouse: MousePosition): IntersectionResult | null {
     this.raycaster.setFromCamera(mouse, this.camera);
 
     // Raycast against all objects, but filter results by visibility
@@ -71,7 +150,7 @@ export class EventHandlers {
       .sort((a, b) => a.distance - b.distance);
 
     // Process intersections in order of distance (closest first)
-    for (let intersect of visibleIntersects) {
+    for (const intersect of visibleIntersects) {
       const obj = intersect.object;
 
       // If it's a wall, block further object selection
@@ -93,15 +172,15 @@ export class EventHandlers {
     return null;
   }
 
-  // NEW: Method to apply pending updates after drag ends
-  applyPendingUpdates () {
+  // Method to apply pending updates after drag ends
+  private applyPendingUpdates(): void {
     if (this.pendingUpdates.size === 0) return;
 
     const updates = Array.from(this.pendingUpdates.entries());
     this.pendingUpdates.clear();
 
     // Apply all updates at once
-    this.setItems(prevItems => {
+    this.setItems((prevItems: BathroomItem[]) => {
       return prevItems.map(item => {
         const update = updates.find(([itemId]) => itemId === item.id);
         if (update) {
@@ -112,8 +191,8 @@ export class EventHandlers {
     });
   }
 
-  // NEW: Method to queue updates during drag operations
-  queueUpdate (itemId, updateData) {
+  // Method to queue updates during drag operations
+  private queueUpdate(itemId: number, updateData: UpdateData): void {
     if (this.isDragOperation) {
       // Store the update for later application
       this.pendingUpdates.set(itemId, {
@@ -122,18 +201,18 @@ export class EventHandlers {
       });
     } else {
       // Apply immediately if not dragging
-      this.setItems(prev => prev.map(item =>
+      this.setItems((prev: BathroomItem[]) => prev.map(item =>
         item.id === itemId ? { ...item, ...updateData } : item
       ));
     }
   }
 
-  // Added keyboard event handler for delete functionality
-  handleKeyDown (event) {
+  // Keyboard event handler for delete functionality
+  private handleKeyDown(event: KeyboardEvent): void {
     // Delete selected object when Delete or Backspace key is pressed
     if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedObject) {
       event.preventDefault();
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
 
       // Clear selection and highlight
       highlightObject(this.selectedObject, false);
@@ -148,7 +227,7 @@ export class EventHandlers {
     }
   }
 
-  handleMouseDown (event) {
+  private handleMouseDown(event: MouseEvent): void {
     this.mouseDownX = event.clientX;
     this.mouseDownY = event.clientY;
     this.mouseX = event.clientX;
@@ -208,17 +287,17 @@ export class EventHandlers {
     }
   }
 
-  handleMouseMove (event) {
+  private handleMouseMove(event: MouseEvent): void {
     this.mouse = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
 
     if (this.isScaling && this.selectedObject) {
       // Scale object
       const deltaY = (this.mouseStartY - event.clientY) * 0.01;
-      let newScale = Math.max(SCALE_LIMITS.MIN, Math.min(SCALE_LIMITS.MAX, this.scaleStart + deltaY));
+      const newScale = Math.max(SCALE_LIMITS.MIN, Math.min(SCALE_LIMITS.MAX, this.scaleStart + deltaY));
 
       this.selectedObject.scale.set(newScale, newScale, newScale);
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, { scale: newScale });
 
@@ -233,7 +312,7 @@ export class EventHandlers {
 
       this.selectedObject.position.y = newY;
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, {
         position: [this.selectedObject.position.x, newY, this.selectedObject.position.z]
@@ -249,7 +328,7 @@ export class EventHandlers {
 
       this.selectedObject.rotation.y = this.objectStartRotation + deltaAngle;
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
@@ -259,10 +338,10 @@ export class EventHandlers {
       const intersectPoint = new THREE.Vector3();
       this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
-      let newPosition = intersectPoint.add(this.dragOffset);
+      const newPosition = intersectPoint.add(this.dragOffset);
 
       // Get object type and scale for enhanced constraints
-      const objectType = this.selectedObject.userData.type;
+      const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
 
       // DEBUG: Log room size refs
@@ -305,7 +384,7 @@ export class EventHandlers {
 
       this.selectedObject.position.copy(newPosition);
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, {
         position: [newPosition.x, newPosition.y, newPosition.z]
@@ -338,7 +417,7 @@ export class EventHandlers {
     }
   }
 
-  handleMouseUp (event) {
+  private handleMouseUp(event: MouseEvent): void {
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
       this.applyPendingUpdates();
@@ -354,16 +433,16 @@ export class EventHandlers {
     this.renderer.domElement.style.cursor = 'default';
   }
 
-  handleContextMenu (event) {
+  private handleContextMenu(event: MouseEvent): void {
     event.preventDefault();
   }
 
-  handleWheel (event) {
+  private handleWheel(event: WheelEvent): void {
     const scale = event.deltaY > 0 ? 1.1 : 0.9;
     this.camera.position.multiplyScalar(scale);
   }
 
-  handleTouchStart (event) {
+  private handleTouchStart(event: TouchEvent): void {
     event.preventDefault();
     const touches = event.touches;
 
@@ -381,7 +460,7 @@ export class EventHandlers {
         const now = Date.now();
         if (this.lastTouchTime && now - this.lastTouchTime < 300) {
           // Double tap detected - delete the object
-          const itemId = this.selectedObject.userData.itemId;
+          const itemId = this.selectedObject.userData.itemId as number;
           highlightObject(this.selectedObject, false);
           this.selectedObject = null;
 
@@ -422,7 +501,7 @@ export class EventHandlers {
     }
   }
 
-  handleTouchMove (event) {
+  private handleTouchMove(event: TouchEvent): void {
     event.preventDefault();
     const touches = event.touches;
 
@@ -435,25 +514,29 @@ export class EventHandlers {
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
-        let newPosition = intersectPoint.add(this.dragOffset);
+        const newPosition = intersectPoint.add(this.dragOffset);
+
+        // Get object type and scale for enhanced constraints
+        const objectType = this.selectedObject.userData.type as ComponentType;
+        const objectScale = this.selectedObject.scale.x;
 
         // Constrain to room bounds using refs
-        const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+        const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
         newPosition.x = constrainedPos.x;
         newPosition.z = constrainedPos.z;
 
         // DEBUG: Log constraint application
-        console.log('🔍 Constraining object:', this.selectedObject.userData.type,
+        console.log('🔍 Constraining object:', objectType,
           'from:', intersectPoint.add(this.dragOffset),
           'to:', constrainedPos);
 
-        const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+        const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
         newPosition.x = snappedPos.x;
         newPosition.z = snappedPos.z;
 
         this.selectedObject.position.copy(newPosition);
 
-        const itemId = this.selectedObject.userData.itemId;
+        const itemId = this.selectedObject.userData.itemId as number;
         // Queue update instead of applying immediately
         this.queueUpdate(itemId, {
           position: [newPosition.x, newPosition.y, newPosition.z]
@@ -488,7 +571,7 @@ export class EventHandlers {
     }
   }
 
-  handleTouchEnd (event) {
+  private handleTouchEnd(event: TouchEvent): void {
     event.preventDefault();
     const touches = event.touches;
 
@@ -510,13 +593,13 @@ export class EventHandlers {
     }
   }
 
-  handleResize () {
+  private handleResize(): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  addEventListeners () {
+  public addEventListeners(): void {
     this.renderer.domElement.addEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
@@ -535,7 +618,7 @@ export class EventHandlers {
     window.addEventListener('resize', this.handleResize);
   }
 
-  removeEventListeners () {
+  public removeEventListeners(): void {
     this.renderer.domElement.removeEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.removeEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.removeEventListener('mouseup', this.handleMouseUp);
@@ -552,5 +635,25 @@ export class EventHandlers {
     }
 
     window.removeEventListener('resize', this.handleResize);
+  }
+
+  // Utility methods for external access
+  public getSelectedObject(): THREE.Object3D | null {
+    return this.selectedObject;
+  }
+
+  public clearSelection(): void {
+    if (this.selectedObject) {
+      highlightObject(this.selectedObject, false);
+      this.selectedObject = null;
+    }
+  }
+
+  public isDragOperationActive(): boolean {
+    return this.isDragOperation;
+  }
+
+  public getPendingUpdatesCount(): number {
+    return this.pendingUpdates.size;
   }
 }
