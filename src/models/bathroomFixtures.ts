@@ -9,7 +9,6 @@ import {
   getPreloadModels,
   type ModelConfig,
   type ProceduralConfig,
-  type FixtureConfig
 } from '../constants/models';
 
 // Types
@@ -76,7 +75,7 @@ class ModelManager {
     }
 
     // Return existing loading promise if already loading
-    if (this.loadingPromises[modelName]) {
+    if (modelName in this.loadingPromises) {
       const loadedModel = await this.loadingPromises[modelName];
       return loadedModel.clone();
     }
