@@ -1,27 +1,19 @@
 // src/services/textureManager.ts
-import * as THREE from "three";
-
-// Type definitions
-export interface TextureConfig {
-  name: string;
-  file: string;
-  color: number;
-  scale?: [number, number];
-}
+import * as THREE from 'three';
+import { TextureConfig } from '../constants/textures';
 
 class TextureManager {
   private textureLoader: THREE.TextureLoader;
   private loadedTextures: Map<string, THREE.Texture>;
 
-  constructor() {
+  constructor () {
     this.textureLoader = new THREE.TextureLoader();
     this.loadedTextures = new Map<string, THREE.Texture>();
   }
 
-  createTexturedMaterial(textureConfig: TextureConfig): THREE.MeshStandardMaterial {
+  createTexturedMaterial (textureConfig: TextureConfig): THREE.MeshStandardMaterial {
     // Check if we should use file or color
-    const hasValidFile: boolean = textureConfig.file &&
-      textureConfig.file.trim() !== "" &&
+    const hasValidFile: boolean = textureConfig.file.trim() !== '' &&
       textureConfig.file !== null &&
       textureConfig.file !== undefined;
 
@@ -74,7 +66,7 @@ class TextureManager {
           console.log(`Loading texture: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
         }
       },
-      (error: ErrorEvent) => {
+      (error: unknown) => {
         console.warn(`Failed to load texture: ${textureConfig.file}, falling back to color`, error);
         // Fallback to color-based material
         material.color.setHex(textureConfig.color);
@@ -85,25 +77,25 @@ class TextureManager {
     return material;
   }
 
-  clearCache(): void {
+  clearCache (): void {
     this.loadedTextures.clear();
   }
 
   // Additional utility methods for better functionality
-  getCacheSize(): number {
+  getCacheSize (): number {
     return this.loadedTextures.size;
   }
 
-  getCachedTextures(): string[] {
+  getCachedTextures (): string[] {
     return Array.from(this.loadedTextures.keys());
   }
 
-  removeCachedTexture(cacheKey: string): boolean {
+  removeCachedTexture (cacheKey: string): boolean {
     return this.loadedTextures.delete(cacheKey);
   }
 
   // Check if a texture is already cached
-  isTextureCached(textureConfig: TextureConfig): boolean {
+  isTextureCached (textureConfig: TextureConfig): boolean {
     const cacheKey: string = `${textureConfig.file}_${textureConfig.scale?.join('x') || 'default'}`;
     return this.loadedTextures.has(cacheKey);
   }
