@@ -26,7 +26,7 @@ type DeleteItemFunction = (itemId: number) => void;
 export class EventHandlers {
   // Core Three.js objects
   private scene: THREE.Scene;
-  private camera: THREE.Camera;
+  private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
   private roomWidthRef: Ref<number>;
   private roomHeightRef: Ref<number>;
@@ -70,7 +70,7 @@ export class EventHandlers {
 
   constructor(
     scene: THREE.Scene,
-    camera: THREE.Camera,
+    camera: THREE.PerspectiveCamera,
     renderer: THREE.WebGLRenderer,
     roomWidthRef: Ref<number>,
     roomHeightRef: Ref<number>,

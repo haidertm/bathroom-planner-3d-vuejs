@@ -1,7 +1,8 @@
 <template>
   <div :style="{ width: '98vw', height: '100vh', position: 'relative' }">
     <Toolbar @add="addItem" />
-    <button @click="debugRadiatorIssue" style="position: fixed; top: 100px; right: 100px; z-index: 9999; background: red; color: white; padding: 10px;">
+    <button @click="debugRadiatorIssue"
+            style="position: fixed; top: 100px; right: 100px; z-index: 9999; background: red; color: white; padding: 10px;">
       Debug Radiator Issue
     </button>
     <button
@@ -76,7 +77,7 @@
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
 import { preloadModels, getModelCacheStatus } from './models/bathroomFixtures'
 import { constrainToRoom } from './utils/constraints'
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // Components
 import Toolbar from './components/ui/Toolbar.vue'
@@ -90,18 +91,18 @@ import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXT
 import { COMPONENT_DEFAULTS } from './constants/components.js'
 
 // Services
-import { SceneManager } from './services/sceneManager.js'
-import { EventHandlers } from './services/eventHandlers.js'
+import { SceneManager } from './services/sceneManager.ts'
+import { EventHandlers } from './services/eventHandlers.ts'
 
 // Models
-import { createModel } from './models/bathroomFixtures.ts'
+import { createModel } from './models/bathroomFixtures'
 
 // Utils
 import { constrainAllObjectsToRoom } from './utils/constraints.js'
 import { isMobile } from './utils/helpers.ts'
 
 // Composables
-import { useUndoRedo } from './composables/useUndoRedo.js'
+import { useUndoRedo } from './composables/useUndoRedo'
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -486,7 +487,10 @@ const debugRadiatorIssue = () => {
     // Check actual Three.js scene object
     if (sceneManagerRef.value) {
       const bathroomGroup = sceneManagerRef.value.getBathroomItemsGroup();
-      console.log('Bathroom group children:', bathroomGroup.children.map(c => ({ type: c.userData.type, position: c.position })));
+      console.log('Bathroom group children:', bathroomGroup.children.map(c => ({
+        type: c.userData.type,
+        position: c.position
+      })));
 
       const radiatorObject = bathroomGroup.children.find(child => child.userData.type === 'Radiator');
       if (radiatorObject) {
@@ -534,14 +538,14 @@ const diagnoseRadiatorModel = () => {
   const size = box.getSize(new THREE.Vector3());
 
   console.log('📏 ACTUAL GLB MODEL DIMENSIONS:');
-  console.log(`Width: ${size.x.toFixed(3)} units`);
-  console.log(`Depth: ${size.z.toFixed(3)} units`);
-  console.log(`Height: ${size.y.toFixed(3)} units`);
+  console.log(`Width: ${ size.x.toFixed(3) } units`);
+  console.log(`Depth: ${ size.z.toFixed(3) } units`);
+  console.log(`Height: ${ size.y.toFixed(3) } units`);
 
   // Compare with current MODEL_DIMENSIONS
   const currentDims = MODEL_DIMENSIONS.Radiator;
   console.log('📋 CURRENT MODEL_DIMENSIONS.Radiator:');
-  console.log(`Width: ${currentDims.width}, Depth: ${currentDims.depth}`);
+  console.log(`Width: ${ currentDims.width }, Depth: ${ currentDims.depth }`);
 
   // Calculate corrected dimensions
   const correctedDims = {
@@ -551,7 +555,7 @@ const diagnoseRadiatorModel = () => {
   };
 
   console.log('🔧 CORRECTED DIMENSIONS TO USE:');
-  console.log(`Radiator: { width: ${correctedDims.width}, depth: ${correctedDims.depth}, height: ${correctedDims.height} }`);
+  console.log(`Radiator: { width: ${ correctedDims.width }, depth: ${ correctedDims.depth }, height: ${ correctedDims.height } }`);
 
   return correctedDims;
 };
