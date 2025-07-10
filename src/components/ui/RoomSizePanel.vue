@@ -71,8 +71,8 @@
 
 <script setup>
 import { computed } from 'vue'
-import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
-import { isMobile } from '../../utils/helpers.js'
+import { ROOM_DEFAULTS } from '../../constants/dimensions'
+import { isMobile } from '../../utils/helpers'
 
 // Define props
 const props = defineProps({
