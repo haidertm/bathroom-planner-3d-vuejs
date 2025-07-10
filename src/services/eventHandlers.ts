@@ -567,6 +567,13 @@ export class EventHandlers {
           objectScale
         );
 
+        // DEBUG: Log wall constraint results
+        console.log('🔗 DRAG - Wall constraint results:', {
+          original: { x: newPosition.x.toFixed(3), z: newPosition.z.toFixed(3) },
+          wallConstrained: { x: wallConstrainedPos.x.toFixed(3), z: wallConstrainedPos.z.toFixed(3) },
+          rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`
+        });
+
         newPosition.x = wallConstrainedPos.x;
         newPosition.z = wallConstrainedPos.z;
 

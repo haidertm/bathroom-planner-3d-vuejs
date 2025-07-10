@@ -1,6 +1,7 @@
 // src/constants/models.ts - Mixed approach configuration with orientation
 
 import type { ComponentType } from './components';
+import { CONSTRAINTS } from './dimensions';
 
 export type OrientationType = 'face_into_room' | 'flush_with_wall' | 'custom';
 
@@ -171,7 +172,7 @@ export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
   // These will use your existing procedural code
 
   Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!,
-  Mirror: PROCEDURAL_FIXTURES.find(f => f.name === 'Mirror')!,
+  Mirror: PROCEDURAL_FIXTURES.find(f => f.name === 'Mirror')!
 };
 
 // Helper function to get wall buffer for an object
