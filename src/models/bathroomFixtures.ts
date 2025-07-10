@@ -475,6 +475,7 @@ export const createModel = async (
     let group: THREE.Group;
 
     if (isModelBased(config)) {
+      console.log('configIs>>>', config);
       // Create model-based fixture
       const fixture = new ModelBasedFixture(position, config);
       group = await fixture.create();

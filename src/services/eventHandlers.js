@@ -94,7 +94,7 @@ export class EventHandlers {
   }
 
   // NEW: Method to apply pending updates after drag ends
-  applyPendingUpdates() {
+  applyPendingUpdates () {
     if (this.pendingUpdates.size === 0) return;
 
     const updates = Array.from(this.pendingUpdates.entries());
@@ -113,7 +113,7 @@ export class EventHandlers {
   }
 
   // NEW: Method to queue updates during drag operations
-  queueUpdate(itemId, updateData) {
+  queueUpdate (itemId, updateData) {
     if (this.isDragOperation) {
       // Store the update for later application
       this.pendingUpdates.set(itemId, {
@@ -129,7 +129,7 @@ export class EventHandlers {
   }
 
   // Added keyboard event handler for delete functionality
-  handleKeyDown(event) {
+  handleKeyDown (event) {
     // Delete selected object when Delete or Backspace key is pressed
     if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedObject) {
       event.preventDefault();
@@ -261,11 +261,16 @@ export class EventHandlers {
 
       let newPosition = intersectPoint.add(this.dragOffset);
 
+      // Get object type and scale for enhanced constraints
+      const objectType = this.selectedObject.userData.type;
+      const objectScale = this.selectedObject.scale.x;
+
       // DEBUG: Log room size refs
       console.log('🔍 DRAG - Room size refs:', {
         width: this.roomWidthRef.value,
         height: this.roomHeightRef.value,
-        selectedObject: this.selectedObject.userData.type
+        selectedObject: objectType,
+        objectScale
       });
 
       // DEBUG: Log position before constraints
@@ -275,7 +280,7 @@ export class EventHandlers {
       });
 
       // Constrain to room bounds using refs
-      const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+      const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
 
       // DEBUG: Log constraint results
       console.log('🔍 DRAG - Constraint results:', {
@@ -287,7 +292,7 @@ export class EventHandlers {
       newPosition.z = constrainedPos.z;
 
       // Apply wall snapping
-      const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+      const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
 
       newPosition.x = snappedPos.x;
       newPosition.z = snappedPos.z;
@@ -333,7 +338,7 @@ export class EventHandlers {
     }
   }
 
-  handleMouseUp(event) {
+  handleMouseUp (event) {
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
       this.applyPendingUpdates();

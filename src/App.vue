@@ -1,6 +1,15 @@
 <template>
   <div :style="{ width: '98vw', height: '100vh', position: 'relative' }">
     <Toolbar @add="addItem" />
+    <button @click="debugRadiatorIssue" style="position: fixed; top: 100px; right: 100px; z-index: 9999; background: red; color: white; padding: 10px;">
+      Debug Radiator Issue
+    </button>
+    <button
+        @click="diagnoseRadiatorModel"
+        style="position: fixed; top: 220px; right: 100px; z-index: 9999; background: purple; color: white; padding: 10px; font-size: 12px;"
+    >
+      Diagnose Radiator
+    </button>
     <TexturePanel
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
@@ -67,6 +76,7 @@
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
 import { preloadModels, getModelCacheStatus } from './models/bathroomFixtures'
 import { constrainToRoom } from './utils/constraints'
+import * as THREE from "three";
 
 // Components
 import Toolbar from './components/ui/Toolbar.vue'
@@ -75,7 +85,7 @@ import RoomSizePanel from './components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from './components/ui/UndoRedoPanel.vue'
 
 // Constants
-import { ROOM_DEFAULTS } from './constants/dimensions.js'
+import { CONSTRAINTS, ROOM_DEFAULTS, MODEL_DIMENSIONS } from './constants/dimensions.js'
 import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from './constants/textures.js'
 import { COMPONENT_DEFAULTS } from './constants/components.js'
 
@@ -211,14 +221,16 @@ const addItem = (type) => {
   const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
 
   // Generate initial random position
-  const randomX = Math.random() * 4 - 2;
-  const randomZ = Math.random() * 4 - 2;
+  const randomX = Math.random() * 2 - 1;
+  const randomZ = Math.random() * 2 - 1;
 
   // FORCE constrain to room bounds
   const constrainedPosition = constrainToRoom(
       { x: randomX, y: defaults.height, z: randomZ },
       roomWidth.value,
-      roomHeight.value
+      roomHeight.value,
+      type,
+      defaults.scale
   );
 
   const newItem = {
@@ -435,6 +447,115 @@ onUnmounted(() => {
     sceneManagerRef.value.dispose()
   }
 })
+
+const debugRadiatorIssue = () => {
+  console.log('🔍 RADIATOR POSITIONING ANALYSIS');
+
+  // Check current room size
+  console.log('Current room size:', { width: roomWidth.value, height: roomHeight.value });
+
+  // Check radiator model dimensions
+  const radiatorDims = MODEL_DIMENSIONS.Radiator;
+  console.log('Radiator model dimensions:', radiatorDims);
+
+  // Check constraint bounds for radiator
+  const radiatorBuffer = Math.max(radiatorDims.width, radiatorDims.depth) / 2;
+  const constraintBounds = {
+    minX: -((roomWidth.value / 2) - radiatorBuffer),
+    maxX: (roomWidth.value / 2) - radiatorBuffer,
+    minZ: -((roomHeight.value / 2) - radiatorBuffer),
+    maxZ: (roomHeight.value / 2) - radiatorBuffer
+  };
+
+  // Check constraint bounds
+
+  console.log('Constraint bounds:', constraintBounds);
+
+  // Find radiator in items array
+  const radiatorItem = items.value.find(item => item.type === 'Radiator');
+  if (radiatorItem) {
+    console.log('Radiator item data:', radiatorItem);
+
+    // Check if position should be valid
+    const shouldBeValid = {
+      x: radiatorItem.position[0] >= constraintBounds.minX && radiatorItem.position[0] <= constraintBounds.maxX,
+      z: radiatorItem.position[2] >= constraintBounds.minZ && radiatorItem.position[2] <= constraintBounds.maxZ
+    };
+    console.log('Should radiator be within bounds?', shouldBeValid);
+
+    // Check actual Three.js scene object
+    if (sceneManagerRef.value) {
+      const bathroomGroup = sceneManagerRef.value.getBathroomItemsGroup();
+      console.log('Bathroom group children:', bathroomGroup.children.map(c => ({ type: c.userData.type, position: c.position })));
+
+      const radiatorObject = bathroomGroup.children.find(child => child.userData.type === 'Radiator');
+      if (radiatorObject) {
+        console.log('Radiator Three.js object:');
+        console.log('- Local position:', radiatorObject.position);
+        console.log('- World position:', radiatorObject.getWorldPosition(new THREE.Vector3()));
+        console.log('- Parent position:', radiatorObject.parent ? radiatorObject.parent.position : 'no parent');
+        console.log('- Scale:', radiatorObject.scale);
+        console.log('- Rotation:', radiatorObject.rotation);
+
+        // Check bounding box
+        const box = new THREE.Box3().setFromObject(radiatorObject);
+        console.log('- Bounding box:', {
+          min: box.min,
+          max: box.max,
+          center: box.getCenter(new THREE.Vector3()),
+          size: box.getSize(new THREE.Vector3())
+        });
+
+        // Check if model has internal children with offsets
+        console.log('- Children:', radiatorObject.children.map(child => ({
+          type: child.type,
+          position: child.position,
+          name: child.name
+        })));
+      }
+    }
+  }
+};
+
+const diagnoseRadiatorModel = () => {
+  console.log('🔍 RADIATOR MODEL DIAGNOSTIC');
+
+  // Get the radiator from scene
+  const bathroomGroup = sceneManagerRef.value.getBathroomItemsGroup();
+  const radiatorObject = bathroomGroup.children.find(child => child.userData.type === 'Radiator');
+
+  if (!radiatorObject) {
+    console.log('❌ No radiator found in scene');
+    return;
+  }
+
+  // Get the actual bounding box of the GLB model
+  const box = new THREE.Box3().setFromObject(radiatorObject);
+  const size = box.getSize(new THREE.Vector3());
+
+  console.log('📏 ACTUAL GLB MODEL DIMENSIONS:');
+  console.log(`Width: ${size.x.toFixed(3)} units`);
+  console.log(`Depth: ${size.z.toFixed(3)} units`);
+  console.log(`Height: ${size.y.toFixed(3)} units`);
+
+  // Compare with current MODEL_DIMENSIONS
+  const currentDims = MODEL_DIMENSIONS.Radiator;
+  console.log('📋 CURRENT MODEL_DIMENSIONS.Radiator:');
+  console.log(`Width: ${currentDims.width}, Depth: ${currentDims.depth}`);
+
+  // Calculate corrected dimensions
+  const correctedDims = {
+    width: Math.ceil(size.x * 10) / 10,
+    depth: Math.ceil(size.z * 10) / 10,
+    height: Math.ceil(size.y * 10) / 10
+  };
+
+  console.log('🔧 CORRECTED DIMENSIONS TO USE:');
+  console.log(`Radiator: { width: ${correctedDims.width}, depth: ${correctedDims.depth}, height: ${correctedDims.height} }`);
+
+  return correctedDims;
+};
+
 </script>
 
 <style scoped>

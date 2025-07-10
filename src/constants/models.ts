@@ -41,7 +41,15 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
     position: [0, 0, 0], // Keep at origin
     fallbackColor: 0xffffff,
     fallbackGeometry: 'box',
-    fallbackSize: [0.8, 0.6, 0.1]
+    fallbackSize: [0.645, 1.302, 0.155]
+  },
+  {
+    name: 'Toilet',
+    path: '/models/toilet.glb',
+    scale: 1.0,
+    fallbackColor: 0xffffff,
+    fallbackGeometry: 'box',
+    fallbackSize: [0.6, 0.8, 0.8]
   },
   {
     name: 'Door',
@@ -56,13 +64,6 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
 
 // Components that will use procedural code (your existing bathroomFixtures logic)
 export const PROCEDURAL_FIXTURES: readonly ProceduralConfig[] = [
-  {
-    name: 'Toilet',
-    type: 'procedural',
-    fallbackColor: 0xffffff,
-    fallbackGeometry: 'box',
-    fallbackSize: [0.6, 0.8, 0.8]
-  },
   {
     name: 'Bath',
     type: 'procedural',
@@ -99,9 +100,9 @@ export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
   Sink: AVAILABLE_MODELS.find(m => m.name === 'Sink')!,
   Door: AVAILABLE_MODELS.find(m => m.name === 'Door')!,
   Radiator: AVAILABLE_MODELS.find(f => f.name === 'Radiator')!,
+  Toilet: AVAILABLE_MODELS.find(f => f.name === 'Toilet')!,
 
   // These will use your existing procedural code
-  Toilet: PROCEDURAL_FIXTURES.find(f => f.name === 'Toilet')!,
   Bath: PROCEDURAL_FIXTURES.find(f => f.name === 'Bath')!,
   Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!,
   Mirror: PROCEDURAL_FIXTURES.find(f => f.name === 'Mirror')!,
