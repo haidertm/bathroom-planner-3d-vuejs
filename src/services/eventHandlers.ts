@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import type { Ref } from 'vue';
 import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers';
-import { constrainToRoom, snapToWall, type BathroomItem } from '../utils/constraints';
+import { constrainToWalls, snapToNearestWall, type BathroomItem } from '../utils/constraints';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 
@@ -323,7 +323,7 @@ export class EventHandlers {
       this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
     } else if (this.isDragging && this.selectedObject) {
-      // Drag object
+      // UPDATED: Drag object with wall constraints
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersectPoint = new THREE.Vector3();
       this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
@@ -335,7 +335,7 @@ export class EventHandlers {
       const objectScale = this.selectedObject.scale.x;
 
       // DEBUG: Log room size refs
-      console.log('🔍 DRAG - Room size refs:', {
+      console.log('🔗 DRAG - Room size refs:', {
         width: this.roomWidthRef.value,
         height: this.roomHeightRef.value,
         selectedObject: objectType,
@@ -343,33 +343,51 @@ export class EventHandlers {
       });
 
       // DEBUG: Log position before constraints
-      console.log('🔍 DRAG - Position before constraints:', {
-        x: newPosition.x,
-        z: newPosition.z
+      console.log('🔗 DRAG - Position before wall constraints:', {
+        x: newPosition.x.toFixed(3),
+        z: newPosition.z.toFixed(3)
       });
 
-      // Constrain to room bounds using refs
-      const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
+      // UPDATED: Always constrain to walls instead of free room movement
+      const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
+        newPosition,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        objectType,
+        objectScale
+      );
 
-      // DEBUG: Log constraint results
-      console.log('🔍 DRAG - Constraint results:', {
-        original: { x: newPosition.x, z: newPosition.z },
-        constrained: { x: constrainedPos.x, z: constrainedPos.z }
+      // DEBUG: Log wall constraint results
+      console.log('🔗 DRAG - Wall constraint results:', {
+        original: { x: newPosition.x.toFixed(3), z: newPosition.z.toFixed(3) },
+        wallConstrained: { x: wallConstrainedPos.x.toFixed(3), z: wallConstrainedPos.z.toFixed(3) },
+        rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`
       });
 
-      newPosition.x = constrainedPos.x;
-      newPosition.z = constrainedPos.z;
+      // Apply wall constraints
+      newPosition.x = wallConstrainedPos.x;
+      newPosition.z = wallConstrainedPos.z;
 
-      // Apply wall snapping
-      const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
+      // Additional snap to nearest wall for fine-tuning
+      const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
+        newPosition,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        objectType,
+        objectScale
+      );
 
       newPosition.x = snappedPos.x;
       newPosition.z = snappedPos.z;
 
+      // IMPORTANT: Update rotation to match the wall the object is on
+      this.selectedObject.rotation.y = snappedRotation;
+
       // DEBUG: Log final position
-      console.log('🔍 DRAG - Final position:', {
-        x: newPosition.x,
-        z: newPosition.z
+      console.log('🔗 DRAG - Final wall-snapped position:', {
+        x: newPosition.x.toFixed(3),
+        z: newPosition.z.toFixed(3),
+        rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`
       });
 
       this.selectedObject.position.copy(newPosition);
@@ -377,7 +395,8 @@ export class EventHandlers {
       const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, {
-        position: [newPosition.x, newPosition.y, newPosition.z]
+        position: [newPosition.x, newPosition.y, newPosition.z],
+        rotation: snappedRotation // Include rotation in the update
       });
 
     } else if (this.isRotating) {
@@ -528,6 +547,7 @@ export class EventHandlers {
       this.mouse.set(touchPos.x, touchPos.y);
 
       if (this.isDragging && this.selectedObject) {
+        // UPDATED: Touch drag with wall constraints
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
@@ -538,26 +558,48 @@ export class EventHandlers {
         const objectType = this.selectedObject.userData.type as ComponentType;
         const objectScale = this.selectedObject.scale.x;
 
-        // Constrain to room bounds using refs
-        const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
-        newPosition.x = constrainedPos.x;
-        newPosition.z = constrainedPos.z;
+        // UPDATED: Always constrain to walls instead of free room movement
+        const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
 
-        // DEBUG: Log constraint application
-        console.log('🔍 Constraining object:', objectType,
-          'from:', intersectPoint.add(this.dragOffset),
-          'to:', constrainedPos);
+        newPosition.x = wallConstrainedPos.x;
+        newPosition.z = wallConstrainedPos.z;
 
-        const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value, objectType, objectScale);
+        // Additional snap to nearest wall
+        const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
+
         newPosition.x = snappedPos.x;
         newPosition.z = snappedPos.z;
+
+        // IMPORTANT: Update rotation to match the wall the object is on
+        this.selectedObject.rotation.y = snappedRotation;
+
+        // DEBUG: Log constraint application
+        console.log('🔗 Touch constraining object:', objectType,
+          'to wall position:', {
+            x: newPosition.x.toFixed(3),
+            z: newPosition.z.toFixed(3),
+            rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`
+          });
 
         this.selectedObject.position.copy(newPosition);
 
         const itemId = this.selectedObject.userData.itemId as number;
         // Queue update instead of applying immediately
         this.queueUpdate(itemId, {
-          position: [newPosition.x, newPosition.y, newPosition.z]
+          position: [newPosition.x, newPosition.y, newPosition.z],
+          rotation: snappedRotation // Include rotation in the update
         });
       } else if (this.isRotating) {
         // UPDATED: Touch camera rotation with floor constraint

@@ -1,16 +1,6 @@
 <template>
   <div :style="{ width: '98vw', height: '100vh', position: 'relative' }">
     <Toolbar @add="addItem" />
-    <button @click="debugRadiatorIssue"
-            style="position: fixed; top: 100px; right: 100px; z-index: 9999; background: red; color: white; padding: 10px;">
-      Debug Radiator Issue
-    </button>
-    <button
-        @click="diagnoseRadiatorModel"
-        style="position: fixed; top: 220px; right: 100px; z-index: 9999; background: purple; color: white; padding: 10px; font-size: 12px;"
-    >
-      Diagnose Radiator
-    </button>
     <TexturePanel
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
@@ -57,14 +47,15 @@
     />
     <div :style="helpTextStyle">
       <div v-if="isMobileDevice">
-        <div>Touch + drag: Move objects</div>
+        <div>Touch + drag: Move objects along walls</div>
         <div>Two finger pinch: Zoom</div>
-        <div>Walls auto-hide for clear interior view</div>
+        <div>Double tap: Delete selected object</div>
+        <div>Objects spawn on any wall with collision detection</div>
       </div>
       <div v-else>
-        <div>Left click + drag: Move | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
+        <div>Left click + drag: Move along walls | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
         <div>Left click empty space: Rotate camera | Wheel: Zoom | DELETE key: Delete selected object</div>
-        <div>Undo/Redo: Top right buttons</div>
+        <div>Objects spawn randomly on any wall and automatically avoid collisions</div>
         <div :style="{ fontSize: '10px', marginTop: '2px', opacity: '0.8' }">
           Smart wall hiding enabled • Walls auto-hide for clear view • Toggle in room settings
         </div>
@@ -76,8 +67,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
 import { preloadModels, getModelCacheStatus } from './models/bathroomFixtures'
-import { constrainToRoom } from './utils/constraints'
-import * as THREE from 'three';
+import * as THREE from "three";
 
 // Components
 import Toolbar from './components/ui/Toolbar.vue'
@@ -86,23 +76,23 @@ import RoomSizePanel from './components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from './components/ui/UndoRedoPanel.vue'
 
 // Constants
-import { CONSTRAINTS, ROOM_DEFAULTS, MODEL_DIMENSIONS } from './constants/dimensions.js'
+import { CONSTRAINTS, ROOM_DEFAULTS } from './constants/dimensions.js'
 import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from './constants/textures.js'
 import { COMPONENT_DEFAULTS } from './constants/components.js'
 
 // Services
-import { SceneManager } from './services/sceneManager.ts'
-import { EventHandlers } from './services/eventHandlers.ts'
+import { SceneManager } from './services/sceneManager.js'
+import { EventHandlers } from './services/eventHandlers.js'
 
 // Models
-import { createModel } from './models/bathroomFixtures'
+import { createModel } from './models/bathroomFixtures.ts'
 
-// Utils
-import { constrainAllObjectsToRoom } from './utils/constraints.js'
+// Utils - Updated imports to include collision detection
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls } from './utils/constraints.js'
 import { isMobile } from './utils/helpers.ts'
 
 // Composables
-import { useUndoRedo } from './composables/useUndoRedo'
+import { useUndoRedo } from './composables/useUndoRedo.js'
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -119,21 +109,21 @@ const generateUniqueId = () => {
   return nextIdRef.value++
 }
 
-// Default objects to load on page start
+// Default objects to load on page start - Properly oriented to face INTO room
 const getDefaultItems = () => {
   return [
     {
       id: 1001,
       type: 'Shower',
-      position: [-1.2, 0, -2.2], // Corner position
-      rotation: 0,
+      position: [-2.5, 0, -2.5], // Northwest corner
+      rotation: 0, // Facing south (into room)
       scale: 1.0
     },
     {
       id: 1003,
       type: 'Sink',
-      position: [0, 0, -2.65], // Center against back wall
-      rotation: 0,
+      position: [1.5, 0, 2.5], // South wall
+      rotation: Math.PI, // Facing north (into room)
       scale: 1.0
     }
   ]
@@ -218,31 +208,32 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   }, 100)
 }
 
+// Updated addItem function with collision-aware wall positioning and proper rotation
 const addItem = (type) => {
   const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
 
-  // Generate initial random position
-  const randomX = Math.random() * 2 - 1;
-  const randomZ = Math.random() * 2 - 1;
-
-  // FORCE constrain to room bounds
-  const constrainedPosition = constrainToRoom(
-      { x: randomX, y: defaults.height, z: randomZ },
+  // Find a free position on any wall that doesn't collide with existing objects
+  const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
       roomWidth.value,
       roomHeight.value,
       type,
-      defaults.scale
-  );
+      defaults.scale,
+      items.value // Pass existing items for collision detection
+  )
 
   const newItem = {
     id: generateUniqueId(),
     type,
-    position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z],
-    rotation: 0,
+    position: [freePosition.x, freePosition.y, freePosition.z],
+    rotation: wallRotation, // Use the wall-appropriate rotation
     scale: defaults.scale
   }
 
-  console.log('🔍 Adding item:', type, 'at CONSTRAINED position:', newItem.position, 'room size:', roomWidth.value, 'x', roomHeight.value)
+  console.log('🏠 Adding item:', type, 'at INSIDE WALL position:', {
+    position: newItem.position,
+    rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
+    roomSize: `${roomWidth.value} x ${roomHeight.value}`
+  })
 
   const newItems = [...items.value, newItem]
   items.value = newItems
@@ -448,117 +439,6 @@ onUnmounted(() => {
     sceneManagerRef.value.dispose()
   }
 })
-
-const debugRadiatorIssue = () => {
-  console.log('🔍 RADIATOR POSITIONING ANALYSIS');
-
-  // Check current room size
-  console.log('Current room size:', { width: roomWidth.value, height: roomHeight.value });
-
-  // Check radiator model dimensions
-  const radiatorDims = MODEL_DIMENSIONS.Radiator;
-  console.log('Radiator model dimensions:', radiatorDims);
-
-  // Check constraint bounds for radiator
-  const radiatorBuffer = Math.max(radiatorDims.width, radiatorDims.depth) / 2;
-  const constraintBounds = {
-    minX: -((roomWidth.value / 2) - radiatorBuffer),
-    maxX: (roomWidth.value / 2) - radiatorBuffer,
-    minZ: -((roomHeight.value / 2) - radiatorBuffer),
-    maxZ: (roomHeight.value / 2) - radiatorBuffer
-  };
-
-  // Check constraint bounds
-
-  console.log('Constraint bounds:', constraintBounds);
-
-  // Find radiator in items array
-  const radiatorItem = items.value.find(item => item.type === 'Radiator');
-  if (radiatorItem) {
-    console.log('Radiator item data:', radiatorItem);
-
-    // Check if position should be valid
-    const shouldBeValid = {
-      x: radiatorItem.position[0] >= constraintBounds.minX && radiatorItem.position[0] <= constraintBounds.maxX,
-      z: radiatorItem.position[2] >= constraintBounds.minZ && radiatorItem.position[2] <= constraintBounds.maxZ
-    };
-    console.log('Should radiator be within bounds?', shouldBeValid);
-
-    // Check actual Three.js scene object
-    if (sceneManagerRef.value) {
-      const bathroomGroup = sceneManagerRef.value.getBathroomItemsGroup();
-      console.log('Bathroom group children:', bathroomGroup.children.map(c => ({
-        type: c.userData.type,
-        position: c.position
-      })));
-
-      const radiatorObject = bathroomGroup.children.find(child => child.userData.type === 'Radiator');
-      if (radiatorObject) {
-        console.log('Radiator Three.js object:');
-        console.log('- Local position:', radiatorObject.position);
-        console.log('- World position:', radiatorObject.getWorldPosition(new THREE.Vector3()));
-        console.log('- Parent position:', radiatorObject.parent ? radiatorObject.parent.position : 'no parent');
-        console.log('- Scale:', radiatorObject.scale);
-        console.log('- Rotation:', radiatorObject.rotation);
-
-        // Check bounding box
-        const box = new THREE.Box3().setFromObject(radiatorObject);
-        console.log('- Bounding box:', {
-          min: box.min,
-          max: box.max,
-          center: box.getCenter(new THREE.Vector3()),
-          size: box.getSize(new THREE.Vector3())
-        });
-
-        // Check if model has internal children with offsets
-        console.log('- Children:', radiatorObject.children.map(child => ({
-          type: child.type,
-          position: child.position,
-          name: child.name
-        })));
-      }
-    }
-  }
-};
-
-const diagnoseRadiatorModel = () => {
-  console.log('🔍 RADIATOR MODEL DIAGNOSTIC');
-
-  // Get the radiator from scene
-  const bathroomGroup = sceneManagerRef.value.getBathroomItemsGroup();
-  const radiatorObject = bathroomGroup.children.find(child => child.userData.type === 'Radiator');
-
-  if (!radiatorObject) {
-    console.log('❌ No radiator found in scene');
-    return;
-  }
-
-  // Get the actual bounding box of the GLB model
-  const box = new THREE.Box3().setFromObject(radiatorObject);
-  const size = box.getSize(new THREE.Vector3());
-
-  console.log('📏 ACTUAL GLB MODEL DIMENSIONS:');
-  console.log(`Width: ${ size.x.toFixed(3) } units`);
-  console.log(`Depth: ${ size.z.toFixed(3) } units`);
-  console.log(`Height: ${ size.y.toFixed(3) } units`);
-
-  // Compare with current MODEL_DIMENSIONS
-  const currentDims = MODEL_DIMENSIONS.Radiator;
-  console.log('📋 CURRENT MODEL_DIMENSIONS.Radiator:');
-  console.log(`Width: ${ currentDims.width }, Depth: ${ currentDims.depth }`);
-
-  // Calculate corrected dimensions
-  const correctedDims = {
-    width: Math.ceil(size.x * 10) / 10,
-    depth: Math.ceil(size.z * 10) / 10,
-    height: Math.ceil(size.y * 10) / 10
-  };
-
-  console.log('🔧 CORRECTED DIMENSIONS TO USE:');
-  console.log(`Radiator: { width: ${ correctedDims.width }, depth: ${ correctedDims.depth }, height: ${ correctedDims.height } }`);
-
-  return correctedDims;
-};
 
 </script>
 
