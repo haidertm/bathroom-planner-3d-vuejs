@@ -1,5 +1,6 @@
 import { CONSTRAINTS } from '../constants/dimensions.ts';
 import type { ComponentType } from '../constants/components';
+import { getObjectRotationForWall, getOrientationInfo, getObjectWallBuffer } from '../constants/models';
 
 // Model dimensions for more accurate constraint calculations
 export const MODEL_DIMENSIONS: Record<ComponentType, { width: number; depth: number; height: number }> = {
@@ -44,13 +45,8 @@ export const findNearestWall = (
   objectType: ComponentType | null = null,
   scale: number = 1.0
 ): WallInfo => {
-  let buffer = CONSTRAINTS.OBJECT_BUFFER;
-
-  // If we have the object type, use its actual dimensions
-  if (objectType && MODEL_DIMENSIONS[objectType]) {
-    const modelDims = MODEL_DIMENSIONS[objectType];
-    buffer = Math.max(modelDims.width, modelDims.depth) * scale / 2;
-  }
+  // Use configurable wall buffer instead of generic buffer
+  const buffer = objectType ? getObjectWallBuffer(objectType, scale) : CONSTRAINTS.OBJECT_BUFFER;
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
@@ -142,7 +138,7 @@ export const wouldCollideWithExisting = (
   return false;
 };
 
-// Constrain movement to walls only with proper rotation
+// Constrain movement to walls only with configurable rotation and buffer
 export const constrainToWalls = (
   position: Position,
   roomWidth: number,
@@ -150,18 +146,13 @@ export const constrainToWalls = (
   objectType: ComponentType | null = null,
   scale: number = 1.0
 ): { position: Position; rotation: number } => {
-  let buffer = CONSTRAINTS.OBJECT_BUFFER;
-
-  // If we have the object type, use its actual dimensions
-  if (objectType && MODEL_DIMENSIONS[objectType]) {
-    const modelDims = MODEL_DIMENSIONS[objectType];
-    buffer = Math.max(modelDims.width, modelDims.depth) * scale / 2;
-  }
+  // Use configurable wall buffer instead of generic buffer
+  const buffer = objectType ? getObjectWallBuffer(objectType, scale) : CONSTRAINTS.OBJECT_BUFFER;
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
 
-  // Wall positions (accounting for object buffer)
+  // Wall positions (accounting for object-specific buffer)
   const northWallZ = -roomHalfHeight + buffer;
   const southWallZ = roomHalfHeight - buffer;
   const eastWallX = roomHalfWidth - buffer;
@@ -178,33 +169,43 @@ export const constrainToWalls = (
 
   let constrainedPosition = { ...position };
   let wallRotation = 0;
+  let wallType: 'north' | 'south' | 'east' | 'west' = 'south';
 
   if (minDistance === distanceToNorth) {
-    // Snap to north wall - face south (into room)
+    // Snap to north wall
     constrainedPosition.z = northWallZ;
     constrainedPosition.x = Math.max(westWallX, Math.min(eastWallX, position.x));
-    wallRotation = 0; // Face south
+    wallType = 'north';
   } else if (minDistance === distanceToSouth) {
-    // Snap to south wall - face north (into room)
+    // Snap to south wall
     constrainedPosition.z = southWallZ;
     constrainedPosition.x = Math.max(westWallX, Math.min(eastWallX, position.x));
-    wallRotation = Math.PI; // Face north
+    wallType = 'south';
   } else if (minDistance === distanceToEast) {
-    // Snap to east wall - face west (into room)
+    // Snap to east wall
     constrainedPosition.x = eastWallX;
     constrainedPosition.z = Math.max(northWallZ, Math.min(southWallZ, position.z));
-    wallRotation = -Math.PI / 2; // Face west (into room)
+    wallType = 'east';
   } else {
-    // Snap to west wall - face east (into room)
+    // Snap to west wall
     constrainedPosition.x = westWallX;
     constrainedPosition.z = Math.max(northWallZ, Math.min(southWallZ, position.z));
-    wallRotation = Math.PI / 2; // Face east (into room)
+    wallType = 'west';
   }
 
+  // Get rotation from configuration instead of hardcoded logic
+  if (objectType) {
+    wallRotation = getObjectRotationForWall(objectType, wallType);
+  }
+
+  const orientationInfo = objectType ? getOrientationInfo(objectType) : { type: 'face_into_room', description: 'Default' };
   console.log(`🔗 Wall constraint applied to ${objectType}:`, {
     original: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
     constrained: { x: constrainedPosition.x.toFixed(3), z: constrainedPosition.z.toFixed(3) },
-    rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`
+    wall: wallType,
+    wallBuffer: `${buffer.toFixed(3)}m`,
+    rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
+    orientation: orientationInfo.description
   });
 
   return { position: constrainedPosition, rotation: wallRotation };
@@ -286,54 +287,49 @@ export const findFreeWallPosition = (
   existingItems: BathroomItem[] = [],
   maxAttempts: number = 50
 ): { position: Position; rotation: number } => {
-  let buffer = CONSTRAINTS.OBJECT_BUFFER;
-
-  // If we have the object type, use its actual dimensions
-  if (objectType && MODEL_DIMENSIONS[objectType]) {
-    const modelDims = MODEL_DIMENSIONS[objectType];
-    buffer = Math.max(modelDims.width, modelDims.depth) * scale / 2;
-  }
+  // Use configurable wall buffer instead of generic buffer
+  const buffer = getObjectWallBuffer(objectType, scale);
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
 
-  // Define the four walls with proper inside positioning and inward-facing rotations
+  // Define the four walls with configurable orientations and buffers
   const walls = [
-    { // North wall - objects face INTO room (south direction)
+    { // North wall
       name: 'north',
       getPosition: (t: number) => ({
         x: -roomHalfWidth + buffer + t * (roomWidth - 2 * buffer),
         y: objectType === 'Mirror' ? 1.2 : 0,
-        z: -roomHalfHeight + buffer // Inside the room, not in the wall
+        z: -roomHalfHeight + buffer // Distance from wall based on object config
       }),
-      rotation: 0 // Face south (into room)
+      rotation: getObjectRotationForWall(objectType, 'north')
     },
-    { // South wall - objects face INTO room (north direction)
+    { // South wall
       name: 'south',
       getPosition: (t: number) => ({
         x: -roomHalfWidth + buffer + t * (roomWidth - 2 * buffer),
         y: objectType === 'Mirror' ? 1.2 : 0,
-        z: roomHalfHeight - buffer // Inside the room, not in the wall
+        z: roomHalfHeight - buffer // Distance from wall based on object config
       }),
-      rotation: Math.PI // Face north (into room)
+      rotation: getObjectRotationForWall(objectType, 'south')
     },
-    { // East wall - objects face INTO room (west direction)
+    { // East wall
       name: 'east',
       getPosition: (t: number) => ({
-        x: roomHalfWidth - buffer, // Inside the room, not in the wall
+        x: roomHalfWidth - buffer, // Distance from wall based on object config
         y: objectType === 'Mirror' ? 1.2 : 0,
         z: -roomHalfHeight + buffer + t * (roomHeight - 2 * buffer)
       }),
-      rotation: -Math.PI / 2 // Face west (into room)
+      rotation: getObjectRotationForWall(objectType, 'east')
     },
-    { // West wall - objects face INTO room (east direction)
+    { // West wall
       name: 'west',
       getPosition: (t: number) => ({
-        x: -roomHalfWidth + buffer, // Inside the room, not in the wall
+        x: -roomHalfWidth + buffer, // Distance from wall based on object config
         y: objectType === 'Mirror' ? 1.2 : 0,
         z: -roomHalfHeight + buffer + t * (roomHeight - 2 * buffer)
       }),
-      rotation: Math.PI / 2 // Face east (into room)
+      rotation: getObjectRotationForWall(objectType, 'west')
     }
   ];
 
@@ -363,24 +359,28 @@ export const findFreeWallPosition = (
     }
 
     if (!hasCollision) {
-      console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall (facing INTO room):`, {
+      const orientationInfo = getOrientationInfo(objectType);
+      console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
         position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
+        wallBuffer: `${buffer.toFixed(3)}m`,
         rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
+        orientation: orientationInfo.description,
         attempt: attempt + 1
       });
       return { position, rotation: wall.rotation };
     }
   }
 
-  // If we couldn't find a free position, return a fallback position (south wall, facing north)
+  // If we couldn't find a free position, return a fallback position
   console.warn(`⚠️ Could not find free position for ${objectType} after ${maxAttempts} attempts, using fallback`);
+  const fallbackRotation = getObjectRotationForWall(objectType, 'south'); // Default to south wall
   return {
     position: {
       x: 0,
       y: objectType === 'Mirror' ? 1.2 : 0,
       z: roomHalfHeight - buffer
     },
-    rotation: Math.PI // Face north (into room) from south wall
+    rotation: fallbackRotation
   };
 };
 

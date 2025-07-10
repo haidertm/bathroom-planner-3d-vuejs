@@ -229,9 +229,10 @@ const addItem = (type) => {
     scale: defaults.scale
   }
 
-  console.log('🏠 Adding item:', type, 'at INSIDE WALL position:', {
+  console.log('🏠 Adding item:', type, 'at WALL position:', {
     position: newItem.position,
     rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
+    orientation: 'configured per object type',
     roomSize: `${roomWidth.value} x ${roomHeight.value}`
   })
 
