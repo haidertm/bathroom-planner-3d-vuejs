@@ -64,10 +64,10 @@ export class SceneManager {
     // Better color management and tone mapping
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.8;
+    this.renderer.toneMappingExposure = 2.2;
 
     // Enable physically correct lights
-    this.renderer.physicallyCorrectLights = true;
+    // this.renderer.physicallyCorrectLights = true;
 
     // Add bathroom items group to scene
     this.scene.add(this.bathroomItemsGroup);
