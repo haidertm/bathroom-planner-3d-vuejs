@@ -97,46 +97,61 @@ export class SceneManager {
     if (!this.scene || !this.camera || !this.renderer) return;
 
     try {
-      // Create render target with proper encoding (ChatGPT's fix)
-      const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
-        format: THREE.RGBAFormat,
-        type: THREE.HalfFloatType, // or THREE.UnsignedByteType if not using HDR
-        colorSpace: THREE.SRGBColorSpace // crucial!
-      });
+      // Create render target with higher precision for better outline rendering
+      const renderTarget = new THREE.WebGLRenderTarget(
+        window.innerWidth,
+        window.innerHeight,
+        {
+          format: THREE.RGBAFormat,
+          type: THREE.FloatType, // Use FloatType for better precision
+          colorSpace: THREE.SRGBColorSpace,
+          // Add multisampling for smoother outlines
+          samples: 4,
+          // Higher precision depth buffer
+          depthBuffer: true,
+          stencilBuffer: false
+        }
+      );
 
-      // Create EffectComposer with proper render target
       this.composer = new EffectComposer(this.renderer, renderTarget);
 
       // Add render pass
       const renderPass = new RenderPass(this.scene, this.camera);
       this.composer.addPass(renderPass);
 
-      // Add outline pass with ChatGPT's settings
+      // Enhanced outline pass with distance-optimized settings
       this.outlinePass = new OutlinePass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
         this.scene,
         this.camera
       );
 
-      // Configure outline pass settings (exactly like ChatGPT's example)
-      this.outlinePass.edgeStrength = 10;
-      this.outlinePass.edgeGlow = 1.0;
-      this.outlinePass.edgeThickness = 4;
-      this.outlinePass.visibleEdgeColor.set('#00ffcc'); // ChatGPT's cyan/turquoise color
-      this.outlinePass.hiddenEdgeColor.set('#000000'); // Black
+      // IMPROVED: Distance-optimized outline settings
+      this.outlinePass.edgeStrength = 15;        // Increased from 10
+      this.outlinePass.edgeGlow = 0.5;           // Reduced glow for better visibility
+      this.outlinePass.edgeThickness = 6;        // Increased thickness
+      this.outlinePass.pulsePeriod = 0;          // Disable pulsing for consistency
+      this.outlinePass.visibleEdgeColor.set('#00ffcc');
+      this.outlinePass.hiddenEdgeColor.set('#00ffcc'); // Make hidden edges more visible
+
+      // CRITICAL: Set resolution multiplier for better edge detection
+      this.outlinePass.resolution = new THREE.Vector2(
+        window.innerWidth * 2,
+        window.innerHeight * 2
+      );
 
       this.composer.addPass(this.outlinePass);
 
-      // Add OutputPass to restore correct color rendering (ChatGPT's missing step!)
+      // Add OutputPass
       const outputPass = new OutputPass();
       this.composer.addPass(outputPass);
 
-      // Set outline pass reference for helpers.ts
+      // Set outline pass reference
       setOutlinePass(this.outlinePass);
 
-      console.log('Post-processing setup successful with OutputPass');
+      console.log('Enhanced post-processing setup successful');
     } catch (error) {
-      console.warn('Post-processing setup failed, falling back to normal rendering:', error);
+      console.warn('Post-processing setup failed:', error);
       this.composer = null;
       this.outlinePass = null;
     }
@@ -369,6 +384,33 @@ export class SceneManager {
     });
   }
 
+  adjustOutlineForDistance(): void {
+    if (!this.outlinePass || !this.camera) return;
+
+    // Calculate average distance to selected objects
+    const selectedObjects = this.outlinePass.selectedObjects;
+    if (selectedObjects.length === 0) return;
+
+    let totalDistance = 0;
+    selectedObjects.forEach(obj => {
+      totalDistance += this.camera!.position.distanceTo(obj.position);
+    });
+
+    const averageDistance = totalDistance / selectedObjects.length;
+
+    // Adjust outline parameters based on distance
+    const distanceFactor = Math.max(1, averageDistance / 10); // Normalize to 10 units
+
+    // Scale outline thickness and strength with distance
+    this.outlinePass.edgeThickness = Math.min(10, 3 * distanceFactor);
+    this.outlinePass.edgeStrength = Math.min(20, 8 * distanceFactor);
+
+    // Only log occasionally to avoid spam
+    if (Math.random() < 0.01) { // 1% chance
+      console.log(`Outline adjusted for distance: ${averageDistance.toFixed(1)} units`);
+    }
+  }
+
   startAnimationLoop(): void {
     if (!this.renderer || !this.scene || !this.camera) return;
 
@@ -377,17 +419,19 @@ export class SceneManager {
     const animate = () => {
       this.animationId = requestAnimationFrame(animate);
 
-      // Check if we should continue animating and if objects still exist
       if (!this.isAnimating || !this.renderer || !this.scene || !this.camera) {
         return;
       }
 
-      // Update wall culling based on camera position
+      // Update wall culling
       if (this.wallCullingManager) {
         this.wallCullingManager.updateWallVisibility();
       }
 
-      // Render using post-processing composer with OutputPass (ChatGPT's solution)
+      // ADDED: Adjust outline for distance every frame
+      this.adjustOutlineForDistance();
+
+      // Render
       if (this.composer) {
         this.composer.render();
       } else {
@@ -411,10 +455,12 @@ export class SceneManager {
     if (this.composer) {
       this.composer.setSize(window.innerWidth, window.innerHeight);
 
-      // Update render target size if needed
-      const renderTarget = this.composer.renderTarget1;
-      if (renderTarget) {
-        renderTarget.setSize(window.innerWidth, window.innerHeight);
+      // Update outline pass resolution
+      if (this.outlinePass) {
+        this.outlinePass.resolution.set(
+          window.innerWidth * 2,
+          window.innerHeight * 2
+        );
       }
     }
   }
