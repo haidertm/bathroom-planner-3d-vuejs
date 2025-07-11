@@ -425,12 +425,39 @@ class ModelBasedFixture {
 
     try {
       const model = await this.modelManager.loadModel(this.config.name, this.config);
+
+      // Quick fix for black mirror
+      if (this.config.name === 'Mirror') {
+        this.fixMirrorMaterial(model);
+      }
+
       group.add(model);
       return group;
     } catch (error) {
       console.error(`Failed to load ${this.config.name} model, using fallback`);
       return this.createFallback();
     }
+  }
+
+  // Add this method to the ModelBasedFixture class:
+  private fixMirrorMaterial(model: THREE.Object3D): void {
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // Create a shiny, reflective material
+        const mirrorMaterial = new THREE.MeshStandardMaterial({
+          color: 0xffffff,      // White
+          metalness: 0.9,       // Very metallic
+          roughness: 0.1,       // Very smooth
+          transparent: false,
+          opacity: 1.0,
+          emissive: 0x111111,   // Slight glow to make it visible
+          emissiveIntensity: 0.1
+        });
+
+        child.material = mirrorMaterial;
+        child.material.needsUpdate = true;
+      }
+    });
   }
 
   private createFallback(): THREE.Group {

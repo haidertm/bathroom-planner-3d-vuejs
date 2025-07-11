@@ -117,19 +117,25 @@ const generateUniqueId = () => {
 const getDefaultItems = () => {
   return [
     {
-      id: 1001,
-      type: 'Shower',
-      position: [-2.5, 0, -2.5], // Northwest corner
-      rotation: 0, // Facing south (into room)
+      id: 1003,
+      type: 'Door',
+      position: [0, 0, -2.95], // South wall
+      rotation: - Math.PI / 2, // Facing north (into room)
       scale: 1.0
     },
-    {
-      id: 1003,
-      type: 'Sink',
-      position: [1.5, 0, 2.5], // South wall
-      rotation: Math.PI, // Facing north (into room)
-      scale: 1.0
-    }
+    // {
+    //   name: 'Door',
+    //   path: '/models/door.glb',
+    //   scale: 1.4,
+    //   orientation: {
+    //     type: 'flush_with_wall',
+    //     wallBuffer: 0.045, // Flush with wall - no gap
+    //     description: 'Door is part of wall opening'
+    //   },
+    //   fallbackColor: 0x8B4513,
+    //   fallbackGeometry: 'box',
+    //   fallbackSize: [0.1, 2.0, 0.8]
+    // }
   ]
 }
 

@@ -13,6 +13,6 @@ export const COMPONENT_DEFAULTS: Record<ComponentType, ComponentDefaults> = {
   Bath: { height: 0, scale: 1.0 },
   Shower: { height: 0, scale: 1.0 },
   Radiator: { height: 0, scale: 1.0 },
-  Mirror: { height: 1.2, scale: 1.0 },
+  Mirror: { height: 0, scale: 1.0 },
   Door: { height: 0, scale: 1.0 }
 };

@@ -66,7 +66,7 @@ export const MODEL_DIMENSIONS = {
   Bath: { width: 1.7, depth: 0.8, height: 0.6 },
   Shower: { width: 0.8, depth: 0.8, height: 2.0 },
   Radiator: { width: 0.7, depth: 0.2, height: 1.4 },
-  Mirror: { width: 0.8, depth: 0.05, height: 1.0 },
+  Mirror: { width: 0.8, depth: 0.05, height: 0 },
   Door: { width: 0.8, depth: 0.1, height: 2.0 }
 };
 

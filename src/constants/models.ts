@@ -120,7 +120,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   {
     name: 'Door',
     path: '/models/door.glb',
-    scale: 1.0,
+    scale: 1.2,
     orientation: {
       type: 'flush_with_wall',
       wallBuffer: 0.045, // Flush with wall - no gap
@@ -129,6 +129,20 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
     fallbackColor: 0x8B4513,
     fallbackGeometry: 'box',
     fallbackSize: [0.1, 2.0, 0.8]
+  },
+  {
+    name: 'Mirror',
+    path: '/models/mirror.glb',
+    position: [0, -1.2, 0],
+    orientation: {
+      type: 'face_into_room',
+      rotationOffset: Math.PI, // Add this line to flip the mirror 180 degrees
+      wallBuffer: 0.1, // Almost flush with wall - just 2cm gap
+      description: 'Reflective surface faces into room'
+    },
+    fallbackColor: 0x87CEEB,
+    fallbackGeometry: 'box',
+    fallbackSize: [0.8, 1.0, 0.05]
   }
   // Only add models here that you want to load from .glb files
 ] as const;
@@ -146,18 +160,6 @@ export const PROCEDURAL_FIXTURES: readonly ProceduralConfig[] = [
     fallbackColor: 0xffffff,
     fallbackGeometry: 'cylinder',
     fallbackSize: [0.8, 2.0, 0.8]
-  },
-  {
-    name: 'Mirror',
-    type: 'procedural',
-    orientation: {
-      type: 'face_into_room',
-      wallBuffer: 0.02, // Almost flush with wall - just 2cm gap
-      description: 'Reflective surface faces into room'
-    },
-    fallbackColor: 0x87CEEB,
-    fallbackGeometry: 'box',
-    fallbackSize: [0.8, 1.0, 0.05]
   }
 ] as const;
 
@@ -169,10 +171,10 @@ export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
   Radiator: AVAILABLE_MODELS.find(f => f.name === 'Radiator')!,
   Toilet: AVAILABLE_MODELS.find(f => f.name === 'Toilet')!,
   Bath: AVAILABLE_MODELS.find(f => f.name === 'Bath')!,
+  Mirror: AVAILABLE_MODELS.find(f => f.name === 'Mirror')!,
   // These will use your existing procedural code
 
-  Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!,
-  Mirror: PROCEDURAL_FIXTURES.find(f => f.name === 'Mirror')!
+  Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!
 };
 
 // Helper function to get wall buffer for an object

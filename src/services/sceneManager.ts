@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 import { createFloor, createWalls, createCustomGrid } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
@@ -17,6 +17,10 @@ export class SceneManager {
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
 
+  // ADD THESE NEW PROPERTIES:
+  private animationId: number | null = null;
+  private isAnimating: boolean = false;
+
   private floorRef: THREE.Mesh | null = null;
   private wallRefs: THREE.Mesh[] = [];
   private gridRef: THREE.Group | null = null;
@@ -24,20 +28,20 @@ export class SceneManager {
   private bathroomItemsGroup: THREE.Group;
   private isUpdatingItems = false;
 
-  constructor() {
+  constructor () {
     this.wallCullingManager = new SimpleWallCulling();
     this.bathroomItemsGroup = new THREE.Group();
     this.bathroomItemsGroup.name = 'bathroomItems';
   }
 
-  initializeScene(): SceneComponents {
+  initializeScene (): SceneComponents {
     // Create scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xf0f0f0);
 
     // Create camera
     this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.camera.position.set(7, 2, 7);
+    this.camera.position.set(0, 8, 8);
     this.camera.lookAt(0, 0, 0);
 
     // Create renderer
@@ -62,7 +66,7 @@ export class SceneManager {
     };
   }
 
-  private setupLighting(): void {
+  private setupLighting (): void {
     if (!this.scene) return;
 
     // Ambient light
@@ -90,7 +94,7 @@ export class SceneManager {
     this.scene.add(frontLight);
   }
 
-  updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
+  updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
     if (!this.scene) return;
 
     if (this.floorRef) {
@@ -102,7 +106,7 @@ export class SceneManager {
     this.scene.add(this.floorRef);
   }
 
-  updateWalls(roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
+  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
     if (!this.scene) return;
 
     // Remove existing walls
@@ -121,7 +125,7 @@ export class SceneManager {
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
   }
 
-  updateGrid(roomWidth: number, roomHeight: number, showGrid: boolean): void {
+  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean): void {
     if (!this.scene) return;
 
     // Remove existing grid
@@ -137,7 +141,7 @@ export class SceneManager {
     }
   }
 
-  async updateBathroomItems(items: BathroomItem[]): Promise<void> {
+  async updateBathroomItems (items: BathroomItem[]): Promise<void> {
     if (!this.scene || this.isUpdatingItems) return;
 
     this.isUpdatingItems = true;
@@ -195,31 +199,40 @@ export class SceneManager {
     }
   }
 
-  startAnimationLoop(): void {
+  startAnimationLoop (): void {
     if (!this.renderer || !this.scene || !this.camera) return;
 
+    this.isAnimating = true;
+
     const animate = () => {
-      requestAnimationFrame(animate);
+      this.animationId = requestAnimationFrame(animate);
+
+      // Check if we should continue animating and if objects still exist
+      if (!this.isAnimating || !this.renderer || !this.scene || !this.camera) {
+        return;
+      }
 
       // Update wall culling based on camera position
-      this.wallCullingManager.updateWallVisibility();
+      if (this.wallCullingManager) {
+        this.wallCullingManager.updateWallVisibility();
+      }
 
-      this.renderer!.render(this.scene!, this.camera!);
+      this.renderer.render(this.scene, this.camera!);
     };
     animate();
   }
 
   // Wall culling controls
-  setWallCullingEnabled(enabled: boolean): void {
+  setWallCullingEnabled (enabled: boolean): void {
     this.wallCullingManager.setEnabled(enabled);
   }
 
-  isWallCullingEnabled(): boolean {
+  isWallCullingEnabled (): boolean {
     return this.wallCullingManager.enabled;
   }
 
   // Cleanup method
-  dispose(): void {
+  dispose (): void {
     if (this.wallCullingManager) {
       this.wallCullingManager.dispose();
     }
@@ -242,7 +255,7 @@ export class SceneManager {
   }
 
   // Utility method to get bathroom items group
-  getBathroomItemsGroup(): THREE.Group {
+  getBathroomItemsGroup (): THREE.Group {
     return this.bathroomItemsGroup;
   }
 }
