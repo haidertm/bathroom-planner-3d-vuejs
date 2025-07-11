@@ -49,14 +49,15 @@
 
     <div :style="helpTextStyle">
       <div v-if="isMobileDevice">
-        <div>Touch + drag: Move objects</div>
+        <div>Touch + drag: Move objects along walls</div>
         <div>Two finger pinch: Zoom</div>
-        <div>Walls auto-hide for clear interior view</div>
+        <div>Double tap: Delete selected object</div>
+        <div>Objects spawn on any wall with collision detection</div>
       </div>
       <div v-else>
-        <div>Left click + drag: Move | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
+        <div>Left click + drag: Move along walls | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
         <div>Left click empty space: Rotate camera | Wheel: Zoom | DELETE key: Delete selected object</div>
-        <div>Undo/Redo: Top right buttons</div>
+        <div>Objects spawn randomly on any wall and automatically avoid collisions</div>
         <div :style="{ fontSize: '10px', marginTop: '2px', opacity: '0.8' }">
           Smart wall hiding enabled • Walls auto-hide for clear view • Toggle in room settings
         </div>
@@ -67,6 +68,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
+import { preloadModels, getModelCacheStatus } from './models/bathroomFixtures'
+import * as THREE from "three";
 
 // Components
 import Toolbar from './components/ui/Toolbar.vue'
@@ -75,7 +78,7 @@ import RoomSizePanel from './components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from './components/ui/UndoRedoPanel.vue'
 
 // Constants
-import { ROOM_DEFAULTS } from './constants/dimensions.js'
+import { CONSTRAINTS, ROOM_DEFAULTS } from './constants/dimensions.js'
 import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from './constants/textures.js'
 import { COMPONENT_DEFAULTS } from './constants/components.js'
 
@@ -84,10 +87,10 @@ import { SceneManager } from './services/sceneManager.js'
 import { EventHandlers } from './services/eventHandlers.js'
 
 // Models
-import { createModel } from './models/bathroomFixtures.js'
+import { createModel } from './models/bathroomFixtures.ts'
 
-// Utils
-import { constrainAllObjectsToRoom } from './utils/constraints.js'
+// Utils - Updated imports to include collision detection
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls } from './utils/constraints.js'
 import { isMobile } from './utils/helpers.ts'
 
 // Composables
@@ -110,21 +113,21 @@ const generateUniqueId = () => {
   return nextIdRef.value++
 }
 
-// Default objects to load on page start
+// Default objects to load on page start - Properly oriented to face INTO room
 const getDefaultItems = () => {
   return [
     {
       id: 1001,
       type: 'Shower',
-      position: [-1.2, 0, -2.2], // Corner position
-      rotation: 0,
+      position: [-2.5, 0, -2.5], // Northwest corner
+      rotation: 0, // Facing south (into room)
       scale: 1.0
     },
     {
       id: 1003,
       type: 'Sink',
-      position: [0, 0, -2.65], // Center against back wall
-      rotation: 0,
+      position: [1.5, 0, 2.5], // South wall
+      rotation: Math.PI, // Facing north (into room)
       scale: 1.0
     }
   ]
@@ -242,17 +245,33 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   }, 100)
 }
 
+// Updated addItem function with collision-aware wall positioning and proper rotation
 const addItem = (type) => {
   const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
+
+  // Find a free position on any wall that doesn't collide with existing objects
+  const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
+      roomWidth.value,
+      roomHeight.value,
+      type,
+      defaults.scale,
+      items.value // Pass existing items for collision detection
+  )
+
   const newItem = {
     id: generateUniqueId(),
     type,
-    position: [Math.random() * 4 - 2, defaults.height, Math.random() * 4 - 2],
-    rotation: 0,
+    position: [freePosition.x, freePosition.y, freePosition.z],
+    rotation: wallRotation, // Use the wall-appropriate rotation
     scale: defaults.scale
   }
 
-  console.log('newItem >>>', newItem)
+  console.log('🏠 Adding item:', type, 'at WALL position:', {
+    position: newItem.position,
+    rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
+    orientation: 'configured per object type',
+    roomSize: `${roomWidth.value} x ${roomHeight.value}`
+  })
 
   const newItems = [...items.value, newItem]
   items.value = newItems
@@ -359,7 +378,7 @@ const setItems = (updaterOrArray) => {
 }
 
 // Initialize scene
-onMounted(() => {
+onMounted(async () => {
   // Initialize scene manager
   const sceneManager = markRaw(new SceneManager())
   sceneManagerRef.value = sceneManager
@@ -395,8 +414,22 @@ onMounted(() => {
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
 
-  // Load initial items
-  sceneManagerRef.value.updateBathroomItems(items.value, createModel)
+  // PRELOAD MODELS - This will load all models defined in constants
+  console.log('Starting model preloading...')
+  try {
+    await preloadModels()
+    console.log('Model preloading completed!')
+    console.log('Cache status:', getModelCacheStatus())
+  } catch (error) {
+    console.error('Error during model preloading:', error)
+  }
+
+  // Load initial items - NOW ASYNC
+  try {
+    await sceneManagerRef.value.updateBathroomItems(items.value)
+  } catch (error) {
+    console.error('Error loading initial items:', error)
+  }
 })
 
 // Watch for room geometry changes
@@ -444,6 +477,7 @@ onUnmounted(() => {
     sceneManagerRef.value.dispose()
   }
 })
+
 </script>
 
 <style scoped>

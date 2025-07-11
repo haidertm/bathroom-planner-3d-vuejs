@@ -134,7 +134,7 @@
                   @mouseenter="e => e.target.style.backgroundColor = '#45a049'"
                   @mouseleave="e => e.target.style.backgroundColor = '#4CAF50'"
               >
-                Constrain Objects to Room
+                Snap Objects to Walls
               </button>
             </div>
           </div>
@@ -434,7 +434,7 @@ const controlGroupStyle = computed(() => ({
 
 const labelStyle = computed(() => ({
   display: 'block',
-  fontSize: isMobileDevice.value ? '14px' : '14px',
+  fontSize: isMobileDevice.value ? '12px' : '14px',
   color: '#666',
   marginBottom: '5px',
   fontFamily: 'Arial, sans-serif'
@@ -444,7 +444,7 @@ const checkboxLabelStyle = computed(() => ({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
-  fontSize: isMobileDevice.value ? '14px' : '14px',
+  fontSize: isMobileDevice.value ? '12px' : '14px',
   color: '#666',
   cursor: 'pointer',
   fontFamily: 'Arial, sans-serif'
@@ -453,12 +453,12 @@ const checkboxLabelStyle = computed(() => ({
 const sliderStyle = computed(() => ({
   width: '100%',
   marginTop: '5px',
-  accentColor: '#10b981',
+  accentColor: '#4CAF50',
   height: isMobileDevice.value ? '8px' : '6px'
 }))
 
 const checkboxStyle = computed(() => ({
-  accentColor: '#10b981',
+  accentColor: '#4CAF50',
   width: isMobileDevice.value ? '18px' : '16px',
   height: isMobileDevice.value ? '18px' : '16px'
 }))
@@ -466,13 +466,13 @@ const checkboxStyle = computed(() => ({
 const buttonStyle = computed(() => ({
   width: '100%',
   padding: isMobileDevice.value ? '12px' : '10px',
-  backgroundColor: '#10b981',
+  backgroundColor: '#4CAF50',
   color: 'white',
   border: 'none',
-  borderRadius: '6px',
+  borderRadius: '4px',
   cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '14px' : '14px',
-  fontWeight: '600',
+  fontSize: isMobileDevice.value ? '12px' : '14px',
+  fontWeight: '500',
   transition: 'background-color 0.2s ease',
   fontFamily: 'Arial, sans-serif'
 }))
@@ -775,7 +775,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #10b981;
+  background: #4CAF50;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -784,7 +784,7 @@ input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #10b981;
+  background: #4CAF50;
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);

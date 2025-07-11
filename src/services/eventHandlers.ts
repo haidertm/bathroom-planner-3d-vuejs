@@ -1,10 +1,82 @@
+// src/services/eventHandlers.ts
 import * as THREE from 'three';
-import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers.ts';
-import { constrainToRoom, snapToWall } from '../utils/constraints.js';
-import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions.js';
+import type { Ref } from 'vue';
+import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers';
+import { constrainToWalls, snapToNearestWall, type BathroomItem } from '../utils/constraints';
+import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
+import type { ComponentType } from '../constants/components';
+
+interface IntersectionResult {
+  object: THREE.Object3D;
+  point: THREE.Vector3;
+}
+
+interface UpdateData {
+  position?: [number, number, number];
+  rotation?: number;
+  scale?: number;
+
+  [key: string]: any;
+}
+
+// Function type definitions
+type SetItemsFunction = (updater: (items: BathroomItem[]) => BathroomItem[]) => void;
+type DeleteItemFunction = (itemId: number) => void;
 
 export class EventHandlers {
-  constructor (scene, camera, renderer, roomWidthRef, roomHeightRef, setItems, deleteItem) {
+  // Core Three.js objects
+  private scene: THREE.Scene;
+  private camera: THREE.PerspectiveCamera;
+  private renderer: THREE.WebGLRenderer;
+  private roomWidthRef: Ref<number>;
+  private roomHeightRef: Ref<number>;
+  private setItems: SetItemsFunction;
+  private deleteItem: DeleteItemFunction;
+
+  // Camera constraints - ADD THESE NEW PROPERTIES
+  private readonly MIN_CAMERA_HEIGHT = 0.5; // Minimum height above floor
+  private readonly MAX_PHI_ANGLE = Math.PI / 2 - 0.1; // Slightly less than horizontal to stay above floor
+
+  // Interaction state
+  private raycaster: THREE.Raycaster;
+  private mouse: THREE.Vector2;
+  private selectedObject: THREE.Object3D | null;
+  private isDragging: boolean;
+  private isRotating: boolean;
+  private isObjectRotating: boolean;
+  private isHeightAdjusting: boolean;
+  private isScaling: boolean;
+  private dragPlane: THREE.Plane;
+  private dragOffset: THREE.Vector3;
+  private rotationStartAngle: number;
+  private objectStartRotation: number;
+  private heightStartY: number;
+  private scaleStart: number;
+  private mouseStartY: number;
+  private mouseX: number;
+  private mouseY: number;
+
+  // Touch variables
+  private lastTouchDistance: number;
+  private lastTouchTime: number;
+  private isTouchDevice: boolean;
+
+  // Drag operation tracking
+  private isDragOperation: boolean;
+  private pendingUpdates: Map<number, UpdateData>;
+
+  // Note: Event handlers are defined as methods below and bound in constructor
+
+  constructor (
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    renderer: THREE.WebGLRenderer,
+    roomWidthRef: Ref<number>,
+    roomHeightRef: Ref<number>,
+    setItems: SetItemsFunction,
+    deleteItem: DeleteItemFunction
+  ) {
+    // Assign core objects
     this.scene = scene;
     this.camera = camera;
     this.renderer = renderer;
@@ -13,7 +85,7 @@ export class EventHandlers {
     this.setItems = setItems;
     this.deleteItem = deleteItem;
 
-    // Interaction state
+    // Initialize interaction state
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
     this.selectedObject = null;
@@ -31,20 +103,15 @@ export class EventHandlers {
     this.mouseStartY = 0;
     this.mouseX = 0;
     this.mouseY = 0;
-    this.mouseDownX = 0;
-    this.mouseDownY = 0;
 
-    // Touch variables
-    this.touchStartX = 0;
-    this.touchStartY = 0;
-    this.touchStart = null;
+    // Initialize touch variables
     this.lastTouchDistance = 0;
     this.lastTouchTime = 0;
     this.isTouchDevice = 'ontouchstart' in window;
 
-    // ADD: Track if we're in a drag operation to prevent state updates
+    // Initialize drag operation tracking
     this.isDragOperation = false;
-    this.pendingUpdates = new Map(); // Store pending updates during drag
+    this.pendingUpdates = new Map<number, UpdateData>();
 
     // Bind methods
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -59,7 +126,7 @@ export class EventHandlers {
     this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
-  getIntersectedObject (mouse) {
+  private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
     this.raycaster.setFromCamera(mouse, this.camera);
 
     // Raycast against all objects, but filter results by visibility
@@ -71,7 +138,7 @@ export class EventHandlers {
       .sort((a, b) => a.distance - b.distance);
 
     // Process intersections in order of distance (closest first)
-    for (let intersect of visibleIntersects) {
+    for (const intersect of visibleIntersects) {
       const obj = intersect.object;
 
       // If it's a wall, block further object selection
@@ -93,15 +160,15 @@ export class EventHandlers {
     return null;
   }
 
-  // NEW: Method to apply pending updates after drag ends
-  applyPendingUpdates() {
+  // Method to apply pending updates after drag ends
+  private applyPendingUpdates (): void {
     if (this.pendingUpdates.size === 0) return;
 
     const updates = Array.from(this.pendingUpdates.entries());
     this.pendingUpdates.clear();
 
     // Apply all updates at once
-    this.setItems(prevItems => {
+    this.setItems((prevItems: BathroomItem[]) => {
       return prevItems.map(item => {
         const update = updates.find(([itemId]) => itemId === item.id);
         if (update) {
@@ -112,8 +179,8 @@ export class EventHandlers {
     });
   }
 
-  // NEW: Method to queue updates during drag operations
-  queueUpdate(itemId, updateData) {
+  // Method to queue updates during drag operations
+  private queueUpdate (itemId: number, updateData: UpdateData): void {
     if (this.isDragOperation) {
       // Store the update for later application
       this.pendingUpdates.set(itemId, {
@@ -122,18 +189,18 @@ export class EventHandlers {
       });
     } else {
       // Apply immediately if not dragging
-      this.setItems(prev => prev.map(item =>
+      this.setItems((prev: BathroomItem[]) => prev.map(item =>
         item.id === itemId ? { ...item, ...updateData } : item
       ));
     }
   }
 
-  // Added keyboard event handler for delete functionality
-  handleKeyDown(event) {
+  // Keyboard event handler for delete functionality
+  private handleKeyDown (event: KeyboardEvent): void {
     // Delete selected object when Delete or Backspace key is pressed
     if ((event.key === 'Delete' || event.key === 'Backspace') && this.selectedObject) {
       event.preventDefault();
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
 
       // Clear selection and highlight
       highlightObject(this.selectedObject, false);
@@ -148,13 +215,14 @@ export class EventHandlers {
     }
   }
 
-  handleMouseDown (event) {
-    this.mouseDownX = event.clientX;
-    this.mouseDownY = event.clientY;
+  private handleMouseDown (event: MouseEvent): void {
     this.mouseX = event.clientX;
     this.mouseY = event.clientY;
 
-    this.mouse = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+    // Convert mouse position to Three.js Vector2
+    const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+    this.mouse.set(mousePos.x, mousePos.y);
+
     const intersected = this.getIntersectedObject(this.mouse);
 
     // Clear previous selection if clicking on empty space or different object
@@ -208,17 +276,18 @@ export class EventHandlers {
     }
   }
 
-  handleMouseMove (event) {
-    this.mouse = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+  private handleMouseMove (event: MouseEvent): void {
+    const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
+    this.mouse.set(mousePos.x, mousePos.y);
 
     if (this.isScaling && this.selectedObject) {
       // Scale object
       const deltaY = (this.mouseStartY - event.clientY) * 0.01;
-      let newScale = Math.max(SCALE_LIMITS.MIN, Math.min(SCALE_LIMITS.MAX, this.scaleStart + deltaY));
+      const newScale = Math.max(SCALE_LIMITS.MIN, Math.min(SCALE_LIMITS.MAX, this.scaleStart + deltaY));
 
       this.selectedObject.scale.set(newScale, newScale, newScale);
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, { scale: newScale });
 
@@ -233,7 +302,7 @@ export class EventHandlers {
 
       this.selectedObject.position.y = newY;
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, {
         position: [this.selectedObject.position.x, newY, this.selectedObject.position.z]
@@ -249,38 +318,89 @@ export class EventHandlers {
 
       this.selectedObject.rotation.y = this.objectStartRotation + deltaAngle;
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
     } else if (this.isDragging && this.selectedObject) {
-      // Drag object
+      // UPDATED: Drag object with wall constraints
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersectPoint = new THREE.Vector3();
       this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
-      let newPosition = intersectPoint.add(this.dragOffset);
+      const newPosition = intersectPoint.add(this.dragOffset);
 
-      // Constrain to room bounds using refs
-      const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
-      newPosition.x = constrainedPos.x;
-      newPosition.z = constrainedPos.z;
+      // Get object type and scale for enhanced constraints
+      const objectType = this.selectedObject.userData.type as ComponentType;
+      const objectScale = this.selectedObject.scale.x;
 
-      // Apply wall snapping
-      const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+      // DEBUG: Log room size refs
+      console.log('🔗 DRAG - Room size refs:', {
+        width: this.roomWidthRef.value,
+        height: this.roomHeightRef.value,
+        selectedObject: objectType,
+        objectScale
+      });
+
+      // DEBUG: Log position before constraints
+      console.log('🔗 DRAG - Position before wall constraints:', {
+        x: newPosition.x.toFixed(3),
+        z: newPosition.z.toFixed(3)
+      });
+
+      // UPDATED: Always constrain to walls instead of free room movement
+      const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
+        newPosition,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        objectType,
+        objectScale
+      );
+
+      // DEBUG: Log wall constraint results
+      console.log('🔗 DRAG - Wall constraint results:', {
+        original: { x: newPosition.x.toFixed(3), z: newPosition.z.toFixed(3) },
+        wallConstrained: { x: wallConstrainedPos.x.toFixed(3), z: wallConstrainedPos.z.toFixed(3) },
+        rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`
+      });
+
+      // Apply wall constraints
+      newPosition.x = wallConstrainedPos.x;
+      newPosition.z = wallConstrainedPos.z;
+
+      // Additional snap to nearest wall for fine-tuning
+      const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
+        newPosition,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        objectType,
+        objectScale
+      );
+
       newPosition.x = snappedPos.x;
       newPosition.z = snappedPos.z;
 
+      // IMPORTANT: Update rotation to match the wall the object is on
+      this.selectedObject.rotation.y = snappedRotation;
+
+      // DEBUG: Log final position
+      console.log('🔗 DRAG - Final wall-snapped position:', {
+        x: newPosition.x.toFixed(3),
+        z: newPosition.z.toFixed(3),
+        rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`
+      });
+
       this.selectedObject.position.copy(newPosition);
 
-      const itemId = this.selectedObject.userData.itemId;
+      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, {
-        position: [newPosition.x, newPosition.y, newPosition.z]
+        position: [newPosition.x, newPosition.y, newPosition.z],
+        rotation: snappedRotation // Include rotation in the update
       });
 
     } else if (this.isRotating) {
-      // Rotate camera
+      // UPDATED: Rotate camera with floor constraint
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
 
@@ -288,9 +408,24 @@ export class EventHandlers {
       spherical.setFromVector3(this.camera.position);
       spherical.theta -= deltaX * 0.01;
       spherical.phi += deltaY * 0.01;
-      spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
 
+      // Constrain phi to prevent camera from going below floor
+      // phi = 0 is looking straight down from above
+      // phi = Math.PI/2 is looking horizontally
+      // We want to limit phi to keep camera above floor level
+      spherical.phi = Math.max(0.1, Math.min(this.MAX_PHI_ANGLE, spherical.phi));
+
+      // Apply the constrained position
       this.camera.position.setFromSpherical(spherical);
+
+      // Additional check: if camera somehow goes below minimum height, adjust it
+      if (this.camera.position.y < this.MIN_CAMERA_HEIGHT) {
+        const distance = this.camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
+        const newPhi = Math.acos(this.MIN_CAMERA_HEIGHT / distance);
+        spherical.phi = Math.min(spherical.phi, newPhi);
+        this.camera.position.setFromSpherical(spherical);
+      }
+
       this.camera.lookAt(0, 0, 0);
 
       this.mouseX = event.clientX;
@@ -306,7 +441,7 @@ export class EventHandlers {
     }
   }
 
-  handleMouseUp(event) {
+  private handleMouseUp (): void {
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
       this.applyPendingUpdates();
@@ -322,26 +457,38 @@ export class EventHandlers {
     this.renderer.domElement.style.cursor = 'default';
   }
 
-  handleContextMenu (event) {
+  private handleContextMenu (event: MouseEvent): void {
     event.preventDefault();
   }
 
-  handleWheel (event) {
+  private handleWheel (event: WheelEvent): void {
+    // UPDATED: Constrain zoom to prevent going below floor
     const scale = event.deltaY > 0 ? 1.1 : 0.9;
-    this.camera.position.multiplyScalar(scale);
+    const newPosition = this.camera.position.clone().multiplyScalar(scale);
+
+    // Check if the new position would put camera below minimum height
+    if (newPosition.y >= this.MIN_CAMERA_HEIGHT) {
+      this.camera.position.copy(newPosition);
+    } else {
+      // If zooming in would put camera below floor, limit the zoom
+      // Calculate maximum scale that keeps camera above minimum height
+      const maxScale = this.MIN_CAMERA_HEIGHT / this.camera.position.y;
+      if (scale < maxScale) {
+        this.camera.position.multiplyScalar(maxScale);
+      }
+    }
   }
 
-  handleTouchStart (event) {
+  private handleTouchStart (event: TouchEvent): void {
     event.preventDefault();
     const touches = event.touches;
 
     if (touches.length === 1) {
       const touch = touches[0];
-      this.touchStartX = touch.clientX;
-      this.touchStartY = touch.clientY;
-      this.touchStart = touch;
 
-      this.mouse = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      const touchPos = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      this.mouse.set(touchPos.x, touchPos.y);
+
       const intersected = this.getIntersectedObject(this.mouse);
 
       // Handle double tap to delete on mobile
@@ -349,7 +496,7 @@ export class EventHandlers {
         const now = Date.now();
         if (this.lastTouchTime && now - this.lastTouchTime < 300) {
           // Double tap detected - delete the object
-          const itemId = this.selectedObject.userData.itemId;
+          const itemId = this.selectedObject.userData.itemId as number;
           highlightObject(this.selectedObject, false);
           this.selectedObject = null;
 
@@ -390,38 +537,79 @@ export class EventHandlers {
     }
   }
 
-  handleTouchMove (event) {
+  private handleTouchMove (event: TouchEvent): void {
     event.preventDefault();
     const touches = event.touches;
 
     if (touches.length === 1) {
       const touch = touches[0];
-      this.mouse = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      const touchPos = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+      this.mouse.set(touchPos.x, touchPos.y);
 
       if (this.isDragging && this.selectedObject) {
+        // UPDATED: Touch drag with wall constraints
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
-        let newPosition = intersectPoint.add(this.dragOffset);
+        const newPosition = intersectPoint.add(this.dragOffset);
 
-        // Constrain to room bounds using refs
-        const constrainedPos = constrainToRoom(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
-        newPosition.x = constrainedPos.x;
-        newPosition.z = constrainedPos.z;
+        // Get object type and scale for enhanced constraints
+        const objectType = this.selectedObject.userData.type as ComponentType;
+        const objectScale = this.selectedObject.scale.x;
 
-        const snappedPos = snapToWall(newPosition, this.roomWidthRef.value, this.roomHeightRef.value);
+        // UPDATED: Always constrain to walls instead of free room movement
+        const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
+
+        // DEBUG: Log wall constraint results
+        console.log('🔗 DRAG - Wall constraint results:', {
+          original: { x: newPosition.x.toFixed(3), z: newPosition.z.toFixed(3) },
+          wallConstrained: { x: wallConstrainedPos.x.toFixed(3), z: wallConstrainedPos.z.toFixed(3) },
+          rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`
+        });
+
+        newPosition.x = wallConstrainedPos.x;
+        newPosition.z = wallConstrainedPos.z;
+
+        // Additional snap to nearest wall
+        const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
+
         newPosition.x = snappedPos.x;
         newPosition.z = snappedPos.z;
 
+        // IMPORTANT: Update rotation to match the wall the object is on
+        this.selectedObject.rotation.y = snappedRotation;
+
+        // DEBUG: Log constraint application
+        console.log('🔗 Touch constraining object:', objectType,
+          'to wall position:', {
+            x: newPosition.x.toFixed(3),
+            z: newPosition.z.toFixed(3),
+            rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`
+          });
+
         this.selectedObject.position.copy(newPosition);
 
-        const itemId = this.selectedObject.userData.itemId;
+        const itemId = this.selectedObject.userData.itemId as number;
         // Queue update instead of applying immediately
         this.queueUpdate(itemId, {
-          position: [newPosition.x, newPosition.y, newPosition.z]
+          position: [newPosition.x, newPosition.y, newPosition.z],
+          rotation: snappedRotation // Include rotation in the update
         });
       } else if (this.isRotating) {
+        // UPDATED: Touch camera rotation with floor constraint
         const deltaX = touch.clientX - this.mouseX;
         const deltaY = touch.clientY - this.mouseY;
 
@@ -429,9 +617,21 @@ export class EventHandlers {
         spherical.setFromVector3(this.camera.position);
         spherical.theta -= deltaX * 0.01;
         spherical.phi += deltaY * 0.01;
-        spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
 
+        // Same constraint as mouse rotation
+        spherical.phi = Math.max(0.1, Math.min(this.MAX_PHI_ANGLE, spherical.phi));
+
+        // Apply the constrained position
         this.camera.position.setFromSpherical(spherical);
+
+        // Additional check for minimum height
+        if (this.camera.position.y < this.MIN_CAMERA_HEIGHT) {
+          const distance = this.camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
+          const newPhi = Math.acos(this.MIN_CAMERA_HEIGHT / distance);
+          spherical.phi = Math.min(spherical.phi, newPhi);
+          this.camera.position.setFromSpherical(spherical);
+        }
+
         this.camera.lookAt(0, 0, 0);
 
         this.mouseX = touch.clientX;
@@ -451,9 +651,8 @@ export class EventHandlers {
     }
   }
 
-  handleTouchEnd (event) {
+  private handleTouchEnd (event: TouchEvent): void {
     event.preventDefault();
-    const touches = event.touches;
 
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
@@ -467,19 +666,15 @@ export class EventHandlers {
     this.isObjectRotating = false;
     this.isHeightAdjusting = false;
     this.isScaling = false;
-
-    if (touches.length === 0) {
-      this.touchStart = null;
-    }
   }
 
-  handleResize () {
+  private handleResize (): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  addEventListeners () {
+  public addEventListeners (): void {
     this.renderer.domElement.addEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
@@ -498,7 +693,7 @@ export class EventHandlers {
     window.addEventListener('resize', this.handleResize);
   }
 
-  removeEventListeners () {
+  public removeEventListeners (): void {
     this.renderer.domElement.removeEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.removeEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.removeEventListener('mouseup', this.handleMouseUp);
@@ -515,5 +710,25 @@ export class EventHandlers {
     }
 
     window.removeEventListener('resize', this.handleResize);
+  }
+
+  // Utility methods for external access
+  public getSelectedObject (): THREE.Object3D | null {
+    return this.selectedObject;
+  }
+
+  public clearSelection (): void {
+    if (this.selectedObject) {
+      highlightObject(this.selectedObject, false);
+      this.selectedObject = null;
+    }
+  }
+
+  public isDragOperationActive (): boolean {
+    return this.isDragOperation;
+  }
+
+  public getPendingUpdatesCount (): number {
+    return this.pendingUpdates.size;
   }
 }
