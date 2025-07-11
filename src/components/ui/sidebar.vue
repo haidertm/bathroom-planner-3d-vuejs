@@ -335,7 +335,7 @@ const mobileCloseButtonStyle = computed(() => ({
 // Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '93px',
+  top: isMobileDevice.value ? '0' : '83px',
   left: '0',
   backgroundColor: 'rgba(255, 255, 255, 0.98)',
   padding: isMobileDevice.value ? '50px 20px 20px 20px' : '20px',
@@ -504,7 +504,7 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '93px',
+  top: isMobileDevice.value ? '0' : '83px',
   left: isMobileDevice.value ? '0' : '0',
   height: isMobileDevice.value ? '100vh' : 'calc(100vh - 93px)',
   width: isMobileDevice.value ? '100vw' : '480px',
