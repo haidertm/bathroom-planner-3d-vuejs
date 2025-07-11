@@ -34,8 +34,6 @@
         <div
             @click="toggleBathroomItemsSection"
             :style="mainAccordionHeaderStyle"
-            @mouseenter="e => e.target.style.backgroundColor = '#f8f9fa'"
-            @mouseleave="e => e.target.style.backgroundColor = 'transparent'"
         >
           <h4 :style="accordionTitleStyle">Bathroom Items</h4>
           <span :style="getArrowStyle(isBathroomItemsExpanded)">▼</span>
@@ -62,8 +60,6 @@
         <div
             @click="toggleRoomSettingsSection"
             :style="mainAccordionHeaderStyle"
-            @mouseenter="e => e.target.style.backgroundColor = '#f8f9fa'"
-            @mouseleave="e => e.target.style.backgroundColor = 'transparent'"
         >
           <h4 :style="accordionTitleStyle">Room Settings</h4>
           <span :style="getArrowStyle(isRoomSettingsExpanded)">▼</span>
@@ -131,8 +127,6 @@
               <button
                   @click="$emit('constrain-objects')"
                   :style="buttonStyle"
-                  @mouseenter="e => e.target.style.backgroundColor = '#45a049'"
-                  @mouseleave="e => e.target.style.backgroundColor = '#4CAF50'"
               >
                 Snap Objects to Walls
               </button>
@@ -146,8 +140,6 @@
         <button
             @click="toggleTextureDrawer"
             :style="textureButtonStyle"
-            @mouseenter="e => e.target.style.backgroundColor = '#059669'"
-            @mouseleave="e => e.target.style.backgroundColor = '#10b981'"
         >
           <h4 :style="accordionTitleStyle">Textures</h4>
           <span :style="textureArrowStyle">▶</span>
@@ -182,8 +174,6 @@
           <div
               @click="toggleFloorSection"
               :style="drawerSubHeaderStyle"
-              @mouseenter="e => e.target.style.backgroundColor = '#f0f2f5'"
-              @mouseleave="e => e.target.style.backgroundColor = 'transparent'"
           >
             <h5 :style="drawerSubTitleStyle">Floor Texture</h5>
             <span :style="getSubArrowStyle(isFloorExpanded)">▼</span>
@@ -208,8 +198,6 @@
           <div
               @click="toggleWallSection"
               :style="drawerSubHeaderStyle"
-              @mouseenter="e => e.target.style.backgroundColor = '#f0f2f5'"
-              @mouseleave="e => e.target.style.backgroundColor = 'transparent'"
           >
             <h5 :style="drawerSubTitleStyle">Wall Texture</h5>
             <span :style="getSubArrowStyle(isWallExpanded)">▼</span>
@@ -291,7 +279,7 @@ const mobileFloatingButtonStyle = computed(() => ({
   width: '60px',
   height: '60px',
   borderRadius: '50%',
-  backgroundColor: isButtonPressed.value ? '#059669' : '#10b981',
+  backgroundColor: isButtonPressed.value ? '#29275B' : '#29275B',
   color: 'white',
   border: 'none',
   boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
@@ -332,7 +320,7 @@ const mobileCloseButtonStyle = computed(() => ({
   width: '32px',
   height: '32px',
   borderRadius: '50%',
-  backgroundColor: '#ef4444',
+  backgroundColor: '#29275B',
   color: 'white',
   border: 'none',
   fontSize: '18px',
@@ -347,18 +335,17 @@ const mobileCloseButtonStyle = computed(() => ({
 // Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '93px',
+  top: isMobileDevice.value ? '0' : '83px',
   left: '0',
   backgroundColor: 'rgba(255, 255, 255, 0.98)',
   padding: isMobileDevice.value ? '50px 20px 20px 20px' : '20px',
-  borderRadius: isMobileDevice.value ? '0' : '12px',
   boxShadow: isMobileDevice.value ? 'none' : '0 8px 32px rgba(0, 0, 0, 0.15)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
   maxHeight: isMobileDevice.value ? '100vh' : '100vh',
-  height: isMobileDevice.value ? '100vh' : '80vh',
+  height: isMobileDevice.value ? '100vh' : '100vh',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
@@ -382,7 +369,7 @@ const mainAccordionHeaderStyle = computed(() => ({
   padding: '15px',
   cursor: 'pointer',
   backgroundColor: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+  background: '#29275B',
   transition: 'all 0.2s ease',
   borderBottom: '1px solid #d1fae5',
   color: '#ffffff',
@@ -453,12 +440,12 @@ const checkboxLabelStyle = computed(() => ({
 const sliderStyle = computed(() => ({
   width: '100%',
   marginTop: '5px',
-  accentColor: '#4CAF50',
+  accentColor: '#29275B',
   height: isMobileDevice.value ? '8px' : '6px'
 }))
 
 const checkboxStyle = computed(() => ({
-  accentColor: '#4CAF50',
+  accentColor: '#29275B',
   width: isMobileDevice.value ? '18px' : '16px',
   height: isMobileDevice.value ? '18px' : '16px'
 }))
@@ -466,7 +453,7 @@ const checkboxStyle = computed(() => ({
 const buttonStyle = computed(() => ({
   width: '100%',
   padding: isMobileDevice.value ? '12px' : '10px',
-  backgroundColor: '#4CAF50',
+  backgroundColor: '#29275B',
   color: 'white',
   border: 'none',
   borderRadius: '4px',
@@ -484,8 +471,8 @@ const textureButtonStyle = computed(() => ({
   alignItems: 'center',
   padding: '15px',
   cursor: 'pointer',
-  backgroundColor: '#10b981',
-  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+  backgroundColor: '#29275B',
+  background: '#29275B',
   transition: 'all 0.2s ease',
   color: '#ffffff',
   fontFamily: 'Arial, sans-serif',
@@ -517,17 +504,20 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '104px',
+  top: isMobileDevice.value ? '0' : '83px',
   left: isMobileDevice.value ? '0' : '0',
-  height: isMobileDevice.value ? '100vh' : '83vh',
-  width: isMobileDevice.value ? '100vw' : '400px',
+  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 93px)',
+  width: isMobileDevice.value ? '100vw' : '480px',
+  maxWidth: isMobileDevice.value ? '100vw' : '500px',
   backgroundColor: '#ffffff',
   boxShadow: isMobileDevice.value ? 'none' : '2px 0 20px rgba(0, 0, 0, 0.15)',
   zIndex: 1700,
   transform: isTextureDrawerOpen.value ? 'translateX(0)' : 'translateX(-100%)',
   transition: 'transform 0.3s ease',
-  overflowY: 'auto',
-  fontFamily: 'Arial, sans-serif'
+  overflowY: 'hidden',
+  fontFamily: 'Arial, sans-serif',
+  display: 'flex',
+  flexDirection: 'column'
 }))
 
 const drawerHeaderStyle = computed(() => ({
@@ -539,7 +529,8 @@ const drawerHeaderStyle = computed(() => ({
   backgroundColor: '#f9fafb',
   position: 'sticky',
   top: '0',
-  zIndex: 10
+  zIndex: 10,
+  flexShrink: 0
 }))
 
 const drawerTitleStyle = computed(() => ({
@@ -567,7 +558,12 @@ const drawerCloseButtonStyle = computed(() => ({
 }))
 
 const drawerContentStyle = computed(() => ({
-  padding: '20px'
+  padding: '20px',
+  flexGrow: 1,
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  height: '0',
+  minHeight: '0'
 }))
 
 const drawerSectionStyle = computed(() => ({
@@ -582,8 +578,9 @@ const drawerSubHeaderStyle = computed(() => ({
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '15px',
+  color: 'white',
   cursor: 'pointer',
-  backgroundColor: '#f9fafb',
+  backgroundColor: '#29275B',
   transition: 'background-color 0.2s ease',
   borderBottom: '1px solid #e5e7eb'
 }))
@@ -592,7 +589,7 @@ const drawerSubTitleStyle = computed(() => ({
   margin: '0',
   fontSize: isMobileDevice.value ? '15px' : '16px',
   fontWeight: '600',
-  color: '#374151',
+  color: '#fff',
   fontFamily: 'Arial, sans-serif'
 }))
 
@@ -702,8 +699,8 @@ const getAccordionContentStyle = (isExpanded) => ({
 })
 
 const getSubAccordionContentStyle = (isExpanded) => ({
-  maxHeight: isExpanded ? '600px' : '0px',
-  overflow: 'hidden',
+  maxHeight: isExpanded ? 'none' : '0px',
+  overflow: isExpanded ? 'visible' : 'hidden',
   transition: 'max-height 0.3s ease-in-out',
   backgroundColor: '#ffffff'
 })
@@ -775,7 +772,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #4CAF50;
+  background: #29275B;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -784,7 +781,7 @@ input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #4CAF50;
+  background: #29275B;
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
