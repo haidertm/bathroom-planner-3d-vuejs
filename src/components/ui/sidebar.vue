@@ -1,7 +1,34 @@
 <template>
   <div>
+    <!-- Mobile Floating + Button -->
+    <button
+        v-if="isMobileDevice && !isSidebarVisible"
+        @click="showSidebar"
+        :style="mobileFloatingButtonStyle"
+        @touchstart="handleTouchStart"
+        @touchend="handleTouchEnd"
+    >
+      <span :style="plusIconStyle">+</span>
+    </button>
+
+    <!-- Mobile Overlay -->
+    <div
+        v-if="isMobileDevice && isSidebarVisible"
+        :style="mobileOverlayStyle"
+        @click="hideSidebar"
+    ></div>
+
     <!-- Main Sidebar Panel -->
-    <div :style="panelStyle">
+    <div :style="panelStyle" v-show="!isMobileDevice || isSidebarVisible">
+      <!-- Mobile Close Button -->
+      <button
+          v-if="isMobileDevice"
+          @click="hideSidebar"
+          :style="mobileCloseButtonStyle"
+      >
+        ✕
+      </button>
+
       <!-- Bathroom Items Accordion -->
       <div :style="accordionSectionStyle">
         <div
@@ -250,28 +277,93 @@ const isRoomSettingsExpanded = ref(true)
 const isTextureDrawerOpen = ref(false)
 const isFloorExpanded = ref(true)
 const isWallExpanded = ref(false)
+const isSidebarVisible = ref(false)
+const isButtonPressed = ref(false)
 
 // Computed
 const isMobileDevice = computed(() => isMobile())
 
+// Mobile floating button styles
+const mobileFloatingButtonStyle = computed(() => ({
+  position: 'fixed',
+  bottom: '30px',
+  left: '20px',
+  width: '60px',
+  height: '60px',
+  borderRadius: '50%',
+  backgroundColor: isButtonPressed.value ? '#059669' : '#10b981',
+  color: 'white',
+  border: 'none',
+  boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
+  cursor: 'pointer',
+  zIndex: 1000,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'all 0.2s ease',
+  transform: isButtonPressed.value ? 'scale(0.95)' : 'scale(1)',
+  fontSize: '24px',
+  fontWeight: 'bold',
+  backdropFilter: 'blur(10px)'
+}))
+
+const plusIconStyle = computed(() => ({
+  fontSize: '28px',
+  fontWeight: 'bold',
+  lineHeight: '1'
+}))
+
+const mobileOverlayStyle = computed(() => ({
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  right: '0',
+  bottom: '0',
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  zIndex: 1500,
+  opacity: '1',
+  visibility: 'visible'
+}))
+
+const mobileCloseButtonStyle = computed(() => ({
+  position: 'absolute',
+  top: '10px',
+  right: '10px',
+  width: '32px',
+  height: '32px',
+  borderRadius: '50%',
+  backgroundColor: '#ef4444',
+  color: 'white',
+  border: 'none',
+  fontSize: '18px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 10,
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+}))
+
 // Main panel styles
 const panelStyle = computed(() => ({
-  position: 'absolute',
-  top: isMobileDevice.value ? '80px' : '93px',
+  position: isMobileDevice.value ? 'fixed' : 'absolute',
+  top: isMobileDevice.value ? '0' : '93px',
   left: '0',
-  backgroundColor: 'rgba(255, 255, 255, 0.96)',
-  padding: '20px',
-  borderRadius: '12px',
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)',
-  width: isMobileDevice.value ? '90vw' : '480px',
-  maxWidth: isMobileDevice.value ? '90vw' : '500px',
-  zIndex: 1000,
+  backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  padding: isMobileDevice.value ? '50px 20px 20px 20px' : '20px',
+  borderRadius: isMobileDevice.value ? '0' : '12px',
+  boxShadow: isMobileDevice.value ? 'none' : '0 8px 32px rgba(0, 0, 0, 0.15)',
+  width: isMobileDevice.value ? '100vw' : '480px',
+  maxWidth: isMobileDevice.value ? '100vw' : '500px',
+  zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? '70vh' : '100vh',
-  height: '80vh',
+  maxHeight: isMobileDevice.value ? '100vh' : '100vh',
+  height: isMobileDevice.value ? '100vh' : '80vh',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
-  border: '1px solid rgba(16, 185, 129, 0.2)'
+  border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
+  transform: isMobileDevice.value && !isSidebarVisible.value ? 'translateX(-100%)' : 'translateX(0)',
+  transition: 'transform 0.3s ease'
 }))
 
 const accordionSectionStyle = computed(() => ({
@@ -314,19 +406,21 @@ const itemsGridStyle = computed(() => ({
 }))
 
 const itemButtonStyle = computed(() => ({
-  padding: isMobileDevice.value ? '10px 14px' : '12px 18px',
-  border: '2px solid #f59e0b',
+  padding: isMobileDevice.value ? '12px 16px' : '12px 18px',
+  border: '2px solid #29275Bb',
   borderRadius: '8px',
-  backgroundColor: '#f59e0b',
+  backgroundColor: '#29275B',
   color: '#ffffff',
   cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '13px' : '14px',
+  fontSize: isMobileDevice.value ? '14px' : '14px',
   fontWeight: '600',
   transition: 'all 0.3s ease',
   whiteSpace: 'nowrap',
   fontFamily: 'Arial, sans-serif',
   textTransform: 'capitalize',
-  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)'
+  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)',
+  minWidth: isMobileDevice.value ? '120px' : 'auto',
+  textAlign: 'center'
 }))
 
 // Room Settings styles
@@ -340,7 +434,7 @@ const controlGroupStyle = computed(() => ({
 
 const labelStyle = computed(() => ({
   display: 'block',
-  fontSize: isMobileDevice.value ? '12px' : '14px',
+  fontSize: isMobileDevice.value ? '14px' : '14px',
   color: '#666',
   marginBottom: '5px',
   fontFamily: 'Arial, sans-serif'
@@ -350,7 +444,7 @@ const checkboxLabelStyle = computed(() => ({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
-  fontSize: isMobileDevice.value ? '12px' : '14px',
+  fontSize: isMobileDevice.value ? '14px' : '14px',
   color: '#666',
   cursor: 'pointer',
   fontFamily: 'Arial, sans-serif'
@@ -359,22 +453,25 @@ const checkboxLabelStyle = computed(() => ({
 const sliderStyle = computed(() => ({
   width: '100%',
   marginTop: '5px',
-  accentColor: '#10b981'
+  accentColor: '#10b981',
+  height: isMobileDevice.value ? '8px' : '6px'
 }))
 
 const checkboxStyle = computed(() => ({
-  accentColor: '#10b981'
+  accentColor: '#10b981',
+  width: isMobileDevice.value ? '18px' : '16px',
+  height: isMobileDevice.value ? '18px' : '16px'
 }))
 
 const buttonStyle = computed(() => ({
   width: '100%',
-  padding: '10px',
+  padding: isMobileDevice.value ? '12px' : '10px',
   backgroundColor: '#10b981',
   color: 'white',
   border: 'none',
   borderRadius: '6px',
   cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '12px' : '14px',
+  fontSize: isMobileDevice.value ? '14px' : '14px',
   fontWeight: '600',
   transition: 'background-color 0.2s ease',
   fontFamily: 'Arial, sans-serif'
@@ -419,14 +516,14 @@ const overlayStyle = computed(() => ({
 }))
 
 const drawerStyle = computed(() => ({
-  position: 'absolute',
-  top: '104px',
-  left: '0',
-  height: '83vh',
-  width: isMobileDevice.value ? '85vw' : '400px',
+  position: isMobileDevice.value ? 'fixed' : 'absolute',
+  top: isMobileDevice.value ? '0' : '104px',
+  left: isMobileDevice.value ? '0' : '0',
+  height: isMobileDevice.value ? '100vh' : '83vh',
+  width: isMobileDevice.value ? '100vw' : '400px',
   backgroundColor: '#ffffff',
-  boxShadow: '2px 0 20px rgba(0, 0, 0, 0.15)',
-  zIndex: 1600,
+  boxShadow: isMobileDevice.value ? 'none' : '2px 0 20px rgba(0, 0, 0, 0.15)',
+  zIndex: 1700,
   transform: isTextureDrawerOpen.value ? 'translateX(0)' : 'translateX(-100%)',
   transition: 'transform 0.3s ease',
   overflowY: 'auto',
@@ -447,7 +544,7 @@ const drawerHeaderStyle = computed(() => ({
 
 const drawerTitleStyle = computed(() => ({
   margin: '0',
-  fontSize: '20px',
+  fontSize: isMobileDevice.value ? '18px' : '20px',
   fontWeight: 'bold',
   color: '#1f2937',
   fontFamily: 'Arial, sans-serif'
@@ -493,7 +590,7 @@ const drawerSubHeaderStyle = computed(() => ({
 
 const drawerSubTitleStyle = computed(() => ({
   margin: '0',
-  fontSize: '16px',
+  fontSize: isMobileDevice.value ? '15px' : '16px',
   fontWeight: '600',
   color: '#374151',
   fontFamily: 'Arial, sans-serif'
@@ -507,7 +604,7 @@ const textureGridStyle = computed(() => ({
 }))
 
 const textureLabelStyle = computed(() => ({
-  fontSize: '12px',
+  fontSize: isMobileDevice.value ? '11px' : '12px',
   color: '#6b7280',
   textAlign: 'center',
   fontWeight: '500',
@@ -519,6 +616,28 @@ const textureLabelStyle = computed(() => ({
 const handleAddComponent = (component) => {
   console.log('Adding component:', component)
   emit('add', component)
+  // Auto-hide sidebar on mobile after adding component
+  if (isMobileDevice.value) {
+    setTimeout(() => {
+      hideSidebar()
+    }, 300)
+  }
+}
+
+const showSidebar = () => {
+  isSidebarVisible.value = true
+}
+
+const hideSidebar = () => {
+  isSidebarVisible.value = false
+}
+
+const handleTouchStart = () => {
+  isButtonPressed.value = true
+}
+
+const handleTouchEnd = () => {
+  isButtonPressed.value = false
 }
 
 const toggleBathroomItemsSection = () => {
@@ -600,13 +719,13 @@ const getTextureButtonStyle = (texture, isActive) => ({
   flexDirection: 'column',
   alignItems: 'center',
   gap: '8px',
-  minHeight: '80px',
+  minHeight: isMobileDevice.value ? '70px' : '80px',
   boxShadow: isActive ? '0 2px 8px rgba(16, 185, 129, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
 })
 
 const getTexturePreviewStyle = (texture) => ({
   width: '100%',
-  height: '45px',
+  height: isMobileDevice.value ? '35px' : '45px',
   backgroundColor: `#${texture.color.toString(16).padStart(6, '0')}`,
   borderRadius: '4px',
   border: '1px solid #e5e7eb',
@@ -637,8 +756,8 @@ const getTexturePreviewStyle = (texture) => ({
   background: #555;
 }
 
-/* Prevent body scroll when drawer is open */
-body:has([data-drawer-open]) {
+/* Prevent body scroll when sidebar is open on mobile */
+body:has([data-sidebar-open]) {
   overflow: hidden;
 }
 
@@ -669,5 +788,18 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+  }
 }
 </style>
