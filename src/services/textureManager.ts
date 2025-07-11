@@ -256,7 +256,7 @@ class TextureManager {
   // Preload commonly used textures
   async preloadTextures(textureConfigs: TextureConfig[]): Promise<void> {
     const promises = textureConfigs.map(config => {
-      return new Promise<void>((resolve, reject) => {
+      return new Promise<void>((resolve) => {
         if (!config.file || config.file.trim() === '') {
           resolve();
           return;
