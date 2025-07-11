@@ -1,7 +1,7 @@
 <template>
   <div :style="{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }">
     <Header
-        logo="/src/assets/logo.svg"
+        logo="./assets/logo.svg"
         backgroundColor="#fff"
         logoHeight="45px"
     />
