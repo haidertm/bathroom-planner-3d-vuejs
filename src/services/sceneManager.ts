@@ -45,7 +45,7 @@ export class SceneManager {
 
     // Create camera with better positioning and settings
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.camera.position.set(8, 6, 8);
+    this.camera.position.set(0, 5, 9);
     this.camera.lookAt(0, 0, 0);
 
     // Create renderer with enhanced settings
@@ -64,7 +64,7 @@ export class SceneManager {
     // Better color management and tone mapping
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 2.2;
+    this.renderer.toneMappingExposure = 1.8;
 
     // Enable physically correct lights
     // this.renderer.physicallyCorrectLights = true;
