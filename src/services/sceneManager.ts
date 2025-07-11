@@ -3,8 +3,15 @@ import { createFloor, createWalls, createCustomGrid } from '../models/roomGeomet
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
 import { createModel } from '../models/bathroomFixtures';
+import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
+
+// Import post-processing modules
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 interface SceneComponents {
   scene: THREE.Scene;
@@ -17,7 +24,11 @@ export class SceneManager {
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
 
-  // Animation loop management (your additions)
+  // Post-processing components
+  private composer: EffectComposer | null = null;
+  private outlinePass: OutlinePass | null = null;
+
+  // Animation loop management
   private animationId: number | null = null;
   private isAnimating: boolean = false;
 
@@ -61,13 +72,13 @@ export class SceneManager {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = true;
 
-    // Better color management and tone mapping
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.8;
+    // Better color management and tone mapping (ChatGPT's explicit settings)
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace; // for three.js r152+
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // explicit tone mapping
+    this.renderer.toneMappingExposure = 1.0; // Reset to 1.0 as ChatGPT suggested
 
-    // Enable physically correct lights
-    // this.renderer.physicallyCorrectLights = true;
+    // Set up post-processing with OutputPass (ChatGPT's complete solution)
+    this.setupPostProcessing();
 
     // Add bathroom items group to scene
     this.scene.add(this.bathroomItemsGroup);
@@ -82,6 +93,55 @@ export class SceneManager {
     };
   }
 
+  private setupPostProcessing(): void {
+    if (!this.scene || !this.camera || !this.renderer) return;
+
+    try {
+      // Create render target with proper encoding (ChatGPT's fix)
+      const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+        format: THREE.RGBAFormat,
+        type: THREE.HalfFloatType, // or THREE.UnsignedByteType if not using HDR
+        colorSpace: THREE.SRGBColorSpace // crucial!
+      });
+
+      // Create EffectComposer with proper render target
+      this.composer = new EffectComposer(this.renderer, renderTarget);
+
+      // Add render pass
+      const renderPass = new RenderPass(this.scene, this.camera);
+      this.composer.addPass(renderPass);
+
+      // Add outline pass with ChatGPT's settings
+      this.outlinePass = new OutlinePass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        this.scene,
+        this.camera
+      );
+
+      // Configure outline pass settings (exactly like ChatGPT's example)
+      this.outlinePass.edgeStrength = 10;
+      this.outlinePass.edgeGlow = 1.0;
+      this.outlinePass.edgeThickness = 4;
+      this.outlinePass.visibleEdgeColor.set('#00ffcc'); // ChatGPT's cyan/turquoise color
+      this.outlinePass.hiddenEdgeColor.set('#000000'); // Black
+
+      this.composer.addPass(this.outlinePass);
+
+      // Add OutputPass to restore correct color rendering (ChatGPT's missing step!)
+      const outputPass = new OutputPass();
+      this.composer.addPass(outputPass);
+
+      // Set outline pass reference for helpers.ts
+      setOutlinePass(this.outlinePass);
+
+      console.log('Post-processing setup successful with OutputPass');
+    } catch (error) {
+      console.warn('Post-processing setup failed, falling back to normal rendering:', error);
+      this.composer = null;
+      this.outlinePass = null;
+    }
+  }
+
   private setupEnhancedLighting(): void {
     if (!this.scene) return;
 
@@ -90,12 +150,12 @@ export class SceneManager {
     this.lights = [];
 
     // 1. Bright ambient light - creates that "well-lit room" base
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Back to original
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
 
     // 2. Main ceiling light - bright overhead illumination
-    const mainCeilingLight = new THREE.PointLight(0xffffff, 1.2, 25);
+    const mainCeilingLight = new THREE.PointLight(0xffffff, 1.2, 25); // Back to original
     mainCeilingLight.position.set(0, 2.8, 0);
     mainCeilingLight.castShadow = true;
     mainCeilingLight.shadow.mapSize.width = 2048;
@@ -108,7 +168,7 @@ export class SceneManager {
     this.lights.push(mainCeilingLight);
 
     // 3. Additional ceiling lights for even coverage
-    const ceilingLight1 = new THREE.PointLight(0xffffff, 0.8, 15);
+    const ceilingLight1 = new THREE.PointLight(0xffffff, 0.8, 15); // Back to original
     ceilingLight1.position.set(1.5, 2.8, 1.5);
     ceilingLight1.castShadow = true;
     ceilingLight1.shadow.mapSize.width = 1024;
@@ -119,7 +179,7 @@ export class SceneManager {
     this.scene.add(ceilingLight1);
     this.lights.push(ceilingLight1);
 
-    const ceilingLight2 = new THREE.PointLight(0xffffff, 0.8, 15);
+    const ceilingLight2 = new THREE.PointLight(0xffffff, 0.8, 15); // Back to original
     ceilingLight2.position.set(-1.5, 2.8, -1.5);
     ceilingLight2.castShadow = true;
     ceilingLight2.shadow.mapSize.width = 1024;
@@ -131,7 +191,7 @@ export class SceneManager {
     this.lights.push(ceilingLight2);
 
     // 4. Soft directional light from above - simulates natural light
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.4); // Back to original
     topLight.position.set(0, 10, 2);
     topLight.castShadow = true;
     topLight.shadow.mapSize.width = 2048;
@@ -148,14 +208,10 @@ export class SceneManager {
     this.lights.push(topLight);
 
     // 5. Fill light to reduce harsh shadows
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.2); // Back to original
     fillLight.position.set(-5, 8, -5);
     this.scene.add(fillLight);
     this.lights.push(fillLight);
-
-    // Optional: Add light helpers for debugging (comment out in production)
-    // const helper = new THREE.PointLightHelper(mainCeilingLight, 0.5);
-    // this.scene.add(helper);
   }
 
   updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
@@ -302,11 +358,6 @@ export class SceneManager {
               material.roughness = material.roughness || 0.7;
               material.metalness = material.metalness || 0.1;
               material.envMapIntensity = 0.5;
-
-              // Add subtle normal mapping if not present
-              if (!material.normalMap) {
-                // Could add a default normal map here
-              }
             }
           });
         }
@@ -336,7 +387,12 @@ export class SceneManager {
         this.wallCullingManager.updateWallVisibility();
       }
 
-      this.renderer.render(this.scene, this.camera);
+      // Render using post-processing composer with OutputPass (ChatGPT's solution)
+      if (this.composer) {
+        this.composer.render();
+      } else {
+        this.renderer.render(this.scene, this.camera);
+      }
     };
     animate();
   }
@@ -347,6 +403,19 @@ export class SceneManager {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
+    }
+  }
+
+  // Update composer size when window resizes
+  updateComposerSize(): void {
+    if (this.composer) {
+      this.composer.setSize(window.innerWidth, window.innerHeight);
+
+      // Update render target size if needed
+      const renderTarget = this.composer.renderTarget1;
+      if (renderTarget) {
+        renderTarget.setSize(window.innerWidth, window.innerHeight);
+      }
     }
   }
 
@@ -380,6 +449,10 @@ export class SceneManager {
     });
     this.lights = [];
 
+    if (this.composer) {
+      this.composer.dispose();
+    }
+
     if (this.renderer) {
       this.renderer.dispose();
     }
@@ -388,6 +461,8 @@ export class SceneManager {
     this.scene = null;
     this.camera = null;
     this.renderer = null;
+    this.composer = null;
+    this.outlinePass = null;
     this.floorRef = null;
     this.wallRefs = [];
     this.gridRef = null;

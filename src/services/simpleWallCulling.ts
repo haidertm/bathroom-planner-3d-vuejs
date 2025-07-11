@@ -153,7 +153,7 @@ export class SimpleWallCulling {
     // Hide the identified walls completely
     wallsToHide.forEach(({ wall, direction }: WallToHide) => {
       wall.visible = false;
-      console.log(`Hiding ${direction} wall - visible: ${wall.visible}`);
+      // console.log(`Hiding ${direction} wall - visible: ${wall.visible}`);
     });
 
     // // Debug: Log current wall states
