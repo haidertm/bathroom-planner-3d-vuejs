@@ -1,22 +1,25 @@
 <template>
-  <div :style="{ width: '98vw', height: '100vh', position: 'relative' }">
-    <Toolbar @add="addItem" />
-    <TexturePanel
+  <div :style="{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }">
+    <Header
+        logo="/src/assets/logo.svg"
+        backgroundColor="#fff"
+        logoHeight="45px"
+    />
+    <sidebar
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
         @wall-change="handleWallChange"
         :current-floor="currentFloorTexture"
         :current-wall="currentWallTexture"
+        @add="addItem"
         @close="handleTextureClose"
-    />
-    <RoomSizePanel
-        @room-size-change="handleRoomSizeChange"
         :room-width="roomWidth"
         :room-height="roomHeight"
         :show-grid="showGrid"
+        :wall-culling-enabled="wallCullingEnabled"
+        @room-size-change="handleRoomSizeChange"
         @toggle-grid="setShowGrid"
         @constrain-objects="constrainObjects"
-        :wall-culling-enabled="wallCullingEnabled"
         @toggle-wall-culling="handleWallCullingToggle"
     />
 
@@ -37,14 +40,13 @@
         :can-undo="canUndo"
         :can-redo="canRedo"
     />
+
+    <!-- Canvas container positioned on the right side -->
     <div
         ref="mountRef"
-        :style="{
-        width: '100%',
-        height: '100%',
-        cursor: 'grab'
-      }"
+        :style="canvasContainerStyle"
     />
+
     <div :style="helpTextStyle">
       <div v-if="isMobileDevice">
         <div>Touch + drag: Move objects along walls</div>
@@ -93,6 +95,8 @@ import { isMobile } from './utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from './composables/useUndoRedo.js'
+import Sidebar from "./components/ui/sidebar.vue";
+import Header from "./components/ui/Header.vue";
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -139,6 +143,37 @@ const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
 const showGrid = ref(false)
 const wallCullingEnabled = ref(true)
 
+
+// Update your App.vue canvasContainerStyle computed property:
+
+const canvasContainerStyle = computed(() => {
+  // On mobile, always use full width since sidebar is overlay
+  if (isMobileDevice.value) {
+    return {
+      position: 'absolute',
+      top: '60px',
+      left: '0',
+      width: '100vw',
+      height: 'calc(100vh - 60px)',
+      cursor: 'grab',
+      overflow: 'hidden'
+    }
+  }
+
+  // On desktop, adjust for sidebar
+  const sidebarWidth = showTexturePanel.value ? '320px' : '0px'
+  return {
+    position: 'absolute',
+    top: '60px',
+    left: sidebarWidth,
+    width: `calc(100vw - ${sidebarWidth})`,
+    height: 'calc(100vh - 60px)',
+    cursor: 'grab',
+    overflow: 'hidden'
+  }
+})
+
+
 // ADD: Track when items are updated programmatically vs drag operations
 const lastUpdateSource = ref('initial')
 
@@ -169,10 +204,12 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
+// NEW: Canvas container style that positions it on the right side
+
 const helpTextStyle = computed(() => ({
   position: 'absolute',
   bottom: '10px',
-  left: '10px',
+  right: '10px', // Changed from left to right
   color: 'white',
   background: 'rgba(0,0,0,0.5)',
   padding: '5px 10px',
