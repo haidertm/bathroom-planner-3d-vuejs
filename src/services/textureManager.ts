@@ -6,18 +6,18 @@ export interface TextureConfig {
   name: string;
   file: string;
   color: number;
-  scale?: [number, number];
+  scale?: readonly [number, number];
 }
 
 class TextureManager {
   private textureLoader: THREE.TextureLoader;
   private loadedTextures: Map<string, THREE.Texture>;
-  private cubeTextureLoader: THREE.CubeTextureLoader;
+  // private cubeTextureLoader: THREE.CubeTextureLoader;
   private environmentMap: THREE.CubeTexture | null = null;
 
   constructor() {
     this.textureLoader = new THREE.TextureLoader();
-    this.cubeTextureLoader = new THREE.CubeTextureLoader();
+    // this.cubeTextureLoader = new THREE.CubeTextureLoader();
     this.loadedTextures = new Map<string, THREE.Texture>();
     this.initializeEnvironmentMap();
   }
@@ -41,10 +41,8 @@ class TextureManager {
 
   createTexturedMaterial(textureConfig: TextureConfig): THREE.MeshStandardMaterial {
     // Check if we should use file or color
-    const hasValidFile: boolean = textureConfig.file &&
-      textureConfig.file.trim() !== "" &&
-      textureConfig.file !== null &&
-      textureConfig.file !== undefined;
+    const hasValidFile: boolean = Boolean(textureConfig.file) &&
+      textureConfig.file.trim() !== "";
 
     // Create material with enhanced properties
     const material = new THREE.MeshStandardMaterial({
@@ -102,7 +100,7 @@ class TextureManager {
           console.log(`Loading texture: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
         }
       },
-      (error: ErrorEvent) => {
+      (error: unknown) => {
         console.warn(`Failed to load texture: ${textureConfig.file}, falling back to color`, error);
         // Enhanced fallback with color variations
         this.addColorVariations(material, textureConfig.color);
