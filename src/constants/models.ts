@@ -143,24 +143,36 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
     fallbackColor: 0x87CEEB,
     fallbackGeometry: 'box',
     fallbackSize: [0.8, 1.0, 0.05]
-  }
-  // Only add models here that you want to load from .glb files
-] as const;
-
-// Components that will use procedural code (your existing bathroomFixtures logic)
-export const PROCEDURAL_FIXTURES: readonly ProceduralConfig[] = [
+  },
   {
     name: 'Shower',
-    type: 'procedural',
+    path: '/models/shower.glb',
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 0.85, // Very close to wall
+      wallBuffer: 1.39, // Very close to wall
       description: 'Shower opening faces into room'
     },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'cylinder',
     fallbackSize: [0.8, 2.0, 0.8]
   }
+  // Only add models here that you want to load from .glb files
+] as const;
+
+// Components that will use procedural code (your existing bathroomFixtures logic)
+export const PROCEDURAL_FIXTURES: readonly ProceduralConfig[] = [
+  // {
+  //   name: 'Shower',
+  //   type: 'procedural',
+  //   orientation: {
+  //     type: 'face_into_room',
+  //     wallBuffer: 0.85, // Very close to wall
+  //     description: 'Shower opening faces into room'
+  //   },
+  //   fallbackColor: 0xffffff,
+  //   fallbackGeometry: 'cylinder',
+  //   fallbackSize: [0.8, 2.0, 0.8]
+  // }
 ] as const;
 
 // HERE'S WHERE YOU CHOOSE: Map each component to either model or procedural
@@ -172,9 +184,10 @@ export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
   Toilet: AVAILABLE_MODELS.find(f => f.name === 'Toilet')!,
   Bath: AVAILABLE_MODELS.find(f => f.name === 'Bath')!,
   Mirror: AVAILABLE_MODELS.find(f => f.name === 'Mirror')!,
-  // These will use your existing procedural code
+  Shower: AVAILABLE_MODELS.find(f => f.name === 'Shower')!
 
-  Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!
+  // These will use your existing procedural code
+  // Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!
 };
 
 // Helper function to get wall buffer for an object

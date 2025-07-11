@@ -21,6 +21,16 @@
       >
         ↷ Redo
       </button>
+
+      <button
+        @click="handleClearClick"
+        :style="getClearButtonStyle()"
+        @mouseenter="e => handleClearMouseEnter(e)"
+        @mouseleave="e => handleClearMouseLeave(e)"
+        title="Clear All Objects"
+      >
+        🧹 Clear
+      </button>
     </div>
   </template>
 
@@ -40,8 +50,8 @@
     }
   })
 
-  // Define emits
-  const emit = defineEmits(['undo', 'redo'])
+  // Define emits - Added 'clear' to the existing emits
+  const emit = defineEmits(['undo', 'redo', 'clear'])
 
   // Computed
   const isMobileDevice = computed(() => isMobile())
@@ -57,7 +67,8 @@
     display: 'flex',
     gap: '8px',
     zIndex: 1000,
-    backdropFilter: 'blur(10px)'
+    backdropFilter: 'blur(10px)',
+    flexWrap: isMobileDevice.value ? 'wrap' : 'nowrap'
   }))
 
   // Methods
@@ -75,6 +86,20 @@
     whiteSpace: 'nowrap'
   })
 
+  // New method for Clear button styling
+  const getClearButtonStyle = () => ({
+    padding: isMobileDevice.value ? '6px 10px' : '8px 12px',
+    border: '1px solid #e74c3c',
+    borderRadius: '4px',
+    backgroundColor: '#fff5f5',
+    color: '#e74c3c',
+    cursor: 'pointer',
+    fontSize: isMobileDevice.value ? '12px' : '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    whiteSpace: 'nowrap'
+  })
+
   const handleMouseEnter = (event, isEnabled) => {
     if (isEnabled) {
       event.target.style.backgroundColor = '#e0e0e0'
@@ -86,6 +111,25 @@
       event.target.style.backgroundColor = '#f0f0f0'
     } else {
       event.target.style.backgroundColor = '#f8f8f8'
+    }
+  }
+
+  // New methods for Clear button hover effects
+  const handleClearMouseEnter = (event) => {
+    event.target.style.backgroundColor = '#fee'
+    event.target.style.color = '#c0392b'
+  }
+
+  const handleClearMouseLeave = (event) => {
+    event.target.style.backgroundColor = '#fff5f5'
+    event.target.style.color = '#e74c3c'
+  }
+
+  // New method for Clear button click with confirmation
+  const handleClearClick = () => {
+    // Add a confirmation dialog for safety
+    if (confirm('Are you sure you want to clear all objects? This action can be undone.')) {
+      emit('clear')
     }
   }
   </script>

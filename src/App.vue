@@ -1,7 +1,7 @@
 <template>
   <div :style="{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }">
     <Header
-        logo="/src/assets/logo.svg"
+        logo="./assets/logo.svg"
         backgroundColor="#fff"
         logoHeight="45px"
     />
@@ -37,6 +37,7 @@
     <UndoRedoPanel
         @undo="handleUndo"
         @redo="handleRedo"
+        @clear="handleClearAll"
         :can-undo="canUndo"
         :can-redo="canRedo"
     />
@@ -483,6 +484,25 @@ onUnmounted(() => {
     sceneManagerRef.value.dispose()
   }
 })
+
+const handleClearAll = () => {
+  // Clear all items
+  const clearedItems = []
+
+  items.value = clearedItems
+  lastUpdateSource.value = 'clear'
+
+  // Save to history for undo capability
+  saveToHistory({
+    items: clearedItems,
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value,
+    currentFloorTexture: currentFloorTexture.value,
+    currentWallTexture: currentWallTexture.value
+  })
+
+  console.log('🧹 All items cleared from bathroom planner')
+}
 
 </script>
 
