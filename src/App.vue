@@ -90,7 +90,7 @@
               <p><strong>Ctrl + drag:</strong> Adjust object height</p>
               <p><strong>Alt + drag:</strong> Scale/Resize objects</p>
               <p><strong>Left click empty space:</strong> Rotate camera view</p>
-              <p><strong>Mouse wheel:</strong> Zoom in/out</p>
+              <p><strong>Mouse wheel:</strong> Zoom In/Out</p>
               <p><strong>DELETE key:</strong> Delete selected object</p>
             </div>
           </div>
