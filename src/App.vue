@@ -5,7 +5,7 @@
         backgroundColor="#fff"
         logoHeight="45px"
     />
-    <sidebar
+    <Sidebar
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
         @wall-change="handleWallChange"

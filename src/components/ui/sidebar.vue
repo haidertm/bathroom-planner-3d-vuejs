@@ -11,15 +11,15 @@
       <span :style="plusIconStyle">+</span>
     </button>
 
-    <!-- Mobile Overlay -->
+    <!-- Mobile Sidebar Overlay -->
     <div
         v-if="isMobileDevice && isSidebarVisible"
-        :style="mobileOverlayStyle"
+        :style="mobileSidebarOverlayStyle"
         @click="hideSidebar"
     ></div>
 
     <!-- Main Sidebar Panel -->
-    <div :style="panelStyle" v-show="!isMobileDevice || isSidebarVisible">
+    <div :style="panelStyle">
       <!-- Mobile Close Button -->
       <button
           v-if="isMobileDevice"
@@ -282,7 +282,6 @@ const mobileFloatingButtonStyle = computed(() => ({
   backgroundColor: isButtonPressed.value ? '#29275B' : '#29275B',
   color: 'white',
   border: 'none',
-  boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
   cursor: 'pointer',
   zIndex: 1000,
   display: 'flex',
@@ -301,7 +300,7 @@ const plusIconStyle = computed(() => ({
   lineHeight: '1'
 }))
 
-const mobileOverlayStyle = computed(() => ({
+const mobileSidebarOverlayStyle = computed(() => ({
   position: 'fixed',
   top: '0',
   left: '0',
@@ -349,16 +348,16 @@ const panelStyle = computed(() => ({
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
-  transform: isMobileDevice.value && !isSidebarVisible.value ? 'translateX(-100%)' : 'translateX(0)',
-  transition: 'transform 0.3s ease'
+  transform: isMobileDevice.value ? (isSidebarVisible.value ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
+  transition: 'transform 0.3s ease',
+  display: isMobileDevice.value ? 'block' : 'block'
 }))
 
 const accordionSectionStyle = computed(() => ({
   marginBottom: '15px',
-  border: '1px solid #d1fae5',
+  border: '1px solid #fff',
   borderRadius: '10px',
   overflow: 'hidden',
-  boxShadow: '0 2px 8px rgba(16, 185, 129, 0.1)',
   backgroundColor: '#ffffff'
 }))
 
@@ -371,7 +370,6 @@ const mainAccordionHeaderStyle = computed(() => ({
   backgroundColor: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
   background: '#29275B',
   transition: 'all 0.2s ease',
-  borderBottom: '1px solid #d1fae5',
   color: '#ffffff',
   fontFamily: 'Arial, sans-serif'
 }))
@@ -394,7 +392,7 @@ const itemsGridStyle = computed(() => ({
 
 const itemButtonStyle = computed(() => ({
   padding: isMobileDevice.value ? '12px 16px' : '12px 18px',
-  border: '2px solid #29275Bb',
+  border: '2px solid #29275B',
   borderRadius: '8px',
   backgroundColor: '#29275B',
   color: '#ffffff',
@@ -405,7 +403,6 @@ const itemButtonStyle = computed(() => ({
   whiteSpace: 'nowrap',
   fontFamily: 'Arial, sans-serif',
   textTransform: 'capitalize',
-  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)',
   minWidth: isMobileDevice.value ? '120px' : 'auto',
   textAlign: 'center'
 }))
@@ -707,7 +704,7 @@ const getSubAccordionContentStyle = (isExpanded) => ({
 
 const getTextureButtonStyle = (texture, isActive) => ({
   padding: '10px',
-  border: isActive ? '3px solid #10b981' : '2px solid #e5e7eb',
+  border: isActive ? '3px solid #29275B' : '2px solid #e5e7eb',
   borderRadius: '8px',
   cursor: 'pointer',
   backgroundColor: isActive ? '#f0fdf4' : '#fff',
@@ -753,10 +750,6 @@ const getTexturePreviewStyle = (texture) => ({
   background: #555;
 }
 
-/* Prevent body scroll when sidebar is open on mobile */
-body:has([data-sidebar-open]) {
-  overflow: hidden;
-}
 
 /* Custom slider styles */
 input[type="range"] {
