@@ -127,8 +127,8 @@ export class SceneManager {
       );
 
       // IMPROVED: Distance-optimized outline settings
-      this.outlinePass.edgeStrength = 15;        // Increased from 10
-      this.outlinePass.edgeGlow = 0.5;           // Reduced glow for better visibility
+      this.outlinePass.edgeStrength = 20;        // Increased from 10
+      this.outlinePass.edgeGlow = 2.0;           // Reduced glow for better visibility
       this.outlinePass.edgeThickness = 6;        // Increased thickness
       this.outlinePass.pulsePeriod = 0;          // Disable pulsing for consistency
       this.outlinePass.visibleEdgeColor.set('#00ffcc');
@@ -194,7 +194,7 @@ export class SceneManager {
     this.scene.add(ceilingLight1);
     this.lights.push(ceilingLight1);
 
-    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 18); // Back to original
+    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 18); // Increased from 0.8
     ceilingLight2.position.set(-1.5, 2.8, -1.5);
     ceilingLight2.castShadow = true;
     ceilingLight2.shadow.mapSize.width = 1024;
@@ -229,7 +229,7 @@ export class SceneManager {
     this.lights.push(ceilingLight4);
 
     // 5. Brighter directional light from above - simulates natural light
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.8); // Increased from 0.4
     topLight.position.set(0, 10, 2);
     topLight.castShadow = true;
     topLight.shadow.mapSize.width = 2048;
@@ -246,10 +246,10 @@ export class SceneManager {
     this.lights.push(topLight);
 
     // 6. Multiple fill lights to reduce harsh shadows
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.5); // Back to original
-    fillLight.position.set(-5, 8, -5);
-    this.scene.add(fillLight);
-    this.lights.push(fillLight);
+    const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.5); // Increased from 0.2
+    fillLight1.position.set(-5, 8, -5);
+    this.scene.add(fillLight1);
+    this.lights.push(fillLight1);
 
     const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
     fillLight2.position.set(5, 8, 5);
@@ -278,6 +278,7 @@ export class SceneManager {
     this.scene.add(floorBounce);
     this.lights.push(floorBounce);
 
+    console.log(`Enhanced lighting setup complete: ${this.lights.length} lights total`);
   }
 
   updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
@@ -298,7 +299,14 @@ export class SceneManager {
     // Enhanced floor material properties
     material.roughness = 0.05;
     material.metalness = 0.02;
-    material.envMapIntensity = 1.0;
+    material.envMapIntensity = 0.5;
+
+
+    // material.clearcoat = 0.8;
+    // material.clearcoatRoughness = 0.1;
+    //
+    // // Enhance reflectivity
+    // material.reflectivity = 0.9;
 
     return material;
   }

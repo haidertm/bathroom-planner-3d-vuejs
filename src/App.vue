@@ -509,6 +509,11 @@ const setItems = (updaterOrArray) => {
   lastUpdateSource.value = 'drag'
 }
 
+// NEW: Custom getItems function for collision detection
+const getItems = () => {
+  return items.value
+}
+
 // Initialize scene
 onMounted(async () => {
   // Initialize scene manager
@@ -524,6 +529,7 @@ onMounted(async () => {
       roomWidthRef,
       roomHeightRef,
       setItems, // Use our custom setItems function
+      getItems, // Use our custom getItems function
       deleteItem
   ))
 
