@@ -311,6 +311,7 @@ const closeButtonStyle = computed(() => ({
   top: isMobileDevice.value ? '15px' : '0',
   right: isMobileDevice.value ? '15px' : '0',
   paddingRight: isMobileDevice.value ? '0' : '1px',
+  paddingTop: isMobileDevice.value ? '1px' : '0',
   width: '29px',
   height: '29px',
   backgroundColor: '#29275B',
