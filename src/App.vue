@@ -88,7 +88,7 @@
               <p><strong>Left click + drag:</strong> Move objects along walls</p>
               <p><strong>Right click + drag:</strong> Rotate objects</p>
               <p><strong>Ctrl + drag:</strong> Adjust object height</p>
-              <p><strong>Alt + drag:</strong> Scale objects</p>
+              <p><strong>Alt + drag:</strong> Scale/Resize objects</p>
               <p><strong>Left click empty space:</strong> Rotate camera view</p>
               <p><strong>Mouse wheel:</strong> Zoom in/out</p>
               <p><strong>DELETE key:</strong> Delete selected object</p>
@@ -308,8 +308,8 @@ const popupContentStyle = computed(() => ({
 
 const closeButtonStyle = computed(() => ({
   position: 'absolute',
-  top: isMobileDevice.value ? '15px' : '0',
-  right: isMobileDevice.value ? '15px' : '0',
+  top: isMobileDevice.value ? '15px' : '6px',
+  right: isMobileDevice.value ? '15px' : '6px',
   paddingRight: isMobileDevice.value ? '0' : '1px',
   paddingTop: isMobileDevice.value ? '1px' : '0',
   width: '29px',
