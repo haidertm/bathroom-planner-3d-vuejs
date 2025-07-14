@@ -20,14 +20,14 @@
 
 html, body {
   height: 100%;
-  overflow: hidden; /* Remove scroll bars */
+  overflow-x: hidden !important; /* Remove scroll bars */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 #app {
   height: 100vh;
   width: 100vw;
-  overflow: hidden; /* Remove scroll bars from app container */
+  overflow-x: hidden !important; /* Remove scroll bars from app container */
 }
 
 /* Remove scroll bars from all elements while keeping scroll functionality */
