@@ -57,10 +57,54 @@ export const highlightObject = (obj: THREE.Object3D | null, highlight: boolean):
 
     // Set selected objects for OutlinePass
     outlinePassRef.selectedObjects = meshes;
-    console.log('🎯 OutlinePass selected objects:', meshes.length);
+    console.log('🎯 OutlinePass selected objects:', meshes.length, 'meshes found');
+    console.log('🎯 Current outline colors:', {
+      visible: outlinePassRef.visibleEdgeColor.getHexString(),
+      hidden: outlinePassRef.hiddenEdgeColor.getHexString()
+    });
   } else {
     // Clear selection
     outlinePassRef.selectedObjects = [];
     console.log('⭕ OutlinePass selection cleared');
   }
+};
+
+// NEW: Function to change outline color based on collision state
+export const setOutlineColor = (isColliding: boolean): void => {
+  if (!outlinePassRef) {
+    console.warn('OutlinePass not initialized. Cannot set outline color.');
+    return;
+  }
+
+  if (isColliding) {
+    // Red outline for collision - bright and visible
+    outlinePassRef.visibleEdgeColor.set('#ff0000');
+    outlinePassRef.hiddenEdgeColor.set('#cc0000'); // Brighter dark red
+    console.log('🔴 Outline color set to RED (collision detected)');
+  } else {
+    // Bright cyan/turquoise outline for normal selection - much more visible
+    outlinePassRef.visibleEdgeColor.set('#00ffff'); // Brighter cyan
+    outlinePassRef.hiddenEdgeColor.set('#0088aa'); // Brighter dark cyan
+    console.log('🟢 Outline color set to CYAN (no collision)');
+  }
+
+  // Debug: Log the actual color values that were set
+  console.log('🎨 Outline colors after setting:', {
+    visible: outlinePassRef.visibleEdgeColor.getHexString(),
+    hidden: outlinePassRef.hiddenEdgeColor.getHexString(),
+    selectedObjects: outlinePassRef.selectedObjects.length
+  });
+};
+
+// TEST: Function to force a very bright outline for debugging
+export const testBrightOutline = (): void => {
+  if (!outlinePassRef) {
+    console.warn('OutlinePass not initialized. Cannot test outline.');
+    return;
+  }
+
+  // Set extremely bright, visible colors
+  outlinePassRef.visibleEdgeColor.set('#ffffff'); // Pure white
+  outlinePassRef.hiddenEdgeColor.set('#888888'); // Gray
+  console.log('🧪 TEST: Set outline to bright white for visibility test');
 };
