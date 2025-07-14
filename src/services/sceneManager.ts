@@ -302,11 +302,11 @@ export class SceneManager {
     material.envMapIntensity = 0.5;
 
 
-    material.clearcoat = 0.8;
-    material.clearcoatRoughness = 0.1;
-
-    // Enhance reflectivity
-    material.reflectivity = 0.9;
+    // material.clearcoat = 0.8;
+    // material.clearcoatRoughness = 0.1;
+    //
+    // // Enhance reflectivity
+    // material.reflectivity = 0.9;
 
     return material;
   }
