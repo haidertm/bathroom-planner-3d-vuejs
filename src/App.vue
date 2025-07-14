@@ -5,7 +5,7 @@
         backgroundColor="#fff"
         logoHeight="45px"
     />
-    <sidebar
+    <Sidebar
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
         @wall-change="handleWallChange"
@@ -49,18 +49,51 @@
     />
 
     <div :style="helpTextStyle">
-      <div v-if="isMobileDevice">
-        <div>Touch + drag: Move objects along walls</div>
-        <div>Two finger pinch: Zoom</div>
-        <div>Double tap: Delete selected object</div>
-        <div>Objects spawn on any wall with collision detection</div>
-      </div>
-      <div v-else>
-        <div>Left click + drag: Move along walls | Right click + drag: Rotate | Ctrl + drag: Height | Alt + drag: Scale</div>
-        <div>Left click empty space: Rotate camera | Wheel: Zoom | DELETE key: Delete selected object</div>
-        <div>Objects spawn randomly on any wall and automatically avoid collisions</div>
-        <div :style="{ fontSize: '10px', marginTop: '2px', opacity: '0.8' }">
-          Smart wall hiding enabled • Walls auto-hide for clear view • Toggle in room settings
+      <!-- Read Instructions Button -->
+      <button
+          @click="showInstructions = true"
+          :style="readInstructionsButtonStyle"
+      >
+        <span>📖</span>
+        <span>Read Instructions</span>
+      </button>
+    </div>
+
+    <!-- Instructions Popup -->
+    <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
+      <div :style="popupContentStyle" @click.stop>
+        <!-- Close Button -->
+        <button
+            @click="closeInstructions"
+            :style="closeButtonStyle"
+        >
+          ✕
+        </button>
+
+        <!-- Instructions Content -->
+        <h2 :style="{ marginTop: '0', marginBottom: '20px', color: '#333', fontSize: '24px' }">
+          🏠 Bathroom Planner Instructions
+        </h2>
+
+        <div :style="instructionsContentStyle">
+          <div :style="sectionStyle">
+            <h3 :style="sectionHeaderStyle">🖱️ Controls</h3>
+            <div v-if="isMobileDevice">
+              <p><strong>Touch + drag:</strong> Move objects along walls</p>
+              <p><strong>Two finger pinch:</strong> Zoom in/out</p>
+              <p><strong>Double tap:</strong> Delete selected object</p>
+              <p><strong>Single tap:</strong> Select object</p>
+            </div>
+            <div v-else>
+              <p><strong>Left click + drag:</strong> Move objects along walls</p>
+              <p><strong>Right click + drag:</strong> Rotate objects</p>
+              <p><strong>Ctrl + drag:</strong> Adjust object height</p>
+              <p><strong>Alt + drag:</strong> Scale/Resize objects</p>
+              <p><strong>Left click empty space:</strong> Rotate camera view</p>
+              <p><strong>Mouse wheel:</strong> Zoom In/Out</p>
+              <p><strong>DELETE key:</strong> Delete selected object</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -149,10 +182,9 @@ const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
 const showGrid = ref(false)
 const wallCullingEnabled = ref(true)
-
+const showInstructions = ref(false)
 
 // Update your App.vue canvasContainerStyle computed property:
-
 const canvasContainerStyle = computed(() => {
   // On mobile, always use full width since sidebar is overlay
   if (isMobileDevice.value) {
@@ -179,7 +211,6 @@ const canvasContainerStyle = computed(() => {
     overflow: 'hidden'
   }
 })
-
 
 // ADD: Track when items are updated programmatically vs drag operations
 const lastUpdateSource = ref('initial')
@@ -212,18 +243,108 @@ const toggleButtonStyle = computed(() => ({
 }))
 
 // NEW: Canvas container style that positions it on the right side
-
 const helpTextStyle = computed(() => ({
   position: 'absolute',
-  bottom: '10px',
+  bottom: '30px',
   right: '10px', // Changed from left to right
   color: 'white',
-  background: 'rgba(0,0,0,0.5)',
   padding: '5px 10px',
   borderRadius: '4px',
-  fontSize: isMobileDevice.value ? '10px' : '12px',
+  fontSize: isMobileDevice.value ? '16px' : '20px',
   maxWidth: isMobileDevice.value ? '280px' : '320px',
   lineHeight: '1.2'
+}))
+
+const readInstructionsButtonStyle = computed(() => ({
+  marginTop: '10px',
+  padding: '8px 16px',
+  backgroundColor: 'rgba(59, 130, 246, 0.9)', // Blue background
+  color: '#ffffff',
+  border: '1px solid rgba(59, 130, 246, 0.8)',
+  borderRadius: '6px',
+  cursor: 'pointer',
+  fontSize: '12px',
+  fontWeight: '600',
+  transition: 'all 0.3s ease',
+  backdropFilter: 'blur(8px)',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  width: 'fit-content',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+  '&:hover': {
+    backgroundColor: 'rgba(37, 99, 235, 0.95)',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+  }
+}))
+
+const popupOverlayStyle = computed(() => ({
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  width: '100vw',
+  height: '100vh',
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10000,
+  backdropFilter: 'blur(3px)'
+}))
+
+const popupContentStyle = computed(() => ({
+  backgroundColor: '#fff',
+  padding: '30px',
+  borderRadius: '12px',
+  maxWidth: isMobileDevice.value ? '90vw' : '600px',
+  maxHeight: isMobileDevice.value ? '85vh' : '80vh',
+  overflowY: 'auto',
+  position: 'relative',
+  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+  border: '1px solid #e0e0e0'
+}))
+
+const closeButtonStyle = computed(() => ({
+  position: 'absolute',
+  top: isMobileDevice.value ? '15px' : '6px',
+  right: isMobileDevice.value ? '15px' : '6px',
+  paddingRight: isMobileDevice.value ? '0' : '1px',
+  paddingTop: isMobileDevice.value ? '1px' : '0',
+  width: '29px',
+  height: '29px',
+  backgroundColor: '#29275B',
+  color: 'white',
+  border: 'none',
+  borderRadius: '50%',
+  cursor: 'pointer',
+  fontSize: '16px',
+  fontWeight: 'bold',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'all 0.2s ease',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+}))
+
+const instructionsContentStyle = computed(() => ({
+  lineHeight: '1.6',
+  color: '#555',
+  fontSize: '14px'
+}))
+
+const sectionStyle = computed(() => ({
+  marginBottom: '25px',
+  paddingBottom: '15px',
+  borderBottom: '1px solid #f0f0f0'
+}))
+
+const sectionHeaderStyle = computed(() => ({
+  color: '#2c3e50',
+  fontSize: '18px',
+  marginBottom: '12px',
+  fontWeight: '600'
 }))
 
 // Watch for room size changes to update refs
@@ -370,6 +491,10 @@ const constrainObjects = () => {
   const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value)
   items.value = constrainedItems
   lastUpdateSource.value = 'constrain'
+}
+
+const closeInstructions = () => {
+  showInstructions.value = false
 }
 
 // NEW: Custom setItems function that tracks update source
@@ -519,6 +644,7 @@ const handleClearAll = () => {
 }
 
 </script>
+
 
 <style scoped>
 /* Add any component-specific styles here */
