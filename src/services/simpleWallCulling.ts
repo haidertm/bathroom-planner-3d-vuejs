@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // Type definitions
 type WallDirection = 'north' | 'south' | 'east' | 'west';
@@ -20,7 +20,7 @@ export class SimpleWallCulling {
   private roomSize: RoomSize;
   private wallMap: Map<THREE.Mesh, WallDirection>;
 
-  constructor() {
+  constructor () {
     this.walls = [];
     this.camera = null;
     this.enabled = true;
@@ -28,13 +28,13 @@ export class SimpleWallCulling {
     this.wallMap = new Map<THREE.Mesh, WallDirection>();
   }
 
-  initialize(walls: THREE.Mesh[], camera: THREE.Camera): void {
+  initialize (walls: THREE.Mesh[], camera: THREE.Camera): void {
     this.walls = walls;
     this.camera = camera;
     this.identifyWalls();
   }
 
-  private identifyWalls(): void {
+  private identifyWalls (): void {
     // Clear the map
     this.wallMap.clear();
 
@@ -68,14 +68,14 @@ export class SimpleWallCulling {
     ));
   }
 
-  setEnabled(enabled: boolean): void {
+  setEnabled (enabled: boolean): void {
     this.enabled = enabled;
     if (!enabled) {
       this.showAllWalls();
     }
   }
 
-  private showAllWalls(): void {
+  private showAllWalls (): void {
     this.walls.forEach((wall: THREE.Mesh) => {
       wall.visible = true;
       // Reset material if it was made transparent
@@ -96,7 +96,7 @@ export class SimpleWallCulling {
     });
   }
 
-  updateRoomSize(width: number, height: number): void {
+  updateRoomSize (width: number, height: number): void {
     this.roomSize = { width, height };
     // Re-identify walls with new size
     if (this.walls.length > 0) {
@@ -104,7 +104,7 @@ export class SimpleWallCulling {
     }
   }
 
-  updateWallVisibility(): void {
+  updateWallVisibility (): void {
     if (!this.enabled || !this.camera) return;
 
     // First, show all walls
@@ -151,9 +151,8 @@ export class SimpleWallCulling {
     });
 
     // Hide the identified walls completely
-    wallsToHide.forEach(({ wall, direction }: WallToHide) => {
+    wallsToHide.forEach(({ wall }: WallToHide) => {
       wall.visible = false;
-      // console.log(`Hiding ${direction} wall - visible: ${wall.visible}`);
     });
 
     // // Debug: Log current wall states
@@ -167,39 +166,43 @@ export class SimpleWallCulling {
     // }
   }
 
-  dispose(): void {
+  dispose (): void {
     this.walls = [];
     this.camera = null;
     this.wallMap.clear();
   }
 
   // Additional utility methods for better functionality
-  getWallCount(): number {
+  getWallCount (): number {
     return this.walls.length;
   }
 
-  getVisibleWalls(): THREE.Mesh[] {
+  getVisibleWalls (): THREE.Mesh[] {
     return this.walls.filter(wall => wall.visible);
   }
 
-  getHiddenWalls(): THREE.Mesh[] {
+  getHiddenWalls (): THREE.Mesh[] {
     return this.walls.filter(wall => !wall.visible);
   }
 
-  getWallDirection(wall: THREE.Mesh): WallDirection | undefined {
+  getWallDirection (wall: THREE.Mesh): WallDirection | undefined {
     return this.wallMap.get(wall);
   }
 
-  getRoomSize(): RoomSize {
+  getRoomSize (): RoomSize {
     return { ...this.roomSize };
   }
 
-  isWallVisible(wall: THREE.Mesh): boolean {
+  isWallVisible (wall: THREE.Mesh): boolean {
     return wall.visible;
   }
 
   // Debug method to get wall visibility status
-  getWallVisibilityStatus(): Array<{ direction: WallDirection; visible: boolean; position: { x: number; z: number } }> {
+  getWallVisibilityStatus (): Array<{
+    direction: WallDirection;
+    visible: boolean;
+    position: { x: number; z: number }
+  }> {
     return Array.from(this.wallMap.entries()).map(([wall, direction]) => ({
       direction,
       visible: wall.visible,
