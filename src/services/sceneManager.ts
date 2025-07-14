@@ -165,12 +165,12 @@ export class SceneManager {
     this.lights = [];
 
     // 1. Bright ambient light - creates that "well-lit room" base
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Back to original
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // Increased from 0.8
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
 
     // 2. Main ceiling light - bright overhead illumination
-    const mainCeilingLight = new THREE.PointLight(0xffffff, 1.2, 25); // Back to original
+    const mainCeilingLight = new THREE.PointLight(0xffffff, 2.0, 30); // Back to original
     mainCeilingLight.position.set(0, 2.8, 0);
     mainCeilingLight.castShadow = true;
     mainCeilingLight.shadow.mapSize.width = 2048;
@@ -183,7 +183,7 @@ export class SceneManager {
     this.lights.push(mainCeilingLight);
 
     // 3. Additional ceiling lights for even coverage
-    const ceilingLight1 = new THREE.PointLight(0xffffff, 0.8, 15); // Back to original
+    const ceilingLight1 = new THREE.PointLight(0xffffff, 1.4, 18); // Increased from 0.8
     ceilingLight1.position.set(1.5, 2.8, 1.5);
     ceilingLight1.castShadow = true;
     ceilingLight1.shadow.mapSize.width = 1024;
@@ -194,7 +194,7 @@ export class SceneManager {
     this.scene.add(ceilingLight1);
     this.lights.push(ceilingLight1);
 
-    const ceilingLight2 = new THREE.PointLight(0xffffff, 0.8, 15); // Back to original
+    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 18); // Back to original
     ceilingLight2.position.set(-1.5, 2.8, -1.5);
     ceilingLight2.castShadow = true;
     ceilingLight2.shadow.mapSize.width = 1024;
@@ -205,8 +205,31 @@ export class SceneManager {
     this.scene.add(ceilingLight2);
     this.lights.push(ceilingLight2);
 
-    // 4. Soft directional light from above - simulates natural light
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.4); // Back to original
+    // 4. MORE ceiling lights for corner coverage
+    const ceilingLight3 = new THREE.PointLight(0xffffff, 1.2, 16);
+    ceilingLight3.position.set(1.5, 2.8, -1.5);
+    ceilingLight3.castShadow = true;
+    ceilingLight3.shadow.mapSize.width = 1024;
+    ceilingLight3.shadow.mapSize.height = 1024;
+    ceilingLight3.shadow.camera.near = 0.1;
+    ceilingLight3.shadow.camera.far = 15;
+
+    this.scene.add(ceilingLight3);
+    this.lights.push(ceilingLight3);
+
+    const ceilingLight4 = new THREE.PointLight(0xffffff, 1.2, 16);
+    ceilingLight4.position.set(-1.5, 2.8, 1.5);
+    ceilingLight4.castShadow = true;
+    ceilingLight4.shadow.mapSize.width = 1024;
+    ceilingLight4.shadow.mapSize.height = 1024;
+    ceilingLight4.shadow.camera.near = 0.1;
+    ceilingLight4.shadow.camera.far = 15;
+
+    this.scene.add(ceilingLight4);
+    this.lights.push(ceilingLight4);
+
+    // 5. Brighter directional light from above - simulates natural light
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.8);
     topLight.position.set(0, 10, 2);
     topLight.castShadow = true;
     topLight.shadow.mapSize.width = 2048;
@@ -222,11 +245,39 @@ export class SceneManager {
     this.scene.add(topLight);
     this.lights.push(topLight);
 
-    // 5. Fill light to reduce harsh shadows
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.2); // Back to original
+    // 6. Multiple fill lights to reduce harsh shadows
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.5); // Back to original
     fillLight.position.set(-5, 8, -5);
     this.scene.add(fillLight);
     this.lights.push(fillLight);
+
+    const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    fillLight2.position.set(5, 8, 5);
+    this.scene.add(fillLight2);
+    this.lights.push(fillLight2);
+
+    const fillLight3 = new THREE.DirectionalLight(0xffffff, 0.3);
+    fillLight3.position.set(-5, 8, 5);
+    this.scene.add(fillLight3);
+    this.lights.push(fillLight3);
+
+    // 7. Side rim lights for better object definition
+    const rimLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
+    rimLight1.position.set(8, 5, 0);
+    this.scene.add(rimLight1);
+    this.lights.push(rimLight1);
+
+    const rimLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+    rimLight2.position.set(-8, 5, 0);
+    this.scene.add(rimLight2);
+    this.lights.push(rimLight2);
+
+    // 8. Additional ambient fill from below (subtle floor bounce)
+    const floorBounce = new THREE.HemisphereLight(0xffffff, 0xf0f0f0, 0.4);
+    floorBounce.position.set(0, -1, 0);
+    this.scene.add(floorBounce);
+    this.lights.push(floorBounce);
+
   }
 
   updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
@@ -245,9 +296,9 @@ export class SceneManager {
     const material = textureManager.createTexturedMaterial(floorTexture);
 
     // Enhanced floor material properties
-    material.roughness = 0.3;
-    material.metalness = 0.05;
-    material.envMapIntensity = 0.8;
+    material.roughness = 0.05;
+    material.metalness = 0.02;
+    material.envMapIntensity = 1.0;
 
     return material;
   }
