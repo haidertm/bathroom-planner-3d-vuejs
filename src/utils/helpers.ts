@@ -32,30 +32,35 @@ const isMesh = (obj: THREE.Object3D): obj is THREE.Mesh => {
   return obj.type === 'Mesh';
 };
 
-// Type guard to check if material has emissive property
-const hasEmissive = (material: THREE.Material): material is THREE.Material & { emissive: THREE.Color } => {
-  return 'emissive' in material;
+// Store reference to outline pass for external access
+let outlinePassRef: any = null;
+
+export const setOutlinePass = (outlinePass: any) => {
+  outlinePassRef = outlinePass;
 };
 
-// Helper function to process a single material
-const processMaterial = (material: THREE.Material, highlight: boolean): THREE.Material => {
-  const clonedMaterial = material.clone();
-  if (hasEmissive(clonedMaterial)) {
-    clonedMaterial.emissive.setHex(highlight ? 0x444444 : 0x000000);
-  }
-  return clonedMaterial;
-};
-
+// ChatGPT's outline approach - with OutputPass support
 export const highlightObject = (obj: THREE.Object3D | null, highlight: boolean): void => {
-  if (!obj) return;
+  if (!outlinePassRef) {
+    console.warn('OutlinePass not initialized. Please call setOutlinePass first.');
+    return;
+  }
 
-  obj.traverse((child) => {
-    if (isMesh(child) && child.material) {
-      // Normalize to array, process, then assign back
-      const materials = Array.isArray(child.material) ? child.material : [child.material];
-      const processedMaterials = materials.map(material => processMaterial(material, highlight));
+  if (highlight && obj) {
+    // Collect all meshes from the object
+    const meshes: THREE.Mesh[] = [];
+    obj.traverse((child) => {
+      if (isMesh(child)) {
+        meshes.push(child);
+      }
+    });
 
-      child.material = Array.isArray(child.material) ? processedMaterials : processedMaterials[0];
-    }
-  });
+    // Set selected objects for OutlinePass
+    outlinePassRef.selectedObjects = meshes;
+    console.log('🎯 OutlinePass selected objects:', meshes.length);
+  } else {
+    // Clear selection
+    outlinePassRef.selectedObjects = [];
+    console.log('⭕ OutlinePass selection cleared');
+  }
 };

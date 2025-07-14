@@ -543,6 +543,13 @@ onMounted(async () => {
   // Add event listeners
   eventHandlersRef.value.addEventListeners()
 
+  // Add window resize handler for post-processing
+  window.addEventListener('resize', () => {
+    if (sceneManagerRef.value) {
+      sceneManagerRef.value.updateComposerSize();
+    }
+  })
+
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
 
@@ -597,6 +604,13 @@ onUnmounted(() => {
   if (eventHandlersRef.value) {
     eventHandlersRef.value.removeEventListeners()
   }
+
+  // Remove resize listener
+  window.removeEventListener('resize', () => {
+    if (sceneManagerRef.value) {
+      sceneManagerRef.value.updateComposerSize();
+    }
+  })
 
   if (mountRef.value && sceneManagerRef.value) {
     const renderer = sceneManagerRef.value.renderer
