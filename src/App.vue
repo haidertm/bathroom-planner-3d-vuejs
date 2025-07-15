@@ -19,7 +19,7 @@ const router = useRouter()
 const handleSaveDesign = () => {
   // Emit event to the current route component
   const currentRoute = router.currentRoute.value
-  if (currentRoute.name === 'Home') {
+  if (currentRoute.name === 'Planner') {
     // Trigger save design functionality
     const event = new CustomEvent('header-save-design')
     window.dispatchEvent(event)
