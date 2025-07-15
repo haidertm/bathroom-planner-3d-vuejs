@@ -57,8 +57,8 @@ export interface HeightLimits {
 
 export const HEIGHT_LIMITS: HeightLimits = {
   MIN: 0,
-  MAX: 1.5,
-  MIRROR_MAX: 2.5
+  MAX: 150,
+  MIRROR_MAX: 250
 } as const;
 
 // Add model dimensions for better constraint handling

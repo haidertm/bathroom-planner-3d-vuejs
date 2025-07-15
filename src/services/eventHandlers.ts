@@ -16,7 +16,6 @@ interface UpdateData {
   position?: [number, number, number];
   rotation?: number;
   scale?: number;
-
   [key: string]: any;
 }
 
@@ -60,7 +59,7 @@ export class EventHandlers {
   private mouseX: number;
   private mouseY: number;
 
-  // NEW: Store original position for collision snap-back
+  // Store original position for collision snap-back
   private originalDragPosition: THREE.Vector3;
   private originalDragRotation: number;
 
@@ -140,6 +139,8 @@ export class EventHandlers {
     this.handleTouchEnd = this.handleTouchEnd.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
+    // 🔧 FIX: Bind the new visibility change handler
+    this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
   }
 
   // Method to get current items for collision detection
@@ -326,6 +327,15 @@ export class EventHandlers {
     const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
     this.mouse.set(mousePos.x, mousePos.y);
 
+    // 🔧 FIX: Safety check - if no mouse buttons are pressed, stop dragging
+    if (event.buttons === 0) {
+      if (this.isDragging || this.isRotating || this.isObjectRotating || this.isHeightAdjusting || this.isScaling) {
+        console.log('🛑 No mouse buttons pressed, stopping drag operations');
+        this.stopAllDragOperations();
+        return;
+      }
+    }
+
     if (this.isScaling && this.selectedObject) {
       // Scale object - UPDATED SCALING FACTOR FOR CENTIMETERS
       const deltaY = (this.mouseStartY - event.clientY) * 0.001; // Reduced from 0.01 to 0.001
@@ -343,7 +353,7 @@ export class EventHandlers {
       let newY = this.heightStartY + deltaY;
 
       const minHeight = HEIGHT_LIMITS.MIN;
-      const maxHeight = this.selectedObject.userData.type === 'Mirror' ? HEIGHT_LIMITS.MIRROR_MAX * 100 : HEIGHT_LIMITS.MAX * 100; // Convert to cm
+      const maxHeight = this.selectedObject.userData.type === 'Mirror' ? HEIGHT_LIMITS.MIRROR_MAX : HEIGHT_LIMITS.MAX;
       newY = Math.max(minHeight, Math.min(maxHeight, newY));
 
       this.selectedObject.position.y = newY;
@@ -467,7 +477,7 @@ export class EventHandlers {
       const spherical = new THREE.Spherical();
       spherical.setFromVector3(this.camera.position);
       spherical.theta -= deltaX * 0.01;
-      spherical.phi += deltaY * 0.01;
+      spherical.phi -= deltaY * 0.01;
 
       // Constrain phi to prevent camera from going below floor
       // phi = 0 is looking straight down from above
@@ -876,12 +886,51 @@ export class EventHandlers {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
+  // 🔧 FIX: Add visibility change handler to stop dragging when tab loses focus
+  private handleVisibilityChange (): void {
+    if (document.hidden) {
+      // Tab is hidden, stop all drag operations
+      this.stopAllDragOperations();
+    }
+  }
+
+  // 🔧 FIX: Helper method to stop all drag operations
+  private stopAllDragOperations(): void {
+    // Apply any pending updates before stopping
+    if (this.isDragOperation) {
+      this.applyPendingUpdates();
+      this.isDragOperation = false;
+    }
+
+    // Clear all drag states
+    this.isDragging = false;
+    this.isRotating = false;
+    this.isObjectRotating = false;
+    this.isHeightAdjusting = false;
+    this.isScaling = false;
+
+    // Reset cursor
+    this.renderer.domElement.style.cursor = 'default';
+
+    // Log for debugging
+    console.log('🛑 All drag operations stopped');
+  }
+
   public addEventListeners (): void {
     this.renderer.domElement.addEventListener('mousedown', this.handleMouseDown);
     this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
     this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
     this.renderer.domElement.addEventListener('contextmenu', this.handleContextMenu);
     this.renderer.domElement.addEventListener('wheel', this.handleWheel);
+
+    // 🔧 FIX: Add mouse leave event to stop dragging when cursor leaves canvas
+    this.renderer.domElement.addEventListener('mouseleave', this.handleMouseUp);
+
+    // 🔧 FIX: Add global mouseup listener to catch mouseup events outside canvas
+    document.addEventListener('mouseup', this.handleMouseUp);
+
+    // 🔧 FIX: Add visibility change listener to stop dragging when tab loses focus
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
 
     // Add keyboard event listener for delete functionality
     document.addEventListener('keydown', this.handleKeyDown);
@@ -890,6 +939,9 @@ export class EventHandlers {
       this.renderer.domElement.addEventListener('touchstart', this.handleTouchStart, { passive: false });
       this.renderer.domElement.addEventListener('touchmove', this.handleTouchMove, { passive: false });
       this.renderer.domElement.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+
+      // 🔧 FIX: Add touch cancel event for mobile
+      this.renderer.domElement.addEventListener('touchcancel', this.handleTouchEnd, { passive: false });
     }
 
     window.addEventListener('resize', this.handleResize);
@@ -902,6 +954,11 @@ export class EventHandlers {
     this.renderer.domElement.removeEventListener('contextmenu', this.handleContextMenu);
     this.renderer.domElement.removeEventListener('wheel', this.handleWheel);
 
+    // 🔧 FIX: Remove additional mouse event listeners
+    this.renderer.domElement.removeEventListener('mouseleave', this.handleMouseUp);
+    document.removeEventListener('mouseup', this.handleMouseUp);
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+
     // Remove keyboard event listener
     document.removeEventListener('keydown', this.handleKeyDown);
 
@@ -909,6 +966,7 @@ export class EventHandlers {
       this.renderer.domElement.removeEventListener('touchstart', this.handleTouchStart);
       this.renderer.domElement.removeEventListener('touchmove', this.handleTouchMove);
       this.renderer.domElement.removeEventListener('touchend', this.handleTouchEnd);
+      this.renderer.domElement.removeEventListener('touchcancel', this.handleTouchEnd);
     }
 
     window.removeEventListener('resize', this.handleResize);
@@ -922,7 +980,7 @@ export class EventHandlers {
   public clearSelection (): void {
     if (this.selectedObject) {
       highlightObject(this.selectedObject, false);
-      setOutlineColor(false); // Reset to normal color when clearing selection
+      setOutlineColor(false);
       this.selectedObject = null;
     }
   }

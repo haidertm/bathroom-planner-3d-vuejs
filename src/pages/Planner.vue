@@ -1,6 +1,11 @@
 <template>
   <div :style="{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }">
-    <sidebar
+    <Header
+        logo="./assets/logo.svg"
+        backgroundColor="#fff"
+        logoHeight="45px"
+    />
+    <Sidebar
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
         @wall-change="handleWallChange"
@@ -125,6 +130,7 @@ import { isMobile } from '../utils/helpers.ts'
 // Composables
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import Sidebar from "../components/ui/sidebar.vue";
+import Header from "../components/ui/Header.vue";
 
 // Router
 const router = useRouter()
@@ -150,13 +156,26 @@ const generateUniqueId = () => {
 // Default objects to load on page start - Properly oriented to face INTO room
 const getDefaultItems = () => {
   return [
-    {
-      id: 1003,
-      type: 'Door',
-      position: [0, 0, -2.95], // South wall
-      rotation: - Math.PI / 2, // Facing north (into room)
-      scale: 1.0
-    }
+    // {
+    //   id: 1003,
+    //   type: 'Door',
+    //   position: [0, 0, -2.95], // South wall
+    //   rotation: - Math.PI / 2, // Facing north (into room)
+    //   scale: 1.0
+    // },
+    // {
+    //   name: 'Door',
+    //   path: '/models/door.glb',
+    //   scale: 1.4,
+    //   orientation: {
+    //     type: 'flush_with_wall',
+    //     wallBuffer: 0.045, // Flush with wall - no gap
+    //     description: 'Door is part of wall opening'
+    //   },
+    //   fallbackColor: 0x8B4513,
+    //   fallbackGeometry: 'box',
+    //   fallbackSize: [0.1, 2.0, 0.8]
+    // }
   ]
 }
 
@@ -167,8 +186,9 @@ const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
-const showGrid = ref(false)
+const showGrid = ref(true)
 const wallCullingEnabled = ref(true)
+const preventCollisionPlacement = ref(true)
 
 // Update your App.vue canvasContainerStyle computed property:
 const canvasContainerStyle = computed(() => {

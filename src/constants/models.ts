@@ -134,7 +134,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   {
     name: 'Mirror',
     path: '/models/mirror.glb',
-    position: [0, -100, 0], // -120cm (was -1.2m)
+    position: [0, 0, 0], // -120cm (was -1.2m)
     orientation: {
       type: 'face_into_room',
       rotationOffset: Math.PI, // Flip the mirror 180 degrees
