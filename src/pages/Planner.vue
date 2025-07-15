@@ -29,7 +29,6 @@
     >
       🎨 Textures
     </button>
-
     <UndoRedoPanel
         @undo="handleUndo"
         @redo="handleRedo"
@@ -229,6 +228,7 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
+// NEW: Canvas container style that positions it on the right side
 const helpTextStyle = computed(() => ({
   position: 'absolute',
   bottom: '30px',
@@ -258,7 +258,12 @@ const readInstructionsButtonStyle = computed(() => ({
   gap: '6px',
   width: 'fit-content',
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+  '&:hover': {
+    backgroundColor: 'rgba(37, 99, 235, 0.95)',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+  }
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -328,89 +333,11 @@ const sectionHeaderStyle = computed(() => ({
   fontWeight: '600'
 }))
 
-const myDesignsButtonStyle = computed(() => ({
-  position: 'absolute',
-  top: isMobileDevice.value ? '130px' : '120px',
-  left: '10px',
-  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  padding: '12px 16px',
-  borderRadius: '8px',
-  border: '1px solid #ccc',
-  cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '13px' : '14px',
-  fontWeight: '500',
-  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-  backdropFilter: 'blur(10px)',
-  zIndex: 1000,
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  whiteSpace: 'nowrap'
-}))
-
-const saveDesignButtonStyle = computed(() => ({
-  position: 'absolute',
-  top: isMobileDevice.value ? '180px' : '170px',
-  left: '10px',
-  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  padding: '12px 16px',
-  borderRadius: '8px',
-  border: '1px solid #ccc',
-  cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '13px' : '14px',
-  fontWeight: '500',
-  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
-  backdropFilter: 'blur(10px)',
-  zIndex: 1000,
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  whiteSpace: 'nowrap'
-}))
-
 // Watch for room size changes to update refs
 watch([roomWidth, roomHeight], ([newWidth, newHeight]) => {
   roomWidthRef.value = newWidth
   roomHeightRef.value = newHeight
 })
-
-// ADD THIS: Missing function to close instructions
-const closeInstructions = () => {
-  showInstructions.value = false
-}
-
-// Navigation functions - REMOVED goToMyDesigns since it's now in header
-
-const saveCurrentDesign = () => {
-  const designName = prompt('Enter a name for your design:')
-  if (!designName) return
-
-  const design = {
-    id: Date.now(),
-    name: designName,
-    description: `${items.value.length} items bathroom design`,
-    roomWidth: roomWidth.value,
-    roomHeight: roomHeight.value,
-    itemCount: items.value.length,
-    createdAt: new Date(),
-    items: items.value,
-    floorTexture: currentFloorTexture.value,
-    wallTexture: currentWallTexture.value
-  }
-
-  // Get existing designs from localStorage
-  const existingDesigns = JSON.parse(localStorage.getItem('bathroom-designs') || '[]')
-
-  // Add new design
-  existingDesigns.push(design)
-
-  // Save back to localStorage
-  localStorage.setItem('bathroom-designs', JSON.stringify(existingDesigns))
-
-  alert('Design saved successfully!')
-}
 
 // Room size change handler
 const handleRoomSizeChange = (newWidth, newHeight) => {
@@ -552,6 +479,10 @@ const constrainObjects = () => {
   lastUpdateSource.value = 'constrain'
 }
 
+const closeInstructions = () => {
+  showInstructions.value = false
+}
+
 // NEW: Custom setItems function that tracks update source
 const setItems = (updaterOrArray) => {
   if (typeof updaterOrArray === 'function') {
@@ -564,37 +495,13 @@ const setItems = (updaterOrArray) => {
   lastUpdateSource.value = 'drag'
 }
 
-// Check for design to load from My Designs page
+// NEW: Custom getItems function for collision detection
+const getItems = () => {
+  return items.value
+}
+
+// Initialize scene
 onMounted(async () => {
-  // Listen for save design event from header
-  const handleHeaderSaveDesign = () => {
-    saveCurrentDesign()
-  }
-  window.addEventListener('header-save-design', handleHeaderSaveDesign)
-
-  // Clean up event listener
-  onUnmounted(() => {
-    window.removeEventListener('header-save-design', handleHeaderSaveDesign)
-  })
-
-  // Check if there's a design to load
-  const designToLoad = localStorage.getItem('design-to-load')
-  if (designToLoad) {
-    const design = JSON.parse(designToLoad)
-
-    // Load the design
-    items.value = design.items
-    roomWidth.value = design.roomWidth
-    roomHeight.value = design.roomHeight
-    currentFloorTexture.value = design.floorTexture || DEFAULT_FLOOR_TEXTURE
-    currentWallTexture.value = design.wallTexture || DEFAULT_WALL_TEXTURE
-
-    // Clear the design to load
-    localStorage.removeItem('design-to-load')
-
-    console.log('Loaded design:', design.name)
-  }
-
   // Initialize scene manager
   const sceneManager = markRaw(new SceneManager())
   sceneManagerRef.value = sceneManager
@@ -608,6 +515,7 @@ onMounted(async () => {
       roomWidthRef,
       roomHeightRef,
       setItems, // Use our custom setItems function
+      getItems, // Use our custom getItems function
       deleteItem
   ))
 
@@ -726,7 +634,9 @@ const handleClearAll = () => {
 
   console.log('🧹 All items cleared from bathroom planner')
 }
+
 </script>
+
 
 <style scoped>
 /* Add any component-specific styles here */
