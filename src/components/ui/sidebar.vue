@@ -124,6 +124,21 @@
             </div>
 
             <div :style="controlGroupStyle">
+              <label :style="checkboxLabelStyle">
+                <input
+                    type="checkbox"
+                    :checked="preventCollisionPlacement"
+                    @change="$emit('toggle-collision-prevention', $event.target.checked)"
+                    :style="checkboxStyle"
+                />
+                Prevent Collision Placement
+              </label>
+              <div :style="helpTextStyle">
+                When enabled, objects will snap back to their original position if placed on top of another object.
+              </div>
+            </div>
+
+            <div :style="controlGroupStyle">
               <button
                   @click="$emit('constrain-objects')"
                   :style="buttonStyle"
@@ -253,11 +268,25 @@ const props = defineProps({
   wallCullingEnabled: {
     type: Boolean,
     required: true
+  },
+  preventCollisionPlacement: {
+    type: Boolean,
+    required: true
   }
 })
 
 // Define emits
-const emit = defineEmits(['floor-change', 'wall-change', 'close', 'add', 'room-size-change', 'toggle-grid', 'constrain-objects', 'toggle-wall-culling'])
+const emit = defineEmits([
+  'floor-change',
+  'wall-change',
+  'close',
+  'add',
+  'room-size-change',
+  'toggle-grid',
+  'constrain-objects',
+  'toggle-wall-culling',
+  'toggle-collision-prevention'
+])
 
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
@@ -432,6 +461,14 @@ const checkboxLabelStyle = computed(() => ({
   color: '#666',
   cursor: 'pointer',
   fontFamily: 'Arial, sans-serif'
+}))
+
+const helpTextStyle = computed(() => ({
+  fontSize: '12px',
+  color: '#a0aec0',
+  marginTop: '4px',
+  marginLeft: '24px',
+  lineHeight: '1.4'
 }))
 
 const sliderStyle = computed(() => ({
@@ -720,10 +757,10 @@ const getTextureButtonStyle = (texture, isActive) => ({
 const getTexturePreviewStyle = (texture) => ({
   width: '100%',
   height: isMobileDevice.value ? '35px' : '45px',
-  backgroundColor: `#${texture.color.toString(16).padStart(6, '0')}`,
+  backgroundColor: `#${ texture.color.toString(16).padStart(6, '0') }`,
   borderRadius: '4px',
   border: '1px solid #e5e7eb',
-  backgroundImage: texture.file ? `url(${texture.file})` : 'none',
+  backgroundImage: texture.file ? `url(${ texture.file })` : 'none',
   backgroundSize: 'cover',
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'center'

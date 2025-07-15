@@ -150,13 +150,13 @@ const generateUniqueId = () => {
 // Default objects to load on page start - Properly oriented to face INTO room
 const getDefaultItems = () => {
   return [
-    {
-      id: 1003,
-      type: 'Door',
-      position: [0, 0, -2.95], // South wall
-      rotation: - Math.PI / 2, // Facing north (into room)
-      scale: 1.0
-    },
+    // {
+    //   id: 1003,
+    //   type: 'Door',
+    //   position: [0, 0, -2.95], // South wall
+    //   rotation: - Math.PI / 2, // Facing north (into room)
+    //   scale: 1.0
+    // },
     // {
     //   name: 'Door',
     //   path: '/models/door.glb',
@@ -180,8 +180,9 @@ const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
-const showGrid = ref(false)
+const showGrid = ref(true)
 const wallCullingEnabled = ref(true)
+const preventCollisionPlacement = ref(true)
 const showInstructions = ref(false)
 
 // Update your App.vue canvasContainerStyle computed property:

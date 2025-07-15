@@ -5,6 +5,7 @@ import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightOb
 import { constrainToWalls, snapToNearestWall, wouldCollideWithExisting, type BathroomItem } from '../utils/constraints';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
+import { LOOK_AT } from '../constants/camera';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -34,9 +35,10 @@ export class EventHandlers {
   private setItems: SetItemsFunction;
   private getItems: GetItemsFunction;
   private deleteItem: DeleteItemFunction;
+  private preventCollisionPlacementRef: Ref<boolean>; // NEW: Collision prevention setting
 
-  // Camera constraints - ADD THESE NEW PROPERTIES
-  private readonly MIN_CAMERA_HEIGHT = 0.5; // Minimum height above floor
+  // Camera constraints - UPDATED FOR CENTIMETERS
+  private readonly MIN_CAMERA_HEIGHT = 50; // 50cm minimum height above floor
   private readonly MAX_PHI_ANGLE = Math.PI / 2 - 0.1; // Slightly less than horizontal to stay above floor
 
   // Interaction state
@@ -58,6 +60,10 @@ export class EventHandlers {
   private mouseX: number;
   private mouseY: number;
 
+  // NEW: Store original position for collision snap-back
+  private originalDragPosition: THREE.Vector3;
+  private originalDragRotation: number;
+
   // Touch variables
   private lastTouchDistance: number;
   private lastTouchTime: number;
@@ -77,7 +83,8 @@ export class EventHandlers {
     roomHeightRef: Ref<number>,
     setItems: SetItemsFunction,
     getItems: GetItemsFunction,
-    deleteItem: DeleteItemFunction
+    deleteItem: DeleteItemFunction,
+    preventCollisionPlacementRef: Ref<boolean> // NEW: Accept collision prevention setting
   ) {
     // Assign core objects
     this.scene = scene;
@@ -88,6 +95,7 @@ export class EventHandlers {
     this.setItems = setItems;
     this.getItems = getItems;
     this.deleteItem = deleteItem;
+    this.preventCollisionPlacementRef = preventCollisionPlacementRef; // NEW: Store collision prevention setting
 
     // Initialize interaction state
     this.raycaster = new THREE.Raycaster();
@@ -107,6 +115,10 @@ export class EventHandlers {
     this.mouseStartY = 0;
     this.mouseX = 0;
     this.mouseY = 0;
+
+    // NEW: Initialize original position tracking
+    this.originalDragPosition = new THREE.Vector3();
+    this.originalDragRotation = 0;
 
     // Initialize touch variables
     this.lastTouchDistance = 0;
@@ -290,6 +302,11 @@ export class EventHandlers {
       } else { // Left click for dragging
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+
+        // NEW: Store original position for potential snap-back
+        this.originalDragPosition.copy(this.selectedObject.position);
+        this.originalDragRotation = this.selectedObject.rotation.y;
+
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
@@ -310,8 +327,8 @@ export class EventHandlers {
     this.mouse.set(mousePos.x, mousePos.y);
 
     if (this.isScaling && this.selectedObject) {
-      // Scale object
-      const deltaY = (this.mouseStartY - event.clientY) * 0.01;
+      // Scale object - UPDATED SCALING FACTOR FOR CENTIMETERS
+      const deltaY = (this.mouseStartY - event.clientY) * 0.001; // Reduced from 0.01 to 0.001
       const newScale = Math.max(SCALE_LIMITS.MIN, Math.min(SCALE_LIMITS.MAX, this.scaleStart + deltaY));
 
       this.selectedObject.scale.set(newScale, newScale, newScale);
@@ -321,12 +338,12 @@ export class EventHandlers {
       this.queueUpdate(itemId, { scale: newScale });
 
     } else if (this.isHeightAdjusting && this.selectedObject) {
-      // Adjust object height
-      const deltaY = (this.mouseStartY - event.clientY) * 0.01;
+      // Adjust object height - UPDATED HEIGHT ADJUSTMENT FOR CENTIMETERS
+      const deltaY = (this.mouseStartY - event.clientY) * 1.0; // Increased from 0.01 to 1.0
       let newY = this.heightStartY + deltaY;
 
       const minHeight = HEIGHT_LIMITS.MIN;
-      const maxHeight = this.selectedObject.userData.type === 'Mirror' ? HEIGHT_LIMITS.MIRROR_MAX : HEIGHT_LIMITS.MAX;
+      const maxHeight = this.selectedObject.userData.type === 'Mirror' ? HEIGHT_LIMITS.MIRROR_MAX * 100 : HEIGHT_LIMITS.MAX * 100; // Convert to cm
       newY = Math.max(minHeight, Math.min(maxHeight, newY));
 
       this.selectedObject.position.y = newY;
@@ -469,7 +486,7 @@ export class EventHandlers {
         this.camera.position.setFromSpherical(spherical);
       }
 
-      this.camera.lookAt(0, 0, 0);
+      this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
 
       this.mouseX = event.clientX;
       this.mouseY = event.clientY;
@@ -491,7 +508,7 @@ export class EventHandlers {
       this.isDragOperation = false;
     }
 
-    // Check final collision state when drag ends and set appropriate color
+    // NEW: Handle collision prevention and snap-back logic
     if (this.isDragging && this.selectedObject) {
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
@@ -507,10 +524,42 @@ export class EventHandlers {
         currentItems
       );
 
-      // Set outline color based on final collision state
-      setOutlineColor(isColliding);
+      // NEW: Check if collision prevention is enabled and object is colliding
+      if (this.preventCollisionPlacementRef.value && isColliding) {
+        // Snap back to original position
+        this.selectedObject.position.copy(this.originalDragPosition);
+        this.selectedObject.rotation.y = this.originalDragRotation;
 
-      console.log('🎯 Final drag position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
+        // Update the data model with the original position
+        this.setItems((prevItems: BathroomItem[]) => {
+          return prevItems.map(item =>
+            item.id === itemId ? {
+              ...item,
+              position: [this.originalDragPosition.x, this.originalDragPosition.y, this.originalDragPosition.z],
+              rotation: this.originalDragRotation
+            } : item
+          );
+        });
+
+        // Set outline to normal color since we're back to non-colliding position
+        setOutlineColor(false);
+
+        console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
+        console.log('📍 Original position restored:', {
+          x: this.originalDragPosition.x.toFixed(3),
+          z: this.originalDragPosition.z.toFixed(3),
+          rotation: `${(this.originalDragRotation * 180 / Math.PI).toFixed(0)}°`
+        });
+      } else {
+        // Normal behavior: set outline color based on final collision state
+        setOutlineColor(isColliding);
+
+        console.log('🎯 Final drag position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
+
+        if (isColliding && this.preventCollisionPlacementRef.value) {
+          console.log('⚠️ Collision detected but placement allowed (prevention disabled)');
+        }
+      }
     }
 
     // Don't clear selection on mouse up - keep it selected for potential deletion
@@ -585,6 +634,10 @@ export class EventHandlers {
         this.selectedObject = intersected.object;
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+
+        // NEW: Store original position for potential snap-back
+        this.originalDragPosition.copy(this.selectedObject.position);
+        this.originalDragRotation = this.selectedObject.rotation.y;
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
@@ -730,7 +783,8 @@ export class EventHandlers {
           this.camera.position.setFromSpherical(spherical);
         }
 
-        this.camera.lookAt(0, 0, 0);
+        // this.camera.lookAt(0, 0, 0);
+        this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
 
         this.mouseX = touch.clientX;
         this.mouseY = touch.clientY;
@@ -740,10 +794,10 @@ export class EventHandlers {
       const scale = distance / this.lastTouchDistance;
 
       if (scale > 1.02) {
-        this.camera.position.multiplyScalar(0.95);
+        this.camera.position.multiplyScalar(0.98); // Reduced zoom speed
         this.lastTouchDistance = distance;
       } else if (scale < 0.98) {
-        this.camera.position.multiplyScalar(1.05);
+        this.camera.position.multiplyScalar(1.02); // Reduced zoom speed
         this.lastTouchDistance = distance;
       }
     }
@@ -758,7 +812,7 @@ export class EventHandlers {
       this.isDragOperation = false;
     }
 
-    // Check final collision state when touch drag ends and set appropriate color
+    // NEW: Handle collision prevention and snap-back logic for touch
     if (this.isDragging && this.selectedObject) {
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
@@ -774,10 +828,38 @@ export class EventHandlers {
         currentItems
       );
 
-      // Set outline color based on final collision state
-      setOutlineColor(isColliding);
+      // NEW: Check if collision prevention is enabled and object is colliding
+      if (this.preventCollisionPlacementRef.value && isColliding) {
+        // Snap back to original position
+        this.selectedObject.position.copy(this.originalDragPosition);
+        this.selectedObject.rotation.y = this.originalDragRotation;
 
-      console.log('🎯 Final touch position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
+        // Update the data model with the original position
+        this.setItems((prevItems: BathroomItem[]) => {
+          return prevItems.map(item =>
+            item.id === itemId ? {
+              ...item,
+              position: [this.originalDragPosition.x, this.originalDragPosition.y, this.originalDragPosition.z],
+              rotation: this.originalDragRotation
+            } : item
+          );
+        });
+
+        // Set outline to normal color since we're back to non-colliding position
+        setOutlineColor(false);
+
+        console.log('🔄 TOUCH SNAP BACK: Object returned to original position due to collision prevention');
+        console.log('📍 Original position restored:', {
+          x: this.originalDragPosition.x.toFixed(3),
+          z: this.originalDragPosition.z.toFixed(3),
+          rotation: `${(this.originalDragRotation * 180 / Math.PI).toFixed(0)}°`
+        });
+      } else {
+        // Normal behavior: set outline color based on final collision state
+        setOutlineColor(isColliding);
+
+        console.log('🎯 Final touch position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
+      }
     }
 
     // Don't clear selection on touch end - keep it selected for potential deletion
@@ -851,5 +933,10 @@ export class EventHandlers {
 
   public getPendingUpdatesCount (): number {
     return this.pendingUpdates.size;
+  }
+
+  // NEW: Utility method to check collision prevention status
+  public isCollisionPreventionEnabled (): boolean {
+    return this.preventCollisionPlacementRef.value;
   }
 }

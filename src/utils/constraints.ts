@@ -360,13 +360,13 @@ export const findFreeWallPosition = (
 
     if (!hasCollision) {
       const orientationInfo = getOrientationInfo(objectType);
-      console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
-        position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
-        wallBuffer: `${buffer.toFixed(3)}m`,
-        rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
-        orientation: orientationInfo.description,
-        attempt: attempt + 1
-      });
+console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
+  position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
+  wallBuffer: `${buffer.toFixed(3)}cm`, // Changed from 'm' to 'cm'
+  rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
+  orientation: orientationInfo.description,
+  attempt: attempt + 1
+});
       return { position, rotation: wall.rotation };
     }
   }

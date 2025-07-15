@@ -1,3 +1,5 @@
+//src/services/sceneManager.ts
+
 import * as THREE from 'three';
 import { createFloor, createWalls, createCustomGrid } from '../models/roomGeometry';
 import textureManager from './textureManager';
@@ -6,6 +8,7 @@ import { createModel } from '../models/bathroomFixtures';
 import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
+import { LOOK_AT, CAMERA_SETTINGS, CAMERA_CONTROLS, CAMERA_PRESETS } from '../constants/camera';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -42,27 +45,27 @@ export class SceneManager {
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
 
-  constructor() {
+  constructor () {
     this.wallCullingManager = new SimpleWallCulling();
     this.bathroomItemsGroup = new THREE.Group();
     this.bathroomItemsGroup.name = 'bathroomItems';
   }
 
-  initializeScene(): SceneComponents {
+  initializeScene (): SceneComponents {
     // Create scene with better background and atmosphere
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xf5f5f5);
-    this.scene.fog = new THREE.Fog(0xf5f5f5, 10, 50);
+    this.scene.fog = new THREE.Fog(0xf5f5f5, 1000, 5000);
 
     // Create camera with better positioning and settings
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    this.camera.position.set(0, 5, 9);
-    this.camera.lookAt(0, 0, 0);
+    this.camera = new THREE.PerspectiveCamera(CAMERA_SETTINGS.FOV, window.innerWidth / window.innerHeight, CAMERA_SETTINGS.NEAR, CAMERA_SETTINGS.FAR);
+    this.camera.position.set(CAMERA_SETTINGS.INITIAL_POSITION.x, CAMERA_SETTINGS.INITIAL_POSITION.y, CAMERA_SETTINGS.INITIAL_POSITION.z);
+    this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
 
     // Create renderer with enhanced settings
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
-      powerPreference: "high-performance"
+      powerPreference: 'high-performance'
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -93,7 +96,50 @@ export class SceneManager {
     };
   }
 
-  private setupPostProcessing(): void {
+  setCameraPreset(preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
+    if (!this.camera) return;
+
+    const presetConfig = CAMERA_PRESETS[preset];
+    this.camera.position.set(
+      presetConfig.position.x,
+      presetConfig.position.y,
+      presetConfig.position.z
+    );
+    this.camera.lookAt(
+      presetConfig.lookAt.x,
+      presetConfig.lookAt.y,
+      presetConfig.lookAt.z
+    );
+  }
+
+  // ADD: Method to get camera info for debugging
+  getCameraInfo(): any {
+    if (!this.camera) return null;
+
+    return {
+      position: this.camera.position,
+      lookAt: LOOK_AT,
+      fov: this.camera.fov,
+      near: this.camera.near,
+      far: this.camera.far
+    };
+  }
+
+  // ADD: Temporary debug cube method
+  addDebugCube(position: [number, number, number]): void {
+    if (!this.scene) return;
+
+    const geometry = new THREE.BoxGeometry(50, 50, 50); // 50cm cube
+    const material = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Red color
+    const cube = new THREE.Mesh(geometry, material);
+    cube.position.set(position[0], position[1], position[2]);
+    this.scene.add(cube);
+
+    console.log('🔴 Debug cube added at position:', position);
+    console.log('🔴 Camera info:', this.getCameraInfo());
+  }
+
+  private setupPostProcessing (): void {
     if (!this.scene || !this.camera || !this.renderer) return;
 
     try {
@@ -157,7 +203,7 @@ export class SceneManager {
     }
   }
 
-  private setupEnhancedLighting(): void {
+  private setupEnhancedLighting (): void {
     if (!this.scene) return;
 
     // Clear existing lights
@@ -170,76 +216,76 @@ export class SceneManager {
     this.lights.push(ambientLight);
 
     // 2. Main ceiling light - bright overhead illumination
-    const mainCeilingLight = new THREE.PointLight(0xffffff, 2.0, 30); // Back to original
-    mainCeilingLight.position.set(0, 2.8, 0);
+    const mainCeilingLight = new THREE.PointLight(0xffffff, 2.0, 3000); // Back to original
+    mainCeilingLight.position.set(0, 280, 0);
     mainCeilingLight.castShadow = true;
     mainCeilingLight.shadow.mapSize.width = 2048;
     mainCeilingLight.shadow.mapSize.height = 2048;
-    mainCeilingLight.shadow.camera.near = 0.1;
-    mainCeilingLight.shadow.camera.far = 20;
+    mainCeilingLight.shadow.camera.near = 10;
+    mainCeilingLight.shadow.camera.far = 2000;
     mainCeilingLight.shadow.bias = -0.0001;
 
     this.scene.add(mainCeilingLight);
     this.lights.push(mainCeilingLight);
 
     // 3. Additional ceiling lights for even coverage
-    const ceilingLight1 = new THREE.PointLight(0xffffff, 1.4, 18); // Increased from 0.8
-    ceilingLight1.position.set(1.5, 2.8, 1.5);
+    const ceilingLight1 = new THREE.PointLight(0xffffff, 1.4, 1800); // Increased from 0.8
+    ceilingLight1.position.set(150, 280, 150);
     ceilingLight1.castShadow = true;
     ceilingLight1.shadow.mapSize.width = 1024;
     ceilingLight1.shadow.mapSize.height = 1024;
-    ceilingLight1.shadow.camera.near = 0.1;
-    ceilingLight1.shadow.camera.far = 15;
+    ceilingLight1.shadow.camera.near = 10;
+    ceilingLight1.shadow.camera.far = 1500;
 
     this.scene.add(ceilingLight1);
     this.lights.push(ceilingLight1);
 
-    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 18); // Increased from 0.8
-    ceilingLight2.position.set(-1.5, 2.8, -1.5);
+    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 1800); // Increased from 0.8
+    ceilingLight2.position.set(-150, 280, -150);
     ceilingLight2.castShadow = true;
     ceilingLight2.shadow.mapSize.width = 1024;
     ceilingLight2.shadow.mapSize.height = 1024;
-    ceilingLight2.shadow.camera.near = 0.1;
-    ceilingLight2.shadow.camera.far = 15;
+    ceilingLight2.shadow.camera.near = 10;
+    ceilingLight2.shadow.camera.far = 1500;
 
     this.scene.add(ceilingLight2);
     this.lights.push(ceilingLight2);
 
     // 4. MORE ceiling lights for corner coverage
-    const ceilingLight3 = new THREE.PointLight(0xffffff, 1.2, 16);
-    ceilingLight3.position.set(1.5, 2.8, -1.5);
+    const ceilingLight3 = new THREE.PointLight(0xffffff, 1.2, 1600);
+    ceilingLight3.position.set(150, 280, -150);
     ceilingLight3.castShadow = true;
     ceilingLight3.shadow.mapSize.width = 1024;
     ceilingLight3.shadow.mapSize.height = 1024;
-    ceilingLight3.shadow.camera.near = 0.1;
-    ceilingLight3.shadow.camera.far = 15;
+    ceilingLight3.shadow.camera.near = 10;
+    ceilingLight3.shadow.camera.far = 1500;
 
     this.scene.add(ceilingLight3);
     this.lights.push(ceilingLight3);
 
-    const ceilingLight4 = new THREE.PointLight(0xffffff, 1.2, 16);
-    ceilingLight4.position.set(-1.5, 2.8, 1.5);
+    const ceilingLight4 = new THREE.PointLight(0xffffff, 1.2, 1600);
+    ceilingLight4.position.set(-150, 280, 150);
     ceilingLight4.castShadow = true;
     ceilingLight4.shadow.mapSize.width = 1024;
     ceilingLight4.shadow.mapSize.height = 1024;
-    ceilingLight4.shadow.camera.near = 0.1;
-    ceilingLight4.shadow.camera.far = 15;
+    ceilingLight4.shadow.camera.near = 10;
+    ceilingLight4.shadow.camera.far = 1500;
 
     this.scene.add(ceilingLight4);
     this.lights.push(ceilingLight4);
 
     // 5. Brighter directional light from above - simulates natural light
     const topLight = new THREE.DirectionalLight(0xffffff, 0.8); // Increased from 0.4
-    topLight.position.set(0, 10, 2);
+    topLight.position.set(0, 1000, 200);
     topLight.castShadow = true;
     topLight.shadow.mapSize.width = 2048;
     topLight.shadow.mapSize.height = 2048;
-    topLight.shadow.camera.near = 0.1;
-    topLight.shadow.camera.far = 30;
-    topLight.shadow.camera.left = -10;
-    topLight.shadow.camera.right = 10;
-    topLight.shadow.camera.top = 10;
-    topLight.shadow.camera.bottom = -10;
+    topLight.shadow.camera.near = 10;
+    topLight.shadow.camera.far = 3000;
+    topLight.shadow.camera.left = -1000;
+    topLight.shadow.camera.right = 1000;
+    topLight.shadow.camera.top = 1000;
+    topLight.shadow.camera.bottom = -1000;
     topLight.shadow.bias = -0.0001;
 
     this.scene.add(topLight);
@@ -247,41 +293,41 @@ export class SceneManager {
 
     // 6. Multiple fill lights to reduce harsh shadows
     const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.5); // Increased from 0.2
-    fillLight1.position.set(-5, 8, -5);
+    fillLight1.position.set(-500, 800, -500);
     this.scene.add(fillLight1);
     this.lights.push(fillLight1);
 
     const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    fillLight2.position.set(5, 8, 5);
+    fillLight2.position.set(500, 800, 500);
     this.scene.add(fillLight2);
     this.lights.push(fillLight2);
 
     const fillLight3 = new THREE.DirectionalLight(0xffffff, 0.3);
-    fillLight3.position.set(-5, 8, 5);
+    fillLight3.position.set(-500, 800, 500);
     this.scene.add(fillLight3);
     this.lights.push(fillLight3);
 
     // 7. Side rim lights for better object definition
     const rimLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
-    rimLight1.position.set(8, 5, 0);
+    rimLight1.position.set(800, 500, 0);
     this.scene.add(rimLight1);
     this.lights.push(rimLight1);
 
     const rimLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
-    rimLight2.position.set(-8, 5, 0);
+    rimLight2.position.set(-800, 500, 0);
     this.scene.add(rimLight2);
     this.lights.push(rimLight2);
 
     // 8. Additional ambient fill from below (subtle floor bounce)
     const floorBounce = new THREE.HemisphereLight(0xffffff, 0xf0f0f0, 0.4);
-    floorBounce.position.set(0, -1, 0);
+    floorBounce.position.set(0, -100, 0);
     this.scene.add(floorBounce);
     this.lights.push(floorBounce);
 
     console.log(`Enhanced lighting setup complete: ${this.lights.length} lights total`);
   }
 
-  updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
+  updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
     if (!this.scene) return;
 
     if (this.floorRef) {
@@ -293,11 +339,11 @@ export class SceneManager {
     this.scene.add(this.floorRef);
   }
 
-  private createEnhancedFloorMaterial(floorTexture: TextureConfig): THREE.MeshStandardMaterial {
+  private createEnhancedFloorMaterial (floorTexture: TextureConfig): THREE.MeshStandardMaterial {
     const material = textureManager.createTexturedMaterial(floorTexture);
 
     // Enhanced floor material properties
-    material.roughness = 0.05;
+    material.roughness = 0;
     material.metalness = 0.02;
     material.envMapIntensity = 0.5;
 
@@ -311,7 +357,7 @@ export class SceneManager {
     return material;
   }
 
-  updateWalls(roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
+  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
     if (!this.scene) return;
 
     // Remove existing walls
@@ -330,7 +376,7 @@ export class SceneManager {
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
   }
 
-  private createEnhancedWallMaterial(wallTexture: TextureConfig): THREE.MeshStandardMaterial {
+  private createEnhancedWallMaterial (wallTexture: TextureConfig): THREE.MeshStandardMaterial {
     const material = textureManager.createTexturedMaterial(wallTexture);
 
     // Enhanced wall material properties
@@ -341,7 +387,7 @@ export class SceneManager {
     return material;
   }
 
-  updateGrid(roomWidth: number, roomHeight: number, showGrid: boolean): void {
+  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean): void {
     if (!this.scene) return;
 
     // Remove existing grid
@@ -357,7 +403,7 @@ export class SceneManager {
     }
   }
 
-  async updateBathroomItems(items: BathroomItem[]): Promise<void> {
+  async updateBathroomItems (items: BathroomItem[]): Promise<void> {
     if (!this.scene || this.isUpdatingItems) return;
 
     this.isUpdatingItems = true;
@@ -371,7 +417,13 @@ export class SceneManager {
 
       // Create all models concurrently for better performance
       const modelPromises = items.map(async (item, index) => {
-        console.log(`Creating model for item [${index}]:`, item);
+        console.log(`Creating model for item [${index}]:`, {
+          id: item.id,
+          type: item.type,
+          position: item.position, // This will show the actual position values
+          rotation: item.rotation,
+          scale: item.scale
+        });
 
         try {
           const model = await createModel(
@@ -385,6 +437,15 @@ export class SceneManager {
             model.userData.isBathroomItem = true;
             model.userData.itemId = item.id;
             model.userData.type = item.type;
+
+            // ADD THIS: Log the actual model position and scale
+            console.log(`✅ Model created successfully:`, {
+              type: item.type,
+              worldPosition: model.position,
+              worldScale: model.scale,
+              visible: model.visible,
+              boundingBox: this.getModelBoundingBox(model)
+            });
 
             // Enhance model materials
             this.enhanceModelMaterials(model);
@@ -412,6 +473,13 @@ export class SceneManager {
       console.log('=== BATHROOM ITEMS UPDATE COMPLETE ===');
       console.log(`Added ${models.filter(m => m !== null).length} models to scene`);
 
+      // ADD THIS: Log the bathroom items group info
+      console.log('Bathroom items group:', {
+        children: this.bathroomItemsGroup.children.length,
+        position: this.bathroomItemsGroup.position,
+        scale: this.bathroomItemsGroup.scale
+      });
+
     } catch (error) {
       console.error('Error updating bathroom items:', error);
     } finally {
@@ -419,7 +487,17 @@ export class SceneManager {
     }
   }
 
-  private enhanceModelMaterials(model: THREE.Object3D): void {
+  private getModelBoundingBox (model: THREE.Object3D): any {
+    const box = new THREE.Box3().setFromObject(model);
+    return {
+      min: box.min,
+      max: box.max,
+      size: box.getSize(new THREE.Vector3()),
+      center: box.getCenter(new THREE.Vector3())
+    };
+  }
+
+  private enhanceModelMaterials (model: THREE.Object3D): void {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         if (child.material) {
@@ -443,7 +521,7 @@ export class SceneManager {
     });
   }
 
-  adjustOutlineForDistance(): void {
+  adjustOutlineForDistance (): void {
     if (!this.outlinePass || !this.camera) return;
 
     // Calculate average distance to selected objects
@@ -470,7 +548,7 @@ export class SceneManager {
     }
   }
 
-  startAnimationLoop(): void {
+  startAnimationLoop (): void {
     if (!this.renderer || !this.scene || !this.camera) return;
 
     this.isAnimating = true;
@@ -501,7 +579,7 @@ export class SceneManager {
   }
 
   // Method to stop animation loop
-  stopAnimationLoop(): void {
+  stopAnimationLoop (): void {
     this.isAnimating = false;
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
@@ -510,7 +588,7 @@ export class SceneManager {
   }
 
   // Update composer size when window resizes
-  updateComposerSize(): void {
+  updateComposerSize (): void {
     if (this.composer) {
       this.composer.setSize(window.innerWidth, window.innerHeight);
 
@@ -525,16 +603,16 @@ export class SceneManager {
   }
 
   // Wall culling controls
-  setWallCullingEnabled(enabled: boolean): void {
+  setWallCullingEnabled (enabled: boolean): void {
     this.wallCullingManager.setEnabled(enabled);
   }
 
-  isWallCullingEnabled(): boolean {
+  isWallCullingEnabled (): boolean {
     return this.wallCullingManager.enabled;
   }
 
   // Cleanup method - enhanced
-  dispose(): void {
+  dispose (): void {
     // Stop animation loop
     this.stopAnimationLoop();
 
@@ -574,12 +652,12 @@ export class SceneManager {
   }
 
   // Utility method to get bathroom items group
-  getBathroomItemsGroup(): THREE.Group {
+  getBathroomItemsGroup (): THREE.Group {
     return this.bathroomItemsGroup;
   }
 
   // Method to adjust lighting intensity
-  adjustLightingIntensity(factor: number): void {
+  adjustLightingIntensity (factor: number): void {
     this.lights.forEach(light => {
       if (light instanceof THREE.DirectionalLight || light instanceof THREE.PointLight) {
         light.intensity *= factor;
@@ -588,7 +666,7 @@ export class SceneManager {
   }
 
   // Method to switch lighting presets
-  setLightingPreset(preset: 'natural' | 'warm' | 'cool'): void {
+  setLightingPreset (preset: 'natural' | 'warm' | 'cool'): void {
     this.lights.forEach(light => {
       if (light instanceof THREE.AmbientLight) {
         switch (preset) {
@@ -624,7 +702,7 @@ export class SceneManager {
   }
 
   // Method to get current lighting information
-  getLightingInfo(): { lightCount: number; shadowsEnabled: boolean } {
+  getLightingInfo (): { lightCount: number; shadowsEnabled: boolean } {
     return {
       lightCount: this.lights.length,
       shadowsEnabled: this.renderer?.shadowMap.enabled || false

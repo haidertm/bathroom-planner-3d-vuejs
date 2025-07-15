@@ -1,4 +1,4 @@
-// src/constants/models.ts - Mixed approach configuration with orientation
+// src/constants/models.ts - Mixed approach configuration with orientation - CENTIMETER UNITS
 
 import type { ComponentType } from './components';
 import { CONSTRAINTS } from './dimensions';
@@ -8,7 +8,7 @@ export type OrientationType = 'face_into_room' | 'flush_with_wall' | 'custom';
 export interface OrientationConfig {
   type: OrientationType;
   rotationOffset?: number; // Additional rotation offset in radians (optional)
-  wallBuffer?: number; // Custom distance from wall (optional, overrides default buffer)
+  wallBuffer?: number; // Custom distance from wall in CENTIMETERS (optional, overrides default buffer)
   description?: string;
 }
 
@@ -17,11 +17,11 @@ export interface ModelConfig {
   readonly path: string;
   readonly scale?: number;
   readonly rotation?: readonly [number, number, number];
-  readonly position?: readonly [number, number, number];
+  readonly position?: readonly [number, number, number]; // In CENTIMETERS
   readonly orientation?: OrientationConfig;
   readonly fallbackColor?: number;
   readonly fallbackGeometry?: 'box' | 'cylinder' | 'sphere' | 'cone';
-  readonly fallbackSize?: readonly [number, number, number];
+  readonly fallbackSize?: readonly [number, number, number]; // In CENTIMETERS
 }
 
 export interface ProceduralConfig {
@@ -30,7 +30,7 @@ export interface ProceduralConfig {
   readonly orientation?: OrientationConfig;
   readonly fallbackColor?: number;
   readonly fallbackGeometry?: 'box' | 'cylinder' | 'sphere' | 'cone';
-  readonly fallbackSize?: readonly [number, number, number];
+  readonly fallbackSize?: readonly [number, number, number]; // In CENTIMETERS
 }
 
 export type FixtureConfig = ModelConfig | ProceduralConfig;
@@ -62,99 +62,101 @@ export const WALL_ROTATIONS: Record<OrientationType, Record<string, number>> = {
   }
 };
 
-// ONLY the models you want to load from .glb files
+// ONLY the models you want to load from .glb files - ALL VALUES IN CENTIMETERS
 export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   {
     name: 'Sink',
     path: '/models/sink.glb',
-    scale: 1.5,
+    scale: 100,
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 0.08, // Stay away from wall for access
+      wallBuffer: 8, // 8cm - Stay away from wall for access
       description: 'Basin faces into room for use'
     },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'cylinder',
-    fallbackSize: [0.6, 0.8, 0.6]
+    fallbackSize: [60, 80, 60] // 60cm x 80cm x 60cm
   },
   {
     name: 'Radiator',
     path: '/models/radiator.glb',
-    scale: 1.0,
+    scale: 80,
     rotation: [0, 0, 0],
     position: [0, 0, 0], // Keep at origin
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 0.12, // Very close to wall for radiators
+      wallBuffer: 12, // 12cm - Very close to wall for radiators
       description: 'Heat radiates into room'
     },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'box',
-    fallbackSize: [0.645, 1.302, 0.155]
+    fallbackSize: [64.5, 130.2, 15.5] // 64.5cm x 130.2cm x 15.5cm
   },
   {
     name: 'Toilet',
     path: '/models/toilet.glb',
-    scale: 1.0,
+    scale: 90,
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 0.35, // Some space from wall
+      wallBuffer: 35, // 35cm - Some space from wall
       description: 'Seat faces into room for use'
     },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'box',
-    fallbackSize: [0.6, 0.8, 0.8]
+    fallbackSize: [60, 80, 80] // 60cm x 80cm x 80cm
   },
   {
     name: 'Bath',
+    scale: 72,
     path: '/models/bath.glb',
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 0.89, // Close to wall but accessible
+      wallBuffer: 89, // 89cm - Close to wall but accessible
       description: 'Tub opening faces into room'
     },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'box',
-    fallbackSize: [1.7, 0.6, 0.8]
+    fallbackSize: [170, 60, 80] // 170cm x 60cm x 80cm
   },
   {
     name: 'Door',
     path: '/models/door.glb',
-    scale: 1.2,
+    scale: 90,
     orientation: {
       type: 'flush_with_wall',
-      wallBuffer: 0.045, // Flush with wall - no gap
+      wallBuffer: 4.5, // 4.5cm - Flush with wall - minimal gap
       description: 'Door is part of wall opening'
     },
     fallbackColor: 0x8B4513,
     fallbackGeometry: 'box',
-    fallbackSize: [0.1, 2.0, 0.8]
+    fallbackSize: [10, 200, 80] // 10cm x 200cm x 80cm
   },
   {
     name: 'Mirror',
     path: '/models/mirror.glb',
-    position: [0, -1.2, 0],
+    position: [0, -100, 0], // -120cm (was -1.2m)
     orientation: {
       type: 'face_into_room',
-      rotationOffset: Math.PI, // Add this line to flip the mirror 180 degrees
-      wallBuffer: 0.1, // Almost flush with wall - just 2cm gap
+      rotationOffset: Math.PI, // Flip the mirror 180 degrees
+      wallBuffer: 10, // 10cm - Almost flush with wall
       description: 'Reflective surface faces into room'
     },
     fallbackColor: 0x87CEEB,
     fallbackGeometry: 'box',
-    fallbackSize: [0.8, 1.0, 0.05]
+    fallbackSize: [80, 100, 5] // 80cm x 100cm x 5cm
   },
   {
     name: 'Shower',
     path: '/models/shower.glb',
+    scale: 70,
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 1.39, // Very close to wall
+      wallBuffer: 100, // 139cm - Very close to wall
       description: 'Shower opening faces into room'
     },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'cylinder',
-    fallbackSize: [0.8, 2.0, 0.8]
+    fallbackSize: [80, 200, 80] // 80cm x 200cm x 80cm
   }
   // Only add models here that you want to load from .glb files
 ] as const;
@@ -166,12 +168,12 @@ export const PROCEDURAL_FIXTURES: readonly ProceduralConfig[] = [
   //   type: 'procedural',
   //   orientation: {
   //     type: 'face_into_room',
-  //     wallBuffer: 0.85, // Very close to wall
+  //     wallBuffer: 85, // 85cm - Very close to wall
   //     description: 'Shower opening faces into room'
   //   },
   //   fallbackColor: 0xffffff,
   //   fallbackGeometry: 'cylinder',
-  //   fallbackSize: [0.8, 2.0, 0.8]
+  //   fallbackSize: [80, 200, 80] // 80cm x 200cm x 80cm
   // }
 ] as const;
 
@@ -190,25 +192,25 @@ export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
   // Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!
 };
 
-// Helper function to get wall buffer for an object
+// Helper function to get wall buffer for an object - ALL VALUES IN CENTIMETERS
 export const getObjectWallBuffer = (
   objectType: ComponentType,
   scale: number = 1.0
 ): number => {
   const config = FIXTURE_CONFIG[objectType];
 
-  // If object has custom wallBuffer defined, use it
+  // If object has custom wallBuffer defined, use it (already in centimeters)
   if (config?.orientation?.wallBuffer !== undefined) {
     return config.orientation.wallBuffer * scale;
   }
 
-  // Fallback to default buffer calculation
+  // Fallback to default buffer calculation (fallbackSize already in centimeters)
   if (config && 'fallbackSize' in config && config.fallbackSize) {
     const [width, , depth] = config.fallbackSize;
     return Math.max(width, depth) * scale / 2;
   }
 
-  // Ultimate fallback
+  // Ultimate fallback (CONSTRAINTS.OBJECT_BUFFER already in centimeters)
   return CONSTRAINTS.OBJECT_BUFFER;
 };
 

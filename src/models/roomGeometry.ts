@@ -40,7 +40,7 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
     gridGroup.add(line);
   }
 
-  gridGroup.position.y = 0.01;
+  gridGroup.position.y = 1;
   return gridGroup;
 };
 
@@ -91,9 +91,9 @@ export const createFloor = (
   roomHeight: number,
   floorMaterial: THREE.Material
 ): THREE.Mesh => {
-  const floorGeometry = new THREE.BoxGeometry(roomWidth, 0.1, roomHeight);
+  const floorGeometry = new THREE.BoxGeometry(roomWidth, 10, roomHeight);
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.position.y = -0.05;
+  floor.position.y = -5;
   floor.receiveShadow = true;
   floor.userData.isFloor = true;
   return floor;
