@@ -529,7 +529,8 @@ onMounted(async () => {
       roomHeightRef,
       setItems, // Use our custom setItems function
       getItems, // Use our custom getItems function
-      deleteItem
+      deleteItem,
+      preventCollisionPlacement
   ))
 
   // Set up initial scene

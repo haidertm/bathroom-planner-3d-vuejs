@@ -6,6 +6,7 @@ import { constrainToWalls, snapToNearestWall, wouldCollideWithExisting, type Bat
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { LOOK_AT } from '../constants/camera';
+import { ref } from 'vue';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -83,7 +84,7 @@ export class EventHandlers {
     setItems: SetItemsFunction,
     getItems: GetItemsFunction,
     deleteItem: DeleteItemFunction,
-    preventCollisionPlacementRef: Ref<boolean> // NEW: Accept collision prevention setting
+    preventCollisionPlacementRef: Ref<boolean> = ref(true) // NEW: Accept collision prevention setting
   ) {
     // Assign core objects
     this.scene = scene;
@@ -327,7 +328,7 @@ export class EventHandlers {
     const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
     this.mouse.set(mousePos.x, mousePos.y);
 
-    // 🔧 FIX: Safety check - if no mouse buttons are pressed, stop dragging
+    // Safety check - if no mouse buttons are pressed, stop dragging
     if (event.buttons === 0) {
       if (this.isDragging || this.isRotating || this.isObjectRotating || this.isHeightAdjusting || this.isScaling) {
         console.log('🛑 No mouse buttons pressed, stopping drag operations');
@@ -379,7 +380,7 @@ export class EventHandlers {
       this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
     } else if (this.isDragging && this.selectedObject) {
-      // UPDATED: Drag object with wall constraints
+      // ENHANCED: Drag object with wall constraints and collision detection
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersectPoint = new THREE.Vector3();
       this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
@@ -405,7 +406,7 @@ export class EventHandlers {
         z: newPosition.z.toFixed(3)
       });
 
-      // UPDATED: Always constrain to walls instead of free room movement
+      // Always constrain to walls
       const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
         newPosition,
         this.roomWidthRef.value,
@@ -440,7 +441,7 @@ export class EventHandlers {
       // IMPORTANT: Update rotation to match the wall the object is on
       this.selectedObject.rotation.y = snappedRotation;
 
-      // NEW: Check for collisions and update outline color
+      // ENHANCED: Check for collisions and update outline color
       const currentItems = this.getCurrentItems();
       const isColliding = wouldCollideWithExisting(
         { x: newPosition.x, y: newPosition.y, z: newPosition.z },
@@ -450,16 +451,21 @@ export class EventHandlers {
         currentItems
       );
 
-      // Update outline color based on collision state
+      // CRITICAL: Update outline color immediately and force refresh
+      console.log(`🎨 Setting outline color: ${isColliding ? 'RED (collision)' : 'CYAN (safe)'}`);
       setOutlineColor(isColliding);
 
-      // DEBUG: Log final position
-      console.log('🔗 DRAG - Final wall-snapped position:', {
-        x: newPosition.x.toFixed(3),
-        z: newPosition.z.toFixed(3),
-        rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`,
-        collision: isColliding ? 'DETECTED' : 'NONE'
+      // Additional debug info
+      console.log('🔗 DRAG collision check result:', {
+        position: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
+        objectType,
+        objectScale: objectScale.toFixed(2),
+        itemId,
+        existingItems: currentItems.length,
+        isColliding,
+        outlineColor: isColliding ? 'RED' : 'CYAN'
       });
+
 
       this.selectedObject.position.copy(newPosition);
 
@@ -512,13 +518,14 @@ export class EventHandlers {
   }
 
   private handleMouseUp (): void {
+    console.log('🖱️ Mouse up - checking for collision snap-back');
     // Apply any pending updates before clearing drag state
     if (this.isDragOperation) {
       this.applyPendingUpdates();
       this.isDragOperation = false;
     }
 
-    // NEW: Handle collision prevention and snap-back logic
+    // ENHANCED: Handle collision prevention and snap-back logic
     if (this.isDragging && this.selectedObject) {
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
@@ -838,8 +845,16 @@ export class EventHandlers {
         currentItems
       );
 
-      // NEW: Check if collision prevention is enabled and object is colliding
+    console.log('🎯 Touch final position collision check:', {
+      position: { x: finalPosition.x.toFixed(1), z: finalPosition.z.toFixed(1) },
+      isColliding,
+      preventionEnabled: this.preventCollisionPlacementRef.value,
+      willSnapBack: this.preventCollisionPlacementRef.value && isColliding
+    });
+
+      // Check if collision prevention is enabled and object is colliding
       if (this.preventCollisionPlacementRef.value && isColliding) {
+        console.log('🔄 TOUCH SNAP BACK: Collision detected, returning to original position');
         // Snap back to original position
         this.selectedObject.position.copy(this.originalDragPosition);
         this.selectedObject.rotation.y = this.originalDragRotation;
@@ -857,13 +872,7 @@ export class EventHandlers {
 
         // Set outline to normal color since we're back to non-colliding position
         setOutlineColor(false);
-
-        console.log('🔄 TOUCH SNAP BACK: Object returned to original position due to collision prevention');
-        console.log('📍 Original position restored:', {
-          x: this.originalDragPosition.x.toFixed(3),
-          z: this.originalDragPosition.z.toFixed(3),
-          rotation: `${(this.originalDragRotation * 180 / Math.PI).toFixed(0)}°`
-        });
+        console.log('✅ Touch snap back completed - outline set to CYAN');
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);

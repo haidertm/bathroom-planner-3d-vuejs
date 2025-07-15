@@ -8,7 +8,7 @@ import { createModel } from '../models/bathroomFixtures';
 import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
-import { LOOK_AT, CAMERA_SETTINGS, CAMERA_CONTROLS, CAMERA_PRESETS } from '../constants/camera';
+import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS } from '../constants/camera';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -173,9 +173,9 @@ export class SceneManager {
       );
 
       // IMPROVED: Distance-optimized outline settings
-      this.outlinePass.edgeStrength = 20;        // Increased from 10
-      this.outlinePass.edgeGlow = 2.0;           // Reduced glow for better visibility
-      this.outlinePass.edgeThickness = 6;        // Increased thickness
+      this.outlinePass.edgeStrength = 8;        // Increased from 10
+      this.outlinePass.edgeGlow = 0.5;           // Reduced glow for better visibility
+      this.outlinePass.edgeThickness = 2;        // Increased thickness
       this.outlinePass.pulsePeriod = 0;          // Disable pulsing for consistency
       this.outlinePass.visibleEdgeColor.set('#00ffcc');
       this.outlinePass.hiddenEdgeColor.set('#00ffcc'); // Make hidden edges more visible
