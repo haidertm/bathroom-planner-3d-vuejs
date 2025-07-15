@@ -30,28 +30,6 @@
       🎨 Textures
     </button>
 
-    <!-- Navigation button to My Designs -->
-    <button
-        @click="goToMyDesigns"
-        :style="myDesignsButtonStyle"
-        title="View My Designs"
-        @mouseenter="e => e.target.style.backgroundColor = '#e0e0e0'"
-        @mouseleave="e => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.95)'"
-    >
-      📁 My Designs
-    </button>
-
-    <!-- Save Design button -->
-    <button
-        @click="saveCurrentDesign"
-        :style="saveDesignButtonStyle"
-        title="Save Current Design"
-        @mouseenter="e => e.target.style.backgroundColor = '#e0e0e0'"
-        @mouseleave="e => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.95)'"
-    >
-      💾 Save Design
-    </button>
-
     <UndoRedoPanel
         @undo="handleUndo"
         @redo="handleRedo"
@@ -94,7 +72,7 @@
         </h2>
 
         <div :style="instructionsContentStyle">
-          <div>
+          <div :style="sectionStyle">
             <h3 :style="sectionHeaderStyle">🖱️ Controls</h3>
             <div v-if="isMobileDevice">
               <p><strong>Touch + drag:</strong> Move objects along walls</p>
@@ -337,6 +315,12 @@ const instructionsContentStyle = computed(() => ({
   fontSize: '14px'
 }))
 
+const sectionStyle = computed(() => ({
+  marginBottom: '25px',
+  paddingBottom: '15px',
+  borderBottom: '1px solid #f0f0f0'
+}))
+
 const sectionHeaderStyle = computed(() => ({
   color: '#2c3e50',
   fontSize: '18px',
@@ -397,10 +381,7 @@ const closeInstructions = () => {
   showInstructions.value = false
 }
 
-// Navigation functions
-const goToMyDesigns = () => {
-  router.push('/my-designs')
-}
+// Navigation functions - REMOVED goToMyDesigns since it's now in header
 
 const saveCurrentDesign = () => {
   const designName = prompt('Enter a name for your design:')
@@ -585,6 +566,17 @@ const setItems = (updaterOrArray) => {
 
 // Check for design to load from My Designs page
 onMounted(async () => {
+  // Listen for save design event from header
+  const handleHeaderSaveDesign = () => {
+    saveCurrentDesign()
+  }
+  window.addEventListener('header-save-design', handleHeaderSaveDesign)
+
+  // Clean up event listener
+  onUnmounted(() => {
+    window.removeEventListener('header-save-design', handleHeaderSaveDesign)
+  })
+
   // Check if there's a design to load
   const designToLoad = localStorage.getItem('design-to-load')
   if (designToLoad) {

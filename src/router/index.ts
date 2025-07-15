@@ -1,12 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../pages/Home.vue' // Updated to match your actual file name
+import RoomShapeSelector from '../pages/RoomShapeSelector.vue'
+import Planner from '../pages/Planner.vue' // Renamed from Home
 import MyDesigns from '../pages/MyDesigns.vue'
 
 const routes = [
     {
         path: '/',
-        name: 'Home',
-        component: Home
+        name: 'RoomShapeSelector',
+        component: RoomShapeSelector
+    },
+    {
+        path: '/planner',
+        name: 'Planner',
+        component: Planner
     },
     {
         path: '/my-designs',

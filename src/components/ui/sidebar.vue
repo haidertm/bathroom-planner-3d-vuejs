@@ -72,30 +72,58 @@
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
                 Width: {{ roomWidth.toFixed(1) }}m
-                <input
-                    type="range"
-                    :min="ROOM_DEFAULTS.MIN_SIZE"
-                    :max="ROOM_DEFAULTS.MAX_SIZE"
-                    :step="ROOM_DEFAULTS.STEP"
-                    :value="roomWidth"
-                    @input="updateWidth"
-                    :style="sliderStyle"
-                />
+                <div :style="inputSliderContainerStyle">
+                  <input
+                      type="number"
+                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :max="ROOM_DEFAULTS.MAX_SIZE"
+                      :step="ROOM_DEFAULTS.STEP"
+                      :value="roomWidth.toFixed(1)"
+                      @input="updateWidthFromInput"
+                      :style="numberInputStyle"
+                      placeholder="Width"
+                      class="modern-number-input"
+                  />
+                  <input
+                      type="range"
+                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :max="ROOM_DEFAULTS.MAX_SIZE"
+                      :step="ROOM_DEFAULTS.STEP"
+                      :value="roomWidth"
+                      @input="updateWidth"
+                      :style="sliderStyle"
+                      class="modern-slider"
+                  />
+                </div>
               </label>
             </div>
 
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
                 Height: {{ roomHeight.toFixed(1) }}m
-                <input
-                    type="range"
-                    :min="ROOM_DEFAULTS.MIN_SIZE"
-                    :max="ROOM_DEFAULTS.MAX_SIZE"
-                    :step="ROOM_DEFAULTS.STEP"
-                    :value="roomHeight"
-                    @input="updateHeight"
-                    :style="sliderStyle"
-                />
+                <div :style="inputSliderContainerStyle">
+                  <input
+                      type="number"
+                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :max="ROOM_DEFAULTS.MAX_SIZE"
+                      :step="ROOM_DEFAULTS.STEP"
+                      :value="roomHeight.toFixed(1)"
+                      @input="updateHeightFromInput"
+                      :style="numberInputStyle"
+                      placeholder="Height"
+                      class="modern-number-input"
+                  />
+                  <input
+                      type="range"
+                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :max="ROOM_DEFAULTS.MAX_SIZE"
+                      :step="ROOM_DEFAULTS.STEP"
+                      :value="roomHeight"
+                      @input="updateHeight"
+                      :style="sliderStyle"
+                      class="modern-slider"
+                  />
+                </div>
               </label>
             </div>
 
@@ -407,21 +435,62 @@ const itemButtonStyle = computed(() => ({
   textAlign: 'center'
 }))
 
-// Room Settings styles
+// Room Settings styles with enhanced design
 const roomSettingsContentStyle = computed(() => ({
-  padding: '15px'
+  padding: '20px',
+  backgroundColor: '#fafbfc'
 }))
 
 const controlGroupStyle = computed(() => ({
-  marginBottom: '15px'
+  marginBottom: '20px',
+  padding: '20px',
+  backgroundColor: '#ffffff',
+  borderRadius: '12px',
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+  transition: 'all 0.2s ease'
 }))
 
 const labelStyle = computed(() => ({
   display: 'block',
-  fontSize: isMobileDevice.value ? '12px' : '14px',
-  color: '#666',
-  marginBottom: '5px',
-  fontFamily: 'Arial, sans-serif'
+  fontSize: isMobileDevice.value ? '14px' : '15px',
+  color: '#1f2937',
+  marginBottom: '8px',
+  fontFamily: 'Arial, sans-serif',
+  fontWeight: '600'
+}))
+
+const inputSliderContainerStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '15px',
+  marginTop: '12px'
+}))
+
+const numberInputStyle = computed(() => ({
+  width: isMobileDevice.value ? '80px' : '90px',
+  padding: '12px 16px',
+  border: '2px solid #e5e7eb',
+  borderRadius: '10px',
+  fontSize: isMobileDevice.value ? '14px' : '15px',
+  fontFamily: 'Arial, sans-serif',
+  backgroundColor: '#ffffff',
+  color: '#1f2937',
+  outline: 'none',
+  transition: 'all 0.3s ease',
+  textAlign: 'center',
+  fontWeight: '600',
+  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
+  position: 'relative'
+}))
+
+const sliderStyle = computed(() => ({
+  flex: 1,
+  marginTop: '0',
+  accentColor: '#29275B',
+  height: isMobileDevice.value ? '8px' : '6px',
+  borderRadius: '4px',
+  cursor: 'pointer'
 }))
 
 const checkboxLabelStyle = computed(() => ({
@@ -432,13 +501,6 @@ const checkboxLabelStyle = computed(() => ({
   color: '#666',
   cursor: 'pointer',
   fontFamily: 'Arial, sans-serif'
-}))
-
-const sliderStyle = computed(() => ({
-  width: '100%',
-  marginTop: '5px',
-  accentColor: '#29275B',
-  height: isMobileDevice.value ? '8px' : '6px'
 }))
 
 const checkboxStyle = computed(() => ({
@@ -669,6 +731,22 @@ const updateHeight = (event) => {
   emit('room-size-change', props.roomWidth, newHeight)
 }
 
+const updateWidthFromInput = (event) => {
+  const newWidth = parseFloat(event.target.value)
+  // Ensure the value is within bounds
+  if (newWidth >= ROOM_DEFAULTS.MIN_SIZE && newWidth <= ROOM_DEFAULTS.MAX_SIZE) {
+    emit('room-size-change', newWidth, props.roomHeight)
+  }
+}
+
+const updateHeightFromInput = (event) => {
+  const newHeight = parseFloat(event.target.value)
+  // Ensure the value is within bounds
+  if (newHeight >= ROOM_DEFAULTS.MIN_SIZE && newHeight <= ROOM_DEFAULTS.MAX_SIZE) {
+    emit('room-size-change', props.roomWidth, newHeight)
+  }
+}
+
 const getArrowStyle = (isExpanded) => ({
   fontSize: '14px',
   color: '#ffffff',
@@ -750,46 +828,122 @@ const getTexturePreviewStyle = (texture) => ({
   background: #555;
 }
 
-
-/* Custom slider styles */
-input[type="range"] {
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  background: #ddd;
-  outline: none;
+/* Enhanced modern input styles */
+.modern-number-input {
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 2px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 12px 16px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
 }
 
-input[type="range"]::-webkit-slider-thumb {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #29275B;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.modern-number-input:hover {
+  border-color: #9ca3af !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-1px) !important;
 }
 
-input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #29275B;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+.modern-number-input:focus {
+  border-color: #29275B !important;
+  box-shadow: 0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px) !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+.modern-number-input::-webkit-outer-spin-button,
+.modern-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+.modern-number-input {
+  -moz-appearance: textfield !important;
+}
+
+/* Enhanced slider styles */
+.modern-slider {
+  appearance: none !important;
+  height: 8px !important;
+  border-radius: 4px !important;
+  background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 100%) !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+}
+
+.modern-slider:hover {
+  background: linear-gradient(to right, #d1d5db 0%, #d1d5db 100%) !important;
+}
+
+.modern-slider::-webkit-slider-thumb {
+  appearance: none !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #29275B 0%, #1e1b47 100%) !important;
+  cursor: pointer !important;
+  box-shadow: 0 3px 10px rgba(41, 39, 91, 0.3) !important;
+  transition: all 0.2s ease !important;
+  border: 3px solid #ffffff !important;
+}
+
+.modern-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 5px 15px rgba(41, 39, 91, 0.4) !important;
+}
+
+.modern-slider::-moz-range-thumb {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #29275B 0%, #1e1b47 100%) !important;
+  cursor: pointer !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 0 3px 10px rgba(41, 39, 91, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.modern-slider::-moz-range-thumb:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 5px 15px rgba(41, 39, 91, 0.4) !important;
+}
+
+/* Control group hover effect */
+.control-group:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Animation for input focus */
+@keyframes inputFocus {
+  0% {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.modern-number-input:focus {
+  animation: inputFocus 0.3s ease !important;
 }
 
 /* Mobile optimizations */
 @media (max-width: 768px) {
-  input[type="range"]::-webkit-slider-thumb {
-    width: 22px;
-    height: 22px;
+  .modern-slider::-webkit-slider-thumb {
+    width: 26px !important;
+    height: 26px !important;
   }
 
-  input[type="range"]::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
+  .modern-slider::-moz-range-thumb {
+    width: 26px !important;
+    height: 26px !important;
+  }
+
+  .modern-number-input {
+    font-size: 14px !important;
+    padding: 10px 14px !important;
   }
 }
 </style>

@@ -89,14 +89,6 @@
           <router-link to="/" class="cta-button">Begin Designing</router-link>
         </div>
       </div>
-
-      <!-- Help Section -->
-      <div class="help-section">
-        <div class="help-content">
-          <span>Can't find your design?</span>
-          <a href="#" class="help-link">Learn more about saving designs</a>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -230,10 +222,11 @@ const deleteDesign = (designId) => {
   min-height: calc(100vh - 60px);
   margin-top: 60px;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding-top: 10px;
 }
 
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #29275B 0%, #1a1845 100%);
   color: white;
   padding: 60px 20px;
   display: flex;
@@ -311,7 +304,7 @@ const deleteDesign = (designId) => {
 
 .section-header h2 {
   font-size: 32px;
-  color: #2c3e50;
+  color: #29275B;
   margin-bottom: 10px;
 }
 
@@ -342,8 +335,8 @@ const deleteDesign = (designId) => {
 }
 
 .new-design-card {
-  border: 2px dashed #95d5b2;
-  background: linear-gradient(135deg, #f8fbf8 0%, #e8f5e8 100%);
+  border: 2px dashed #29275B;
+  background: linear-gradient(135deg, #f8f9fb 0%, #eeeef5 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -358,7 +351,7 @@ const deleteDesign = (designId) => {
 .plus-icon {
   width: 60px;
   height: 60px;
-  background: #95d5b2;
+  background: #29275B;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -370,7 +363,7 @@ const deleteDesign = (designId) => {
 }
 
 .new-design-content h3 {
-  color: #2d6a4f;
+  color: #29275B;
   font-size: 24px;
   margin: 0;
 }
@@ -488,7 +481,7 @@ const deleteDesign = (designId) => {
 .design-title {
   font-size: 18px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #29275B;
   margin: 0 0 10px 0;
 }
 
@@ -504,7 +497,7 @@ const deleteDesign = (designId) => {
 }
 
 .meta-item.expiry {
-  color: #95d5b2;
+  color: #29275B;
 }
 
 .card-actions {
@@ -526,12 +519,12 @@ const deleteDesign = (designId) => {
 }
 
 .action-button.primary {
-  background: #95d5b2;
+  background: #29275B;
   color: white;
 }
 
 .action-button.primary:hover {
-  background: #74c69d;
+  background: #1e1b47;
   transform: translateY(-1px);
 }
 
@@ -555,7 +548,7 @@ const deleteDesign = (designId) => {
 
 .empty-state h3 {
   font-size: 24px;
-  color: #2c3e50;
+  color: #29275B;
   margin-bottom: 15px;
 }
 
@@ -579,7 +572,7 @@ const deleteDesign = (designId) => {
 }
 
 .help-link {
-  color: #667eea;
+  color: #29275B;
   text-decoration: none;
   font-weight: 500;
   margin-left: 10px;

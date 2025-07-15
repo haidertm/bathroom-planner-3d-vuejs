@@ -4,13 +4,27 @@
         logo="./assets/logo.svg"
         backgroundColor="#fff"
         logoHeight="45px"
+        @save-design="handleSaveDesign"
     />
-    <router-view />
+    <router-view @save-design="handleSaveDesign" />
   </div>
 </template>
 
 <script setup>
 import Header from "./components/ui/Header.vue";
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const handleSaveDesign = () => {
+  // Emit event to the current route component
+  const currentRoute = router.currentRoute.value
+  if (currentRoute.name === 'Home') {
+    // Trigger save design functionality
+    const event = new CustomEvent('header-save-design')
+    window.dispatchEvent(event)
+  }
+}
 </script>
 
 <style>
@@ -23,14 +37,14 @@ import Header from "./components/ui/Header.vue";
 
 html, body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 #app {
   height: 100vh;
   width: 100vw;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 /* Remove scroll bars from all elements while keeping scroll functionality */
