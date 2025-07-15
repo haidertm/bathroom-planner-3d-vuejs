@@ -71,15 +71,16 @@
           <div :style="roomSettingsContentStyle">
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Width: {{ roomWidth.toFixed(1) }}m
+                Width: {{ localRoomWidth.toFixed(1) }}m
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
                       :min="ROOM_DEFAULTS.MIN_SIZE"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
-                      :value="roomWidth.toFixed(1)"
+                      v-model="localRoomWidth"
                       @input="updateWidthFromInput"
+                      @blur="validateAndUpdateWidth"
                       :style="numberInputStyle"
                       placeholder="Width"
                       class="modern-number-input"
@@ -89,8 +90,8 @@
                       :min="ROOM_DEFAULTS.MIN_SIZE"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
-                      :value="roomWidth"
-                      @input="updateWidth"
+                      v-model="localRoomWidth"
+                      @input="updateWidthFromSlider"
                       :style="sliderStyle"
                       class="modern-slider"
                   />
@@ -100,15 +101,16 @@
 
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Height: {{ roomHeight.toFixed(1) }}m
+                Height: {{ localRoomHeight.toFixed(1) }}m
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
                       :min="ROOM_DEFAULTS.MIN_SIZE"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
-                      :value="roomHeight.toFixed(1)"
+                      v-model="localRoomHeight"
                       @input="updateHeightFromInput"
+                      @blur="validateAndUpdateHeight"
                       :style="numberInputStyle"
                       placeholder="Height"
                       class="modern-number-input"
@@ -118,8 +120,8 @@
                       :min="ROOM_DEFAULTS.MIN_SIZE"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
-                      :value="roomHeight"
-                      @input="updateHeight"
+                      v-model="localRoomHeight"
+                      @input="updateHeightFromSlider"
                       :style="sliderStyle"
                       class="modern-slider"
                   />
@@ -250,7 +252,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
@@ -295,6 +297,26 @@ const isFloorExpanded = ref(true)
 const isWallExpanded = ref(false)
 const isSidebarVisible = ref(false)
 const isButtonPressed = ref(false)
+
+// Local state for inputs - THIS IS THE KEY FIX
+const localRoomWidth = ref(props.roomWidth)
+const localRoomHeight = ref(props.roomHeight)
+
+// Track if we're currently updating to prevent circular updates
+const isInternalUpdate = ref(false)
+
+// Watch for external prop changes and update local state (but not during internal updates)
+watch(() => props.roomWidth, (newWidth) => {
+  if (!isInternalUpdate.value) {
+    localRoomWidth.value = newWidth
+  }
+})
+
+watch(() => props.roomHeight, (newHeight) => {
+  if (!isInternalUpdate.value) {
+    localRoomHeight.value = newHeight
+  }
+})
 
 // Computed
 const isMobileDevice = computed(() => isMobile())
@@ -720,30 +742,89 @@ const toggleWallSection = () => {
   isWallExpanded.value = !isWallExpanded.value
 }
 
-// Room settings methods
-const updateWidth = (event) => {
-  const newWidth = parseFloat(event.target.value)
-  emit('room-size-change', newWidth, props.roomHeight)
+// FIXED: Room settings methods with proper validation
+const validateValue = (value, min, max) => {
+  const num = parseFloat(value)
+  if (isNaN(num)) return min
+  return Math.max(min, Math.min(max, num))
 }
 
-const updateHeight = (event) => {
-  const newHeight = parseFloat(event.target.value)
-  emit('room-size-change', props.roomWidth, newHeight)
-}
-
+// For input fields - don't validate on every keystroke, just emit
 const updateWidthFromInput = (event) => {
-  const newWidth = parseFloat(event.target.value)
-  // Ensure the value is within bounds
-  if (newWidth >= ROOM_DEFAULTS.MIN_SIZE && newWidth <= ROOM_DEFAULTS.MAX_SIZE) {
-    emit('room-size-change', newWidth, props.roomHeight)
+  const newValue = parseFloat(event.target.value)
+  if (!isNaN(newValue)) {
+    isInternalUpdate.value = true
+    emit('room-size-change', newValue, localRoomHeight.value)
+    // Reset the flag after a short delay to allow parent updates
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
   }
 }
 
 const updateHeightFromInput = (event) => {
-  const newHeight = parseFloat(event.target.value)
-  // Ensure the value is within bounds
-  if (newHeight >= ROOM_DEFAULTS.MIN_SIZE && newHeight <= ROOM_DEFAULTS.MAX_SIZE) {
-    emit('room-size-change', props.roomWidth, newHeight)
+  const newValue = parseFloat(event.target.value)
+  if (!isNaN(newValue)) {
+    isInternalUpdate.value = true
+    emit('room-size-change', localRoomWidth.value, newValue)
+    // Reset the flag after a short delay to allow parent updates
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
+  }
+}
+
+// For sliders - emit directly
+const updateWidthFromSlider = (event) => {
+  const newValue = parseFloat(event.target.value)
+  isInternalUpdate.value = true
+  emit('room-size-change', newValue, localRoomHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const updateHeightFromSlider = (event) => {
+  const newValue = parseFloat(event.target.value)
+  isInternalUpdate.value = true
+  emit('room-size-change', localRoomWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+// Only validate and constrain when user finishes editing (on blur)
+const validateAndUpdateWidth = () => {
+  const validatedValue = validateValue(
+      localRoomWidth.value,
+      ROOM_DEFAULTS.MIN_SIZE,
+      ROOM_DEFAULTS.MAX_SIZE
+  )
+
+  if (validatedValue !== localRoomWidth.value) {
+    localRoomWidth.value = validatedValue
+    isInternalUpdate.value = true
+    emit('room-size-change', validatedValue, localRoomHeight.value)
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
+  }
+}
+
+const validateAndUpdateHeight = () => {
+  const validatedValue = validateValue(
+      localRoomHeight.value,
+      ROOM_DEFAULTS.MIN_SIZE,
+      ROOM_DEFAULTS.MAX_SIZE
+  )
+
+  if (validatedValue !== localRoomHeight.value) {
+    localRoomHeight.value = validatedValue
+    isInternalUpdate.value = true
+    emit('room-size-change', localRoomWidth.value, validatedValue)
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
   }
 }
 

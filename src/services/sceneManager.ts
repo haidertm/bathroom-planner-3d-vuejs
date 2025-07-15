@@ -3,8 +3,15 @@ import { createFloor, createWalls, createCustomGrid } from '../models/roomGeomet
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
 import { createModel } from '../models/bathroomFixtures';
+import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
+
+// Import post-processing modules
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 interface SceneComponents {
   scene: THREE.Scene;
@@ -17,7 +24,11 @@ export class SceneManager {
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
 
-  // Animation loop management (your additions)
+  // Post-processing components
+  private composer: EffectComposer | null = null;
+  private outlinePass: OutlinePass | null = null;
+
+  // Animation loop management
   private animationId: number | null = null;
   private isAnimating: boolean = false;
 
@@ -61,13 +72,13 @@ export class SceneManager {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = true;
 
-    // Better color management and tone mapping
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.8;
+    // Better color management and tone mapping (ChatGPT's explicit settings)
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace; // for three.js r152+
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // explicit tone mapping
+    this.renderer.toneMappingExposure = 1.0; // Reset to 1.0 as ChatGPT suggested
 
-    // Enable physically correct lights
-    // this.renderer.physicallyCorrectLights = true;
+    // Set up post-processing with OutputPass (ChatGPT's complete solution)
+    this.setupPostProcessing();
 
     // Add bathroom items group to scene
     this.scene.add(this.bathroomItemsGroup);
@@ -82,6 +93,70 @@ export class SceneManager {
     };
   }
 
+  private setupPostProcessing(): void {
+    if (!this.scene || !this.camera || !this.renderer) return;
+
+    try {
+      // Create render target with higher precision for better outline rendering
+      const renderTarget = new THREE.WebGLRenderTarget(
+        window.innerWidth,
+        window.innerHeight,
+        {
+          format: THREE.RGBAFormat,
+          type: THREE.FloatType, // Use FloatType for better precision
+          colorSpace: THREE.SRGBColorSpace,
+          // Add multisampling for smoother outlines
+          samples: 4,
+          // Higher precision depth buffer
+          depthBuffer: true,
+          stencilBuffer: false
+        }
+      );
+
+      this.composer = new EffectComposer(this.renderer, renderTarget);
+
+      // Add render pass
+      const renderPass = new RenderPass(this.scene, this.camera);
+      this.composer.addPass(renderPass);
+
+      // Enhanced outline pass with distance-optimized settings
+      this.outlinePass = new OutlinePass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        this.scene,
+        this.camera
+      );
+
+      // IMPROVED: Distance-optimized outline settings
+      this.outlinePass.edgeStrength = 20;        // Increased from 10
+      this.outlinePass.edgeGlow = 2.0;           // Reduced glow for better visibility
+      this.outlinePass.edgeThickness = 6;        // Increased thickness
+      this.outlinePass.pulsePeriod = 0;          // Disable pulsing for consistency
+      this.outlinePass.visibleEdgeColor.set('#00ffcc');
+      this.outlinePass.hiddenEdgeColor.set('#00ffcc'); // Make hidden edges more visible
+
+      // CRITICAL: Set resolution multiplier for better edge detection
+      this.outlinePass.resolution = new THREE.Vector2(
+        window.innerWidth * 2,
+        window.innerHeight * 2
+      );
+
+      this.composer.addPass(this.outlinePass);
+
+      // Add OutputPass
+      const outputPass = new OutputPass();
+      this.composer.addPass(outputPass);
+
+      // Set outline pass reference
+      setOutlinePass(this.outlinePass);
+
+      console.log('Enhanced post-processing setup successful');
+    } catch (error) {
+      console.warn('Post-processing setup failed:', error);
+      this.composer = null;
+      this.outlinePass = null;
+    }
+  }
+
   private setupEnhancedLighting(): void {
     if (!this.scene) return;
 
@@ -90,12 +165,12 @@ export class SceneManager {
     this.lights = [];
 
     // 1. Bright ambient light - creates that "well-lit room" base
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // Increased from 0.8
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
 
     // 2. Main ceiling light - bright overhead illumination
-    const mainCeilingLight = new THREE.PointLight(0xffffff, 1.2, 25);
+    const mainCeilingLight = new THREE.PointLight(0xffffff, 2.0, 30); // Back to original
     mainCeilingLight.position.set(0, 2.8, 0);
     mainCeilingLight.castShadow = true;
     mainCeilingLight.shadow.mapSize.width = 2048;
@@ -108,7 +183,7 @@ export class SceneManager {
     this.lights.push(mainCeilingLight);
 
     // 3. Additional ceiling lights for even coverage
-    const ceilingLight1 = new THREE.PointLight(0xffffff, 0.8, 15);
+    const ceilingLight1 = new THREE.PointLight(0xffffff, 1.4, 18); // Increased from 0.8
     ceilingLight1.position.set(1.5, 2.8, 1.5);
     ceilingLight1.castShadow = true;
     ceilingLight1.shadow.mapSize.width = 1024;
@@ -119,7 +194,7 @@ export class SceneManager {
     this.scene.add(ceilingLight1);
     this.lights.push(ceilingLight1);
 
-    const ceilingLight2 = new THREE.PointLight(0xffffff, 0.8, 15);
+    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 18); // Increased from 0.8
     ceilingLight2.position.set(-1.5, 2.8, -1.5);
     ceilingLight2.castShadow = true;
     ceilingLight2.shadow.mapSize.width = 1024;
@@ -130,8 +205,31 @@ export class SceneManager {
     this.scene.add(ceilingLight2);
     this.lights.push(ceilingLight2);
 
-    // 4. Soft directional light from above - simulates natural light
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    // 4. MORE ceiling lights for corner coverage
+    const ceilingLight3 = new THREE.PointLight(0xffffff, 1.2, 16);
+    ceilingLight3.position.set(1.5, 2.8, -1.5);
+    ceilingLight3.castShadow = true;
+    ceilingLight3.shadow.mapSize.width = 1024;
+    ceilingLight3.shadow.mapSize.height = 1024;
+    ceilingLight3.shadow.camera.near = 0.1;
+    ceilingLight3.shadow.camera.far = 15;
+
+    this.scene.add(ceilingLight3);
+    this.lights.push(ceilingLight3);
+
+    const ceilingLight4 = new THREE.PointLight(0xffffff, 1.2, 16);
+    ceilingLight4.position.set(-1.5, 2.8, 1.5);
+    ceilingLight4.castShadow = true;
+    ceilingLight4.shadow.mapSize.width = 1024;
+    ceilingLight4.shadow.mapSize.height = 1024;
+    ceilingLight4.shadow.camera.near = 0.1;
+    ceilingLight4.shadow.camera.far = 15;
+
+    this.scene.add(ceilingLight4);
+    this.lights.push(ceilingLight4);
+
+    // 5. Brighter directional light from above - simulates natural light
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.8); // Increased from 0.4
     topLight.position.set(0, 10, 2);
     topLight.castShadow = true;
     topLight.shadow.mapSize.width = 2048;
@@ -147,15 +245,40 @@ export class SceneManager {
     this.scene.add(topLight);
     this.lights.push(topLight);
 
-    // 5. Fill light to reduce harsh shadows
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.2);
-    fillLight.position.set(-5, 8, -5);
-    this.scene.add(fillLight);
-    this.lights.push(fillLight);
+    // 6. Multiple fill lights to reduce harsh shadows
+    const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.5); // Increased from 0.2
+    fillLight1.position.set(-5, 8, -5);
+    this.scene.add(fillLight1);
+    this.lights.push(fillLight1);
 
-    // Optional: Add light helpers for debugging (comment out in production)
-    // const helper = new THREE.PointLightHelper(mainCeilingLight, 0.5);
-    // this.scene.add(helper);
+    const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    fillLight2.position.set(5, 8, 5);
+    this.scene.add(fillLight2);
+    this.lights.push(fillLight2);
+
+    const fillLight3 = new THREE.DirectionalLight(0xffffff, 0.3);
+    fillLight3.position.set(-5, 8, 5);
+    this.scene.add(fillLight3);
+    this.lights.push(fillLight3);
+
+    // 7. Side rim lights for better object definition
+    const rimLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
+    rimLight1.position.set(8, 5, 0);
+    this.scene.add(rimLight1);
+    this.lights.push(rimLight1);
+
+    const rimLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+    rimLight2.position.set(-8, 5, 0);
+    this.scene.add(rimLight2);
+    this.lights.push(rimLight2);
+
+    // 8. Additional ambient fill from below (subtle floor bounce)
+    const floorBounce = new THREE.HemisphereLight(0xffffff, 0xf0f0f0, 0.4);
+    floorBounce.position.set(0, -1, 0);
+    this.scene.add(floorBounce);
+    this.lights.push(floorBounce);
+
+    console.log(`Enhanced lighting setup complete: ${this.lights.length} lights total`);
   }
 
   updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
@@ -174,9 +297,16 @@ export class SceneManager {
     const material = textureManager.createTexturedMaterial(floorTexture);
 
     // Enhanced floor material properties
-    material.roughness = 0.3;
-    material.metalness = 0.05;
-    material.envMapIntensity = 0.8;
+    material.roughness = 0.05;
+    material.metalness = 0.02;
+    material.envMapIntensity = 0.5;
+
+
+    // material.clearcoat = 0.8;
+    // material.clearcoatRoughness = 0.1;
+    //
+    // // Enhance reflectivity
+    // material.reflectivity = 0.9;
 
     return material;
   }
@@ -302,11 +432,6 @@ export class SceneManager {
               material.roughness = material.roughness || 0.7;
               material.metalness = material.metalness || 0.1;
               material.envMapIntensity = 0.5;
-
-              // Add subtle normal mapping if not present
-              if (!material.normalMap) {
-                // Could add a default normal map here
-              }
             }
           });
         }
@@ -318,6 +443,33 @@ export class SceneManager {
     });
   }
 
+  adjustOutlineForDistance(): void {
+    if (!this.outlinePass || !this.camera) return;
+
+    // Calculate average distance to selected objects
+    const selectedObjects = this.outlinePass.selectedObjects;
+    if (selectedObjects.length === 0) return;
+
+    let totalDistance = 0;
+    selectedObjects.forEach(obj => {
+      totalDistance += this.camera!.position.distanceTo(obj.position);
+    });
+
+    const averageDistance = totalDistance / selectedObjects.length;
+
+    // Adjust outline parameters based on distance
+    const distanceFactor = Math.max(1, averageDistance / 10); // Normalize to 10 units
+
+    // Scale outline thickness and strength with distance
+    this.outlinePass.edgeThickness = Math.min(10, 3 * distanceFactor);
+    this.outlinePass.edgeStrength = Math.min(20, 8 * distanceFactor);
+
+    // Only log occasionally to avoid spam
+    if (Math.random() < 0.01) { // 1% chance
+      console.log(`Outline adjusted for distance: ${averageDistance.toFixed(1)} units`);
+    }
+  }
+
   startAnimationLoop(): void {
     if (!this.renderer || !this.scene || !this.camera) return;
 
@@ -326,17 +478,24 @@ export class SceneManager {
     const animate = () => {
       this.animationId = requestAnimationFrame(animate);
 
-      // Check if we should continue animating and if objects still exist
       if (!this.isAnimating || !this.renderer || !this.scene || !this.camera) {
         return;
       }
 
-      // Update wall culling based on camera position
+      // Update wall culling
       if (this.wallCullingManager) {
         this.wallCullingManager.updateWallVisibility();
       }
 
-      this.renderer.render(this.scene, this.camera);
+      // ADDED: Adjust outline for distance every frame
+      this.adjustOutlineForDistance();
+
+      // Render
+      if (this.composer) {
+        this.composer.render();
+      } else {
+        this.renderer.render(this.scene, this.camera);
+      }
     };
     animate();
   }
@@ -347,6 +506,21 @@ export class SceneManager {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
+    }
+  }
+
+  // Update composer size when window resizes
+  updateComposerSize(): void {
+    if (this.composer) {
+      this.composer.setSize(window.innerWidth, window.innerHeight);
+
+      // Update outline pass resolution
+      if (this.outlinePass) {
+        this.outlinePass.resolution.set(
+          window.innerWidth * 2,
+          window.innerHeight * 2
+        );
+      }
     }
   }
 
@@ -380,6 +554,10 @@ export class SceneManager {
     });
     this.lights = [];
 
+    if (this.composer) {
+      this.composer.dispose();
+    }
+
     if (this.renderer) {
       this.renderer.dispose();
     }
@@ -388,6 +566,8 @@ export class SceneManager {
     this.scene = null;
     this.camera = null;
     this.renderer = null;
+    this.composer = null;
+    this.outlinePass = null;
     this.floorRef = null;
     this.wallRefs = [];
     this.gridRef = null;

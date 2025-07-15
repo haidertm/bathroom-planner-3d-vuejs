@@ -1,8 +1,8 @@
 // src/services/eventHandlers.ts
 import * as THREE from 'three';
 import type { Ref } from 'vue';
-import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject } from '../utils/helpers';
-import { constrainToWalls, snapToNearestWall, type BathroomItem } from '../utils/constraints';
+import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject, setOutlineColor } from '../utils/helpers';
+import { constrainToWalls, snapToNearestWall, wouldCollideWithExisting, type BathroomItem } from '../utils/constraints';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 
@@ -21,6 +21,7 @@ interface UpdateData {
 
 // Function type definitions
 type SetItemsFunction = (updater: (items: BathroomItem[]) => BathroomItem[]) => void;
+type GetItemsFunction = () => BathroomItem[];
 type DeleteItemFunction = (itemId: number) => void;
 
 export class EventHandlers {
@@ -31,6 +32,7 @@ export class EventHandlers {
   private roomWidthRef: Ref<number>;
   private roomHeightRef: Ref<number>;
   private setItems: SetItemsFunction;
+  private getItems: GetItemsFunction;
   private deleteItem: DeleteItemFunction;
 
   // Camera constraints - ADD THESE NEW PROPERTIES
@@ -74,6 +76,7 @@ export class EventHandlers {
     roomWidthRef: Ref<number>,
     roomHeightRef: Ref<number>,
     setItems: SetItemsFunction,
+    getItems: GetItemsFunction,
     deleteItem: DeleteItemFunction
   ) {
     // Assign core objects
@@ -83,6 +86,7 @@ export class EventHandlers {
     this.roomWidthRef = roomWidthRef;
     this.roomHeightRef = roomHeightRef;
     this.setItems = setItems;
+    this.getItems = getItems;
     this.deleteItem = deleteItem;
 
     // Initialize interaction state
@@ -124,6 +128,11 @@ export class EventHandlers {
     this.handleTouchEnd = this.handleTouchEnd.bind(this);
     this.handleResize = this.handleResize.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
+  }
+
+  // Method to get current items for collision detection
+  private getCurrentItems(): BathroomItem[] {
+    return this.getItems();
   }
 
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
@@ -236,6 +245,27 @@ export class EventHandlers {
 
       console.log('selectedObject >>>', this.selectedObject);
 
+      // Check collision state immediately when object is selected
+      const objectType = this.selectedObject.userData.type as ComponentType;
+      const objectScale = this.selectedObject.scale.x;
+      const itemId = this.selectedObject.userData.itemId as number;
+      const currentItems = this.getCurrentItems();
+
+      const currentPosition = this.selectedObject.position;
+      const isColliding = wouldCollideWithExisting(
+        { x: currentPosition.x, y: currentPosition.y, z: currentPosition.z },
+        objectType,
+        objectScale,
+        itemId,
+        currentItems
+      );
+
+      // Highlight the object first
+      highlightObject(this.selectedObject, true);
+
+      // Then set appropriate outline color based on current collision state
+      setOutlineColor(isColliding);
+
       if (event.button === 2) { // Right click for rotation
         this.isObjectRotating = true;
         this.isDragOperation = true; // Mark as drag operation
@@ -267,7 +297,6 @@ export class EventHandlers {
         this.renderer.domElement.style.cursor = 'grabbing';
       }
 
-      highlightObject(this.selectedObject, true);
     } else {
       if (event.button === 0) { // Left click for camera rotation
         this.isRotating = true;
@@ -333,6 +362,7 @@ export class EventHandlers {
       // Get object type and scale for enhanced constraints
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
+      const itemId = this.selectedObject.userData.itemId as number;
 
       // DEBUG: Log room size refs
       console.log('🔗 DRAG - Room size refs:', {
@@ -383,16 +413,29 @@ export class EventHandlers {
       // IMPORTANT: Update rotation to match the wall the object is on
       this.selectedObject.rotation.y = snappedRotation;
 
+      // NEW: Check for collisions and update outline color
+      const currentItems = this.getCurrentItems();
+      const isColliding = wouldCollideWithExisting(
+        { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+        objectType,
+        objectScale,
+        itemId,
+        currentItems
+      );
+
+      // Update outline color based on collision state
+      setOutlineColor(isColliding);
+
       // DEBUG: Log final position
       console.log('🔗 DRAG - Final wall-snapped position:', {
         x: newPosition.x.toFixed(3),
         z: newPosition.z.toFixed(3),
-        rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`
+        rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`,
+        collision: isColliding ? 'DETECTED' : 'NONE'
       });
 
       this.selectedObject.position.copy(newPosition);
 
-      const itemId = this.selectedObject.userData.itemId as number;
       // Queue update instead of applying immediately
       this.queueUpdate(itemId, {
         position: [newPosition.x, newPosition.y, newPosition.z],
@@ -446,6 +489,28 @@ export class EventHandlers {
     if (this.isDragOperation) {
       this.applyPendingUpdates();
       this.isDragOperation = false;
+    }
+
+    // Check final collision state when drag ends and set appropriate color
+    if (this.isDragging && this.selectedObject) {
+      const objectType = this.selectedObject.userData.type as ComponentType;
+      const objectScale = this.selectedObject.scale.x;
+      const itemId = this.selectedObject.userData.itemId as number;
+      const currentItems = this.getCurrentItems();
+
+      const finalPosition = this.selectedObject.position;
+      const isColliding = wouldCollideWithExisting(
+        { x: finalPosition.x, y: finalPosition.y, z: finalPosition.z },
+        objectType,
+        objectScale,
+        itemId,
+        currentItems
+      );
+
+      // Set outline color based on final collision state
+      setOutlineColor(isColliding);
+
+      console.log('🎯 Final drag position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
     }
 
     // Don't clear selection on mouse up - keep it selected for potential deletion
@@ -526,7 +591,26 @@ export class EventHandlers {
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
         this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
 
+        // Check collision state immediately when object is selected
+        const objectType = this.selectedObject.userData.type as ComponentType;
+        const objectScale = this.selectedObject.scale.x;
+        const itemId = this.selectedObject.userData.itemId as number;
+        const currentItems = this.getCurrentItems();
+
+        const currentPosition = this.selectedObject.position;
+        const isColliding = wouldCollideWithExisting(
+          { x: currentPosition.x, y: currentPosition.y, z: currentPosition.z },
+          objectType,
+          objectScale,
+          itemId,
+          currentItems
+        );
+
+        // Highlight the object first
         highlightObject(this.selectedObject, true);
+
+        // Then set appropriate outline color based on current collision state
+        setOutlineColor(isColliding);
       } else {
         this.isRotating = true;
         this.mouseX = touch.clientX;
@@ -557,6 +641,7 @@ export class EventHandlers {
         // Get object type and scale for enhanced constraints
         const objectType = this.selectedObject.userData.type as ComponentType;
         const objectScale = this.selectedObject.scale.x;
+        const itemId = this.selectedObject.userData.itemId as number;
 
         // UPDATED: Always constrain to walls instead of free room movement
         const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
@@ -592,17 +677,30 @@ export class EventHandlers {
         // IMPORTANT: Update rotation to match the wall the object is on
         this.selectedObject.rotation.y = snappedRotation;
 
+        // NEW: Check for collisions and update outline color
+        const currentItems = this.getCurrentItems();
+        const isColliding = wouldCollideWithExisting(
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+          objectType,
+          objectScale,
+          itemId,
+          currentItems
+        );
+
+        // Update outline color based on collision state
+        setOutlineColor(isColliding);
+
         // DEBUG: Log constraint application
         console.log('🔗 Touch constraining object:', objectType,
           'to wall position:', {
             x: newPosition.x.toFixed(3),
             z: newPosition.z.toFixed(3),
-            rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`
+            rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`,
+            collision: isColliding ? 'DETECTED' : 'NONE'
           });
 
         this.selectedObject.position.copy(newPosition);
 
-        const itemId = this.selectedObject.userData.itemId as number;
         // Queue update instead of applying immediately
         this.queueUpdate(itemId, {
           position: [newPosition.x, newPosition.y, newPosition.z],
@@ -658,6 +756,28 @@ export class EventHandlers {
     if (this.isDragOperation) {
       this.applyPendingUpdates();
       this.isDragOperation = false;
+    }
+
+    // Check final collision state when touch drag ends and set appropriate color
+    if (this.isDragging && this.selectedObject) {
+      const objectType = this.selectedObject.userData.type as ComponentType;
+      const objectScale = this.selectedObject.scale.x;
+      const itemId = this.selectedObject.userData.itemId as number;
+      const currentItems = this.getCurrentItems();
+
+      const finalPosition = this.selectedObject.position;
+      const isColliding = wouldCollideWithExisting(
+        { x: finalPosition.x, y: finalPosition.y, z: finalPosition.z },
+        objectType,
+        objectScale,
+        itemId,
+        currentItems
+      );
+
+      // Set outline color based on final collision state
+      setOutlineColor(isColliding);
+
+      console.log('🎯 Final touch position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
     }
 
     // Don't clear selection on touch end - keep it selected for potential deletion
@@ -720,6 +840,7 @@ export class EventHandlers {
   public clearSelection (): void {
     if (this.selectedObject) {
       highlightObject(this.selectedObject, false);
+      setOutlineColor(false); // Reset to normal color when clearing selection
       this.selectedObject = null;
     }
   }
