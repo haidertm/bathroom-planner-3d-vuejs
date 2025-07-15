@@ -592,7 +592,7 @@ const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
   top: isMobileDevice.value ? '0' : '60px',
   left: isMobileDevice.value ? '0' : '0',
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 93px)',
+  height: isMobileDevice.value ? '100vh' : '100vh',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   backgroundColor: '#ffffff',
@@ -758,24 +758,34 @@ const validateValue = (value, min, max) => {
 const updateWidthFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
+    // Update local value without clamping during typing
     localRoomWidth.value = newValue
-    isInternalUpdate.value = true
-    emit('room-size-change', newValue, localRoomHeight.value)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
+
+    // Only emit valid values (within range)
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+      isInternalUpdate.value = true
+      emit('room-size-change', newValue, localRoomHeight.value)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
   }
 }
 
 const updateHeightFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
+    // Update local value without clamping during typing
     localRoomHeight.value = newValue
-    isInternalUpdate.value = true
-    emit('room-size-change', localRoomWidth.value, newValue)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
+
+    // Only emit valid values (within range)
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+      isInternalUpdate.value = true
+      emit('room-size-change', localRoomWidth.value, newValue)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
   }
 }
 
