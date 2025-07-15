@@ -66,7 +66,7 @@
         </button>
 
         <!-- Instructions Content -->
-        <h2 :style="{ marginTop: '0', marginBottom: '20px', color: '#333', fontSize: '24px' }">
+        <h2 :style="{ marginTop: '0', color: '#333', fontSize: '24px' }">
           🏠 Bathroom Planner Instructions
         </h2>
 
@@ -259,11 +259,6 @@ const readInstructionsButtonStyle = computed(() => ({
   width: 'fit-content',
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
   textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-  '&:hover': {
-    backgroundColor: 'rgba(37, 99, 235, 0.95)',
-    transform: 'translateY(-1px)',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-  }
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -321,9 +316,7 @@ const instructionsContentStyle = computed(() => ({
 }))
 
 const sectionStyle = computed(() => ({
-  marginBottom: '25px',
-  paddingBottom: '15px',
-  borderBottom: '1px solid #f0f0f0'
+  paddingBottom: '0',
 }))
 
 const sectionHeaderStyle = computed(() => ({

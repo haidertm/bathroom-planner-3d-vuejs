@@ -98,7 +98,8 @@
             <!-- Bathtub -->
             <div class="bathtub-icon">
               <svg width="100" height="50" viewBox="0 0 100 50">
-                <path d="M10 15 Q10 10 15 10 L85 10 Q90 10 90 15 L90 35 Q90 40 85 40 L15 40 Q10 40 10 35 Z" fill="none" stroke="#29275B" stroke-width="2"/>
+                <path d="M10 15 Q10 10 15 10 L85 10 Q90 10 90 15 L90 35 Q90 40 85 40 L15 40 Q10 40 10 35 Z" fill="none"
+                      stroke="#29275B" stroke-width="2"/>
                 <circle cx="20" cy="45" r="3" fill="none" stroke="#29275B" stroke-width="2"/>
                 <circle cx="80" cy="45" r="3" fill="none" stroke="#29275B" stroke-width="2"/>
               </svg>
@@ -149,10 +150,13 @@ const selectShape = (shape) => {
 
 const goToPlanner = () => {
   if (selectedShape.value) {
-    // Store the selected shape for the planner
-    localStorage.setItem('selected-room-shape', selectedShape.value)
-
-    // Navigate to the planner page
+    try {
+      // Store the selected shape for the planner
+      localStorage.setItem('selected-room-shape', selectedShape.value)
+    } catch (error) {
+      console.warn('Failed to save shape selection:', error)
+      // Continue navigation even if storage fails
+    }
     router.push('/planner')
   }
 }
@@ -441,10 +445,10 @@ const goToPlanner = () => {
 
 @keyframes float {
   0%, 100% {
-    transform: translateY(0px);
+    transform: translate3d(0, 0px, 0);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translate3d(0, -10px, 0);
   }
 }
 
