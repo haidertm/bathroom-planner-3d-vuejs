@@ -73,6 +73,15 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       wallBuffer: 8, // 8cm - Stay away from wall for access
       description: 'Basin faces into room for use'
     },
+    movement: { // NEW: Sink movement configuration
+      snapToWall: true,
+      allowVerticalMovement: false,
+      allowFreeMovement: false,
+      allowFreeRotation: false,
+      minHeight: 70,
+      maxHeight: 120,
+      maintainWallDistance: true
+    },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'cylinder',
     fallbackSize: [60, 80, 60] // 60cm x 80cm x 60cm
@@ -88,6 +97,15 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       wallBuffer: 12, // 12cm - Very close to wall for radiators
       description: 'Heat radiates into room'
     },
+    movement: { // Radiator movement configuration
+      snapToWall: true,
+      allowVerticalMovement: true,
+      allowFreeMovement: false,
+      allowFreeRotation: false,
+      minHeight: 10,
+      maxHeight: 100,
+      maintainWallDistance: false
+    },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'box',
     fallbackSize: [64.5, 130.2, 15.5] // 64.5cm x 130.2cm x 15.5cm
@@ -101,6 +119,15 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       wallBuffer: 35, // 35cm - Some space from wall
       description: 'Seat faces into room for use'
     },
+    movement: { // NEW: Toilet movement configuration
+      snapToWall: true, // Toilets can be positioned anywhere
+      allowVerticalMovement: false,
+      allowFreeMovement: false,
+      allowFreeRotation: false,
+      minHeight: 0,
+      maxHeight: 20,
+      maintainWallDistance: false
+    },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'box',
     fallbackSize: [60, 80, 80] // 60cm x 80cm x 80cm
@@ -111,8 +138,17 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
     path: '/models/bath.glb',
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 89, // 89cm - Close to wall but accessible
+      wallBuffer: 68, // 89cm - Close to wall but accessible
       description: 'Tub opening faces into room'
+    },
+    movement: { // NEW: Toilet movement configuration
+      snapToWall: false, // Toilets can be positioned anywhere
+      allowVerticalMovement: false,
+      allowFreeMovement: true,
+      allowFreeRotation: true,
+      minHeight: 0,
+      maxHeight: 20,
+      maintainWallDistance: false
     },
     fallbackColor: 0xffffff,
     fallbackGeometry: 'box',
