@@ -134,6 +134,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   {
     name: 'Mirror',
     path: '/models/mirror.glb',
+    scale: 90,
     position: [0, 0, 0], // -120cm (was -1.2m)
     orientation: {
       type: 'face_into_room',
