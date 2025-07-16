@@ -545,17 +545,6 @@ onMounted(async () => {
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 
-  setTimeout(() => {
-    console.log('🧪 AUTO-TESTING grid system...');
-    sceneManagerRef.value.testGridSystem();
-
-    // Test visual grids after 1 more second
-    setTimeout(() => {
-      console.log('🎨 AUTO-TESTING visual grids...');
-      sceneManagerRef.value.testWallGridVisibility();
-    }, 1000);
-  }, 2000);
-
   // Set initial wall culling state
   sceneManagerRef.value.setWallCullingEnabled(wallCullingEnabled.value)
 

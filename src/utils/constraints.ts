@@ -108,7 +108,7 @@ export const checkCollision = (
   const halfDepth2 = (dims2.depth * scale2) / 2;
 
   // Add small buffer to prevent objects from being too close
-  const buffer = 15; // 10cm buffer
+  const buffer = 10; // 10cm buffer
 
   // Check if bounding boxes overlap with buffer
   const overlapX = Math.abs(pos1.x - pos2.x) < (halfWidth1 + halfWidth2 + buffer);
