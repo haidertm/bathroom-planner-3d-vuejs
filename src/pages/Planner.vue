@@ -1,6 +1,11 @@
 <template>
   <div :style="{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }">
-    <sidebar
+    <Header
+        logo="./assets/logo.svg"
+        backgroundColor="#fff"
+        logoHeight="45px"
+    />
+    <Sidebar
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
         @wall-change="handleWallChange"
@@ -11,9 +16,11 @@
         :room-width="roomWidth"
         :room-height="roomHeight"
         :show-grid="showGrid"
+        :show-wall-grid="showWallGrid"
         :wall-culling-enabled="wallCullingEnabled"
         @room-size-change="handleRoomSizeChange"
         @toggle-grid="setShowGrid"
+        @toggle-wall-grid="setShowWallGrid"
         @constrain-objects="constrainObjects"
         @toggle-wall-culling="handleWallCullingToggle"
     />
@@ -98,7 +105,7 @@
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
@@ -124,7 +131,8 @@ import { isMobile } from '../utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from '../composables/useUndoRedo.js'
-import Sidebar from "../components/ui/sidebar.vue";
+import Sidebar from '../components/ui/sidebar.vue';
+import Header from '../components/ui/Header.vue';
 
 // Router
 const router = useRouter()
@@ -150,13 +158,26 @@ const generateUniqueId = () => {
 // Default objects to load on page start - Properly oriented to face INTO room
 const getDefaultItems = () => {
   return [
-    {
-      id: 1003,
-      type: 'Door',
-      position: [0, 0, -2.95], // South wall
-      rotation: - Math.PI / 2, // Facing north (into room)
-      scale: 1.0
-    }
+    // {
+    //   id: 1003,
+    //   type: 'Door',
+    //   position: [0, 0, -2.95], // South wall
+    //   rotation: - Math.PI / 2, // Facing north (into room)
+    //   scale: 1.0
+    // },
+    // {
+    //   name: 'Door',
+    //   path: '/models/door.glb',
+    //   scale: 1.4,
+    //   orientation: {
+    //     type: 'flush_with_wall',
+    //     wallBuffer: 0.045, // Flush with wall - no gap
+    //     description: 'Door is part of wall opening'
+    //   },
+    //   fallbackColor: 0x8B4513,
+    //   fallbackGeometry: 'box',
+    //   fallbackSize: [0.1, 2.0, 0.8]
+    // }
   ]
 }
 
@@ -167,8 +188,10 @@ const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
-const showGrid = ref(false)
+const showGrid = ref(true)
+const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
+const preventCollisionPlacement = ref(true)
 
 // Update your App.vue canvasContainerStyle computed property:
 const canvasContainerStyle = computed(() => {
@@ -191,7 +214,7 @@ const canvasContainerStyle = computed(() => {
     position: 'absolute',
     top: '60px',
     left: sidebarWidth,
-    width: `calc(100vw - ${sidebarWidth})`,
+    width: `calc(100vw - ${ sidebarWidth })`,
     height: 'calc(100vh - 60px)',
     cursor: 'grab',
     overflow: 'hidden'
@@ -258,7 +281,7 @@ const readInstructionsButtonStyle = computed(() => ({
   gap: '6px',
   width: 'fit-content',
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -316,7 +339,7 @@ const instructionsContentStyle = computed(() => ({
 }))
 
 const sectionStyle = computed(() => ({
-  paddingBottom: '0',
+  paddingBottom: '0'
 }))
 
 const sectionHeaderStyle = computed(() => ({
@@ -375,9 +398,9 @@ const addItem = (type) => {
 
   console.log('🏠 Adding item:', type, 'at WALL position:', {
     position: newItem.position,
-    rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
+    rotation: `${ (wallRotation * 180 / Math.PI).toFixed(0) }°`,
     orientation: 'configured per object type',
-    roomSize: `${roomWidth.value} x ${roomHeight.value}`
+    roomSize: `${ roomWidth.value } x ${ roomHeight.value }`
   })
 
   const newItems = [...items.value, newItem]
@@ -461,6 +484,10 @@ const setShowGrid = (value) => {
   showGrid.value = value
 }
 
+const setShowWallGrid = (value) => {
+  showWallGrid.value = value
+}
+
 const handleShowTexturePanel = () => {
   console.log('Show texture panel')
   showTexturePanel.value = true
@@ -509,13 +536,14 @@ onMounted(async () => {
       roomHeightRef,
       setItems, // Use our custom setItems function
       getItems, // Use our custom getItems function
-      deleteItem
+      deleteItem,
+      preventCollisionPlacement
   ))
 
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 
   // Set initial wall culling state
   sceneManagerRef.value.setWallCullingEnabled(wallCullingEnabled.value)
@@ -538,6 +566,11 @@ onMounted(async () => {
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
 
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.setWallGridVisible(showWallGrid.value)
+    console.log('🔄 Initial wall grid visibility synchronized:', showWallGrid.value)
+  }
+
   // PRELOAD MODELS - This will load all models defined in constants
   console.log('Starting model preloading...')
   try {
@@ -557,12 +590,12 @@ onMounted(async () => {
 })
 
 // Watch for room geometry changes
-watch([roomWidth, roomHeight, showGrid], () => {
+watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
   if (!sceneManagerRef.value) return
 
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 })
 
 // Watch for texture changes
@@ -583,6 +616,14 @@ watch([items, lastUpdateSource], ([newItems, updateSource]) => {
     sceneManagerRef.value.updateBathroomItems(newItems, createModel)
   }
 }, { deep: true })
+
+watch([showWallGrid], ([newShowWallGrid]) => {
+  console.log('👀 Wall grid visibility changed:', newShowWallGrid);
+
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.setWallGridVisible(newShowWallGrid);
+  }
+}, { immediate: true });
 
 // Cleanup
 onUnmounted(() => {

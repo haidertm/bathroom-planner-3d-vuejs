@@ -1,3 +1,5 @@
+// src/constants/dimensions.ts - Unit conversion utilities
+
 export interface RoomDefaults {
   readonly WIDTH: number;
   readonly HEIGHT: number;
@@ -7,11 +9,11 @@ export interface RoomDefaults {
 }
 
 export const ROOM_DEFAULTS: RoomDefaults = {
-  WIDTH: 6,
-  HEIGHT: 6,
-  MIN_SIZE: 6,
-  MAX_SIZE: 20,
-  STEP: 0.5
+  WIDTH: 300, // default
+  HEIGHT: 250, // default Length/Depth
+  MIN_SIZE: 100,
+  MAX_SIZE: 600,
+  STEP: 10
 }  as const;
 
 export interface WallSettings {
@@ -20,8 +22,8 @@ export interface WallSettings {
 }
 
 export const WALL_SETTINGS: WallSettings = {
-  HEIGHT: 3,
-  THICKNESS: 0.1
+  HEIGHT: 250,
+  THICKNESS: 5
 } as const;
 
 
@@ -32,9 +34,9 @@ export interface Constraints {
 }
 
 export const CONSTRAINTS: Constraints = {
-  OBJECT_BUFFER: 0.4,
-  SNAP_DISTANCE: 0.3,
-  GRID_SPACING: 0.5
+  OBJECT_BUFFER: 40,
+  SNAP_DISTANCE: 30,
+  GRID_SPACING: 15 // in centimeters
 } as const;
 
 export interface ScaleLimits {
@@ -55,19 +57,19 @@ export interface HeightLimits {
 
 export const HEIGHT_LIMITS: HeightLimits = {
   MIN: 0,
-  MAX: 1.5,
-  MIRROR_MAX: 2.5
+  MAX: 150,
+  MIRROR_MAX: 250
 } as const;
 
 // Add model dimensions for better constraint handling
 export const MODEL_DIMENSIONS = {
-  Toilet: { width: 0.8, depth: 0.8, height: 0.8 },
-  Sink: { width: 0.6, depth: 0.5, height: 0.9 },
-  Bath: { width: 1.7, depth: 0.8, height: 0.6 },
-  Shower: { width: 0.8, depth: 0.8, height: 2.0 },
-  Radiator: { width: 0.7, depth: 0.2, height: 1.4 },
-  Mirror: { width: 0.8, depth: 0.05, height: 0 },
-  Door: { width: 0.8, depth: 0.1, height: 2.0 }
+  Toilet: { width: 80, depth: 80, height: 80 },
+  Sink: { width: 60, depth: 50, height: 90 },
+  Bath: { width: 170, depth: 80, height: 60 },
+  Shower: { width: 80, depth: 80, height: 200 },
+  Radiator: { width: 70, depth: 20, height: 140 },
+  Mirror: { width: 80, depth: 5, height: 0 },
+  Door: { width: 80, depth: 10, height: 200 }
 };
 
 export type ComponentType = keyof typeof MODEL_DIMENSIONS;

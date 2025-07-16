@@ -4,13 +4,13 @@ import { getObjectRotationForWall, getOrientationInfo, getObjectWallBuffer } fro
 
 // Model dimensions for more accurate constraint calculations
 export const MODEL_DIMENSIONS: Record<ComponentType, { width: number; depth: number; height: number }> = {
-  'Toilet': { width: 0.6, depth: 0.8, height: 0.8 },
-  'Sink': { width: 0.6, depth: 0.6, height: 0.8 },
-  'Bath': { width: 1.7, depth: 0.8, height: 0.6 },
-  'Shower': { width: 0.8, depth: 0.8, height: 2.0 },
-  'Radiator': { width: 0.8, depth: 0.1, height: 0.6 },
-  'Mirror': { width: 0.8, depth: 0.05, height: 1.0 },
-  'Door': { width: 0.1, depth: 0.8, height: 2.0 }
+  'Toilet': { width: 60, depth: 80, height: 80 },
+  'Sink': { width: 60, depth: 60, height: 80 },
+  'Bath': { width: 170, depth: 80, height: 60 },
+  'Shower': { width: 80, depth: 80, height: 200 },
+  'Radiator': { width: 80, depth: 10, height: 60 },
+  'Mirror': { width: 80, depth: 5, height: 100 },
+  'Door': { width: 10, depth: 80, height: 200 }
 };
 
 // Interface for position
@@ -84,6 +84,7 @@ export const findNearestWall = (
 };
 
 // Check if two objects would collide at given positions
+// Enhanced collision detection with better debugging
 export const checkCollision = (
   pos1: Position,
   type1: ComponentType,
@@ -95,19 +96,38 @@ export const checkCollision = (
   const dims1 = MODEL_DIMENSIONS[type1];
   const dims2 = MODEL_DIMENSIONS[type2];
 
-  if (!dims1 || !dims2) return false;
+  if (!dims1 || !dims2) {
+    console.warn(`Missing dimensions for collision check: ${type1} or ${type2}`);
+    return false;
+  }
 
-  // Calculate bounding boxes with scale
+  // Calculate bounding boxes with scale (dimensions are in centimeters)
   const halfWidth1 = (dims1.width * scale1) / 2;
   const halfDepth1 = (dims1.depth * scale1) / 2;
   const halfWidth2 = (dims2.width * scale2) / 2;
   const halfDepth2 = (dims2.depth * scale2) / 2;
 
-  // Check if bounding boxes overlap
-  const overlapX = Math.abs(pos1.x - pos2.x) < (halfWidth1 + halfWidth2);
-  const overlapZ = Math.abs(pos1.z - pos2.z) < (halfDepth1 + halfDepth2);
+  // Add small buffer to prevent objects from being too close
+  const buffer = 10; // 10cm buffer
 
-  return overlapX && overlapZ;
+  // Check if bounding boxes overlap with buffer
+  const overlapX = Math.abs(pos1.x - pos2.x) < (halfWidth1 + halfWidth2 + buffer);
+  const overlapZ = Math.abs(pos1.z - pos2.z) < (halfDepth1 + halfDepth2 + buffer);
+
+  const hasCollision = overlapX && overlapZ;
+
+  // Debug logging
+  console.log(`🔍 Collision check: ${type1} vs ${type2}`, {
+    pos1: { x: pos1.x.toFixed(1), z: pos1.z.toFixed(1) },
+    pos2: { x: pos2.x.toFixed(1), z: pos2.z.toFixed(1) },
+    dims1: { w: (dims1.width * scale1).toFixed(1), d: (dims1.depth * scale1).toFixed(1) },
+    dims2: { w: (dims2.width * scale2).toFixed(1), d: (dims2.depth * scale2).toFixed(1) },
+    distance: { x: Math.abs(pos1.x - pos2.x).toFixed(1), z: Math.abs(pos1.z - pos2.z).toFixed(1) },
+    required: { x: (halfWidth1 + halfWidth2 + buffer).toFixed(1), z: (halfDepth1 + halfDepth2 + buffer).toFixed(1) },
+    collision: hasCollision
+  });
+
+  return hasCollision;
 };
 
 // Check if a position would cause collision with existing objects
@@ -118,23 +138,39 @@ export const wouldCollideWithExisting = (
   objectId: number, // ID of the object being moved (to exclude from collision check)
   existingItems: BathroomItem[]
 ): boolean => {
+  console.log(`🔍 Checking collision for ${objectType} (ID: ${objectId}) at position:`, {
+    x: position.x.toFixed(1),
+    z: position.z.toFixed(1),
+    scale: scale.toFixed(2),
+    existingItems: existingItems.length
+  });
+
   for (const item of existingItems) {
     // Skip checking collision with self
-    if (item.id === objectId) continue;
+    if (item.id === objectId) {
+      console.log(`  ⏭️ Skipping self-collision check for ID: ${objectId}`);
+      continue;
+    }
 
     const itemPosition = { x: item.position[0], y: item.position[1], z: item.position[2] };
+    const itemScale = item.scale || 1.0;
 
-    if (checkCollision(
+    const hasCollision = checkCollision(
       position,
       objectType,
       scale,
       itemPosition,
       item.type,
-      item.scale || 1.0
-    )) {
+      itemScale
+    );
+
+    if (hasCollision) {
+      console.log(`  ❌ COLLISION DETECTED with ${item.type} (ID: ${item.id})`);
       return true;
     }
   }
+
+  console.log(`  ✅ No collisions detected for ${objectType}`);
   return false;
 };
 
@@ -360,13 +396,13 @@ export const findFreeWallPosition = (
 
     if (!hasCollision) {
       const orientationInfo = getOrientationInfo(objectType);
-      console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
-        position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
-        wallBuffer: `${buffer.toFixed(3)}m`,
-        rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
-        orientation: orientationInfo.description,
-        attempt: attempt + 1
-      });
+console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
+  position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
+  wallBuffer: `${buffer.toFixed(3)}cm`, // Changed from 'm' to 'cm'
+  rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
+  orientation: orientationInfo.description,
+  attempt: attempt + 1
+});
       return { position, rotation: wall.rotation };
     }
   }

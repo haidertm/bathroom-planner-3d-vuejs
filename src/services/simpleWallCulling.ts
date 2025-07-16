@@ -19,6 +19,7 @@ export class SimpleWallCulling {
   public enabled: boolean;
   private roomSize: RoomSize;
   private wallMap: Map<THREE.Mesh, WallDirection>;
+  private wallGridMap: Map<THREE.Mesh, THREE.Line[]>; // NEW: Track grid lines for each wall
 
   constructor () {
     this.walls = [];
@@ -26,12 +27,23 @@ export class SimpleWallCulling {
     this.enabled = true;
     this.roomSize = { width: 10, height: 10 };
     this.wallMap = new Map<THREE.Mesh, WallDirection>();
+    this.wallGridMap = new Map<THREE.Mesh, THREE.Line[]>(); // NEW: Initialize grid map
   }
 
   initialize (walls: THREE.Mesh[], camera: THREE.Camera): void {
     this.walls = walls;
     this.camera = camera;
     this.identifyWalls();
+  }
+
+  // NEW: Method to register grid lines for each wall
+  registerWallGridLines (wall: THREE.Mesh, gridLines: THREE.Line[]): void {
+    this.wallGridMap.set(wall, gridLines);
+  }
+
+  // NEW: Method to clear grid line associations
+  clearWallGridLines (): void {
+    this.wallGridMap.clear();
   }
 
   private identifyWalls (): void {
@@ -93,6 +105,14 @@ export class SimpleWallCulling {
           wall.material.opacity = 1;
         }
       }
+
+      // NEW: Show associated grid lines when showing wall
+      const gridLines = this.wallGridMap.get(wall);
+      if (gridLines) {
+        gridLines.forEach(line => {
+          line.visible = true;
+        });
+      }
     });
   }
 
@@ -105,42 +125,45 @@ export class SimpleWallCulling {
   }
 
   updateWallVisibility (): void {
-    if (!this.enabled || !this.camera) return;
+    if (!this.enabled || !this.camera) {
+      return;
+    }
 
-    // First, show all walls
+    console.log('🔄 ===== WALL CULLING UPDATE =====');
+    console.log(`📷 Camera position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`);
+
+    // First, show all walls and their grid lines
     this.walls.forEach((wall: THREE.Mesh) => {
       wall.visible = true;
+      const gridLines = this.wallGridMap.get(wall);
+      if (gridLines) {
+        gridLines.forEach(line => {
+          line.visible = true;
+        });
+      }
     });
 
-    // Get camera position
+    // Get camera position and calculate which walls to hide
     const cameraPos = this.camera.position;
-
-    // Calculate which walls should be hidden based on camera position
     const wallsToHide: WallToHide[] = [];
-
-    // Simple logic: hide walls that are closest to camera position
     const roomHalfWidth: number = this.roomSize.width / 2;
     const roomHalfHeight: number = this.roomSize.height / 2;
 
-    // Check each direction and hide the wall if camera is on that side
+    // Check each wall
     this.wallMap.forEach((direction: WallDirection, wall: THREE.Mesh) => {
       let shouldHide: boolean = false;
 
       switch (direction) {
         case 'north':
-          // Hide north wall if camera is north of room center
           shouldHide = cameraPos.z < -roomHalfHeight + 2;
           break;
         case 'south':
-          // Hide south wall if camera is south of room center
           shouldHide = cameraPos.z > roomHalfHeight - 2;
           break;
         case 'east':
-          // Hide east wall if camera is east of room center
           shouldHide = cameraPos.x > roomHalfWidth - 2;
           break;
         case 'west':
-          // Hide west wall if camera is west of room center
           shouldHide = cameraPos.x < -roomHalfWidth + 2;
           break;
       }
@@ -150,26 +173,33 @@ export class SimpleWallCulling {
       }
     });
 
-    // Hide the identified walls completely
-    wallsToHide.forEach(({ wall }: WallToHide) => {
+    // Hide walls and their grid lines
+    wallsToHide.forEach(({ wall, direction }: WallToHide) => {
+      console.log(`🚫 Hiding ${direction} wall...`);
+
+      // Hide the wall
       wall.visible = false;
+
+      // Hide associated grid lines
+      const gridLines = this.wallGridMap.get(wall);
+      if (gridLines) {
+        gridLines.forEach(line => {
+          line.visible = false;
+        });
+        console.log(`✅ Hid ${gridLines.length} grid lines for ${direction} wall`);
+      } else {
+        console.log(`❌ NO GRID LINES FOUND FOR ${direction} WALL - THIS IS THE PROBLEM!`);
+      }
     });
 
-    // // Debug: Log current wall states
-    // console.log('Current wall visibility:', Array.from(this.wallMap.entries()).map(([wall, direction]) =>
-    //   `${direction}: ${wall.visible}`
-    // ));
-
-    // Debug output for camera position
-    // if (wallsToHide.length > 0) {
-    //   console.log(`Camera at (${cameraPos.x.toFixed(1)}, ${cameraPos.z.toFixed(1)}) - Hiding: ${wallsToHide.map(w => w.direction).join(', ')}`);
-    // }
+    console.log('🔄 ===== WALL CULLING UPDATE END =====');
   }
 
   dispose (): void {
     this.walls = [];
     this.camera = null;
     this.wallMap.clear();
+    this.wallGridMap.clear(); // NEW: Clear grid map
   }
 
   // Additional utility methods for better functionality
@@ -208,5 +238,23 @@ export class SimpleWallCulling {
       visible: wall.visible,
       position: { x: wall.position.x, z: wall.position.z }
     }));
+  }
+
+  getGridLineStatus (): Array<{
+    direction: WallDirection;
+    gridLineCount: number;
+    visibleGridLines: number;
+  }> {
+    return Array.from(this.wallMap.entries()).map(([wall, direction]) => {
+      const gridLines = this.wallGridMap.get(wall);
+      const gridLineCount = gridLines ? gridLines.length : 0;
+      const visibleGridLines = gridLines ? gridLines.filter(line => line.visible).length : 0;
+
+      return {
+        direction,
+        gridLineCount,
+        visibleGridLines
+      };
+    });
   }
 }
