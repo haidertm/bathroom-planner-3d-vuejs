@@ -16,9 +16,11 @@
         :room-width="roomWidth"
         :room-height="roomHeight"
         :show-grid="showGrid"
+        :show-wall-grid="showWallGrid"
         :wall-culling-enabled="wallCullingEnabled"
         @room-size-change="handleRoomSizeChange"
         @toggle-grid="setShowGrid"
+        @toggle-wall-grid="setShowWallGrid"
         @constrain-objects="constrainObjects"
         @toggle-wall-culling="handleWallCullingToggle"
     />
@@ -103,7 +105,7 @@
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
-import * as THREE from "three";
+import * as THREE from 'three';
 
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
@@ -129,8 +131,8 @@ import { isMobile } from '../utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from '../composables/useUndoRedo.js'
-import Sidebar from "../components/ui/sidebar.vue";
-import Header from "../components/ui/Header.vue";
+import Sidebar from '../components/ui/sidebar.vue';
+import Header from '../components/ui/Header.vue';
 
 // Router
 const router = useRouter()
@@ -187,6 +189,7 @@ const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
 const showGrid = ref(true)
+const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
 const preventCollisionPlacement = ref(true)
 
@@ -211,7 +214,7 @@ const canvasContainerStyle = computed(() => {
     position: 'absolute',
     top: '60px',
     left: sidebarWidth,
-    width: `calc(100vw - ${sidebarWidth})`,
+    width: `calc(100vw - ${ sidebarWidth })`,
     height: 'calc(100vh - 60px)',
     cursor: 'grab',
     overflow: 'hidden'
@@ -278,7 +281,7 @@ const readInstructionsButtonStyle = computed(() => ({
   gap: '6px',
   width: 'fit-content',
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -336,7 +339,7 @@ const instructionsContentStyle = computed(() => ({
 }))
 
 const sectionStyle = computed(() => ({
-  paddingBottom: '0',
+  paddingBottom: '0'
 }))
 
 const sectionHeaderStyle = computed(() => ({
@@ -395,9 +398,9 @@ const addItem = (type) => {
 
   console.log('🏠 Adding item:', type, 'at WALL position:', {
     position: newItem.position,
-    rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
+    rotation: `${ (wallRotation * 180 / Math.PI).toFixed(0) }°`,
     orientation: 'configured per object type',
-    roomSize: `${roomWidth.value} x ${roomHeight.value}`
+    roomSize: `${ roomWidth.value } x ${ roomHeight.value }`
   })
 
   const newItems = [...items.value, newItem]
@@ -481,6 +484,10 @@ const setShowGrid = (value) => {
   showGrid.value = value
 }
 
+const setShowWallGrid = (value) => {
+  showWallGrid.value = value
+}
+
 const handleShowTexturePanel = () => {
   console.log('Show texture panel')
   showTexturePanel.value = true
@@ -536,7 +543,18 @@ onMounted(async () => {
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+
+  setTimeout(() => {
+    console.log('🧪 AUTO-TESTING grid system...');
+    sceneManagerRef.value.testGridSystem();
+
+    // Test visual grids after 1 more second
+    setTimeout(() => {
+      console.log('🎨 AUTO-TESTING visual grids...');
+      sceneManagerRef.value.testWallGridVisibility();
+    }, 1000);
+  }, 2000);
 
   // Set initial wall culling state
   sceneManagerRef.value.setWallCullingEnabled(wallCullingEnabled.value)
@@ -559,6 +577,11 @@ onMounted(async () => {
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
 
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.setWallGridVisible(showWallGrid.value)
+    console.log('🔄 Initial wall grid visibility synchronized:', showWallGrid.value)
+  }
+
   // PRELOAD MODELS - This will load all models defined in constants
   console.log('Starting model preloading...')
   try {
@@ -578,12 +601,12 @@ onMounted(async () => {
 })
 
 // Watch for room geometry changes
-watch([roomWidth, roomHeight, showGrid], () => {
+watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
   if (!sceneManagerRef.value) return
 
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 })
 
 // Watch for texture changes
@@ -604,6 +627,14 @@ watch([items, lastUpdateSource], ([newItems, updateSource]) => {
     sceneManagerRef.value.updateBathroomItems(newItems, createModel)
   }
 }, { deep: true })
+
+watch([showWallGrid], ([newShowWallGrid]) => {
+  console.log('👀 Wall grid visibility changed:', newShowWallGrid);
+
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.setWallGridVisible(newShowWallGrid);
+  }
+}, { immediate: true });
 
 // Cleanup
 onUnmounted(() => {

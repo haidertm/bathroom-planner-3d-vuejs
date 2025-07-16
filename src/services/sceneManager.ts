@@ -1,7 +1,13 @@
 //src/services/sceneManager.ts
 
 import * as THREE from 'three';
-import { createFloor, createWalls, createCustomGrid } from '../models/roomGeometry';
+import {
+  createFloor,
+  createWalls,
+  createCustomGrid,
+  createWallGridLines,
+  createTestWallGridLines
+} from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
 import { createModel } from '../models/bathroomFixtures';
@@ -41,6 +47,8 @@ export class SceneManager {
   private wallCullingManager: SimpleWallCulling;
   private bathroomItemsGroup: THREE.Group;
   private isUpdatingItems = false;
+  private wallGridGroup: THREE.Group | null = null; // NEW: Group for wall grid lines
+  private wallGridVisible: boolean = true; // NEW: Track wall grid visibility state
 
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
@@ -96,7 +104,7 @@ export class SceneManager {
     };
   }
 
-  setCameraPreset(preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
+  setCameraPreset (preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
     if (!this.camera) return;
 
     const presetConfig = CAMERA_PRESETS[preset];
@@ -113,7 +121,7 @@ export class SceneManager {
   }
 
   // ADD: Method to get camera info for debugging
-  getCameraInfo(): any {
+  getCameraInfo (): any {
     if (!this.camera) return null;
 
     return {
@@ -126,7 +134,7 @@ export class SceneManager {
   }
 
   // ADD: Temporary debug cube method
-  addDebugCube(position: [number, number, number]): void {
+  addDebugCube (position: [number, number, number]): void {
     if (!this.scene) return;
 
     const geometry = new THREE.BoxGeometry(50, 50, 50); // 50cm cube
@@ -387,20 +395,166 @@ export class SceneManager {
     return material;
   }
 
-  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean): void {
-    if (!this.scene) return;
+  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true): void {
+    console.log('🔄 SceneManager.updateGrid called with:', {
+      roomWidth,
+      roomHeight,
+      showGrid,
+      showWallGrid
+    });
+
+    if (!this.scene) {
+      console.error('❌ Scene is null, cannot update grid');
+      return;
+    }
 
     // Remove existing grid
     if (this.gridRef) {
+      console.log('🗑️ Removing existing grid from scene');
       this.scene.remove(this.gridRef);
       this.gridRef = null;
     }
 
-    // Create new grid if needed
-    if (showGrid) {
-      this.gridRef = createCustomGrid(roomWidth, roomHeight);
-      this.scene.add(this.gridRef);
+    // Remove existing wall grid group
+    if (this.wallGridGroup) {
+      console.log('🗑️ Removing existing wall grid group from scene');
+      this.scene.remove(this.wallGridGroup);
+      this.wallGridGroup = null;
     }
+
+    // Clear existing wall grid associations
+    console.log('🧹 Clearing wall grid associations');
+    this.wallCullingManager.clearWallGridLines();
+
+    // Create floor grid if showGrid is enabled
+    if (showGrid) {
+      console.log('🏗️ Creating floor grid...');
+      try {
+        // FIXED: Simplified - createCustomGrid now returns THREE.Group directly
+        this.gridRef = createCustomGrid(roomWidth, roomHeight);
+
+        console.log('✅ Floor grid created:', {
+          children: this.gridRef.children.length,
+          position: this.gridRef.position,
+          name: this.gridRef.name
+        });
+
+        this.scene.add(this.gridRef);
+
+        console.log('✅ Floor grid added to scene');
+
+        // Verify it's in the scene
+        const gridInScene = this.scene.children.find(child => child === this.gridRef);
+        console.log('🔍 Grid found in scene:', !!gridInScene);
+
+      } catch (error) {
+        console.error('❌ Error creating floor grid:', error);
+      }
+    } else {
+      console.log('⏭️ Skipping floor grid creation (showGrid = false)');
+    }
+
+    // Create wall grid group and lines
+    console.log('🧱 Creating wall grid group...');
+    this.wallGridGroup = new THREE.Group();
+    this.wallGridGroup.name = 'WallGridGroup';
+    this.wallGridVisible = showWallGrid;
+
+    if (this.wallRefs.length > 0) {
+      console.log('📊 Available walls:', this.wallRefs.map(wall => ({
+        name: wall.name,
+        direction: wall.userData.wallDirection,
+        position: wall.position
+      })));
+
+      try {
+        let totalWallGridLines = 0;
+
+        this.wallRefs.forEach((wall, index) => {
+          const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west';
+
+          if (wallDirection) {
+            console.log(`🔨 Creating grid for ${wallDirection} wall...`);
+
+            const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight);
+
+            console.log(`📏 Wall grid lines created for ${wallDirection}:`, wallGridLines.length);
+
+            // Add wall grid lines to the scene
+            wallGridLines.forEach((line, lineIndex) => {
+              if (line && line.isObject3D) {
+                line.name = `WallGrid_${wallDirection}_${lineIndex}`;
+                this.wallGridGroup!.add(line); // Add to group, not directly to scene
+                totalWallGridLines++;
+              } else {
+                console.error(`❌ Invalid wall grid line at index ${lineIndex}:`, line);
+              }
+            });
+
+            // Register the grid lines with the wall culling manager
+            this.wallCullingManager.registerWallGridLines(wall, wallGridLines);
+
+            console.log(`✅ Registered ${wallGridLines.length} grid lines for ${wallDirection} wall`);
+          } else {
+            console.warn(`⚠️ Wall at index ${index} has no wallDirection:`, wall.userData);
+          }
+        });
+
+        console.log(`✅ Total wall grid lines added to group: ${totalWallGridLines}`);
+
+        // Set initial visibility based on showWallGrid
+        this.wallGridGroup.visible = showWallGrid;
+        console.log(`🔍 Wall grid group visibility set to: ${showWallGrid}`);
+
+        // Add the wall grid group to the scene
+        this.scene.add(this.wallGridGroup);
+        console.log('✅ Wall grid group added to scene');
+
+      } catch (error) {
+        console.error('❌ Error creating wall grids:', error);
+      }
+    } else {
+      console.log('⏭️ No walls available for wall grid creation');
+    }
+
+    // Final scene debugging
+    console.log('🎬 Final scene state:', {
+      totalChildren: this.scene.children.length,
+      gridRef: this.gridRef ? 'present' : 'null',
+      wallGridGroup: this.wallGridGroup ? 'present' : 'null',
+      wallGridVisible: this.wallGridVisible,
+      sceneChildren: this.scene.children.map(child => ({
+        name: child.name || 'unnamed',
+        type: child.type,
+        visible: child.visible,
+        children: child.children ? child.children.length : 0
+      }))
+    });
+  }
+
+  // Method to toggle wall grid visibility
+  setWallGridVisible(visible: boolean): void {
+    console.log(`🔄 Setting wall grid visibility to: ${visible}`);
+
+    this.wallGridVisible = visible;
+
+    if (this.wallGridGroup) {
+      this.wallGridGroup.visible = visible;
+      console.log(`✅ Wall grid group visibility updated to: ${visible}`);
+
+      // Also update individual line visibility for wall culling
+      this.wallGridGroup.children.forEach(child => {
+        if (child instanceof THREE.Line) {
+          child.visible = visible;
+        }
+      });
+    } else {
+      console.warn('⚠️ Wall grid group not found - cannot toggle visibility');
+    }
+  }
+
+  getWallGridVisible(): boolean {
+    return this.wallGridVisible;
   }
 
   async updateBathroomItems (items: BathroomItem[]): Promise<void> {
@@ -707,5 +861,76 @@ export class SceneManager {
       lightCount: this.lights.length,
       shadowsEnabled: this.renderer?.shadowMap.enabled || false
     };
+  }
+
+  testWallGridVisibility(): void {
+    console.log('🧪 ===== VISUAL WALL GRID TEST =====');
+
+    if (!this.scene) {
+      console.error('❌ No scene available');
+      return;
+    }
+
+    // Clear existing wall grid associations
+    this.wallCullingManager.clearWallGridLines();
+
+    // Remove existing test grids
+    const existingTestGrids = this.scene.children.filter(child =>
+      child.name && child.name.startsWith('TestWallGrid_')
+    );
+    existingTestGrids.forEach(grid => this.scene!.remove(grid));
+
+    // Create bright test grids for each wall
+    this.wallRefs.forEach((wall, index) => {
+      const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west';
+
+      if (wallDirection) {
+        console.log(`🎨 Creating bright test grid for ${wallDirection} wall`);
+
+        const testGridLines = createTestWallGridLines(wallDirection, 300, 250);
+
+        // Add to scene
+        testGridLines.forEach(line => {
+          this.scene!.add(line);
+        });
+
+        // Register with wall culling manager
+        this.wallCullingManager.registerWallGridLines(wall, testGridLines);
+
+        console.log(`✅ Test grid created for ${wallDirection}: ${testGridLines.length} bright lines`);
+      }
+    });
+
+    console.log('🎨 Bright test grids created - they should be VERY visible!');
+    console.log('🔄 Now rotate your camera to test wall culling...');
+    console.log('📝 Expected: Bright colored lines should disappear when their wall is hidden');
+    console.log('🧪 ===== VISUAL WALL GRID TEST END =====');
+  }
+
+  // Add these methods to SceneManager class
+  testGridSystem(): void {
+    console.log('🧪 ===== GRID SYSTEM TEST =====');
+
+    console.log('\n📋 Test 1: Wall Direction Check');
+    this.wallRefs.forEach((wall, index) => {
+      console.log(`Wall ${index + 1}: ${wall.userData.wallDirection || 'NO DIRECTION'} at (${wall.position.x.toFixed(1)}, ${wall.position.z.toFixed(1)})`);
+    });
+
+    console.log('\n📋 Test 2: Wall Culling Manager State');
+    console.log(`Walls in manager: ${this.wallCullingManager.getWallCount()}`);
+
+    console.log('\n📋 Test 3: Grid Line Registration Status');
+    const gridStatus = this.wallCullingManager.getGridLineStatus();
+    gridStatus.forEach(status => {
+      console.log(`${status.direction}: ${status.gridLineCount} registered, ${status.visibleGridLines} visible`);
+    });
+
+    console.log('\n📋 Test 4: Scene Wall Grid Lines');
+    const wallGridLinesInScene = this.scene?.children.filter(child =>
+      child.name && child.name.startsWith('WallGrid_')
+    ) || [];
+    console.log(`Total wall grid lines in scene: ${wallGridLinesInScene.length}`);
+
+    console.log('🧪 ===== GRID SYSTEM TEST END =====');
   }
 }

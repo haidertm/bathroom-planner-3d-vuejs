@@ -23,7 +23,7 @@ export interface WallSettings {
 
 export const WALL_SETTINGS: WallSettings = {
   HEIGHT: 250,
-  THICKNESS: 10
+  THICKNESS: 5
 } as const;
 
 
@@ -36,7 +36,7 @@ export interface Constraints {
 export const CONSTRAINTS: Constraints = {
   OBJECT_BUFFER: 40,
   SNAP_DISTANCE: 30,
-  GRID_SPACING: 25 // in centimeters
+  GRID_SPACING: 15 // in centimeters
 } as const;
 
 export interface ScaleLimits {
