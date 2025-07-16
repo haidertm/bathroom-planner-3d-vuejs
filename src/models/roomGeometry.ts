@@ -95,7 +95,6 @@ export const createTestWallGridLines = (
 ): THREE.Line[] => {
   console.log(`🧪 Creating TEST wall grid lines for ${wallDirection} wall (bright colors)`);
 
-  const { GRID_SPACING } = CONSTRAINTS;
   const wallHeight = WALL_SETTINGS.HEIGHT;
   const wallGridLines: THREE.Line[] = [];
 

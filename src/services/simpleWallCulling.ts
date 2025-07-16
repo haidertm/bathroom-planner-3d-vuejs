@@ -239,4 +239,22 @@ export class SimpleWallCulling {
       position: { x: wall.position.x, z: wall.position.z }
     }));
   }
+
+  getGridLineStatus (): Array<{
+    direction: WallDirection;
+    gridLineCount: number;
+    visibleGridLines: number;
+  }> {
+    return Array.from(this.wallMap.entries()).map(([wall, direction]) => {
+      const gridLines = this.wallGridMap.get(wall);
+      const gridLineCount = gridLines ? gridLines.length : 0;
+      const visibleGridLines = gridLines ? gridLines.filter(line => line.visible).length : 0;
+
+      return {
+        direction,
+        gridLineCount,
+        visibleGridLines
+      };
+    });
+  }
 }

@@ -533,7 +533,7 @@ export class SceneManager {
   }
 
   // Method to toggle wall grid visibility
-  setWallGridVisible(visible: boolean): void {
+  setWallGridVisible (visible: boolean): void {
     console.log(`🔄 Setting wall grid visibility to: ${visible}`);
 
     this.wallGridVisible = visible;
@@ -553,7 +553,7 @@ export class SceneManager {
     }
   }
 
-  getWallGridVisible(): boolean {
+  getWallGridVisible (): boolean {
     return this.wallGridVisible;
   }
 
@@ -863,7 +863,7 @@ export class SceneManager {
     };
   }
 
-  testWallGridVisibility(): void {
+  testWallGridVisibility (): void {
     console.log('🧪 ===== VISUAL WALL GRID TEST =====');
 
     if (!this.scene) {
@@ -881,7 +881,7 @@ export class SceneManager {
     existingTestGrids.forEach(grid => this.scene!.remove(grid));
 
     // Create bright test grids for each wall
-    this.wallRefs.forEach((wall, index) => {
+    this.wallRefs.forEach((wall) => {
       const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west';
 
       if (wallDirection) {
@@ -908,7 +908,7 @@ export class SceneManager {
   }
 
   // Add these methods to SceneManager class
-  testGridSystem(): void {
+  testGridSystem (): void {
     console.log('🧪 ===== GRID SYSTEM TEST =====');
 
     console.log('\n📋 Test 1: Wall Direction Check');
@@ -921,7 +921,11 @@ export class SceneManager {
 
     console.log('\n📋 Test 3: Grid Line Registration Status');
     const gridStatus = this.wallCullingManager.getGridLineStatus();
-    gridStatus.forEach(status => {
+    gridStatus.forEach((status: {
+      direction: string;
+      gridLineCount: number;
+      visibleGridLines: number;
+    }) => {
       console.log(`${status.direction}: ${status.gridLineCount} registered, ${status.visibleGridLines} visible`);
     });
 
