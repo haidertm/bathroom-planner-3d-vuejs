@@ -5,8 +5,7 @@ import {
   createFloor,
   createWalls,
   createCustomGrid,
-  createWallGridLines,
-  createTestWallGridLines
+  createWallGridLines
 } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
