@@ -5,10 +5,6 @@
         :class="{ active: measurementsEnabled }"
         :style="measurementButtonStyle"
         @click="toggleMeasurements"
-        @mouseenter="handleMouseEnter"
-        @mouseleave="handleMouseLeave"
-        @touchstart="handleTouchStart"
-        @touchend="handleTouchEnd"
     >
       <svg
           class="ruler-icon"
@@ -26,7 +22,7 @@
         <path d="m8.5 6.5 2-2"/>
         <path d="m17.5 15.5 2-2"/>
       </svg>
-      <div v-if="showTooltip" class="tooltip">
+      <div class="tooltip">
         {{ measurementsEnabled ? 'Toggle measurements off' : 'Toggle measurements on' }}
       </div>
     </button>
@@ -63,8 +59,6 @@ const measurementsEnabled = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-const showTooltip = ref(false)
-
 // Methods
 const toggleMeasurements = () => {
   if (props.disabled) return
@@ -72,38 +66,8 @@ const toggleMeasurements = () => {
   const newValue = !measurementsEnabled.value
   measurementsEnabled.value = newValue
 
-  // Hide tooltip on mobile after toggle
-  if (isMobileDevice.value) {
-    showTooltip.value = false
-  }
-
   // Emit change event with the new value
   emit('change', newValue)
-}
-
-const handleMouseEnter = () => {
-  if (!props.disabled) {
-    showTooltip.value = true
-  }
-}
-
-const handleMouseLeave = () => {
-  showTooltip.value = false
-}
-
-const handleTouchStart = () => {
-  if (!props.disabled && isMobileDevice.value) {
-    showTooltip.value = true
-  }
-}
-
-const handleTouchEnd = () => {
-  if (isMobileDevice.value) {
-    // Hide tooltip after a brief delay on mobile
-    setTimeout(() => {
-      showTooltip.value = false
-    }, 300)
-  }
 }
 
 const isMobileDevice = computed(() => isMobile())
@@ -176,21 +140,12 @@ const iconSize = computed(() => {
   border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
   pointer-events: none;
   margin-bottom: 8px;
   z-index: 1000;
-  animation: tooltipFadeIn 0.2s ease-out;
-}
-
-@keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
 }
 
 .tooltip::after {
@@ -203,7 +158,10 @@ const iconSize = computed(() => {
   border-top-color: rgba(0, 0, 0, 0.8);
 }
 
-/* Remove the old hover-based tooltip rule since we're using showTooltip state */
+.measurement-button:hover:not(:disabled) .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
 
 /* Focus styles for accessibility */
 .measurement-button:focus-visible {

@@ -261,9 +261,9 @@ const toggleButtonStyle = computed(() => ({
 
 const toggleMeasurementStyle = computed(() => ({
   position: 'absolute',
-  bottom: '30px',
-  left: isMobileDevice.value ? '12%' : '28%', // Changed from left to right
-  top: isMobileDevice.value ? '12%' : '', // Changed from left to right
+  left: isMobileDevice.value ? '' : '28%', // Changed from left to right
+  right: isMobileDevice.value ? '12%' : '',
+  bottom: isMobileDevice.value ? '10%' : '30px',
   color: 'white',
   padding: '5px 10px',
   borderRadius: '4px',
