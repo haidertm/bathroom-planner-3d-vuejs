@@ -1,6 +1,7 @@
 //src/services/sceneManager.ts
 
 import * as THREE from 'three';
+import { MeasurementSystem } from './measurementSystem';
 import {
   createFloor,
   createWalls,
@@ -48,6 +49,7 @@ export class SceneManager {
   private isUpdatingItems = false;
   private wallGridGroup: THREE.Group | null = null; // NEW: Group for wall grid lines
   private wallGridVisible: boolean = true; // NEW: Track wall grid visibility state
+  private measurementSystem: MeasurementSystem | null = null;
 
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
@@ -96,11 +98,44 @@ export class SceneManager {
     // Setup enhanced lighting
     this.setupEnhancedLighting();
 
+    // Initialize measurement system after scene, camera, and renderer are ready
+    if (this.scene && this.camera && this.renderer) {
+      this.measurementSystem = new MeasurementSystem(this.scene, this.camera, this.renderer);
+      console.log('Measurement system initialized');
+    }
+
     return {
       scene: this.scene,
       camera: this.camera,
       renderer: this.renderer
     };
+  }
+
+  // Add methods to control measurement system
+  public enableMeasurements (enabled: boolean): void {
+    if (this.measurementSystem) {
+      this.measurementSystem.setEnabled(enabled);
+    }
+  }
+
+  public forceUpdateMeasurements(): void {
+    if (this.measurementSystem) {
+      this.measurementSystem.forceUpdateMeasurements();
+    }
+  }
+
+  public setMeasurementSelectedObject (object: THREE.Object3D | null): void {
+    if (this.measurementSystem) {
+      this.measurementSystem.setSelectedObject(object);
+    }
+  }
+
+  public getCurrentMeasurements (): MeasurementData | null {
+    return this.measurementSystem?.getCurrentMeasurements() || null;
+  }
+
+  public isMeasurementEnabled (): boolean {
+    return this.measurementSystem?.isEnabled() || false;
   }
 
   setCameraPreset (preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
@@ -344,6 +379,11 @@ export class SceneManager {
     const floorMaterial = this.createEnhancedFloorMaterial(floorTexture);
     this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     this.scene.add(this.floorRef);
+
+    // Update measurement system with new room dimensions
+    if (this.measurementSystem) {
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+    }
   }
 
   private createEnhancedFloorMaterial (floorTexture: TextureConfig): THREE.MeshStandardMaterial {
@@ -381,6 +421,10 @@ export class SceneManager {
     // Update wall culling manager with new walls and room size
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
+    // Update measurement system with new room dimensions
+    if (this.measurementSystem) {
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+    }
   }
 
   private createEnhancedWallMaterial (wallTexture: TextureConfig): THREE.MeshStandardMaterial {
@@ -606,6 +650,12 @@ export class SceneManager {
             console.log(`  Created model with userData:`, model.userData);
             return model;
           }
+
+          // Update measurement system with new items
+          if (this.measurementSystem) {
+            this.measurementSystem.updateExistingItems(items);
+          }
+
         } catch (error) {
           console.error(`Failed to create model for item ${item.id}:`, error);
         }
@@ -802,6 +852,11 @@ export class SceneManager {
     this.floorRef = null;
     this.wallRefs = [];
     this.gridRef = null;
+
+    if (this.measurementSystem) {
+      this.measurementSystem.dispose();
+      this.measurementSystem = null;
+    }
   }
 
   // Utility method to get bathroom items group

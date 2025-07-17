@@ -21,18 +21,22 @@ export const CAMERA_SETTINGS = {
 
   // Camera movement limits (in centimeters)
   MIN_DISTANCE: 200,   // 2m minimum distance
-  MAX_DISTANCE: 2000,  // 20m maximum distance
+  MAX_DISTANCE: 1100,  // 20m maximum distance
   MIN_HEIGHT: 50,      // 50cm minimum height above floor
   MAX_HEIGHT: 1500     // 15m maximum height
 } as const;
 
 export const CAMERA_CONTROLS = {
   // Mouse/touch sensitivity
-  ROTATION_SPEED: 0.01,
+  ROTATION_SPEED: 0.02,
   ZOOM_SPEED: 0.05,
 
-  // Smooth movement
+  // Smooth movement - NEW smooth zoom properties
   DAMPING: 0.1,
+  SMOOTH_ZOOM_SPEED: 0.15,      // How fast camera interpolates to target
+  SMOOTH_ZOOM_DAMPING: 0.92,    // Damping factor for smooth movement
+  ZOOM_STEP_SIZE: 1.05,         // How much to zoom per wheel step (smaller = smoother)
+  TOUCH_ZOOM_STEP: 0.98,        // Touch zoom increment
 
   // Constraints
   MAX_PHI_ANGLE: Math.PI / 2 - 0.1,  // Prevent going below floor

@@ -177,6 +177,36 @@
         </div>
       </div>
 
+      <!-- Measurement section -->
+      <div :style="accordionSectionStyle">
+        <div
+            @click="toggleMeasurementSection"
+            :style="mainAccordionHeaderStyle"
+        >
+          <h4 :style="accordionTitleStyle">📏 Measurements</h4>
+          <span :style="getArrowStyle(isMeasurementExpanded)">▼</span>
+        </div>
+        <div :style="getAccordionContentStyle(isMeasurementExpanded)">
+          <div :style="controlGroupStyle">
+            <label :style="checkboxLabelStyle">
+              <input
+                  type="checkbox"
+                  :checked="measurementEnabled"
+                  @change="$emit('toggle-measurements')"
+                  :style="checkboxStyle"
+              />
+              Enable Ruler Mode
+            </label>
+          </div>
+          <div :style="controlGroupStyle">
+            <p :style="helpTextStyle">
+              Select an object to see its dimensions and available space around it.
+              Press 'M' key to toggle this mode.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Textures Button -->
       <div :style="accordionSectionStyle">
         <button
@@ -270,6 +300,13 @@ import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 
+
+const isMeasurementExpanded = ref(false)
+
+const toggleMeasurementSection = () => {
+  isMeasurementExpanded.value = !isMeasurementExpanded.value
+}
+
 // Define props
 const props = defineProps({
   currentFloor: {
@@ -299,6 +336,10 @@ const props = defineProps({
   wallCullingEnabled: {
     type: Boolean,
     required: true
+  },
+  measurementEnabled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -312,7 +353,8 @@ const emit = defineEmits([
   'toggle-grid',
   'toggle-wall-grid',   // Wall grid toggle
   'constrain-objects',
-  'toggle-wall-culling'
+  'toggle-wall-culling',
+  'toggle-measurements'
 ])
 
 // Reactive state
@@ -929,6 +971,15 @@ const getTexturePreviewStyle = (texture) => ({
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'center'
 })
+
+//For measurement
+const helpTextStyle = computed(() => ({
+  fontSize: '12px',
+  color: '#6c757d',
+  lineHeight: '1.4',
+  margin: '0',
+  fontStyle: 'italic'
+}))
 </script>
 
 <style scoped>

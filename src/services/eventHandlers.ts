@@ -1,11 +1,17 @@
 // src/services/eventHandlers.ts
 import * as THREE from 'three';
 import type { Ref } from 'vue';
-import { updateMousePosition, updateTouchPosition, getTouchDistance, highlightObject, setOutlineColor } from '../utils/helpers';
+import {
+  updateMousePosition,
+  updateTouchPosition,
+  getTouchDistance,
+  highlightObject,
+  setOutlineColor
+} from '../utils/helpers';
 import { constrainToWalls, snapToNearestWall, wouldCollideWithExisting, type BathroomItem } from '../utils/constraints';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
-import { LOOK_AT } from '../constants/camera';
+import { LOOK_AT, CAMERA_SETTINGS, CAMERA_CONTROLS } from '../constants/camera';
 import { ref } from 'vue';
 
 interface IntersectionResult {
@@ -17,6 +23,7 @@ interface UpdateData {
   position?: [number, number, number];
   rotation?: number;
   scale?: number;
+
   [key: string]: any;
 }
 
@@ -59,6 +66,7 @@ export class EventHandlers {
   private mouseStartY: number;
   private mouseX: number;
   private mouseY: number;
+  private measurementSystem: MeasurementSystem | null = null;
 
   // Store original position for collision snap-back
   private originalDragPosition: THREE.Vector3;
@@ -72,6 +80,14 @@ export class EventHandlers {
   // Drag operation tracking
   private isDragOperation: boolean;
   private pendingUpdates: Map<number, UpdateData>;
+
+  // Smooth zoom properties using constants
+  private targetCameraPosition: THREE.Vector3;
+  private targetSpherical: THREE.Spherical;        // NEW: Target rotation
+  private isAnimatingCamera: boolean = false;
+
+  // Add these properties for smooth rotation
+  private currentSpherical: THREE.Spherical;
 
   // Note: Event handlers are defined as methods below and bound in constructor
 
@@ -129,6 +145,9 @@ export class EventHandlers {
     this.isDragOperation = false;
     this.pendingUpdates = new Map<number, UpdateData>();
 
+    // Initialize target camera position
+    this.targetCameraPosition = this.camera.position.clone();
+
     // Bind methods
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -142,11 +161,32 @@ export class EventHandlers {
     this.handleKeyDown = this.handleKeyDown.bind(this);
     // 🔧 FIX: Bind the new visibility change handler
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+
+    // Simple animation loop ONLY for zoom
+    this.startSimpleZoomAnimation();
+  }
+
+  private startSimpleZoomAnimation(): void {
+    const animate = () => {
+      requestAnimationFrame(animate);
+
+      const distance = this.camera.position.distanceTo(this.targetCameraPosition);
+      if (distance > 0.1) {
+        this.camera.position.lerp(this.targetCameraPosition, CAMERA_CONTROLS.ZOOM_SMOOTHING);
+        this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
+      }
+    };
+    animate();
   }
 
   // Method to get current items for collision detection
-  private getCurrentItems(): BathroomItem[] {
+  private getCurrentItems (): BathroomItem[] {
     return this.getItems();
+  }
+
+  // Add method to set measurement system reference
+  public setMeasurementSystem (measurementSystem: MeasurementSystem): void {
+    this.measurementSystem = measurementSystem;
   }
 
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
@@ -259,6 +299,14 @@ export class EventHandlers {
 
       console.log('selectedObject >>>', this.selectedObject);
 
+      // Sync with measurement system
+      if (this.measurementSystem) {
+        this.measurementSystem.setSelectedObject(this.selectedObject);
+      }
+
+      // Emit event for measurement updates
+      window.dispatchEvent(new CustomEvent('object-selected'));
+
       // Check collision state immediately when object is selected
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
@@ -321,6 +369,14 @@ export class EventHandlers {
         this.isRotating = true;
         this.renderer.domElement.style.cursor = 'grabbing';
       }
+
+      // Clear measurement system selection
+      if (this.measurementSystem) {
+        this.measurementSystem.setSelectedObject(null);
+      }
+
+      // Emit event for measurement updates
+      window.dispatchEvent(new CustomEvent('object-selected'));
     }
   }
 
@@ -334,6 +390,12 @@ export class EventHandlers {
         console.log('🛑 No mouse buttons pressed, stopping drag operations');
         this.stopAllDragOperations();
         return;
+      }
+    } else {
+      if (this.isDragging && this.selectedObject && this.measurementSystem) {
+        this.measurementSystem.forceUpdateMeasurements();
+        // Emit event for real-time measurement updates
+        window.dispatchEvent(new CustomEvent('object-moved'));
       }
     }
 
@@ -476,7 +538,7 @@ export class EventHandlers {
       });
 
     } else if (this.isRotating) {
-      // UPDATED: Rotate camera with floor constraint
+      // SMOOTH: Rotate camera with smooth interpolation
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
 
@@ -525,6 +587,7 @@ export class EventHandlers {
 
     // ENHANCED: Handle collision prevention and snap-back logic
     if (this.isDragging && this.selectedObject) {
+      window.dispatchEvent(new CustomEvent('object-moved'));
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
@@ -591,20 +654,27 @@ export class EventHandlers {
   }
 
   private handleWheel (event: WheelEvent): void {
-    // UPDATED: Constrain zoom to prevent going below floor
-    const scale = event.deltaY > 0 ? 1.1 : 0.9;
-    const newPosition = this.camera.position.clone().multiplyScalar(scale);
+    event.preventDefault();
 
-    // Check if the new position would put camera below minimum height
-    if (newPosition.y >= this.MIN_CAMERA_HEIGHT) {
-      this.camera.position.copy(newPosition);
-    } else {
-      // If zooming in would put camera below floor, limit the zoom
-      // Calculate maximum scale that keeps camera above minimum height
-      const maxScale = this.MIN_CAMERA_HEIGHT / this.camera.position.y;
-      if (scale < maxScale) {
-        this.camera.position.multiplyScalar(maxScale);
-      }
+    // Use zoom step size from constants
+    const zoomFactor = event.deltaY > 0 ? CAMERA_CONTROLS.ZOOM_STEP_SIZE : (1 / CAMERA_CONTROLS.ZOOM_STEP_SIZE);
+    const newTargetPosition = this.targetCameraPosition.clone().multiplyScalar(zoomFactor);
+
+    // Calculate distance from center
+    const distanceFromCenter = newTargetPosition.distanceTo(new THREE.Vector3(0, 0, 0));
+
+    // Check constraints using constants
+    const meetMinHeightConstraint = newTargetPosition.y >= CAMERA_SETTINGS.MIN_HEIGHT;
+    const meetMaxDistanceConstraint = distanceFromCenter <= CAMERA_SETTINGS.MAX_DISTANCE;
+
+    // Update target position if constraints are met
+    if (meetMinHeightConstraint && meetMaxDistanceConstraint) {
+      this.targetCameraPosition.copy(newTargetPosition);
+    } else if (!meetMinHeightConstraint) {
+      // Constrain to minimum height
+      const direction = this.targetCameraPosition.clone().normalize();
+      const minDistance = CAMERA_SETTINGS.MIN_HEIGHT / direction.y;
+      this.targetCameraPosition.copy(direction.multiplyScalar(minDistance));
     }
   }
 
@@ -647,6 +717,12 @@ export class EventHandlers {
 
       if (intersected) {
         this.selectedObject = intersected.object;
+
+        // Sync with measurement system
+        if (this.measurementSystem) {
+          this.measurementSystem.setSelectedObject(this.selectedObject);
+        }
+
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
 
@@ -796,16 +872,26 @@ export class EventHandlers {
           updateData.rotation = this.selectedObject.rotation.y;
         }
 
+        if (this.measurementSystem) {
+          this.measurementSystem.forceUpdateMeasurements();
+          // Emit event for real-time measurement updates
+          window.dispatchEvent(new CustomEvent('object-moved'));
+        }
+
         this.queueUpdate(itemId, updateData);
       } else if (this.isRotating) {
-        // UPDATED: Touch camera rotation with floor constraint
+        // BACK TO ORIGINAL TOUCH ROTATION - with tiny smoothing
         const deltaX = touch.clientX - this.mouseX;
         const deltaY = touch.clientY - this.mouseY;
 
+        // Add tiny smoothing to touch movement
+        const smoothDeltaX = deltaX * 0.8;
+        const smoothDeltaY = deltaY * 0.8;
+
         const spherical = new THREE.Spherical();
         spherical.setFromVector3(this.camera.position);
-        spherical.theta -= deltaX * 0.01;
-        spherical.phi += deltaY * 0.01;
+        spherical.theta -= smoothDeltaX * 0.01;
+        spherical.phi += smoothDeltaY * 0.01;
 
         // Same constraint as mouse rotation
         spherical.phi = Math.max(0.1, Math.min(this.MAX_PHI_ANGLE, spherical.phi));
@@ -821,7 +907,6 @@ export class EventHandlers {
           this.camera.position.setFromSpherical(spherical);
         }
 
-        // this.camera.lookAt(0, 0, 0);
         this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
 
         this.mouseX = touch.clientX;
@@ -866,12 +951,12 @@ export class EventHandlers {
         currentItems
       );
 
-    console.log('🎯 Touch final position collision check:', {
-      position: { x: finalPosition.x.toFixed(1), z: finalPosition.z.toFixed(1) },
-      isColliding,
-      preventionEnabled: this.preventCollisionPlacementRef.value,
-      willSnapBack: this.preventCollisionPlacementRef.value && isColliding
-    });
+      console.log('🎯 Touch final position collision check:', {
+        position: { x: finalPosition.x.toFixed(1), z: finalPosition.z.toFixed(1) },
+        isColliding,
+        preventionEnabled: this.preventCollisionPlacementRef.value,
+        willSnapBack: this.preventCollisionPlacementRef.value && isColliding
+      });
 
       // Check if collision prevention is enabled and object is colliding
       if (this.preventCollisionPlacementRef.value && isColliding) {
@@ -925,7 +1010,7 @@ export class EventHandlers {
   }
 
   // 🔧 FIX: Helper method to stop all drag operations
-  private stopAllDragOperations(): void {
+  private stopAllDragOperations (): void {
     // Apply any pending updates before stopping
     if (this.isDragOperation) {
       this.applyPendingUpdates();
@@ -1012,6 +1097,10 @@ export class EventHandlers {
       highlightObject(this.selectedObject, false);
       setOutlineColor(false);
       this.selectedObject = null;
+    }
+    // Clear measurement system selection
+    if (this.measurementSystem) {
+      this.measurementSystem.setSelectedObject(null);
     }
   }
 

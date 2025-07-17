@@ -99,6 +99,11 @@
         </div>
       </div>
     </div>
+    <MeasurementPanel
+        :measurement-enabled="measurementEnabled"
+        :current-measurements="currentMeasurements"
+        @toggle-measurements="handleToggleMeasurements"
+    />
   </div>
 </template>
 <script setup>
@@ -106,6 +111,7 @@ import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markR
 import { useRouter } from 'vue-router'
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
 import * as THREE from 'three';
+import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
 
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
@@ -192,6 +198,18 @@ const showGrid = ref(true)
 const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
 const preventCollisionPlacement = ref(true)
+
+//For Measurement
+const measurementEnabled = ref(false)
+const currentMeasurements = ref(null)
+// Add method to handle measurement toggle
+const handleToggleMeasurements = () => {
+  measurementEnabled.value = !measurementEnabled.value
+
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.enableMeasurements(measurementEnabled.value)
+  }
+}
 
 // Update your App.vue canvasContainerStyle computed property:
 const canvasContainerStyle = computed(() => {
@@ -520,6 +538,18 @@ const getItems = () => {
   return items.value
 }
 
+// Declare event handlers in component scope
+const handleMeasurementUpdate = () => {
+  if (measurementEnabled.value) {
+    updateCurrentMeasurements()
+  }
+}
+
+// Listen for measurement toggle from keyboard
+const handleMeasurementToggle = () => {
+  handleToggleMeasurements()
+}
+
 // Initialize scene
 onMounted(async () => {
   // Initialize scene manager
@@ -573,6 +603,7 @@ onMounted(async () => {
 
   // PRELOAD MODELS - This will load all models defined in constants
   console.log('Starting model preloading...')
+
   try {
     await preloadModels()
     console.log('Model preloading completed!')
@@ -587,6 +618,16 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error loading initial items:', error)
   }
+
+  // ADD THESE LINES to your existing onMounted:
+  if (sceneManagerRef.value.measurementSystem && eventHandlersRef.value) {
+    eventHandlersRef.value.setMeasurementSystem(sceneManagerRef.value.measurementSystem)
+  }
+
+  window.addEventListener('object-selected', handleMeasurementUpdate)
+  window.addEventListener('object-moved', handleMeasurementUpdate)
+  window.addEventListener('toggle-measurements', handleMeasurementToggle)
+
 })
 
 // Watch for room geometry changes
@@ -625,11 +666,20 @@ watch([showWallGrid], ([newShowWallGrid]) => {
   }
 }, { immediate: true });
 
+// Watch for measurement changes
+watch(measurementEnabled, (enabled) => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.enableMeasurements(enabled)
+  }
+});
+
 // Cleanup
 onUnmounted(() => {
   if (eventHandlersRef.value) {
     eventHandlersRef.value.removeEventListeners()
   }
+
+  window.removeEventListener('toggle-measurements', handleMeasurementToggle)
 
   // Remove resize listener
   window.removeEventListener('resize', () => {
@@ -649,6 +699,15 @@ onUnmounted(() => {
     sceneManagerRef.value.dispose()
   }
 })
+
+// Add method to update current measurements
+const updateCurrentMeasurements = () => {
+  if (sceneManagerRef.value && measurementEnabled.value) {
+    currentMeasurements.value = sceneManagerRef.value.getCurrentMeasurements()
+  } else {
+    currentMeasurements.value = null
+  }
+}
 
 const handleClearAll = () => {
   // Clear all items

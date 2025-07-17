@@ -63,7 +63,7 @@ export const HEIGHT_LIMITS: HeightLimits = {
 
 // Add model dimensions for better constraint handling
 export const MODEL_DIMENSIONS = {
-  Toilet: { width: 80, depth: 80, height: 80 },
+  Toilet: { width: 45, depth: 80, height: 80 },
   Sink: { width: 60, depth: 50, height: 90 },
   Bath: { width: 170, depth: 80, height: 60 },
   Shower: { width: 80, depth: 80, height: 200 },
@@ -73,3 +73,11 @@ export const MODEL_DIMENSIONS = {
 };
 
 export type ComponentType = keyof typeof MODEL_DIMENSIONS;
+
+export const MEASUREMENT_SETTINGS = {
+  MIN_DISPLAY_DISTANCE: 5, // Don't show measurements less than 10cm
+  LABEL_HEIGHT_OFFSET: 80,   // Height above objects for labels
+  LINE_HEIGHT_OFFSET: 70,    // Height above objects for measurement lines
+  TOLERANCE: 20,             // Alignment tolerance for objects
+  UPDATE_INTERVAL: 500       // Measurement update interval in ms
+} as const;

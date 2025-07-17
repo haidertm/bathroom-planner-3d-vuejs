@@ -88,13 +88,13 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Radiator',
-    path: '/models/radiator.glb',
+    path: '/models/31019.glb',
     scale: 80,
     rotation: [0, 0, 0],
     position: [0, 0, 0], // Keep at origin
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 12, // 12cm - Very close to wall for radiators
+      wallBuffer: 5, // 12cm - Very close to wall for radiators
       description: 'Heat radiates into room'
     },
     movement: { // Radiator movement configuration
@@ -171,7 +171,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
     name: 'Mirror',
     path: '/models/mirror.glb',
     scale: 90,
-    position: [0, 0, 0], // -120cm (was -1.2m)
+    position: [0, -100, 0], // -120cm (was -1.2m)
     orientation: {
       type: 'face_into_room',
       rotationOffset: Math.PI, // Flip the mirror 180 degrees
