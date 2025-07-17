@@ -37,11 +37,14 @@
       🎨 Textures
     </button>
     <UndoRedoPanel
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :show-instructions="showInstructions"
         @undo="handleUndo"
         @redo="handleRedo"
         @clear="handleClearAll"
-        :can-undo="canUndo"
-        :can-redo="canRedo"
+        @show-instructions="showInstructions = true"
+        @close-instructions="showInstructions = false"
     />
 
     <!-- Canvas container positioned on the right side -->
@@ -50,16 +53,13 @@
         :style="canvasContainerStyle"
     />
 
-    <div :style="helpTextStyle">
-      <!-- Read Instructions Button -->
-      <button
-          @click="showInstructions = true"
-          :style="readInstructionsButtonStyle"
-      >
-        <span>📖</span>
-        <span>Read Instructions</span>
-      </button>
-    </div>
+<!--    MeasurementToggle button-->
+    <MeasurementToggle
+        :style="toggleMeasurementStyle"
+        v-model="measurementsEnabled"
+        @change="handleMeasurementChange"
+        size="large"
+    />
 
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
@@ -112,6 +112,7 @@ import Toolbar from '../components/ui/Toolbar.vue'
 import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
+import MeasurementToggle from "../components/ui/MeasurementToggle.vue";
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
@@ -179,6 +180,13 @@ const getDefaultItems = () => {
     //   fallbackSize: [0.1, 2.0, 0.8]
     // }
   ]
+}
+
+const measurementsEnabled = ref(false)
+
+const handleMeasurementChange = (enabled) => {
+  console.log('Measurements toggled:', enabled)
+  // Add your measurement logic here
 }
 
 // Reactive state
@@ -251,11 +259,11 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
-// NEW: Canvas container style that positions it on the right side
-const helpTextStyle = computed(() => ({
+const toggleMeasurementStyle = computed(() => ({
   position: 'absolute',
   bottom: '30px',
-  right: '10px', // Changed from left to right
+  left: isMobileDevice.value ? '12%' : '28%', // Changed from left to right
+  top: isMobileDevice.value ? '12%' : '', // Changed from left to right
   color: 'white',
   padding: '5px 10px',
   borderRadius: '4px',
