@@ -83,13 +83,6 @@ export class EventHandlers {
 
   // Smooth zoom properties using constants
   private targetCameraPosition: THREE.Vector3;
-  private targetSpherical: THREE.Spherical;        // NEW: Target rotation
-  private isAnimatingCamera: boolean = false;
-
-  // Add these properties for smooth rotation
-  private currentSpherical: THREE.Spherical;
-
-  // Note: Event handlers are defined as methods below and bound in constructor
 
   constructor (
     scene: THREE.Scene,
@@ -132,7 +125,7 @@ export class EventHandlers {
     this.mouseX = 0;
     this.mouseY = 0;
 
-    // NEW: Initialize original position tracking
+    // Initialize original position tracking
     this.originalDragPosition = new THREE.Vector3();
     this.originalDragRotation = 0;
 
@@ -565,6 +558,8 @@ export class EventHandlers {
       }
 
       this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
+      // ADD THIS LINE - sync the target with current position
+      this.targetCameraPosition.copy(this.camera.position);
 
       this.mouseX = event.clientX;
       this.mouseY = event.clientY;
@@ -653,29 +648,38 @@ export class EventHandlers {
     event.preventDefault();
   }
 
+  // ✅ FIXED: DIRECTIONAL ZOOM - No Direction Changes
   private handleWheel (event: WheelEvent): void {
     event.preventDefault();
 
-    // Use zoom step size from constants
-    const zoomFactor = event.deltaY > 0 ? CAMERA_CONTROLS.ZOOM_STEP_SIZE : (1 / CAMERA_CONTROLS.ZOOM_STEP_SIZE);
-    const newTargetPosition = this.targetCameraPosition.clone().multiplyScalar(zoomFactor);
+    console.log('🎯 Directional zoom started');
 
-    // Calculate distance from center
-    const distanceFromCenter = newTargetPosition.distanceTo(new THREE.Vector3(0, 0, 0));
+    // Simple zoom: move 30cm forward or backward along viewing direction
+    const zoomStep = event.deltaY > 0 ? -50 : 50; // positive = zoom out, negative = zoom in
 
-    // Check constraints using constants
-    const meetMinHeightConstraint = newTargetPosition.y >= CAMERA_SETTINGS.MIN_HEIGHT;
-    const meetMaxDistanceConstraint = distanceFromCenter <= CAMERA_SETTINGS.MAX_DISTANCE;
+    // ✅ Get the direction the camera is currently looking
+    const viewDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(viewDirection);
 
-    // Update target position if constraints are met
-    if (meetMinHeightConstraint && meetMaxDistanceConstraint) {
-      this.targetCameraPosition.copy(newTargetPosition);
-    } else if (!meetMinHeightConstraint) {
-      // Constrain to minimum height
-      const direction = this.targetCameraPosition.clone().normalize();
-      const minDistance = CAMERA_SETTINGS.MIN_HEIGHT / direction.y;
-      this.targetCameraPosition.copy(direction.multiplyScalar(minDistance));
+    // ✅ Move camera along that exact direction
+    const newPosition = this.camera.position.clone();
+    newPosition.addScaledVector(viewDirection, zoomStep);
+
+    // ✅ Optional: Only apply distance limits (no other constraints)
+    const distanceFromCenter = newPosition.distanceTo(new THREE.Vector3(0, 0, 0));
+
+    if (distanceFromCenter >= 100 && distanceFromCenter <= 1200) {
+      // ✅ Update camera position - direction stays exactly the same
+      this.camera.position.copy(newPosition);
+      this.targetCameraPosition.copy(newPosition);
+
+      console.log(`🎯 Zoomed to ${distanceFromCenter.toFixed(0)}cm - direction unchanged`);
+    } else {
+      console.log('🚫 Zoom blocked by distance limit');
     }
+
+    // ✅ CRITICAL: NO camera.lookAt() call here!
+    // The camera automatically maintains its viewing direction
   }
 
   private handleTouchStart (event: TouchEvent): void {
@@ -908,19 +912,38 @@ export class EventHandlers {
         }
 
         this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
+        // ADD THIS LINE - sync the target with current position
+        this.targetCameraPosition.copy(this.camera.position);
 
         this.mouseX = touch.clientX;
         this.mouseY = touch.clientY;
       }
     } else if (touches.length === 2) {
+      // ✅ FIXED: Directional touch zoom
       const distance = getTouchDistance(touches[0], touches[1]);
       const scale = distance / this.lastTouchDistance;
 
-      if (scale > 1.02) {
-        this.camera.position.multiplyScalar(0.98); // Reduced zoom speed
-        this.lastTouchDistance = distance;
-      } else if (scale < 0.98) {
-        this.camera.position.multiplyScalar(1.02); // Reduced zoom speed
+      if (scale > 1.02 || scale < 0.98) {
+        // Touch zoom: move 20cm forward or backward along viewing direction
+        const zoomStep = scale > 1.02 ? -20 : 20; // pinch in = zoom in (negative)
+
+        // ✅ Get viewing direction and move along it
+        const viewDirection = new THREE.Vector3();
+        this.camera.getWorldDirection(viewDirection);
+
+        const newPosition = this.camera.position.clone();
+        newPosition.addScaledVector(viewDirection, zoomStep);
+
+        // ✅ Apply distance limits only
+        const distanceFromCenter = newPosition.distanceTo(new THREE.Vector3(0, 0, 0));
+
+        if (distanceFromCenter >= 100 && distanceFromCenter <= 1200) {
+          this.camera.position.copy(newPosition);
+          this.targetCameraPosition.copy(newPosition);
+
+          console.log(`📱 Touch zoom: ${distanceFromCenter.toFixed(0)}cm - direction unchanged`);
+        }
+
         this.lastTouchDistance = distance;
       }
     }

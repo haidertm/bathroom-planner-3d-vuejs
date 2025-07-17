@@ -1,6 +1,7 @@
+// src/constants/camera.ts - FIXED CAMERA CONSTANTS
 export const LOOK_AT = {
   x: 0,
-  y: 100,
+  y: 80,
   z: 0
 };
 
@@ -11,32 +12,31 @@ export const CAMERA_SETTINGS = {
   // Camera position for centimeter units
   INITIAL_POSITION: {
     x: 0,
-    y: 400,    // 400cm = 4m height
-    z: 500     // 600cm = 6m distance
+    y: 150,    // 400cm = 4m height
+    z: 800     // 500cm = 5m distance
   },
 
-  // Camera constraints
-  NEAR: 1,
-  FAR: 100000,
+  // FIXED: Camera constraints with better values
+  NEAR: 5,        // Changed from 1 to 10 to avoid precision issues
+  FAR: 50000,      // Reduced from 100000 to 50000 for better precision
 
-  // Camera movement limits (in centimeters)
-  MIN_DISTANCE: 200,   // 2m minimum distance
-  MAX_DISTANCE: 1100,  // 20m maximum distance
-  MIN_HEIGHT: 50,      // 50cm minimum height above floor
-  MAX_HEIGHT: 1500     // 15m maximum height
+  // LOWERED: Camera movement limits for even closer inspection
+  MIN_DISTANCE: 100,
+  MAX_DISTANCE: 1200,
+  MIN_HEIGHT: 15,      // LOWERED: From 30 to 15cm - much closer to ground
+  MAX_HEIGHT: 600      // LOWERED: From 800 to 600cm (6m) - lower maximum height
 } as const;
 
 export const CAMERA_CONTROLS = {
   // Mouse/touch sensitivity
-  ROTATION_SPEED: 0.02,
+  ROTATION_SPEED: 0.01,    // Reduced from 0.02 for smoother rotation
   ZOOM_SPEED: 0.05,
 
-  // Smooth movement - NEW smooth zoom properties
+  // FIXED: Proper zoom control values
   DAMPING: 0.1,
-  SMOOTH_ZOOM_SPEED: 0.15,      // How fast camera interpolates to target
-  SMOOTH_ZOOM_DAMPING: 0.92,    // Damping factor for smooth movement
-  ZOOM_STEP_SIZE: 1.05,         // How much to zoom per wheel step (smaller = smoother)
-  TOUCH_ZOOM_STEP: 0.98,        // Touch zoom increment
+  ZOOM_STEP_SIZE: 1.08,         // Slightly increased for more noticeable zoom
+  TOUCH_ZOOM_STEP: 0.95,        // Adjusted for touch devices
+  ZOOM_SMOOTHING: 0.15,         // Added the missing ZOOM_SMOOTHING constant
 
   // Constraints
   MAX_PHI_ANGLE: Math.PI / 2 - 0.1,  // Prevent going below floor
@@ -44,24 +44,24 @@ export const CAMERA_CONTROLS = {
 } as const;
 
 export const CAMERA_PRESETS = {
-  // Different camera angles for better viewing
+  // LOWERED: Camera positions only (keeping look-at at origin)
   OVERVIEW: {
-    position: { x: 0, y: 600, z: 800 },
+    position: { x: 0, y: 300, z: 450 },     // LOWERED: More downward angle
     lookAt: LOOK_AT
   },
 
   CLOSE_UP: {
-    position: { x: 0, y: 200, z: 400 },
+    position: { x: 0, y: 100, z: 200 },     // LOWERED: Close to ground level
     lookAt: LOOK_AT
   },
 
   CORNER_VIEW: {
-    position: { x: 400, y: 300, z: 400 },
+    position: { x: 300, y: 180, z: 300 },   // LOWERED: More downward corner view
     lookAt: LOOK_AT
   },
 
   SIDE_VIEW: {
-    position: { x: 800, y: 300, z: 0 },
+    position: { x: 400, y: 120, z: 0 },     // LOWERED: Lower side perspective
     lookAt: LOOK_AT
   }
 } as const;

@@ -104,6 +104,16 @@ export class SceneManager {
       console.log('Measurement system initialized');
     }
 
+    this.renderer.logarithmicDepthBuffer = true;
+
+      // FIXED: Log scene initialization
+  console.log('✅ Scene initialized successfully:', {
+    sceneBackground: this.scene.background,
+    hasFog: !!this.scene.fog,
+    rendererSize: { width: window.innerWidth, height: window.innerHeight },
+    logarithmicDepthBuffer: this.renderer.logarithmicDepthBuffer
+  });
+
     return {
       scene: this.scene,
       camera: this.camera,
