@@ -1,10 +1,15 @@
 <template>
   <div class="button-container">
     <button
+        ref="buttonRef"
         class="measurement-button"
         :class="{ active: measurementsEnabled }"
         :style="measurementButtonStyle"
         @click="toggleMeasurements"
+        @mouseenter="handleMouseEnter"
+        @mouseleave="handleMouseLeave"
+        @touchstart="handleTouchStart"
+        @touchend="handleTouchEnd"
     >
       <svg
           class="ruler-icon"
@@ -22,7 +27,7 @@
         <path d="m8.5 6.5 2-2"/>
         <path d="m17.5 15.5 2-2"/>
       </svg>
-      <div class="tooltip">
+      <div v-if="showTooltip" class="tooltip" :style="tooltipStyle">
         {{ measurementsEnabled ? 'Toggle measurements off' : 'Toggle measurements on' }}
       </div>
     </button>
@@ -59,6 +64,86 @@ const measurementsEnabled = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
+const showTooltip = ref(false)
+const buttonRef = ref(null)
+
+// Dynamic tooltip positioning for mobile
+const tooltipStyle = computed(() => {
+  const baseStyle = {
+    position: 'absolute',
+    left: '50%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    color: 'white',
+    padding: '6px 10px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    whiteSpace: 'nowrap',
+    pointerEvents: 'none',
+    zIndex: 1000,
+    animation: 'tooltipFadeIn 0.2s ease-out'
+  }
+
+  if (isMobileDevice.value && buttonRef.value) {
+    // Get button position relative to viewport
+    const rect = buttonRef.value.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const tooltipHeight = 40 // Estimated tooltip height
+    const spaceAbove = rect.top
+    const spaceBelow = viewportHeight - rect.bottom
+
+    // Check if there's enough space above
+    if (spaceAbove >= tooltipHeight + 16) {
+      // Position above (default)
+      return {
+        ...baseStyle,
+        bottom: '100%',
+        transform: 'translateX(-50%)',
+        marginBottom: '8px'
+      }
+    } else if (spaceBelow >= tooltipHeight + 16) {
+      // Position below
+      return {
+        ...baseStyle,
+        top: '100%',
+        transform: 'translateX(-50%)',
+        marginTop: '8px'
+      }
+    } else {
+      // Position to the side (left or right based on available space)
+      const spaceLeft = rect.left
+      const spaceRight = window.innerWidth - rect.right
+
+      if (spaceRight >= 120) {
+        // Position to the right
+        return {
+          ...baseStyle,
+          left: '100%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          marginLeft: '8px'
+        }
+      } else {
+        // Position to the left
+        return {
+          ...baseStyle,
+          right: '100%',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          marginRight: '8px'
+        }
+      }
+    }
+  } else {
+    // Desktop - default positioning
+    return {
+      ...baseStyle,
+      bottom: '100%',
+      transform: 'translateX(-50%)',
+      marginBottom: '8px'
+    }
+  }
+})
+
 // Methods
 const toggleMeasurements = () => {
   if (props.disabled) return
@@ -66,8 +151,44 @@ const toggleMeasurements = () => {
   const newValue = !measurementsEnabled.value
   measurementsEnabled.value = newValue
 
+  // Hide tooltip on mobile after toggle
+  if (isMobileDevice.value) {
+    showTooltip.value = false
+  }
+
   // Emit change event with the new value
   emit('change', newValue)
+}
+
+const handleMouseEnter = () => {
+  if (!props.disabled && !isMobileDevice.value) {
+    showTooltip.value = true
+  }
+}
+
+const handleMouseLeave = () => {
+  if (!isMobileDevice.value) {
+    showTooltip.value = false
+  }
+}
+
+const handleTouchStart = () => {
+  if (!props.disabled && isMobileDevice.value) {
+    showTooltip.value = true
+    // Force re-computation of tooltip position
+    setTimeout(() => {
+      showTooltip.value = showTooltip.value
+    }, 10)
+  }
+}
+
+const handleTouchEnd = () => {
+  if (isMobileDevice.value) {
+    // Hide tooltip after a brief delay on mobile
+    setTimeout(() => {
+      showTooltip.value = false
+    }, 100)
+  }
 }
 
 const isMobileDevice = computed(() => isMobile())
@@ -140,12 +261,21 @@ const iconSize = computed(() => {
   border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
   pointer-events: none;
   margin-bottom: 8px;
   z-index: 1000;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .tooltip::after {
@@ -158,10 +288,7 @@ const iconSize = computed(() => {
   border-top-color: rgba(0, 0, 0, 0.8);
 }
 
-.measurement-button:hover:not(:disabled) .tooltip {
-  opacity: 1;
-  visibility: visible;
-}
+/* Remove the old hover-based tooltip rule since we're using showTooltip state */
 
 /* Focus styles for accessibility */
 .measurement-button:focus-visible {

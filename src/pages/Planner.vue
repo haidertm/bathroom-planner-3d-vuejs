@@ -272,26 +272,6 @@ const toggleMeasurementStyle = computed(() => ({
   lineHeight: '1.2'
 }))
 
-const readInstructionsButtonStyle = computed(() => ({
-  marginTop: '10px',
-  padding: '8px 16px',
-  backgroundColor: 'rgba(59, 130, 246, 0.9)', // Blue background
-  color: '#ffffff',
-  border: '1px solid rgba(59, 130, 246, 0.8)',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '12px',
-  fontWeight: '600',
-  transition: 'all 0.3s ease',
-  backdropFilter: 'blur(8px)',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  width: 'fit-content',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
-}))
-
 const popupOverlayStyle = computed(() => ({
   position: 'fixed',
   top: '0',
