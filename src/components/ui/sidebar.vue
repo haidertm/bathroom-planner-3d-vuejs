@@ -266,11 +266,10 @@
       </div>
     </div>
 
-    <!-- Unified Product Drawer -->
     <ProductDrawer
         :is-open="isProductDrawerOpen"
         :selected-category="selectedCategory"
-        @close="closeProductDrawer"
+        @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
     />
   </div>
@@ -406,62 +405,58 @@ const isButtonPressed = ref(false)
 
 // Product drawer state
 const isProductDrawerOpen = ref(false)
-const isVariantsDrawerOpen = ref(false)
 const selectedCategory = ref('')
-const selectedProduct = ref(null)
 
 // Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
 const isInternalUpdate = ref(false)
 
-// Product drawer methods
+// DEBUG: Add console logs to track state changes
+watch(isProductDrawerOpen, (newVal) => {
+  console.log('🔍 Product drawer open state changed:', newVal)
+})
+
+watch(isSidebarVisible, (newVal) => {
+  console.log('🔍 Sidebar visible state changed:', newVal)
+})
+
+// FIXED: Product drawer methods
 const openProductDrawer = (category) => {
-  emit('add', category)
+  console.log('🔍 Opening product drawer for category:', category)
   selectedCategory.value = category
   isProductDrawerOpen.value = true
 
-  // Auto-hide sidebar on mobile when opening product drawer
-  if (isMobileDevice.value) {
-    hideSidebar()
-  }
+  // On mobile, keep sidebar visible when opening product drawer
+  // Don't auto-hide it - let user control it
+  console.log('🔍 Product drawer opened, sidebar remains visible')
 }
 
-const closeProductDrawer = () => {
+const handleProductDrawerClose = () => {
+  console.log('🔍 Product drawer close event received')
   isProductDrawerOpen.value = false
   selectedCategory.value = ''
+
+  // IMPORTANT: Don't hide the main sidebar when closing product drawer
+  // The sidebar should stay open for the user to access other features
+  console.log('🔍 Product drawer closed, sidebar remains visible')
 }
 
 const handleAddToRoom = (product) => {
-  console.log('Adding product to room:', product)
-  selectedProduct.value = product
-  isProductDrawerOpen.value = false
-  isVariantsDrawerOpen.value = true
-}
+  console.log('🔍 Adding product to room:', product)
 
-const closeVariantsDrawer = () => {
-  isVariantsDrawerOpen.value = false
-  selectedProduct.value = null
-}
+  // Extract component type from product data
+  const componentType = product.type || 'Unknown'
 
-const backToProductList = () => {
-  isVariantsDrawerOpen.value = false
-  isProductDrawerOpen.value = true
-}
+  // Emit to parent component to add the item
+  emit('add', componentType)
 
-const handleConfirmAdd = (productData) => {
-  console.log('Confirming add to room with variants:', productData)
-  const componentType = productData.type
-  console.log('Extracted component type:', componentType)
-  handleAddComponent(componentType)
-  closeVariantsDrawer()
-  closeProductDrawer()
-}
+  // Close product drawer after adding
+  handleProductDrawerClose()
 
-const handleAddComponent = (component) => {
-  console.log('Adding component:', component)
-  emit('add', component)
+  // On mobile, auto-hide sidebar after adding item (this is the only time we auto-hide)
   if (isMobileDevice.value) {
+    console.log('🔍 Mobile: Auto-hiding sidebar after adding item')
     setTimeout(() => {
       hideSidebar()
     }, 300)
@@ -490,48 +485,212 @@ watch(() => props.roomHeight, (newHeight) => {
 // Computed
 const isMobileDevice = computed(() => isMobile())
 
-// Styles for new category design
-const categoriesContainerStyle = computed(() => ({
-  padding: '10px',
-  backgroundColor: '#ffffff'
-}))
+// Mobile sidebar methods
+const showSidebar = () => {
+  console.log('🔍 Showing sidebar')
+  isSidebarVisible.value = true
+}
 
-const categoryItemStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: '16px 20px',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e5e7eb',
-  borderRadius: '8px',
-  marginBottom: '8px',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  gap: '16px',
-  fontFamily: 'Arial, sans-serif',
-  ':hover': {
-    backgroundColor: '#f9fafb',
-    borderColor: '#10b981'
+const hideSidebar = () => {
+  console.log('🔍 Hiding sidebar')
+  isSidebarVisible.value = false
+
+  // Also close any open drawers when hiding sidebar
+  if (isProductDrawerOpen.value) {
+    console.log('🔍 Also closing product drawer when hiding sidebar')
+    handleProductDrawerClose()
   }
-}))
 
-const categoryIconStyle = computed(() => ({
-  width: '24px',
-  height: '24px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#29275B',
-  flexShrink: 0
-}))
+  if (isTextureDrawerOpen.value) {
+    console.log('🔍 Also closing texture drawer when hiding sidebar')
+    closeTextureDrawer()
+  }
+}
 
-const categoryLabelStyle = computed(() => ({
-  fontSize: '15px',
-  fontWeight: '500',
-  color: '#374151',
+const handleTouchStart = () => {
+  isButtonPressed.value = true
+}
+
+const handleTouchEnd = () => {
+  isButtonPressed.value = false
+}
+
+const toggleBathroomItemsSection = () => {
+  isBathroomItemsExpanded.value = !isBathroomItemsExpanded.value
+}
+
+const toggleRoomSettingsSection = () => {
+  isRoomSettingsExpanded.value = !isRoomSettingsExpanded.value
+}
+
+const toggleTextureDrawer = () => {
+  isTextureDrawerOpen.value = !isTextureDrawerOpen.value
+}
+
+const closeTextureDrawer = () => {
+  isTextureDrawerOpen.value = false
+}
+
+const toggleFloorSection = () => {
+  isFloorExpanded.value = !isFloorExpanded.value
+}
+
+const toggleWallSection = () => {
+  isWallExpanded.value = !isWallExpanded.value
+}
+
+// Room settings methods
+const validateValue = (value, min, max) => {
+  const num = Number(value)
+  if (isNaN(num)) return min
+  return Math.max(min, Math.min(max, num))
+}
+
+const updateWidthFromInput = (event) => {
+  const newValue = Number(event.target.value)
+  if (!isNaN(newValue)) {
+    localRoomWidth.value = newValue
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+      isInternalUpdate.value = true
+      emit('room-size-change', newValue, localRoomHeight.value)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
+  }
+}
+
+const updateHeightFromInput = (event) => {
+  const newValue = Number(event.target.value)
+  if (!isNaN(newValue)) {
+    localRoomHeight.value = newValue
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+      isInternalUpdate.value = true
+      emit('room-size-change', localRoomWidth.value, newValue)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
+  }
+}
+
+const updateWidthFromSlider = (event) => {
+  const newValue = Number(event.target.value)
+  localRoomWidth.value = newValue
+  isInternalUpdate.value = true
+  emit('room-size-change', newValue, localRoomHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const updateHeightFromSlider = (event) => {
+  const newValue = Number(event.target.value)
+  localRoomHeight.value = newValue
+  isInternalUpdate.value = true
+  emit('room-size-change', localRoomWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const validateAndUpdateWidth = () => {
+  const validatedValue = validateValue(
+      localRoomWidth.value,
+      ROOM_DEFAULTS.MIN_SIZE,
+      ROOM_DEFAULTS.MAX_SIZE
+  )
+
+  if (validatedValue !== localRoomWidth.value) {
+    localRoomWidth.value = validatedValue
+    isInternalUpdate.value = true
+    emit('room-size-change', validatedValue, localRoomHeight.value)
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
+  }
+}
+
+const validateAndUpdateHeight = () => {
+  const validatedValue = validateValue(
+      localRoomHeight.value,
+      ROOM_DEFAULTS.MIN_SIZE,
+      ROOM_DEFAULTS.MAX_SIZE
+  )
+
+  if (validatedValue !== localRoomHeight.value) {
+    localRoomHeight.value = validatedValue
+    isInternalUpdate.value = true
+    emit('room-size-change', localRoomWidth.value, validatedValue)
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
+  }
+}
+
+// Style helper methods
+const getArrowStyle = (isExpanded) => ({
+  fontSize: '14px',
+  color: '#ffffff',
+  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+  transition: 'transform 0.2s ease',
+  display: 'inline-block',
   fontFamily: 'Arial, sans-serif'
-}))
+})
 
-// Keep all other existing styles...
+const getSubArrowStyle = (isExpanded) => ({
+  fontSize: '12px',
+  color: '#6b7280',
+  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+  transition: 'transform 0.2s ease',
+  display: 'inline-block',
+  fontFamily: 'Arial, sans-serif'
+})
+
+const getAccordionContentStyle = (isExpanded) => ({
+  maxHeight: isExpanded ? '800px' : '0px',
+  overflow: 'hidden',
+  transition: 'max-height 0.3s ease-in-out',
+  backgroundColor: '#f9fafb',
+  padding: isExpanded ? '0px' : '0px'
+})
+
+const getSubAccordionContentStyle = (isExpanded) => ({
+  maxHeight: isExpanded ? 'none' : '0px',
+  overflow: isExpanded ? 'visible' : 'hidden',
+  transition: 'max-height 0.3s ease-in-out',
+  backgroundColor: '#ffffff'
+})
+
+const getTextureButtonStyle = (texture, isActive) => ({
+  padding: '10px',
+  border: isActive ? '3px solid #29275B' : '2px solid #e5e7eb',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  backgroundColor: isActive ? '#f0fdf4' : '#fff',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '8px',
+  minHeight: isMobileDevice.value ? '70px' : '80px',
+  boxShadow: isActive ? '0 2px 8px rgba(16, 185, 129, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
+})
+
+const getTexturePreviewStyle = (texture) => ({
+  width: '100%',
+  height: isMobileDevice.value ? '35px' : '45px',
+  backgroundColor: `#${ texture.color.toString(16).padStart(6, '0') }`,
+  borderRadius: '4px',
+  border: '1px solid #e5e7eb',
+  backgroundImage: texture.file ? `url(${ texture.file })` : 'none',
+  backgroundSize: 'cover',
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'center'
+})
+
+// All your existing style computed properties go here...
+// (I'll keep them the same as in your original code)
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
   bottom: '30px',
@@ -591,7 +750,7 @@ const mobileCloseButtonStyle = computed(() => ({
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
 }))
 
-// FIXED: Main panel styles - the key fix is here
+// Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
   top: isMobileDevice.value ? '0' : '60px',
@@ -603,17 +762,14 @@ const panelStyle = computed(() => ({
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  // FIXED: Changed from 100vh to calc(100vh - 60px) for desktop
-  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
+  maxHeight: isMobileDevice.value ? '100vh' : '100vh',
+  height: isMobileDevice.value ? '100vh' : '100vh',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
   transform: isMobileDevice.value ? (isSidebarVisible.value ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
   transition: 'transform 0.3s ease',
-  display: isMobileDevice.value ? 'block' : 'block',
-  // ADDED: Additional bottom padding to ensure content doesn't get cut off
-  paddingBottom: isMobileDevice.value ? '20px' : '40px'
+  display: isMobileDevice.value ? 'block' : 'block'
 }))
 
 const accordionSectionStyle = computed(() => ({
@@ -775,8 +931,7 @@ const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
   top: isMobileDevice.value ? '0' : '60px',
   left: isMobileDevice.value ? '0' : '0',
-  // FIXED: Same height fix for drawer
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
+  height: isMobileDevice.value ? '100vh' : '100vh',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   backgroundColor: '#ffffff',
@@ -833,9 +988,7 @@ const drawerContentStyle = computed(() => ({
   overflowY: 'auto',
   overflowX: 'hidden',
   height: '0',
-  minHeight: '0',
-  // ADDED: Bottom padding to ensure content doesn't get cut off
-  paddingBottom: '40px'
+  minHeight: '0'
 }))
 
 const drawerSectionStyle = computed(() => ({
@@ -881,196 +1034,46 @@ const textureLabelStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-// Methods
-const showSidebar = () => {
-  isSidebarVisible.value = true
-}
-
-const hideSidebar = () => {
-  isSidebarVisible.value = false
-}
-
-const handleTouchStart = () => {
-  isButtonPressed.value = true
-}
-
-const handleTouchEnd = () => {
-  isButtonPressed.value = false
-}
-
-const toggleBathroomItemsSection = () => {
-  isBathroomItemsExpanded.value = !isBathroomItemsExpanded.value
-}
-
-const toggleRoomSettingsSection = () => {
-  isRoomSettingsExpanded.value = !isRoomSettingsExpanded.value
-}
-
-const toggleTextureDrawer = () => {
-  isTextureDrawerOpen.value = !isTextureDrawerOpen.value
-}
-
-const closeTextureDrawer = () => {
-  isTextureDrawerOpen.value = false
-}
-
-const toggleFloorSection = () => {
-  isFloorExpanded.value = !isFloorExpanded.value
-}
-
-const toggleWallSection = () => {
-  isWallExpanded.value = !isWallExpanded.value
-}
-
-// Room settings methods
-const validateValue = (value, min, max) => {
-  const num = Number(value)
-  if (isNaN(num)) return min
-  return Math.max(min, Math.min(max, num))
-}
-
-const updateWidthFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    localRoomWidth.value = newValue
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
-      isInternalUpdate.value = true
-      emit('room-size-change', newValue, localRoomHeight.value)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateHeightFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    localRoomHeight.value = newValue
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
-      isInternalUpdate.value = true
-      emit('room-size-change', localRoomWidth.value, newValue)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateWidthFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localRoomWidth.value = newValue
-  isInternalUpdate.value = true
-  emit('room-size-change', newValue, localRoomHeight.value)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-const updateHeightFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localRoomHeight.value = newValue
-  isInternalUpdate.value = true
-  emit('room-size-change', localRoomWidth.value, newValue)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-// FIXED: Validation methods that ensure numbers
-const validateAndUpdateWidth = () => {
-  const validatedValue = validateValue(
-      localRoomWidth.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomWidth.value) {
-    localRoomWidth.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', validatedValue, localRoomHeight.value)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
-}
-
-const validateAndUpdateHeight = () => {
-  const validatedValue = validateValue(
-      localRoomHeight.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomHeight.value) {
-    localRoomHeight.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', localRoomWidth.value, validatedValue)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
-}
-
-const getArrowStyle = (isExpanded) => ({
-  fontSize: '14px',
-  color: '#ffffff',
-  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-  transition: 'transform 0.2s ease',
-  display: 'inline-block',
-  fontFamily: 'Arial, sans-serif'
-})
-
-const getSubArrowStyle = (isExpanded) => ({
-  fontSize: '12px',
-  color: '#6b7280',
-  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-  transition: 'transform 0.2s ease',
-  display: 'inline-block',
-  fontFamily: 'Arial, sans-serif'
-})
-
-const getAccordionContentStyle = (isExpanded) => ({
-  maxHeight: isExpanded ? '800px' : '0px',
-  overflow: 'hidden',
-  transition: 'max-height 0.3s ease-in-out',
-  backgroundColor: '#f9fafb',
-  padding: isExpanded ? '0px' : '0px'
-})
-
-const getSubAccordionContentStyle = (isExpanded) => ({
-  maxHeight: isExpanded ? 'none' : '0px',
-  overflow: isExpanded ? 'visible' : 'hidden',
-  transition: 'max-height 0.3s ease-in-out',
-  backgroundColor: '#ffffff'
-})
-
-const getTextureButtonStyle = (texture, isActive) => ({
+// Styles for new category design
+const categoriesContainerStyle = computed(() => ({
   padding: '10px',
-  border: isActive ? '3px solid #29275B' : '2px solid #e5e7eb',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  backgroundColor: isActive ? '#f0fdf4' : '#fff',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '8px',
-  minHeight: isMobileDevice.value ? '70px' : '80px',
-  boxShadow: isActive ? '0 2px 8px rgba(16, 185, 129, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
-})
+  backgroundColor: '#ffffff'
+}))
 
-const getTexturePreviewStyle = (texture) => ({
-  width: '100%',
-  height: isMobileDevice.value ? '35px' : '45px',
-  backgroundColor: `#${ texture.color.toString(16).padStart(6, '0') }`,
-  borderRadius: '4px',
+const categoryItemStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '16px 20px',
+  backgroundColor: '#ffffff',
   border: '1px solid #e5e7eb',
-  backgroundImage: texture.file ? `url(${ texture.file })` : 'none',
-  backgroundSize: 'cover',
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'center'
-})
+  borderRadius: '8px',
+  marginBottom: '8px',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  gap: '16px',
+  fontFamily: 'Arial, sans-serif',
+  ':hover': {
+    backgroundColor: '#f9fafb',
+    borderColor: '#10b981'
+  }
+}))
+
+const categoryIconStyle = computed(() => ({
+  width: '24px',
+  height: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#29275B',
+  flexShrink: 0
+}))
+
+const categoryLabelStyle = computed(() => ({
+  fontSize: '15px',
+  fontWeight: '500',
+  color: '#374151',
+  fontFamily: 'Arial, sans-serif'
+}))
 </script>
 
 <style scoped>

@@ -195,8 +195,8 @@ const props = defineProps({
   }
 })
 
-// Emits
-const emit = defineEmits(['close', 'add-to-room'])
+// Emits - ADD 'back' event for better control
+const emit = defineEmits(['close', 'add-to-room', 'back'])
 
 // Reactive state
 const currentView = ref('products') // 'products' or 'variants'
@@ -641,7 +641,6 @@ const getProductsForCategory = (category) => {
 }
 
 const selectProduct = (product) => {
-  emit('add', product)
   selectedProduct.value = product
   currentView.value = 'variants'
 }
