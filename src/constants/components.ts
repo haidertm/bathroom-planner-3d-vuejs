@@ -1,6 +1,6 @@
-export type ComponentType = 'Toilet' | 'Sink' | 'Bath' | 'Shower' | 'Radiator' | 'Mirror' | 'Door';
+export type ComponentType = 'Toilet' | 'Furniture' | 'Bath' | 'Shower' | 'Radiator' | 'Mirror';
 
-export const COMPONENTS: ComponentType[] = ['Toilet', 'Sink', 'Bath', 'Shower', 'Radiator', 'Mirror', 'Door'];
+export const COMPONENTS: ComponentType[] = ['Toilet', 'Furniture', 'Bath', 'Shower', 'Radiator', 'Mirror'];
 
 export interface ComponentDefaults {
   height: number;
@@ -9,10 +9,9 @@ export interface ComponentDefaults {
 
 export const COMPONENT_DEFAULTS: Record<ComponentType, ComponentDefaults> = {
   Toilet: { height: 0, scale: 1.0 },
-  Sink: { height: 0, scale: 1.0 },
+  Furniture: { height: 0, scale: 1.0 },
   Bath: { height: 0, scale: 1.0 },
   Shower: { height: 0, scale: 1.0 },
   Radiator: { height: 0, scale: 1.0 },
   Mirror: { height: 0, scale: 1.0 },
-  Door: { height: 0, scale: 1.0 }
 };

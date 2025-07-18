@@ -42,15 +42,20 @@
             :style="getAccordionContentStyle(isBathroomItemsExpanded)"
             ref="bathroomItemsContent"
         >
-          <div :style="itemsGridStyle">
-            <button
-                v-for="component in COMPONENTS"
-                :key="component"
-                @click.stop="handleAddComponent(component)"
-                :style="itemButtonStyle"
+          <div :style="categoriesContainerStyle">
+            <!-- Category Items -->
+            <div
+                v-for="category in bathroomCategories"
+                :key="category.id"
+                @click.stop="openProductDrawer(category.component)"
+                :style="categoryItemStyle"
+                class="category-item"
             >
-              {{ component }}
-            </button>
+              <div :style="categoryIconStyle">
+                <span v-html="category.icon"></span>
+              </div>
+              <span :style="categoryLabelStyle">{{ category.label }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -71,7 +76,7 @@
           <div :style="roomSettingsContentStyle">
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Width: {{ safeToFixed(localRoomWidth, 1) }}m
+                Width: {{ safeToFixed(localRoomWidth, 0) }}cm
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
@@ -101,7 +106,7 @@
 
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Height: {{ safeToFixed(localRoomHeight, 1) }}m
+                Height: {{ safeToFixed(localRoomHeight, 0) }}cm
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
@@ -260,6 +265,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Unified Product Drawer -->
+    <ProductDrawer
+        :is-open="isProductDrawerOpen"
+        :selected-category="selectedCategory"
+        @close="closeProductDrawer"
+        @add-to-room="handleAddToRoom"
+    />
   </div>
 </template>
 
@@ -269,6 +282,7 @@ import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
+import ProductDrawer from './ProductDrawer.vue'
 
 // Define props
 const props = defineProps({
@@ -310,10 +324,76 @@ const emit = defineEmits([
   'add',
   'room-size-change',
   'toggle-grid',
-  'toggle-wall-grid',   // Wall grid toggle
+  'toggle-wall-grid',
   'constrain-objects',
   'toggle-wall-culling'
 ])
+
+// Bathroom categories with icons (matching your design)
+const bathroomCategories = [
+  {
+    id: 'baths',
+    label: 'Baths',
+    component: 'Bath',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 12h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-6z"/>
+      <path d="M2 18h20"/>
+      <circle cx="7" cy="21" r="1"/>
+      <circle cx="17" cy="21" r="1"/>
+    </svg>`
+  },
+  {
+    id: 'showers',
+    label: 'Showers',
+    component: 'Shower',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 4h16v16H4z"/>
+      <path d="M8 2v20"/>
+      <path d="M12 8v8"/>
+      <path d="M16 8v8"/>
+    </svg>`
+  },
+  {
+    id: 'toilets',
+    label: 'Toilets',
+    component: 'Toilet',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M6 8h12v8a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>
+      <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M6 8H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"/>
+    </svg>`
+  },
+  {
+    id: 'mirrors',
+    label: 'Mirrors',
+    component: 'Mirror',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="4" y="4" width="16" height="16" rx="2"/>
+      <path d="M8 12l3 3 5-5"/>
+    </svg>`
+  },
+  {
+    id: 'Radiator',
+    label: 'Radiator',
+    component: 'Radiator',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="4" y="6" width="16" height="12" rx="2"/>
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M8 18v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2"/>
+    </svg>`
+  },
+  {
+    id: 'furniture',
+    label: 'Furniture',
+    component: 'Furniture',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="8" width="18" height="10" rx="2"/>
+      <path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/>
+      <path d="M7 18v2"/>
+      <path d="M17 18v2"/>
+    </svg>`
+  },
+]
 
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
@@ -324,20 +404,77 @@ const isWallExpanded = ref(false)
 const isSidebarVisible = ref(false)
 const isButtonPressed = ref(false)
 
-// Local state for inputs - FIXED: Ensure they're always numbers
+// Product drawer state
+const isProductDrawerOpen = ref(false)
+const isVariantsDrawerOpen = ref(false)
+const selectedCategory = ref('')
+const selectedProduct = ref(null)
+
+// Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
-
-// Track if we're currently updating to prevent circular updates
 const isInternalUpdate = ref(false)
 
-// FIXED: Safe toFixed function
+// Product drawer methods
+const openProductDrawer = (category) => {
+  emit('add', category)
+  selectedCategory.value = category
+  isProductDrawerOpen.value = true
+
+  // Auto-hide sidebar on mobile when opening product drawer
+  if (isMobileDevice.value) {
+    hideSidebar()
+  }
+}
+
+const closeProductDrawer = () => {
+  isProductDrawerOpen.value = false
+  selectedCategory.value = ''
+}
+
+const handleAddToRoom = (product) => {
+  console.log('Adding product to room:', product)
+  selectedProduct.value = product
+  isProductDrawerOpen.value = false
+  isVariantsDrawerOpen.value = true
+}
+
+const closeVariantsDrawer = () => {
+  isVariantsDrawerOpen.value = false
+  selectedProduct.value = null
+}
+
+const backToProductList = () => {
+  isVariantsDrawerOpen.value = false
+  isProductDrawerOpen.value = true
+}
+
+const handleConfirmAdd = (productData) => {
+  console.log('Confirming add to room with variants:', productData)
+  const componentType = productData.type
+  console.log('Extracted component type:', componentType)
+  handleAddComponent(componentType)
+  closeVariantsDrawer()
+  closeProductDrawer()
+}
+
+const handleAddComponent = (component) => {
+  console.log('Adding component:', component)
+  emit('add', component)
+  if (isMobileDevice.value) {
+    setTimeout(() => {
+      hideSidebar()
+    }, 300)
+  }
+}
+
+// Safe toFixed function
 const safeToFixed = (value, decimals) => {
   const num = Number(value)
   return isNaN(num) ? '0.0' : num.toFixed(decimals)
 }
 
-// Watch for external prop changes and update local state (but not during internal updates)
+// Watch for external prop changes
 watch(() => props.roomWidth, (newWidth) => {
   if (!isInternalUpdate.value) {
     localRoomWidth.value = Number(newWidth) || ROOM_DEFAULTS.WIDTH
@@ -353,7 +490,48 @@ watch(() => props.roomHeight, (newHeight) => {
 // Computed
 const isMobileDevice = computed(() => isMobile())
 
-// Mobile floating button styles
+// Styles for new category design
+const categoriesContainerStyle = computed(() => ({
+  padding: '10px',
+  backgroundColor: '#ffffff'
+}))
+
+const categoryItemStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '16px 20px',
+  backgroundColor: '#ffffff',
+  border: '1px solid #e5e7eb',
+  borderRadius: '8px',
+  marginBottom: '8px',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  gap: '16px',
+  fontFamily: 'Arial, sans-serif',
+  ':hover': {
+    backgroundColor: '#f9fafb',
+    borderColor: '#10b981'
+  }
+}))
+
+const categoryIconStyle = computed(() => ({
+  width: '24px',
+  height: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#29275B',
+  flexShrink: 0
+}))
+
+const categoryLabelStyle = computed(() => ({
+  fontSize: '15px',
+  fontWeight: '500',
+  color: '#374151',
+  fontFamily: 'Arial, sans-serif'
+}))
+
+// Keep all other existing styles...
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
   bottom: '30px',
@@ -439,7 +617,8 @@ const accordionSectionStyle = computed(() => ({
   border: '1px solid #fff',
   borderRadius: '10px',
   overflow: 'hidden',
-  backgroundColor: '#ffffff'
+  backgroundColor: '#ffffff',
+  marginBottom: '12px'
 }))
 
 const mainAccordionHeaderStyle = computed(() => ({
@@ -463,32 +642,7 @@ const accordionTitleStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-const itemsGridStyle = computed(() => ({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '8px',
-  padding: '15px',
-  justifyContent: isMobileDevice.value ? 'center' : 'flex-start'
-}))
-
-const itemButtonStyle = computed(() => ({
-  padding: isMobileDevice.value ? '12px 16px' : '12px 18px',
-  border: '2px solid #29275B',
-  borderRadius: '8px',
-  backgroundColor: '#29275B',
-  color: '#ffffff',
-  cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '14px' : '14px',
-  fontWeight: '600',
-  transition: 'all 0.3s ease',
-  whiteSpace: 'nowrap',
-  fontFamily: 'Arial, sans-serif',
-  textTransform: 'capitalize',
-  minWidth: isMobileDevice.value ? '120px' : 'auto',
-  textAlign: 'center'
-}))
-
-// Room Settings styles with enhanced design
+// Room Settings styles
 const roomSettingsContentStyle = computed(() => ({
   padding: '20px',
   backgroundColor: '#fafbfc'
@@ -722,17 +876,6 @@ const textureLabelStyle = computed(() => ({
 }))
 
 // Methods
-const handleAddComponent = (component) => {
-  console.log('Adding component:', component)
-  emit('add', component)
-  // Auto-hide sidebar on mobile after adding component
-  if (isMobileDevice.value) {
-    setTimeout(() => {
-      hideSidebar()
-    }, 300)
-  }
-}
-
 const showSidebar = () => {
   isSidebarVisible.value = true
 }
@@ -773,21 +916,17 @@ const toggleWallSection = () => {
   isWallExpanded.value = !isWallExpanded.value
 }
 
-// FIXED: Room settings methods with proper validation and number conversion
+// Room settings methods
 const validateValue = (value, min, max) => {
   const num = Number(value)
   if (isNaN(num)) return min
   return Math.max(min, Math.min(max, num))
 }
 
-// FIXED: Ensure all input handlers convert to numbers
 const updateWidthFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
-    // Update local value without clamping during typing
     localRoomWidth.value = newValue
-
-    // Only emit valid values (within range)
     if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
       isInternalUpdate.value = true
       emit('room-size-change', newValue, localRoomHeight.value)
@@ -801,10 +940,7 @@ const updateWidthFromInput = (event) => {
 const updateHeightFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
-    // Update local value without clamping during typing
     localRoomHeight.value = newValue
-
-    // Only emit valid values (within range)
     if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
       isInternalUpdate.value = true
       emit('room-size-change', localRoomWidth.value, newValue)
@@ -932,6 +1068,17 @@ const getTexturePreviewStyle = (texture) => ({
 </script>
 
 <style scoped>
+/* Category item hover effects */
+.category-item:hover {
+  background-color: #f9fafb !important;
+  border-color: #29275B !important;
+  transform: translateY(-1px);
+}
+
+.category-item:hover .category-icon {
+  color: #29275B !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
@@ -1032,27 +1179,6 @@ const getTexturePreviewStyle = (texture) => ({
   box-shadow: 0 5px 15px rgba(41, 39, 91, 0.4) !important;
 }
 
-/* Control group hover effect */
-.control-group:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* Animation for input focus */
-@keyframes inputFocus {
-  0% {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  }
-  100% {
-    box-shadow: 0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-}
-
-.modern-number-input:focus {
-  animation: inputFocus 0.3s ease !important;
-}
-
-/* Mobile optimizations */
 @media (max-width: 768px) {
   .modern-slider::-webkit-slider-thumb {
     width: 26px !important;
