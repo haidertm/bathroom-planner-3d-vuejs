@@ -591,7 +591,7 @@ const mobileCloseButtonStyle = computed(() => ({
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
 }))
 
-// Main panel styles
+// FIXED: Main panel styles - the key fix is here
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
   top: isMobileDevice.value ? '0' : '60px',
@@ -603,14 +603,17 @@ const panelStyle = computed(() => ({
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? '100vh' : '100vh',
-  height: isMobileDevice.value ? '100vh' : '100vh',
+  // FIXED: Changed from 100vh to calc(100vh - 60px) for desktop
+  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
+  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
   transform: isMobileDevice.value ? (isSidebarVisible.value ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
   transition: 'transform 0.3s ease',
-  display: isMobileDevice.value ? 'block' : 'block'
+  display: isMobileDevice.value ? 'block' : 'block',
+  // ADDED: Additional bottom padding to ensure content doesn't get cut off
+  paddingBottom: isMobileDevice.value ? '20px' : '40px'
 }))
 
 const accordionSectionStyle = computed(() => ({
@@ -772,7 +775,8 @@ const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
   top: isMobileDevice.value ? '0' : '60px',
   left: isMobileDevice.value ? '0' : '0',
-  height: isMobileDevice.value ? '100vh' : '100vh',
+  // FIXED: Same height fix for drawer
+  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   backgroundColor: '#ffffff',
@@ -829,7 +833,9 @@ const drawerContentStyle = computed(() => ({
   overflowY: 'auto',
   overflowX: 'hidden',
   height: '0',
-  minHeight: '0'
+  minHeight: '0',
+  // ADDED: Bottom padding to ensure content doesn't get cut off
+  paddingBottom: '40px'
 }))
 
 const drawerSectionStyle = computed(() => ({

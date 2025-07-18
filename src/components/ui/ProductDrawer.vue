@@ -726,9 +726,10 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: 'fixed',
-  top: '0',
+  top: isMobileDevice.value ? '0' : '60px',
   left: '0',
-  height: '100vh',
+  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
+  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
   width: isMobileDevice.value ? '100vw' : '500px',
   maxWidth: '100vw',
   backgroundColor: currentView.value === 'variants' ? '#ffffff' : '#f5f5f5',
@@ -738,7 +739,8 @@ const drawerStyle = computed(() => ({
   display: 'flex',
   flexDirection: 'column',
   fontFamily: 'Arial, sans-serif',
-  boxShadow: '2px 0 20px rgba(0, 0, 0, 0.15)'
+  boxShadow: '2px 0 20px rgba(0, 0, 0, 0.15)',
+  paddingBottom: isMobileDevice.value ? '20px' : '40px',
 }))
 
 const headerStyle = computed(() => ({
