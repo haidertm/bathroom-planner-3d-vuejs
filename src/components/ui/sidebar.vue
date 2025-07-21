@@ -1110,18 +1110,6 @@ const categoryIconStyle = computed(() => ({
   flexShrink: 0
 }))
 
-const getTexturePreviewStyle = (texture) => ({
-  width: '100%',
-  height: isMobileDevice.value ? '35px' : '45px',
-  backgroundColor: `#${ texture.color.toString(16).padStart(6, '0') }`,
-  borderRadius: '4px',
-  border: '1px solid #e5e7eb',
-  backgroundImage: texture.file ? `url(${ texture.file })` : 'none',
-  backgroundSize: 'cover',
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'center'
-})
-
 //For measurement
 const helpTextStyle = computed(() => ({
   fontSize: '12px',
