@@ -59,7 +59,7 @@
           <div :style="productInfoStyle">
             <div :style="brandStyle">{{ product.brand }}</div>
             <h3 :style="productNameStyle">{{ product.name }}</h3>
-            <div :style="priceStyle">£{{ product.price }}</div>
+            <div :style="priceStyle">{{ product.price }}</div>
 
             <!-- More Info Link -->
             <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank">
@@ -88,7 +88,7 @@
           <div :style="productInfoStyle">
             <div :style="brandStyle">{{ selectedProduct.brand }}</div>
             <h3 :style="productNameStyle">{{ selectedProduct.name }}</h3>
-            <div :style="priceStyle">£{{ selectedProduct.price }}</div>
+            <div :style="priceStyle">{{ selectedProduct.price }}</div>
           </div>
         </div>
 
@@ -228,21 +228,21 @@ const productData = {
       id: 'furniture_variant_1',
       link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-short-projection-basin-drawer-vanity-600mm-c76236',
       name: 'Corsica Gloss White Basin Drawer Vanity 600mm',
-      price: '299.95',
+      price: '£249.99',
       image: 'assets/productImages/furniture/C76237-1000-White-Basin-Drawer-Vanity-600mm_1.webp',
       variants: [
         {
           id: 'c76236',
           name: 'Wall Hung Slimline Basin Drawer Vanity 600mm',
           sku: 'C76236',
-          price: '299.95',
+          price: '£249.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm'
         },
         {
           id: 'c76237',
           name: 'Slimline Basin Drawer Vanity 600mm',
           sku: 'C76237',
-          price: '279.95',
+          price: '£249.99',
           title: 'Corsica Gloss White Slimline Basin Drawer Vanity 600mm'
         }
       ],
@@ -258,35 +258,35 @@ const productData = {
       id: 'furniture_variant_2',
       link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
       name: 'Bali Gloss White Wall Hung Basin Drawer Vanity',
-      price: '319.95',
+      price: '£399.99',
       image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
       variants: [
         {
           id: 'c77605',
           name: '600mm Width',
           sku: 'C77605',
-          price: '319.95',
+          price: '£399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 600mm'
         },
         {
           id: 'c77606',
           name: '800mm Width',
           sku: 'C77606',
-          price: '359.95',
+          price: '£399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm'
         },
         {
           id: 'c77607',
           name: '900mm Width',
           sku: 'C77607',
-          price: '399.95',
+          price: '£399.99',
           title: 'Bali Gloss White Basin Drawer Vanity 900mm'
         },
         {
           id: 'c77608',
           name: '1000mm Width',
           sku: 'C77608',
-          price: '439.95',
+          price: '£399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm'
         }
       ],
@@ -305,28 +305,28 @@ const productData = {
       id: 'mirror_variant_1',
       link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-650x1200mm',
       name: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker',
-      price: '449.95',
+      price: '£499.99',
       image: 'assets/productImages/mirror/73104v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp',
       variants: [
         {
           id: '73189v2',
           name: '650x1200mm',
           sku: '73189V2',
-          price: '449.95',
+          price: '£499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm'
         },
         {
           id: '73104v2',
           name: '600x600mm',
           sku: '73104V2',
-          price: '329.95',
+          price: '£499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm'
         },
         {
           id: '73103v2',
           name: '600x450mm',
           sku: '73103V2',
-          price: '299.95',
+          price: '£499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x450mm'
         }
       ],
@@ -342,35 +342,35 @@ const productData = {
       id: 'mirror_variant_2',
       link: 'https://www.bathroommountain.co.uk/evelyn-large-illuminated-led-mirror-500x1200mm',
       name: 'Evelyn Illuminated LED Mirror',
-      price: '199.95',
+      price: '£139.99',
       image: 'assets/productImages/mirror/73153v2-1000-evelyn-illuminated-led-mirror-600x400mm_1.webp',
       variants: [
         {
           id: '73035v2',
           name: '500x1200mm',
           sku: '73035V2',
-          price: '199.95',
+          price: '£139.99',
           title: 'Evelyn Large Illuminated LED Mirror 500x1200mm'
         },
         {
           id: '73154v2',
           name: '500x1000mm',
           sku: '73154V2',
-          price: '179.95',
+          price: '£139.99',
           title: 'Evelyn Illuminated LED Mirror 500x1000mm'
         },
         {
           id: '73153v2',
           name: '600x400mm',
           sku: '73153V2',
-          price: '149.95',
+          price: '£139.99',
           title: 'Evelyn Illuminated LED Mirror 600x400mm'
         },
         {
           id: '73033v2',
           name: '700x500mm',
           sku: '73033V2',
-          price: '169.95',
+          price: '£139.99',
           title: 'Evelyn Illuminated LED Mirror 700x500mm'
         }
       ],
@@ -388,28 +388,28 @@ const productData = {
       id: 'radiator_variant_1',
       link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x560mm-31022',
       name: 'Faro Anthracite Double Flat Panel Vertical Radiator',
-      price: '289.95',
+      price: '£289.99',
       image: 'assets/productImages/radiator/31019-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x350mm_1.webp',
       variants: [
         {
           id: '31022',
           name: '1600x560mm',
           sku: '31022',
-          price: '289.95',
+          price: '£289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x560mm'
         },
         {
           id: '31063',
           name: '1800x560mm',
           sku: '31063',
-          price: '319.95',
+          price: '£289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1800x560mm'
         },
         {
           id: '31019',
           name: '1600x350mm',
           sku: '31019',
-          price: '259.95',
+          price: '£289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x350mm'
         }
       ],
@@ -426,21 +426,21 @@ const productData = {
       id: 'radiator_variant_2',
       link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x1190mm',
       name: 'Faro Matt Black Double Flat Panel Horizontal Radiator',
-      price: '259.95',
+      price: '£289.99',
       image: 'assets/productImages/radiator/32124-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x420mm_1.webp',
       variants: [
         {
           id: '32128',
           name: '600x1190mm',
           sku: '32128',
-          price: '259.95',
+          price: '£289.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x1190mm'
         },
         {
           id: '32124',
           name: '600x420mm',
           sku: '32124',
-          price: '199.95',
+          price: '£289.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x420mm'
         }
       ],
@@ -459,35 +459,35 @@ const productData = {
       id: 'shower_variant_1',
       link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x700mm-c46247',
       name: 'London Matt Black 6mm Sliding Shower Enclosure',
-      price: '599.95',
+      price: '£219.99',
       image: 'assets/productImages/shower/c46006-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x760mm.webp',
       variants: [
         {
           id: 'c46247',
           name: '1000x700mm',
           sku: 'C46247',
-          price: '599.95',
+          price: '£219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x700mm'
         },
         {
           id: 'c46006',
           name: '1000x760mm',
           sku: 'C46006',
-          price: '629.95',
+          price: '£219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x760mm'
         },
         {
           id: 'c46009',
           name: '1200x800mm',
           sku: 'C46009',
-          price: '699.95',
+          price: '£219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x800mm'
         },
         {
           id: 'c46175',
           name: '1400x900mm',
           sku: 'C46175',
-          price: '799.95',
+          price: '£219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x900mm'
         }
       ],
@@ -506,7 +506,7 @@ const productData = {
       id: 'bath_variant_1',
       link: 'https://www.bathroommountain.co.uk/newham-1370mm-freestanding-bath-c51096',
       name: 'Newham Freestanding Bath',
-      price: '399.95',
+      price: '£479.99',
       image: 'assets/productImages/bath/C51092-1000-Newham-V2-1500mm-Freestanding-Bath_6.webp',
       variants: [
         {
@@ -543,7 +543,7 @@ const productData = {
       id: 'bath_2',
       link: 'https://www.bathroommountain.co.uk/l-shaped-1700-shower-bath-with-front-panel-6mm-easy-clean-brushed-brass-bath-screen-right-handed-c57499',
       name: 'L Shaped 1700 Shower Bath with Front Panel & Bath Screen',
-      price: '599.95',
+      price: '£489.99',
       image: 'assets/productImages/bath/C57499-1000-L-Shaped-Shower-Bath-Front-Panel-Bath-Screen-Right.webp',
       variants: [
         {
@@ -568,21 +568,21 @@ const productData = {
       id: 'toilet_variant_1',
       link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
       name: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat',
-      price: '399.95',
+      price: '£179.99',
       image: 'assets/productImages/toilet/c66174-1000-rimless-wall-hung-toilet-with-soft-close-seat.webp',
       variants: [
         {
           id: 'c66175',
           name: 'Slim Seat',
           sku: 'C66175',
-          price: '399.95',
+          price: '£179.99',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
         },
         {
           id: 'c66174',
           name: 'Standard Seat',
           sku: 'C66174',
-          price: '379.95',
+          price: '£179.99',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat'
         }
       ],
@@ -598,28 +598,28 @@ const productData = {
       id: 'toilet_variant_2',
       link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
       name: 'Portland Close Coupled Toilet With Soft Close Seat',
-      price: '299.95',
+      price: '£209.99',
       image: 'assets/productImages/toilet/C66183-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
       variants: [
         {
           id: 'c66183',
           name: 'Slim Seat',
           sku: 'C66183',
-          price: '299.95',
+          price: '£209.99',
           title: 'Portland Close Coupled Toilet With Soft Close Slim Seat'
         },
         {
           id: 'c66185',
           name: 'Comfort Height',
           sku: 'C66185',
-          price: '329.95',
+          price: '£209.99',
           title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Slim Seat'
         },
         {
           id: 'c66184',
           name: 'Back to Wall',
           sku: 'C66184',
-          price: '349.95',
+          price: '£209.99',
           title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Slim Seat'
         }
       ],
