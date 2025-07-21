@@ -42,15 +42,20 @@
             :style="getAccordionContentStyle(isBathroomItemsExpanded)"
             ref="bathroomItemsContent"
         >
-          <div :style="itemsGridStyle">
-            <button
-                v-for="component in COMPONENTS"
-                :key="component"
-                @click.stop="handleAddComponent(component)"
-                :style="itemButtonStyle"
+          <div :style="categoriesContainerStyle">
+            <!-- Category Items -->
+            <div
+                v-for="category in bathroomCategories"
+                :key="category.id"
+                @click.stop="openProductDrawer(category.component)"
+                :style="categoryItemStyle"
+                class="category-item"
             >
-              {{ component }}
-            </button>
+              <div :style="categoryIconStyle">
+                <span v-html="category.icon"></span>
+              </div>
+              <span :style="categoryLabelStyle">{{ category.label }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -71,7 +76,7 @@
           <div :style="roomSettingsContentStyle">
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Width: {{ safeToFixed(localRoomWidth, 1) }}m
+                Width: {{ safeToFixed(localRoomWidth, 0) }}cm
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
@@ -101,7 +106,7 @@
 
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Height: {{ safeToFixed(localRoomHeight, 1) }}m
+                Height: {{ safeToFixed(localRoomHeight, 0) }}cm
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
@@ -260,6 +265,13 @@
         </div>
       </div>
     </div>
+
+    <ProductDrawer
+        :is-open="isProductDrawerOpen"
+        :selected-category="selectedCategory"
+        @close="handleProductDrawerClose"
+        @add-to-room="handleAddToRoom"
+    />
   </div>
 </template>
 
@@ -269,6 +281,7 @@ import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
+import ProductDrawer from './ProductDrawer.vue'
 
 // Define props
 const props = defineProps({
@@ -310,10 +323,76 @@ const emit = defineEmits([
   'add',
   'room-size-change',
   'toggle-grid',
-  'toggle-wall-grid',   // Wall grid toggle
+  'toggle-wall-grid',
   'constrain-objects',
   'toggle-wall-culling'
 ])
+
+// Bathroom categories with icons (matching your design)
+const bathroomCategories = [
+  {
+    id: 'baths',
+    label: 'Baths',
+    component: 'Bath',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 12h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-6z"/>
+      <path d="M2 18h20"/>
+      <circle cx="7" cy="21" r="1"/>
+      <circle cx="17" cy="21" r="1"/>
+    </svg>`
+  },
+  {
+    id: 'showers',
+    label: 'Showers',
+    component: 'Shower',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 4h16v16H4z"/>
+      <path d="M8 2v20"/>
+      <path d="M12 8v8"/>
+      <path d="M16 8v8"/>
+    </svg>`
+  },
+  {
+    id: 'toilets',
+    label: 'Toilets',
+    component: 'Toilet',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M6 8h12v8a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>
+      <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M6 8H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"/>
+    </svg>`
+  },
+  {
+    id: 'mirrors',
+    label: 'Mirrors',
+    component: 'Mirror',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="4" y="4" width="16" height="16" rx="2"/>
+      <path d="M8 12l3 3 5-5"/>
+    </svg>`
+  },
+  {
+    id: 'Radiator',
+    label: 'Radiator',
+    component: 'Radiator',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="4" y="6" width="16" height="12" rx="2"/>
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      <path d="M8 18v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2"/>
+    </svg>`
+  },
+  {
+    id: 'furniture',
+    label: 'Furniture',
+    component: 'Furniture',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="8" width="18" height="10" rx="2"/>
+      <path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/>
+      <path d="M7 18v2"/>
+      <path d="M17 18v2"/>
+    </svg>`
+  },
+]
 
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
@@ -324,20 +403,73 @@ const isWallExpanded = ref(false)
 const isSidebarVisible = ref(false)
 const isButtonPressed = ref(false)
 
-// Local state for inputs - FIXED: Ensure they're always numbers
+// Product drawer state
+const isProductDrawerOpen = ref(false)
+const selectedCategory = ref('')
+
+// Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
-
-// Track if we're currently updating to prevent circular updates
 const isInternalUpdate = ref(false)
 
-// FIXED: Safe toFixed function
+// DEBUG: Add console logs to track state changes
+watch(isProductDrawerOpen, (newVal) => {
+  console.log('🔍 Product drawer open state changed:', newVal)
+})
+
+watch(isSidebarVisible, (newVal) => {
+  console.log('🔍 Sidebar visible state changed:', newVal)
+})
+
+// FIXED: Product drawer methods
+const openProductDrawer = (category) => {
+  console.log('🔍 Opening product drawer for category:', category)
+  selectedCategory.value = category
+  isProductDrawerOpen.value = true
+
+  // On mobile, keep sidebar visible when opening product drawer
+  // Don't auto-hide it - let user control it
+  console.log('🔍 Product drawer opened, sidebar remains visible')
+}
+
+const handleProductDrawerClose = () => {
+  console.log('🔍 Product drawer close event received')
+  isProductDrawerOpen.value = false
+  selectedCategory.value = ''
+
+  // IMPORTANT: Don't hide the main sidebar when closing product drawer
+  // The sidebar should stay open for the user to access other features
+  console.log('🔍 Product drawer closed, sidebar remains visible')
+}
+
+const handleAddToRoom = (product) => {
+  console.log('🔍 Adding product to room:', product)
+
+  // Extract component type from product data
+  const componentType = product.type || 'Unknown'
+
+  // Emit to parent component to add the item
+  emit('add', componentType)
+
+  // Close product drawer after adding
+  handleProductDrawerClose()
+
+  // On mobile, auto-hide sidebar after adding item (this is the only time we auto-hide)
+  if (isMobileDevice.value) {
+    console.log('🔍 Mobile: Auto-hiding sidebar after adding item')
+    setTimeout(() => {
+      hideSidebar()
+    }, 300)
+  }
+}
+
+// Safe toFixed function
 const safeToFixed = (value, decimals) => {
   const num = Number(value)
   return isNaN(num) ? '0.0' : num.toFixed(decimals)
 }
 
-// Watch for external prop changes and update local state (but not during internal updates)
+// Watch for external prop changes
 watch(() => props.roomWidth, (newWidth) => {
   if (!isInternalUpdate.value) {
     localRoomWidth.value = Number(newWidth) || ROOM_DEFAULTS.WIDTH
@@ -353,7 +485,212 @@ watch(() => props.roomHeight, (newHeight) => {
 // Computed
 const isMobileDevice = computed(() => isMobile())
 
-// Mobile floating button styles
+// Mobile sidebar methods
+const showSidebar = () => {
+  console.log('🔍 Showing sidebar')
+  isSidebarVisible.value = true
+}
+
+const hideSidebar = () => {
+  console.log('🔍 Hiding sidebar')
+  isSidebarVisible.value = false
+
+  // Also close any open drawers when hiding sidebar
+  if (isProductDrawerOpen.value) {
+    console.log('🔍 Also closing product drawer when hiding sidebar')
+    handleProductDrawerClose()
+  }
+
+  if (isTextureDrawerOpen.value) {
+    console.log('🔍 Also closing texture drawer when hiding sidebar')
+    closeTextureDrawer()
+  }
+}
+
+const handleTouchStart = () => {
+  isButtonPressed.value = true
+}
+
+const handleTouchEnd = () => {
+  isButtonPressed.value = false
+}
+
+const toggleBathroomItemsSection = () => {
+  isBathroomItemsExpanded.value = !isBathroomItemsExpanded.value
+}
+
+const toggleRoomSettingsSection = () => {
+  isRoomSettingsExpanded.value = !isRoomSettingsExpanded.value
+}
+
+const toggleTextureDrawer = () => {
+  isTextureDrawerOpen.value = !isTextureDrawerOpen.value
+}
+
+const closeTextureDrawer = () => {
+  isTextureDrawerOpen.value = false
+}
+
+const toggleFloorSection = () => {
+  isFloorExpanded.value = !isFloorExpanded.value
+}
+
+const toggleWallSection = () => {
+  isWallExpanded.value = !isWallExpanded.value
+}
+
+// Room settings methods
+const validateValue = (value, min, max) => {
+  const num = Number(value)
+  if (isNaN(num)) return min
+  return Math.max(min, Math.min(max, num))
+}
+
+const updateWidthFromInput = (event) => {
+  const newValue = Number(event.target.value)
+  if (!isNaN(newValue)) {
+    localRoomWidth.value = newValue
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+      isInternalUpdate.value = true
+      emit('room-size-change', newValue, localRoomHeight.value)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
+  }
+}
+
+const updateHeightFromInput = (event) => {
+  const newValue = Number(event.target.value)
+  if (!isNaN(newValue)) {
+    localRoomHeight.value = newValue
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+      isInternalUpdate.value = true
+      emit('room-size-change', localRoomWidth.value, newValue)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
+  }
+}
+
+const updateWidthFromSlider = (event) => {
+  const newValue = Number(event.target.value)
+  localRoomWidth.value = newValue
+  isInternalUpdate.value = true
+  emit('room-size-change', newValue, localRoomHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const updateHeightFromSlider = (event) => {
+  const newValue = Number(event.target.value)
+  localRoomHeight.value = newValue
+  isInternalUpdate.value = true
+  emit('room-size-change', localRoomWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const validateAndUpdateWidth = () => {
+  const validatedValue = validateValue(
+      localRoomWidth.value,
+      ROOM_DEFAULTS.MIN_SIZE,
+      ROOM_DEFAULTS.MAX_SIZE
+  )
+
+  if (validatedValue !== localRoomWidth.value) {
+    localRoomWidth.value = validatedValue
+    isInternalUpdate.value = true
+    emit('room-size-change', validatedValue, localRoomHeight.value)
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
+  }
+}
+
+const validateAndUpdateHeight = () => {
+  const validatedValue = validateValue(
+      localRoomHeight.value,
+      ROOM_DEFAULTS.MIN_SIZE,
+      ROOM_DEFAULTS.MAX_SIZE
+  )
+
+  if (validatedValue !== localRoomHeight.value) {
+    localRoomHeight.value = validatedValue
+    isInternalUpdate.value = true
+    emit('room-size-change', localRoomWidth.value, validatedValue)
+    setTimeout(() => {
+      isInternalUpdate.value = false
+    }, 100)
+  }
+}
+
+// Style helper methods
+const getArrowStyle = (isExpanded) => ({
+  fontSize: '14px',
+  color: '#ffffff',
+  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+  transition: 'transform 0.2s ease',
+  display: 'inline-block',
+  fontFamily: 'Arial, sans-serif'
+})
+
+const getSubArrowStyle = (isExpanded) => ({
+  fontSize: '12px',
+  color: '#6b7280',
+  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+  transition: 'transform 0.2s ease',
+  display: 'inline-block',
+  fontFamily: 'Arial, sans-serif'
+})
+
+const getAccordionContentStyle = (isExpanded) => ({
+  maxHeight: isExpanded ? '800px' : '0px',
+  overflow: 'hidden',
+  transition: 'max-height 0.3s ease-in-out',
+  backgroundColor: '#f9fafb',
+  padding: isExpanded ? '0px' : '0px'
+})
+
+const getSubAccordionContentStyle = (isExpanded) => ({
+  maxHeight: isExpanded ? 'none' : '0px',
+  overflow: isExpanded ? 'visible' : 'hidden',
+  transition: 'max-height 0.3s ease-in-out',
+  backgroundColor: '#ffffff'
+})
+
+const getTextureButtonStyle = (texture, isActive) => ({
+  padding: '10px',
+  border: isActive ? '3px solid #29275B' : '2px solid #e5e7eb',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  backgroundColor: isActive ? '#f0fdf4' : '#fff',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '8px',
+  minHeight: isMobileDevice.value ? '70px' : '80px',
+  boxShadow: isActive ? '0 2px 8px rgba(16, 185, 129, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
+})
+
+const getTexturePreviewStyle = (texture) => ({
+  width: '100%',
+  height: isMobileDevice.value ? '35px' : '45px',
+  backgroundColor: `#${ texture.color.toString(16).padStart(6, '0') }`,
+  borderRadius: '4px',
+  border: '1px solid #e5e7eb',
+  backgroundImage: texture.file ? `url(${ texture.file })` : 'none',
+  backgroundSize: 'cover',
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'center'
+})
+
+// All your existing style computed properties go here...
+// (I'll keep them the same as in your original code)
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
   bottom: '30px',
@@ -425,8 +762,8 @@ const panelStyle = computed(() => ({
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? '100vh' : '100vh',
-  height: isMobileDevice.value ? '100vh' : '100vh',
+  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
+  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
@@ -439,7 +776,8 @@ const accordionSectionStyle = computed(() => ({
   border: '1px solid #fff',
   borderRadius: '10px',
   overflow: 'hidden',
-  backgroundColor: '#ffffff'
+  backgroundColor: '#ffffff',
+  marginBottom: '12px'
 }))
 
 const mainAccordionHeaderStyle = computed(() => ({
@@ -463,32 +801,7 @@ const accordionTitleStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-const itemsGridStyle = computed(() => ({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: '8px',
-  padding: '15px',
-  justifyContent: isMobileDevice.value ? 'center' : 'flex-start'
-}))
-
-const itemButtonStyle = computed(() => ({
-  padding: isMobileDevice.value ? '12px 16px' : '12px 18px',
-  border: '2px solid #29275B',
-  borderRadius: '8px',
-  backgroundColor: '#29275B',
-  color: '#ffffff',
-  cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '14px' : '14px',
-  fontWeight: '600',
-  transition: 'all 0.3s ease',
-  whiteSpace: 'nowrap',
-  fontFamily: 'Arial, sans-serif',
-  textTransform: 'capitalize',
-  minWidth: isMobileDevice.value ? '120px' : 'auto',
-  textAlign: 'center'
-}))
-
-// Room Settings styles with enhanced design
+// Room Settings styles
 const roomSettingsContentStyle = computed(() => ({
   padding: '20px',
   backgroundColor: '#fafbfc'
@@ -721,217 +1034,60 @@ const textureLabelStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-// Methods
-const handleAddComponent = (component) => {
-  console.log('Adding component:', component)
-  emit('add', component)
-  // Auto-hide sidebar on mobile after adding component
-  if (isMobileDevice.value) {
-    setTimeout(() => {
-      hideSidebar()
-    }, 300)
-  }
-}
-
-const showSidebar = () => {
-  isSidebarVisible.value = true
-}
-
-const hideSidebar = () => {
-  isSidebarVisible.value = false
-}
-
-const handleTouchStart = () => {
-  isButtonPressed.value = true
-}
-
-const handleTouchEnd = () => {
-  isButtonPressed.value = false
-}
-
-const toggleBathroomItemsSection = () => {
-  isBathroomItemsExpanded.value = !isBathroomItemsExpanded.value
-}
-
-const toggleRoomSettingsSection = () => {
-  isRoomSettingsExpanded.value = !isRoomSettingsExpanded.value
-}
-
-const toggleTextureDrawer = () => {
-  isTextureDrawerOpen.value = !isTextureDrawerOpen.value
-}
-
-const closeTextureDrawer = () => {
-  isTextureDrawerOpen.value = false
-}
-
-const toggleFloorSection = () => {
-  isFloorExpanded.value = !isFloorExpanded.value
-}
-
-const toggleWallSection = () => {
-  isWallExpanded.value = !isWallExpanded.value
-}
-
-// FIXED: Room settings methods with proper validation and number conversion
-const validateValue = (value, min, max) => {
-  const num = Number(value)
-  if (isNaN(num)) return min
-  return Math.max(min, Math.min(max, num))
-}
-
-// FIXED: Ensure all input handlers convert to numbers
-const updateWidthFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    // Update local value without clamping during typing
-    localRoomWidth.value = newValue
-
-    // Only emit valid values (within range)
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
-      isInternalUpdate.value = true
-      emit('room-size-change', newValue, localRoomHeight.value)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateHeightFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    // Update local value without clamping during typing
-    localRoomHeight.value = newValue
-
-    // Only emit valid values (within range)
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
-      isInternalUpdate.value = true
-      emit('room-size-change', localRoomWidth.value, newValue)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateWidthFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localRoomWidth.value = newValue
-  isInternalUpdate.value = true
-  emit('room-size-change', newValue, localRoomHeight.value)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-const updateHeightFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localRoomHeight.value = newValue
-  isInternalUpdate.value = true
-  emit('room-size-change', localRoomWidth.value, newValue)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-// FIXED: Validation methods that ensure numbers
-const validateAndUpdateWidth = () => {
-  const validatedValue = validateValue(
-      localRoomWidth.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomWidth.value) {
-    localRoomWidth.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', validatedValue, localRoomHeight.value)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
-}
-
-const validateAndUpdateHeight = () => {
-  const validatedValue = validateValue(
-      localRoomHeight.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomHeight.value) {
-    localRoomHeight.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', localRoomWidth.value, validatedValue)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
-}
-
-const getArrowStyle = (isExpanded) => ({
-  fontSize: '14px',
-  color: '#ffffff',
-  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-  transition: 'transform 0.2s ease',
-  display: 'inline-block',
-  fontFamily: 'Arial, sans-serif'
-})
-
-const getSubArrowStyle = (isExpanded) => ({
-  fontSize: '12px',
-  color: '#6b7280',
-  transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
-  transition: 'transform 0.2s ease',
-  display: 'inline-block',
-  fontFamily: 'Arial, sans-serif'
-})
-
-const getAccordionContentStyle = (isExpanded) => ({
-  maxHeight: isExpanded ? '800px' : '0px',
-  overflow: 'hidden',
-  transition: 'max-height 0.3s ease-in-out',
-  backgroundColor: '#f9fafb',
-  padding: isExpanded ? '0px' : '0px'
-})
-
-const getSubAccordionContentStyle = (isExpanded) => ({
-  maxHeight: isExpanded ? 'none' : '0px',
-  overflow: isExpanded ? 'visible' : 'hidden',
-  transition: 'max-height 0.3s ease-in-out',
-  backgroundColor: '#ffffff'
-})
-
-const getTextureButtonStyle = (texture, isActive) => ({
+// Styles for new category design
+const categoriesContainerStyle = computed(() => ({
   padding: '10px',
-  border: isActive ? '3px solid #29275B' : '2px solid #e5e7eb',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  backgroundColor: isActive ? '#f0fdf4' : '#fff',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '8px',
-  minHeight: isMobileDevice.value ? '70px' : '80px',
-  boxShadow: isActive ? '0 2px 8px rgba(16, 185, 129, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.1)'
-})
+  backgroundColor: '#ffffff'
+}))
 
-const getTexturePreviewStyle = (texture) => ({
-  width: '100%',
-  height: isMobileDevice.value ? '35px' : '45px',
-  backgroundColor: `#${ texture.color.toString(16).padStart(6, '0') }`,
-  borderRadius: '4px',
+const categoryItemStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '16px 20px',
+  backgroundColor: '#ffffff',
   border: '1px solid #e5e7eb',
-  backgroundImage: texture.file ? `url(${ texture.file })` : 'none',
-  backgroundSize: 'cover',
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'center'
-})
+  borderRadius: '8px',
+  marginBottom: '8px',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  gap: '16px',
+  fontFamily: 'Arial, sans-serif',
+  ':hover': {
+    backgroundColor: '#f9fafb',
+    borderColor: '#10b981'
+  }
+}))
+
+const categoryIconStyle = computed(() => ({
+  width: '24px',
+  height: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#29275B',
+  flexShrink: 0
+}))
+
+const categoryLabelStyle = computed(() => ({
+  fontSize: '15px',
+  fontWeight: '500',
+  color: '#374151',
+  fontFamily: 'Arial, sans-serif'
+}))
 </script>
 
 <style scoped>
+/* Category item hover effects */
+.category-item:hover {
+  background-color: #f9fafb !important;
+  border-color: #29275B !important;
+  transform: translateY(-1px);
+}
+
+.category-item:hover .category-icon {
+  color: #29275B !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
@@ -1032,27 +1188,6 @@ const getTexturePreviewStyle = (texture) => ({
   box-shadow: 0 5px 15px rgba(41, 39, 91, 0.4) !important;
 }
 
-/* Control group hover effect */
-.control-group:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* Animation for input focus */
-@keyframes inputFocus {
-  0% {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  }
-  100% {
-    box-shadow: 0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-}
-
-.modern-number-input:focus {
-  animation: inputFocus 0.3s ease !important;
-}
-
-/* Mobile optimizations */
 @media (max-width: 768px) {
   .modern-slider::-webkit-slider-thumb {
     width: 26px !important;

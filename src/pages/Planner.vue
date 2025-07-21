@@ -363,33 +363,38 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   }, 100)
 }
 
-// Updated addItem function with collision-aware wall positioning and proper rotation
-const addItem = (type) => {
+// 6. Update your Home.vue addItem function to handle product data:
+const addItem = (type, productData = null) => {
+  console.log('addItem called with type:', type) // Add this line
   const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
 
-  // Find a free position on any wall that doesn't collide with existing objects
+  // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
       roomWidth.value,
       roomHeight.value,
       type,
       defaults.scale,
-      items.value // Pass existing items for collision detection
+      items.value
   )
 
   const newItem = {
     id: generateUniqueId(),
     type,
     position: [freePosition.x, freePosition.y, freePosition.z],
-    rotation: wallRotation, // Use the wall-appropriate rotation
-    scale: defaults.scale
+    rotation: wallRotation,
+    scale: defaults.scale,
+    // Add product data if available
+    ...(productData && {
+      productData: {
+        productId: productData.product?.id,
+        productName: productData.product?.name,
+        brand: productData.product?.brand,
+        price: productData.product?.price,
+        selectedVariant: productData.selectedVariant,
+        selectedColor: productData.selectedColor
+      }
+    })
   }
-
-  console.log('🏠 Adding item:', type, 'at WALL position:', {
-    position: newItem.position,
-    rotation: `${ (wallRotation * 180 / Math.PI).toFixed(0) }°`,
-    orientation: 'configured per object type',
-    roomSize: `${ roomWidth.value } x ${ roomHeight.value }`
-  })
 
   const newItems = [...items.value, newItem]
   items.value = newItems
