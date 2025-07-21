@@ -4,7 +4,7 @@
 
     <div :style="controlGroupStyle">
       <label :style="labelStyle">
-        Width: {{ roomWidth.toFixed(1) }}m
+        Width: {{ roomWidth.toFixed(0) }}cm
         <input
             type="range"
             :min="ROOM_DEFAULTS.MIN_SIZE"
@@ -19,7 +19,7 @@
 
     <div :style="controlGroupStyle">
       <label :style="labelStyle">
-        Height: {{ roomHeight.toFixed(1) }}m
+        Height: {{ roomHeight.toFixed(0) }}cm
         <input
             type="range"
             :min="ROOM_DEFAULTS.MIN_SIZE"

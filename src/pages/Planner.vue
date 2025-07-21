@@ -37,11 +37,14 @@
       🎨 Textures
     </button>
     <UndoRedoPanel
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :show-instructions="showInstructions"
         @undo="handleUndo"
         @redo="handleRedo"
         @clear="handleClearAll"
-        :can-undo="canUndo"
-        :can-redo="canRedo"
+        @show-instructions="showInstructions = true"
+        @close-instructions="showInstructions = false"
     />
 
     <!-- Canvas container positioned on the right side -->
@@ -50,16 +53,13 @@
         :style="canvasContainerStyle"
     />
 
-    <div :style="helpTextStyle">
-      <!-- Read Instructions Button -->
-      <button
-          @click="showInstructions = true"
-          :style="readInstructionsButtonStyle"
-      >
-        <span>📖</span>
-        <span>Read Instructions</span>
-      </button>
-    </div>
+<!--    MeasurementToggle button-->
+    <MeasurementToggle
+        :style="toggleMeasurementStyle"
+        v-model="measurementsEnabled"
+        @change="handleMeasurementChange"
+        size="large"
+    />
 
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
@@ -118,6 +118,7 @@ import Toolbar from '../components/ui/Toolbar.vue'
 import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
+import MeasurementToggle from "../components/ui/MeasurementToggle.vue";
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
@@ -185,6 +186,13 @@ const getDefaultItems = () => {
     //   fallbackSize: [0.1, 2.0, 0.8]
     // }
   ]
+}
+
+const measurementsEnabled = ref(false)
+
+const handleMeasurementChange = (enabled) => {
+  console.log('Measurements toggled:', enabled)
+  // Add your measurement logic here
 }
 
 // Reactive state
@@ -269,37 +277,17 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
-// NEW: Canvas container style that positions it on the right side
-const helpTextStyle = computed(() => ({
+const toggleMeasurementStyle = computed(() => ({
   position: 'absolute',
-  bottom: '30px',
-  right: '10px', // Changed from left to right
+  left: isMobileDevice.value ? '' : '28%', // Changed from left to right
+  right: isMobileDevice.value ? '12%' : '',
+  bottom: isMobileDevice.value ? '10%' : '30px',
   color: 'white',
   padding: '5px 10px',
   borderRadius: '4px',
   fontSize: isMobileDevice.value ? '16px' : '20px',
   maxWidth: isMobileDevice.value ? '280px' : '320px',
   lineHeight: '1.2'
-}))
-
-const readInstructionsButtonStyle = computed(() => ({
-  marginTop: '10px',
-  padding: '8px 16px',
-  backgroundColor: 'rgba(59, 130, 246, 0.9)', // Blue background
-  color: '#ffffff',
-  border: '1px solid rgba(59, 130, 246, 0.8)',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '12px',
-  fontWeight: '600',
-  transition: 'all 0.3s ease',
-  backdropFilter: 'blur(8px)',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '6px',
-  width: 'fit-content',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-  textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -393,33 +381,38 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   }, 100)
 }
 
-// Updated addItem function with collision-aware wall positioning and proper rotation
-const addItem = (type) => {
+// 6. Update your Home.vue addItem function to handle product data:
+const addItem = (type, productData = null) => {
+  console.log('addItem called with type:', type) // Add this line
   const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
 
-  // Find a free position on any wall that doesn't collide with existing objects
+  // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
       roomWidth.value,
       roomHeight.value,
       type,
       defaults.scale,
-      items.value // Pass existing items for collision detection
+      items.value
   )
 
   const newItem = {
     id: generateUniqueId(),
     type,
     position: [freePosition.x, freePosition.y, freePosition.z],
-    rotation: wallRotation, // Use the wall-appropriate rotation
-    scale: defaults.scale
+    rotation: wallRotation,
+    scale: defaults.scale,
+    // Add product data if available
+    ...(productData && {
+      productData: {
+        productId: productData.product?.id,
+        productName: productData.product?.name,
+        brand: productData.product?.brand,
+        price: productData.product?.price,
+        selectedVariant: productData.selectedVariant,
+        selectedColor: productData.selectedColor
+      }
+    })
   }
-
-  console.log('🏠 Adding item:', type, 'at WALL position:', {
-    position: newItem.position,
-    rotation: `${ (wallRotation * 180 / Math.PI).toFixed(0) }°`,
-    orientation: 'configured per object type',
-    roomSize: `${ roomWidth.value } x ${ roomHeight.value }`
-  })
 
   const newItems = [...items.value, newItem]
   items.value = newItems
