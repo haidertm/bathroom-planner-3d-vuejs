@@ -186,7 +186,7 @@ export class SimpleWallCulling {
         gridLines.forEach(line => {
           line.visible = false;
         });
-        console.log(`✅ Hid ${gridLines.length} grid lines for ${direction} wall`);
+        // console.log(`✅ Hid ${gridLines.length} grid lines for ${direction} wall`);
       } else {
         console.log(`❌ NO GRID LINES FOUND FOR ${direction} WALL - THIS IS THE PROBLEM!`);
       }

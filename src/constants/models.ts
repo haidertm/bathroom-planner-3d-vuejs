@@ -2,6 +2,7 @@
 
 import type { ComponentType } from './components';
 import { CONSTRAINTS } from './dimensions';
+import { getScaleForUnits } from '../utils/units';
 
 export type OrientationType = 'face_into_room' | 'flush_with_wall' | 'custom';
 
@@ -87,6 +88,29 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
     fallbackSize: [60, 80, 60] // 60cm x 80cm x 60cm
   },
   {
+    name: 'Furniture',
+    path: '/models/furniture/basin/C76236.glb',
+    scale: getScaleForUnits(1.0, 'meters'),
+    position: [0, 0, 0], // Keep at origin
+    orientation: {
+      type: 'face_into_room',
+      wallBuffer: 0, // 8cm - Stay away from wall for access
+      description: 'Basin faces into room for use'
+    },
+    movement: { // NEW: Sink movement configuration
+      snapToWall: true,
+      allowVerticalMovement: false,
+      allowFreeMovement: false,
+      allowFreeRotation: false,
+      minHeight: 70,
+      maxHeight: 120,
+      maintainWallDistance: true
+    },
+    fallbackColor: 0xffffff,
+    fallbackGeometry: 'cylinder',
+    fallbackSize: [60, 80, 60] // 60cm x 80cm x 60cm
+  },
+  {
     name: 'Radiator',
     path: '/models/31019.glb',
     scale: 80,
@@ -134,11 +158,11 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Bath',
-    scale: 72,
+    scale: 35,
     path: '/models/bath.glb',
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 68, // 89cm - Close to wall but accessible
+      wallBuffer: 32, // 89cm - Close to wall but accessible
       description: 'Tub opening faces into room'
     },
     movement: { // NEW: Toilet movement configuration
@@ -218,6 +242,7 @@ export const PROCEDURAL_FIXTURES: readonly ProceduralConfig[] = [
 export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
   // These will use .glb files
   Sink: AVAILABLE_MODELS.find(m => m.name === 'Sink')!,
+  Furniture: AVAILABLE_MODELS.find(m => m.name === 'Furniture')!,
   Door: AVAILABLE_MODELS.find(m => m.name === 'Door')!,
   Radiator: AVAILABLE_MODELS.find(f => f.name === 'Radiator')!,
   Toilet: AVAILABLE_MODELS.find(f => f.name === 'Toilet')!,
@@ -288,6 +313,7 @@ export const getOrientationInfo = (objectType: ComponentType) => {
 
 // Utility functions
 export const getModelConfig = (componentType: ComponentType): FixtureConfig => {
+  console.log('ModalConfigure>>>>', componentType);
   return FIXTURE_CONFIG[componentType];
 };
 

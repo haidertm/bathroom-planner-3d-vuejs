@@ -53,7 +53,7 @@
         :style="canvasContainerStyle"
     />
 
-<!--    MeasurementToggle button-->
+    <!--    MeasurementToggle button-->
     <MeasurementToggle
         :style="toggleMeasurementStyle"
         v-model="measurementsEnabled"
@@ -118,7 +118,7 @@ import Toolbar from '../components/ui/Toolbar.vue'
 import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
-import MeasurementToggle from "../components/ui/MeasurementToggle.vue";
+import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
@@ -395,6 +395,8 @@ const addItem = (type, productData = null) => {
       items.value
   )
 
+  console.log('found free positioned on wall>>', freePosition, wallRotation);
+
   const newItem = {
     id: generateUniqueId(),
     type,
@@ -647,7 +649,7 @@ watch([items, lastUpdateSource], ([newItems, updateSource]) => {
   // Only update scene for specific operations, NOT for drag operations
   if (updateSource !== 'drag') {
     console.log(`Updating scene for ${ updateSource } operation:`, newItems.length, 'items')
-    sceneManagerRef.value.updateBathroomItems(newItems, createModel)
+    sceneManagerRef.value.updateBathroomItems(newItems)
   }
 }, { deep: true })
 

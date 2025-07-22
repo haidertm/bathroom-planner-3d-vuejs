@@ -65,7 +65,7 @@ export const HEIGHT_LIMITS: HeightLimits = {
 export const MODEL_DIMENSIONS = {
   Toilet: { width: 45, depth: 80, height: 80 },
   Sink: { width: 60, depth: 50, height: 90 },
-  Bath: { width: 170, depth: 80, height: 60 },
+  Bath: { width: 75, depth: 43, height: 60 },
   Shower: { width: 80, depth: 80, height: 200 },
   Radiator: { width: 70, depth: 20, height: 140 },
   Mirror: { width: 80, depth: 5, height: 0 },

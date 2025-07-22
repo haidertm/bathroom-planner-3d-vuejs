@@ -547,7 +547,7 @@ export class SceneManager {
             // Register the grid lines with the wall culling manager
             this.wallCullingManager.registerWallGridLines(wall, wallGridLines);
 
-            console.log(`✅ Registered ${wallGridLines.length} grid lines for ${wallDirection} wall`);
+            // console.log(`✅ Registered ${wallGridLines.length} grid lines for ${wallDirection} wall`);
           } else {
             console.warn(`⚠️ Wall at index ${index} has no wallDirection:`, wall.userData);
           }
