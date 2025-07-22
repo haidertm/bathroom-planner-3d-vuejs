@@ -196,7 +196,7 @@ const props = defineProps({
 })
 
 // Emits - ADD 'back' event for better control
-const emit = defineEmits(['close', 'add-to-room', 'back'])
+const emit = defineEmits(['close', 'add-to-room'])
 
 // Reactive state
 const currentView = ref('products') // 'products' or 'variants'

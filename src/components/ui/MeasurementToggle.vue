@@ -56,7 +56,7 @@ const props = defineProps({
 })
 
 // Define emits
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(['update:modelValue', 'change', 'toggle-measurements'])
 
 // Local state
 const measurementsEnabled = computed({
@@ -150,14 +150,14 @@ const toggleMeasurements = () => {
 
   const newValue = !measurementsEnabled.value
   measurementsEnabled.value = newValue
+  // Also emit the toggle event for any additional handling
+  emit('toggle-measurements', newValue)
+  emit('change', newValue)
 
   // Hide tooltip on mobile after toggle
   if (isMobileDevice.value) {
     showTooltip.value = false
   }
-
-  // Emit change event with the new value
-  emit('change', newValue)
 }
 
 const handleMouseEnter = () => {
