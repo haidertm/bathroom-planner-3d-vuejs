@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import RoomShapeSelector from '../pages/RoomShapeSelector.vue'
 import Planner from '../pages/Planner.vue' // Renamed from Home
 import MyDesigns from '../pages/MyDesigns.vue'
+import RoomDimensions from '../pages/RoomDimensions.vue'
 
 const routes = [
     {
@@ -18,6 +19,11 @@ const routes = [
         path: '/my-designs',
         name: 'MyDesigns',
         component: MyDesigns
+    },
+    {
+        path: '/room-dimensions',
+        name: 'RoomDimensions',
+        component: RoomDimensions
     }
 ]
 

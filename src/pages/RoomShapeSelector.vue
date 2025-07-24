@@ -157,7 +157,7 @@ const goToPlanner = () => {
       console.warn('Failed to save shape selection:', error)
       // Continue navigation even if storage fails
     }
-    router.push('/planner')
+    router.push('/room-dimensions')
   }
 }
 </script>
