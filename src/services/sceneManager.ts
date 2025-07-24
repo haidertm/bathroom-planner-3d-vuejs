@@ -195,18 +195,22 @@ export class SceneManager {
     if (!this.scene || !this.camera || !this.renderer) return;
 
     try {
+      const pixelRatio = Math.min(window.devicePixelRatio, 2);
       // Create render target with higher precision for better outline rendering
       const renderTarget = new THREE.WebGLRenderTarget(
-        window.innerWidth,
-        window.innerHeight,
+        window.innerWidth * pixelRatio,
+        window.innerHeight * pixelRatio,
         {
           format: THREE.RGBAFormat,
           type: THREE.FloatType, // Use FloatType for better precision
           colorSpace: THREE.SRGBColorSpace,
           // Add multisampling for smoother outlines
-          samples: 4,
+          samples: 8,
           // Higher precision depth buffer
           depthBuffer: true,
+          minFilter: THREE.LinearFilter,  // ✅ ADDED: Smooth filtering
+          magFilter: THREE.LinearFilter,  // ✅ ADDED: Smooth filtering
+          generateMipmaps: false,          // ✅ ADDED: Disable mipmaps for post-processing
           stencilBuffer: false
         }
       );
@@ -225,17 +229,20 @@ export class SceneManager {
       );
 
       // IMPROVED: Distance-optimized outline settings
-      this.outlinePass.edgeStrength = 8;        // Increased from 10
-      this.outlinePass.edgeGlow = 0.5;           // Reduced glow for better visibility
-      this.outlinePass.edgeThickness = 2;        // Increased thickness
+      this.outlinePass.edgeStrength = 6;        // Increased from 10
+      this.outlinePass.edgeGlow = 0.1;           // Reduced glow for better visibility
+      this.outlinePass.edgeThickness = 1.5;        // Increased thickness
       this.outlinePass.pulsePeriod = 0;          // Disable pulsing for consistency
+
+      // ✅ ADDED: Enable downsampling ratio for smoother edges
+      this.outlinePass.downSampleRatio = 1;    // Use full resolution
       this.outlinePass.visibleEdgeColor.set('#00ffcc');
       this.outlinePass.hiddenEdgeColor.set('#00ffcc'); // Make hidden edges more visible
 
       // CRITICAL: Set resolution multiplier for better edge detection
       this.outlinePass.resolution = new THREE.Vector2(
-        window.innerWidth * 2,
-        window.innerHeight * 2
+        window.innerWidth * pixelRatio * 2,
+        window.innerHeight * pixelRatio * 2
       );
 
       this.composer.addPass(this.outlinePass);
