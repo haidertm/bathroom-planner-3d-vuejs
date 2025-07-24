@@ -202,11 +202,6 @@ canvas {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.apply-changes-btn:hover {
-  background-color: #29275B;
-  transform: translateY(-1px);
-}
-
 .cancel-changes-btn {
   background-color: #e53e3e;
   color: white;
@@ -248,12 +243,6 @@ canvas {
   transition: all 0.2s ease-out;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.update-btn:hover {
-  background-color: #29275B;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
 }
 
 .update-btn:active {

@@ -1,5 +1,5 @@
 // src/utils/roomDimensions.js
-import { ROOM_DEFAULTS } from '../constants/dimensions.js';
+import { ROOM_DEFAULTS } from '../constants/dimensions';
 
 /**
  * Validates room dimensions

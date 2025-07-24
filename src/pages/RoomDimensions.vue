@@ -5,7 +5,8 @@
         <div class="left-panel">
           <h1 class="title">Add your bathroom's dimensions.</h1>
           <p class="subtitle">
-            Drag the room to move it around. Use the green icons on the room edges to resize, or click the dimension numbers to enter precise measurements.
+            Drag the room to move it around. Use the green icons on the room edges to resize, or click the dimension
+            numbers to enter precise measurements.
           </p>
         </div>
 
@@ -77,9 +78,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { isMobile } from "../utils/helpers.js"
+import {ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
+import {useRouter} from 'vue-router'
+import {isMobile} from "../utils/helpers.js"
+import {ROOM_DEFAULTS} from '../constants/dimensions.js';
 
 // Router
 const router = useRouter()
@@ -89,8 +91,8 @@ const canvas = ref(null)
 const canvasContainer = ref(null)
 
 // Reactive data
-const roomDimensions = reactive({ width: 300, height: 250 })
-const pendingDimensions = reactive({ width: null, height: null })
+const roomDimensions = reactive({width: 300, height: 250})
+const pendingDimensions = reactive({width: null, height: null})
 const canvasWidth = ref(600)
 const canvasHeight = ref(500)
 const scale = ref(1)
@@ -101,14 +103,14 @@ const ctx = ref(null)
 
 // Interaction
 const isDragging = ref(null)
-const dragStartPos = reactive({ x: 0, y: 0 })
-const dragStartDimensions = reactive({ width: 0, height: 0 })
-const dragStartRoomCenter = reactive({ x: 0, y: 0 })
+const dragStartPos = reactive({x: 0, y: 0})
+const dragStartDimensions = reactive({width: 0, height: 0})
+const dragStartRoomCenter = reactive({x: 0, y: 0})
 const hoveredHandle = ref(null)
 const hoveredRoom = ref(false)
 
 // Room positioning
-const roomCenter = reactive({ x: 400, y: 250 })
+const roomCenter = reactive({x: 400, y: 250})
 
 // Handle definitions
 const handles = ref([])
@@ -210,10 +212,10 @@ const updateHandles = () => {
 
   handles.value = [
     // Only edge handles (green resize icons)
-    { id: 'top', x: bounds.left + roomPixelWidth.value / 2, y: bounds.top, type: 'edge', cursor: 'ns-resize' },
-    { id: 'right', x: bounds.right, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize' },
-    { id: 'bottom', x: bounds.left + roomPixelWidth.value / 2, y: bounds.bottom, type: 'edge', cursor: 'ns-resize' },
-    { id: 'left', x: bounds.left, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize' }
+    {id: 'top', x: bounds.left + roomPixelWidth.value / 2, y: bounds.top, type: 'edge', cursor: 'ns-resize'},
+    {id: 'right', x: bounds.right, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize'},
+    {id: 'bottom', x: bounds.left + roomPixelWidth.value / 2, y: bounds.bottom, type: 'edge', cursor: 'ns-resize'},
+    {id: 'left', x: bounds.left, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize'}
   ]
 }
 
@@ -228,8 +230,8 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.width || roomDimensions.width,
       originalValue: roomDimensions.width,
       unit: 'cm',
-      min: 150,
-      max: 600,
+      min: ROOM_DEFAULTS.MIN_SIZE,
+      max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
         position: 'absolute',
@@ -248,8 +250,8 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.width || roomDimensions.width,
       originalValue: roomDimensions.width,
       unit: 'cm',
-      min: 150,
-      max: 600,
+      min: ROOM_DEFAULTS.MIN_SIZE,
+      max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
         position: 'absolute',
@@ -268,8 +270,8 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.height || roomDimensions.height,
       originalValue: roomDimensions.height,
       unit: 'cm',
-      min: 150,
-      max: 600,
+      min: ROOM_DEFAULTS.MIN_SIZE,
+      max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
         position: 'absolute',
@@ -288,8 +290,8 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.height || roomDimensions.height,
       originalValue: roomDimensions.height,
       unit: 'cm',
-      min: 150,
-      max: 600,
+      min: ROOM_DEFAULTS.MIN_SIZE,
+      max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
         position: 'absolute',
@@ -313,7 +315,8 @@ const startEditing = (input) => {
   editingInput.value = input
 
   nextTick(() => {
-    const inputEl = document.querySelector(`[ref="input-${input.id}"]`)
+    const inputRef = `input-${input.id}`
+    const inputEl = this.$refs[inputRef]?.[0]
     if (inputEl) {
       inputEl.focus()
       inputEl.select()
@@ -374,7 +377,7 @@ const cancelAllPendingChanges = () => {
 
 const getMousePos = (e) => {
   const canvasEl = canvas.value
-  if (!canvasEl) return { x: 0, y: 0 }
+  if (!canvasEl) return {x: 0, y: 0}
 
   const rect = canvasEl.getBoundingClientRect()
   return {
@@ -386,7 +389,7 @@ const getMousePos = (e) => {
 const getGlobalMousePos = (e) => {
   // This works even when mouse is outside canvas
   const canvasEl = canvas.value
-  if (!canvasEl) return { x: 0, y: 0 }
+  if (!canvasEl) return {x: 0, y: 0}
 
   const rect = canvasEl.getBoundingClientRect()
   return {
@@ -397,7 +400,7 @@ const getGlobalMousePos = (e) => {
 
 const getTouchPos = (e) => {
   const canvasEl = canvas.value
-  if (!canvasEl) return { x: 0, y: 0 }
+  if (!canvasEl) return {x: 0, y: 0}
 
   const rect = canvasEl.getBoundingClientRect()
   const touch = e.touches[0] || e.changedTouches[0]
@@ -410,7 +413,7 @@ const getTouchPos = (e) => {
 const getGlobalTouchPos = (e) => {
   // This works even when touch is outside canvas
   const canvasEl = canvas.value
-  if (!canvasEl) return { x: 0, y: 0 }
+  if (!canvasEl) return {x: 0, y: 0}
 
   const rect = canvasEl.getBoundingClientRect()
   const touch = e.touches[0] || e.changedTouches[0]
@@ -477,10 +480,10 @@ const handleCanvasMouseDown = (e) => {
 
 const addGlobalMouseListeners = () => {
   // Remove capture: true and be more selective about event handling
-  document.addEventListener('mousemove', handleGlobalMouseMove, { passive: false })
-  document.addEventListener('mouseup', handleGlobalMouseUp, { passive: false })
-  window.addEventListener('mousemove', handleGlobalMouseMove, { passive: false })
-  window.addEventListener('mouseup', handleGlobalMouseUp, { passive: false })
+  document.addEventListener('mousemove', handleGlobalMouseMove, {passive: false})
+  document.addEventListener('mouseup', handleGlobalMouseUp, {passive: false})
+  window.addEventListener('mousemove', handleGlobalMouseMove, {passive: false})
+  window.addEventListener('mouseup', handleGlobalMouseUp, {passive: false})
 }
 
 const preventSelection = () => {
@@ -647,8 +650,8 @@ const removeGlobalTouchListeners = () => {
 }
 
 const addGlobalTouchListeners = () => {
-  document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
-  document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false })
+  document.addEventListener('touchmove', handleGlobalTouchMove, {passive: false})
+  document.addEventListener('touchend', handleGlobalTouchEnd, {passive: false})
 }
 
 const handleCanvasTouchMove = (e) => {
@@ -721,22 +724,22 @@ const handleDrag = (currentPos) => {
   switch (isDragging.value) {
     case 'right':
       // Keep left edge fixed, expand/contract to the right
-      newWidth = Math.max(150, Math.min(600, dragStartDimensions.width + scaledDeltaX))
+      newWidth = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.width + scaledDeltaX))
       newCenterX = startBounds.left + (newWidth * effectiveScale.value) / 2
       break
     case 'bottom':
       // Keep top edge fixed, expand/contract downward
-      newHeight = Math.max(150, Math.min(600, dragStartDimensions.height + scaledDeltaY))
+      newHeight = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.height + scaledDeltaY))
       newCenterY = startBounds.top + (newHeight * effectiveScale.value) / 2
       break
     case 'left':
       // Keep right edge fixed, expand/contract to the left
-      newWidth = Math.max(150, Math.min(600, dragStartDimensions.width - scaledDeltaX))
+      newWidth = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.width - scaledDeltaX))
       newCenterX = startBounds.right - (newWidth * effectiveScale.value) / 2
       break
     case 'top':
       // Keep bottom edge fixed, expand/contract upward
-      newHeight = Math.max(150, Math.min(600, dragStartDimensions.height - scaledDeltaY))
+      newHeight = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.height - scaledDeltaY))
       newCenterY = startBounds.bottom - (newHeight * effectiveScale.value) / 2
       break
   }
@@ -809,12 +812,12 @@ const startRenderLoop = () => {
 watch(roomDimensions, () => {
   updateHandles()
   updateDimensionInputs()
-}, { deep: true })
+}, {deep: true})
 
 watch(roomCenter, () => {
   updateHandles()
   updateDimensionInputs()
-}, { deep: true })
+}, {deep: true})
 
 watch(zoomLevel, () => {
   updateHandles()
