@@ -388,129 +388,52 @@ export class SceneManager {
     }
   }
 
-  private setupEnhancedLighting (): void {
-    if (!this.scene) return;
+  private setupEnhancedLighting(): void {
+  if (!this.scene) return;
 
-    // Clear existing lights
-    this.lights.forEach(light => this.scene!.remove(light));
-    this.lights = [];
+  // Clear existing lights
+  this.lights.forEach(light => this.scene!.remove(light));
+  this.lights = [];
 
-    // 1. Bright ambient light - creates that "well-lit room" base
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // Increased from 0.8
-    this.scene.add(ambientLight);
-    this.lights.push(ambientLight);
+  // 1. Ambient light (keep this)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Reduced from 1.2
+  this.scene.add(ambientLight);
+  this.lights.push(ambientLight);
 
-    // 2. Main ceiling light - bright overhead illumination
-    const mainCeilingLight = new THREE.PointLight(0xffffff, 2.0, 3000); // Back to original
-    mainCeilingLight.position.set(0, 280, 0);
-    mainCeilingLight.castShadow = true;
-    mainCeilingLight.shadow.mapSize.width = 2048;
-    mainCeilingLight.shadow.mapSize.height = 2048;
-    mainCeilingLight.shadow.camera.near = 10;
-    mainCeilingLight.shadow.camera.far = 2000;
-    mainCeilingLight.shadow.bias = -0.0001;
+  // 2. ONLY ONE shadow-casting light (main performance improvement)
+  const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  mainLight.position.set(0, 1000, 200);
+  mainLight.castShadow = true;
 
-    this.scene.add(mainCeilingLight);
-    this.lights.push(mainCeilingLight);
+  // CRITICAL: Reduce shadow map size
+  mainLight.shadow.mapSize.width = 1024;  // Reduced from 2048
+  mainLight.shadow.mapSize.height = 1024; // Reduced from 2048
 
-    // 3. Additional ceiling lights for even coverage
-    const ceilingLight1 = new THREE.PointLight(0xffffff, 1.4, 1800); // Increased from 0.8
-    ceilingLight1.position.set(150, 280, 150);
-    ceilingLight1.castShadow = true;
-    ceilingLight1.shadow.mapSize.width = 1024;
-    ceilingLight1.shadow.mapSize.height = 1024;
-    ceilingLight1.shadow.camera.near = 10;
-    ceilingLight1.shadow.camera.far = 1500;
+  mainLight.shadow.camera.near = 10;
+  mainLight.shadow.camera.far = 2000;
+  mainLight.shadow.camera.left = -800;   // Smaller shadow area
+  mainLight.shadow.camera.right = 800;
+  mainLight.shadow.camera.top = 800;
+  mainLight.shadow.camera.bottom = -800;
 
-    this.scene.add(ceilingLight1);
-    this.lights.push(ceilingLight1);
+  this.scene.add(mainLight);
+  this.lights.push(mainLight);
 
-    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 1800); // Increased from 0.8
-    ceilingLight2.position.set(-150, 280, -150);
-    ceilingLight2.castShadow = true;
-    ceilingLight2.shadow.mapSize.width = 1024;
-    ceilingLight2.shadow.mapSize.height = 1024;
-    ceilingLight2.shadow.camera.near = 10;
-    ceilingLight2.shadow.camera.far = 1500;
+  // 3. Non-shadow fill lights (much cheaper)
+  const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.4);
+  fillLight1.position.set(-500, 800, -500);
+  // NO castShadow = true  (this is key!)
+  this.scene.add(fillLight1);
+  this.lights.push(fillLight1);
 
-    this.scene.add(ceilingLight2);
-    this.lights.push(ceilingLight2);
+  const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+  fillLight2.position.set(500, 800, 500);
+  // NO castShadow = true
+  this.scene.add(fillLight2);
+  this.lights.push(fillLight2);
 
-    // 4. MORE ceiling lights for corner coverage
-    const ceilingLight3 = new THREE.PointLight(0xffffff, 1.2, 1600);
-    ceilingLight3.position.set(150, 280, -150);
-    ceilingLight3.castShadow = true;
-    ceilingLight3.shadow.mapSize.width = 1024;
-    ceilingLight3.shadow.mapSize.height = 1024;
-    ceilingLight3.shadow.camera.near = 10;
-    ceilingLight3.shadow.camera.far = 1500;
-
-    this.scene.add(ceilingLight3);
-    this.lights.push(ceilingLight3);
-
-    const ceilingLight4 = new THREE.PointLight(0xffffff, 1.2, 1600);
-    ceilingLight4.position.set(-150, 280, 150);
-    ceilingLight4.castShadow = true;
-    ceilingLight4.shadow.mapSize.width = 1024;
-    ceilingLight4.shadow.mapSize.height = 1024;
-    ceilingLight4.shadow.camera.near = 10;
-    ceilingLight4.shadow.camera.far = 1500;
-
-    this.scene.add(ceilingLight4);
-    this.lights.push(ceilingLight4);
-
-    // 5. Brighter directional light from above - simulates natural light
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.8); // Increased from 0.4
-    topLight.position.set(0, 1000, 200);
-    topLight.castShadow = true;
-    topLight.shadow.mapSize.width = 2048;
-    topLight.shadow.mapSize.height = 2048;
-    topLight.shadow.camera.near = 10;
-    topLight.shadow.camera.far = 3000;
-    topLight.shadow.camera.left = -1000;
-    topLight.shadow.camera.right = 1000;
-    topLight.shadow.camera.top = 1000;
-    topLight.shadow.camera.bottom = -1000;
-    topLight.shadow.bias = -0.0001;
-
-    this.scene.add(topLight);
-    this.lights.push(topLight);
-
-    // 6. Multiple fill lights to reduce harsh shadows
-    const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.5); // Increased from 0.2
-    fillLight1.position.set(-500, 800, -500);
-    this.scene.add(fillLight1);
-    this.lights.push(fillLight1);
-
-    const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    fillLight2.position.set(500, 800, 500);
-    this.scene.add(fillLight2);
-    this.lights.push(fillLight2);
-
-    const fillLight3 = new THREE.DirectionalLight(0xffffff, 0.3);
-    fillLight3.position.set(-500, 800, 500);
-    this.scene.add(fillLight3);
-    this.lights.push(fillLight3);
-
-    // 7. Side rim lights for better object definition
-    const rimLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
-    rimLight1.position.set(800, 500, 0);
-    this.scene.add(rimLight1);
-    this.lights.push(rimLight1);
-
-    const rimLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
-    rimLight2.position.set(-800, 500, 0);
-    this.scene.add(rimLight2);
-    this.lights.push(rimLight2);
-
-    // 8. Additional ambient fill from below (subtle floor bounce)
-    const floorBounce = new THREE.HemisphereLight(0xffffff, 0xf0f0f0, 0.4);
-    floorBounce.position.set(0, -100, 0);
-    this.scene.add(floorBounce);
-    this.lights.push(floorBounce);
-
-    console.log(`Enhanced lighting setup complete: ${this.lights.length} lights total`);
-  }
+  console.log(`✅ Optimized lighting: ${this.lights.length} lights (only 1 with shadows)`);
+}
 
   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
     if (!this.scene) return;
