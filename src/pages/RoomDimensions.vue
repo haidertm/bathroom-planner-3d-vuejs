@@ -67,7 +67,8 @@
       </div>
 
       <div class="action-bar">
-        <button class="update-btn" @click="goToPlanner">
+        <!-- Updated to use applyAndContinue method -->
+        <button class="update-btn" @click="applyAndContinue">
           Next
         </button>
       </div>
@@ -75,846 +76,777 @@
   </div>
 </template>
 
-<script>
-import {isMobile} from "../utils/helpers.js";
+<script setup>
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { isMobile } from "../utils/helpers.js"
 
-export default {
-  name: 'RoomDimensions',
-  data() {
-    return {
-      roomDimensions: { width: 300, height: 251.52 },
-      pendingDimensions: { width: null, height: null }, // Store pending input changes
-      canvasWidth: 600,
-      canvasHeight: 500,
-      scale: 1,
-      zoomLevel: isMobile() ? 0.5 : 1,
+// Router
+const router = useRouter()
 
-      // Canvas drawing
-      ctx: null,
+// Template refs
+const canvas = ref(null)
+const canvasContainer = ref(null)
 
-      // Interaction
-      isDragging: null,
-      dragStartPos: { x: 0, y: 0 },
-      dragStartDimensions: { width: 0, height: 0 },
-      dragStartRoomCenter: { x: 0, y: 0 },
-      hoveredHandle: null,
-      hoveredRoom: false,
+// Reactive data
+const roomDimensions = reactive({ width: 300, height: 250 })
+const pendingDimensions = reactive({ width: null, height: null })
+const canvasWidth = ref(600)
+const canvasHeight = ref(500)
+const scale = ref(1)
+const zoomLevel = ref(isMobile() ? 0.5 : 1)
 
-      // Room positioning
-      roomCenter: { x: 400, y: 250 },
+// Canvas drawing
+const ctx = ref(null)
 
-      // Handle definitions
-      handles: [],
+// Interaction
+const isDragging = ref(null)
+const dragStartPos = reactive({ x: 0, y: 0 })
+const dragStartDimensions = reactive({ width: 0, height: 0 })
+const dragStartRoomCenter = reactive({ x: 0, y: 0 })
+const hoveredHandle = ref(null)
+const hoveredRoom = ref(false)
 
-      // Dimension inputs
-      dimensionInputs: [],
-      editingInput: null,
+// Room positioning
+const roomCenter = reactive({ x: 400, y: 250 })
 
-      // Animation
-      animationId: null,
-      dragAnimationId: null,
-      lastDragTime: 0,
-      dragThrottleMs: 16 // ~60fps
-    };
-  },
+// Handle definitions
+const handles = ref([])
 
-  computed: {
-    effectiveScale() {
-      return this.scale * this.zoomLevel;
+// Dimension inputs
+const dimensionInputs = ref([])
+const editingInput = ref(null)
+
+// Animation
+const animationId = ref(null)
+const dragAnimationId = ref(null)
+const lastDragTime = ref(0)
+const dragThrottleMs = ref(16) // ~60fps
+
+// Computed properties
+const effectiveScale = computed(() => {
+  return scale.value * zoomLevel.value
+})
+
+const roomPixelWidth = computed(() => {
+  return roomDimensions.width * effectiveScale.value
+})
+
+const roomPixelHeight = computed(() => {
+  return roomDimensions.height * effectiveScale.value
+})
+
+const roomBounds = computed(() => {
+  return {
+    left: roomCenter.x - roomPixelWidth.value / 2,
+    top: roomCenter.y - roomPixelHeight.value / 2,
+    right: roomCenter.x + roomPixelWidth.value / 2,
+    bottom: roomCenter.y + roomPixelHeight.value / 2
+  }
+})
+
+const hasAnyPendingChanges = computed(() => {
+  return pendingDimensions.width !== null || pendingDimensions.height !== null
+})
+
+// Methods
+const goToPlanner = () => {
+  // Save room dimensions to localStorage (convert from cm to meters)
+  const roomDimensionsInMeters = {
+    width: roomDimensions.width / 100,  // Convert cm to meters
+    height: roomDimensions.height / 100, // Convert cm to meters
+    timestamp: Date.now() // Add timestamp for cache management
+  }
+
+  try {
+    localStorage.setItem('room-dimensions', JSON.stringify(roomDimensionsInMeters))
+    console.log('Room dimensions saved:', roomDimensionsInMeters)
+  } catch (error) {
+    console.warn('Failed to save room dimensions:', error)
+    // Continue navigation even if storage fails
+  }
+
+  // Navigate to planner
+  router.push('/planner')
+}
+
+const applyAndContinue = () => {
+  // Apply any pending changes first
+  if (hasAnyPendingChanges.value) {
+    applyPendingChanges()
+  }
+
+  // Then navigate with the final dimensions
+  goToPlanner()
+}
+
+const initCanvas = () => {
+  const canvasEl = canvas.value
+  const container = canvasContainer.value
+
+  // Set canvas size
+  canvasWidth.value = container.offsetWidth
+  canvasHeight.value = container.offsetHeight
+
+  canvasEl.width = canvasWidth.value
+  canvasEl.height = canvasHeight.value
+
+  ctx.value = canvasEl.getContext('2d')
+  ctx.value.imageSmoothingEnabled = true
+
+  // Center the room initially
+  roomCenter.x = canvasWidth.value / 2
+  roomCenter.y = canvasHeight.value / 2
+}
+
+const handleResize = () => {
+  initCanvas()
+  updateHandles()
+  updateDimensionInputs()
+}
+
+const updateHandles = () => {
+  const bounds = roomBounds.value
+
+  handles.value = [
+    // Only edge handles (green resize icons)
+    { id: 'top', x: bounds.left + roomPixelWidth.value / 2, y: bounds.top, type: 'edge', cursor: 'ns-resize' },
+    { id: 'right', x: bounds.right, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize' },
+    { id: 'bottom', x: bounds.left + roomPixelWidth.value / 2, y: bounds.bottom, type: 'edge', cursor: 'ns-resize' },
+    { id: 'left', x: bounds.left, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize' }
+  ]
+}
+
+const updateDimensionInputs = () => {
+  const bounds = roomBounds.value
+
+  dimensionInputs.value = [
+    // Top
+    {
+      id: 'width-top',
+      value: roomDimensions.width,
+      tempValue: pendingDimensions.width || roomDimensions.width,
+      originalValue: roomDimensions.width,
+      unit: 'cm',
+      min: 150,
+      max: 600,
+      editing: false,
+      style: {
+        position: 'absolute',
+        left: (bounds.left + roomPixelWidth.value / 2 - 40) + 'px',
+        top: (bounds.top - 35) + 'px',
+        width: '80px',
+        height: '25px'
+      },
+      onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'width-top'))
     },
 
-    roomPixelWidth() {
-      return this.roomDimensions.width * this.effectiveScale;
+    // Bottom
+    {
+      id: 'width-bottom',
+      value: roomDimensions.width,
+      tempValue: pendingDimensions.width || roomDimensions.width,
+      originalValue: roomDimensions.width,
+      unit: 'cm',
+      min: 150,
+      max: 600,
+      editing: false,
+      style: {
+        position: 'absolute',
+        left: (bounds.left + roomPixelWidth.value / 2 - 40) + 'px',
+        top: (bounds.bottom + 15) + 'px',
+        width: '80px',
+        height: '25px'
+      },
+      onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'width-bottom'))
     },
 
-    roomPixelHeight() {
-      return this.roomDimensions.height * this.effectiveScale;
+    // Left
+    {
+      id: 'height-left',
+      value: roomDimensions.height,
+      tempValue: pendingDimensions.height || roomDimensions.height,
+      originalValue: roomDimensions.height,
+      unit: 'cm',
+      min: 150,
+      max: 600,
+      editing: false,
+      style: {
+        position: 'absolute',
+        left: (bounds.left - 90) + 'px',
+        top: (bounds.top + roomPixelHeight.value / 2 - 12.5) + 'px',
+        width: '80px',
+        height: '25px'
+      },
+      onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'height-left'))
     },
 
-    roomBounds() {
-      return {
-        left: this.roomCenter.x - this.roomPixelWidth / 2,
-        top: this.roomCenter.y - this.roomPixelHeight / 2,
-        right: this.roomCenter.x + this.roomPixelWidth / 2,
-        bottom: this.roomCenter.y + this.roomPixelHeight / 2
-      };
-    },
-
-    hasAnyPendingChanges() {
-      return this.pendingDimensions.width !== null || this.pendingDimensions.height !== null;
+    // Right
+    {
+      id: 'height-right',
+      value: roomDimensions.height,
+      tempValue: pendingDimensions.height || roomDimensions.height,
+      originalValue: roomDimensions.height,
+      unit: 'cm',
+      min: 150,
+      max: 600,
+      editing: false,
+      style: {
+        position: 'absolute',
+        left: (bounds.right + 10) + 'px',
+        top: (bounds.top + roomPixelHeight.value / 2 - 12.5) + 'px',
+        width: '80px',
+        height: '25px'
+      },
+      onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'height-right'))
     }
-  },
+  ]
+}
 
-  mounted() {
-    this.initCanvas();
-    this.updateHandles();
-    this.updateDimensionInputs();
-    this.startRenderLoop();
+const startEditing = (input) => {
+  if (editingInput.value) {
+    finishEditing(editingInput.value)
+  }
 
-    window.addEventListener('resize', this.handleResize);
-  },
+  input.editing = true
+  input.tempValue = input.value // Reset temp value to current value
+  editingInput.value = input
 
-  beforeUnmount() {
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
+  nextTick(() => {
+    const inputEl = document.querySelector(`[ref="input-${input.id}"]`)
+    if (inputEl) {
+      inputEl.focus()
+      inputEl.select()
     }
-    if (this.dragAnimationId) {
-      cancelAnimationFrame(this.dragAnimationId);
-    }
+  })
+}
 
-    // Always clean up drag state and listeners
-    this.isDragging = null;
-    this.removeGlobalMouseListeners();
+const finishEditing = (input) => {
+  // Validate and constrain the temp value
+  const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
+  input.tempValue = validatedValue
+
+  // Store in pending dimensions instead of applying immediately
+  if (input.id.includes('width')) {
+    pendingDimensions.width = validatedValue
+  } else {
+    pendingDimensions.height = validatedValue
+  }
+
+  input.editing = false
+  editingInput.value = null
+}
+
+const cancelEditing = (input) => {
+  input.editing = false
+  editingInput.value = null
+  // Reset temp value to current actual value
+  input.tempValue = input.value
+}
+
+const hasPendingChanges = (input) => {
+  if (input.id.includes('width')) {
+    return pendingDimensions.width !== null && pendingDimensions.width !== roomDimensions.width
+  } else {
+    return pendingDimensions.height !== null && pendingDimensions.height !== roomDimensions.height
+  }
+}
+
+const applyPendingChanges = () => {
+  if (pendingDimensions.width !== null) {
+    roomDimensions.width = pendingDimensions.width
+  }
+  if (pendingDimensions.height !== null) {
+    roomDimensions.height = pendingDimensions.height
+  }
+
+  // Clear pending changes
+  pendingDimensions.width = null
+  pendingDimensions.height = null
+}
+
+const cancelAllPendingChanges = () => {
+  pendingDimensions.width = null
+  pendingDimensions.height = null
+  // Update temp values in inputs to reflect the cancellation
+  updateDimensionInputs()
+}
+
+const getMousePos = (e) => {
+  const canvasEl = canvas.value
+  if (!canvasEl) return { x: 0, y: 0 }
+
+  const rect = canvasEl.getBoundingClientRect()
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  }
+}
+
+const getGlobalMousePos = (e) => {
+  // This works even when mouse is outside canvas
+  const canvasEl = canvas.value
+  if (!canvasEl) return { x: 0, y: 0 }
+
+  const rect = canvasEl.getBoundingClientRect()
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  }
+}
+
+const getTouchPos = (e) => {
+  const canvasEl = canvas.value
+  if (!canvasEl) return { x: 0, y: 0 }
+
+  const rect = canvasEl.getBoundingClientRect()
+  const touch = e.touches[0] || e.changedTouches[0]
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  }
+}
+
+const getGlobalTouchPos = (e) => {
+  // This works even when touch is outside canvas
+  const canvasEl = canvas.value
+  if (!canvasEl) return { x: 0, y: 0 }
+
+  const rect = canvasEl.getBoundingClientRect()
+  const touch = e.touches[0] || e.changedTouches[0]
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  }
+}
+
+const getHandleAt = (pos) => {
+  const handleRadius = 8 // Increased to match the larger green handles
+  return handles.value.find(handle => {
+    const dx = pos.x - handle.x
+    const dy = pos.y - handle.y
+    return Math.sqrt(dx * dx + dy * dy) <= handleRadius
+  })
+}
+
+const isInsideRoom = (pos) => {
+  const bounds = roomBounds.value
+  return pos.x >= bounds.left && pos.x <= bounds.right && pos.y >= bounds.top && pos.y <= bounds.bottom
+}
+
+const handleCanvasMouseDown = (e) => {
+  // Only prevent default for canvas interactions, not all interactions
+  const pos = getMousePos(e)
+
+  // Priority 1: Check for green resize handles
+  const handle = getHandleAt(pos)
+  if (handle) {
+    e.preventDefault()
+    e.stopPropagation()
+    isDragging.value = handle.id
+    dragStartPos.x = pos.x
+    dragStartPos.y = pos.y
+    dragStartDimensions.width = roomDimensions.width
+    dragStartDimensions.height = roomDimensions.height
+    dragStartRoomCenter.x = roomCenter.x
+    dragStartRoomCenter.y = roomCenter.y
+    lastDragTime.value = 0
+    canvas.value.style.cursor = 'grabbing'
+    addGlobalMouseListeners()
+    preventSelection()
+    return
+  }
+
+  // Priority 2: Check if inside room (for moving)
+  if (isInsideRoom(pos)) {
+    e.preventDefault()
+    e.stopPropagation()
+    isDragging.value = 'room-move'
+    dragStartPos.x = pos.x
+    dragStartPos.y = pos.y
+    dragStartRoomCenter.x = roomCenter.x
+    dragStartRoomCenter.y = roomCenter.y
+    lastDragTime.value = 0
+    canvas.value.style.cursor = 'grabbing'
+    addGlobalMouseListeners()
+    preventSelection()
+  }
+
+  // If we're not interacting with the canvas elements, don't prevent the event
+}
+
+const addGlobalMouseListeners = () => {
+  // Remove capture: true and be more selective about event handling
+  document.addEventListener('mousemove', handleGlobalMouseMove, { passive: false })
+  document.addEventListener('mouseup', handleGlobalMouseUp, { passive: false })
+  window.addEventListener('mousemove', handleGlobalMouseMove, { passive: false })
+  window.addEventListener('mouseup', handleGlobalMouseUp, { passive: false })
+}
+
+const preventSelection = () => {
+  console.log('>>> inside the room', isInsideRoom(dragStartPos))
+  document.body.style.userSelect = 'none'
+  document.body.style.webkitUserSelect = 'none'
+}
+
+const handleCanvasMouseMove = (e) => {
+  // Don't prevent default for hover events
+  if (isDragging.value) {
+    return
+  }
+
+  const pos = getMousePos(e)
+
+  // Reset hover states
+  hoveredHandle.value = null
+  hoveredRoom.value = false
+
+  // Check hover - priority order: handles, room interior
+  const handle = getHandleAt(pos)
+  if (handle) {
+    hoveredHandle.value = handle.id
+    const canvasEl = canvas.value
+    if (canvasEl) {
+      canvasEl.style.cursor = handle.cursor
+    }
+    return
+  }
+
+  if (isInsideRoom(pos)) {
+    hoveredRoom.value = true
+    const canvasEl = canvas.value
+    if (canvasEl) {
+      canvasEl.style.cursor = 'move'
+    }
+    return
+  }
+
+  // Default cursor for empty areas
+  const canvasEl = canvas.value
+  if (canvasEl) {
+    canvasEl.style.cursor = 'default'
+  }
+}
+
+const handleCanvasMouseUp = () => {
+  if (isDragging.value) {
+    return
+  }
+}
+
+const handleCanvasMouseEnter = (e) => {
+  // This ensures cursor is updated correctly when mouse re-enters canvas
+  // Especially important after drag operations
+  if (!isDragging.value) {
+    // Force a cursor update by calling mouse move logic
+    handleCanvasMouseMove(e)
+  }
+}
+
+const handleCanvasMouseLeave = () => {
+  if (!isDragging.value) {
+    hoveredHandle.value = null
+    hoveredRoom.value = false
+    canvas.value.style.cursor = 'default'
+  }
+}
+
+const handleGlobalMouseMove = (e) => {
+  // Only prevent default and stop propagation if we're actually dragging
+  if (!isDragging.value) return
+
+  e.preventDefault()
+  e.stopPropagation()
+
+  const now = Date.now()
+  if (now - lastDragTime.value >= dragThrottleMs.value) {
+    const pos = getGlobalMousePos(e)
+    handleDrag(pos)
+    lastDragTime.value = now
+  }
+}
+
+const handleGlobalMouseUp = (e) => {
+  // Only prevent default and stop propagation if we were dragging
+  if (isDragging.value) {
+    e.preventDefault()
+    e.stopPropagation()
+    endDrag()
+  }
+}
+
+const endDrag = () => {
+  console.log('>>> end drag functions', isDragging.value)
+
+  if (!isDragging.value) return
+
+  isDragging.value = null
+
+  // Remove global event listeners - make sure this always happens
+  removeGlobalMouseListeners()
+
+  // Restore text selection
+  document.body.style.userSelect = ''
+  document.body.style.webkitUserSelect = ''
+
+  // Update cursor for current position
+  updateCursorForCurrentPosition()
+}
+
+const removeGlobalMouseListeners = () => {
+  document.removeEventListener('mousemove', handleGlobalMouseMove)
+  document.removeEventListener('mouseup', handleGlobalMouseUp)
+  window.removeEventListener('mousemove', handleGlobalMouseMove)
+  window.removeEventListener('mouseup', handleGlobalMouseUp)
+}
+
+const updateCursorForCurrentPosition = () => {
+  // Simply reset hover states and let the next mouse move event handle cursor updates
+  nextTick(() => {
+    hoveredHandle.value = null
+    hoveredRoom.value = false
+    // Don't force cursor to 'default' - let mouse move handle it
+  })
+}
+
+const handleCanvasTouchStart = (e) => {
+  const pos = getTouchPos(e)
+
+  const handle = getHandleAt(pos)
+  if (handle) {
+    e.preventDefault()
+    e.stopPropagation()
+    isDragging.value = handle.id
+    dragStartPos.x = pos.x
+    dragStartPos.y = pos.y
+    dragStartDimensions.width = roomDimensions.width
+    dragStartDimensions.height = roomDimensions.height
+    dragStartRoomCenter.x = roomCenter.x
+    dragStartRoomCenter.y = roomCenter.y
+    lastDragTime.value = 0
+    addGlobalTouchListeners()
+    return
+  }
+
+  if (isInsideRoom(pos)) {
+    e.preventDefault()
+    e.stopPropagation()
+    isDragging.value = 'room-move'
+    dragStartPos.x = pos.x
+    dragStartPos.y = pos.y
+    dragStartRoomCenter.x = roomCenter.x
+    dragStartRoomCenter.y = roomCenter.y
+    lastDragTime.value = 0
+    addGlobalTouchListeners()
+  }
+}
+
+const removeGlobalTouchListeners = () => {
+  document.removeEventListener('touchmove', handleGlobalTouchMove)
+  document.removeEventListener('touchend', handleGlobalTouchEnd)
+}
+
+const addGlobalTouchListeners = () => {
+  document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false })
+  document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false })
+}
+
+const handleCanvasTouchMove = (e) => {
+  e.preventDefault()
+  if (isDragging.value) {
+    const pos = getTouchPos(e)
+    handleDrag(pos)
+  }
+}
+
+const handleCanvasTouchEnd = (e) => {
+  e.preventDefault()
+  isDragging.value = null
+}
+
+// Fix global touch handlers
+const handleGlobalTouchMove = (e) => {
+  if (!isDragging.value) return
+
+  e.preventDefault()
+  e.stopPropagation()
+  const pos = getGlobalTouchPos(e)
+  handleDrag(pos)
+}
+
+const handleGlobalTouchEnd = (e) => {
+  if (isDragging.value) {
+    e.preventDefault()
+    e.stopPropagation()
+    isDragging.value = null
+    removeGlobalTouchListeners()
 
     // Restore document state
-    document.body.style.userSelect = '';
-    document.body.style.webkitUserSelect = '';
-
-    window.removeEventListener('resize', this.handleResize);
-  },
-
-  watch: {
-    roomDimensions: {
-      handler() {
-        this.updateHandles();
-        this.updateDimensionInputs();
-      },
-      deep: true
-    },
-
-    roomCenter: {
-      handler() {
-        this.updateHandles();
-        this.updateDimensionInputs();
-      },
-      deep: true
-    },
-
-    zoomLevel() {
-      this.updateHandles();
-      this.updateDimensionInputs();
-    }
-  },
-
-  methods: {
-    goToPlanner() {
-      // Fixed: Use this.$router instead of router variable
-      this.$router.push('/planner')
-    },
-
-    initCanvas() {
-      const canvas = this.$refs.canvas;
-      const container = this.$refs.canvasContainer;
-
-      // Set canvas size
-      this.canvasWidth = container.offsetWidth;
-      this.canvasHeight = container.offsetHeight;
-
-      canvas.width = this.canvasWidth;
-      canvas.height = this.canvasHeight;
-
-      this.ctx = canvas.getContext('2d');
-      this.ctx.imageSmoothingEnabled = true;
-
-      // Center the room initially
-      this.roomCenter = {
-        x: this.canvasWidth / 2,
-        y: this.canvasHeight / 2
-      };
-    },
-
-    handleResize() {
-      this.initCanvas();
-      this.updateHandles();
-      this.updateDimensionInputs();
-    },
-
-    updateHandles() {
-      const bounds = this.roomBounds;
-
-      this.handles = [
-        // Only edge handles (green resize icons)
-        { id: 'top', x: bounds.left + this.roomPixelWidth / 2, y: bounds.top, type: 'edge', cursor: 'ns-resize' },
-        { id: 'right', x: bounds.right, y: bounds.top + this.roomPixelHeight / 2, type: 'edge', cursor: 'ew-resize' },
-        { id: 'bottom', x: bounds.left + this.roomPixelWidth / 2, y: bounds.bottom, type: 'edge', cursor: 'ns-resize' },
-        { id: 'left', x: bounds.left, y: bounds.top + this.roomPixelHeight / 2, type: 'edge', cursor: 'ew-resize' }
-      ];
-    },
-
-    updateDimensionInputs() {
-      const bounds = this.roomBounds;
-
-      this.dimensionInputs = [
-        // Top
-        {
-          id: 'width-top',
-          value: this.roomDimensions.width,
-          tempValue: this.pendingDimensions.width || this.roomDimensions.width,
-          originalValue: this.roomDimensions.width,
-          unit: 'cm',
-          min: 150,
-          max: 600,
-          editing: false,
-          style: {
-            position: 'absolute',
-            left: (bounds.left + this.roomPixelWidth / 2 - 40) + 'px',
-            top: (bounds.top - 35) + 'px',
-            width: '80px',
-            height: '25px'
-          },
-          onClick: () => this.startEditing(this.dimensionInputs.find(i => i.id === 'width-top'))
-        },
-
-        // Bottom
-        {
-          id: 'width-bottom',
-          value: this.roomDimensions.width,
-          tempValue: this.pendingDimensions.width || this.roomDimensions.width,
-          originalValue: this.roomDimensions.width,
-          unit: 'cm',
-          min: 150,
-          max: 600,
-          editing: false,
-          style: {
-            position: 'absolute',
-            left: (bounds.left + this.roomPixelWidth / 2 - 40) + 'px',
-            top: (bounds.bottom + 15) + 'px',
-            width: '80px',
-            height: '25px'
-          },
-          onClick: () => this.startEditing(this.dimensionInputs.find(i => i.id === 'width-bottom'))
-        },
-
-        // Left
-        {
-          id: 'height-left',
-          value: this.roomDimensions.height,
-          tempValue: this.pendingDimensions.height || this.roomDimensions.height,
-          originalValue: this.roomDimensions.height,
-          unit: 'cm',
-          min: 150,
-          max: 600,
-          editing: false,
-          style: {
-            position: 'absolute',
-            left: (bounds.left - 90) + 'px',
-            top: (bounds.top + this.roomPixelHeight / 2 - 12.5) + 'px',
-            width: '80px',
-            height: '25px'
-          },
-          onClick: () => this.startEditing(this.dimensionInputs.find(i => i.id === 'height-left'))
-        },
-
-        // Right
-        {
-          id: 'height-right',
-          value: this.roomDimensions.height,
-          tempValue: this.pendingDimensions.height || this.roomDimensions.height,
-          originalValue: this.roomDimensions.height,
-          unit: 'cm',
-          min: 150,
-          max: 600,
-          editing: false,
-          style: {
-            position: 'absolute',
-            left: (bounds.right + 10) + 'px',
-            top: (bounds.top + this.roomPixelHeight / 2 - 12.5) + 'px',
-            width: '80px',
-            height: '25px'
-          },
-          onClick: () => this.startEditing(this.dimensionInputs.find(i => i.id === 'height-right'))
-        }
-      ];
-    },
-
-    startEditing(input) {
-      if (this.editingInput) {
-        this.finishEditing(this.editingInput);
-      }
-
-      input.editing = true;
-      input.tempValue = input.value; // Reset temp value to current value
-      this.editingInput = input;
-
-      this.$nextTick(() => {
-        const inputEl = this.$refs['input-' + input.id]?.[0];
-        if (inputEl) {
-          inputEl.focus();
-          inputEl.select();
-        }
-      });
-    },
-
-    finishEditing(input) {
-      // Validate and constrain the temp value
-      const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue));
-      input.tempValue = validatedValue;
-
-      // Store in pending dimensions instead of applying immediately
-      if (input.id.includes('width')) {
-        this.pendingDimensions.width = validatedValue;
-      } else {
-        this.pendingDimensions.height = validatedValue;
-      }
-
-      input.editing = false;
-      this.editingInput = null;
-    },
-
-    cancelEditing(input) {
-      input.editing = false;
-      this.editingInput = null;
-      // Reset temp value to current actual value
-      input.tempValue = input.value;
-    },
-
-    hasPendingChanges(input) {
-      if (input.id.includes('width')) {
-        return this.pendingDimensions.width !== null && this.pendingDimensions.width !== this.roomDimensions.width;
-      } else {
-        return this.pendingDimensions.height !== null && this.pendingDimensions.height !== this.roomDimensions.height;
-      }
-    },
-
-    applyPendingChanges() {
-      if (this.pendingDimensions.width !== null) {
-        this.roomDimensions.width = this.pendingDimensions.width;
-      }
-      if (this.pendingDimensions.height !== null) {
-        this.roomDimensions.height = this.pendingDimensions.height;
-      }
-
-      // Clear pending changes
-      this.pendingDimensions = { width: null, height: null };
-    },
-
-    cancelAllPendingChanges() {
-      this.pendingDimensions = { width: null, height: null };
-      // Update temp values in inputs to reflect the cancellation
-      this.updateDimensionInputs();
-    },
-
-    getMousePos(e) {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return { x: 0, y: 0 };
-
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    },
-
-    getGlobalMousePos(e) {
-      // This works even when mouse is outside canvas
-      const canvas = this.$refs.canvas;
-      if (!canvas) return { x: 0, y: 0 };
-
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-    },
-
-    getTouchPos(e) {
-      const canvas = this.$refs.canvas;
-      if (!canvas) return { x: 0, y: 0 };
-
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0] || e.changedTouches[0];
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-    },
-
-    getGlobalTouchPos(e) {
-      // This works even when touch is outside canvas
-      const canvas = this.$refs.canvas;
-      if (!canvas) return { x: 0, y: 0 };
-
-      const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0] || e.changedTouches[0];
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-    },
-
-    getHandleAt(pos) {
-      const handleRadius = 8; // Increased to match the larger green handles
-      return this.handles.find(handle => {
-        const dx = pos.x - handle.x;
-        const dy = pos.y - handle.y;
-        return Math.sqrt(dx * dx + dy * dy) <= handleRadius;
-      });
-    },
-
-    isInsideRoom(pos) {
-      const bounds = this.roomBounds;
-      return pos.x >= bounds.left && pos.x <= bounds.right && pos.y >= bounds.top && pos.y <= bounds.bottom;
-    },
-
-    handleCanvasMouseDown(e) {
-      // Only prevent default for canvas interactions, not all interactions
-      const pos = this.getMousePos(e);
-
-      // Priority 1: Check for green resize handles
-      const handle = this.getHandleAt(pos);
-      if (handle) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.isDragging = handle.id;
-        this.dragStartPos = pos;
-        this.dragStartDimensions = { ...this.roomDimensions };
-        this.dragStartRoomCenter = { ...this.roomCenter };
-        this.lastDragTime = 0;
-        this.$refs.canvas.style.cursor = 'grabbing';
-        this.addGlobalMouseListeners();
-        this.preventSelection();
-        return;
-      }
-
-      // Priority 2: Check if inside room (for moving)
-      if (this.isInsideRoom(pos)) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.isDragging = 'room-move';
-        this.dragStartPos = pos;
-        this.dragStartRoomCenter = { ...this.roomCenter };
-        this.lastDragTime = 0;
-        this.$refs.canvas.style.cursor = 'grabbing';
-        this.addGlobalMouseListeners();
-        this.preventSelection();
-      }
-
-      // If we're not interacting with the canvas elements, don't prevent the event
-    },
-
-    addGlobalMouseListeners() {
-      // Remove capture: true and be more selective about event handling
-      document.addEventListener('mousemove', this.handleGlobalMouseMove, { passive: false });
-      document.addEventListener('mouseup', this.handleGlobalMouseUp, { passive: false });
-      window.addEventListener('mousemove', this.handleGlobalMouseMove, { passive: false });
-      window.addEventListener('mouseup', this.handleGlobalMouseUp, { passive: false });
-    },
-
-    preventSelection() {
-      console.log('>>> inside the room', this.isInsideRoom(this.dragStartPos));
-      document.body.style.userSelect = 'none';
-      document.body.style.webkitUserSelect = 'none';
-    },
-
-    handleCanvasMouseMove(e) {
-      // Don't prevent default for hover events
-      if (this.isDragging) {
-        return;
-      }
-
-      const pos = this.getMousePos(e);
-
-      // Reset hover states
-      this.hoveredHandle = null;
-      this.hoveredRoom = false;
-
-      // Check hover - priority order: handles, room interior
-      const handle = this.getHandleAt(pos);
-      if (handle) {
-        this.hoveredHandle = handle.id;
-        const canvas = this.$refs.canvas;
-        if (canvas) {
-          canvas.style.cursor = handle.cursor;
-        }
-        return;
-      }
-
-      if (this.isInsideRoom(pos)) {
-        this.hoveredRoom = true;
-        const canvas = this.$refs.canvas;
-        if (canvas) {
-          canvas.style.cursor = 'move';
-        }
-        return;
-      }
-
-      // Default cursor for empty areas
-      const canvas = this.$refs.canvas;
-      if (canvas) {
-        canvas.style.cursor = 'default';
-      }
-    },
-
-    handleCanvasMouseUp() {
-      if (this.isDragging) {
-        return;
-      }
-    },
-
-    handleCanvasMouseEnter(e) {
-      // This ensures cursor is updated correctly when mouse re-enters canvas
-      // Especially important after drag operations
-      if (!this.isDragging) {
-        // Force a cursor update by calling mouse move logic
-        this.handleCanvasMouseMove(e);
-      }
-    },
-
-    handleCanvasMouseLeave() {
-      if (!this.isDragging) {
-        this.hoveredHandle = null;
-        this.hoveredRoom = false;
-        this.$refs.canvas.style.cursor = 'default';
-      }
-    },
-
-    handleGlobalMouseMove(e) {
-      // Only prevent default and stop propagation if we're actually dragging
-      if (!this.isDragging) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      const now = Date.now();
-      if (now - this.lastDragTime >= this.dragThrottleMs) {
-        const pos = this.getGlobalMousePos(e);
-        this.handleDrag(pos);
-        this.lastDragTime = now;
-      }
-    },
-
-    handleGlobalMouseUp(e) {
-      // Only prevent default and stop propagation if we were dragging
-      if (this.isDragging) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.endDrag();
-      }
-    },
-
-    endDrag() {
-      console.log('>>> end drag functions', this.isDragging);
-
-      if (!this.isDragging) return;
-
-      this.isDragging = null;
-
-      // Remove global event listeners - make sure this always happens
-      this.removeGlobalMouseListeners();
-
-      // Restore text selection
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
-
-      // Update cursor for current position
-      this.updateCursorForCurrentPosition();
-    },
-
-    removeGlobalMouseListeners() {
-      document.removeEventListener('mousemove', this.handleGlobalMouseMove);
-      document.removeEventListener('mouseup', this.handleGlobalMouseUp);
-      window.removeEventListener('mousemove', this.handleGlobalMouseMove);
-      window.removeEventListener('mouseup', this.handleGlobalMouseUp);
-    },
-
-    updateCursorForCurrentPosition() {
-      // Simply reset hover states and let the next mouse move event handle cursor updates
-      this.$nextTick(() => {
-        this.hoveredHandle = null;
-        this.hoveredRoom = false;
-        // Don't force cursor to 'default' - let mouse move handle it
-      });
-    },
-
-    handleCanvasTouchStart(e) {
-      const pos = this.getTouchPos(e);
-
-      const handle = this.getHandleAt(pos);
-      if (handle) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.isDragging = handle.id;
-        this.dragStartPos = pos;
-        this.dragStartDimensions = { ...this.roomDimensions };
-        this.dragStartRoomCenter = { ...this.roomCenter };
-        this.lastDragTime = 0;
-        this.addGlobalTouchListeners();
-        return;
-      }
-
-      if (this.isInsideRoom(pos)) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.isDragging = 'room-move';
-        this.dragStartPos = pos;
-        this.dragStartRoomCenter = { ...this.roomCenter };
-        this.lastDragTime = 0;
-        this.addGlobalTouchListeners();
-      }
-    },
-
-    removeGlobalTouchListeners() {
-      document.removeEventListener('touchmove', this.handleGlobalTouchMove);
-      document.removeEventListener('touchend', this.handleGlobalTouchEnd);
-    },
-
-
-
-    addGlobalTouchListeners() {
-      document.addEventListener('touchmove', this.handleGlobalTouchMove, { passive: false });
-      document.addEventListener('touchend', this.handleGlobalTouchEnd, { passive: false });
-    },
-
-    handleCanvasTouchMove(e) {
-      e.preventDefault();
-      if (this.isDragging) {
-        const pos = this.getTouchPos(e);
-        this.handleDrag(pos);
-      }
-    },
-
-    handleCanvasTouchEnd(e) {
-      e.preventDefault();
-      this.isDragging = null;
-    },
-
-// 11. Fix global touch handlers
-    handleGlobalTouchMove(e) {
-      if (!this.isDragging) return;
-
-      e.preventDefault();
-      e.stopPropagation();
-      const pos = this.getGlobalTouchPos(e);
-      this.handleDrag(pos);
-    },
-
-    handleGlobalTouchEnd(e) {
-      if (this.isDragging) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.isDragging = null;
-        this.removeGlobalTouchListeners();
-
-        // Restore document state
-        document.body.style.userSelect = '';
-        document.body.style.webkitUserSelect = '';
-      }
-    },
-
-    handleDrag(currentPos) {
-      if (!this.isDragging) return;
-
-      const deltaX = currentPos.x - this.dragStartPos.x;
-      const deltaY = currentPos.y - this.dragStartPos.y;
-
-      // Handle room movement
-      if (this.isDragging === 'room-move') {
-        this.roomCenter.x = this.dragStartRoomCenter.x + deltaX;
-        this.roomCenter.y = this.dragStartRoomCenter.y + deltaY;
-        return;
-      }
-
-      // Handle dimension changes (from green edge handles only)
-      // Keep opposite edges fixed during resize
-      const scaledDeltaX = deltaX / this.effectiveScale;
-      const scaledDeltaY = deltaY / this.effectiveScale;
-
-      let newWidth = this.dragStartDimensions.width;
-      let newHeight = this.dragStartDimensions.height;
-      let newCenterX = this.dragStartRoomCenter.x;
-      let newCenterY = this.dragStartRoomCenter.y;
-
-      // Calculate original bounds
-      const startBounds = {
-        left: this.dragStartRoomCenter.x - (this.dragStartDimensions.width * this.effectiveScale) / 2,
-        top: this.dragStartRoomCenter.y - (this.dragStartDimensions.height * this.effectiveScale) / 2,
-        right: this.dragStartRoomCenter.x + (this.dragStartDimensions.width * this.effectiveScale) / 2,
-        bottom: this.dragStartRoomCenter.y + (this.dragStartDimensions.height * this.effectiveScale) / 2
-      };
-
-      switch (this.isDragging) {
-        case 'right':
-          // Keep left edge fixed, expand/contract to the right
-          newWidth = Math.max(150, Math.min(600, this.dragStartDimensions.width + scaledDeltaX));
-          newCenterX = startBounds.left + (newWidth * this.effectiveScale) / 2;
-          break;
-        case 'bottom':
-          // Keep top edge fixed, expand/contract downward
-          newHeight = Math.max(150, Math.min(600, this.dragStartDimensions.height + scaledDeltaY));
-          newCenterY = startBounds.top + (newHeight * this.effectiveScale) / 2;
-          break;
-        case 'left':
-          // Keep right edge fixed, expand/contract to the left
-          newWidth = Math.max(150, Math.min(600, this.dragStartDimensions.width - scaledDeltaX));
-          newCenterX = startBounds.right - (newWidth * this.effectiveScale) / 2;
-          break;
-        case 'top':
-          // Keep bottom edge fixed, expand/contract upward
-          newHeight = Math.max(150, Math.min(600, this.dragStartDimensions.height - scaledDeltaY));
-          newCenterY = startBounds.bottom - (newHeight * this.effectiveScale) / 2;
-          break;
-      }
-
-      // Apply changes
-      this.roomDimensions.width = Math.round(newWidth * 100) / 100;
-      this.roomDimensions.height = Math.round(newHeight * 100) / 100;
-      this.roomCenter.x = newCenterX;
-      this.roomCenter.y = newCenterY;
-
-      // Clear pending changes since dragging overrides them
-      this.pendingDimensions = { width: null, height: null };
-    },
-
-    handleCanvasWheel(e) {
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.05 : 0.05;
-      this.zoomLevel = Math.max(0.5, Math.min(2, this.zoomLevel + delta));
-    },
-
-    draw() {
-      const ctx = this.ctx;
-
-      // Clear canvas
-      ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-
-      const bounds = this.roomBounds;
-
-      // Draw room
-      ctx.fillStyle = this.hoveredRoom && !this.isDragging ? '#f7fafc' : '#ffffff';
-      ctx.fillRect(bounds.left, bounds.top, this.roomPixelWidth, this.roomPixelHeight);
-
-      ctx.strokeStyle = '#2d3748';
-      ctx.lineWidth = 8;
-      ctx.strokeRect(bounds.left, bounds.top, this.roomPixelWidth, this.roomPixelHeight);
-
-      // Draw green resize handles
-      this.drawHandles(ctx);
-    },
-
-    drawDimensionLineHighlights(ctx, bounds) {
-      if (!this.hoveredDimensionLine && !this.isDragging) return;
-
-      ctx.strokeStyle = '#29275B';
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.5;
-
-      const activeColor = '#48bb78';
-      const hoverColor = '#29275B';
-
-      // Determine which line to highlight
-      const lineToHighlight = this.isDragging || this.hoveredDimensionLine;
-
-      if (lineToHighlight === 'width-top' || lineToHighlight === 'width-bottom') {
-        ctx.strokeStyle = this.isDragging ? activeColor : hoverColor;
-        if (lineToHighlight === 'width-top') {
-          ctx.beginPath();
-          ctx.moveTo(bounds.left - 10, bounds.top - 40);
-          ctx.lineTo(bounds.right + 10, bounds.top - 40);
-          ctx.stroke();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(bounds.left - 10, bounds.bottom + 40);
-          ctx.lineTo(bounds.right + 10, bounds.bottom + 40);
-          ctx.stroke();
-        }
-      }
-
-      if (lineToHighlight === 'height-left' || lineToHighlight === 'height-right') {
-        ctx.strokeStyle = this.isDragging ? activeColor : hoverColor;
-        if (lineToHighlight === 'height-left') {
-          ctx.beginPath();
-          ctx.moveTo(bounds.left - 40, bounds.top - 10);
-          ctx.lineTo(bounds.left - 40, bounds.bottom + 10);
-          ctx.stroke();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(bounds.right + 40, bounds.top - 10);
-          ctx.lineTo(bounds.right + 40, bounds.bottom + 10);
-          ctx.stroke();
-        }
-      }
-
-      ctx.globalAlpha = 1.0;
-    },
-
-    drawDimensionLines(ctx, bounds) {
-      ctx.strokeStyle = '#a0aec0';
-      ctx.lineWidth = 1;
-
-      // Top line
-      ctx.beginPath();
-      ctx.moveTo(bounds.left, bounds.top - 40);
-      ctx.lineTo(bounds.right, bounds.top - 40);
-      ctx.stroke();
-
-      // Bottom line
-      ctx.beginPath();
-      ctx.moveTo(bounds.left, bounds.bottom + 40);
-      ctx.lineTo(bounds.right, bounds.bottom + 40);
-      ctx.stroke();
-
-      // Left line
-      ctx.beginPath();
-      ctx.moveTo(bounds.left - 40, bounds.top);
-      ctx.lineTo(bounds.left - 40, bounds.bottom);
-      ctx.stroke();
-
-      // Right line
-      ctx.beginPath();
-      ctx.moveTo(bounds.right + 40, bounds.top);
-      ctx.lineTo(bounds.right + 40, bounds.bottom);
-      ctx.stroke();
-
-      // Draw dimension indicators (dots)
-      ctx.fillStyle = '#29275B';
-
-      // Top center
-      ctx.beginPath();
-      ctx.arc(bounds.left + this.roomPixelWidth / 2, bounds.top - 40, 4, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Bottom center
-      ctx.beginPath();
-      ctx.arc(bounds.left + this.roomPixelWidth / 2, bounds.bottom + 40, 4, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Left center
-      ctx.beginPath();
-      ctx.arc(bounds.left - 40, bounds.top + this.roomPixelHeight / 2, 4, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Right center
-      ctx.beginPath();
-      ctx.arc(bounds.right + 40, bounds.top + this.roomPixelHeight / 2, 4, 0, 2 * Math.PI);
-      ctx.fill();
-    },
-
-    drawHandles(ctx) {
-      this.handles.forEach(handle => {
-        const isHovered = this.hoveredHandle === handle.id;
-        const isDragging = this.isDragging === handle.id;
-
-        // Green color for handles
-        ctx.fillStyle = isDragging ? '#38a169' : isHovered ? '#48bb78' : '#48bb78';
-
-        ctx.beginPath();
-        ctx.arc(handle.x, handle.y, isDragging ? 8 : isHovered ? 7 : 6, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // Add white border for better visibility
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      });
-    },
-
-    startRenderLoop() {
-      const render = () => {
-        this.draw();
-        this.animationId = requestAnimationFrame(render);
-      };
-      render();
-    },
+    document.body.style.userSelect = ''
+    document.body.style.webkitUserSelect = ''
   }
-};
+}
+
+const handleDrag = (currentPos) => {
+  if (!isDragging.value) return
+
+  const deltaX = currentPos.x - dragStartPos.x
+  const deltaY = currentPos.y - dragStartPos.y
+
+  // Handle room movement
+  if (isDragging.value === 'room-move') {
+    roomCenter.x = dragStartRoomCenter.x + deltaX
+    roomCenter.y = dragStartRoomCenter.y + deltaY
+    return
+  }
+
+  // Handle dimension changes (from green edge handles only)
+  // Keep opposite edges fixed during resize
+  const scaledDeltaX = deltaX / effectiveScale.value
+  const scaledDeltaY = deltaY / effectiveScale.value
+
+  let newWidth = dragStartDimensions.width
+  let newHeight = dragStartDimensions.height
+  let newCenterX = dragStartRoomCenter.x
+  let newCenterY = dragStartRoomCenter.y
+
+  // Calculate original bounds
+  const startBounds = {
+    left: dragStartRoomCenter.x - (dragStartDimensions.width * effectiveScale.value) / 2,
+    top: dragStartRoomCenter.y - (dragStartDimensions.height * effectiveScale.value) / 2,
+    right: dragStartRoomCenter.x + (dragStartDimensions.width * effectiveScale.value) / 2,
+    bottom: dragStartRoomCenter.y + (dragStartDimensions.height * effectiveScale.value) / 2
+  }
+
+  switch (isDragging.value) {
+    case 'right':
+      // Keep left edge fixed, expand/contract to the right
+      newWidth = Math.max(150, Math.min(600, dragStartDimensions.width + scaledDeltaX))
+      newCenterX = startBounds.left + (newWidth * effectiveScale.value) / 2
+      break
+    case 'bottom':
+      // Keep top edge fixed, expand/contract downward
+      newHeight = Math.max(150, Math.min(600, dragStartDimensions.height + scaledDeltaY))
+      newCenterY = startBounds.top + (newHeight * effectiveScale.value) / 2
+      break
+    case 'left':
+      // Keep right edge fixed, expand/contract to the left
+      newWidth = Math.max(150, Math.min(600, dragStartDimensions.width - scaledDeltaX))
+      newCenterX = startBounds.right - (newWidth * effectiveScale.value) / 2
+      break
+    case 'top':
+      // Keep bottom edge fixed, expand/contract upward
+      newHeight = Math.max(150, Math.min(600, dragStartDimensions.height - scaledDeltaY))
+      newCenterY = startBounds.bottom - (newHeight * effectiveScale.value) / 2
+      break
+  }
+
+  // Apply changes
+  roomDimensions.width = Math.round(newWidth * 100) / 100
+  roomDimensions.height = Math.round(newHeight * 100) / 100
+  roomCenter.x = newCenterX
+  roomCenter.y = newCenterY
+
+  // Clear pending changes since dragging overrides them
+  pendingDimensions.width = null
+  pendingDimensions.height = null
+}
+
+const handleCanvasWheel = (e) => {
+  e.preventDefault()
+  const delta = e.deltaY > 0 ? -0.05 : 0.05
+  zoomLevel.value = Math.max(0.5, Math.min(2, zoomLevel.value + delta))
+}
+
+const draw = () => {
+  const context = ctx.value
+
+  // Clear canvas
+  context.clearRect(0, 0, canvasWidth.value, canvasHeight.value)
+
+  const bounds = roomBounds.value
+
+  // Draw room
+  context.fillStyle = hoveredRoom.value && !isDragging.value ? '#f7fafc' : '#ffffff'
+  context.fillRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
+
+  context.strokeStyle = '#2d3748'
+  context.lineWidth = 8
+  context.strokeRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
+
+  // Draw green resize handles
+  drawHandles(context)
+}
+
+const drawHandles = (context) => {
+  handles.value.forEach(handle => {
+    const isHovered = hoveredHandle.value === handle.id
+    const isDraggingHandle = isDragging.value === handle.id
+
+    // Green color for handles
+    context.fillStyle = isDraggingHandle ? '#38a169' : isHovered ? '#48bb78' : '#48bb78'
+
+    context.beginPath()
+    context.arc(handle.x, handle.y, isDraggingHandle ? 8 : isHovered ? 7 : 6, 0, 2 * Math.PI)
+    context.fill()
+
+    // Add white border for better visibility
+    context.strokeStyle = '#ffffff'
+    context.lineWidth = 2
+    context.stroke()
+  })
+}
+
+const startRenderLoop = () => {
+  const render = () => {
+    draw()
+    animationId.value = requestAnimationFrame(render)
+  }
+  render()
+}
+
+// Watchers
+watch(roomDimensions, () => {
+  updateHandles()
+  updateDimensionInputs()
+}, { deep: true })
+
+watch(roomCenter, () => {
+  updateHandles()
+  updateDimensionInputs()
+}, { deep: true })
+
+watch(zoomLevel, () => {
+  updateHandles()
+  updateDimensionInputs()
+})
+
+// Lifecycle hooks
+onMounted(() => {
+  initCanvas()
+  updateHandles()
+  updateDimensionInputs()
+  startRenderLoop()
+
+  window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+  if (animationId.value) {
+    cancelAnimationFrame(animationId.value)
+  }
+  if (dragAnimationId.value) {
+    cancelAnimationFrame(dragAnimationId.value)
+  }
+
+  // Always clean up drag state and listeners
+  isDragging.value = null
+  removeGlobalMouseListeners()
+
+  // Restore document state
+  document.body.style.userSelect = ''
+  document.body.style.webkitUserSelect = ''
+
+  window.removeEventListener('resize', handleResize)
+})
 </script>
