@@ -20,8 +20,22 @@ export interface Position {
   z: number;
 }
 
+export type ObjectModel = {
+  path: string;
+  name: string; //Define name for model without spaces
+  scale: number;
+  rotation?: [number, number, number]
+  dimensions: {
+    width: number;
+    height: number;
+    depth?: number;
+  };
+}
+
 export interface BathroomItem {
   id: number;
+  sku?: string;
+  model?: ObjectModel;
   type: ComponentType;
   position: [number, number, number];
   rotation?: number;
@@ -277,7 +291,10 @@ export const constrainToWallsWithCollision = (
   existingItems: BathroomItem[] = []
 ): { position: Position; rotation: number } => {
   // First apply wall constraints
-  const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(position, roomWidth, roomHeight, objectType, scale);
+  const {
+    position: wallConstrainedPos,
+    rotation: wallRotation
+  } = constrainToWalls(position, roomWidth, roomHeight, objectType, scale);
 
   // If no collision checking needed, return wall constrained position and rotation
   if (existingItems.length === 0 || objectId === -1) {
@@ -303,7 +320,10 @@ export const constrainToWallsWithCollision = (
       };
 
       // Re-apply wall constraints to the test position
-      const { position: testWallPos, rotation: testWallRotation } = constrainToWalls(testPos, roomWidth, roomHeight, objectType, scale);
+      const {
+        position: testWallPos,
+        rotation: testWallRotation
+      } = constrainToWalls(testPos, roomWidth, roomHeight, objectType, scale);
 
       // Check if this position is collision-free
       if (!wouldCollideWithExisting(testWallPos, objectType!, scale, objectId, existingItems)) {
@@ -472,13 +492,13 @@ export const findFreeWallPosition = (
 
     if (!hasCollision) {
       const orientationInfo = getOrientationInfo(objectType);
-console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
-  position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
-  wallBuffer: `${buffer.toFixed(3)}cm`, // Changed from 'm' to 'cm'
-  rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
-  orientation: orientationInfo.description,
-  attempt: attempt + 1
-});
+      console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
+        position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
+        wallBuffer: `${buffer.toFixed(3)}cm`, // Changed from 'm' to 'cm'
+        rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
+        orientation: orientationInfo.description,
+        attempt: attempt + 1
+      });
       return { position, rotation: wall.rotation };
     }
   }

@@ -11,7 +11,8 @@ export default {
         {
           id: 'C76236',
           name: 'Wall Hung Slimline Basin Drawer Vanity 600mm',
-          path: '/models/furniture/basin/C76236.glb',
+          path: '../../models/furniture/basin/C76236.glb',
+          dimensions: { width: 60.4, height: 55, depth: 34.7 },
           sku: 'C76236',
           price: '249.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm'
@@ -19,7 +20,8 @@ export default {
         {
           id: 'C76237',
           name: 'Slimline Basin Drawer Vanity 600mm',
-          path: '/models/furniture/basin/C76237.glb',
+          path: '../../models/furniture/basin/C76237.glb',
+          dimensions: { width: 60.4, height: 85, depth: 34.7 },
           sku: 'C76237',
           price: '249.99',
           title: 'Corsica Gloss White Slimline Basin Drawer Vanity 600mm'
@@ -41,30 +43,38 @@ export default {
       image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
       variants: [
         {
-          id: 'c77605',
+          id: 'C77605',
           name: '600mm Width',
+          path: '../../models/furniture/basin/C77605.glb',
+          dimensions: { width: 61, height: 83, depth: 44 },
           sku: 'C77605',
           price: '399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 600mm'
         },
         {
-          id: 'c77606',
+          id: 'C77606',
           name: '800mm Width',
           sku: 'C77606',
+          path: '../../models/furniture/basin/C77606.glb',
+          dimensions: { width: 81.3, height: 53, depth: 44 },
           price: '399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm'
         },
         {
-          id: 'c77607',
+          id: 'C77607',
           name: '900mm Width',
           sku: 'C77607',
+          path: '../../models/furniture/basin/C77607.glb',
+          dimensions: { width: 81.3, height: 83.4, depth: 44 },
           price: '399.99',
           title: 'Bali Gloss White Basin Drawer Vanity 900mm'
         },
         {
-          id: 'c77608',
+          id: 'C77608',
           name: '1000mm Width',
           sku: 'C77608',
+          path: '../../models/furniture/basin/C77608.glb',
+          dimensions: { width: 100.08, height: 53, depth: 43.9 },
           price: '399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm'
         }

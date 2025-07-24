@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { MeasurementSystem } from './measurementSystem';
+import { createModel } from '../models/bathroomFixtures';
 import {
   createFloor,
   createWalls,
@@ -10,11 +11,12 @@ import {
 } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
-import { createModel } from '../models/bathroomFixtures';
 import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS } from '../constants/camera';
+import { ModelCache } from './ModelCache'
+import { ObjectPool } from './ObjectPool'
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -50,6 +52,7 @@ export class SceneManager {
   private wallGridGroup: THREE.Group | null = null; // NEW: Group for wall grid lines
   private wallGridVisible: boolean = true; // NEW: Track wall grid visibility state
   private measurementSystem: MeasurementSystem | null = null;
+  private existingItems: Map<number, THREE.Object3D> = new Map();
 
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
@@ -106,13 +109,13 @@ export class SceneManager {
 
     this.renderer.logarithmicDepthBuffer = true;
 
-      // FIXED: Log scene initialization
-  console.log('✅ Scene initialized successfully:', {
-    sceneBackground: this.scene.background,
-    hasFog: !!this.scene.fog,
-    rendererSize: { width: window.innerWidth, height: window.innerHeight },
-    logarithmicDepthBuffer: this.renderer.logarithmicDepthBuffer
-  });
+    // FIXED: Log scene initialization
+    console.log('✅ Scene initialized successfully:', {
+      sceneBackground: this.scene.background,
+      hasFog: !!this.scene.fog,
+      rendererSize: { width: window.innerWidth, height: window.innerHeight },
+      logarithmicDepthBuffer: this.renderer.logarithmicDepthBuffer
+    });
 
     return {
       scene: this.scene,
@@ -128,7 +131,7 @@ export class SceneManager {
     }
   }
 
-  public forceUpdateMeasurements(): void {
+  public forceUpdateMeasurements (): void {
     if (this.measurementSystem) {
       this.measurementSystem.forceUpdateMeasurements();
     }
@@ -176,6 +179,129 @@ export class SceneManager {
       far: this.camera.far
     };
   }
+
+  private hasItemChanged(model: THREE.Object3D, item: BathroomItem): boolean {
+    const currentPos = model.position;
+    const currentRot = model.rotation;
+    const currentScale = model.scale;
+
+    const posChanged =
+      Math.abs(currentPos.x - item.position[0]) > 0.01 ||
+      Math.abs(currentPos.y - item.position[1]) > 0.01 ||
+      Math.abs(currentPos.z - item.position[2]) > 0.01;
+
+    const rotChanged = Math.abs(currentRot.y - (item.rotation || 0)) > 0.01;
+
+    const scaleChanged = Math.abs(currentScale.x - (item.scale || 1.0)) > 0.01;
+
+    return posChanged || rotChanged || scaleChanged;
+  }
+
+  // Helper method to update existing model properties
+  private updateExistingModel(model: THREE.Object3D, item: BathroomItem): void {
+    // Update position
+    model.position.set(item.position[0], item.position[1], item.position[2]);
+
+    // Update rotation
+    model.rotation.y = item.rotation || 0;
+
+    // Update scale
+    const scale = item.scale || 1.0;
+    model.scale.set(scale, scale, scale);
+
+    console.log(`✅ Updated item ${item.id} properties`);
+  }
+
+  // Helper method to properly dispose of models
+  private disposeModel(model: THREE.Object3D): void {
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(material => material.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  }
+
+  // Add method to add single item (for real-time adding)
+  // Method to add single item (for real-time adding from Planner.vue)
+  async addSingleItem(item: BathroomItem): Promise<void> {
+    if (this.existingItems.has(item.id)) {
+      console.log(`Item ${item.id} already exists, updating instead`);
+      const existingModel = this.existingItems.get(item.id);
+      if (existingModel) {
+        this.updateExistingModel(existingModel, item);
+      }
+      return;
+    }
+
+    console.log(`➕ Adding single item ${item.id} to scene`);
+
+    try {
+      const model = await createModel(
+        item.type,
+        item.position,
+        item.rotation,
+        item.scale,
+        item.model,
+        item.sku
+      );
+
+      if (model) {
+        model.userData.isBathroomItem = true;
+        model.userData.itemId = item.id;
+        model.userData.type = item.type;
+
+        this.debugModelVisibility(model, item);
+        this.enhanceModelMaterials(model);
+
+        this.bathroomItemsGroup.add(model);
+        this.existingItems.set(item.id, model);
+        console.log(`✅ Successfully added item ${item.id}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to add single item ${item.id}:`, error);
+      throw error;
+    }
+  }
+
+// Method to remove single item (for real-time deletion from Planner.vue)
+  removeSingleItem(itemId: number): void {
+    const existingModel = this.existingItems.get(itemId);
+    if (existingModel) {
+      console.log(`🗑️ Removing single item ${itemId} from scene`);
+      this.bathroomItemsGroup.remove(existingModel);
+      this.existingItems.delete(itemId);
+      this.disposeModel(existingModel);
+      console.log(`✅ Successfully removed item ${itemId}`);
+    } else {
+      console.warn(`⚠️ Item ${itemId} not found in scene for removal`);
+    }
+  }
+
+// Method to clear all items efficiently
+  clearAllItems(): void {
+    console.log('🧹 Clearing all bathroom items');
+
+    // Dispose of all models
+    this.existingItems.forEach((model, itemId) => {
+      this.bathroomItemsGroup.remove(model);
+      this.disposeModel(model);
+    });
+
+    // Clear tracking
+    this.existingItems.clear();
+
+    console.log('✅ All items cleared efficiently');
+  }
+
 
   // ADD: Temporary debug cube method
   addDebugCube (position: [number, number, number]): void {
@@ -617,83 +743,153 @@ export class SceneManager {
     return this.wallGridVisible;
   }
 
-  async updateBathroomItems (items: BathroomItem[]): Promise<void> {
+  private debugModelVisibility(model: THREE.Object3D, item: any): void {
+    console.log('📍📍 selectedModelIs>>>>', model);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    console.log('🔍 MODEL DEBUG INFO:');
+    console.log('  Item ID:', item.id);
+    console.log('  Item Type:', item.type);
+    console.log('  Model Position:', model.position);
+    console.log('  Model Scale:', model.scale);
+    console.log('  Model Visible:', model.visible);
+    console.log('  Bounding Box Size:', size);
+    console.log('  Bounding Box Center:', center);
+    console.log('  Children Count:', model.children.length);
+
+    // Check if model is too small
+    const maxSize = Math.max(size.x, size.y, size.z);
+    if (maxSize < 0.01) {
+      console.warn('⚠️ Model might be too small to see (max dimension:', maxSize, ')');
+    }
+
+    // Check if model is too far from origin
+    const distanceFromOrigin = model.position.length();
+    if (distanceFromOrigin > 200) {
+      console.warn('⚠️ Model might be too far from camera (distance:', distanceFromOrigin, ')');
+    }
+
+    // Check children visibility
+    let visibleChildren = 0;
+    model.traverse((child) => {
+      if (child.visible) visibleChildren++;
+    });
+    console.log('  Visible Children:', visibleChildren);
+
+    // Check materials
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        console.log('  Mesh Material:', child.material?.type || 'No material');
+        if (child.material?.transparent && child.material?.opacity < 0.1) {
+          console.warn('⚠️ Material might be too transparent');
+        }
+      }
+    });
+  }
+
+  // Replace the current updateBathroomItems method with this optimized version
+  async updateBathroomItems(items: BathroomItem[]): Promise<void> {
     if (!this.scene || this.isUpdatingItems) return;
 
     this.isUpdatingItems = true;
 
     try {
-      console.log('=== UPDATING BATHROOM ITEMS ===');
-      console.log('Items to render:', items.length);
+      console.log('=== INCREMENTAL BATHROOM ITEMS UPDATE ===');
+      console.log('Items to process:', items.length);
+      console.log('Existing items in scene:', this.existingItems.size);
 
-      // Clear existing bathroom items
-      this.bathroomItemsGroup.clear();
+      // Get current item IDs
+      const newItemIds = new Set(items.map(item => item.id));
+      const existingIds = new Set(this.existingItems.keys());
 
-      // Create all models concurrently for better performance
-      const modelPromises = items.map(async (item, index) => {
-        console.log(`Creating model for item [${index}]:`, {
-          id: item.id,
-          type: item.type,
-          position: item.position, // This will show the actual position values
-          rotation: item.rotation,
-          scale: item.scale
-        });
+      // 1. REMOVE items that no longer exist
+      const itemsToRemove = Array.from(existingIds).filter(id => !newItemIds.has(id));
+      for (const itemId of itemsToRemove) {
+        const existingModel = this.existingItems.get(itemId);
+        if (existingModel) {
+          console.log(`🗑️ Removing item ${itemId} from scene`);
+          this.bathroomItemsGroup.remove(existingModel);
+          this.existingItems.delete(itemId);
 
-        try {
-          const model = await createModel(
-            item.type,
-            item.position,
-            item.rotation || 0,
-            item.scale || 1.0
-          );
-
-          if (model) {
-            model.userData.isBathroomItem = true;
-            model.userData.itemId = item.id;
-            model.userData.type = item.type;
-
-            // ADD THIS: Log the actual model position and scale
-            console.log(`✅ Model created successfully:`, {
-              type: item.type,
-              worldPosition: model.position,
-              worldScale: model.scale,
-              visible: model.visible,
-              boundingBox: this.getModelBoundingBox(model)
-            });
-
-            // Enhance model materials
-            this.enhanceModelMaterials(model);
-
-            console.log(`  Created model with userData:`, model.userData);
-            return model;
-          }
-
-          // Update measurement system with new items
-          if (this.measurementSystem) {
-            this.measurementSystem.updateExistingItems(items);
-          }
-
-        } catch (error) {
-          console.error(`Failed to create model for item ${item.id}:`, error);
+          // Clean up the model
+          this.disposeModel(existingModel);
         }
+      }
 
-        return null;
+      // 2. ADD new items or UPDATE existing ones
+      const updatePromises = items.map(async (item, index) => {
+        const existingModel = this.existingItems.get(item.id);
+
+        if (existingModel) {
+          // UPDATE existing item if position/rotation/scale changed
+          const hasChanged = this.hasItemChanged(existingModel, item);
+          if (hasChanged) {
+            console.log(`🔄 Updating existing item ${item.id}`);
+            this.updateExistingModel(existingModel, item);
+          }
+        } else {
+          // ADD new item (using your existing createModel function)
+          console.log(`➕ Adding new item ${item.id} to scene`);
+          console.log(`Creating model for item [${index}]:`, {
+            id: item.id,
+            type: item.type,
+            position: item.position,
+            rotation: item.rotation,
+            scale: item.scale,
+            path: item.model?.path
+          });
+
+          try {
+            const model = await createModel(
+              item.type,
+              item.position,
+              item.rotation,
+              item.scale,
+              item.model,
+              item.sku
+            );
+
+            if (model) {
+              model.userData.isBathroomItem = true;
+              model.userData.itemId = item.id;
+              model.userData.type = item.type;
+
+              this.debugModelVisibility(model, items[index]);
+
+              console.log(`✅ Model created successfully:`, {
+                type: item.type,
+                worldPosition: model.position,
+                worldScale: model.scale,
+                visible: model.visible,
+                boundingBox: this.getModelBoundingBox(model)
+              });
+
+              // Enhance model materials
+              this.enhanceModelMaterials(model);
+
+              // Add to scene and track it
+              this.bathroomItemsGroup.add(model);
+              this.existingItems.set(item.id, model);
+
+              console.log(`Created model with userData:`, model.userData);
+            }
+          } catch (error) {
+            console.error(`Failed to create model for item ${item.id}:`, error);
+          }
+        }
       });
 
-      // Wait for all models to be created
-      const models = await Promise.all(modelPromises);
+      await Promise.all(updatePromises);
 
-      // Add all successfully created models to the group
-      models.forEach(model => {
-        if (model) {
-          this.bathroomItemsGroup.add(model);
-        }
-      });
+      // Update measurement system with new items
+      if (this.measurementSystem) {
+        this.measurementSystem.updateExistingItems(items);
+      }
 
-      console.log('=== BATHROOM ITEMS UPDATE COMPLETE ===');
-      console.log(`Added ${models.filter(m => m !== null).length} models to scene`);
-
-      // ADD THIS: Log the bathroom items group info
+      console.log('=== INCREMENTAL UPDATE COMPLETE ===');
+      console.log(`Scene now has ${this.existingItems.size} items`);
       console.log('Bathroom items group:', {
         children: this.bathroomItemsGroup.children.length,
         position: this.bathroomItemsGroup.position,
@@ -833,6 +1029,9 @@ export class SceneManager {
 
   // Cleanup method - enhanced
   dispose (): void {
+    // Clear all items first
+    this.clearAllItems();
+
     // Stop animation loop
     this.stopAnimationLoop();
 

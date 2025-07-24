@@ -140,6 +140,7 @@ import { isMobile } from '../utils/helpers.ts'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import Sidebar from '../components/ui/sidebar.vue';
 import Header from '../components/ui/Header.vue';
+import { getScaleForUnits } from '../utils/units.js';
 
 // Router
 const router = useRouter()
@@ -156,6 +157,10 @@ const showInstructions = ref(false)
 
 // ID counter to ensure unique IDs
 const nextIdRef = ref(2000)
+
+// Add these reactive variables
+const previousItems = ref([])
+const isInitialLoad = ref(true)
 
 // Generate unique ID function
 const generateUniqueId = () => {
@@ -382,9 +387,9 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 }
 
 // 6. Update your Home.vue addItem function to handle product data:
-const addItem = (type, productData = null) => {
-  console.log('addItem called with type:', type) // Add this line
-  const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
+const addItem = async (type, productData = null) => {
+  console.log('addItem called with type:', type)
+  const defaults = { height: 0, scale: getScaleForUnits(1.0, 'meters') }
 
   // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
@@ -402,18 +407,33 @@ const addItem = (type, productData = null) => {
     type,
     position: [freePosition.x, freePosition.y, freePosition.z],
     rotation: wallRotation,
-    scale: defaults.scale,
+    scale: 1.0,
     // Add product data if available
     ...(productData && {
-      productData: {
-        productId: productData.product?.id,
-        productName: productData.product?.name,
-        brand: productData.product?.brand,
-        price: productData.product?.price,
-        selectedVariant: productData.selectedVariant,
-        selectedColor: productData.selectedColor
-      }
+      sku: productData.selectedVariant?.sku,
+      productName: productData.selectedVariant?.name,
+      model: {
+        name: `${ type }-${ productData.selectedVariant?.sku }`,
+        path: productData.selectedVariant?.path,
+        scale: 100,
+        dimensions: productData.selectedVariant?.dimensions
+      },
+      price: productData.selectedVariant?.price,
+      selectedColor: productData.selectedColor
     })
+  }
+
+  console.log('newItemToBeAdded>>>', newItem);
+
+  // PERFORMANCE BOOST: Add directly to scene first (if not initial load)
+  if (sceneManagerRef.value && !isInitialLoad.value) {
+    try {
+      await sceneManagerRef.value.addSingleItem(newItem)
+      console.log(`✅ Added item ${newItem.id} directly to scene`)
+    } catch (error) {
+      console.error('❌ Failed to add item directly:', error)
+      // Will fall back to full update via watcher
+    }
   }
 
   const newItems = [...items.value, newItem]
@@ -432,6 +452,16 @@ const addItem = (type, productData = null) => {
 const deleteItem = (itemId) => {
   console.log('Deleting item with ID:', itemId)
   console.log('Current items:', items.value.map(item => ({ id: item.id, type: item.type })))
+
+  // FOR IMMEDIATE PERFORMANCE BOOST: Remove single item from scene directly
+  if (sceneManagerRef.value && !isInitialLoad.value) {
+    try {
+      sceneManagerRef.value.removeSingleItem(itemId)
+      console.log(`✅ Removed item ${itemId} directly from scene`)
+    } catch (error) {
+      console.error('❌ Failed to remove item directly, falling back to full update:', error)
+    }
+  }
 
   const newItems = items.value.filter(item => item.id !== itemId)
 
@@ -643,14 +673,30 @@ watch([currentFloorTexture, currentWallTexture], () => {
 })
 
 // MODIFIED: Only update scene for non-drag operations
+// REPLACE your existing items watcher with this smart version
 watch([items, lastUpdateSource], ([newItems, updateSource]) => {
   if (!sceneManagerRef.value) return
 
-  // Only update scene for specific operations, NOT for drag operations
-  if (updateSource !== 'drag') {
-    console.log(`Updating scene for ${ updateSource } operation:`, newItems.length, 'items')
-    sceneManagerRef.value.updateBathroomItems(newItems)
+  console.log(`🔍 Items changed: ${updateSource}, ${newItems.length} items`)
+
+  // Skip scene updates during drag operations
+  if (updateSource === 'drag') {
+    console.log('⏭️ Skipping scene update during drag')
+    return
   }
+
+  // For initial load, use the full update method
+  if (isInitialLoad.value) {
+    console.log('🚀 Initial load - using full update')
+    sceneManagerRef.value.updateBathroomItems(newItems)
+    previousItems.value = [...newItems]
+    isInitialLoad.value = false
+    return
+  }
+
+  // Use smart updates for better performance
+  handleSmartUpdate(newItems, updateSource)
+
 }, { deep: true })
 
 watch([showWallGrid], ([newShowWallGrid]) => {
@@ -695,12 +741,118 @@ onUnmounted(() => {
   }
 })
 
+// NEW: Smart incremental update handler
+const handleIncrementalUpdate = async (newItems, updateSource) => {
+  if (!sceneManagerRef.value) return
+
+  const prevItems = previousItems.value
+
+  console.log('🔄 Performing incremental update:', {
+    source: updateSource,
+    prevCount: prevItems.length,
+    newCount: newItems.length
+  })
+
+  try {
+    switch (updateSource) {
+      case 'add':
+        // Scene update already handled in addItem method
+        console.log('➕ Add operation - scene already updated directly')
+        break
+
+      case 'delete':
+        // Scene update already handled in deleteItem method
+        console.log('🗑️ Delete operation - scene already updated directly')
+        break
+
+      case 'clear':
+        // Scene update already handled in handleClearAll method
+        console.log('🧹 Clear operation - scene already updated directly')
+        break
+
+      case 'move':
+      case 'rotate':
+      case 'scale':
+      case 'undo':
+      case 'redo':
+      case 'roomSize':
+      case 'constrain':
+        // Use the incremental update for these operations
+        console.log(`🔄 Updating scene for ${updateSource}`)
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+        break
+
+      default:
+        // Fallback to incremental update
+        console.log('🔄 Default incremental update')
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+    }
+
+    // Update the previous items reference
+    previousItems.value = [...newItems]
+
+  } catch (error) {
+    console.error('❌ Error during incremental update:', error)
+    // Fallback to full update on error
+    await sceneManagerRef.value.updateBathroomItems(newItems)
+  }
+}
+
 // Add method to update current measurements
 const updateCurrentMeasurements = () => {
   if (sceneManagerRef.value && measurementEnabled.value) {
     currentMeasurements.value = sceneManagerRef.value.getCurrentMeasurements()
   } else {
     currentMeasurements.value = null
+  }
+}
+
+const handleSmartUpdate = async (newItems, updateSource) => {
+  if (!sceneManagerRef.value) return
+
+  console.log('🔄 Handling smart update:', {
+    source: updateSource,
+    itemCount: newItems.length
+  })
+
+  try {
+    switch (updateSource) {
+      case 'add':
+      case 'delete':
+      case 'clear':
+        // Scene already updated directly in the respective methods
+        console.log(`✅ ${updateSource} operation - scene already updated directly`)
+        break
+
+      case 'undo':
+      case 'redo':
+      case 'move':
+      case 'rotate':
+      case 'scale':
+      case 'roomSize':
+      case 'constrain':
+        // Use incremental update for these operations
+        console.log(`🔄 Updating scene for ${updateSource}`)
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+        break
+
+      default:
+        // Fallback to incremental update
+        console.log('🔄 Default incremental update')
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+    }
+
+    // Update the previous items reference
+    previousItems.value = [...newItems]
+
+  } catch (error) {
+    console.error('❌ Error during smart update:', error)
+    // Fallback to full update on error
+    try {
+      await sceneManagerRef.value.updateBathroomItems(newItems)
+    } catch (fallbackError) {
+      console.error('❌ Fallback update also failed:', fallbackError)
+    }
   }
 }
 

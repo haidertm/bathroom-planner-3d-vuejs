@@ -491,7 +491,7 @@ const handleAddToRoom = (product) => {
   const componentType = product.type || 'Unknown'
 
   // Emit to parent component to add the item
-  emit('add', componentType)
+  emit('add', componentType, product)
 
   // Close product drawer after adding
   handleProductDrawerClose()

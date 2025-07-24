@@ -69,6 +69,9 @@ export class MeasurementSystem {
   }
 
   public setSelectedObject(object: THREE.Object3D | null): void {
+
+    console.log('selectedObject>>> ', object);
+
     this.selectedObject = object;
     if (this.enabled) {
       this.updateMeasurements();
@@ -108,6 +111,8 @@ export class MeasurementSystem {
     const objectType = this.selectedObject.userData.type as ComponentType;
     const objectScale = this.selectedObject.scale.x;
     const objectPosition = this.selectedObject.position;
+
+    // this.selectedObject
 
     if (!objectType || !MODEL_DIMENSIONS[objectType]) return null;
 

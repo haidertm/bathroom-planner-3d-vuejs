@@ -97,10 +97,10 @@
           <h4 :style="sectionTitleStyle">{{ selectedProduct.variantType || 'Size' }}</h4>
           <div :style="variantOptionsStyle">
             <button
-                v-for="variant in selectedProduct.variants"
-                :key="variant.id"
-                @click="selectVariant(variant.id)"
-                :style="getVariantButtonStyle(variant.id)"
+                v-for="(variant, index) in selectedProduct.variants"
+                :key="`variant-`+index"
+                @click="selectVariant(variant)"
+                :style="getVariantButtonStyle(variant)"
                 class="variant-button"
             >
               {{ variant.name }}
@@ -216,8 +216,8 @@ watch(() => props.isOpen, (isOpen) => {
 // Initialize selections when product changes
 watch(() => selectedProduct.value, (newProduct) => {
   if (newProduct) {
-    selectedVariant.value = newProduct.variants?.[0]?.id || ''
-    selectedColor.value = newProduct.colors?.[0]?.id || ''
+    selectedVariant.value = newProduct.variants?.[0] || null
+    selectedColor.value = newProduct.colors?.[0] || null
   }
 })
 
@@ -243,6 +243,7 @@ const goBackToProductList = () => {
 
 const selectVariant = (variantId) => {
   selectedVariant.value = variantId
+  console.log('selectedVariant>>>', selectedVariant.value);
 }
 
 const selectColor = (colorId) => {
@@ -274,7 +275,20 @@ const calculateTotalPrice = () => {
 }
 
 const confirmAddToRoom = () => {
-  if (!selectedProduct.value) return
+  if (!selectedProduct.value) {
+    console.log('No Product has been selected');
+    return
+  }
+
+  if (!selectedVariant.value) {
+    console.log('No Variant for the product has been selected');
+    return
+  }
+
+  if (typeof selectedVariant.value === 'string') {
+    console.log('select variant type is string');
+    return;
+  }
 
   //SelectedCategory
   const componentType = props.selectedCategory;
