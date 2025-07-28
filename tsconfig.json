@@ -7,7 +7,6 @@
     "skipLibCheck": true,
 //    Temporarily disabled
     "noImplicitAny": false,
-    "suppressImplicitAnyIndexErrors": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
