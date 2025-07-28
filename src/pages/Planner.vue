@@ -121,7 +121,7 @@ import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
 import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
 
 // Constants
-import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
+import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions'
 import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures.js'
 import { COMPONENT_DEFAULTS } from '../constants/components.js'
 
@@ -133,7 +133,7 @@ import { EventHandlers } from '../services/eventHandlers.js'
 import { createModel } from '../models/bathroomFixtures.ts'
 
 // Utils - Updated imports to include collision detection
-import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls } from '../utils/constraints.js'
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls } from '../utils/constraints'
 import { isMobile } from '../utils/helpers.ts'
 
 // Composables
@@ -141,6 +141,11 @@ import { useUndoRedo } from '../composables/useUndoRedo.js'
 import Sidebar from '../components/ui/sidebar.vue';
 import Header from '../components/ui/Header.vue';
 import { getScaleForUnits } from '../utils/units.js';
+import {
+  findSafeSpawnPositionEnhanced,
+  getActualProductDimensions,
+  checkWallPenetration
+} from '../utils/constraints/dimensions'
 
 // Router
 const router = useRouter()

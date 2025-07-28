@@ -10,7 +10,7 @@ import {
   type ModelConfig,
   type ProceduralConfig
 } from '../constants/models';
-import { type ObjectModel } from '../utils/constraints.ts';
+import { type ObjectModel } from '../utils/constraints';
 
 // Types
 interface ModelCache {
