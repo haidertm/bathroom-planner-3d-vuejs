@@ -100,6 +100,8 @@ export default {
         {
           id: '73189v2',
           name: '650x1200mm',
+          path: '../../models/mirror/73189V2.glb',
+          dimensions: { width: 119.8, height: 64.8, depth: 13.8 },
           sku: '73189V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm'
@@ -107,6 +109,8 @@ export default {
         {
           id: '73104v2',
           name: '600x600mm',
+          path: '../../models/mirror/73104V2.glb',
+          dimensions: { width: 59, height: 59.9, depth: 13.5 },
           sku: '73104V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm'
@@ -114,6 +118,8 @@ export default {
         {
           id: '73103v2',
           name: '600x450mm',
+          path: '../../models/mirror/73103V2.glb',
+          dimensions: { width: 45, height: 60, depth: 13 },
           sku: '73103V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x450mm'
@@ -137,6 +143,8 @@ export default {
         {
           id: '73035v2',
           name: '500x1200mm',
+          dimensions: { width: 119.5, height: 49.9, depth: 5.1 },
+          path: '../../models/mirror/73035V2.glb',
           sku: '73035V2',
           price: '139.99',
           title: 'Evelyn Large Illuminated LED Mirror 500x1200mm'
@@ -144,6 +152,8 @@ export default {
         {
           id: '73154v2',
           name: '500x1000mm',
+          path: '../../models/mirror/73154V2.glb',
+          dimensions: { width: 100, height: 50, depth: 5.3 },
           sku: '73154V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 500x1000mm'
@@ -151,6 +161,8 @@ export default {
         {
           id: '73153v2',
           name: '600x400mm',
+          path: '../../models/mirror/73153V2.glb',
+          dimensions: { width: 39.8, height: 59.9, depth: 5.3 },
           sku: '73153V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 600x400mm'
@@ -158,6 +170,8 @@ export default {
         {
           id: '73033v2',
           name: '700x500mm',
+          path: '../../models/mirror/73033V2.glb',
+          dimensions: { width: 50, height: 70, depth: 5.1 },
           sku: '73033V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 700x500mm'
@@ -183,6 +197,7 @@ export default {
         {
           id: '31022',
           name: '1600x560mm',
+          path: '../../models/radiator/31022.glb',
           sku: '31022',
           price: '289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x560mm'
@@ -190,6 +205,7 @@ export default {
         {
           id: '31063',
           name: '1800x560mm',
+          path: '../../models/radiator/31063.glb',
           sku: '31063',
           price: '289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1800x560mm'
@@ -197,6 +213,7 @@ export default {
         {
           id: '31019',
           name: '1600x350mm',
+          path: '../../models/radiator/31019.glb',
           sku: '31019',
           price: '289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x350mm'
@@ -221,6 +238,7 @@ export default {
         {
           id: '32128',
           name: '600x1190mm',
+          path: '../../models/radiator/32128.glb',
           sku: '32128',
           price: '289.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x1190mm'
@@ -228,6 +246,7 @@ export default {
         {
           id: '32124',
           name: '600x420mm',
+          path: '../../models/radiator/32124.glb',
           sku: '32124',
           price: '289.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x420mm'
@@ -254,6 +273,8 @@ export default {
         {
           id: 'c46247',
           name: '1000x700mm',
+          path: '../../models/shower/C46247.glb',
+          dimensions: { width: 70, height: 185.5, depth: 100.4 },
           sku: 'C46247',
           price: '219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x700mm'
@@ -261,6 +282,8 @@ export default {
         {
           id: 'c46006',
           name: '1000x760mm',
+          path: '../../models/shower/C46006.glb',
+          dimensions: { width: 76.1, height: 185.5, depth: 100.4 },
           sku: 'C46006',
           price: '219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x760mm'
@@ -268,6 +291,8 @@ export default {
         {
           id: 'c46009',
           name: '1200x800mm',
+          path: '../../models/shower/C46009.glb',
+          dimensions: { width: 80.2, height: 185.5, depth: 120.1 },
           sku: 'C46009',
           price: '219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x800mm'
@@ -275,6 +300,8 @@ export default {
         {
           id: 'c46175',
           name: '1400x900mm',
+          path: '../../models/shower/C46175.glb',
+          dimensions: { width: 90, height: 185.5, depth: 139.4 },
           sku: 'C46175',
           price: '219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x900mm'
@@ -301,6 +328,8 @@ export default {
         {
           id: 'c51096',
           name: '1370mm Length',
+          path: '../../models/bath/C51096.glb',
+          dimensions: { width: 136.9, height: 55, depth: 72.9 },
           sku: 'C51096',
           price: '399.95',
           title: 'Newham 1370mm Freestanding Bath'
@@ -308,6 +337,8 @@ export default {
         {
           id: 'c51092',
           name: '1500mm Length',
+          path: '../../models/bath/C51092.glb',
+          dimensions: { width: 151.7, height: 57.9, depth: 74.8 },
           sku: 'C51092',
           price: '449.95',
           title: 'Newham 1500mm Freestanding Bath'
@@ -315,6 +346,8 @@ export default {
         {
           id: 'c51093',
           name: '1700mm Length',
+          path: '../../models/bath/C51093.glb',
+          dimensions: { width: 169.7, height: 58, depth: 77.8 },
           sku: 'C51093',
           price: '499.95',
           title: 'Newham 1700mm Freestanding Bath'
@@ -338,6 +371,8 @@ export default {
         {
           id: 'c57499',
           name: 'Right Handed',
+          path: '../../models/bath/C57499.glb',
+          dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
           sku: 'C57499',
           price: '599.95',
           title: 'L Shaped 1700 Shower Bath with Front Panel & 6mm Easy Clean Brushed Brass Bath Screen - Right Handed'
@@ -363,6 +398,8 @@ export default {
         {
           id: 'c66175',
           name: 'Slim Seat',
+          path: '../../models/toilet/C66175.glb',
+          dimensions: { width: 35.2, height: 40.5, depth: 52.7 },
           sku: 'C66175',
           price: '179.99',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
@@ -370,6 +407,8 @@ export default {
         {
           id: 'c66174',
           name: 'Standard Seat',
+          path: '../../models/toilet/C66174.glb',
+          dimensions: { width: 36.2, height: 30.8, depth: 52.4 },
           sku: 'C66174',
           price: '179.99',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat'
@@ -393,6 +432,8 @@ export default {
         {
           id: 'c66183',
           name: 'Slim Seat',
+          path: '../../models/toilet/C66183.glb',
+          dimensions: { width: 37.1, height: 77.6, depth: 60.1 },
           sku: 'C66183',
           price: '209.99',
           title: 'Portland Close Coupled Toilet With Soft Close Slim Seat'
@@ -400,6 +441,8 @@ export default {
         {
           id: 'c66185',
           name: 'Comfort Height',
+          path: '../../models/toilet/C66185.glb',
+          dimensions: { width: 37.1, height: 82.5, depth: 60.9 },
           sku: 'C66185',
           price: '209.99',
           title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Slim Seat'
@@ -407,6 +450,8 @@ export default {
         {
           id: 'c66184',
           name: 'Back to Wall',
+          path: '../../models/toilet/C66184.glb',
+          dimensions: { width: 37.1, height: 77.6, depth: 60.2 },
           sku: 'C66184',
           price: '209.99',
           title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Slim Seat'

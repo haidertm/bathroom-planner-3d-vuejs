@@ -15,10 +15,19 @@ export interface OrientationConfig {
 
 export interface ModelConfig {
   readonly name: string;
-  readonly path: string;
+  // readonly path: string;
   readonly scale?: number;
   readonly rotation?: readonly [number, number, number];
   readonly position?: readonly [number, number, number]; // In CENTIMETERS
+  readonly movement?: { // NEW: Sink movement configuration
+    snapToWall?: boolean,
+    allowVerticalMovement?: boolean,
+    allowFreeMovement?: boolean,
+    allowFreeRotation?: boolean,
+    minHeight?: number,
+    maxHeight?: number,
+    maintainWallDistance?: boolean
+  }
   readonly orientation?: OrientationConfig;
   readonly fallbackColor?: number;
   readonly fallbackGeometry?: 'box' | 'cylinder' | 'sphere' | 'cone';
@@ -67,7 +76,7 @@ export const WALL_ROTATIONS: Record<OrientationType, Record<string, number>> = {
 export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   {
     name: 'Sink',
-    path: '/models/sink.glb',
+    // path: '/models/sink.glb',
     scale: 100,
     orientation: {
       type: 'face_into_room',
@@ -89,7 +98,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Furniture',
-    path: '/models/furniture/basin/C76236.glb',
+    // path: '/models/furniture/basin/C76236.glb',
     scale: getScaleForUnits(1.0, 'meters'),
     position: [0, 0, 0], // Keep at origin
     orientation: {
@@ -112,7 +121,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Radiator',
-    path: '/models/31019.glb',
+    // path: '/models/31019.glb',
     scale: 80,
     rotation: [0, 0, 0],
     position: [0, 0, 0], // Keep at origin
@@ -136,11 +145,11 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Toilet',
-    path: '/models/toilet.glb',
-    scale: 90,
+    // path: '/models/toilet.glb',
+    scale: getScaleForUnits(1.0, 'meters'),
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 35, // 35cm - Some space from wall
+      wallBuffer: 0, // 35cm - Some space from wall
       description: 'Seat faces into room for use'
     },
     movement: { // NEW: Toilet movement configuration
@@ -158,11 +167,12 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Bath',
-    scale: 35,
-    path: '/models/bath.glb',
+    scale: getScaleForUnits(1.0, 'meters'),
+    // path: '/models/bath.glb',
+    position: [0, 0, 0], // Keep at origin
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 32, // 89cm - Close to wall but accessible
+      wallBuffer: 0, // 89cm - Close to wall but accessible
       description: 'Tub opening faces into room'
     },
     movement: { // NEW: Toilet movement configuration
@@ -180,7 +190,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Door',
-    path: '/models/door.glb',
+    // path: '/models/door.glb',
     scale: 90,
     orientation: {
       type: 'flush_with_wall',
@@ -193,7 +203,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Mirror',
-    path: '/models/mirror.glb',
+    // path: '/models/mirror.glb',
     scale: 90,
     position: [0, -100, 0], // -120cm (was -1.2m)
     orientation: {
@@ -208,11 +218,12 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   },
   {
     name: 'Shower',
-    path: '/models/shower.glb',
-    scale: 70,
+    // path: '/models/shower.glb',
+    scale: getScaleForUnits(1.0, 'meters'),
+    position: [0, 0, 0], // Keep at origin
     orientation: {
       type: 'face_into_room',
-      wallBuffer: 100, // 139cm - Very close to wall
+      wallBuffer: 0, // 139cm - Very close to wall
       description: 'Shower opening faces into room'
     },
     fallbackColor: 0xffffff,
