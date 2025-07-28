@@ -477,7 +477,10 @@ export class EventHandlers {
           objectType,
           objectScale
         );
-        newPosition = constrainedPos.position;
+
+        newPosition.x = constrainedPos.position.x;
+        newPosition.y = constrainedPos.position.y;
+        newPosition.z = constrainedPos.position.z;
         // Do NOT change rotation for free movement objects
       } else if (movementConfig.snapToWall) {
         // Wall snapping behavior
