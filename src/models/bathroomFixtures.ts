@@ -19,12 +19,6 @@ interface LoadingPromise {
   [key: string]: Promise<THREE.Group>;
 }
 
-interface GeometryConfig {
-  geometry: THREE.BufferGeometry;
-  material: THREE.Material;
-  position: [number, number, number];
-}
-
 type Position = [number, number, number];
 
 // Singleton model manager with dynamic loading

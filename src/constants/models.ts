@@ -106,7 +106,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   {
     name: 'Radiator',
     // path: '/models/31019.glb',
-    scale: 80,
+    scale: getScaleForUnits(1.0, 'meters'),
     rotation: [0, 0, 0],
     position: [0, 0, 0], // Keep at origin
     orientation: {
@@ -215,7 +215,7 @@ export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
 // Helper function to get wall buffer for an object - ALL VALUES IN CENTIMETERS
 export const getObjectWallBuffer = (
   objectType: ComponentType,
-  scale: number = 1.0
+  _: number = 1.0 //scale not being used at the moment
 ): number => {
   const config = FIXTURE_CONFIG[objectType];
 
