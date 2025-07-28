@@ -456,7 +456,7 @@ export const findFreeRoomPosition = (
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const position = {
       x: minX + Math.random() * (maxX - minX),
-      y: objectType === 'Mirror' ? 120 : 0,
+      y: minX + Math.random() * (maxX - minX),
       z: minZ + Math.random() * (maxZ - minZ)
     };
 

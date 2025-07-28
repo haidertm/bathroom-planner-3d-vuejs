@@ -206,11 +206,11 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
   {
     name: 'Mirror',
     // path: '/models/mirror.glb',
-    scale: 90,
-    position: [0, -100, 0], // -120cm (was -1.2m)
+    scale: getScaleForUnits(1.0, 'meters'),
+    position: [0, -100, 0], // Keep at origin
     orientation: {
       type: 'face_into_room',
-      rotationOffset: Math.PI, // Flip the mirror 180 degrees
+      // rotationOffset: Math.PI, // Flip the mirror 180 degrees
       wallBuffer: 10, // 10cm - Almost flush with wall
       description: 'Reflective surface faces into room'
     },
@@ -276,7 +276,7 @@ export const getObjectWallBuffer = (
 
   // If object has custom wallBuffer defined, use it (already in centimeters)
   if (config?.orientation?.wallBuffer !== undefined) {
-    return config.orientation.wallBuffer * scale;
+    return config.orientation.wallBuffer;
   }
 
   // Fallback to default buffer calculation (fallbackSize already in centimeters)
