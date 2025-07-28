@@ -31,21 +31,9 @@ export interface ModelConfig {
   readonly position?: readonly [number, number, number]; // In CENTIMETERS
   readonly movement?: MovementConfig;
   readonly orientation?: OrientationConfig;
-  readonly fallbackColor?: number;
-  readonly fallbackGeometry?: 'box' | 'cylinder' | 'sphere' | 'cone';
-  readonly fallbackSize?: readonly [number, number, number]; // In CENTIMETERS
 }
 
-export interface ProceduralConfig {
-  readonly name: string;
-  readonly type: 'procedural';
-  readonly orientation?: OrientationConfig;
-  readonly fallbackColor?: number;
-  readonly fallbackGeometry?: 'box' | 'cylinder' | 'sphere' | 'cone';
-  readonly fallbackSize?: readonly [number, number, number]; // In CENTIMETERS
-}
-
-export type FixtureConfig = ModelConfig | ProceduralConfig;
+export type FixtureConfig = ModelConfig;
 
 // Wall rotation mappings for different orientation types
 export const WALL_ROTATIONS: Record<OrientationType, Record<string, number>> = {
@@ -93,10 +81,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       minHeight: 70,
       maxHeight: 120,
       maintainWallDistance: true
-    },
-    fallbackColor: 0xffffff,
-    fallbackGeometry: 'cylinder',
-    fallbackSize: [60, 80, 60] // 60cm x 80cm x 60cm
+    }
   },
   {
     name: 'Furniture',
@@ -116,10 +101,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       minHeight: 70,
       maxHeight: 120,
       maintainWallDistance: true
-    },
-    fallbackColor: 0xffffff,
-    fallbackGeometry: 'cylinder',
-    fallbackSize: [60, 80, 60] // 60cm x 80cm x 60cm
+    }
   },
   {
     name: 'Radiator',
@@ -140,10 +122,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       minHeight: 10,
       maxHeight: 100,
       maintainWallDistance: false
-    },
-    fallbackColor: 0xffffff,
-    fallbackGeometry: 'box',
-    fallbackSize: [64.5, 130.2, 15.5] // 64.5cm x 130.2cm x 15.5cm
+    }
   },
   {
     name: 'Toilet',
@@ -162,10 +141,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       minHeight: 0,
       maxHeight: 20,
       maintainWallDistance: false
-    },
-    fallbackColor: 0xffffff,
-    fallbackGeometry: 'box',
-    fallbackSize: [60, 80, 80] // 60cm x 80cm x 80cm
+    }
   },
   {
     name: 'Bath',
@@ -185,10 +161,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       minHeight: 0,
       maxHeight: 20,
       maintainWallDistance: false
-    },
-    fallbackColor: 0xffffff,
-    fallbackGeometry: 'box',
-    fallbackSize: [170, 60, 80] // 170cm x 60cm x 80cm
+    }
   },
   {
     name: 'Door',
@@ -198,10 +171,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       type: 'flush_with_wall',
       wallBuffer: 4.5, // 4.5cm - Flush with wall - minimal gap
       description: 'Door is part of wall opening'
-    },
-    fallbackColor: 0x8B4513,
-    fallbackGeometry: 'box',
-    fallbackSize: [10, 200, 80] // 10cm x 200cm x 80cm
+    }
   },
   {
     name: 'Mirror',
@@ -213,10 +183,7 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       // rotationOffset: Math.PI, // Flip the mirror 180 degrees
       wallBuffer: 10, // 10cm - Almost flush with wall
       description: 'Reflective surface faces into room'
-    },
-    fallbackColor: 0x87CEEB,
-    fallbackGeometry: 'box',
-    fallbackSize: [80, 100, 5] // 80cm x 100cm x 5cm
+    }
   },
   {
     name: 'Shower',
@@ -227,28 +194,9 @@ export const AVAILABLE_MODELS: readonly ModelConfig[] = [
       type: 'face_into_room',
       wallBuffer: 0, // 139cm - Very close to wall
       description: 'Shower opening faces into room'
-    },
-    fallbackColor: 0xffffff,
-    fallbackGeometry: 'cylinder',
-    fallbackSize: [80, 200, 80] // 80cm x 200cm x 80cm
+    }
   }
   // Only add models here that you want to load from .glb files
-] as const;
-
-// Components that will use procedural code (your existing bathroomFixtures logic)
-export const PROCEDURAL_FIXTURES: readonly ProceduralConfig[] = [
-  // {
-  //   name: 'Shower',
-  //   type: 'procedural',
-  //   orientation: {
-  //     type: 'face_into_room',
-  //     wallBuffer: 85, // 85cm - Very close to wall
-  //     description: 'Shower opening faces into room'
-  //   },
-  //   fallbackColor: 0xffffff,
-  //   fallbackGeometry: 'cylinder',
-  //   fallbackSize: [80, 200, 80] // 80cm x 200cm x 80cm
-  // }
 ] as const;
 
 // HERE'S WHERE YOU CHOOSE: Map each component to either model or procedural
@@ -262,9 +210,6 @@ export const FIXTURE_CONFIG: Record<ComponentType, FixtureConfig> = {
   Bath: AVAILABLE_MODELS.find(f => f.name === 'Bath')!,
   Mirror: AVAILABLE_MODELS.find(f => f.name === 'Mirror')!,
   Shower: AVAILABLE_MODELS.find(f => f.name === 'Shower')!
-
-  // These will use your existing procedural code
-  // Shower: PROCEDURAL_FIXTURES.find(f => f.name === 'Shower')!
 };
 
 // Helper function to get wall buffer for an object - ALL VALUES IN CENTIMETERS
@@ -277,12 +222,6 @@ export const getObjectWallBuffer = (
   // If object has custom wallBuffer defined, use it (already in centimeters)
   if (config?.orientation?.wallBuffer !== undefined) {
     return config.orientation.wallBuffer;
-  }
-
-  // Fallback to default buffer calculation (fallbackSize already in centimeters)
-  if (config && 'fallbackSize' in config && config.fallbackSize) {
-    const [width, , depth] = config.fallbackSize;
-    return Math.max(width, depth) * scale / 2;
   }
 
   // Ultimate fallback (CONSTRAINTS.OBJECT_BUFFER already in centimeters)
@@ -332,10 +271,6 @@ export const getModelConfig = (componentType: ComponentType): FixtureConfig => {
 
 export const isModelBased = (config: FixtureConfig): config is ModelConfig => {
   return 'path' in config;
-};
-
-export const isProceduralBased = (config: FixtureConfig): config is ProceduralConfig => {
-  return 'type' in config && config.type === 'procedural';
 };
 
 // Only preload the models you're actually using

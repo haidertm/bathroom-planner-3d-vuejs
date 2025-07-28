@@ -55,10 +55,6 @@ export const getObjectWallBuffer = (
   if (config?.orientation?.wallBuffer !== undefined) {
     return config.orientation.wallBuffer * scale;
   }
-  if (config && 'fallbackSize' in config && config.fallbackSize) {
-    const [width, , depth] = config.fallbackSize;
-    return Math.max(width, depth) * scale / 2;
-  }
   return CONSTRAINTS.OBJECT_BUFFER;
 };
 

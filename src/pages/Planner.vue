@@ -185,10 +185,7 @@ const getDefaultItems = () => {
     //     type: 'flush_with_wall',
     //     wallBuffer: 0.045, // Flush with wall - no gap
     //     description: 'Door is part of wall opening'
-    //   },
-    //   fallbackColor: 0x8B4513,
-    //   fallbackGeometry: 'box',
-    //   fallbackSize: [0.1, 2.0, 0.8]
+    //   }
     // }
   ]
 }
