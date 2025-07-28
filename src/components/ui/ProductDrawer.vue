@@ -59,6 +59,7 @@
           <div :style="productInfoStyle">
             <div :style="brandStyle">{{ product.brand }}</div>
             <h3 :style="productNameStyle">{{ product.name }}</h3>
+            <div :style="brandStyle"><span style="font-weight: bold;">sku:</span> {{ product.sku }}</div>
             <div :style="priceStyle">£{{ product.price }}</div>
 
             <!-- More Info Link -->
@@ -756,3 +757,4 @@ const colorNameStyle = computed(() => ({
   background: #555;
 }
 </style>
+
