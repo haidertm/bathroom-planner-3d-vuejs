@@ -122,8 +122,8 @@ import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
-import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures.js'
-import { COMPONENT_DEFAULTS } from '../constants/components.js'
+import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures'
+import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
 
 // Services
 import { SceneManager } from '../services/sceneManager.js'
@@ -386,10 +386,16 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 // 6. Update your Home.vue addItem function to handle product data:
 const addItem = async (type, productData = null) => {
   console.log('addItem called with type:', type)
-  const defaults = { height: 0, scale: getScaleForUnits(1.0, 'meters') }
+  const defaults = {
+    height: 0,
+    scale: getScaleForUnits(1.0, 'meters'),
+    orientation: DEFAULT_ORIENTATION
+  }
 
   // Extract SKU for real dimension lookup
   const sku = productData?.selectedVariant?.sku || null;
+
+  console.log('productData.selectedVariant?.orientation>>>:::', productData.selectedVariant?.orientation);
 
   // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
@@ -397,7 +403,9 @@ const addItem = async (type, productData = null) => {
       roomHeight.value,
       type,
       defaults.scale,
-      items.value
+      items.value,
+      undefined, // No specific wall direction
+      productData.selectedVariant?.orientation
   )
 
   console.log('found free positioned on wall>>', freePosition, wallRotation);
@@ -416,6 +424,12 @@ const addItem = async (type, productData = null) => {
         name: `${ type }-${ productData.selectedVariant?.sku }`,
         path: productData.selectedVariant?.path,
         scale: 100,
+        orientation: {
+          type: 'flush_with_wall',
+          wallBuffer: 0, // Flush with wall - no gap
+          description: 'Item is part of wall opening',
+          ...(productData.selectedVariant?.orientation)
+        },
         dimensions: productData.selectedVariant?.dimensions
       },
       price: productData.selectedVariant?.price,
@@ -629,12 +643,14 @@ onMounted(async () => {
   // PRELOAD MODELS - This will load all models defined in constants
   console.log('Starting model preloading...')
 
-  try {
-    await preloadModels()
-    console.log('Model preloading completed!')
-    console.log('Cache status:', getModelCacheStatus())
-  } catch (error) {
-    console.error('Error during model preloading:', error)
+  if (CONFIG && CONFIG.preloadModels) {
+    try {
+      await preloadModels()
+      console.log('Model preloading completed!')
+      console.log('Cache status:', getModelCacheStatus())
+    } catch (error) {
+      console.error('Error during model preloading:', error)
+    }
   }
 
   // Load initial items - NOW ASYNC

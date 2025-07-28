@@ -1,7 +1,7 @@
 //src/services/sceneManager.ts
 
 import * as THREE from 'three';
-import { MeasurementSystem } from './measurementSystem';
+import { type MeasurementData, MeasurementSystem } from './measurementSystem';
 import { createModel } from '../models/bathroomFixtures';
 import {
   createFloor,
@@ -15,14 +15,13 @@ import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS } from '../constants/camera';
-import { ModelCache } from './ModelCache'
-import { ObjectPool } from './ObjectPool'
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { getOrientationForItem } from '../utils/models.ts';
 
 interface SceneComponents {
   scene: THREE.Scene;
@@ -180,7 +179,7 @@ export class SceneManager {
     };
   }
 
-  private hasItemChanged(model: THREE.Object3D, item: BathroomItem): boolean {
+  private hasItemChanged (model: THREE.Object3D, item: BathroomItem): boolean {
     const currentPos = model.position;
     const currentRot = model.rotation;
     const currentScale = model.scale;
@@ -198,7 +197,7 @@ export class SceneManager {
   }
 
   // Helper method to update existing model properties
-  private updateExistingModel(model: THREE.Object3D, item: BathroomItem): void {
+  private updateExistingModel (model: THREE.Object3D, item: BathroomItem): void {
     // Update position
     model.position.set(item.position[0], item.position[1], item.position[2]);
 
@@ -213,7 +212,7 @@ export class SceneManager {
   }
 
   // Helper method to properly dispose of models
-  private disposeModel(model: THREE.Object3D): void {
+  private disposeModel (model: THREE.Object3D): void {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         if (child.geometry) {
@@ -232,7 +231,7 @@ export class SceneManager {
 
   // Add method to add single item (for real-time adding)
   // Method to add single item (for real-time adding from Planner.vue)
-  async addSingleItem(item: BathroomItem): Promise<void> {
+  async addSingleItem (item: BathroomItem): Promise<void> {
     if (this.existingItems.has(item.id)) {
       console.log(`Item ${item.id} already exists, updating instead`);
       const existingModel = this.existingItems.get(item.id);
@@ -273,7 +272,7 @@ export class SceneManager {
   }
 
 // Method to remove single item (for real-time deletion from Planner.vue)
-  removeSingleItem(itemId: number): void {
+  removeSingleItem (itemId: number): void {
     const existingModel = this.existingItems.get(itemId);
     if (existingModel) {
       console.log(`🗑️ Removing single item ${itemId} from scene`);
@@ -287,11 +286,11 @@ export class SceneManager {
   }
 
 // Method to clear all items efficiently
-  clearAllItems(): void {
+  clearAllItems (): void {
     console.log('🧹 Clearing all bathroom items');
 
     // Dispose of all models
-    this.existingItems.forEach((model, itemId) => {
+    this.existingItems.forEach((model) => {
       this.bathroomItemsGroup.remove(model);
       this.disposeModel(model);
     });
@@ -388,52 +387,52 @@ export class SceneManager {
     }
   }
 
-  private setupEnhancedLighting(): void {
-  if (!this.scene) return;
+  private setupEnhancedLighting (): void {
+    if (!this.scene) return;
 
-  // Clear existing lights
-  this.lights.forEach(light => this.scene!.remove(light));
-  this.lights = [];
+    // Clear existing lights
+    this.lights.forEach(light => this.scene!.remove(light));
+    this.lights = [];
 
-  // 1. Ambient light (keep this)
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Reduced from 1.2
-  this.scene.add(ambientLight);
-  this.lights.push(ambientLight);
+    // 1. Ambient light (keep this)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Reduced from 1.2
+    this.scene.add(ambientLight);
+    this.lights.push(ambientLight);
 
-  // 2. ONLY ONE shadow-casting light (main performance improvement)
-  const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  mainLight.position.set(0, 1000, 200);
-  mainLight.castShadow = true;
+    // 2. ONLY ONE shadow-casting light (main performance improvement)
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    mainLight.position.set(0, 1000, 200);
+    mainLight.castShadow = true;
 
-  // CRITICAL: Reduce shadow map size
-  mainLight.shadow.mapSize.width = 1024;  // Reduced from 2048
-  mainLight.shadow.mapSize.height = 1024; // Reduced from 2048
+    // CRITICAL: Reduce shadow map size
+    mainLight.shadow.mapSize.width = 1024;  // Reduced from 2048
+    mainLight.shadow.mapSize.height = 1024; // Reduced from 2048
 
-  mainLight.shadow.camera.near = 10;
-  mainLight.shadow.camera.far = 2000;
-  mainLight.shadow.camera.left = -800;   // Smaller shadow area
-  mainLight.shadow.camera.right = 800;
-  mainLight.shadow.camera.top = 800;
-  mainLight.shadow.camera.bottom = -800;
+    mainLight.shadow.camera.near = 10;
+    mainLight.shadow.camera.far = 2000;
+    mainLight.shadow.camera.left = -800;   // Smaller shadow area
+    mainLight.shadow.camera.right = 800;
+    mainLight.shadow.camera.top = 800;
+    mainLight.shadow.camera.bottom = -800;
 
-  this.scene.add(mainLight);
-  this.lights.push(mainLight);
+    this.scene.add(mainLight);
+    this.lights.push(mainLight);
 
-  // 3. Non-shadow fill lights (much cheaper)
-  const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.4);
-  fillLight1.position.set(-500, 800, -500);
-  // NO castShadow = true  (this is key!)
-  this.scene.add(fillLight1);
-  this.lights.push(fillLight1);
+    // 3. Non-shadow fill lights (much cheaper)
+    const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.4);
+    fillLight1.position.set(-500, 800, -500);
+    // NO castShadow = true  (this is key!)
+    this.scene.add(fillLight1);
+    this.lights.push(fillLight1);
 
-  const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-  fillLight2.position.set(500, 800, 500);
-  // NO castShadow = true
-  this.scene.add(fillLight2);
-  this.lights.push(fillLight2);
+    const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+    fillLight2.position.set(500, 800, 500);
+    // NO castShadow = true
+    this.scene.add(fillLight2);
+    this.lights.push(fillLight2);
 
-  console.log(`✅ Optimized lighting: ${this.lights.length} lights (only 1 with shadows)`);
-}
+    console.log(`✅ Optimized lighting: ${this.lights.length} lights (only 1 with shadows)`);
+  }
 
   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
     if (!this.scene) return;
@@ -666,7 +665,7 @@ export class SceneManager {
     return this.wallGridVisible;
   }
 
-  private debugModelVisibility(model: THREE.Object3D, item: any): void {
+  private debugModelVisibility (model: THREE.Object3D, item: any): void {
     console.log('📍📍 selectedModelIs>>>>', model);
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
@@ -713,7 +712,7 @@ export class SceneManager {
   }
 
   // Replace the current updateBathroomItems method with this optimized version
-  async updateBathroomItems(items: BathroomItem[]): Promise<void> {
+  async updateBathroomItems (items: BathroomItem[]): Promise<void> {
     if (!this.scene || this.isUpdatingItems) return;
 
     this.isUpdatingItems = true;
@@ -760,6 +759,7 @@ export class SceneManager {
             type: item.type,
             position: item.position,
             rotation: item.rotation,
+            orientation: item.model?.orientation,
             scale: item.scale,
             path: item.model?.path
           });
@@ -778,6 +778,9 @@ export class SceneManager {
               model.userData.isBathroomItem = true;
               model.userData.itemId = item.id;
               model.userData.type = item.type;
+
+              // NEW: Add orientation data directly to userData
+              model.userData.orientation = getOrientationForItem(item);
 
               this.debugModelVisibility(model, items[index]);
 

@@ -3,8 +3,10 @@
 
 import { CONSTRAINTS, MODEL_DIMENSIONS } from '../constants/dimensions.ts';
 import type { ComponentType } from '../constants/components';
-import { getObjectRotationForWall, getOrientationInfo, getObjectWallBuffer } from '../constants/models';
-import productData from '../mocks/productData'; // Import product data
+import { shouldSnapToWall, canMoveFreelyInRoom } from '../utils/models';
+import { type OrientationConfig, MovementConfig, DEFAULT_ORIENTATION } from '../constants/models';
+import { getObjectWallBuffer, getObjectRotationForWall, getOrientationInfo } from '../utils/models';
+import productData from '../mocks/productData';
 
 // Interface for position
 export interface Position {
@@ -16,8 +18,15 @@ export interface Position {
 export type ObjectModel = {
   path: string;
   name: string;
-  scale: number;
-  rotation?: [number, number, number]
+  title?: string;
+  id?: string;
+  sku?: string;
+  scale?: number;
+  price?: number | string;
+  rotation?: [number, number, number];
+  position?: [number, number, number];
+  movement?: MovementConfig;
+  orientation?: OrientationConfig;
   dimensions: {
     width: number;
     height: number;
@@ -42,24 +51,13 @@ const getProductDimensions = (sku: string, type: ComponentType): {
   depth: number;
   height: number
 } | null => {
-  // Map component types to productData categories
-  const typeMapping: Record<ComponentType, string> = {
-    'Toilet': 'Toilet',
-    'Sink': 'Furniture', // Assuming sinks are in Furniture category
-    'Bath': 'Bath',
-    'Shower': 'Shower',
-    'Radiator': 'Radiator',
-    'Mirror': 'Mirror',
-    'Door': 'Door' // This might not exist in productData
-  };
 
-  const category = typeMapping[type];
-  if (!category || !productData[category]) {
+  if (!type || !productData[type]) {
     return null;
   }
 
   // Search through all product variants in the category
-  for (const product of productData[category]) {
+  for (const product of productData[type]) {
     if (product.variants) {
       for (const variant of product.variants) {
         if (variant.sku === sku && variant.dimensions) {
@@ -123,50 +121,50 @@ export interface WallInfo {
 }
 
 // Find the nearest wall to a given position
-export const findNearestWall = (
-  position: Position,
-  roomWidth: number,
-  roomHeight: number,
-  objectType: ComponentType | null = null,
-  scale: number = 1.0
-): WallInfo => {
-  // Use configurable wall buffer instead of generic buffer
-  const buffer = objectType ? getObjectWallBuffer(objectType, scale) : CONSTRAINTS.OBJECT_BUFFER;
-
-  const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
-
-  // Calculate distances to each wall
-  const walls = [
-    {
-      type: 'north' as WallType,
-      position: { x: position.x, y: position.y, z: -roomHalfHeight + buffer },
-      distance: Math.abs(position.z - (-roomHalfHeight + buffer))
-    },
-    {
-      type: 'south' as WallType,
-      position: { x: position.x, y: position.y, z: roomHalfHeight - buffer },
-      distance: Math.abs(position.z - (roomHalfHeight - buffer))
-    },
-    {
-      type: 'east' as WallType,
-      position: { x: roomHalfWidth - buffer, y: position.y, z: position.z },
-      distance: Math.abs(position.x - (roomHalfWidth - buffer))
-    },
-    {
-      type: 'west' as WallType,
-      position: { x: -roomHalfWidth + buffer, y: position.y, z: position.z },
-      distance: Math.abs(position.x - (-roomHalfWidth + buffer))
-    }
-  ];
-
-  // Find the nearest wall
-  const nearestWall = walls.reduce((nearest, wall) =>
-    wall.distance < nearest.distance ? wall : nearest
-  );
-
-  return nearestWall;
-};
+// export const findNearestWall = (
+//   position: Position,
+//   roomWidth: number,
+//   roomHeight: number,
+//   objectType: ComponentType | null = null,
+//   scale: number = 1.0
+// ): WallInfo => {
+//   // Use configurable wall buffer instead of generic buffer
+//   const buffer = objectType ? getObjectWallBuffer(objectType, scale) : CONSTRAINTS.OBJECT_BUFFER;
+//
+//   const roomHalfWidth = roomWidth / 2;
+//   const roomHalfHeight = roomHeight / 2;
+//
+//   // Calculate distances to each wall
+//   const walls = [
+//     {
+//       type: 'north' as WallType,
+//       position: { x: position.x, y: position.y, z: -roomHalfHeight + buffer },
+//       distance: Math.abs(position.z - (-roomHalfHeight + buffer))
+//     },
+//     {
+//       type: 'south' as WallType,
+//       position: { x: position.x, y: position.y, z: roomHalfHeight - buffer },
+//       distance: Math.abs(position.z - (roomHalfHeight - buffer))
+//     },
+//     {
+//       type: 'east' as WallType,
+//       position: { x: roomHalfWidth - buffer, y: position.y, z: position.z },
+//       distance: Math.abs(position.x - (roomHalfWidth - buffer))
+//     },
+//     {
+//       type: 'west' as WallType,
+//       position: { x: -roomHalfWidth + buffer, y: position.y, z: position.z },
+//       distance: Math.abs(position.x - (-roomHalfWidth + buffer))
+//     }
+//   ];
+//
+//   // Find the nearest wall
+//   const nearestWall = walls.reduce((nearest, wall) =>
+//     wall.distance < nearest.distance ? wall : nearest
+//   );
+//
+//   return nearestWall;
+// };
 
 // ENHANCED: Collision detection with product-specific dimensions
 export const checkCollision = (
@@ -259,11 +257,14 @@ export const constrainToRoom = (
   position: Position,
   roomWidth: number,
   roomHeight: number,
-  objectType: ComponentType | null = null,
-  scale: number = 1.0
+  {
+    type: objectType,
+    scale = 1.0,
+    orientation = DEFAULT_ORIENTATION
+  }
 ): { position: Position; rotation: number } => {
   // Get object dimensions for better boundary calculation
-  const buffer = objectType ? getObjectWallBuffer(objectType, scale) / 2 : CONSTRAINTS.OBJECT_BUFFER;
+  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) / 2 : CONSTRAINTS.OBJECT_BUFFER;
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
@@ -303,11 +304,20 @@ export const constrainToWalls = (
   position: Position,
   roomWidth: number,
   roomHeight: number,
-  objectType: ComponentType | null = null,
-  scale: number = 1.0
+  {
+    type: objectType,
+    scale = 1.0,
+    orientation = DEFAULT_ORIENTATION
+  }: {
+    type: ComponentType | null;
+    scale?: number;
+    orientation?: OrientationConfig;
+  }
 ): { position: Position; rotation: number } => {
+  console.log('objectType>>>>:::>>>', objectType, scale);
+  console.log('orientation>>>>:::>>>', orientation);
   // Use configurable wall buffer instead of generic buffer
-  const buffer = objectType ? getObjectWallBuffer(objectType, scale) : CONSTRAINTS.OBJECT_BUFFER;
+  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) : CONSTRAINTS.OBJECT_BUFFER;
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
@@ -353,7 +363,7 @@ export const constrainToWalls = (
   }
 
   if (objectType) {
-    wallRotation = getObjectRotationForWall(objectType, wallType);
+    wallRotation = getObjectRotationForWall(objectType, wallType, orientation);
   }
 
   return { position: constrainedPosition, rotation: wallRotation };
@@ -364,143 +374,13 @@ export const snapToNearestWall = (
   position: Position,
   roomWidth: number,
   roomHeight: number,
-  objectType: ComponentType | null = null,
-  scale: number = 1.0
+  orientationDetails: {
+    type: ComponentType | null;
+    scale?: number;
+    orientation?: OrientationConfig;
+  }
 ): { position: Position; rotation: number } => {
-  return constrainToWalls(position, roomWidth, roomHeight, objectType, scale);
-};
-
-// ENHANCED: Wall constraint that also checks for collisions and returns rotation
-export const constrainToWallsWithCollision = (
-  position: Position,
-  roomWidth: number,
-  roomHeight: number,
-  objectType: ComponentType | null = null,
-  scale: number = 1.0,
-  objectId: number = -1,
-  existingItems: BathroomItem[] = [],
-  currentItem?: BathroomItem // NEW: Optional current item for specific dimensions
-): { position: Position; rotation: number } => {
-  // First apply wall constraints
-  const {
-    position: wallConstrainedPos,
-    rotation: wallRotation
-  } = constrainToWalls(position, roomWidth, roomHeight, objectType, scale);
-
-  // If no collision checking needed, return wall constrained position and rotation
-  if (existingItems.length === 0 || objectId === -1) {
-    return { position: wallConstrainedPos, rotation: wallRotation };
-  }
-
-  // Check if the wall constrained position would collide
-  if (!wouldCollideWithExisting(wallConstrainedPos, objectType!, scale, objectId, existingItems, currentItem)) {
-    return { position: wallConstrainedPos, rotation: wallRotation };
-  }
-
-  // Try to find a nearby non-colliding position
-  const searchRadius = 50; // Increased search radius
-  const searchSteps = 12; // More search steps
-
-  for (let radius = 20; radius <= searchRadius; radius += 10) {
-    for (let step = 0; step < searchSteps; step++) {
-      const angle = (step / searchSteps) * Math.PI * 2;
-      const testPos = {
-        x: wallConstrainedPos.x + Math.cos(angle) * radius,
-        y: wallConstrainedPos.y,
-        z: wallConstrainedPos.z + Math.sin(angle) * radius
-      };
-
-      // Re-apply wall constraints to the test position
-      const {
-        position: testWallPos,
-        rotation: testWallRotation
-      } = constrainToWalls(testPos, roomWidth, roomHeight, objectType, scale);
-
-      // Check if this position is collision-free
-      if (!wouldCollideWithExisting(testWallPos, objectType!, scale, objectId, existingItems, currentItem)) {
-        console.log(`🔄 Found collision-free position after adjustment:`, {
-          original: { x: wallConstrainedPos.x.toFixed(3), z: wallConstrainedPos.z.toFixed(3) },
-          adjusted: { x: testWallPos.x.toFixed(3), z: testWallPos.z.toFixed(3) },
-          rotation: `${(testWallRotation * 180 / Math.PI).toFixed(0)}°`
-        });
-        return { position: testWallPos, rotation: testWallRotation };
-      }
-    }
-  }
-
-  // If we still can't find a good position, return the wall constrained position
-  console.warn(`⚠️ Could not find collision-free position for ${objectType}, using wall constrained position`);
-  return { position: wallConstrainedPos, rotation: wallRotation };
-};
-
-// ENHANCED: Find a free position anywhere in the room for free movement objects
-export const findFreeRoomPosition = (
-  roomWidth: number,
-  roomHeight: number,
-  objectType: ComponentType,
-  scale: number = 1.0,
-  existingItems: BathroomItem[] = [],
-  maxAttempts: number = 100
-): { position: Position; rotation: number } => {
-  const buffer = getObjectWallBuffer(objectType, scale);
-  const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
-
-  // Define room boundaries
-  const minX = -roomHalfWidth + buffer;
-  const maxX = roomHalfWidth - buffer;
-  const minZ = -roomHalfHeight + buffer;
-  const maxZ = roomHalfHeight - buffer;
-
-  // Try to find a free position anywhere in the room
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const position = {
-      x: minX + Math.random() * (maxX - minX),
-      y: minX + Math.random() * (maxX - minX),
-      z: minZ + Math.random() * (maxZ - minZ)
-    };
-
-    // Check if this position collides with any existing items
-    let hasCollision = false;
-    for (const item of existingItems) {
-      if (checkCollision(
-        position,
-        objectType,
-        scale,
-        { x: item.position[0], y: item.position[1], z: item.position[2] },
-        item.type,
-        item.scale || 1.0,
-        undefined, // No current item data for free positioning
-        item       // Existing item
-      )) {
-        hasCollision = true;
-        break;
-      }
-    }
-
-    if (!hasCollision) {
-      console.log(`🎯 Found free room position for ${objectType}:`, {
-        position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        attempt: attempt + 1,
-        roomBounds: {
-          x: `${minX.toFixed(1)} to ${maxX.toFixed(1)}`,
-          z: `${minZ.toFixed(1)} to ${maxZ.toFixed(1)}`
-        }
-      });
-      return { position, rotation: 0 }; // Free objects start with no rotation
-    }
-  }
-
-  // Fallback position in center of room
-  console.warn(`⚠️ Could not find free room position for ${objectType} after ${maxAttempts} attempts, using center`);
-  return {
-    position: {
-      x: 0,
-      y: objectType === 'Mirror' ? 120 : 0,
-      z: 0
-    },
-    rotation: 0
-  };
+  return constrainToWalls(position, roomWidth, roomHeight, orientationDetails);
 };
 
 // ENHANCED: Find a free position on any wall that doesn't collide with existing objects
@@ -510,10 +390,13 @@ export const findFreeWallPosition = (
   objectType: ComponentType,
   scale: number = 1.0,
   existingItems: BathroomItem[] = [],
-  maxAttempts: number = 50
+  maxAttempts: number = 50,
+  orientation: OrientationConfig = DEFAULT_ORIENTATION
 ): { position: Position; rotation: number } => {
   // Use configurable wall buffer instead of generic buffer
-  const buffer = getObjectWallBuffer(objectType, scale);
+  const buffer = getObjectWallBuffer({ orientation, scale });
+
+  console.log('findFreeWallPosition>>>>>Orientation', orientation);
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
@@ -527,7 +410,7 @@ export const findFreeWallPosition = (
         y: objectType === 'Mirror' ? 120 : 0,
         z: -roomHalfHeight + buffer
       }),
-      rotation: getObjectRotationForWall(objectType, 'north')
+      rotation: getObjectRotationForWall(objectType, 'north', orientation)
     },
     { // South wall
       name: 'south',
@@ -536,7 +419,7 @@ export const findFreeWallPosition = (
         y: objectType === 'Mirror' ? 120 : 0,
         z: roomHalfHeight - buffer
       }),
-      rotation: getObjectRotationForWall(objectType, 'south')
+      rotation: getObjectRotationForWall(objectType, 'south', orientation)
     },
     { // East wall
       name: 'east',
@@ -545,7 +428,7 @@ export const findFreeWallPosition = (
         y: objectType === 'Mirror' ? 120 : 0,
         z: -roomHalfHeight + buffer + t * (roomHeight - 2 * buffer)
       }),
-      rotation: getObjectRotationForWall(objectType, 'east')
+      rotation: getObjectRotationForWall(objectType, 'east', orientation)
     },
     { // West wall
       name: 'west',
@@ -554,7 +437,7 @@ export const findFreeWallPosition = (
         y: objectType === 'Mirror' ? 120 : 0,
         z: -roomHalfHeight + buffer + t * (roomHeight - 2 * buffer)
       }),
-      rotation: getObjectRotationForWall(objectType, 'west')
+      rotation: getObjectRotationForWall(objectType, 'west', orientation)
     }
   ];
 
@@ -586,7 +469,7 @@ export const findFreeWallPosition = (
     }
 
     if (!hasCollision) {
-      const orientationInfo = getOrientationInfo(objectType);
+      const orientationInfo = getOrientationInfo(orientation);
       console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
         position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
         wallBuffer: `${buffer.toFixed(3)}cm`,
@@ -599,7 +482,7 @@ export const findFreeWallPosition = (
   }
 
   // Fallback position
-  const fallbackRotation = getObjectRotationForWall(objectType, 'south');
+  const fallbackRotation = getObjectRotationForWall(objectType, 'south', orientation);
   return {
     position: {
       x: 0,
@@ -610,17 +493,17 @@ export const findFreeWallPosition = (
   };
 };
 
-// LEGACY FUNCTIONS for backward compatibility
-export const snapToWall = (
-  position: Position,
-  roomWidth: number,
-  roomHeight: number,
-  objectType: ComponentType | null = null,
-  scale: number = 1.0
-): Position => {
-  const { position: snappedPos } = snapToNearestWall(position, roomWidth, roomHeight, objectType, scale);
-  return snappedPos;
-};
+// // LEGACY FUNCTIONS for backward compatibility
+// export const snapToWall = (
+//   position: Position,
+//   roomWidth: number,
+//   roomHeight: number,
+//   objectType: ComponentType | null = null,
+//   scale: number = 1.0
+// ): Position => {
+//   const { position: snappedPos } = snapToNearestWall(position, roomWidth, roomHeight, objectType, scale);
+//   return snappedPos;
+// };
 
 // ENHANCED: Function that respects movement configuration
 export const constrainAllObjectsToRoom = (
@@ -629,27 +512,27 @@ export const constrainAllObjectsToRoom = (
   roomHeight: number
 ): BathroomItem[] => {
   return items.map(item => {
-    // Import movement configuration check
-    const { shouldSnapToWall, canMoveFreelyInRoom } = require('../constants/models');
 
     const position = { x: item.position[0], y: item.position[1], z: item.position[2] };
 
     let constrainedPosition: Position;
     let constrainedRotation: number;
 
+    console.log('canMoveFreelyInRoom:>>>>>', item);
+
     if (canMoveFreelyInRoom(item.type)) {
       // Free movement objects - constrain to room bounds
-      const result = constrainToRoom(position, roomWidth, roomHeight, item.type, item.scale || 1.0);
+      const result = constrainToRoom(position, roomWidth, roomHeight, item);
       constrainedPosition = result.position;
       constrainedRotation = item.rotation || 0; // Keep current rotation
     } else if (shouldSnapToWall(item.type)) {
       // Wall-snapped objects - constrain to walls
-      const result = constrainToWalls(position, roomWidth, roomHeight, item.type, item.scale || 1.0);
+      const result = constrainToWalls(position, roomWidth, roomHeight, item);
       constrainedPosition = result.position;
       constrainedRotation = result.rotation;
     } else {
       // Default behavior - constrain to room bounds
-      const result = constrainToRoom(position, roomWidth, roomHeight, item.type, item.scale || 1.0);
+      const result = constrainToRoom(position, roomWidth, roomHeight, item);
       constrainedPosition = result.position;
       constrainedRotation = item.rotation || 0;
     }

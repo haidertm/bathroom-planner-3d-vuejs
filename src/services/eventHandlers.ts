@@ -19,7 +19,7 @@ import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { LOOK_AT, CAMERA_CONTROLS } from '../constants/camera';
 import { ref } from 'vue';
-import { getHeightConstraints, getMovementConfig } from '../utils/models.ts';
+import { getHeightConstraints, getMovementConfig, getObjectWallBuffer, shouldSnapToWall } from '../utils/models.ts';
 import { MeasurementSystem } from './measurementSystem';
 
 interface IntersectionResult {
@@ -454,6 +454,7 @@ export class EventHandlers {
       // Get object type and scale for enhanced constraints
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
+      console.log('selectedObjectGetting dragged', this.selectedObject);
       const itemId = this.selectedObject.userData.itemId as number;
       const movementConfig = getMovementConfig(objectType);
 
@@ -475,8 +476,11 @@ export class EventHandlers {
           newPosition,
           this.roomWidthRef.value,
           this.roomHeightRef.value,
-          objectType,
-          objectScale
+          {
+            type: objectType,
+            scale: objectScale,
+            orientation: this.selectedObject?.userData?.orientation
+          }
         );
 
         newPosition.x = constrainedPos.position.x;
@@ -490,8 +494,11 @@ export class EventHandlers {
           newPosition,
           this.roomWidthRef.value,
           this.roomHeightRef.value,
-          objectType,
-          objectScale
+          {
+            type: objectType,
+            scale: objectScale,
+            orientation: this.selectedObject?.userData?.orientation
+          }
         );
 
         newPosition.x = wallConstrainedPos.x;
@@ -508,8 +515,11 @@ export class EventHandlers {
           newPosition,
           this.roomWidthRef.value,
           this.roomHeightRef.value,
-          objectType,
-          objectScale
+          {
+            type: objectType,
+            scale: objectScale,
+            orientation: this.selectedObject?.userData?.orientation
+          }
         );
 
         newPosition.x = snappedPos.x;
@@ -527,8 +537,11 @@ export class EventHandlers {
           newPosition,
           this.roomWidthRef.value,
           this.roomHeightRef.value,
-          objectType,
-          objectScale
+          {
+            type: objectType,
+            scale: objectScale,
+            orientation: this.selectedObject?.userData?.orientation
+          }
         );
         newPosition = constrainedPos.position;
         // Do NOT change rotation for default room constraint
@@ -843,17 +856,23 @@ export class EventHandlers {
             newPosition,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
-            objectType,
-            objectScale
+            {
+              type: objectType,
+              scale: objectScale,
+              orientation: this.selectedObject?.userData?.orientation
+            }
           );
           newPosition = constrainedPos.position;
         } else if (movementConfig.snapToWall) {
-          const { position: wallConstrainedPos} = constrainToWalls(
+          const { position: wallConstrainedPos } = constrainToWalls(
             newPosition,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
-            objectType,
-            objectScale
+            {
+              type: objectType,
+              scale: objectScale,
+              orientation: this.selectedObject?.userData?.orientation
+            }
           );
 
           newPosition.x = wallConstrainedPos.x;
@@ -870,8 +889,11 @@ export class EventHandlers {
             newPosition,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
-            objectType,
-            objectScale
+            {
+              type: objectType,
+              scale: objectScale,
+              orientation: this.selectedObject?.userData?.orientation
+            }
           );
 
           newPosition.x = snappedPos.x;
@@ -885,8 +907,11 @@ export class EventHandlers {
             newPosition,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
-            objectType,
-            objectScale
+            {
+              type: objectType,
+              scale: objectScale,
+              orientation: this.selectedObject?.userData?.orientation
+            }
           );
           newPosition = constrainedPos.position;
         }

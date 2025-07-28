@@ -1,4 +1,26 @@
-export default {
+import { ObjectModel } from '../utils/constraints';
+
+type ProductColor = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+type ProductData = {
+  [key: string]: {
+    id: string;
+    link: string;
+    name: string;
+    price: string;
+    image: string;
+    variants: ObjectModel[];
+    variantType: string;
+    colors: ProductColor[];
+    features: string[];
+  }[];
+}
+
+const productData: ProductData = {
   Furniture: [
     // Furniture Variant 1 (2 variants)
     {
@@ -13,6 +35,11 @@ export default {
           name: 'Wall Hung Slimline Basin Drawer Vanity 600mm',
           path: '../../models/furniture/basin/C76236.glb',
           dimensions: { width: 60.4, height: 55, depth: 34.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C76236',
           price: '249.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm'
@@ -22,6 +49,11 @@ export default {
           name: 'Slimline Basin Drawer Vanity 600mm',
           path: '../../models/furniture/basin/C76237.glb',
           dimensions: { width: 60.4, height: 85, depth: 34.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C76237',
           price: '249.99',
           title: 'Corsica Gloss White Slimline Basin Drawer Vanity 600mm'
@@ -47,6 +79,11 @@ export default {
           name: '600mm Width',
           path: '../../models/furniture/basin/C77605.glb',
           dimensions: { width: 61, height: 83, depth: 44 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C77605',
           price: '399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 600mm'
@@ -57,6 +94,11 @@ export default {
           sku: 'C77606',
           path: '../../models/furniture/basin/C77606.glb',
           dimensions: { width: 81.3, height: 53, depth: 44 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           price: '399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm'
         },
@@ -66,6 +108,11 @@ export default {
           sku: 'C77607',
           path: '../../models/furniture/basin/C77607.glb',
           dimensions: { width: 81.3, height: 83.4, depth: 44 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           price: '399.99',
           title: 'Bali Gloss White Basin Drawer Vanity 900mm'
         },
@@ -75,6 +122,11 @@ export default {
           sku: 'C77608',
           path: '../../models/furniture/basin/C77608.glb',
           dimensions: { width: 100.08, height: 53, depth: 43.9 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           price: '399.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm'
         }
@@ -198,6 +250,7 @@ export default {
           id: '31022',
           name: '1600x560mm',
           path: '../../models/radiator/31022.glb',
+          dimensions: { width: 65.8, height: 163.2, depth: 11.3 },
           sku: '31022',
           price: '289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x560mm'
@@ -206,6 +259,7 @@ export default {
           id: '31063',
           name: '1800x560mm',
           path: '../../models/radiator/31063.glb',
+          dimensions: { width: 65.8, height: 183.2, depth: 11.3 },
           sku: '31063',
           price: '289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1800x560mm'
@@ -214,6 +268,7 @@ export default {
           id: '31019',
           name: '1600x350mm',
           path: '../../models/radiator/31019.glb',
+          dimensions: { width: 44.8, height: 163, depth: 11.3 },
           sku: '31019',
           price: '289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x350mm'
@@ -239,6 +294,7 @@ export default {
           id: '32128',
           name: '600x1190mm',
           path: '../../models/radiator/32128.glb',
+          dimensions: { width: 128.5, height: 63, depth: 11.3 },
           sku: '32128',
           price: '289.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x1190mm'
@@ -247,6 +303,7 @@ export default {
           id: '32124',
           name: '600x420mm',
           path: '../../models/radiator/32124.glb',
+          dimensions: { width: 51.5, height: 63, depth: 11.3 },
           sku: '32124',
           price: '289.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x420mm'
@@ -400,6 +457,11 @@ export default {
           name: 'Slim Seat',
           path: '../../models/toilet/C66175.glb',
           dimensions: { width: 35.2, height: 40.5, depth: 52.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C66175',
           price: '179.99',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
@@ -409,6 +471,11 @@ export default {
           name: 'Standard Seat',
           path: '../../models/toilet/C66174.glb',
           dimensions: { width: 36.2, height: 30.8, depth: 52.4 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C66174',
           price: '179.99',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat'
@@ -434,6 +501,11 @@ export default {
           name: 'Slim Seat',
           path: '../../models/toilet/C66183.glb',
           dimensions: { width: 37.1, height: 77.6, depth: 60.1 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C66183',
           price: '209.99',
           title: 'Portland Close Coupled Toilet With Soft Close Slim Seat'
@@ -443,6 +515,11 @@ export default {
           name: 'Comfort Height',
           path: '../../models/toilet/C66185.glb',
           dimensions: { width: 37.1, height: 82.5, depth: 60.9 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C66185',
           price: '209.99',
           title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Slim Seat'
@@ -452,6 +529,11 @@ export default {
           name: 'Back to Wall',
           path: '../../models/toilet/C66184.glb',
           dimensions: { width: 37.1, height: 77.6, depth: 60.2 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: 'C66184',
           price: '209.99',
           title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Slim Seat'
@@ -465,3 +547,5 @@ export default {
     }
   ]
 };
+
+export default productData;

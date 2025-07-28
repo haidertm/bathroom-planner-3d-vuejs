@@ -144,7 +144,7 @@ export class MeasurementSystem {
     };
   }
 
-  private isObjectWallBound(position: THREE.Vector3, width: number, depth: number): boolean {
+  private isObjectWallBound(position: THREE.Vector3, _width: number, _depth: number): boolean {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
     const tolerance = 50; // 5cm tolerance
@@ -158,7 +158,7 @@ export class MeasurementSystem {
     return nearNorth || nearSouth || nearEast || nearWest;
   }
 
-  private getWallDirection(position: THREE.Vector3, width: number, depth: number): 'north' | 'south' | 'east' | 'west' | undefined {
+  private getWallDirection(position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | undefined {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
     const tolerance = 50;
@@ -223,7 +223,7 @@ export class MeasurementSystem {
       const itemScale = item.scale || 1.0;
       const itemWidth = itemDimensions.width * itemScale;
       const itemDepth = itemDimensions.depth * itemScale;
-      const itemHeight = itemDimensions.height * itemScale;
+      // const itemHeight = itemDimensions.height * itemScale;
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
 

@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ComponentType } from '../constants/components';
+import productData from '../mocks/productData';
+
 import {
-  FIXTURE_CONFIG,
-  getModelConfig,
-  isModelBased,
-  getPreloadModels,
-  type ModelConfig,
-} from '../constants/models';
+  isModelBased
+} from '../utils/models';
 import { type ObjectModel } from '../utils/constraints.ts';
 
 // Types
@@ -42,13 +40,43 @@ class ModelManager {
 
   // Preload commonly used models
   async preloadModels (): Promise<void> {
-    if (this.preloadComplete) return;
+    if (this.preloadComplete) {
+      console.log('✅ Models already preloaded, skipping...');
+      return;
+    }
 
-    const modelsToPreload = getPreloadModels();
-    console.log('Preloading models:', modelsToPreload.map(m => m.name));
+    console.log('🚀 Starting model preloading from productData...');
 
-    const preloadPromises = modelsToPreload.map(async (modelConfig) => {
+    const allModelPaths = getAllModelPathsFromProductData();
+
+    if (allModelPaths.length === 0) {
+      console.warn('⚠️ No models found in productData to preload');
+      this.preloadComplete = true;
+      return;
+    }
+
+    console.log(`📦 Preloading ${allModelPaths.length} models...`);
+
+    // Track preloading progress
+    let loadedCount = 0;
+    let failedCount = 0;
+
+    // const modelsToPreload = getPreloadModels();
+    // console.log('Preloading models:', modelsToPreload.map(m => m.name));
+
+    const preloadPromises = allModelPaths.map(async ({ name, path, scale }) => {
       try {
+        const tempObjectModel: ObjectModel = {
+          name,
+          path,
+          scale: 100, // Default scale for preloading
+          dimensions: {
+            width: 50,
+            height: 50,
+            depth: 50
+          }
+        };
+
         await this.loadModel(modelConfig.name, modelConfig);
         console.log(`Preloaded: ${modelConfig.name}`);
       } catch (error) {
@@ -61,13 +89,13 @@ class ModelManager {
     console.log('Model preloading complete');
   }
 
-  async loadModel (modelName: string, modelConfig: ModelConfig): Promise<THREE.Group> {
+  async loadModel (modelName: string, productModel: ObjectModel): Promise<THREE.Group> {
     // Return cached model if available
     if (this.cache[modelName]) {
       return this.cache[modelName].clone();
     }
 
-    console.log('loadModel|modelConfig>>>', modelConfig);
+    console.log('loadModel|modelConfig>>>', productModel);
 
     // Return existing loading promise if already loading
     if (modelName in this.loadingPromises) {
@@ -78,25 +106,25 @@ class ModelManager {
     // Start loading
     this.loadingPromises[modelName] = new Promise((resolve, reject) => {
       this.loader.load(
-        modelConfig.path,
+        productModel.path,
         (gltf) => {
           const model = gltf.scene;
 
-          console.log('loaderLoad>>>>', modelConfig.scale);
+          console.log('loaderLoad>>>>', productModel.scale);
           // Apply model configuration
-          if (modelConfig.scale) {
-            model.scale.setScalar(modelConfig.scale);
+          if (productModel.scale) {
+            model.scale.setScalar(productModel.scale);
           }
 
-          console.log('modelConfig.rotation>>>>', modelConfig.rotation);
+          console.log('modelConfig.rotation>>>>', productModel.rotation);
 
-          if (modelConfig.rotation) {
-            console.log('modelConfig.rotation>>>', modelConfig.rotation);
-            model.rotation.set(...modelConfig.rotation);
+          if (productModel.rotation) {
+            console.log('modelConfig.rotation>>>', productModel.rotation);
+            model.rotation.set(...productModel.rotation);
           }
 
-          if (modelConfig.position) {
-            model.position.set(...modelConfig.position);
+          if (productModel.position) {
+            model.position.set(...productModel.position);
           }
 
           // Configure model for shadows
@@ -239,7 +267,7 @@ class ModelManager {
 class ModelBasedFixture {
   private modelManager: ModelManager;
   private position: Position;
-  private config: ModelConfig;
+  private config: ObjectModel;
 
   constructor (position: Position, productModel: ObjectModel) {
     this.modelManager = ModelManager.getInstance();
@@ -272,7 +300,6 @@ export const createModel = async (
   productSKU?: string
 ): Promise<THREE.Group | null> => {
   try {
-    // const config = getModelConfig(type);
 
     if (!productModel || !productModel.path) {
       console.error(`No Model found for product: ${productSKU}`);
@@ -315,5 +342,32 @@ export const getModelCacheStatus = () => {
   return ModelManager.getInstance().getCacheStatus();
 };
 
+// NEW: Function to extract all model paths from productData
+const getAllModelPathsFromProductData = (): Array<{ path: string; name: string; sku: string; category: string }> => {
+  const modelPaths: Array<{ path: string; name: string; sku: string; category: string }> = [];
+
+  // Iterate through all categories in productData
+  Object.entries(productData).forEach(([category, products]) => {
+    products.forEach(product => {
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach(variant => {
+          if (variant.path && variant.sku) {
+            modelPaths.push({
+              path: variant.path,
+              name: variant.name || variant.sku,
+              sku: variant.sku,
+              category: category,
+              scale: variant.scale
+            });
+          }
+        });
+      }
+    });
+  });
+
+  console.log(`📦 Found ${modelPaths.length} models across ${Object.keys(productData).length} categories`);
+  return modelPaths;
+};
+
 // Export configuration for external use
-export { FIXTURE_CONFIG, getModelConfig, isModelBased };
+export { isModelBased };
