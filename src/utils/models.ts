@@ -1,5 +1,12 @@
-
 // Helper function to get movement configuration for an object
+import { ComponentType } from '../constants/components.ts';
+import {
+  AVAILABLE_MODELS,
+  FIXTURE_CONFIG, FixtureConfig,
+  type ModelConfig, MovementConfig,
+  type ProceduralConfig
+} from '../constants/models';
+
 export const getMovementConfig = (objectType: ComponentType): MovementConfig => {
   const config = FIXTURE_CONFIG[objectType];
   return config?.movement || {
@@ -100,4 +107,9 @@ export const getPreloadModels = (): ModelConfig[] => {
       isModelBased(config) && config.name === model.name
     )
   );
+};
+
+export const shouldSnapToWall = (objectType: ComponentType): boolean => {
+  const movementConfig = getMovementConfig(objectType);
+  return movementConfig.snapToWall || false; // Default to false if not specified
 };

@@ -13,21 +13,23 @@ export interface OrientationConfig {
   description?: string;
 }
 
+export type MovementConfig = { // NEW: Sink movement configuration
+  snapToWall?: boolean,
+  allowVerticalMovement?: boolean,
+  allowFreeMovement?: boolean,
+  allowFreeRotation?: boolean,
+  minHeight?: number,
+  maxHeight?: number,
+  maintainWallDistance?: boolean
+}
+
 export interface ModelConfig {
   readonly name: string;
   // readonly path: string;
   readonly scale?: number;
   readonly rotation?: readonly [number, number, number];
   readonly position?: readonly [number, number, number]; // In CENTIMETERS
-  readonly movement?: { // NEW: Sink movement configuration
-    snapToWall?: boolean,
-    allowVerticalMovement?: boolean,
-    allowFreeMovement?: boolean,
-    allowFreeRotation?: boolean,
-    minHeight?: number,
-    maxHeight?: number,
-    maintainWallDistance?: boolean
-  }
+  readonly movement?: MovementConfig;
   readonly orientation?: OrientationConfig;
   readonly fallbackColor?: number;
   readonly fallbackGeometry?: 'box' | 'cylinder' | 'sphere' | 'cone';

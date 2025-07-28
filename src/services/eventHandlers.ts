@@ -8,11 +8,19 @@ import {
   highlightObject,
   setOutlineColor
 } from '../utils/helpers';
-import { constrainToWalls, snapToNearestWall, wouldCollideWithExisting, type BathroomItem } from '../utils/constraints';
+import {
+  constrainToWalls,
+  snapToNearestWall,
+  wouldCollideWithExisting,
+  type BathroomItem,
+  constrainToRoom
+} from '../utils/constraints';
 import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
-import { LOOK_AT, CAMERA_SETTINGS, CAMERA_CONTROLS } from '../constants/camera';
+import { LOOK_AT, CAMERA_CONTROLS } from '../constants/camera';
 import { ref } from 'vue';
+import { getHeightConstraints, getMovementConfig } from '../utils/models.ts';
+import { MeasurementSystem } from './measurementSystem';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -159,7 +167,7 @@ export class EventHandlers {
     this.startSimpleZoomAnimation();
   }
 
-  private startSimpleZoomAnimation(): void {
+  private startSimpleZoomAnimation (): void {
     const animate = () => {
       requestAnimationFrame(animate);
 
@@ -435,68 +443,94 @@ export class EventHandlers {
       this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
     } else if (this.isDragging && this.selectedObject) {
-      // ENHANCED: Drag object with wall constraints and collision detection
+      // ENHANCED: Drag object with movement configuration constraints
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersectPoint = new THREE.Vector3();
       this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
-      const newPosition = intersectPoint.add(this.dragOffset);
+      let newPosition = intersectPoint.add(this.dragOffset);
 
       // Get object type and scale for enhanced constraints
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
+      const movementConfig = getMovementConfig(objectType);
 
-      // DEBUG: Log room size refs
-      console.log('🔗 DRAG - Room size refs:', {
-        width: this.roomWidthRef.value,
-        height: this.roomHeightRef.value,
-        selectedObject: objectType,
-        objectScale
-      });
-
-      // DEBUG: Log position before constraints
-      console.log('🔗 DRAG - Position before wall constraints:', {
-        x: newPosition.x.toFixed(3),
-        z: newPosition.z.toFixed(3)
-      });
-
-      // Always constrain to walls
-      const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
-        newPosition,
-        this.roomWidthRef.value,
-        this.roomHeightRef.value,
+      // DEBUG: Log object movement configuration
+      console.log('🔗 DRAG - Movement config:', {
         objectType,
-        objectScale
-      );
-
-      // DEBUG: Log wall constraint results
-      console.log('🔗 DRAG - Wall constraint results:', {
-        original: { x: newPosition.x.toFixed(3), z: newPosition.z.toFixed(3) },
-        wallConstrained: { x: wallConstrainedPos.x.toFixed(3), z: wallConstrainedPos.z.toFixed(3) },
-        rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`
+        snapToWall: movementConfig.snapToWall,
+        allowFreeMovement: movementConfig.allowFreeMovement,
+        allowFreeRotation: movementConfig.allowFreeRotation
       });
 
-      // Apply wall constraints
-      newPosition.x = wallConstrainedPos.x;
-      newPosition.z = wallConstrainedPos.z;
+      // Apply movement behavior based on configuration
+      let rotationChanged = false;
 
-      // Additional snap to nearest wall for fine-tuning
-      const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
-        newPosition,
-        this.roomWidthRef.value,
-        this.roomHeightRef.value,
-        objectType,
-        objectScale
-      );
+      if (movementConfig.allowFreeMovement) {
+        // Free movement - just constrain to room bounds, preserve current rotation
+        console.log('🎯 Applying FREE MOVEMENT constraints (rotation preserved)');
+        const constrainedPos = constrainToRoom(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
+        newPosition = constrainedPos.position;
+        // Do NOT change rotation for free movement objects
+      } else if (movementConfig.snapToWall) {
+        // Wall snapping behavior
+        console.log('🔗 Applying WALL SNAPPING constraints');
+        const { position: wallConstrainedPos } = constrainToWalls(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
 
-      newPosition.x = snappedPos.x;
-      newPosition.z = snappedPos.z;
+        newPosition.x = wallConstrainedPos.x;
+        newPosition.z = wallConstrainedPos.z;
 
-      // IMPORTANT: Update rotation to match the wall the object is on
-      this.selectedObject.rotation.y = snappedRotation;
+        if (movementConfig.allowVerticalMovement) {
+          const heightConstraints = getHeightConstraints(objectType);
+          newPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
+        } else {
+          newPosition.y = wallConstrainedPos.y;
+        }
 
-      // ENHANCED: Check for collisions and update outline color
+        const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
+
+        newPosition.x = snappedPos.x;
+        newPosition.z = snappedPos.z;
+
+        // Only apply wall-based rotation if free rotation is NOT allowed
+        if (!movementConfig.allowFreeRotation) {
+          this.selectedObject.rotation.y = snappedRotation;
+          rotationChanged = true;
+        }
+      } else {
+        // Default behavior - constrain to room bounds, preserve rotation
+        console.log('🏠 Applying DEFAULT ROOM constraints (rotation preserved)');
+        const constrainedPos = constrainToRoom(
+          newPosition,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          objectType,
+          objectScale
+        );
+        newPosition = constrainedPos.position;
+        // Do NOT change rotation for default room constraint
+      }
+
+      // Check for collisions and update outline color
       const currentItems = this.getCurrentItems();
       const isColliding = wouldCollideWithExisting(
         { x: newPosition.x, y: newPosition.y, z: newPosition.z },
@@ -506,29 +540,31 @@ export class EventHandlers {
         currentItems
       );
 
-      // CRITICAL: Update outline color immediately and force refresh
-      console.log(`🎨 Setting outline color: ${isColliding ? 'RED (collision)' : 'CYAN (safe)'}`);
+      // Update outline color based on collision state
       setOutlineColor(isColliding);
 
-      // Additional debug info
-      console.log('🔗 DRAG collision check result:', {
+      // DEBUG: Log final position and collision state
+      console.log('🔗 DRAG result:', {
         position: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
         objectType,
-        objectScale: objectScale.toFixed(2),
-        itemId,
-        existingItems: currentItems.length,
+        movementType: movementConfig.allowFreeMovement ? 'FREE' : (movementConfig.snapToWall ? 'WALL' : 'ROOM'),
         isColliding,
         outlineColor: isColliding ? 'RED' : 'CYAN'
       });
 
-
       this.selectedObject.position.copy(newPosition);
 
-      // Queue update instead of applying immediately
-      this.queueUpdate(itemId, {
-        position: [newPosition.x, newPosition.y, newPosition.z],
-        rotation: snappedRotation // Include rotation in the update
-      });
+      // Queue update - only include rotation if it was changed by wall snapping
+      const updateData: UpdateData = {
+        position: [newPosition.x, newPosition.y, newPosition.z]
+      };
+
+      // Only include rotation in update if it was actually changed (i.e., by wall snapping)
+      if (rotationChanged) {
+        updateData.rotation = this.selectedObject.rotation.y;
+      }
+
+      this.queueUpdate(itemId, updateData);
 
     } else if (this.isRotating) {
       // SMOOTH: Rotate camera with smooth interpolation
