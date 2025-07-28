@@ -1,17 +1,10 @@
-import { CONSTRAINTS } from '../constants/dimensions.ts';
+// Complete enhanced constraints.ts with product-specific dimension lookup
+// All functions included and enhanced
+
+import { CONSTRAINTS, MODEL_DIMENSIONS } from '../constants/dimensions.ts';
 import type { ComponentType } from '../constants/components';
 import { getObjectRotationForWall, getOrientationInfo, getObjectWallBuffer } from '../constants/models';
-
-// Model dimensions for more accurate constraint calculations
-export const MODEL_DIMENSIONS: Record<ComponentType, { width: number; depth: number; height: number }> = {
-  'Toilet': { width: 60, depth: 80, height: 80 },
-  'Sink': { width: 60, depth: 60, height: 80 },
-  'Bath': { width: 170, depth: 80, height: 60 },
-  'Shower': { width: 80, depth: 80, height: 200 },
-  'Radiator': { width: 80, depth: 10, height: 60 },
-  'Mirror': { width: 80, depth: 5, height: 100 },
-  'Door': { width: 10, depth: 80, height: 200 }
-};
+import productData from '../mocks/productData'; // Import product data
 
 // Interface for position
 export interface Position {
@@ -22,7 +15,7 @@ export interface Position {
 
 export type ObjectModel = {
   path: string;
-  name: string; //Define name for model without spaces
+  name: string;
   scale: number;
   rotation?: [number, number, number]
   dimensions: {
@@ -34,13 +27,91 @@ export type ObjectModel = {
 
 export interface BathroomItem {
   id: number;
-  sku?: string;
-  model?: ObjectModel;
   type: ComponentType;
   position: [number, number, number];
   rotation?: number;
   scale?: number;
+  sku?: string;
+  productName?: string;
+  model?: ObjectModel;
 }
+
+// NEW: Function to get dimensions for a specific product
+const getProductDimensions = (sku: string, type: ComponentType): {
+  width: number;
+  depth: number;
+  height: number
+} | null => {
+  // Map component types to productData categories
+  const typeMapping: Record<ComponentType, string> = {
+    'Toilet': 'Toilet',
+    'Sink': 'Furniture', // Assuming sinks are in Furniture category
+    'Bath': 'Bath',
+    'Shower': 'Shower',
+    'Radiator': 'Radiator',
+    'Mirror': 'Mirror',
+    'Door': 'Door' // This might not exist in productData
+  };
+
+  const category = typeMapping[type];
+  if (!category || !productData[category]) {
+    return null;
+  }
+
+  // Search through all product variants in the category
+  for (const product of productData[category]) {
+    if (product.variants) {
+      for (const variant of product.variants) {
+        if (variant.sku === sku && variant.dimensions) {
+          return {
+            width: variant.dimensions.width,
+            depth: variant.dimensions.depth || variant.dimensions.height, // Use height as depth if depth not available
+            height: variant.dimensions.height
+          };
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+// NEW: Enhanced function to get dimensions with product-specific lookup
+export const getDimensions = (
+  type: ComponentType,
+  sku?: string,
+  model?: ObjectModel
+): { width: number; depth: number; height: number } => {
+
+  // Priority 1: Try to get dimensions from model object if available
+  if (model?.dimensions) {
+    return {
+      width: model.dimensions.width,
+      depth: model.dimensions.depth || model.dimensions.height,
+      height: model.dimensions.height
+    };
+  }
+
+  // Priority 2: Try to get dimensions from product data using SKU
+  if (sku) {
+    const productDims = getProductDimensions(sku, type);
+    if (productDims) {
+      console.log(`🔍 Found specific dimensions for SKU ${sku}:`, productDims);
+      return productDims;
+    }
+  }
+
+  // Priority 3: Fall back to generic type dimensions
+  const genericDims = MODEL_DIMENSIONS[type];
+  if (genericDims) {
+    console.log(`📏 Using generic dimensions for type ${type}:`, genericDims);
+    return genericDims;
+  }
+
+  // Fallback: Return default dimensions if nothing found
+  console.warn(`⚠️ No dimensions found for type ${type}, using default`);
+  return { width: 60, depth: 60, height: 80 };
+};
 
 // Wall identification
 export type WallType = 'north' | 'south' | 'east' | 'west';
@@ -97,18 +168,21 @@ export const findNearestWall = (
   return nearestWall;
 };
 
-// Check if two objects would collide at given positions
-// Enhanced collision detection with better debugging
+// ENHANCED: Collision detection with product-specific dimensions
 export const checkCollision = (
   pos1: Position,
   type1: ComponentType,
   scale1: number,
   pos2: Position,
   type2: ComponentType,
-  scale2: number
+  scale2: number,
+  item1?: BathroomItem, // Optional: full item data for item 1
+  item2?: BathroomItem  // Optional: full item data for item 2
 ): boolean => {
-  const dims1 = MODEL_DIMENSIONS[type1];
-  const dims2 = MODEL_DIMENSIONS[type2];
+
+  // Get dimensions using enhanced lookup
+  const dims1 = getDimensions(type1, item1?.sku, item1?.model);
+  const dims2 = getDimensions(type2, item2?.sku, item2?.model);
 
   if (!dims1 || !dims2) {
     console.warn(`Missing dimensions for collision check: ${type1} or ${type2}`);
@@ -128,16 +202,29 @@ export const checkCollision = (
   const overlapX = Math.abs(pos1.x - pos2.x) < (halfWidth1 + halfWidth2 + buffer);
   const overlapZ = Math.abs(pos1.z - pos2.z) < (halfDepth1 + halfDepth2 + buffer);
 
-  return overlapX && overlapZ;
+  const hasCollision = overlapX && overlapZ;
+
+  // Enhanced logging for debugging
+  if (hasCollision) {
+    console.log('🔴 COLLISION DETECTED:', {
+      item1: { type: type1, sku: item1?.sku, dimensions: dims1 },
+      item2: { type: type2, sku: item2?.sku, dimensions: dims2 },
+      positions: { pos1, pos2 },
+      overlap: { x: overlapX, z: overlapZ }
+    });
+  }
+
+  return hasCollision;
 };
 
-// Check if a position would cause collision with existing objects
+// ENHANCED: Check if a position would cause collision with existing objects
 export const wouldCollideWithExisting = (
   position: Position,
   objectType: ComponentType,
   scale: number,
-  objectId: number, // ID of the object being moved (to exclude from collision check)
-  existingItems: BathroomItem[]
+  objectId: number,
+  existingItems: BathroomItem[],
+  currentItem?: BathroomItem // Optional: the item being moved/placed
 ): boolean => {
   for (const item of existingItems) {
     if (item.id === objectId) {
@@ -147,13 +234,16 @@ export const wouldCollideWithExisting = (
     const itemPosition = { x: item.position[0], y: item.position[1], z: item.position[2] };
     const itemScale = item.scale || 1.0;
 
+    // Use enhanced collision detection with full item data
     const hasCollision = checkCollision(
       position,
       objectType,
       scale,
       itemPosition,
       item.type,
-      itemScale
+      itemScale,
+      currentItem, // Current item being moved
+      item         // Existing item to check against
     );
 
     if (hasCollision) {
@@ -164,7 +254,7 @@ export const wouldCollideWithExisting = (
   return false;
 };
 
-// NEW: Constrain movement to room bounds without wall snapping
+// ENHANCED: Constrain movement to room bounds without wall snapping
 export const constrainToRoom = (
   position: Position,
   roomWidth: number,
@@ -208,7 +298,7 @@ export const constrainToRoom = (
   return { position: constrainedPosition, rotation: currentRotation };
 };
 
-// Constrain movement to walls only with configurable rotation and buffer
+// ENHANCED: Constrain movement to walls only with configurable rotation and buffer
 export const constrainToWalls = (
   position: Position,
   roomWidth: number,
@@ -280,7 +370,7 @@ export const snapToNearestWall = (
   return constrainToWalls(position, roomWidth, roomHeight, objectType, scale);
 };
 
-// Enhanced wall constraint that also checks for collisions and returns rotation
+// ENHANCED: Wall constraint that also checks for collisions and returns rotation
 export const constrainToWallsWithCollision = (
   position: Position,
   roomWidth: number,
@@ -288,7 +378,8 @@ export const constrainToWallsWithCollision = (
   objectType: ComponentType | null = null,
   scale: number = 1.0,
   objectId: number = -1,
-  existingItems: BathroomItem[] = []
+  existingItems: BathroomItem[] = [],
+  currentItem?: BathroomItem // NEW: Optional current item for specific dimensions
 ): { position: Position; rotation: number } => {
   // First apply wall constraints
   const {
@@ -302,7 +393,7 @@ export const constrainToWallsWithCollision = (
   }
 
   // Check if the wall constrained position would collide
-  if (!wouldCollideWithExisting(wallConstrainedPos, objectType!, scale, objectId, existingItems)) {
+  if (!wouldCollideWithExisting(wallConstrainedPos, objectType!, scale, objectId, existingItems, currentItem)) {
     return { position: wallConstrainedPos, rotation: wallRotation };
   }
 
@@ -326,7 +417,7 @@ export const constrainToWallsWithCollision = (
       } = constrainToWalls(testPos, roomWidth, roomHeight, objectType, scale);
 
       // Check if this position is collision-free
-      if (!wouldCollideWithExisting(testWallPos, objectType!, scale, objectId, existingItems)) {
+      if (!wouldCollideWithExisting(testWallPos, objectType!, scale, objectId, existingItems, currentItem)) {
         console.log(`🔄 Found collision-free position after adjustment:`, {
           original: { x: wallConstrainedPos.x.toFixed(3), z: wallConstrainedPos.z.toFixed(3) },
           adjusted: { x: testWallPos.x.toFixed(3), z: testWallPos.z.toFixed(3) },
@@ -342,7 +433,7 @@ export const constrainToWallsWithCollision = (
   return { position: wallConstrainedPos, rotation: wallRotation };
 };
 
-// NEW: Find a free position anywhere in the room for free movement objects
+// ENHANCED: Find a free position anywhere in the room for free movement objects
 export const findFreeRoomPosition = (
   roomWidth: number,
   roomHeight: number,
@@ -365,7 +456,7 @@ export const findFreeRoomPosition = (
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const position = {
       x: minX + Math.random() * (maxX - minX),
-      y: objectType === 'Mirror' ? 120 : 0, // Mirrors at wall height
+      y: objectType === 'Mirror' ? 120 : 0,
       z: minZ + Math.random() * (maxZ - minZ)
     };
 
@@ -378,7 +469,9 @@ export const findFreeRoomPosition = (
         scale,
         { x: item.position[0], y: item.position[1], z: item.position[2] },
         item.type,
-        item.scale || 1.0
+        item.scale || 1.0,
+        undefined, // No current item data for free positioning
+        item       // Existing item
       )) {
         hasCollision = true;
         break;
@@ -410,7 +503,7 @@ export const findFreeRoomPosition = (
   };
 };
 
-// Find a free position on any wall that doesn't collide with existing objects
+// ENHANCED: Find a free position on any wall that doesn't collide with existing objects
 export const findFreeWallPosition = (
   roomWidth: number,
   roomHeight: number,
@@ -483,7 +576,9 @@ export const findFreeWallPosition = (
         scale,
         { x: item.position[0], y: item.position[1], z: item.position[2] },
         item.type,
-        item.scale || 1.0
+        item.scale || 1.0,
+        undefined, // No current item data for free positioning
+        item       // Existing item
       )) {
         hasCollision = true;
         break;
@@ -494,7 +589,7 @@ export const findFreeWallPosition = (
       const orientationInfo = getOrientationInfo(objectType);
       console.log(`🎯 Found free position for ${objectType} on ${wall.name} wall:`, {
         position: { x: position.x.toFixed(3), z: position.z.toFixed(3) },
-        wallBuffer: `${buffer.toFixed(3)}cm`, // Changed from 'm' to 'cm'
+        wallBuffer: `${buffer.toFixed(3)}cm`,
         rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
         orientation: orientationInfo.description,
         attempt: attempt + 1
@@ -527,7 +622,7 @@ export const snapToWall = (
   return snappedPos;
 };
 
-// NEW: Enhanced function that respects movement configuration
+// ENHANCED: Function that respects movement configuration
 export const constrainAllObjectsToRoom = (
   items: BathroomItem[],
   roomWidth: number,

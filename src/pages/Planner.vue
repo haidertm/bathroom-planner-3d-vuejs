@@ -391,6 +391,9 @@ const addItem = async (type, productData = null) => {
   console.log('addItem called with type:', type)
   const defaults = { height: 0, scale: getScaleForUnits(1.0, 'meters') }
 
+  // Extract SKU for real dimension lookup
+  const sku = productData?.selectedVariant?.sku || null;
+
   // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
       roomWidth.value,
@@ -410,7 +413,7 @@ const addItem = async (type, productData = null) => {
     scale: 1.0,
     // Add product data if available
     ...(productData && {
-      sku: productData.selectedVariant?.sku,
+      sku,
       productName: productData.selectedVariant?.name,
       model: {
         name: `${ type }-${ productData.selectedVariant?.sku }`,
@@ -429,7 +432,7 @@ const addItem = async (type, productData = null) => {
   if (sceneManagerRef.value && !isInitialLoad.value) {
     try {
       await sceneManagerRef.value.addSingleItem(newItem)
-      console.log(`✅ Added item ${newItem.id} directly to scene`)
+      console.log(`✅ Added item ${ newItem.id } directly to scene`)
     } catch (error) {
       console.error('❌ Failed to add item directly:', error)
       // Will fall back to full update via watcher
@@ -457,7 +460,7 @@ const deleteItem = (itemId) => {
   if (sceneManagerRef.value && !isInitialLoad.value) {
     try {
       sceneManagerRef.value.removeSingleItem(itemId)
-      console.log(`✅ Removed item ${itemId} directly from scene`)
+      console.log(`✅ Removed item ${ itemId } directly from scene`)
     } catch (error) {
       console.error('❌ Failed to remove item directly, falling back to full update:', error)
     }
@@ -677,7 +680,7 @@ watch([currentFloorTexture, currentWallTexture], () => {
 watch([items, lastUpdateSource], ([newItems, updateSource]) => {
   if (!sceneManagerRef.value) return
 
-  console.log(`🔍 Items changed: ${updateSource}, ${newItems.length} items`)
+  console.log(`🔍 Items changed: ${ updateSource }, ${ newItems.length } items`)
 
   // Skip scene updates during drag operations
   if (updateSource === 'drag') {
@@ -778,7 +781,7 @@ const handleIncrementalUpdate = async (newItems, updateSource) => {
       case 'roomSize':
       case 'constrain':
         // Use the incremental update for these operations
-        console.log(`🔄 Updating scene for ${updateSource}`)
+        console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
         break
 
@@ -821,7 +824,7 @@ const handleSmartUpdate = async (newItems, updateSource) => {
       case 'delete':
       case 'clear':
         // Scene already updated directly in the respective methods
-        console.log(`✅ ${updateSource} operation - scene already updated directly`)
+        console.log(`✅ ${ updateSource } operation - scene already updated directly`)
         break
 
       case 'undo':
@@ -832,7 +835,7 @@ const handleSmartUpdate = async (newItems, updateSource) => {
       case 'roomSize':
       case 'constrain':
         // Use incremental update for these operations
-        console.log(`🔄 Updating scene for ${updateSource}`)
+        console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
         break
 

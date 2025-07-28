@@ -313,14 +313,15 @@ export class EventHandlers {
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItems = this.getCurrentItems();
-
+      const currentItem = currentItems.find(item => item.id === itemId);
       const currentPosition = this.selectedObject.position;
       const isColliding = wouldCollideWithExisting(
         { x: currentPosition.x, y: currentPosition.y, z: currentPosition.z },
         objectType,
         objectScale,
         itemId,
-        currentItems
+        currentItems,
+        currentItem
       );
 
       // Highlight the object first
@@ -535,12 +536,14 @@ export class EventHandlers {
 
       // Check for collisions and update outline color
       const currentItems = this.getCurrentItems();
+      const currentItem = currentItems.find(item => item.id === itemId);
       const isColliding = wouldCollideWithExisting(
         { x: newPosition.x, y: newPosition.y, z: newPosition.z },
         objectType,
         objectScale,
         itemId,
-        currentItems
+        currentItems,
+        currentItem
       );
 
       // Update outline color based on collision state
@@ -626,14 +629,16 @@ export class EventHandlers {
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItems = this.getCurrentItems();
-
+      // NEW: Get the current item data for enhanced dimension lookup
+      const currentItem = currentItems.find(item => item.id === itemId);
       const finalPosition = this.selectedObject.position;
       const isColliding = wouldCollideWithExisting(
         { x: finalPosition.x, y: finalPosition.y, z: finalPosition.z },
         objectType,
         objectScale,
         itemId,
-        currentItems
+        currentItems,
+        currentItem
       );
 
       // NEW: Check if collision prevention is enabled and object is colliding
@@ -783,6 +788,8 @@ export class EventHandlers {
         const objectScale = this.selectedObject.scale.x;
         const itemId = this.selectedObject.userData.itemId as number;
         const currentItems = this.getCurrentItems();
+        // NEW: Get the current item data for enhanced dimension lookup
+        const currentItem = currentItems.find(item => item.id === itemId);
 
         const currentPosition = this.selectedObject.position;
         const isColliding = wouldCollideWithExisting(
@@ -790,7 +797,8 @@ export class EventHandlers {
           objectType,
           objectScale,
           itemId,
-          currentItems
+          currentItems,
+          currentItem
         );
 
         // Highlight the object first
@@ -840,7 +848,7 @@ export class EventHandlers {
           );
           newPosition = constrainedPos.position;
         } else if (movementConfig.snapToWall) {
-          const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
+          const { position: wallConstrainedPos} = constrainToWalls(
             newPosition,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
@@ -885,12 +893,14 @@ export class EventHandlers {
 
         // NEW: Check for collisions and update outline color
         const currentItems = this.getCurrentItems();
+        const currentItem = currentItems.find(item => item.id === itemId);
         const isColliding = wouldCollideWithExisting(
           { x: newPosition.x, y: newPosition.y, z: newPosition.z },
           objectType,
           objectScale,
           itemId,
-          currentItems
+          currentItems,
+          currentItem
         );
 
         // Update outline color based on collision state
@@ -1003,14 +1013,15 @@ export class EventHandlers {
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItems = this.getCurrentItems();
-
+      const currentItem = currentItems.find(item => item.id === itemId);
       const finalPosition = this.selectedObject.position;
       const isColliding = wouldCollideWithExisting(
         { x: finalPosition.x, y: finalPosition.y, z: finalPosition.z },
         objectType,
         objectScale,
         itemId,
-        currentItems
+        currentItems,
+        currentItem
       );
 
       console.log('🎯 Touch final position collision check:', {
