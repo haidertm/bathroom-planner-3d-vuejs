@@ -495,7 +495,7 @@ export class EventHandlers {
       console.log('🔗 DRAG - Movement config:', {
         objectType,
         snapToWall: movementConfig.snapToWall,
-        allowFreeMovement: movementConfig.allowFreeMovement,
+        allowFreeMovement: !movementConfig.snapToWall,
         allowFreeRotation: movementConfig.allowFreeRotation
       });
 
@@ -503,7 +503,7 @@ export class EventHandlers {
       let rotationChanged = false;
       let snappedRotation = 0; // Initialize snappedRotation
 
-      if (movementConfig.allowFreeMovement) {
+      if (!movementConfig.snapToWall) {
         // Free movement - just constrain to room bounds, preserve current rotation
         console.log('🎯 Applying FREE MOVEMENT constraints (rotation preserved)');
         const constrainedPos = constrainToRoom(
@@ -608,7 +608,7 @@ export class EventHandlers {
       console.log('🔗 DRAG result:', {
         position: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
         objectType,
-        movementType: movementConfig.allowFreeMovement ? 'FREE' : (movementConfig.snapToWall ? 'WALL' : 'ROOM'),
+        movementType: !movementConfig.snapToWall ? 'FREE' : (movementConfig.snapToWall ? 'WALL' : 'ROOM'),
         isColliding,
         outlineColor: isColliding ? 'RED' : 'CYAN'
       });
@@ -930,7 +930,7 @@ export class EventHandlers {
         let snappedRotation = 0;
 
         // Apply movement behavior based on configuration
-        if (movementConfig.allowFreeMovement) {
+        if (!movementConfig.snapToWall) {
           const constrainedPos = constrainToRoom(
             { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
             this.roomWidthRef.value,

@@ -40,6 +40,13 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false,
+            minHeight: 70,
+            maxHeight: 120,
+          },
           sku: 'C76236',
           price: '249.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm'
@@ -53,6 +60,13 @@ const productData: ProductData = {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false,
+            minHeight: 70,
+            maxHeight: 120,
           },
           sku: 'C76237',
           price: '249.99',
@@ -387,6 +401,13 @@ const productData: ProductData = {
           name: '1370mm Length',
           path: '../../models/bath/C51096.glb',
           dimensions: { width: 136.9, height: 55, depth: 72.9 },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: false,
+            minHeight: 70,
+            maxHeight: 120,
+          },
           sku: 'C51096',
           price: '399.95',
           title: 'Newham 1370mm Freestanding Bath'
