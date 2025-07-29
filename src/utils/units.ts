@@ -18,6 +18,14 @@ export const metersToCm = (meters: number): number => {
   return meters * 100;
 };
 
+// Helper function to calculate scale based on units
+export const getScaleForUnits = (baseScale: number = 1.0, units: 'meters' | 'centimeters' = 'meters'): number => {
+  // If model is in meters, scale by 100 to convert to centimeters
+  // If model is already in centimeters, use base scale
+  const unitMultiplier = units === 'meters' ? 100 : 1;
+  return baseScale * unitMultiplier;
+};
+
 /**
  * Convert millimeters to centimeters
  * @param mm - Value in millimeters

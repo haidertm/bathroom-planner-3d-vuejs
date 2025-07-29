@@ -1,15 +1,12 @@
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { ComponentType } from '../constants/components';
+import productData from '../mocks/productData';
+
 import {
-  FIXTURE_CONFIG,
-  getModelConfig,
-  isModelBased,
-  isProceduralBased,
-  getPreloadModels,
-  type ModelConfig,
-  type ProceduralConfig,
-} from '../constants/models';
+  isModelBased
+} from '../utils/models';
+import { type ObjectModel, type ObjectModelWithCategory } from '../utils/constraints.ts';
 
 // Types
 interface ModelCache {
@@ -18,12 +15,6 @@ interface ModelCache {
 
 interface LoadingPromise {
   [key: string]: Promise<THREE.Group>;
-}
-
-interface GeometryConfig {
-  geometry: THREE.BufferGeometry;
-  material: THREE.Material;
-  position: [number, number, number];
 }
 
 type Position = [number, number, number];
@@ -36,11 +27,11 @@ class ModelManager {
   private loadingPromises: LoadingPromise = {};
   private preloadComplete = false;
 
-  private constructor() {
+  private constructor () {
     this.loader = new GLTFLoader();
   }
 
-  static getInstance(): ModelManager {
+  static getInstance (): ModelManager {
     if (!ModelManager.instance) {
       ModelManager.instance = new ModelManager();
     }
@@ -48,31 +39,66 @@ class ModelManager {
   }
 
   // Preload commonly used models
-  async preloadModels(): Promise<void> {
-    if (this.preloadComplete) return;
+  async preloadModels (): Promise<void> {
+    if (this.preloadComplete) {
+      console.log('✅ Models already preloaded, skipping...');
+      return;
+    }
 
-    const modelsToPreload = getPreloadModels();
-    console.log('Preloading models:', modelsToPreload.map(m => m.name));
+    console.log('🚀 Starting model preloading from productData...');
 
-    const preloadPromises = modelsToPreload.map(async (modelConfig) => {
+    const allModelPaths = getAllModelPathsFromProductData();
+
+    if (allModelPaths.length === 0) {
+      console.warn('⚠️ No models found in productData to preload');
+      this.preloadComplete = true;
+      return;
+    }
+
+    console.log(`📦 Preloading ${allModelPaths.length} models...`);
+
+    // Track preloading progress
+    let loadedCount = 0;
+    let failedCount = 0;
+
+    // const modelsToPreload = getPreloadModels();
+    // console.log('Preloading models:', modelsToPreload.map(m => m.name));
+
+    const preloadPromises = allModelPaths.map(async ({ name, path, scale }) => {
       try {
-        await this.loadModel(modelConfig.name, modelConfig);
-        console.log(`Preloaded: ${modelConfig.name}`);
+        const tempObjectModel: ObjectModel = {
+          name,
+          path,
+          scale, // Default scale for preloading
+          dimensions: {
+            width: 50,
+            height: 50,
+            depth: 50
+          }
+        };
+
+        await this.loadModel(name, tempObjectModel);
+        loadedCount++;
+        console.log(`Preloaded: ${name}`);
       } catch (error) {
-        console.warn(`Failed to preload: ${modelConfig.name}`, error);
+        failedCount++;
+        console.warn(`Failed to preload: ${name}`, error);
       }
     });
 
     await Promise.all(preloadPromises);
     this.preloadComplete = true;
-    console.log('Model preloading complete');
+    console.log('🎉 Model preloading complete!');
+    console.log(`📊 Results: ${loadedCount} loaded, ${failedCount} failed, ${Object.keys(this.cache).length} cached`);
   }
 
-  async loadModel(modelName: string, modelConfig: ModelConfig): Promise<THREE.Group> {
+  async loadModel (modelName: string, productModel: ObjectModel): Promise<THREE.Group> {
     // Return cached model if available
     if (this.cache[modelName]) {
       return this.cache[modelName].clone();
     }
+
+    console.log('loadModel|modelConfig>>>', productModel);
 
     // Return existing loading promise if already loading
     if (modelName in this.loadingPromises) {
@@ -83,21 +109,25 @@ class ModelManager {
     // Start loading
     this.loadingPromises[modelName] = new Promise((resolve, reject) => {
       this.loader.load(
-        modelConfig.path,
+        productModel.path,
         (gltf) => {
           const model = gltf.scene;
 
+          console.log('loaderLoad>>>>', productModel.scale);
           // Apply model configuration
-          if (modelConfig.scale) {
-            model.scale.setScalar(modelConfig.scale);
+          if (productModel.scale) {
+            model.scale.setScalar(productModel.scale);
           }
 
-          if (modelConfig.rotation) {
-            model.rotation.set(...modelConfig.rotation);
+          console.log('modelConfig.rotation>>>>', productModel.rotation);
+
+          if (productModel.rotation) {
+            console.log('modelConfig.rotation>>>', productModel.rotation);
+            model.rotation.set(...productModel.rotation);
           }
 
-          if (modelConfig.position) {
-            model.position.set(...modelConfig.position);
+          if (productModel.position) {
+            model.position.set(...productModel.position);
           }
 
           // Configure model for shadows
@@ -107,6 +137,9 @@ class ModelManager {
               child.receiveShadow = true;
             }
           });
+
+          // ✅ CRITICAL: Fix pixelated models with proper material processing
+          this.processModelForSmoothRendering(model);
 
           // Cache the model
           this.cache[modelName] = model;
@@ -132,13 +165,100 @@ class ModelManager {
     return loadedModel.clone();
   }
 
-  clearCache(): void {
+  // ✅ NEW: Advanced geometry smoothing for low-poly models
+  private processModelForSmoothRendering (model: THREE.Object3D): void {
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // ✅ 1. Advanced geometry processing
+        if (child.geometry) {
+          // Compute smooth vertex normals
+          child.geometry.computeVertexNormals();
+
+          // ✅ ADVANCED: If model is very low-poly, try subdivision (optional)
+          // Uncomment if you want to smooth very blocky models
+          // if (this.isLowPolyGeometry(child.geometry)) {
+          //   child.geometry = this.subdivideGeometry(child.geometry);
+          // }
+
+          // Ensure geometry has proper attributes
+          if (!child.geometry.attributes.normal) {
+            child.geometry.computeVertexNormals();
+          }
+
+          // ✅ CRITICAL: Merge vertices and recompute normals for smoothness
+          child.geometry = child.geometry.toNonIndexed(); // Convert to non-indexed
+          child.geometry.computeVertexNormals(); // Recompute normals
+        }
+
+        // ✅ 2. Fix material properties for smooth rendering
+        if (child.material) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+          materials.forEach(material => {
+            if (material instanceof THREE.MeshStandardMaterial) {
+              // CRITICAL: Disable flat shading
+              material.flatShading = false;
+              material.needsUpdate = true;
+
+              // Fix texture filtering if textures exist
+              if (material.map) {
+                this.fixTextureFiltering(material.map);
+              }
+              if (material.normalMap) {
+                this.fixTextureFiltering(material.normalMap);
+              }
+              if (material.roughnessMap) {
+                this.fixTextureFiltering(material.roughnessMap);
+              }
+              if (material.metalnessMap) {
+                this.fixTextureFiltering(material.metalnessMap);
+              }
+
+              // ✅ ADDED: Better material properties for smooth appearance
+              material.roughness = Math.max(0.1, material.roughness || 0.5);
+              material.metalness = material.metalness || 0.0;
+            }
+          });
+        }
+
+        // Configure for shadows
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    console.log(`✅ Model processed for smooth rendering: ${model.name || 'unnamed'}`);
+  }
+
+  // ✅ NEW: Fix texture filtering to prevent pixelation
+  private fixTextureFiltering (texture: THREE.Texture): void {
+    // Use linear filtering for smooth textures
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+
+    // Enable anisotropic filtering for better quality at angles
+    texture.anisotropy = Math.min(16, this.getMaxAnisotropy());
+
+    // Generate mipmaps for smooth scaling
+    texture.generateMipmaps = true;
+
+    // Update the texture
+    texture.needsUpdate = true;
+  }
+
+  // ✅ NEW: Get maximum anisotropic filtering supported
+  private getMaxAnisotropy (): number {
+    // This should be called with a renderer context, but we'll use a reasonable default
+    return 16; // Most modern GPUs support 16x anisotropic filtering
+  }
+
+  clearCache (): void {
     this.cache = {};
     this.loadingPromises = {};
     this.preloadComplete = false;
   }
 
-  getCacheStatus(): { cached: string[], loading: string[] } {
+  getCacheStatus (): { cached: string[], loading: string[] } {
     return {
       cached: Object.keys(this.cache),
       loading: Object.keys(this.loadingPromises)
@@ -146,340 +266,30 @@ class ModelManager {
   }
 }
 
-// Helper functions for creating materials
-const createStandardMaterial = (color: number, roughness = 0.8, metalness = 0.0): THREE.MeshStandardMaterial => {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness,
-    metalness
-  });
-};
-
-const createTransparentMaterial = (color: number, opacity: number): THREE.MeshStandardMaterial => {
-  return new THREE.MeshStandardMaterial({
-    color,
-    transparent: true,
-    opacity
-  });
-};
-
-// Helper to create geometry from config
-const createGeometryFromConfig = (
-  geometryType: string,
-  size: readonly [number, number, number]
-): THREE.BufferGeometry => {
-  const [width, height, depth] = size;
-
-  switch (geometryType) {
-    case 'box':
-      return new THREE.BoxGeometry(width, height, depth);
-    case 'cylinder':
-      return new THREE.CylinderGeometry(width / 2, width / 2, height);
-    case 'sphere':
-      return new THREE.SphereGeometry(width / 2);
-    case 'cone':
-      return new THREE.ConeGeometry(width / 2, height);
-    default:
-      return new THREE.BoxGeometry(width, height, depth);
-  }
-};
-
-// Base class for procedural fixtures
-abstract class ProceduralFixture {
-  protected group: THREE.Group;
-  protected position: Position;
-  protected config: ProceduralConfig;
-
-  constructor(position: Position, config: ProceduralConfig) {
-    this.group = new THREE.Group();
-    this.position = position;
-    this.config = config;
-    this.group.position.set(position[0], position[1], position[2]);
-  }
-
-  abstract create(): THREE.Group;
-
-  protected addGeometry(config: GeometryConfig): void {
-    const mesh = new THREE.Mesh(config.geometry, config.material);
-    mesh.position.set(config.position[0], config.position[1], config.position[2]);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    this.group.add(mesh);
-  }
-
-  protected createFallback(): THREE.Group {
-    const fallbackMaterial = createStandardMaterial(
-      this.config.fallbackColor || 0x8B4513
-    );
-
-    const fallbackGeometry = createGeometryFromConfig(
-      this.config.fallbackGeometry || 'box',
-      this.config.fallbackSize || [0.5, 0.5, 0.5]
-    );
-
-    const fallbackMesh = new THREE.Mesh(fallbackGeometry, fallbackMaterial);
-    fallbackMesh.position.set(0, 1, 0);
-    fallbackMesh.castShadow = true;
-    fallbackMesh.receiveShadow = true;
-
-    this.group.add(fallbackMesh);
-    return this.group;
-  }
-}
-
-// Specific fixture implementations
-class ToiletFixture extends ProceduralFixture {
-  create(): THREE.Group {
-    const whiteMaterial = createStandardMaterial(0xffffff);
-    const seatMaterial = createStandardMaterial(0xf0f0f0);
-
-    // Base
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(0.6, 0.4, 0.8),
-      material: whiteMaterial,
-      position: [0, 0.2, 0]
-    });
-
-    // Tank
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(0.5, 0.6, 0.2),
-      material: whiteMaterial,
-      position: [0, 0.5, -0.3]
-    });
-
-    // Seat
-    this.addGeometry({
-      geometry: new THREE.CylinderGeometry(0.25, 0.25, 0.05),
-      material: seatMaterial,
-      position: [0, 0.42, 0.1]
-    });
-
-    return this.group;
-  }
-}
-
-class BathFixture extends ProceduralFixture {
-  create(): THREE.Group {
-    const tubMaterial = createStandardMaterial(0xffffff);
-    const innerMaterial = createStandardMaterial(0xf8f8f8);
-
-    // Tub
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(1.7, 0.6, 0.8),
-      material: tubMaterial,
-      position: [0, 0.3, 0]
-    });
-
-    // Inner cavity
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(1.5, 0.4, 0.6),
-      material: innerMaterial,
-      position: [0, 0.4, 0]
-    });
-
-    return this.group;
-  }
-}
-
-class ShowerFixture extends ProceduralFixture {
-  create(): THREE.Group {
-    const baseMaterial = createStandardMaterial(0xffffff);
-    const wallMaterial = createTransparentMaterial(0xadd8e6, 0.3);
-    const headMaterial = createStandardMaterial(0xc0c0c0);
-
-    // Base
-    this.addGeometry({
-      geometry: new THREE.CylinderGeometry(0.4, 0.4, 0.1),
-      material: baseMaterial,
-      position: [0, 0.05, 0]
-    });
-
-    // Walls
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(0.8, 2, 0.05),
-      material: wallMaterial,
-      position: [-0.4, 1, 0]
-    });
-
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(0.05, 2, 0.8),
-      material: wallMaterial,
-      position: [0, 1, -0.4]
-    });
-
-    // Shower head
-    this.addGeometry({
-      geometry: new THREE.CylinderGeometry(0.08, 0.08, 0.05),
-      material: headMaterial,
-      position: [0, 1.8, 0]
-    });
-
-    return this.group;
-  }
-}
-
-class RadiatorFixture extends ProceduralFixture {
-  create(): THREE.Group {
-    const mainMaterial = createStandardMaterial(0xffffff);
-    const finMaterial = createStandardMaterial(0xe0e0e0);
-
-    // Main body
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(0.8, 0.6, 0.1),
-      material: mainMaterial,
-      position: [0, 0.5, 0]
-    });
-
-    // Radiator fins
-    for (let i = 0; i < 8; i++) {
-      this.addGeometry({
-        geometry: new THREE.BoxGeometry(0.08, 0.5, 0.08),
-        material: finMaterial,
-        position: [-0.3 + i * 0.08, 0.5, 0]
-      });
-    }
-
-    return this.group;
-  }
-}
-
-class MirrorFixture extends ProceduralFixture {
-  create(): THREE.Group {
-    const frameMaterial = createStandardMaterial(0x8B4513);
-    const mirrorMaterial = createStandardMaterial(0x87CEEB, 0.1, 1);
-
-    // Frame
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(0.8, 1.0, 0.05),
-      material: frameMaterial,
-      position: [0, 0, 0]
-    });
-
-    // Mirror surface
-    this.addGeometry({
-      geometry: new THREE.BoxGeometry(0.7, 0.9, 0.01),
-      material: mirrorMaterial,
-      position: [0, 0, 0.025]
-    });
-
-    return this.group;
-  }
-}
-
-// Procedural fixture factory
-const createProceduralFixture = (
-  componentType: ComponentType,
-  position: Position,
-  config: ProceduralConfig
-): THREE.Group => {
-  switch (componentType) {
-    case 'Toilet':
-      return new ToiletFixture(position, config).create();
-    case 'Bath':
-      return new BathFixture(position, config).create();
-    case 'Shower':
-      return new ShowerFixture(position, config).create();
-    case 'Radiator':
-      return new RadiatorFixture(position, config).create();
-    case 'Mirror':
-      return new MirrorFixture(position, config).create();
-    default:
-      // Create a simple fallback directly without calling protected method
-      const group = new THREE.Group();
-      group.position.set(position[0], position[1], position[2]);
-
-      const fallbackMaterial = createStandardMaterial(
-        config.fallbackColor || 0x8B4513
-      );
-
-      const fallbackGeometry = createGeometryFromConfig(
-        config.fallbackGeometry || 'box',
-        config.fallbackSize || [0.5, 0.5, 0.5]
-      );
-
-      const fallbackMesh = new THREE.Mesh(fallbackGeometry, fallbackMaterial);
-      fallbackMesh.position.set(0, 1, 0);
-      fallbackMesh.castShadow = true;
-      fallbackMesh.receiveShadow = true;
-
-      group.add(fallbackMesh);
-      return group;
-  }
-};
-
 // Model-based fixture handler
 class ModelBasedFixture {
   private modelManager: ModelManager;
   private position: Position;
-  private config: ModelConfig;
+  private config: ObjectModel;
 
-  constructor(position: Position, config: ModelConfig) {
+  constructor (position: Position, productModel: ObjectModel) {
     this.modelManager = ModelManager.getInstance();
     this.position = position;
-    this.config = config;
+    this.config = productModel;
   }
 
-  async create(): Promise<THREE.Group> {
+  async create (): Promise<THREE.Group> {
     const group = new THREE.Group();
     group.position.set(this.position[0], this.position[1], this.position[2]);
 
     try {
       const model = await this.modelManager.loadModel(this.config.name, this.config);
-
-      // Quick fix for black mirror
-      if (this.config.name === 'Mirror') {
-        this.fixMirrorMaterial(model);
-      }
-
       group.add(model);
       return group;
     } catch (error) {
       console.error(`Failed to load ${this.config.name} model, using fallback`);
-      return this.createFallback();
+      return group;
     }
-  }
-
-  // Add this method to the ModelBasedFixture class:
-  private fixMirrorMaterial(model: THREE.Object3D): void {
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        // Create a shiny, reflective material
-        const mirrorMaterial = new THREE.MeshStandardMaterial({
-          color: 0xffffff,      // White
-          metalness: 0.9,       // Very metallic
-          roughness: 0.1,       // Very smooth
-          transparent: false,
-          opacity: 1.0,
-          emissive: 0x111111,   // Slight glow to make it visible
-          emissiveIntensity: 0.1
-        });
-
-        child.material = mirrorMaterial;
-        child.material.needsUpdate = true;
-      }
-    });
-  }
-
-  private createFallback(): THREE.Group {
-    const group = new THREE.Group();
-    group.position.set(this.position[0], this.position[1], this.position[2]);
-
-    const fallbackMaterial = createStandardMaterial(
-      this.config.fallbackColor || 0x8B4513
-    );
-
-    const fallbackGeometry = createGeometryFromConfig(
-      this.config.fallbackGeometry || 'box',
-      this.config.fallbackSize || [0.5, 0.5, 0.5]
-    );
-
-    const fallbackMesh = new THREE.Mesh(fallbackGeometry, fallbackMaterial);
-    fallbackMesh.position.set(0, 1, 0);
-    fallbackMesh.castShadow = true;
-    fallbackMesh.receiveShadow = true;
-
-    group.add(fallbackMesh);
-    return group;
   }
 }
 
@@ -488,38 +298,24 @@ export const createModel = async (
   type: ComponentType,
   position: Position,
   rotation: number = 0,
-  scale: number = 1.0
+  scale: number = 1.0,
+  productModel?: ObjectModel,
+  productSKU?: string
 ): Promise<THREE.Group | null> => {
   try {
-    const config = getModelConfig(type);
 
-    if (!config) {
-      console.error(`No configuration found for component type: ${type}`);
+    if (!productModel || !productModel.path) {
+      console.error(`No Model found for product: ${productSKU}`);
       return null;
     }
 
-    let group: THREE.Group;
-
-    if (isModelBased(config)) {
-      console.log('configIs>>>', config);
-      // Create model-based fixture
-      const fixture = new ModelBasedFixture(position, config);
-      group = await fixture.create();
-    } else if (isProceduralBased(config)) {
-      // Create procedural fixture
-      group = createProceduralFixture(type, position, config);
-    } else {
-      console.error(`Unknown configuration type for: ${type}`);
-      return null;
-    }
-
-    if (group) {
-      group.rotation.y = rotation;
-      group.scale.set(scale, scale, scale);
-      group.userData.type = type;
-    }
-
-    return group;
+    // Create model-based fixture
+    const fixture = new ModelBasedFixture(position, productModel);
+    const model = await fixture.create();
+    model.rotation.y = rotation;
+    model.scale.set(scale, scale, scale);
+    model.userData.type = type;
+    return model;
   } catch (error) {
     console.error(`Error creating ${type} model:`, error);
     return null;
@@ -542,5 +338,26 @@ export const getModelCacheStatus = () => {
   return ModelManager.getInstance().getCacheStatus();
 };
 
+// NEW: Function to extract all model paths from productData
+const getAllModelPathsFromProductData = (): ObjectModelWithCategory[] => {
+  const modelPaths: ObjectModelWithCategory[] = [];
+
+  // Iterate through all categories in productData
+  Object.entries(productData).forEach(([category, products]) => {
+    products.forEach(product => {
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach(variant => {
+          if (variant.path && variant.sku) {
+            modelPaths.push({ ...variant, category: category as ComponentType });
+          }
+        });
+      }
+    });
+  });
+
+  console.log(`📦 Found ${modelPaths.length} models across ${Object.keys(productData).length} categories`);
+  return modelPaths;
+};
+
 // Export configuration for external use
-export { FIXTURE_CONFIG, getModelConfig, isModelBased, isProceduralBased };
+export { isModelBased };

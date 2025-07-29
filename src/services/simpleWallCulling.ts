@@ -129,8 +129,8 @@ export class SimpleWallCulling {
       return;
     }
 
-    console.log('🔄 ===== WALL CULLING UPDATE =====');
-    console.log(`📷 Camera position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`);
+    // console.log('🔄 ===== WALL CULLING UPDATE =====');
+    // console.log(`📷 Camera position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`);
 
     // First, show all walls and their grid lines
     this.walls.forEach((wall: THREE.Mesh) => {
@@ -175,7 +175,7 @@ export class SimpleWallCulling {
 
     // Hide walls and their grid lines
     wallsToHide.forEach(({ wall, direction }: WallToHide) => {
-      console.log(`🚫 Hiding ${direction} wall...`);
+      // console.log(`🚫 Hiding ${direction} wall...`);
 
       // Hide the wall
       wall.visible = false;
@@ -186,13 +186,13 @@ export class SimpleWallCulling {
         gridLines.forEach(line => {
           line.visible = false;
         });
-        console.log(`✅ Hid ${gridLines.length} grid lines for ${direction} wall`);
+        // console.log(`✅ Hid ${gridLines.length} grid lines for ${direction} wall`);
       } else {
         console.log(`❌ NO GRID LINES FOUND FOR ${direction} WALL - THIS IS THE PROBLEM!`);
       }
     });
 
-    console.log('🔄 ===== WALL CULLING UPDATE END =====');
+    // console.log('🔄 ===== WALL CULLING UPDATE END =====');
   }
 
   dispose (): void {
