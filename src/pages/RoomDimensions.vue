@@ -35,11 +35,12 @@
             >
               <input
                   v-if="input.editing"
-                  :ref="'input-' + input.id"
+                  :ref="el => setInputRef(el, input.id)"
                   v-model.number="input.tempValue"
                   type="number"
                   class="dimension-field"
                   :class="{ 'has-changes': input.tempValue !== input.originalValue }"
+                  @input="handleInputChange(input)"
                   @blur="finishEditing(input)"
                   @keyup.enter="finishEditing(input)"
                   @keyup.escape="cancelEditing(input)"
@@ -89,6 +90,18 @@ const router = useRouter()
 // Template refs
 const canvas = ref(null)
 const canvasContainer = ref(null)
+
+// FIXED: Create a Map to store dynamic input refs
+const inputRefs = new Map()
+
+// FIXED: Function to set input refs dynamically
+const setInputRef = (el, inputId) => {
+  if (el) {
+    inputRefs.set(inputId, el)
+  } else {
+    inputRefs.delete(inputId)
+  }
+}
 
 // Reactive data
 const roomDimensions = reactive({width: 300, height: 250})
@@ -314,30 +327,62 @@ const startEditing = (input) => {
   input.tempValue = input.value // Reset temp value to current value
   editingInput.value = input
 
+  // FIXED: Use nextTick with proper ref access
   nextTick(() => {
-    const inputRef = `input-${input.id}`
-    const inputEl = this.$refs[inputRef]?.[0]
+    const inputEl = inputRefs.get(input.id)
+
     if (inputEl) {
-      inputEl.focus()
-      inputEl.select()
+      try {
+        inputEl.focus()
+      } catch (error) {
+        console.error('Error focusing input:', error)
+      }
+    } else {
+      console.warn('Input element not found for ID:', input.id)
+      // Fallback: try again after a short delay
+      setTimeout(() => {
+        const retryInputEl = inputRefs.get(input.id)
+        if (retryInputEl) {
+          retryInputEl.focus()
+          retryInputEl.select()
+        }
+      }, 100)
     }
   })
 }
 
-const finishEditing = (input) => {
-  // Validate and constrain the temp value
+// Handle input changes to show pending changes and apply button
+const handleInputChange = (input) => {
+  // Set pending dimensions when user types to show the apply changes button
   const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
-  input.tempValue = validatedValue
 
-  // Store in pending dimensions instead of applying immediately
   if (input.id.includes('width')) {
     pendingDimensions.width = validatedValue
   } else {
     pendingDimensions.height = validatedValue
   }
+}
+
+const finishEditing = (input) => {
+
+  // Validate and constrain the temp value
+  const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
+  input.tempValue = validatedValue
+
+  // Apply changes immediately when user clicks outside (blur event)
+  if (input.id.includes('width')) {
+    roomDimensions.width = validatedValue
+    pendingDimensions.width = null // Clear pending changes to hide apply button
+  } else {
+    roomDimensions.height = validatedValue
+    pendingDimensions.height = null // Clear pending changes to hide apply button
+  }
 
   input.editing = false
   editingInput.value = null
+
+  // Clean up the ref
+  inputRefs.delete(input.id)
 }
 
 const cancelEditing = (input) => {
@@ -345,6 +390,16 @@ const cancelEditing = (input) => {
   editingInput.value = null
   // Reset temp value to current actual value
   input.tempValue = input.value
+
+  // Clear pending changes to hide apply button when canceling
+  if (input.id.includes('width')) {
+    pendingDimensions.width = null
+  } else {
+    pendingDimensions.height = null
+  }
+
+  // Clean up the ref
+  inputRefs.delete(input.id)
 }
 
 const hasPendingChanges = (input) => {
@@ -850,6 +905,21 @@ onBeforeUnmount(() => {
   document.body.style.userSelect = ''
   document.body.style.webkitUserSelect = ''
 
+  // FIXED: Clean up input refs
+  inputRefs.clear()
+
   window.removeEventListener('resize', handleResize)
 })
 </script>
+<style scoped>
+/* Hide number input arrows */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>
