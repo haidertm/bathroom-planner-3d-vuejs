@@ -19,7 +19,7 @@ import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { LOOK_AT, CAMERA_CONTROLS } from '../constants/camera';
 import { ref } from 'vue';
-import { getHeightConstraints, getMovementConfig, getObjectWallBuffer, shouldSnapToWall } from '../utils/models.ts';
+import { getHeightConstraints, getMovementConfig, shouldSnapToWall } from '../utils/models.ts';
 import { MeasurementSystem } from './measurementSystem';
 
 interface IntersectionResult {
@@ -449,7 +449,7 @@ export class EventHandlers {
       const intersectPoint = new THREE.Vector3();
       this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
-      let newPosition = intersectPoint.add(this.dragOffset);
+      const newPosition = intersectPoint.add(this.dragOffset);
 
       // Get object type and scale for enhanced constraints
       const objectType = this.selectedObject.userData.type as ComponentType;
@@ -468,12 +468,13 @@ export class EventHandlers {
 
       // Apply movement behavior based on configuration
       let rotationChanged = false;
+      let snappedRotation = 0; // Initialize snappedRotation
 
       if (movementConfig.allowFreeMovement) {
         // Free movement - just constrain to room bounds, preserve current rotation
         console.log('🎯 Applying FREE MOVEMENT constraints (rotation preserved)');
         const constrainedPos = constrainToRoom(
-          newPosition,
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
@@ -483,6 +484,7 @@ export class EventHandlers {
           }
         );
 
+        // Apply constrained position to Vector3
         newPosition.x = constrainedPos.position.x;
         newPosition.y = constrainedPos.position.y;
         newPosition.z = constrainedPos.position.z;
@@ -491,7 +493,7 @@ export class EventHandlers {
         // Wall snapping behavior
         console.log('🔗 Applying WALL SNAPPING constraints');
         const { position: wallConstrainedPos } = constrainToWalls(
-          newPosition,
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
@@ -501,6 +503,7 @@ export class EventHandlers {
           }
         );
 
+        // Apply wall constraints to Vector3
         newPosition.x = wallConstrainedPos.x;
         newPosition.z = wallConstrainedPos.z;
 
@@ -511,8 +514,8 @@ export class EventHandlers {
           newPosition.y = wallConstrainedPos.y;
         }
 
-        const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
-          newPosition,
+        const { position: snappedPos, rotation: wallSnappedRotation } = snapToNearestWall(
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
@@ -522,8 +525,10 @@ export class EventHandlers {
           }
         );
 
+        // Apply snapped position to Vector3
         newPosition.x = snappedPos.x;
         newPosition.z = snappedPos.z;
+        snappedRotation = wallSnappedRotation; // Store the rotation
 
         // Only apply wall-based rotation if free rotation is NOT allowed
         if (!movementConfig.allowFreeRotation) {
@@ -534,7 +539,7 @@ export class EventHandlers {
         // Default behavior - constrain to room bounds, preserve rotation
         console.log('🏠 Applying DEFAULT ROOM constraints (rotation preserved)');
         const constrainedPos = constrainToRoom(
-          newPosition,
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
@@ -543,7 +548,11 @@ export class EventHandlers {
             orientation: this.selectedObject?.userData?.orientation
           }
         );
-        newPosition = constrainedPos.position;
+
+        // Apply constrained position to Vector3
+        newPosition.x = constrainedPos.position.x;
+        newPosition.y = constrainedPos.position.y;
+        newPosition.z = constrainedPos.position.z;
         // Do NOT change rotation for default room constraint
       }
 
@@ -848,24 +857,15 @@ export class EventHandlers {
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
-        let newPosition = intersectPoint.add(this.dragOffset);
+        const newPosition = intersectPoint.add(this.dragOffset);
+
+        // Initialize snappedRotation to prevent undefined errors
+        let snappedRotation = 0;
 
         // Apply movement behavior based on configuration
         if (movementConfig.allowFreeMovement) {
           const constrainedPos = constrainToRoom(
-            newPosition,
-            this.roomWidthRef.value,
-            this.roomHeightRef.value,
-            {
-              type: objectType,
-              scale: objectScale,
-              orientation: this.selectedObject?.userData?.orientation
-            }
-          );
-          newPosition = constrainedPos.position;
-        } else if (movementConfig.snapToWall) {
-          const { position: wallConstrainedPos } = constrainToWalls(
-            newPosition,
+            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -875,6 +875,24 @@ export class EventHandlers {
             }
           );
 
+          // Apply constrained position to Vector3
+          newPosition.x = constrainedPos.position.x;
+          newPosition.y = constrainedPos.position.y;
+          newPosition.z = constrainedPos.position.z;
+
+        } else if (movementConfig.snapToWall) {
+          const { position: wallConstrainedPos } = constrainToWalls(
+            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            {
+              type: objectType,
+              scale: objectScale,
+              orientation: this.selectedObject?.userData?.orientation
+            }
+          );
+
+          // Apply wall constraints to Vector3
           newPosition.x = wallConstrainedPos.x;
           newPosition.z = wallConstrainedPos.z;
 
@@ -885,8 +903,8 @@ export class EventHandlers {
             newPosition.y = wallConstrainedPos.y;
           }
 
-          const { position: snappedPos, rotation: snappedRotation } = snapToNearestWall(
-            newPosition,
+          const { position: snappedPos, rotation: wallSnappedRotation } = snapToNearestWall(
+            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -904,7 +922,7 @@ export class EventHandlers {
           }
         } else {
           const constrainedPos = constrainToRoom(
-            newPosition,
+            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -913,7 +931,11 @@ export class EventHandlers {
               orientation: this.selectedObject?.userData?.orientation
             }
           );
-          newPosition = constrainedPos.position;
+
+          // Apply constrained position to Vector3
+          newPosition.x = constrainedPos.position.x;
+          newPosition.y = constrainedPos.position.y;
+          newPosition.z = constrainedPos.position.z;
         }
 
         // NEW: Check for collisions and update outline color

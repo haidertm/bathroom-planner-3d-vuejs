@@ -21,7 +21,7 @@ export type ObjectModel = {
   title?: string;
   id?: string;
   sku?: string;
-  scale: number;
+  scale?: number;
   price?: number | string;
   rotation?: [number, number, number];
   position?: [number, number, number];
