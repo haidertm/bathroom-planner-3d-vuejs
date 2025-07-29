@@ -182,6 +182,36 @@
         </div>
       </div>
 
+      <!-- Measurement section -->
+      <div :style="accordionSectionStyle">
+        <div
+            @click="toggleMeasurementSection"
+            :style="mainAccordionHeaderStyle"
+        >
+          <h4 :style="accordionTitleStyle">📏 Measurements</h4>
+          <span :style="getArrowStyle(isMeasurementExpanded)">▼</span>
+        </div>
+        <div :style="getAccordionContentStyle(isMeasurementExpanded)">
+          <div :style="controlGroupStyle">
+            <label :style="checkboxLabelStyle">
+              <input
+                  type="checkbox"
+                  :checked="measurementEnabled"
+                  @change="$emit('toggle-measurements')"
+                  :style="checkboxStyle"
+              />
+              Enable Ruler Mode
+            </label>
+          </div>
+          <div :style="controlGroupStyle">
+            <p :style="helpTextStyle">
+              Select an object to see its dimensions and available space around it.
+              Press 'M' key to toggle this mode.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Textures Button -->
       <div :style="accordionSectionStyle">
         <button
@@ -283,6 +313,13 @@ import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
 
+
+const isMeasurementExpanded = ref(false)
+
+const toggleMeasurementSection = () => {
+  isMeasurementExpanded.value = !isMeasurementExpanded.value
+}
+
 // Define props
 const props = defineProps({
   currentFloor: {
@@ -312,6 +349,10 @@ const props = defineProps({
   wallCullingEnabled: {
     type: Boolean,
     required: true
+  },
+  measurementEnabled: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -325,7 +366,8 @@ const emit = defineEmits([
   'toggle-grid',
   'toggle-wall-grid',
   'constrain-objects',
-  'toggle-wall-culling'
+  'toggle-wall-culling',
+  'toggle-measurements'
 ])
 
 // Bathroom categories with icons (matching your design)
@@ -449,7 +491,7 @@ const handleAddToRoom = (product) => {
   const componentType = product.type || 'Unknown'
 
   // Emit to parent component to add the item
-  emit('add', componentType)
+  emit('add', componentType, product)
 
   // Close product drawer after adding
   handleProductDrawerClose()
@@ -1066,6 +1108,15 @@ const categoryIconStyle = computed(() => ({
   justifyContent: 'center',
   color: '#29275B',
   flexShrink: 0
+}))
+
+//For measurement
+const helpTextStyle = computed(() => ({
+  fontSize: '12px',
+  color: '#6c757d',
+  lineHeight: '1.4',
+  margin: '0',
+  fontStyle: 'italic'
 }))
 
 const categoryLabelStyle = computed(() => ({

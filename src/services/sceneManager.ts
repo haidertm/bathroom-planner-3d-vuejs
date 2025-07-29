@@ -1,6 +1,8 @@
 //src/services/sceneManager.ts
 
 import * as THREE from 'three';
+import { type MeasurementData, MeasurementSystem } from './measurementSystem';
+import { createModel } from '../models/bathroomFixtures';
 import {
   createFloor,
   createWalls,
@@ -9,7 +11,6 @@ import {
 } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
-import { createModel } from '../models/bathroomFixtures';
 import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
@@ -20,6 +21,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { getOrientationForItem } from '../utils/models.ts';
 
 interface SceneComponents {
   scene: THREE.Scene;
@@ -48,6 +50,8 @@ export class SceneManager {
   private isUpdatingItems = false;
   private wallGridGroup: THREE.Group | null = null; // NEW: Group for wall grid lines
   private wallGridVisible: boolean = true; // NEW: Track wall grid visibility state
+  private measurementSystem: MeasurementSystem | null = null;
+  private existingItems: Map<number, THREE.Object3D> = new Map();
 
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
@@ -72,7 +76,8 @@ export class SceneManager {
     // Create renderer with enhanced settings
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
-      powerPreference: 'high-performance'
+      powerPreference: 'high-performance',
+      logarithmicDepthBuffer: true  // Set it in the constructor options
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -96,11 +101,57 @@ export class SceneManager {
     // Setup enhanced lighting
     this.setupEnhancedLighting();
 
+    // Initialize measurement system after scene, camera, and renderer are ready
+    if (this.scene && this.camera && this.renderer) {
+      this.measurementSystem = new MeasurementSystem(this.scene, this.camera, this.renderer);
+      console.log('Measurement system initialized');
+    }
+
+    // this.renderer = new THREE.WebGLRenderer({
+    //   antialias: true,
+    //   powerPreference: 'high-performance',
+    //   logarithmicDepthBuffer: true  // Set it in the constructor options
+    // });
+
+    // FIXED: Log scene initialization
+    console.log('✅ Scene initialized successfully:', {
+      sceneBackground: this.scene.background,
+      hasFog: !!this.scene.fog,
+      rendererSize: { width: window.innerWidth, height: window.innerHeight }
+    });
+
     return {
       scene: this.scene,
       camera: this.camera,
       renderer: this.renderer
     };
+  }
+
+  // Add methods to control measurement system
+  public enableMeasurements (enabled: boolean): void {
+    if (this.measurementSystem) {
+      this.measurementSystem.setEnabled(enabled);
+    }
+  }
+
+  public forceUpdateMeasurements (): void {
+    if (this.measurementSystem) {
+      this.measurementSystem.forceUpdateMeasurements();
+    }
+  }
+
+  public setMeasurementSelectedObject (object: THREE.Object3D | null): void {
+    if (this.measurementSystem) {
+      this.measurementSystem.setSelectedObject(object);
+    }
+  }
+
+  public getCurrentMeasurements (): MeasurementData | null {
+    return this.measurementSystem?.getCurrentMeasurements() || null;
+  }
+
+  public isMeasurementEnabled (): boolean {
+    return this.measurementSystem?.isEnabled() || false;
   }
 
   setCameraPreset (preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
@@ -132,6 +183,129 @@ export class SceneManager {
     };
   }
 
+  private hasItemChanged (model: THREE.Object3D, item: BathroomItem): boolean {
+    const currentPos = model.position;
+    const currentRot = model.rotation;
+    const currentScale = model.scale;
+
+    const posChanged =
+      Math.abs(currentPos.x - item.position[0]) > 0.01 ||
+      Math.abs(currentPos.y - item.position[1]) > 0.01 ||
+      Math.abs(currentPos.z - item.position[2]) > 0.01;
+
+    const rotChanged = Math.abs(currentRot.y - (item.rotation || 0)) > 0.01;
+
+    const scaleChanged = Math.abs(currentScale.x - (item.scale || 1.0)) > 0.01;
+
+    return posChanged || rotChanged || scaleChanged;
+  }
+
+  // Helper method to update existing model properties
+  private updateExistingModel (model: THREE.Object3D, item: BathroomItem): void {
+    // Update position
+    model.position.set(item.position[0], item.position[1], item.position[2]);
+
+    // Update rotation
+    model.rotation.y = item.rotation || 0;
+
+    // Update scale
+    const scale = item.scale || 1.0;
+    model.scale.set(scale, scale, scale);
+
+    console.log(`✅ Updated item ${item.id} properties`);
+  }
+
+  // Helper method to properly dispose of models
+  private disposeModel (model: THREE.Object3D): void {
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(material => material.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  }
+
+  // Add method to add single item (for real-time adding)
+  // Method to add single item (for real-time adding from Planner.vue)
+  async addSingleItem (item: BathroomItem): Promise<void> {
+    if (this.existingItems.has(item.id)) {
+      console.log(`Item ${item.id} already exists, updating instead`);
+      const existingModel = this.existingItems.get(item.id);
+      if (existingModel) {
+        this.updateExistingModel(existingModel, item);
+      }
+      return;
+    }
+
+    console.log(`➕ Adding single item ${item.id} to scene`);
+
+    try {
+      const model = await createModel(
+        item.type,
+        item.position,
+        item.rotation,
+        item.scale,
+        item.model,
+        item.sku
+      );
+
+      if (model) {
+        model.userData.isBathroomItem = true;
+        model.userData.itemId = item.id;
+        model.userData.type = item.type;
+
+        this.debugModelVisibility(model, item);
+        this.enhanceModelMaterials(model);
+
+        this.bathroomItemsGroup.add(model);
+        this.existingItems.set(item.id, model);
+        console.log(`✅ Successfully added item ${item.id}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to add single item ${item.id}:`, error);
+      throw error;
+    }
+  }
+
+// Method to remove single item (for real-time deletion from Planner.vue)
+  removeSingleItem (itemId: number): void {
+    const existingModel = this.existingItems.get(itemId);
+    if (existingModel) {
+      console.log(`🗑️ Removing single item ${itemId} from scene`);
+      this.bathroomItemsGroup.remove(existingModel);
+      this.existingItems.delete(itemId);
+      this.disposeModel(existingModel);
+      console.log(`✅ Successfully removed item ${itemId}`);
+    } else {
+      console.warn(`⚠️ Item ${itemId} not found in scene for removal`);
+    }
+  }
+
+// Method to clear all items efficiently
+  clearAllItems (): void {
+    console.log('🧹 Clearing all bathroom items');
+
+    // Dispose of all models
+    this.existingItems.forEach((model) => {
+      this.bathroomItemsGroup.remove(model);
+      this.disposeModel(model);
+    });
+
+    // Clear tracking
+    this.existingItems.clear();
+
+    console.log('✅ All items cleared efficiently');
+  }
+
+
   // ADD: Temporary debug cube method
   addDebugCube (position: [number, number, number]): void {
     if (!this.scene) return;
@@ -150,18 +324,22 @@ export class SceneManager {
     if (!this.scene || !this.camera || !this.renderer) return;
 
     try {
+      const pixelRatio = Math.min(window.devicePixelRatio, 2);
       // Create render target with higher precision for better outline rendering
       const renderTarget = new THREE.WebGLRenderTarget(
-        window.innerWidth,
-        window.innerHeight,
+        window.innerWidth * pixelRatio,
+        window.innerHeight * pixelRatio,
         {
           format: THREE.RGBAFormat,
           type: THREE.FloatType, // Use FloatType for better precision
           colorSpace: THREE.SRGBColorSpace,
           // Add multisampling for smoother outlines
-          samples: 4,
+          samples: 8,
           // Higher precision depth buffer
           depthBuffer: true,
+          minFilter: THREE.LinearFilter,  // ✅ ADDED: Smooth filtering
+          magFilter: THREE.LinearFilter,  // ✅ ADDED: Smooth filtering
+          generateMipmaps: false,          // ✅ ADDED: Disable mipmaps for post-processing
           stencilBuffer: false
         }
       );
@@ -180,17 +358,20 @@ export class SceneManager {
       );
 
       // IMPROVED: Distance-optimized outline settings
-      this.outlinePass.edgeStrength = 8;        // Increased from 10
-      this.outlinePass.edgeGlow = 0.5;           // Reduced glow for better visibility
-      this.outlinePass.edgeThickness = 2;        // Increased thickness
+      this.outlinePass.edgeStrength = 6;        // Increased from 10
+      this.outlinePass.edgeGlow = 0.1;           // Reduced glow for better visibility
+      this.outlinePass.edgeThickness = 1.5;        // Increased thickness
       this.outlinePass.pulsePeriod = 0;          // Disable pulsing for consistency
+
+      // ✅ ADDED: Enable downsampling ratio for smoother edges
+      this.outlinePass.downSampleRatio = 1;    // Use full resolution
       this.outlinePass.visibleEdgeColor.set('#00ffcc');
       this.outlinePass.hiddenEdgeColor.set('#00ffcc'); // Make hidden edges more visible
 
       // CRITICAL: Set resolution multiplier for better edge detection
       this.outlinePass.resolution = new THREE.Vector2(
-        window.innerWidth * 2,
-        window.innerHeight * 2
+        window.innerWidth * pixelRatio * 2,
+        window.innerHeight * pixelRatio * 2
       );
 
       this.composer.addPass(this.outlinePass);
@@ -217,121 +398,44 @@ export class SceneManager {
     this.lights.forEach(light => this.scene!.remove(light));
     this.lights = [];
 
-    // 1. Bright ambient light - creates that "well-lit room" base
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // Increased from 0.8
+    // 1. Ambient light (keep this)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Reduced from 1.2
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
 
-    // 2. Main ceiling light - bright overhead illumination
-    const mainCeilingLight = new THREE.PointLight(0xffffff, 2.0, 3000); // Back to original
-    mainCeilingLight.position.set(0, 280, 0);
-    mainCeilingLight.castShadow = true;
-    mainCeilingLight.shadow.mapSize.width = 2048;
-    mainCeilingLight.shadow.mapSize.height = 2048;
-    mainCeilingLight.shadow.camera.near = 10;
-    mainCeilingLight.shadow.camera.far = 2000;
-    mainCeilingLight.shadow.bias = -0.0001;
+    // 2. ONLY ONE shadow-casting light (main performance improvement)
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    mainLight.position.set(0, 1000, 200);
+    mainLight.castShadow = true;
 
-    this.scene.add(mainCeilingLight);
-    this.lights.push(mainCeilingLight);
+    // CRITICAL: Reduce shadow map size
+    mainLight.shadow.mapSize.width = 1024;  // Reduced from 2048
+    mainLight.shadow.mapSize.height = 1024; // Reduced from 2048
 
-    // 3. Additional ceiling lights for even coverage
-    const ceilingLight1 = new THREE.PointLight(0xffffff, 1.4, 1800); // Increased from 0.8
-    ceilingLight1.position.set(150, 280, 150);
-    ceilingLight1.castShadow = true;
-    ceilingLight1.shadow.mapSize.width = 1024;
-    ceilingLight1.shadow.mapSize.height = 1024;
-    ceilingLight1.shadow.camera.near = 10;
-    ceilingLight1.shadow.camera.far = 1500;
+    mainLight.shadow.camera.near = 10;
+    mainLight.shadow.camera.far = 2000;
+    mainLight.shadow.camera.left = -800;   // Smaller shadow area
+    mainLight.shadow.camera.right = 800;
+    mainLight.shadow.camera.top = 800;
+    mainLight.shadow.camera.bottom = -800;
 
-    this.scene.add(ceilingLight1);
-    this.lights.push(ceilingLight1);
+    this.scene.add(mainLight);
+    this.lights.push(mainLight);
 
-    const ceilingLight2 = new THREE.PointLight(0xffffff, 1.4, 1800); // Increased from 0.8
-    ceilingLight2.position.set(-150, 280, -150);
-    ceilingLight2.castShadow = true;
-    ceilingLight2.shadow.mapSize.width = 1024;
-    ceilingLight2.shadow.mapSize.height = 1024;
-    ceilingLight2.shadow.camera.near = 10;
-    ceilingLight2.shadow.camera.far = 1500;
-
-    this.scene.add(ceilingLight2);
-    this.lights.push(ceilingLight2);
-
-    // 4. MORE ceiling lights for corner coverage
-    const ceilingLight3 = new THREE.PointLight(0xffffff, 1.2, 1600);
-    ceilingLight3.position.set(150, 280, -150);
-    ceilingLight3.castShadow = true;
-    ceilingLight3.shadow.mapSize.width = 1024;
-    ceilingLight3.shadow.mapSize.height = 1024;
-    ceilingLight3.shadow.camera.near = 10;
-    ceilingLight3.shadow.camera.far = 1500;
-
-    this.scene.add(ceilingLight3);
-    this.lights.push(ceilingLight3);
-
-    const ceilingLight4 = new THREE.PointLight(0xffffff, 1.2, 1600);
-    ceilingLight4.position.set(-150, 280, 150);
-    ceilingLight4.castShadow = true;
-    ceilingLight4.shadow.mapSize.width = 1024;
-    ceilingLight4.shadow.mapSize.height = 1024;
-    ceilingLight4.shadow.camera.near = 10;
-    ceilingLight4.shadow.camera.far = 1500;
-
-    this.scene.add(ceilingLight4);
-    this.lights.push(ceilingLight4);
-
-    // 5. Brighter directional light from above - simulates natural light
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.8); // Increased from 0.4
-    topLight.position.set(0, 1000, 200);
-    topLight.castShadow = true;
-    topLight.shadow.mapSize.width = 2048;
-    topLight.shadow.mapSize.height = 2048;
-    topLight.shadow.camera.near = 10;
-    topLight.shadow.camera.far = 3000;
-    topLight.shadow.camera.left = -1000;
-    topLight.shadow.camera.right = 1000;
-    topLight.shadow.camera.top = 1000;
-    topLight.shadow.camera.bottom = -1000;
-    topLight.shadow.bias = -0.0001;
-
-    this.scene.add(topLight);
-    this.lights.push(topLight);
-
-    // 6. Multiple fill lights to reduce harsh shadows
-    const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.5); // Increased from 0.2
+    // 3. Non-shadow fill lights (much cheaper)
+    const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.4);
     fillLight1.position.set(-500, 800, -500);
+    // NO castShadow = true  (this is key!)
     this.scene.add(fillLight1);
     this.lights.push(fillLight1);
 
-    const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
     fillLight2.position.set(500, 800, 500);
+    // NO castShadow = true
     this.scene.add(fillLight2);
     this.lights.push(fillLight2);
 
-    const fillLight3 = new THREE.DirectionalLight(0xffffff, 0.3);
-    fillLight3.position.set(-500, 800, 500);
-    this.scene.add(fillLight3);
-    this.lights.push(fillLight3);
-
-    // 7. Side rim lights for better object definition
-    const rimLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
-    rimLight1.position.set(800, 500, 0);
-    this.scene.add(rimLight1);
-    this.lights.push(rimLight1);
-
-    const rimLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
-    rimLight2.position.set(-800, 500, 0);
-    this.scene.add(rimLight2);
-    this.lights.push(rimLight2);
-
-    // 8. Additional ambient fill from below (subtle floor bounce)
-    const floorBounce = new THREE.HemisphereLight(0xffffff, 0xf0f0f0, 0.4);
-    floorBounce.position.set(0, -100, 0);
-    this.scene.add(floorBounce);
-    this.lights.push(floorBounce);
-
-    console.log(`Enhanced lighting setup complete: ${this.lights.length} lights total`);
+    console.log(`✅ Optimized lighting: ${this.lights.length} lights (only 1 with shadows)`);
   }
 
   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
@@ -344,6 +448,11 @@ export class SceneManager {
     const floorMaterial = this.createEnhancedFloorMaterial(floorTexture);
     this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     this.scene.add(this.floorRef);
+
+    // Update measurement system with new room dimensions
+    if (this.measurementSystem) {
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+    }
   }
 
   private createEnhancedFloorMaterial (floorTexture: TextureConfig): THREE.MeshStandardMaterial {
@@ -381,6 +490,10 @@ export class SceneManager {
     // Update wall culling manager with new walls and room size
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
+    // Update measurement system with new room dimensions
+    if (this.measurementSystem) {
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+    }
   }
 
   private createEnhancedWallMaterial (wallTexture: TextureConfig): THREE.MeshStandardMaterial {
@@ -493,7 +606,7 @@ export class SceneManager {
             // Register the grid lines with the wall culling manager
             this.wallCullingManager.registerWallGridLines(wall, wallGridLines);
 
-            console.log(`✅ Registered ${wallGridLines.length} grid lines for ${wallDirection} wall`);
+            // console.log(`✅ Registered ${wallGridLines.length} grid lines for ${wallDirection} wall`);
           } else {
             console.warn(`⚠️ Wall at index ${index} has no wallDirection:`, wall.userData);
           }
@@ -556,77 +669,157 @@ export class SceneManager {
     return this.wallGridVisible;
   }
 
+  private debugModelVisibility (model: THREE.Object3D, item: any): void {
+    console.log('📍📍 selectedModelIs>>>>', model);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    console.log('🔍 MODEL DEBUG INFO:');
+    console.log('  Item ID:', item.id);
+    console.log('  Item Type:', item.type);
+    console.log('  Model Position:', model.position);
+    console.log('  Model Scale:', model.scale);
+    console.log('  Model Visible:', model.visible);
+    console.log('  Bounding Box Size:', size);
+    console.log('  Bounding Box Center:', center);
+    console.log('  Children Count:', model.children.length);
+
+    // Check if model is too small
+    const maxSize = Math.max(size.x, size.y, size.z);
+    if (maxSize < 0.01) {
+      console.warn('⚠️ Model might be too small to see (max dimension:', maxSize, ')');
+    }
+
+    // Check if model is too far from origin
+    const distanceFromOrigin = model.position.length();
+    if (distanceFromOrigin > 200) {
+      console.warn('⚠️ Model might be too far from camera (distance:', distanceFromOrigin, ')');
+    }
+
+    // Check children visibility
+    let visibleChildren = 0;
+    model.traverse((child) => {
+      if (child.visible) visibleChildren++;
+    });
+    console.log('  Visible Children:', visibleChildren);
+
+    // Check materials
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        console.log('  Mesh Material:', child.material?.type || 'No material');
+        if (child.material?.transparent && child.material?.opacity < 0.1) {
+          console.warn('⚠️ Material might be too transparent');
+        }
+      }
+    });
+  }
+
+  // Replace the current updateBathroomItems method with this optimized version
   async updateBathroomItems (items: BathroomItem[]): Promise<void> {
     if (!this.scene || this.isUpdatingItems) return;
 
     this.isUpdatingItems = true;
 
     try {
-      console.log('=== UPDATING BATHROOM ITEMS ===');
-      console.log('Items to render:', items.length);
+      console.log('=== INCREMENTAL BATHROOM ITEMS UPDATE ===');
+      console.log('Items to process:', items.length);
+      console.log('Existing items in scene:', this.existingItems.size);
 
-      // Clear existing bathroom items
-      this.bathroomItemsGroup.clear();
+      // Get current item IDs
+      const newItemIds = new Set(items.map(item => item.id));
+      const existingIds = new Set(this.existingItems.keys());
 
-      // Create all models concurrently for better performance
-      const modelPromises = items.map(async (item, index) => {
-        console.log(`Creating model for item [${index}]:`, {
-          id: item.id,
-          type: item.type,
-          position: item.position, // This will show the actual position values
-          rotation: item.rotation,
-          scale: item.scale
-        });
+      // 1. REMOVE items that no longer exist
+      const itemsToRemove = Array.from(existingIds).filter(id => !newItemIds.has(id));
+      for (const itemId of itemsToRemove) {
+        const existingModel = this.existingItems.get(itemId);
+        if (existingModel) {
+          console.log(`🗑️ Removing item ${itemId} from scene`);
+          this.bathroomItemsGroup.remove(existingModel);
+          this.existingItems.delete(itemId);
 
-        try {
-          const model = await createModel(
-            item.type,
-            item.position,
-            item.rotation || 0,
-            item.scale || 1.0
-          );
+          // Clean up the model
+          this.disposeModel(existingModel);
+        }
+      }
 
-          if (model) {
-            model.userData.isBathroomItem = true;
-            model.userData.itemId = item.id;
-            model.userData.type = item.type;
+      // 2. ADD new items or UPDATE existing ones
+      const updatePromises = items.map(async (item, index) => {
+        const existingModel = this.existingItems.get(item.id);
 
-            // ADD THIS: Log the actual model position and scale
-            console.log(`✅ Model created successfully:`, {
-              type: item.type,
-              worldPosition: model.position,
-              worldScale: model.scale,
-              visible: model.visible,
-              boundingBox: this.getModelBoundingBox(model)
-            });
-
-            // Enhance model materials
-            this.enhanceModelMaterials(model);
-
-            console.log(`  Created model with userData:`, model.userData);
-            return model;
+        if (existingModel) {
+          // UPDATE existing item if position/rotation/scale changed
+          const hasChanged = this.hasItemChanged(existingModel, item);
+          if (hasChanged) {
+            console.log(`🔄 Updating existing item ${item.id}`);
+            this.updateExistingModel(existingModel, item);
           }
-        } catch (error) {
-          console.error(`Failed to create model for item ${item.id}:`, error);
-        }
+        } else {
+          // ADD new item (using your existing createModel function)
+          console.log(`➕ Adding new item ${item.id} to scene`);
+          console.log(`Creating model for item [${index}]:`, {
+            id: item.id,
+            type: item.type,
+            position: item.position,
+            rotation: item.rotation,
+            orientation: item.model?.orientation,
+            scale: item.scale,
+            path: item.model?.path
+          });
 
-        return null;
+          try {
+            const model = await createModel(
+              item.type,
+              item.position,
+              item.rotation,
+              item.scale,
+              item.model,
+              item.sku
+            );
+
+            if (model) {
+              model.userData.isBathroomItem = true;
+              model.userData.itemId = item.id;
+              model.userData.type = item.type;
+
+              // NEW: Add orientation data directly to userData
+              model.userData.orientation = getOrientationForItem(item);
+
+              this.debugModelVisibility(model, items[index]);
+
+              console.log(`✅ Model created successfully:`, {
+                type: item.type,
+                worldPosition: model.position,
+                worldScale: model.scale,
+                visible: model.visible,
+                boundingBox: this.getModelBoundingBox(model)
+              });
+
+              // Enhance model materials
+              this.enhanceModelMaterials(model);
+
+              // Add to scene and track it
+              this.bathroomItemsGroup.add(model);
+              this.existingItems.set(item.id, model);
+
+              console.log(`Created model with userData:`, model.userData);
+            }
+          } catch (error) {
+            console.error(`Failed to create model for item ${item.id}:`, error);
+          }
+        }
       });
 
-      // Wait for all models to be created
-      const models = await Promise.all(modelPromises);
+      await Promise.all(updatePromises);
 
-      // Add all successfully created models to the group
-      models.forEach(model => {
-        if (model) {
-          this.bathroomItemsGroup.add(model);
-        }
-      });
+      // Update measurement system with new items
+      if (this.measurementSystem) {
+        this.measurementSystem.updateExistingItems(items);
+      }
 
-      console.log('=== BATHROOM ITEMS UPDATE COMPLETE ===');
-      console.log(`Added ${models.filter(m => m !== null).length} models to scene`);
-
-      // ADD THIS: Log the bathroom items group info
+      console.log('=== INCREMENTAL UPDATE COMPLETE ===');
+      console.log(`Scene now has ${this.existingItems.size} items`);
       console.log('Bathroom items group:', {
         children: this.bathroomItemsGroup.children.length,
         position: this.bathroomItemsGroup.position,
@@ -766,6 +959,9 @@ export class SceneManager {
 
   // Cleanup method - enhanced
   dispose (): void {
+    // Clear all items first
+    this.clearAllItems();
+
     // Stop animation loop
     this.stopAnimationLoop();
 
@@ -802,6 +998,11 @@ export class SceneManager {
     this.floorRef = null;
     this.wallRefs = [];
     this.gridRef = null;
+
+    if (this.measurementSystem) {
+      this.measurementSystem.dispose();
+      this.measurementSystem = null;
+    }
   }
 
   // Utility method to get bathroom items group

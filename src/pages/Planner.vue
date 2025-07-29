@@ -53,11 +53,12 @@
         :style="canvasContainerStyle"
     />
 
-<!--    MeasurementToggle button-->
+    <!--    MeasurementToggle button-->
     <MeasurementToggle
         :style="toggleMeasurementStyle"
-        v-model="measurementsEnabled"
-        @change="handleMeasurementChange"
+        v-model="measurementEnabled"
+        @update:modelValue="handleMeasurementToggle"
+        @toggle-measurements="handleToggleMeasurements"
         size="large"
     />
 
@@ -106,18 +107,19 @@ import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markR
 import { useRouter } from 'vue-router'
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
 import * as THREE from 'three';
+import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
 
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
 import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
-import MeasurementToggle from "../components/ui/MeasurementToggle.vue";
+import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
-import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures.js'
-import { COMPONENT_DEFAULTS } from '../constants/components.js'
+import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures'
+import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
 
 // Services
 import { SceneManager } from '../services/sceneManager.js'
@@ -134,6 +136,7 @@ import { isMobile } from '../utils/helpers.ts'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import Sidebar from '../components/ui/sidebar.vue';
 import Header from '../components/ui/Header.vue';
+import { getScaleForUnits } from '../utils/units.js';
 
 // Router
 const router = useRouter()
@@ -150,6 +153,10 @@ const showInstructions = ref(false)
 
 // ID counter to ensure unique IDs
 const nextIdRef = ref(2000)
+
+// Add these reactive variables
+const previousItems = ref([])
+const isInitialLoad = ref(true)
 
 // Generate unique ID function
 const generateUniqueId = () => {
@@ -174,10 +181,7 @@ const getDefaultItems = () => {
     //     type: 'flush_with_wall',
     //     wallBuffer: 0.045, // Flush with wall - no gap
     //     description: 'Door is part of wall opening'
-    //   },
-    //   fallbackColor: 0x8B4513,
-    //   fallbackGeometry: 'box',
-    //   fallbackSize: [0.1, 2.0, 0.8]
+    //   }
     // }
   ]
 }
@@ -200,6 +204,18 @@ const showGrid = ref(true)
 const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
 const preventCollisionPlacement = ref(true)
+
+//For Measurement
+const measurementEnabled = ref(false)
+const currentMeasurements = ref(null)
+// Add method to handle measurement toggle
+const handleToggleMeasurements = () => {
+  measurementEnabled.value = !measurementEnabled.value
+
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.enableMeasurements(measurementEnabled.value)
+  }
+}
 
 // Update your App.vue canvasContainerStyle computed property:
 const canvasContainerStyle = computed(() => {
@@ -364,9 +380,18 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 }
 
 // 6. Update your Home.vue addItem function to handle product data:
-const addItem = (type, productData = null) => {
-  console.log('addItem called with type:', type) // Add this line
-  const defaults = COMPONENT_DEFAULTS[type] || { height: 0, scale: 1.0 }
+const addItem = async (type, productData = null) => {
+  console.log('addItem called with type:', type)
+  const defaults = {
+    height: 0,
+    scale: getScaleForUnits(1.0, 'meters'),
+    orientation: DEFAULT_ORIENTATION
+  }
+
+  // Extract SKU for real dimension lookup
+  const sku = productData?.selectedVariant?.sku || null;
+
+  console.log('productData.selectedVariant?.orientation>>>:::', productData.selectedVariant?.orientation);
 
   // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
@@ -374,26 +399,51 @@ const addItem = (type, productData = null) => {
       roomHeight.value,
       type,
       defaults.scale,
-      items.value
+      items.value,
+      undefined, // No specific wall direction
+      productData.selectedVariant?.orientation
   )
+
+  console.log('found free positioned on wall>>', freePosition, wallRotation);
 
   const newItem = {
     id: generateUniqueId(),
     type,
     position: [freePosition.x, freePosition.y, freePosition.z],
     rotation: wallRotation,
-    scale: defaults.scale,
+    scale: 1.0,
     // Add product data if available
     ...(productData && {
-      productData: {
-        productId: productData.product?.id,
-        productName: productData.product?.name,
-        brand: productData.product?.brand,
-        price: productData.product?.price,
-        selectedVariant: productData.selectedVariant,
-        selectedColor: productData.selectedColor
-      }
+      sku,
+      productName: productData.selectedVariant?.name,
+      model: {
+        name: `${ type }-${ productData.selectedVariant?.sku }`,
+        path: productData.selectedVariant?.path,
+        scale: 100,
+        orientation: {
+          type: 'flush_with_wall',
+          wallBuffer: 0, // Flush with wall - no gap
+          description: 'Item is part of wall opening',
+          ...(productData.selectedVariant?.orientation)
+        },
+        dimensions: productData.selectedVariant?.dimensions
+      },
+      price: productData.selectedVariant?.price,
+      selectedColor: productData.selectedColor
     })
+  }
+
+  console.log('newItemToBeAdded>>>', newItem);
+
+  // PERFORMANCE BOOST: Add directly to scene first (if not initial load)
+  if (sceneManagerRef.value && !isInitialLoad.value) {
+    try {
+      await sceneManagerRef.value.addSingleItem(newItem)
+      console.log(`✅ Added item ${ newItem.id } directly to scene`)
+    } catch (error) {
+      console.error('❌ Failed to add item directly:', error)
+      // Will fall back to full update via watcher
+    }
   }
 
   const newItems = [...items.value, newItem]
@@ -412,6 +462,16 @@ const addItem = (type, productData = null) => {
 const deleteItem = (itemId) => {
   console.log('Deleting item with ID:', itemId)
   console.log('Current items:', items.value.map(item => ({ id: item.id, type: item.type })))
+
+  // FOR IMMEDIATE PERFORMANCE BOOST: Remove single item from scene directly
+  if (sceneManagerRef.value && !isInitialLoad.value) {
+    try {
+      sceneManagerRef.value.removeSingleItem(itemId)
+      console.log(`✅ Removed item ${ itemId } directly from scene`)
+    } catch (error) {
+      console.error('❌ Failed to remove item directly, falling back to full update:', error)
+    }
+  }
 
   const newItems = items.value.filter(item => item.id !== itemId)
 
@@ -513,6 +573,18 @@ const getItems = () => {
   return items.value
 }
 
+// Declare event handlers in component scope
+const handleMeasurementUpdate = () => {
+  if (measurementEnabled.value) {
+    updateCurrentMeasurements()
+  }
+}
+
+// Listen for measurement toggle from keyboard
+const handleMeasurementToggle = () => {
+  handleToggleMeasurements()
+}
+
 // Initialize scene
 onMounted(async () => {
   // Initialize scene manager
@@ -566,12 +638,15 @@ onMounted(async () => {
 
   // PRELOAD MODELS - This will load all models defined in constants
   console.log('Starting model preloading...')
-  try {
-    await preloadModels()
-    console.log('Model preloading completed!')
-    console.log('Cache status:', getModelCacheStatus())
-  } catch (error) {
-    console.error('Error during model preloading:', error)
+
+  if (CONFIG && CONFIG.preloadModels) {
+    try {
+      await preloadModels()
+      console.log('Model preloading completed!')
+      console.log('Cache status:', getModelCacheStatus())
+    } catch (error) {
+      console.error('Error during model preloading:', error)
+    }
   }
 
   // Load initial items - NOW ASYNC
@@ -580,6 +655,16 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error loading initial items:', error)
   }
+
+  // ADD THESE LINES to your existing onMounted:
+  if (sceneManagerRef.value.measurementSystem && eventHandlersRef.value) {
+    eventHandlersRef.value.setMeasurementSystem(sceneManagerRef.value.measurementSystem)
+  }
+
+  window.addEventListener('object-selected', handleMeasurementUpdate)
+  window.addEventListener('object-moved', handleMeasurementUpdate)
+  window.addEventListener('toggle-measurements', handleMeasurementToggle)
+
 })
 
 // Watch for room geometry changes
@@ -600,14 +685,30 @@ watch([currentFloorTexture, currentWallTexture], () => {
 })
 
 // MODIFIED: Only update scene for non-drag operations
+// REPLACE your existing items watcher with this smart version
 watch([items, lastUpdateSource], ([newItems, updateSource]) => {
   if (!sceneManagerRef.value) return
 
-  // Only update scene for specific operations, NOT for drag operations
-  if (updateSource !== 'drag') {
-    console.log(`Updating scene for ${ updateSource } operation:`, newItems.length, 'items')
-    sceneManagerRef.value.updateBathroomItems(newItems, createModel)
+  console.log(`🔍 Items changed: ${ updateSource }, ${ newItems.length } items`)
+
+  // Skip scene updates during drag operations
+  if (updateSource === 'drag') {
+    console.log('⏭️ Skipping scene update during drag')
+    return
   }
+
+  // For initial load, use the full update method
+  if (isInitialLoad.value) {
+    console.log('🚀 Initial load - using full update')
+    sceneManagerRef.value.updateBathroomItems(newItems)
+    previousItems.value = [...newItems]
+    isInitialLoad.value = false
+    return
+  }
+
+  // Use smart updates for better performance
+  handleSmartUpdate(newItems, updateSource)
+
 }, { deep: true })
 
 watch([showWallGrid], ([newShowWallGrid]) => {
@@ -618,11 +719,20 @@ watch([showWallGrid], ([newShowWallGrid]) => {
   }
 }, { immediate: true });
 
+// Watch for measurement changes
+watch(measurementEnabled, (enabled) => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.enableMeasurements(enabled)
+  }
+});
+
 // Cleanup
 onUnmounted(() => {
   if (eventHandlersRef.value) {
     eventHandlersRef.value.removeEventListeners()
   }
+
+  window.removeEventListener('toggle-measurements', handleMeasurementToggle)
 
   // Remove resize listener
   window.removeEventListener('resize', () => {
@@ -642,6 +752,121 @@ onUnmounted(() => {
     sceneManagerRef.value.dispose()
   }
 })
+
+// NEW: Smart incremental update handler
+const handleIncrementalUpdate = async (newItems, updateSource) => {
+  if (!sceneManagerRef.value) return
+
+  const prevItems = previousItems.value
+
+  console.log('🔄 Performing incremental update:', {
+    source: updateSource,
+    prevCount: prevItems.length,
+    newCount: newItems.length
+  })
+
+  try {
+    switch (updateSource) {
+      case 'add':
+        // Scene update already handled in addItem method
+        console.log('➕ Add operation - scene already updated directly')
+        break
+
+      case 'delete':
+        // Scene update already handled in deleteItem method
+        console.log('🗑️ Delete operation - scene already updated directly')
+        break
+
+      case 'clear':
+        // Scene update already handled in handleClearAll method
+        console.log('🧹 Clear operation - scene already updated directly')
+        break
+
+      case 'move':
+      case 'rotate':
+      case 'scale':
+      case 'undo':
+      case 'redo':
+      case 'roomSize':
+      case 'constrain':
+        // Use the incremental update for these operations
+        console.log(`🔄 Updating scene for ${ updateSource }`)
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+        break
+
+      default:
+        // Fallback to incremental update
+        console.log('🔄 Default incremental update')
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+    }
+
+    // Update the previous items reference
+    previousItems.value = [...newItems]
+
+  } catch (error) {
+    console.error('❌ Error during incremental update:', error)
+    // Fallback to full update on error
+    await sceneManagerRef.value.updateBathroomItems(newItems)
+  }
+}
+
+// Add method to update current measurements
+const updateCurrentMeasurements = () => {
+  if (sceneManagerRef.value && measurementEnabled.value) {
+    currentMeasurements.value = sceneManagerRef.value.getCurrentMeasurements()
+  } else {
+    currentMeasurements.value = null
+  }
+}
+
+const handleSmartUpdate = async (newItems, updateSource) => {
+  if (!sceneManagerRef.value) return
+
+  console.log('🔄 Handling smart update:', {
+    source: updateSource,
+    itemCount: newItems.length
+  })
+
+  try {
+    switch (updateSource) {
+      case 'add':
+      case 'delete':
+      case 'clear':
+        // Scene already updated directly in the respective methods
+        console.log(`✅ ${ updateSource } operation - scene already updated directly`)
+        break
+
+      case 'undo':
+      case 'redo':
+      case 'move':
+      case 'rotate':
+      case 'scale':
+      case 'roomSize':
+      case 'constrain':
+        // Use incremental update for these operations
+        console.log(`🔄 Updating scene for ${ updateSource }`)
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+        break
+
+      default:
+        // Fallback to incremental update
+        console.log('🔄 Default incremental update')
+        await sceneManagerRef.value.updateBathroomItems(newItems)
+    }
+
+    // Update the previous items reference
+    previousItems.value = [...newItems]
+
+  } catch (error) {
+    console.error('❌ Error during smart update:', error)
+    // Fallback to full update on error
+    try {
+      await sceneManagerRef.value.updateBathroomItems(newItems)
+    } catch (fallbackError) {
+      console.error('❌ Fallback update also failed:', fallbackError)
+    }
+  }
+}
 
 const handleClearAll = () => {
   // Clear all items
