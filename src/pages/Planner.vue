@@ -56,8 +56,9 @@
     <!--    MeasurementToggle button-->
     <MeasurementToggle
         :style="toggleMeasurementStyle"
-        v-model="measurementsEnabled"
-        @change="handleMeasurementChange"
+        v-model="measurementEnabled"
+        @update:modelValue="handleMeasurementToggle"
+        @toggle-measurements="handleToggleMeasurements"
         size="large"
     />
 
@@ -99,11 +100,6 @@
         </div>
       </div>
     </div>
-    <MeasurementPanel
-        :measurement-enabled="measurementEnabled"
-        :current-measurements="currentMeasurements"
-        @toggle-measurements="handleToggleMeasurements"
-    />
   </div>
 </template>
 <script setup>
