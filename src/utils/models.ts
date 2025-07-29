@@ -1,5 +1,5 @@
 // Helper function to get movement configuration for an object
-import { ComponentType } from '../constants/components.ts';
+import { ComponentType } from '../constants/components';
 
 import {
   DEFAULT_ORIENTATION,
@@ -7,7 +7,7 @@ import {
   type ModelConfig, MovementConfig, OrientationConfig, WALL_ROTATIONS
 } from '../constants/models';
 import { CONSTRAINTS } from '../constants/dimensions';
-import { BathroomItem } from '../utils/constraints.ts';
+import { BathroomItem } from '../utils/constraints';
 import productData from '../mocks/productData.ts';
 
 export const getMovementConfig = (_objectType: ComponentType): MovementConfig => {

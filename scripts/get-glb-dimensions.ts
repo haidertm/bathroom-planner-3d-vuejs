@@ -7,12 +7,12 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 declare const global: any;
 
 // Mock browser globals for Node.js environment
-const globalThis = global as any;
+const globalContext = global as any;
 
 // Create a minimal DOM-like environment
-globalThis.self = globalThis;
-globalThis.window = globalThis;
-globalThis.document = {
+globalContext.self = globalContext;
+globalContext.window = globalContext;
+globalContext.document = {
   createElement: (tag: string) => {
     if (tag === 'canvas') {
       return {
@@ -34,7 +34,7 @@ globalThis.document = {
 };
 
 // Mock Image constructor for texture loading
-globalThis.Image = function () {
+globalContext.Image = function () {
   return {
     onload: null,
     onerror: null,
@@ -46,39 +46,98 @@ globalThis.Image = function () {
 };
 
 // Mock URL.createObjectURL
-globalThis.URL = {
+globalContext.URL = {
   createObjectURL: () => 'mock-url',
   revokeObjectURL: () => {
   }
 };
 
 // Patch FileLoader to work in Node.js
-THREE.FileLoader.prototype.load = function (url, onLoad, onProgress, onError) {
+THREE.FileLoader.prototype.load = function (url, onLoad, _onProgress, onError) {
   fs.readFile(url)
-    .then((data) => onLoad(data.buffer))
-    .catch(onError);
+    .then((data) => {
+      if (onLoad) {
+        onLoad(data.buffer);
+      }
+    })
+    .catch((error) => {
+      if (onError) {
+        onError(error);
+      }
+    });
 };
 
-// Override ImageLoader to handle images in Node.js
-class NodeImageLoader extends THREE.ImageLoader {
-  load (url: string, onLoad?: (image: any) => void, onProgress?: (event: ProgressEvent) => void, onError?: (event: ErrorEvent) => void) {
-    // Create a mock image object
-    const image = {
+// Override ImageLoader to handle images in Node.js - Complete implementation
+class NodeImageLoader {
+  public manager: THREE.LoadingManager;
+  public crossOrigin: string = 'anonymous';
+  public withCredentials: boolean = false;
+  public path: string = '';
+  public resourcePath: string = '';
+  public requestHeader: Record<string, string> = {};
+
+  constructor(manager?: THREE.LoadingManager) {
+    this.manager = manager || THREE.DefaultLoadingManager;
+  }
+
+  load (
+    url: string,
+    onLoad?: (image: any) => void,
+    _onProgress?: (event: ProgressEvent) => void,
+    _onError?: (event: ErrorEvent) => void
+  ) {
+    // Create a simple mock image object
+    const mockImage = {
       width: 256,
       height: 256,
-      data: new Uint8Array(256 * 256 * 4).fill(255) // White texture
+      src: url,
+      crossOrigin: null,
+      complete: true,
+      naturalWidth: 256,
+      naturalHeight: 256
     };
 
     if (onLoad) {
-      setTimeout(() => onLoad(image), 0);
+      setTimeout(() => onLoad(mockImage), 0);
     }
 
-    return image;
+    return mockImage;
+  }
+
+  loadAsync(url: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.load(url, resolve, undefined, reject);
+    });
+  }
+
+  setPath(path: string) {
+    this.path = path;
+    return this;
+  }
+
+  setResourcePath(resourcePath: string) {
+    this.resourcePath = resourcePath;
+    return this;
+  }
+
+  setRequestHeader(requestHeader: Record<string, string>) {
+    this.requestHeader = requestHeader;
+    return this;
+  }
+
+  setCrossOrigin(crossOrigin: string) {
+    this.crossOrigin = crossOrigin;
+    return this;
+  }
+
+  setWithCredentials(value: boolean) {
+    this.withCredentials = value;
+    return this;
   }
 }
 
 // Replace the default ImageLoader
-THREE.DefaultLoadingManager.setURLModifier = () => '';
+THREE.DefaultLoadingManager.setURLModifier((url: string) => url);
 
 async function loadGLB (filePath: string): Promise<THREE.Object3D> {
   const loader = new GLTFLoader();
@@ -186,7 +245,7 @@ async function getDimensions (dirPath: string) {
 }
 
 // CLI Handling
-const inputDir = process.argv[2] ?? './public/models/';
+const inputDir: string = process.argv[2] || './public/models/';
 
 console.log('🚀 Starting GLB dimension scanner...');
 getDimensions(inputDir).catch(console.error);
