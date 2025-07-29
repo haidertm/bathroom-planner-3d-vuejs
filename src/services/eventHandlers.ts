@@ -903,7 +903,7 @@ export class EventHandlers {
             newPosition.y = wallConstrainedPos.y;
           }
 
-          const { position: snappedPos, rotation: wallSnappedRotation } = snapToNearestWall(
+          const { position: snappedPos, rotation: _wallSnappedRotation } = snapToNearestWall(
             { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
             this.roomWidthRef.value,
             this.roomHeightRef.value,
