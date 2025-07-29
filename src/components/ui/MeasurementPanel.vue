@@ -1,8 +1,7 @@
-// src/components/ui/MeasurementPanel.vue - IMPROVED VERSION
 <template>
   <div :style="panelStyle" v-if="measurementEnabled && currentMeasurements">
     <!-- Show measurements if available -->
-    <div v-if="currentMeasurements" :style="measurementDataStyle">
+    <div :style="measurementDataStyle">
       <div :style="dimensionsRowStyle">
         <div :style="dimensionItemStyle">
           <span :style="labelStyle">Width:</span>
@@ -107,32 +106,12 @@ const valueStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-// New styles for instruction text
-const instructionStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  minHeight: '20px'
-}))
-
-const instructionTextStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#ccc',
-  fontStyle: 'italic',
-  fontFamily: 'Arial, sans-serif',
-  textAlign: 'center'
-}))
 </script>
 
 <style scoped>
 /* Smooth transitions for all interactive elements */
 * {
   transition: all 0.2s ease;
-}
-
-/* Panel hover effect */
-div:hover {
-  transform: translateY(-1px);
 }
 
 /* Custom scrollbar for mobile */
