@@ -6,7 +6,7 @@ import productData from '../mocks/productData';
 import {
   isModelBased
 } from '../utils/models';
-import { type ObjectModel } from '../utils/constraints.ts';
+import { type ObjectModel, type ObjectModelWithCategory } from '../utils/constraints.ts';
 
 // Types
 interface ModelCache {
@@ -69,7 +69,7 @@ class ModelManager {
         const tempObjectModel: ObjectModel = {
           name,
           path,
-          scale: 100, // Default scale for preloading
+          scale, // Default scale for preloading
           dimensions: {
             width: 50,
             height: 50,
@@ -77,16 +77,19 @@ class ModelManager {
           }
         };
 
-        await this.loadModel(modelConfig.name, modelConfig);
-        console.log(`Preloaded: ${modelConfig.name}`);
+        await this.loadModel(name, tempObjectModel);
+        loadedCount++;
+        console.log(`Preloaded: ${name}`);
       } catch (error) {
-        console.warn(`Failed to preload: ${modelConfig.name}`, error);
+        failedCount++;
+        console.warn(`Failed to preload: ${name}`, error);
       }
     });
 
     await Promise.all(preloadPromises);
     this.preloadComplete = true;
-    console.log('Model preloading complete');
+    console.log('🎉 Model preloading complete!');
+    console.log(`📊 Results: ${loadedCount} loaded, ${failedCount} failed, ${Object.keys(this.cache).length} cached`);
   }
 
   async loadModel (modelName: string, productModel: ObjectModel): Promise<THREE.Group> {
@@ -343,8 +346,8 @@ export const getModelCacheStatus = () => {
 };
 
 // NEW: Function to extract all model paths from productData
-const getAllModelPathsFromProductData = (): Array<{ path: string; name: string; sku: string; category: string }> => {
-  const modelPaths: Array<{ path: string; name: string; sku: string; category: string }> = [];
+const getAllModelPathsFromProductData = (): ObjectModelWithCategory[] => {
+  const modelPaths: ObjectModelWithCategory[] = [];
 
   // Iterate through all categories in productData
   Object.entries(productData).forEach(([category, products]) => {
@@ -352,13 +355,7 @@ const getAllModelPathsFromProductData = (): Array<{ path: string; name: string; 
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach(variant => {
           if (variant.path && variant.sku) {
-            modelPaths.push({
-              path: variant.path,
-              name: variant.name || variant.sku,
-              sku: variant.sku,
-              category: category,
-              scale: variant.scale
-            });
+            modelPaths.push({...variant, category: category as ComponentType });
           }
         });
       }
