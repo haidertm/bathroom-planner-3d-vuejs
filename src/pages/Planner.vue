@@ -5,6 +5,11 @@
         backgroundColor="#fff"
         logoHeight="45px"
     />
+    <MeasurementPanel
+        :measurement-enabled="measurementEnabled"
+        :current-measurements="currentMeasurements"
+        @toggle-measurements="handleToggleMeasurements"
+    />
     <Sidebar
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
