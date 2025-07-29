@@ -34,7 +34,7 @@ export class ModelCache {
     }
   }
 
-  private static async loadModelFromFile(modelPath: string): Promise<THREE.Object3D> {
+  private static async loadModelFromFile(_modelPath: string): Promise<THREE.Object3D> {
     // Use your existing model loading logic here
     // This should be moved from your current createBathroomItemModel method
     throw new Error('Implement your existing model loading logic here');

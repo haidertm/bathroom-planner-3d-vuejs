@@ -10,7 +10,7 @@ import { CONSTRAINTS } from '../constants/dimensions';
 import { BathroomItem } from '../utils/constraints.ts';
 import productData from '../mocks/productData.ts';
 
-export const getMovementConfig = (objectType: ComponentType): MovementConfig => {
+export const getMovementConfig = (_objectType: ComponentType): MovementConfig => {
   // const config = FIXTURE_CONFIG[objectType];
   // return config?.movement || {
   //   // Default movement configuration for objects without explicit config
@@ -93,13 +93,13 @@ export const canMoveFreelyInRoom = (_objectType: ComponentType): boolean => {
 // NEW: Helper function to check if object can move vertically
 export const canMoveVertically = (objectType: ComponentType): boolean => {
   const movementConfig = getMovementConfig(objectType);
-  return movementConfig.allowVerticalMovement || movementConfig.allowFreeMovement;
+  return !!(movementConfig.allowVerticalMovement || movementConfig.allowFreeMovement);
 };
 
 // NEW: Helper function to check if object can rotate freely
 export const canRotateFreely = (objectType: ComponentType): boolean => {
   const movementConfig = getMovementConfig(objectType);
-  return movementConfig.allowFreeRotation || movementConfig.allowFreeMovement;
+  return !!(movementConfig.allowFreeRotation || movementConfig.allowFreeMovement);
 };
 
 // NEW: Helper function to get height constraints
