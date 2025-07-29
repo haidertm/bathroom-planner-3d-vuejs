@@ -1,5 +1,5 @@
 // Helper function to get movement configuration for an object
-import { ComponentType } from '../constants/components.ts';
+import { ComponentType } from '../constants/components';
 
 import {
   DEFAULT_ORIENTATION,
