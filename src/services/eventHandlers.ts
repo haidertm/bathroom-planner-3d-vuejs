@@ -52,6 +52,12 @@ export class EventHandlers {
   private deleteItem: DeleteItemFunction;
   private preventCollisionPlacementRef: Ref<boolean>; // NEW: Collision prevention setting
 
+  // ADD these new properties for movement tracking
+  private mouseDownPosition: THREE.Vector2;
+  private hasMouseMoved: boolean;
+  private wasEmptySpaceClicked: boolean; // Track if empty space was clicked
+  private readonly MOUSE_MOVE_THRESHOLD = 5; // pixels
+
   // Camera constraints - UPDATED FOR CENTIMETERS
   private readonly MIN_CAMERA_HEIGHT = 50; // 50cm minimum height above floor
   private readonly MAX_PHI_ANGLE = Math.PI / 2 - 0.1; // Slightly less than horizontal to stay above floor
@@ -148,6 +154,11 @@ export class EventHandlers {
 
     // Initialize target camera position
     this.targetCameraPosition = this.camera.position.clone();
+
+    // Initialize new tracking properties
+    this.mouseDownPosition = new THREE.Vector2();
+    this.hasMouseMoved = false;
+    this.wasEmptySpaceClicked = false;
 
     // Bind methods
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -280,6 +291,13 @@ export class EventHandlers {
   }
 
   private handleMouseDown (event: MouseEvent): void {
+    event.preventDefault();
+
+    // Store initial mouse position to track movement
+    this.mouseDownPosition.set(event.clientX, event.clientY);
+    this.hasMouseMoved = false;
+    this.wasEmptySpaceClicked = false; // Reset flag
+
     this.mouseX = event.clientX;
     this.mouseY = event.clientY;
 
@@ -289,10 +307,15 @@ export class EventHandlers {
 
     const intersected = this.getIntersectedObject(this.mouse);
 
-    // Clear previous selection if clicking on empty space or different object
-    if (this.selectedObject && (!intersected || intersected.object !== this.selectedObject)) {
+    // MODIFIED: Only clear selection if clicking on a different object, NOT empty space
+    if (this.selectedObject && intersected && intersected.object !== this.selectedObject) {
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
+    }
+
+    // TRACK: Remember if empty space was clicked (for later deselection in mouseup)
+    if (this.selectedObject && !intersected) {
+      this.wasEmptySpaceClicked = true;
     }
 
     if (intersected) {
@@ -308,7 +331,7 @@ export class EventHandlers {
       // Emit event for measurement updates
       window.dispatchEvent(new CustomEvent('object-selected'));
 
-      // Check collision state immediately when object is selected
+      // PRESERVED: Check collision state immediately when object is selected
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
@@ -372,17 +395,27 @@ export class EventHandlers {
         this.renderer.domElement.style.cursor = 'grabbing';
       }
 
+      // DON'T clear measurement system selection here!
+      // The measurement should stay synchronized with object selection
+      // Only clear it when the object itself gets deselected in handleMouseUp
+
       // Clear measurement system selection
-      if (this.measurementSystem) {
-        this.measurementSystem.setSelectedObject(null);
-      }
+      // if (this.measurementSystem) {
+      //   this.measurementSystem.setSelectedObject(null);
+      // }
 
       // Emit event for measurement updates
       window.dispatchEvent(new CustomEvent('object-selected'));
     }
   }
 
-  private handleMouseMove (event: MouseEvent): void {
+  private handleMouseMove(event: MouseEvent): void {
+    // Track mouse movement for click vs drag detection
+    const mouseDistance = this.mouseDownPosition.distanceTo(new THREE.Vector2(event.clientX, event.clientY));
+    if (mouseDistance > this.MOUSE_MOVE_THRESHOLD) {
+      this.hasMouseMoved = true;
+    }
+
     const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
     this.mouse.set(mousePos.x, mousePos.y);
 
@@ -701,14 +734,31 @@ export class EventHandlers {
       }
     }
 
-    // Don't clear selection on mouse up - keep it selected for potential deletion
-    this.isDragging = false;
-    this.isRotating = false;
-    this.isObjectRotating = false;
-    this.isHeightAdjusting = false;
-    this.isScaling = false;
-    this.renderer.domElement.style.cursor = 'default';
+  // NEW: Only deselect if empty space was clicked AND it was a click (not drag)
+  if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
+    console.log('🎯 Deselecting object - was click on empty space, not drag');
+    highlightObject(this.selectedObject, false);
+    this.selectedObject = null;
+
+    // Clear measurement system selection
+    if (this.measurementSystem) {
+      this.measurementSystem.setSelectedObject(null);
+    }
+
+    // Emit event for measurement updates
+    window.dispatchEvent(new CustomEvent('object-selected'));
   }
+
+  // Reset all states
+  this.isDragging = false;
+  this.isRotating = false;
+  this.isObjectRotating = false;
+  this.isHeightAdjusting = false;
+  this.isScaling = false;
+  this.hasMouseMoved = false; // Reset movement tracking
+  this.wasEmptySpaceClicked = false; // Reset empty space flag
+  this.renderer.domElement.style.cursor = 'default';
+}
 
   private handleContextMenu (event: MouseEvent): void {
     event.preventDefault();
@@ -752,41 +802,51 @@ export class EventHandlers {
     event.preventDefault();
     const touches = event.touches;
 
-    if (touches.length === 1) {
-      const touch = touches[0];
+  if (touches.length === 1) {
+    const touch = touches[0];
 
-      const touchPos = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
-      this.mouse.set(touchPos.x, touchPos.y);
+    // ADD: Track initial touch position
+    this.mouseDownPosition.set(touch.clientX, touch.clientY);
+    this.hasMouseMoved = false;
+    this.wasEmptySpaceClicked = false;
 
-      const intersected = this.getIntersectedObject(this.mouse);
+    const touchPos = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
+    this.mouse.set(touchPos.x, touchPos.y);
 
-      // Handle double tap to delete on mobile
-      if (intersected && this.selectedObject && intersected.object === this.selectedObject) {
-        const now = Date.now();
-        if (this.lastTouchTime && now - this.lastTouchTime < 300) {
-          // Double tap detected - delete the object
-          const itemId = this.selectedObject.userData.itemId as number;
-          highlightObject(this.selectedObject, false);
-          this.selectedObject = null;
+    const intersected = this.getIntersectedObject(this.mouse);
 
-          if (this.deleteItem && itemId) {
-            this.deleteItem(itemId);
-          }
-          return;
-        }
-        this.lastTouchTime = now;
-      } else {
-        this.lastTouchTime = Date.now();
-      }
-
-      // Clear previous selection if touching empty space or different object
-      if (this.selectedObject && (!intersected || intersected.object !== this.selectedObject)) {
+    // Handle double tap to delete on mobile
+    if (intersected && this.selectedObject && intersected.object === this.selectedObject) {
+      const now = Date.now();
+      if (this.lastTouchTime && now - this.lastTouchTime < 300) {
+        // Double tap detected - delete the object
+        const itemId = this.selectedObject.userData.itemId as number;
         highlightObject(this.selectedObject, false);
         this.selectedObject = null;
-      }
 
-      if (intersected) {
-        this.selectedObject = intersected.object;
+        if (this.deleteItem && itemId) {
+          this.deleteItem(itemId);
+        }
+        return;
+      }
+      this.lastTouchTime = now;
+    } else {
+      this.lastTouchTime = Date.now();
+    }
+
+    // MODIFIED: Only clear selection if touching a different object, NOT empty space
+    if (this.selectedObject && intersected && intersected.object !== this.selectedObject) {
+      highlightObject(this.selectedObject, false);
+      this.selectedObject = null;
+    }
+
+    // TRACK: Remember if empty space was touched
+    if (this.selectedObject && !intersected) {
+      this.wasEmptySpaceClicked = true;
+    }
+
+    if (intersected) {
+      this.selectedObject = intersected.object;
 
         // Sync with measurement system
         if (this.measurementSystem) {
@@ -826,17 +886,17 @@ export class EventHandlers {
         // Highlight the object first
         highlightObject(this.selectedObject, true);
 
-        // Then set appropriate outline color based on current collision state
-        setOutlineColor(isColliding);
-      } else {
-        this.isRotating = true;
-        this.mouseX = touch.clientX;
-        this.mouseY = touch.clientY;
-      }
-    } else if (touches.length === 2) {
-      this.lastTouchDistance = getTouchDistance(touches[0], touches[1]);
+      // Then set appropriate outline color based on current collision state
+      setOutlineColor(isColliding);
+    } else {
+      this.isRotating = true;
+      this.mouseX = touch.clientX;
+      this.mouseY = touch.clientY;
     }
+  } else if (touches.length === 2) {
+    this.lastTouchDistance = getTouchDistance(touches[0], touches[1]);
   }
+}
 
   private handleTouchMove (event: TouchEvent): void {
     event.preventDefault();
@@ -844,6 +904,13 @@ export class EventHandlers {
 
     if (touches.length === 1) {
       const touch = touches[0];
+
+      // ADD: Track touch movement
+      const touchDistance = this.mouseDownPosition.distanceTo(new THREE.Vector2(touch.clientX, touch.clientY));
+      if (touchDistance > this.MOUSE_MOVE_THRESHOLD) {
+        this.hasMouseMoved = true;
+      }
+
       const touchPos = updateTouchPosition(touch, this.renderer.domElement.getBoundingClientRect());
       this.mouse.set(touchPos.x, touchPos.y);
 
@@ -1107,13 +1174,28 @@ export class EventHandlers {
       }
     }
 
-    // Don't clear selection on touch end - keep it selected for potential deletion
-    this.isDragging = false;
-    this.isRotating = false;
-    this.isObjectRotating = false;
-    this.isHeightAdjusting = false;
-    this.isScaling = false;
+  // NEW: Only deselect if empty space was tapped AND it was a tap (not drag)
+  if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
+    console.log('🎯 Deselecting object - was tap on empty space, not drag');
+    highlightObject(this.selectedObject, false);
+    this.selectedObject = null;
+
+    if (this.measurementSystem) {
+      this.measurementSystem.setSelectedObject(null);
+    }
+
+    window.dispatchEvent(new CustomEvent('object-selected'));
   }
+
+  // Reset all states
+  this.isDragging = false;
+  this.isRotating = false;
+  this.isObjectRotating = false;
+  this.isHeightAdjusting = false;
+  this.isScaling = false;
+  this.hasMouseMoved = false; // Reset movement tracking
+  this.wasEmptySpaceClicked = false; // Reset empty space flag
+}
 
   private handleResize (): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
