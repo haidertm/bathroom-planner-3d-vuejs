@@ -288,7 +288,7 @@ class ModelBasedFixture {
       return group;
     } catch (error) {
       console.error(`Failed to load ${this.config.name} model, using fallback`);
-      return null;
+      return group;
     }
   }
 }
@@ -309,20 +309,13 @@ export const createModel = async (
       return null;
     }
 
-    let group: THREE.Group;
-
     // Create model-based fixture
     const fixture = new ModelBasedFixture(position, productModel);
-    group = await fixture.create();
-
-    if (group) {
-      group.rotation.y = rotation;
-      group.scale.set(scale, scale, scale);
-      group.userData.type = type;
-      return group;
-    }
-
-    return null;
+    const model = await fixture.create();
+    model.rotation.y = rotation;
+    model.scale.set(scale, scale, scale);
+    model.userData.type = type;
+    return model;
   } catch (error) {
     console.error(`Error creating ${type} model:`, error);
     return null;
@@ -355,7 +348,7 @@ const getAllModelPathsFromProductData = (): ObjectModelWithCategory[] => {
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach(variant => {
           if (variant.path && variant.sku) {
-            modelPaths.push({...variant, category: category as ComponentType });
+            modelPaths.push({ ...variant, category: category as ComponentType });
           }
         });
       }

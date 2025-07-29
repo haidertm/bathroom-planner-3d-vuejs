@@ -29,8 +29,8 @@ export interface MeasurementLabel {
 
 export class MeasurementSystem {
   private scene: THREE.Scene;
-  private camera: THREE.Camera;
-  private renderer: THREE.WebGLRenderer;
+  // private _camera: THREE.Camera;
+  // private _renderer: THREE.WebGLRenderer;
   private enabled: boolean = false;
   private selectedObject: THREE.Object3D | null = null;
   private measurementLabels: THREE.Group;
@@ -40,10 +40,10 @@ export class MeasurementSystem {
   private roomHeight: number = 250;
   private existingItems: BathroomItem[] = [];
 
-  constructor(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
+  constructor(scene: THREE.Scene, _camera: THREE.Camera, _renderer: THREE.WebGLRenderer) {
     this.scene = scene;
-    this.camera = camera;
-    this.renderer = renderer;
+    // this._camera = _camera;
+    // this._renderer = _renderer;
 
     // Create groups for measurement visuals
     this.measurementLabels = new THREE.Group();
@@ -206,7 +206,7 @@ export class MeasurementSystem {
     position: THREE.Vector3,
     width: number,
     depth: number,
-    height: number,
+    _height: number,
     excludeItemId: number
   ): { left: number; right: number; front: number; back: number } {
     let minLeft = Infinity;

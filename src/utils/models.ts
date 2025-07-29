@@ -84,7 +84,7 @@ const getOrientationFromProductData = (sku: string, objectType: ComponentType): 
 // }
 
 // NEW: Helper function to check if object can move freely
-export const canMoveFreelyInRoom = (objectType: ComponentType): boolean => {
+export const canMoveFreelyInRoom = (_objectType: ComponentType): boolean => {
   return false;
   // const movementConfig = getMovementConfig(objectType);
   // return !!movementConfig.allowFreeMovement;

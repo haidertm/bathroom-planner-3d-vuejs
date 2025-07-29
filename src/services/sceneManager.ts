@@ -76,7 +76,8 @@ export class SceneManager {
     // Create renderer with enhanced settings
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
-      powerPreference: 'high-performance'
+      powerPreference: 'high-performance',
+      logarithmicDepthBuffer: true  // Set it in the constructor options
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -106,14 +107,17 @@ export class SceneManager {
       console.log('Measurement system initialized');
     }
 
-    this.renderer.logarithmicDepthBuffer = true;
+    // this.renderer = new THREE.WebGLRenderer({
+    //   antialias: true,
+    //   powerPreference: 'high-performance',
+    //   logarithmicDepthBuffer: true  // Set it in the constructor options
+    // });
 
     // FIXED: Log scene initialization
     console.log('✅ Scene initialized successfully:', {
       sceneBackground: this.scene.background,
       hasFog: !!this.scene.fog,
-      rendererSize: { width: window.innerWidth, height: window.innerHeight },
-      logarithmicDepthBuffer: this.renderer.logarithmicDepthBuffer
+      rendererSize: { width: window.innerWidth, height: window.innerHeight }
     });
 
     return {
