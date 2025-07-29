@@ -99,6 +99,7 @@ html, body {
   align-items: center;
   justify-content: center;
   background-color: white;
+  width: 75%;
 }
 
 .canvas-container {
@@ -264,6 +265,7 @@ canvas {
   }
   .right-panel{
     padding: 0;
+    width: 100%;
   }
   .content-wrapper {
     flex-direction: column;
