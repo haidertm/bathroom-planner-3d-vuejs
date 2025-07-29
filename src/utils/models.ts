@@ -8,7 +8,7 @@ import {
 } from '../constants/models';
 import { CONSTRAINTS } from '../constants/dimensions';
 import { BathroomItem } from '../utils/constraints';
-import productData from '../mocks/productData.ts';
+import productData from '../mocks/productData';
 
 export const getMovementConfig = (_objectType: ComponentType): MovementConfig => {
   // const config = FIXTURE_CONFIG[objectType];

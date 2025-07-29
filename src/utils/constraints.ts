@@ -1,7 +1,7 @@
 // Complete enhanced constraints.ts with product-specific dimension lookup
 // All functions included and enhanced
 
-import { CONSTRAINTS, MODEL_DIMENSIONS } from '../constants/dimensions.ts';
+import { CONSTRAINTS, MODEL_DIMENSIONS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { shouldSnapToWall, canMoveFreelyInRoom } from '../utils/models';
 import { type OrientationConfig, MovementConfig, DEFAULT_ORIENTATION } from '../constants/models';
