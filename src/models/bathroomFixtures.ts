@@ -6,7 +6,7 @@ import productData from '../mocks/productData';
 import {
   isModelBased
 } from '../utils/models';
-import { type ObjectModel, type ObjectModelWithCategory } from '../utils/constraints.ts';
+import { type ObjectModel, type ObjectModelWithCategory } from '../utils/constraints';
 
 // Types
 interface ModelCache {

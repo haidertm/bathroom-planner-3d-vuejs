@@ -21,7 +21,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { getOrientationForItem } from '../utils/models.ts';
+import { getOrientationForItem } from '../utils/models';
 
 interface SceneComponents {
   scene: THREE.Scene;

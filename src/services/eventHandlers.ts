@@ -19,7 +19,7 @@ import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { LOOK_AT, CAMERA_CONTROLS } from '../constants/camera';
 import { ref } from 'vue';
-import { getHeightConstraints, getMovementConfig, shouldSnapToWall } from '../utils/models.ts';
+import { getHeightConstraints, getMovementConfig, shouldSnapToWall } from '../utils/models';
 import { MeasurementSystem } from './measurementSystem';
 
 interface IntersectionResult {
