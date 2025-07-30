@@ -636,7 +636,15 @@ const findFreeStandingPosition = (
     // Random rotation if allowed
     const rotation = movementConfig.allowFreeRotation ? Math.random() * Math.PI * 2 : 0;
 
-    // Check for collisions
+    // ✅ FIXED: Create temporary item for enhanced collision detection
+    const tempItem: BathroomItem = {
+      id: -1, // Temporary ID
+      type: objectType,
+      position: [position.x, position.y, position.z] as [number, number, number],
+      scale: scale
+    };
+
+    // Check for collisions with enhanced detection
     let hasCollision = false;
     for (const item of existingItems) {
       if (checkCollision(
@@ -645,7 +653,9 @@ const findFreeStandingPosition = (
         scale,
         { x: item.position[0], y: item.position[1], z: item.position[2] },
         item.type,
-        item.scale || 1.0
+        item.scale || 1.0,
+        tempItem, // ✅ Pass temporary item for enhanced dimensions lookup
+        item      // ✅ Pass existing item for product-specific dimensions
       )) {
         hasCollision = true;
         break;
