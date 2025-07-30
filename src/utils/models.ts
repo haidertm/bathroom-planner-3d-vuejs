@@ -21,7 +21,7 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
     allowVerticalMovement: true, // Mirrors can be adjusted up/down
     allowFreeRotation: false,
     minHeight: 0,
-    maxHeight: 0 // 2m max height
+    maxHeight: 150
   },
 
   Sink: {

@@ -169,7 +169,7 @@ const productData: ProductData = {
           floorOffset: 110.1,
           orientation: {
             type: 'face_into_room',
-            wallBuffer: 1, // Flush with wall - no gap
+            wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
           sku: '73189V2',
@@ -182,6 +182,11 @@ const productData: ProductData = {
           path: '../../models/mirror/73104V2.glb',
           dimensions: { width: 59, height: 59.9, depth: 13.5 },
           floorOffset: 110,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73104V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm'
@@ -191,6 +196,11 @@ const productData: ProductData = {
           name: '600x450mm',
           path: '../../models/mirror/73103V2.glb',
           dimensions: { width: 45, height: 60, depth: 13 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           floorOffset: 0,
           sku: '73103V2',
           price: '499.99',
@@ -217,6 +227,11 @@ const productData: ProductData = {
           name: '500x1200mm',
           dimensions: { width: 119.5, height: 49.9, depth: 5.1 },
           floorOffset: 99.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           path: '../../models/mirror/73035V2.glb',
           sku: '73035V2',
           price: '139.99',
@@ -228,6 +243,11 @@ const productData: ProductData = {
           path: '../../models/mirror/73154V2.glb',
           dimensions: { width: 100, height: 50, depth: 5.3 },
           floorOffset: 99.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73154V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 500x1000mm'
@@ -238,6 +258,11 @@ const productData: ProductData = {
           path: '../../models/mirror/73153V2.glb',
           dimensions: { width: 39.8, height: 59.9, depth: 5.3 },
           floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73153V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 600x400mm'
@@ -248,6 +273,11 @@ const productData: ProductData = {
           path: '../../models/mirror/73033V2.glb',
           dimensions: { width: 50, height: 70, depth: 5.1 },
           floorOffset: 99.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73033V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 700x500mm'
