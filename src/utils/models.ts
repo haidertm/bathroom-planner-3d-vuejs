@@ -20,8 +20,8 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
     snapToWall: true,
     allowVerticalMovement: true, // Mirrors can be adjusted up/down
     allowFreeRotation: false,
-    minHeight: 80, // 80cm from floor
-    maxHeight: 200 // 2m max height
+    minHeight: 0,
+    maxHeight: 0 // 2m max height
   },
 
   Sink: {
@@ -52,7 +52,7 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
     snapToWall: true,
     allowVerticalMovement: true, // Can be positioned at different heights
     allowFreeRotation: false,
-    minHeight: 10, // 10cm from floor
+    minHeight: 0, // 10cm from floor
     maxHeight: 150 // 1.5m max
   },
 

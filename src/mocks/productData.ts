@@ -43,9 +43,7 @@ const productData: ProductData = {
           movement: { // NEW: Sink movement configuration
             snapToWall: true,
             allowVerticalMovement: false,
-            allowFreeRotation: false,
-            minHeight: 70,
-            maxHeight: 120,
+            allowFreeRotation: false
           },
           sku: 'C76236',
           price: '249.99',
@@ -168,6 +166,11 @@ const productData: ProductData = {
           name: '650x1200mm',
           path: '../../models/mirror/73189V2.glb',
           dimensions: { width: 119.8, height: 64.8, depth: 13.8 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 1, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73189V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm'
@@ -404,9 +407,7 @@ const productData: ProductData = {
           movement: { // NEW: Sink movement configuration
             snapToWall: false,
             allowVerticalMovement: false,
-            allowFreeRotation: false,
-            minHeight: 70,
-            maxHeight: 120,
+            allowFreeRotation: true
           },
           sku: 'C51096',
           price: '399.95',
@@ -417,6 +418,11 @@ const productData: ProductData = {
           name: '1500mm Length',
           path: '../../models/bath/C51092.glb',
           dimensions: { width: 151.7, height: 57.9, depth: 74.8 },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51092',
           price: '449.95',
           title: 'Newham 1500mm Freestanding Bath'
@@ -426,6 +432,11 @@ const productData: ProductData = {
           name: '1700mm Length',
           path: '../../models/bath/C51093.glb',
           dimensions: { width: 169.7, height: 58, depth: 77.8 },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51093',
           price: '499.95',
           title: 'Newham 1700mm Freestanding Bath'

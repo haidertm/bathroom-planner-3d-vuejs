@@ -15,11 +15,16 @@ import {
   type BathroomItem,
   constrainToRoom
 } from '../utils/constraints';
-import { SCALE_LIMITS, HEIGHT_LIMITS } from '../constants/dimensions';
+import { SCALE_LIMITS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { LOOK_AT, CAMERA_CONTROLS } from '../constants/camera';
 import { ref } from 'vue';
-import { getHeightConstraints, getMovementConfig, shouldSnapToWall } from '../utils/models';
+import {
+  getHeightConstraints,
+  getMovementConfig,
+  canMoveVertically,
+  canRotateFreely,
+} from '../utils/models';
 import { MeasurementSystem } from './measurementSystem';
 
 interface IntersectionResult {
@@ -31,7 +36,6 @@ interface UpdateData {
   position?: [number, number, number];
   rotation?: number;
   scale?: number;
-
   [key: string]: any;
 }
 
@@ -52,11 +56,11 @@ export class EventHandlers {
   private deleteItem: DeleteItemFunction;
   private preventCollisionPlacementRef: Ref<boolean>; // NEW: Collision prevention setting
 
-  // ADD these new properties for movement tracking
+  // Movement tracking
   private mouseDownPosition: THREE.Vector2;
   private hasMouseMoved: boolean;
-  private wasEmptySpaceClicked: boolean; // Track if empty space was clicked
-  private readonly MOUSE_MOVE_THRESHOLD = 5; // pixels
+  private wasEmptySpaceClicked: boolean;
+  private readonly MOUSE_MOVE_THRESHOLD = 5;
 
   // Camera constraints - UPDATED FOR CENTIMETERS
   private readonly MIN_CAMERA_HEIGHT = 50; // 50cm minimum height above floor
@@ -201,6 +205,12 @@ export class EventHandlers {
     this.measurementSystem = measurementSystem;
   }
 
+  // 🆕 NEW: Get current item data for movement configuration
+  private getCurrentItemData(objectId: number): BathroomItem | undefined {
+    const currentItems = this.getCurrentItems();
+    return currentItems.find(item => item.id === objectId);
+  }
+
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
     this.raycaster.setFromCamera(mouse, this.camera);
 
@@ -296,7 +306,7 @@ export class EventHandlers {
     // Store initial mouse position to track movement
     this.mouseDownPosition.set(event.clientX, event.clientY);
     this.hasMouseMoved = false;
-    this.wasEmptySpaceClicked = false; // Reset flag
+    this.wasEmptySpaceClicked = false;
 
     this.mouseX = event.clientX;
     this.mouseY = event.clientY;
@@ -307,7 +317,7 @@ export class EventHandlers {
 
     const intersected = this.getIntersectedObject(this.mouse);
 
-    // MODIFIED: Only clear selection if clicking on a different object, NOT empty space
+    // Only clear selection if clicking on a different object, NOT empty space
     if (this.selectedObject && intersected && intersected.object !== this.selectedObject) {
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
@@ -331,7 +341,7 @@ export class EventHandlers {
       // Emit event for measurement updates
       window.dispatchEvent(new CustomEvent('object-selected'));
 
-      // PRESERVED: Check collision state immediately when object is selected
+      // Check collision state immediately when object is selected
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
@@ -395,15 +405,6 @@ export class EventHandlers {
         this.renderer.domElement.style.cursor = 'grabbing';
       }
 
-      // DON'T clear measurement system selection here!
-      // The measurement should stay synchronized with object selection
-      // Only clear it when the object itself gets deselected in handleMouseUp
-
-      // Clear measurement system selection
-      // if (this.measurementSystem) {
-      //   this.measurementSystem.setSelectedObject(null);
-      // }
-
       // Emit event for measurement updates
       window.dispatchEvent(new CustomEvent('object-selected'));
     }
@@ -435,8 +436,8 @@ export class EventHandlers {
     }
 
     if (this.isScaling && this.selectedObject) {
-      // Scale object - UPDATED SCALING FACTOR FOR CENTIMETERS
-      const deltaY = (this.mouseStartY - event.clientY) * 0.001; // Reduced from 0.01 to 0.001
+      // Scale object
+      const deltaY = (this.mouseStartY - event.clientY) * 0.001;
       const newScale = Math.max(SCALE_LIMITS.MIN, Math.min(SCALE_LIMITS.MAX, this.scaleStart + deltaY));
 
       this.selectedObject.scale.set(newScale, newScale, newScale);
@@ -446,23 +447,42 @@ export class EventHandlers {
       this.queueUpdate(itemId, { scale: newScale });
 
     } else if (this.isHeightAdjusting && this.selectedObject) {
-      // Adjust object height - UPDATED HEIGHT ADJUSTMENT FOR CENTIMETERS
-      const deltaY = (this.mouseStartY - event.clientY) * 1.0; // Increased from 0.01 to 1.0
+      // 🆕 ENHANCED: Height adjustment with movement configuration
+      const objectType = this.selectedObject.userData.type as ComponentType;
+      const itemId = this.selectedObject.userData.itemId as number;
+      const currentItem = this.getCurrentItemData(itemId);
+
+      // Check if vertical movement is allowed
+      if (!canMoveVertically(objectType, currentItem)) {
+        console.log('⚠️ Vertical movement not allowed for', objectType);
+        return; // Don't allow height adjustment
+      }
+
+      const deltaY = (this.mouseStartY - event.clientY) * 1.0;
       let newY = this.heightStartY + deltaY;
 
-      const minHeight = HEIGHT_LIMITS.MIN;
-      const maxHeight = this.selectedObject.userData.type === 'Mirror' ? HEIGHT_LIMITS.MIRROR_MAX : HEIGHT_LIMITS.MAX;
-      newY = Math.max(minHeight, Math.min(maxHeight, newY));
+      // Use movement-specific height constraints
+      const heightConstraints = getHeightConstraints(objectType, currentItem);
+      newY = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newY));
 
       this.selectedObject.position.y = newY;
 
-      const itemId = this.selectedObject.userData.itemId as number;
-      // Queue update instead of applying immediately
       this.queueUpdate(itemId, {
         position: [this.selectedObject.position.x, newY, this.selectedObject.position.z]
       });
 
     } else if (this.isObjectRotating && this.selectedObject) {
+      // 🆕 ENHANCED: Rotation with movement configuration
+      const objectType = this.selectedObject.userData.type as ComponentType;
+      const itemId = this.selectedObject.userData.itemId as number;
+      const currentItem = this.getCurrentItemData(itemId);
+
+      // Check if free rotation is allowed
+      if (!canRotateFreely(objectType, currentItem)) {
+        console.log('⚠️ Free rotation not allowed for', objectType);
+        return; // Don't allow free rotation
+      }
+
       // Rotate object
       const rect = this.renderer.domElement.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -472,61 +492,40 @@ export class EventHandlers {
 
       this.selectedObject.rotation.y = this.objectStartRotation + deltaAngle;
 
-      const itemId = this.selectedObject.userData.itemId as number;
-      // Queue update instead of applying immediately
       this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
     } else if (this.isDragging && this.selectedObject) {
-      // ENHANCED: Drag object with movement configuration constraints
+      // 🆕 ENHANCED: Movement with proper configuration system
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersectPoint = new THREE.Vector3();
       this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
       const newPosition = intersectPoint.add(this.dragOffset);
 
-      // Get object type and scale for enhanced constraints
+      // Get object movement configuration
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
-      console.log('selectedObjectGetting dragged', this.selectedObject);
       const itemId = this.selectedObject.userData.itemId as number;
-      const movementConfig = getMovementConfig(objectType);
+      const currentItem = this.getCurrentItemData(itemId);
+      const movementConfig = getMovementConfig(objectType, currentItem);
 
-      // DEBUG: Log object movement configuration
-      console.log('🔗 DRAG - Movement config:', {
+      console.log('🔧 DRAG - Using movement config:', {
         objectType,
-        snapToWall: movementConfig.snapToWall,
-        allowFreeMovement: !movementConfig.snapToWall,
-        allowFreeRotation: movementConfig.allowFreeRotation
+        sku: currentItem?.sku,
+        config: movementConfig
       });
 
-      // Apply movement behavior based on configuration
+      let constrainedPosition = { ...newPosition };
+      let constrainedRotation = this.selectedObject.rotation.y; // Keep current rotation by default
       let rotationChanged = false;
-      let snappedRotation = 0; // Initialize snappedRotation
 
-      if (!movementConfig.snapToWall) {
-        // Free movement - just constrain to room bounds, preserve current rotation
-        console.log('🎯 Applying FREE MOVEMENT constraints (rotation preserved)');
-        const constrainedPos = constrainToRoom(
-          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
-          this.roomWidthRef.value,
-          this.roomHeightRef.value,
-          {
-            type: objectType,
-            scale: objectScale,
-            orientation: this.selectedObject?.userData?.orientation
-          }
-        );
-
-        // Apply constrained position to Vector3
-        newPosition.x = constrainedPos.position.x;
-        newPosition.y = constrainedPos.position.y;
-        newPosition.z = constrainedPos.position.z;
-        // Do NOT change rotation for free movement objects
-      } else if (movementConfig.snapToWall) {
-        // Wall snapping behavior
+      // 🆕 ENHANCED: Apply movement constraints based on configuration
+      if (movementConfig.snapToWall) {
         console.log('🔗 Applying WALL SNAPPING constraints');
+
+        // Wall-snapped objects
         const { position: wallConstrainedPos } = constrainToWalls(
-          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
@@ -536,43 +535,39 @@ export class EventHandlers {
           }
         );
 
-        // Apply wall constraints to Vector3
-        newPosition.x = wallConstrainedPos.x;
-        newPosition.z = wallConstrainedPos.z;
+        constrainedPosition.x = wallConstrainedPos.x;
+        constrainedPosition.z = wallConstrainedPos.z;
 
+        // Handle vertical movement for wall-mounted objects
         if (movementConfig.allowVerticalMovement) {
-          const heightConstraints = getHeightConstraints(objectType);
-          newPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
+          const heightConstraints = getHeightConstraints(objectType, currentItem);
+          constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
         } else {
-          newPosition.y = wallConstrainedPos.y;
+          constrainedPosition.y = wallConstrainedPos.y; // Use wall-constrained Y
         }
 
-        const { position: snappedPos, rotation: wallSnappedRotation } = snapToNearestWall(
-          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
-          this.roomWidthRef.value,
-          this.roomHeightRef.value,
-          {
-            type: objectType,
-            scale: objectScale,
-            orientation: this.selectedObject?.userData?.orientation
-          }
-        );
-
-        // Apply snapped position to Vector3
-        newPosition.x = snappedPos.x;
-        newPosition.z = snappedPos.z;
-        snappedRotation = wallSnappedRotation; // Store the rotation
-
-        // Only apply wall-based rotation if free rotation is NOT allowed
+        // Handle rotation for wall-mounted objects
         if (!movementConfig.allowFreeRotation) {
-          this.selectedObject.rotation.y = snappedRotation;
+          const { rotation: wallRotation } = snapToNearestWall(
+            { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            {
+              type: objectType,
+              scale: objectScale,
+              orientation: this.selectedObject?.userData?.orientation
+            }
+          );
+          constrainedRotation = wallRotation;
           rotationChanged = true;
         }
+
       } else {
-        // Default behavior - constrain to room bounds, preserve rotation
-        console.log('🏠 Applying DEFAULT ROOM constraints (rotation preserved)');
-        const constrainedPos = constrainToRoom(
-          { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
+        console.log('🎯 Applying FREE MOVEMENT constraints');
+
+        // Free-standing objects
+        const { position: roomConstrainedPos } = constrainToRoom(
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
@@ -582,18 +577,24 @@ export class EventHandlers {
           }
         );
 
-        // Apply constrained position to Vector3
-        newPosition.x = constrainedPos.position.x;
-        newPosition.y = constrainedPos.position.y;
-        newPosition.z = constrainedPos.position.z;
-        // Do NOT change rotation for default room constraint
+        constrainedPosition.x = roomConstrainedPos.x;
+        constrainedPosition.z = roomConstrainedPos.z;
+
+        // 🆕 CRITICAL: Free-standing objects should stay on floor level
+        if (!movementConfig.allowVerticalMovement) {
+          constrainedPosition.y = 0; // Keep on floor
+        } else {
+          constrainedPosition.y = roomConstrainedPos.y;
+        }
+
+        // Free-standing objects can keep their current rotation
+        // (no automatic rotation changes unless allowFreeRotation is explicitly false)
       }
 
       // Check for collisions and update outline color
       const currentItems = this.getCurrentItems();
-      const currentItem = currentItems.find(item => item.id === itemId);
       const isColliding = wouldCollideWithExisting(
-        { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+        { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
         objectType,
         objectScale,
         itemId,
@@ -604,31 +605,35 @@ export class EventHandlers {
       // Update outline color based on collision state
       setOutlineColor(isColliding);
 
-      // DEBUG: Log final position and collision state
-      console.log('🔗 DRAG result:', {
-        position: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
-        objectType,
-        movementType: !movementConfig.snapToWall ? 'FREE' : (movementConfig.snapToWall ? 'WALL' : 'ROOM'),
-        isColliding,
-        outlineColor: isColliding ? 'RED' : 'CYAN'
-      });
+      // Apply constrained position
+      this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
 
-      this.selectedObject.position.copy(newPosition);
+      // Apply rotation if it was changed
+      if (rotationChanged) {
+        this.selectedObject.rotation.y = constrainedRotation;
+      }
 
-      // Queue update - only include rotation if it was changed by wall snapping
+      // Queue update
       const updateData: UpdateData = {
-        position: [newPosition.x, newPosition.y, newPosition.z]
+        position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z]
       };
 
-      // Only include rotation in update if it was actually changed (i.e., by wall snapping)
       if (rotationChanged) {
-        updateData.rotation = this.selectedObject.rotation.y;
+        updateData.rotation = constrainedRotation;
       }
 
       this.queueUpdate(itemId, updateData);
 
+      console.log('🔧 DRAG result:', {
+        movementType: movementConfig.snapToWall ? 'WALL-SNAPPED' : 'FREE-STANDING',
+        position: { x: constrainedPosition.x.toFixed(1), y: constrainedPosition.y.toFixed(1), z: constrainedPosition.z.toFixed(1) },
+        rotation: rotationChanged ? `${(constrainedRotation * 180 / Math.PI).toFixed(0)}°` : 'unchanged',
+        isColliding,
+        verticalMovement: movementConfig.allowVerticalMovement ? 'allowed' : 'restricted'
+      });
+
     } else if (this.isRotating) {
-      // SMOOTH: Rotate camera with smooth interpolation
+      // Camera rotation logic (unchanged)
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
 
@@ -677,14 +682,13 @@ export class EventHandlers {
       this.isDragOperation = false;
     }
 
-    // ENHANCED: Handle collision prevention and snap-back logic
+    // Handle collision prevention and snap-back logic
     if (this.isDragging && this.selectedObject) {
       window.dispatchEvent(new CustomEvent('object-moved'));
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItems = this.getCurrentItems();
-      // NEW: Get the current item data for enhanced dimension lookup
       const currentItem = currentItems.find(item => item.id === itemId);
       const finalPosition = this.selectedObject.position;
       const isColliding = wouldCollideWithExisting(
@@ -696,7 +700,7 @@ export class EventHandlers {
         currentItem
       );
 
-      // NEW: Check if collision prevention is enabled and object is colliding
+      // Check if collision prevention is enabled and object is colliding
       if (this.preventCollisionPlacementRef.value && isColliding) {
         // Snap back to original position
         this.selectedObject.position.copy(this.originalDragPosition);
@@ -717,11 +721,6 @@ export class EventHandlers {
         setOutlineColor(false);
 
         console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
-        console.log('📍 Original position restored:', {
-          x: this.originalDragPosition.x.toFixed(3),
-          z: this.originalDragPosition.z.toFixed(3),
-          rotation: `${(this.originalDragRotation * 180 / Math.PI).toFixed(0)}°`
-        });
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
@@ -734,31 +733,31 @@ export class EventHandlers {
       }
     }
 
-  // NEW: Only deselect if empty space was clicked AND it was a click (not drag)
-  if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
-    console.log('🎯 Deselecting object - was click on empty space, not drag');
-    highlightObject(this.selectedObject, false);
-    this.selectedObject = null;
+    // Only deselect if empty space was clicked AND it was a click (not drag)
+    if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
+      console.log('🎯 Deselecting object - was click on empty space, not drag');
+      highlightObject(this.selectedObject, false);
+      this.selectedObject = null;
 
-    // Clear measurement system selection
-    if (this.measurementSystem) {
-      this.measurementSystem.setSelectedObject(null);
+      // Clear measurement system selection
+      if (this.measurementSystem) {
+        this.measurementSystem.setSelectedObject(null);
+      }
+
+      // Emit event for measurement updates
+      window.dispatchEvent(new CustomEvent('object-selected'));
     }
 
-    // Emit event for measurement updates
-    window.dispatchEvent(new CustomEvent('object-selected'));
+    // Reset all states
+    this.isDragging = false;
+    this.isRotating = false;
+    this.isObjectRotating = false;
+    this.isHeightAdjusting = false;
+    this.isScaling = false;
+    this.hasMouseMoved = false;
+    this.wasEmptySpaceClicked = false;
+    this.renderer.domElement.style.cursor = 'default';
   }
-
-  // Reset all states
-  this.isDragging = false;
-  this.isRotating = false;
-  this.isObjectRotating = false;
-  this.isHeightAdjusting = false;
-  this.isScaling = false;
-  this.hasMouseMoved = false; // Reset movement tracking
-  this.wasEmptySpaceClicked = false; // Reset empty space flag
-  this.renderer.domElement.style.cursor = 'default';
-}
 
   private handleContextMenu (event: MouseEvent): void {
     event.preventDefault();
@@ -905,7 +904,7 @@ export class EventHandlers {
     if (touches.length === 1) {
       const touch = touches[0];
 
-      // ADD: Track touch movement
+      // Track touch movement
       const touchDistance = this.mouseDownPosition.distanceTo(new THREE.Vector2(touch.clientX, touch.clientY));
       if (touchDistance > this.MOUSE_MOVE_THRESHOLD) {
         this.hasMouseMoved = true;
@@ -915,41 +914,26 @@ export class EventHandlers {
       this.mouse.set(touchPos.x, touchPos.y);
 
       if (this.isDragging && this.selectedObject) {
-        // NEW: Apply the same enhanced drag logic as mouse movement
+        // 🆕 ENHANCED: Apply the same movement logic as mouse for touch
         const objectType = this.selectedObject.userData.type as ComponentType;
         const objectScale = this.selectedObject.scale.x;
         const itemId = this.selectedObject.userData.itemId as number;
-        const movementConfig = getMovementConfig(objectType);
+        const currentItem = this.getCurrentItemData(itemId);
+        const movementConfig = getMovementConfig(objectType, currentItem);
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
         const newPosition = intersectPoint.add(this.dragOffset);
 
-        // Initialize snappedRotation to prevent undefined errors
-        let snappedRotation = 0;
+        let constrainedPosition = { ...newPosition };
+        let constrainedRotation = this.selectedObject.rotation.y;
+        let rotationChanged = false;
 
-        // Apply movement behavior based on configuration
-        if (!movementConfig.snapToWall) {
-          const constrainedPos = constrainToRoom(
-            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
-            this.roomWidthRef.value,
-            this.roomHeightRef.value,
-            {
-              type: objectType,
-              scale: objectScale,
-              orientation: this.selectedObject?.userData?.orientation
-            }
-          );
-
-          // Apply constrained position to Vector3
-          newPosition.x = constrainedPos.position.x;
-          newPosition.y = constrainedPos.position.y;
-          newPosition.z = constrainedPos.position.z;
-
-        } else if (movementConfig.snapToWall) {
+        // Apply the same movement logic as mouse
+        if (movementConfig.snapToWall) {
           const { position: wallConstrainedPos } = constrainToWalls(
-            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
+            { x: newPosition.x, y: newPosition.y, z: newPosition.z },
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -959,37 +943,33 @@ export class EventHandlers {
             }
           );
 
-          // Apply wall constraints to Vector3
-          newPosition.x = wallConstrainedPos.x;
-          newPosition.z = wallConstrainedPos.z;
+          constrainedPosition.x = wallConstrainedPos.x;
+          constrainedPosition.z = wallConstrainedPos.z;
 
           if (movementConfig.allowVerticalMovement) {
-            const heightConstraints = getHeightConstraints(objectType);
-            newPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
+            const heightConstraints = getHeightConstraints(objectType, currentItem);
+            constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
           } else {
-            newPosition.y = wallConstrainedPos.y;
+            constrainedPosition.y = wallConstrainedPos.y;
           }
-
-          const { position: snappedPos, rotation: _wallSnappedRotation } = snapToNearestWall(
-            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
-            this.roomWidthRef.value,
-            this.roomHeightRef.value,
-            {
-              type: objectType,
-              scale: objectScale,
-              orientation: this.selectedObject?.userData?.orientation
-            }
-          );
-
-          newPosition.x = snappedPos.x;
-          newPosition.z = snappedPos.z;
 
           if (!movementConfig.allowFreeRotation) {
-            this.selectedObject.rotation.y = snappedRotation;
+            const { rotation: wallRotation } = snapToNearestWall(
+              { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              {
+                type: objectType,
+                scale: objectScale,
+                orientation: this.selectedObject?.userData?.orientation
+              }
+            );
+            constrainedRotation = wallRotation;
+            rotationChanged = true;
           }
         } else {
-          const constrainedPos = constrainToRoom(
-            { x: newPosition.x, y: newPosition.y, z: newPosition.z }, // Convert Vector3 to Position
+          const { position: roomConstrainedPos } = constrainToRoom(
+            { x: newPosition.x, y: newPosition.y, z: newPosition.z },
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -999,17 +979,21 @@ export class EventHandlers {
             }
           );
 
-          // Apply constrained position to Vector3
-          newPosition.x = constrainedPos.position.x;
-          newPosition.y = constrainedPos.position.y;
-          newPosition.z = constrainedPos.position.z;
+          constrainedPosition.x = roomConstrainedPos.x;
+          constrainedPosition.z = roomConstrainedPos.z;
+
+          // Keep free-standing objects on floor
+          if (!movementConfig.allowVerticalMovement) {
+            constrainedPosition.y = 0;
+          } else {
+            constrainedPosition.y = roomConstrainedPos.y;
+          }
         }
 
-        // NEW: Check for collisions and update outline color
+        // Check for collisions and update outline color
         const currentItems = this.getCurrentItems();
-        const currentItem = currentItems.find(item => item.id === itemId);
         const isColliding = wouldCollideWithExisting(
-          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+          { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
           objectType,
           objectScale,
           itemId,
@@ -1017,41 +1001,33 @@ export class EventHandlers {
           currentItem
         );
 
-        // Update outline color based on collision state
         setOutlineColor(isColliding);
 
-        // DEBUG: Log constraint application
-        console.log('🔗 Touch constraining object:', objectType,
-          'to wall position:', {
-            x: newPosition.x.toFixed(3),
-            z: newPosition.z.toFixed(3),
-            rotation: `${(snappedRotation * 180 / Math.PI).toFixed(0)}°`,
-            collision: isColliding ? 'DETECTED' : 'NONE'
-          });
+        this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
 
-        this.selectedObject.position.copy(newPosition);
+        if (rotationChanged) {
+          this.selectedObject.rotation.y = constrainedRotation;
+        }
 
         const updateData: UpdateData = {
-          position: [newPosition.x, newPosition.y, newPosition.z]
+          position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z]
         };
 
-        if (shouldSnapToWall(objectType) && !movementConfig.allowFreeRotation) {
-          updateData.rotation = this.selectedObject.rotation.y;
+        if (rotationChanged) {
+          updateData.rotation = constrainedRotation;
         }
 
         if (this.measurementSystem) {
           this.measurementSystem.forceUpdateMeasurements();
-          // Emit event for real-time measurement updates
           window.dispatchEvent(new CustomEvent('object-moved'));
         }
 
         this.queueUpdate(itemId, updateData);
       } else if (this.isRotating) {
-        // BACK TO ORIGINAL TOUCH ROTATION - with tiny smoothing
+        // Camera rotation for touch (unchanged)
         const deltaX = touch.clientX - this.mouseX;
         const deltaY = touch.clientY - this.mouseY;
 
-        // Add tiny smoothing to touch movement
         const smoothDeltaX = deltaX * 0.8;
         const smoothDeltaY = deltaY * 0.8;
 
@@ -1287,11 +1263,6 @@ export class EventHandlers {
     }
 
     window.removeEventListener('resize', this.handleResize);
-  }
-
-  // Utility methods for external access
-  public getSelectedObject (): THREE.Object3D | null {
-    return this.selectedObject;
   }
 
   public clearSelection (): void {
