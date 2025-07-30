@@ -407,7 +407,8 @@ const addItem = async (type, productData = null) => {
       defaults.scale,
       items.value,
       undefined, // No specific wall direction
-      productData.selectedVariant?.orientation
+      productData.selectedVariant?.orientation,
+      productData.selectedVariant?.movement
   )
 
   console.log('found free positioned on wall>>', freePosition, wallRotation);
@@ -432,7 +433,11 @@ const addItem = async (type, productData = null) => {
           description: 'Item is part of wall opening',
           ...(productData.selectedVariant?.orientation)
         },
-        dimensions: productData.selectedVariant?.dimensions
+        dimensions: productData.selectedVariant?.dimensions,
+        ...(productData.selectedVariant?.movement && {
+          movement: productData.selectedVariant?.movement
+        }),
+        floorOffset: productData.selectedVariant?.floorOffset || 0
       },
       price: productData.selectedVariant?.price,
       selectedColor: productData.selectedColor

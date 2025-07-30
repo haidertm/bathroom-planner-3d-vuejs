@@ -22,13 +22,11 @@ export const DEFAULT_ORIENTATION: OrientationConfig = {
 }
 
 export type MovementConfig = { // NEW: Sink movement configuration
-  snapToWall?: boolean,
+  snapToWall: boolean,
   allowVerticalMovement?: boolean,
-  allowFreeMovement?: boolean,
   allowFreeRotation?: boolean,
   minHeight?: number,
-  maxHeight?: number,
-  maintainWallDistance?: boolean
+  maxHeight?: number
 }
 
 export interface ModelConfig {

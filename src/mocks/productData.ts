@@ -40,6 +40,11 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
           sku: 'C76236',
           price: '249.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm'
@@ -53,6 +58,13 @@ const productData: ProductData = {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false,
+            minHeight: 70,
+            maxHeight: 120
           },
           sku: 'C76237',
           price: '249.99',
@@ -154,6 +166,12 @@ const productData: ProductData = {
           name: '650x1200mm',
           path: '../../models/mirror/73189V2.glb',
           dimensions: { width: 119.8, height: 64.8, depth: 13.8 },
+          floorOffset: 110.1,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73189V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm'
@@ -163,6 +181,12 @@ const productData: ProductData = {
           name: '600x600mm',
           path: '../../models/mirror/73104V2.glb',
           dimensions: { width: 59, height: 59.9, depth: 13.5 },
+          floorOffset: 110,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73104V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm'
@@ -172,6 +196,12 @@ const productData: ProductData = {
           name: '600x450mm',
           path: '../../models/mirror/73103V2.glb',
           dimensions: { width: 45, height: 60, depth: 13 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          floorOffset: 0,
           sku: '73103V2',
           price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x450mm'
@@ -196,6 +226,12 @@ const productData: ProductData = {
           id: '73035v2',
           name: '500x1200mm',
           dimensions: { width: 119.5, height: 49.9, depth: 5.1 },
+          floorOffset: 99.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           path: '../../models/mirror/73035V2.glb',
           sku: '73035V2',
           price: '139.99',
@@ -206,6 +242,12 @@ const productData: ProductData = {
           name: '500x1000mm',
           path: '../../models/mirror/73154V2.glb',
           dimensions: { width: 100, height: 50, depth: 5.3 },
+          floorOffset: 99.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73154V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 500x1000mm'
@@ -215,6 +257,12 @@ const productData: ProductData = {
           name: '600x400mm',
           path: '../../models/mirror/73153V2.glb',
           dimensions: { width: 39.8, height: 59.9, depth: 5.3 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73153V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 600x400mm'
@@ -224,6 +272,12 @@ const productData: ProductData = {
           name: '700x500mm',
           path: '../../models/mirror/73033V2.glb',
           dimensions: { width: 50, height: 70, depth: 5.1 },
+          floorOffset: 99.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '73033V2',
           price: '139.99',
           title: 'Evelyn Illuminated LED Mirror 700x500mm'
@@ -387,6 +441,11 @@ const productData: ProductData = {
           name: '1370mm Length',
           path: '../../models/bath/C51096.glb',
           dimensions: { width: 136.9, height: 55, depth: 72.9 },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51096',
           price: '399.95',
           title: 'Newham 1370mm Freestanding Bath'
@@ -396,6 +455,11 @@ const productData: ProductData = {
           name: '1500mm Length',
           path: '../../models/bath/C51092.glb',
           dimensions: { width: 151.7, height: 57.9, depth: 74.8 },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51092',
           price: '449.95',
           title: 'Newham 1500mm Freestanding Bath'
@@ -405,6 +469,11 @@ const productData: ProductData = {
           name: '1700mm Length',
           path: '../../models/bath/C51093.glb',
           dimensions: { width: 169.7, height: 58, depth: 77.8 },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51093',
           price: '499.95',
           title: 'Newham 1700mm Freestanding Bath'
