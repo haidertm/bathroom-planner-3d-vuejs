@@ -25,6 +25,7 @@ export type ObjectModel = {
   position?: [number, number, number];
   movement?: MovementConfig;
   orientation?: OrientationConfig;
+  floorOffset?: number; // Floor offset in centimeters
   dimensions: {
     width: number;
     height: number;
@@ -51,7 +52,8 @@ export interface BathroomItem {
 const getProductDimensions = (sku: string, type: ComponentType): {
   width: number;
   depth: number;
-  height: number
+  height: number;
+  floorOffset: number;
 } | null => {
 
   if (!type || !productData[type]) {
@@ -66,7 +68,8 @@ const getProductDimensions = (sku: string, type: ComponentType): {
           return {
             width: variant.dimensions.width,
             depth: variant.dimensions.depth || variant.dimensions.height, // Use height as depth if depth not available
-            height: variant.dimensions.height
+            height: variant.dimensions.height,
+            floorOffset: variant.floorOffset || 0 // Use floor offset if available
           };
         }
       }
@@ -81,14 +84,15 @@ export const getDimensions = (
   type: ComponentType,
   sku?: string,
   model?: ObjectModel
-): { width: number; depth: number; height: number } => {
+): { width: number; depth: number; height: number, floorOffset: number } => {
 
   // Priority 1: Try to get dimensions from model object if available
   if (model?.dimensions) {
     return {
       width: model.dimensions.width,
       depth: model.dimensions.depth || model.dimensions.height,
-      height: model.dimensions.height
+      height: model.dimensions.height,
+      floorOffset: model.floorOffset || 0 // Use model's floor offset if available
     };
   }
 
@@ -110,7 +114,7 @@ export const getDimensions = (
 
   // Fallback: Return default dimensions if nothing found
   console.warn(`⚠️ No dimensions found for type ${type}, using default`);
-  return { width: 60, depth: 60, height: 80 };
+  return { width: 0, depth: 0, height: 0, floorOffset: 0 };
 };
 
 // Wall identification
@@ -130,11 +134,11 @@ export const checkCollision = (
   pos2: Position,
   type2: ComponentType,
   scale2: number,
-  item1?: BathroomItem, // Optional: full item data for item 1
-  item2?: BathroomItem  // Optional: full item data for item 2
+  item1?: BathroomItem,
+  item2?: BathroomItem
 ): boolean => {
 
-  // Get dimensions using enhanced lookup
+  // Get enhanced dimensions including floorOffset
   const dims1 = getDimensions(type1, item1?.sku, item1?.model);
   const dims2 = getDimensions(type2, item2?.sku, item2?.model);
 
@@ -143,29 +147,88 @@ export const checkCollision = (
     return false;
   }
 
-  // Calculate bounding boxes with scale (dimensions are in centimeters)
-  const halfWidth1 = (dims1.width * scale1) / 2;
-  const halfDepth1 = (dims1.depth * scale1) / 2;
-  const halfWidth2 = (dims2.width * scale2) / 2;
-  const halfDepth2 = (dims2.depth * scale2) / 2;
+  // ✅ CRITICAL: Calculate actual 3D bounding boxes accounting for floorOffset
 
-  // Add small buffer to prevent objects from being too close
-  const buffer = 10; // 10cm buffer
+  // Object 1 bounding box (scaled dimensions)
+  const obj1Width = dims1.width * scale1;
+  const obj1Height = dims1.height * scale1;
+  const obj1Depth = dims1.depth * scale1;
+  const obj1FloorOffset = dims1.floorOffset * scale1; // ✅ Scale the floor offset too
 
-  // Check if bounding boxes overlap with buffer
-  const overlapX = Math.abs(pos1.x - pos2.x) < (halfWidth1 + halfWidth2 + buffer);
-  const overlapZ = Math.abs(pos1.z - pos2.z) < (halfDepth1 + halfDepth2 + buffer);
+  // Object 2 bounding box (scaled dimensions)
+  const obj2Width = dims2.width * scale2;
+  const obj2Height = dims2.height * scale2;
+  const obj2Depth = dims2.depth * scale2;
+  const obj2FloorOffset = dims2.floorOffset * scale2; // ✅ Scale the floor offset too
 
-  const hasCollision = overlapX && overlapZ;
+  // ✅ CRITICAL: Calculate actual 3D positions accounting for floorOffset
+  // The floorOffset represents how much the object is elevated in its GLB model
+  const obj1ActualY = pos1.y + obj1FloorOffset; // Object's bottom position in 3D space
+  const obj2ActualY = pos2.y + obj2FloorOffset; // Object's bottom position in 3D space
 
-  // Enhanced logging for debugging
+  // ✅ CRITICAL: Calculate bounding box boundaries in 3D space
+  const obj1MinY = obj1ActualY; // Bottom of object 1
+  const obj1MaxY = obj1ActualY + obj1Height; // Top of object 1
+
+  const obj2MinY = obj2ActualY; // Bottom of object 2
+  const obj2MaxY = obj2ActualY + obj2Height; // Top of object 2
+
+  // Horizontal bounding boxes (unchanged)
+  const obj1MinX = pos1.x - obj1Width / 2;
+  const obj1MaxX = pos1.x + obj1Width / 2;
+  const obj2MinX = pos2.x - obj2Width / 2;
+  const obj2MaxX = pos2.x + obj2Width / 2;
+
+  const obj1MinZ = pos1.z - obj1Depth / 2;
+  const obj1MaxZ = pos1.z + obj1Depth / 2;
+  const obj2MinZ = pos2.z - obj2Depth / 2;
+  const obj2MaxZ = pos2.z + obj2Depth / 2;
+
+  // Add collision buffers
+  const horizontalBuffer = 10; // 10cm horizontal buffer
+  const verticalBuffer = 3;    // 3cm vertical buffer
+
+  // ✅ CRITICAL: Proper 3D bounding box overlap detection
+  const overlapX = !(obj1MaxX + horizontalBuffer < obj2MinX || obj2MaxX + horizontalBuffer < obj1MinX);
+  const overlapZ = !(obj1MaxZ + horizontalBuffer < obj2MinZ || obj2MaxZ + horizontalBuffer < obj1MinZ);
+  const overlapY = !(obj1MaxY + verticalBuffer < obj2MinY || obj2MaxY + verticalBuffer < obj1MinY);
+
+  const hasCollision = overlapX && overlapZ && overlapY;
+
+  // ✅ ENHANCED: Detailed logging for debugging
   if (hasCollision) {
-    console.log('🔴 COLLISION DETECTED:', {
-      item1: { type: type1, sku: item1?.sku, dimensions: dims1 },
-      item2: { type: type2, sku: item2?.sku, dimensions: dims2 },
-      positions: { pos1, pos2 },
-      overlap: { x: overlapX, z: overlapZ }
+    console.log('🔴 3D COLLISION DETECTED (with floorOffset):', {
+      item1: {
+        type: type1,
+        sku: item1?.sku,
+        logicalPos: { x: pos1.x.toFixed(1), y: pos1.y.toFixed(1), z: pos1.z.toFixed(1) },
+        actualYRange: `${obj1MinY.toFixed(1)}cm to ${obj1MaxY.toFixed(1)}cm`,
+        floorOffset: obj1FloorOffset.toFixed(1) + 'cm',
+        dimensions: `${obj1Width.toFixed(1)} × ${obj1Height.toFixed(1)} × ${obj1Depth.toFixed(1)}`
+      },
+      item2: {
+        type: type2,
+        sku: item2?.sku,
+        logicalPos: { x: pos2.x.toFixed(1), y: pos2.y.toFixed(1), z: pos2.z.toFixed(1) },
+        actualYRange: `${obj2MinY.toFixed(1)}cm to ${obj2MaxY.toFixed(1)}cm`,
+        floorOffset: obj2FloorOffset.toFixed(1) + 'cm',
+        dimensions: `${obj2Width.toFixed(1)} × ${obj2Height.toFixed(1)} × ${obj2Depth.toFixed(1)}`
+      },
+      overlaps: { x: overlapX, z: overlapZ, y: overlapY },
+      verticalGap: Math.max(obj1MinY - obj2MaxY, obj2MinY - obj1MaxY).toFixed(1) + 'cm'
     });
+  } else {
+    // ✅ Debug log for successful non-collisions (helps verify the fix)
+    const verticalGap = Math.max(obj1MinY - obj2MaxY, obj2MinY - obj1MaxY);
+    if (overlapX && overlapZ && verticalGap < 50) { // Log near-misses within 50cm
+      console.log('🟢 NO COLLISION (vertical clearance):', {
+        items: `${type1} & ${type2}`,
+        obj1YRange: `${obj1MinY.toFixed(1)} to ${obj1MaxY.toFixed(1)}cm`,
+        obj2YRange: `${obj2MinY.toFixed(1)} to ${obj2MaxY.toFixed(1)}cm`,
+        verticalGap: verticalGap.toFixed(1) + 'cm',
+        floorOffsets: `${obj1FloorOffset.toFixed(1)}cm, ${obj2FloorOffset.toFixed(1)}cm`
+      });
+    }
   }
 
   return hasCollision;
@@ -201,6 +264,11 @@ export const wouldCollideWithExisting = (
     );
 
     if (hasCollision) {
+      console.log('🔴 Collision detected in wouldCollideWithExisting:', {
+        movingObject: { type: objectType, sku: currentItem?.sku },
+        existingObject: { type: item.type, sku: item.sku },
+        positions: { moving: position, existing: itemPosition }
+      });
       return true;
     }
   }

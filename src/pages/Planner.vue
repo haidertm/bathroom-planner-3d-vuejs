@@ -430,7 +430,8 @@ const addItem = async (type, productData = null) => {
         dimensions: productData.selectedVariant?.dimensions,
         ...(productData.selectedVariant?.movement && {
           movement: productData.selectedVariant?.movement
-        })
+        }),
+        floorOffset: productData.selectedVariant?.floorOffset || 0
       },
       price: productData.selectedVariant?.price,
       selectedColor: productData.selectedColor
