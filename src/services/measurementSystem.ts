@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
-import { MODEL_DIMENSIONS, WALL_SETTINGS } from '../constants/dimensions';
+import { WALL_SETTINGS } from '../constants/dimensions';
+import { getDimensions } from '../utils/constraints'; // Import the enhanced dimension function
 
 export interface MeasurementData {
   objectWidth: number;
@@ -73,8 +74,13 @@ export class MeasurementSystem {
     console.log('selectedObject>>> ', object);
 
     this.selectedObject = object;
-    if (this.enabled) {
+
+    // If we have a selected object, immediately trigger update
+    if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
+    } else if (!this.selectedObject) {
+      // Clear measurements when no object is selected
+      this.clearMeasurements();
     }
   }
 
@@ -111,12 +117,36 @@ export class MeasurementSystem {
     const objectType = this.selectedObject.userData.type as ComponentType;
     const objectScale = this.selectedObject.scale.x;
     const objectPosition = this.selectedObject.position;
+    const itemId = this.selectedObject.userData.itemId;
 
-    // this.selectedObject
+    // 🚀 UPDATED: Get the current item data to access SKU and model information
+    const currentItem = this.existingItems.find(item => item.id === itemId);
 
-    if (!objectType || !MODEL_DIMENSIONS[objectType]) return null;
+    // 🆘 FALLBACK: If not found in existingItems, check if data is in userData
+    let itemForDimensions = currentItem;
+    if (!currentItem && this.selectedObject.userData.sku) {
+      itemForDimensions = {
+        id: itemId,
+        type: objectType,
+        position: [objectPosition.x, objectPosition.y, objectPosition.z],
+        sku: this.selectedObject.userData.sku,
+        model: this.selectedObject.userData.model || undefined,
+        scale: objectScale
+      } as BathroomItem;
+    }
 
-    const dimensions = MODEL_DIMENSIONS[objectType];
+    // 🚀 UPDATED: Use enhanced dimension lookup that prioritizes product data
+    const dimensions = getDimensions(
+        objectType,
+        itemForDimensions?.sku,        // Pass SKU for product-specific dimensions
+        itemForDimensions?.model       // Pass model data for most accurate dimensions
+    );
+
+    if (!dimensions || (dimensions.width === 0 && dimensions.height === 0 && dimensions.depth === 0)) {
+      return null;
+    }
+
+    // Apply scale to the product-specific dimensions
     const scaledWidth = dimensions.width * objectScale;
     const scaledDepth = dimensions.depth * objectScale;
     const scaledHeight = dimensions.height * objectScale;
@@ -217,13 +247,21 @@ export class MeasurementSystem {
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return;
 
-      const itemDimensions = MODEL_DIMENSIONS[item.type];
-      if (!itemDimensions) return;
+// 🚀 UPDATED: Use enhanced dimension lookup for other objects too
+      const itemDimensions = getDimensions(
+          item.type,
+          item.sku,        // Use SKU for product-specific dimensions
+          item.model       // Use model data if available
+      );
+
+      if (!itemDimensions) {
+        console.warn(`⚠️ No dimensions found for item ${item.id} of type ${item.type}`);
+        return;
+      }
 
       const itemScale = item.scale || 1.0;
       const itemWidth = itemDimensions.width * itemScale;
       const itemDepth = itemDimensions.depth * itemScale;
-      // const itemHeight = itemDimensions.height * itemScale;
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
 
@@ -325,9 +363,9 @@ export class MeasurementSystem {
     } else {
       // Object against east/west wall
       labels.push({
-        id: 'object-depth',
-        text: `${Math.round(objectDepth)} cm`,
-        position: new THREE.Vector3(position.x, position.y + 80, position.z),
+        id: 'object-width',
+        text: `${Math.round(objectWidth)} cm`,
+        position: new THREE.Vector3(position.x, position.y + 100, position.z),
         direction: 'horizontal',
         color: '#ff6b35',
         isObjectDimension: true
@@ -507,13 +545,14 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(position.x + halfWidth, lineHeight, position.z), 'vertical');
 
       } else if (label.id === 'object-depth') {
-        // Vertical line across object depth
-        points.push(new THREE.Vector3(position.x, lineHeight, position.z - halfDepth));
-        points.push(new THREE.Vector3(position.x, lineHeight, position.z + halfDepth));
+        // Line across object depth (Z-axis) - offset slightly to avoid overlap with width line
+        const offsetHeight = lineHeight + 20; // Offset by 20cm to separate from width line
+        points.push(new THREE.Vector3(position.x, offsetHeight, position.z - halfDepth));
+        points.push(new THREE.Vector3(position.x, offsetHeight, position.z + halfDepth));
 
         // Add end markers (small horizontal lines)
-        this.createEndMarker(new THREE.Vector3(position.x, lineHeight, position.z - halfDepth), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, lineHeight, position.z + halfDepth), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(position.x, offsetHeight, position.z - halfDepth), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(position.x, offsetHeight, position.z + halfDepth), 'horizontal');
       }
     } else {
       // Lines showing available space - these extend FROM object TO walls/obstacles
@@ -576,14 +615,14 @@ export class MeasurementSystem {
 
       // IKEA-style line material - thin and professional
       const material = new THREE.LineBasicMaterial({
-        color: label.isObjectDimension ? '#ff6b35' : '#000000', // Orange for object, green for space
+        color: '#2196F3',
         linewidth: 2,
         transparent: true,
-        opacity: 0.9
+        opacity: 0.8
       });
 
       const line = new THREE.Line(geometry, material);
-      line.userData = { labelId: label.id };
+      line.userData = { lineId: label.id };
       this.measurementLines.add(line);
     }
   }

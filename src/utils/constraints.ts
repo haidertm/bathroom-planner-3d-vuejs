@@ -1,5 +1,5 @@
 // src/utils/constraints.ts - ENHANCED with proper movement integration
-import { CONSTRAINTS, MODEL_DIMENSIONS } from '../constants/dimensions';
+import { CONSTRAINTS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { getMovementConfig } from '../utils/models';
 import { type OrientationConfig, MovementConfig, DEFAULT_ORIENTATION } from '../constants/models';
@@ -105,15 +105,6 @@ export const getDimensions = (
     }
   }
 
-  // Priority 3: Fall back to generic type dimensions
-  const genericDims = MODEL_DIMENSIONS[type];
-  if (genericDims) {
-    console.log(`📏 Using generic dimensions for type ${type}:`, genericDims);
-    return genericDims;
-  }
-
-  // Fallback: Return default dimensions if nothing found
-  console.warn(`⚠️ No dimensions found for type ${type}, using default`);
   return { width: 0, depth: 0, height: 0, floorOffset: 0 };
 };
 
@@ -298,7 +289,7 @@ export const constrainToRoom = (
   const movementConfig = objectType ? getMovementConfig(objectType, item) : null;
 
   // Get object dimensions for better boundary calculation
-  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) / 2 : CONSTRAINTS.OBJECT_BUFFER;
+  const buffer = objectType ? getObjectWallBuffer({ orientation, scale, type: objectType }) : CONSTRAINTS.OBJECT_BUFFER;
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;

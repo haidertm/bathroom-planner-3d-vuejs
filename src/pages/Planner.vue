@@ -62,6 +62,7 @@
     <MeasurementToggle
         :style="toggleMeasurementStyle"
         v-model="measurementEnabled"
+        @click="handleMeasurementUpdate"
         @update:modelValue="handleMeasurementToggle"
         @toggle-measurements="handleToggleMeasurements"
         size="large"
