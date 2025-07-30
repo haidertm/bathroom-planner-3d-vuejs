@@ -327,6 +327,17 @@ const handleClearMouseEnter = (event) => {
   event.target.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)'
 }
 
+const handleClearMouseLeave = (event) => {
+  try {
+    hoveredButton.value = null
+    event.target.style.backgroundColor = '#ffffff'
+    event.target.style.borderColor = 'rgba(0, 0, 0, 0.08)'
+    event.target.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.02)'
+  } catch (error) {
+    console.warn('Mouse leave error:', error)
+  }
+}
+
 const handleClearClick = () => {
   if (confirm('Are you sure you want to clear all objects? This action can be undone.')) {
     emit('clear')
