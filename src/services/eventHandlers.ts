@@ -509,12 +509,6 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
-      console.log('🔧 DRAG - Using movement config:', {
-        objectType,
-        sku: currentItem?.sku,
-        config: movementConfig
-      });
-
       let constrainedPosition = { ...newPosition };
       let constrainedRotation = this.selectedObject.rotation.y; // Keep current rotation by default
       let rotationChanged = false;
