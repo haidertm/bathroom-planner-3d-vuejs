@@ -198,7 +198,10 @@ async function getDimensions (dirPath: string) {
 
   console.log(`📁 Found ${glbFiles.length} GLB files`);
 
-  const results: Record<string, { width: number; height: number; depth: number; status: string }> = {};
+  const results: Record<
+    string,
+    { width: number; height: number; depth: number; floorOffset: number; status: string }
+  > = {};
 
   for (const filePath of glbFiles) {
     const fileName = path.relative(dirPath, filePath);
@@ -210,25 +213,29 @@ async function getDimensions (dirPath: string) {
       const size = new THREE.Vector3();
       box.getSize(size);
 
-      // Check if dimensions are valid
+      const floorOffset = Number(box.min.y.toFixed(3)); // NEW
+
       const isValid = size.x > 0 && size.y > 0 && size.z > 0;
 
       results[fileName] = {
         width: Number(size.x.toFixed(3)),
         height: Number(size.y.toFixed(3)),
         depth: Number(size.z.toFixed(3)),
-        status: isValid ? '✅ Success' : '⚠️ Invalid dimensions'
+        floorOffset: floorOffset,
+        status: isValid ? '✅ Success' : '⚠️ Invalid dimensions',
       };
 
-      console.log(`  ✅ ${fileName}: ${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}`);
-
+      console.log(
+        `  ✅ ${fileName}: ${size.x.toFixed(2)} × ${size.y.toFixed(2)} × ${size.z.toFixed(2)}, Floor Offset: ${floorOffset}`
+      );
     } catch (err) {
       console.error(`❌ Failed to parse ${fileName}:`, err instanceof Error ? err.message : err);
       results[fileName] = {
         width: 0,
         height: 0,
         depth: 0,
-        status: '❌ Failed'
+        floorOffset: 0,
+        status: '❌ Failed',
       };
     }
   }
@@ -236,13 +243,13 @@ async function getDimensions (dirPath: string) {
   console.log('\n📐 GLB Dimensions Summary:');
   console.table(results);
 
-  // Summary statistics
-  const successful = Object.values(results).filter(r => r.status === '✅ Success').length;
-  const failed = Object.values(results).filter(r => r.status === '❌ Failed').length;
-  const invalid = Object.values(results).filter(r => r.status === '⚠️ Invalid dimensions').length;
+  const successful = Object.values(results).filter((r) => r.status === '✅ Success').length;
+  const failed = Object.values(results).filter((r) => r.status === '❌ Failed').length;
+  const invalid = Object.values(results).filter((r) => r.status === '⚠️ Invalid dimensions').length;
 
   console.log(`\n📊 Summary: ${successful} successful, ${invalid} invalid dimensions, ${failed} failed`);
 }
+
 
 // CLI Handling
 const inputDir: string = process.argv[2] || './public/models/';
