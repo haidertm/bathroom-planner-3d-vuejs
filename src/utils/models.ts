@@ -168,7 +168,7 @@ export const getHeightConstraints = (objectType: ComponentType, item?: BathroomI
   const movementConfig = getMovementConfig(objectType, item);
   return {
     min: movementConfig.minHeight || 0,
-    max: movementConfig.maxHeight || 250
+    max: movementConfig.maxHeight ?? 250
   };
 };
 
