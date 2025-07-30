@@ -74,8 +74,13 @@ export class MeasurementSystem {
     console.log('selectedObject>>> ', object);
 
     this.selectedObject = object;
-    if (this.enabled) {
+
+    // If we have a selected object, immediately trigger update
+    if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
+    } else if (!this.selectedObject) {
+      // Clear measurements when no object is selected
+      this.clearMeasurements();
     }
   }
 
@@ -117,21 +122,27 @@ export class MeasurementSystem {
     // 🚀 UPDATED: Get the current item data to access SKU and model information
     const currentItem = this.existingItems.find(item => item.id === itemId);
 
+    // 🆘 FALLBACK: If not found in existingItems, check if data is in userData
+    let itemForDimensions = currentItem;
+    if (!currentItem && this.selectedObject.userData.sku) {
+      itemForDimensions = {
+        id: itemId,
+        type: objectType,
+        position: [objectPosition.x, objectPosition.y, objectPosition.z],
+        sku: this.selectedObject.userData.sku,
+        model: this.selectedObject.userData.model || undefined,
+        scale: objectScale
+      } as BathroomItem;
+    }
+
     // 🚀 UPDATED: Use enhanced dimension lookup that prioritizes product data
     const dimensions = getDimensions(
         objectType,
-        currentItem?.sku,        // Pass SKU for product-specific dimensions
-        currentItem?.model       // Pass model data for most accurate dimensions
+        itemForDimensions?.sku,        // Pass SKU for product-specific dimensions
+        itemForDimensions?.model       // Pass model data for most accurate dimensions
     );
 
-    console.log(`📏 Using dimensions for ${objectType}:`, {
-      sku: currentItem?.sku,
-      dimensions,
-      source: currentItem?.sku ? 'Product Data' : 'Generic Type'
-    });
-
-    if (!dimensions) {
-      console.warn(`❌ No dimensions found for ${objectType}`);
+    if (!dimensions || (dimensions.width === 0 && dimensions.height === 0 && dimensions.depth === 0)) {
       return null;
     }
 
@@ -352,9 +363,9 @@ export class MeasurementSystem {
     } else {
       // Object against east/west wall
       labels.push({
-        id: 'object-depth',
-        text: `${Math.round(objectDepth)} cm`,
-        position: new THREE.Vector3(position.x, position.y + 80, position.z),
+        id: 'object-width',
+        text: `${Math.round(objectWidth)} cm`,
+        position: new THREE.Vector3(position.x, position.y + 100, position.z),
         direction: 'horizontal',
         color: '#ff6b35',
         isObjectDimension: true
@@ -534,13 +545,14 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(position.x + halfWidth, lineHeight, position.z), 'vertical');
 
       } else if (label.id === 'object-depth') {
-        // Vertical line across object depth
-        points.push(new THREE.Vector3(position.x, lineHeight, position.z - halfDepth));
-        points.push(new THREE.Vector3(position.x, lineHeight, position.z + halfDepth));
+        // Line across object depth (Z-axis) - offset slightly to avoid overlap with width line
+        const offsetHeight = lineHeight + 20; // Offset by 20cm to separate from width line
+        points.push(new THREE.Vector3(position.x, offsetHeight, position.z - halfDepth));
+        points.push(new THREE.Vector3(position.x, offsetHeight, position.z + halfDepth));
 
         // Add end markers (small horizontal lines)
-        this.createEndMarker(new THREE.Vector3(position.x, lineHeight, position.z - halfDepth), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, lineHeight, position.z + halfDepth), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(position.x, offsetHeight, position.z - halfDepth), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(position.x, offsetHeight, position.z + halfDepth), 'horizontal');
       }
     } else {
       // Lines showing available space - these extend FROM object TO walls/obstacles
@@ -603,14 +615,14 @@ export class MeasurementSystem {
 
       // IKEA-style line material - thin and professional
       const material = new THREE.LineBasicMaterial({
-        color: label.isObjectDimension ? '#ff6b35' : '#000000', // Orange for object, green for space
+        color: '#2196F3',
         linewidth: 2,
         transparent: true,
-        opacity: 0.9
+        opacity: 0.8
       });
 
       const line = new THREE.Line(geometry, material);
-      line.userData = { labelId: label.id };
+      line.userData = { lineId: label.id };
       this.measurementLines.add(line);
     }
   }

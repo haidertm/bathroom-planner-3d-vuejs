@@ -333,8 +333,12 @@ export class EventHandlers {
 
       console.log('selectedObject >>>', this.selectedObject);
 
-      // Sync with measurement system
+      // 🚀 FIXED: Get fresh items before updating measurement system
+      const currentItems = this.getCurrentItems();
       if (this.measurementSystem) {
+        // Update the measurement system with current items FIRST
+        this.measurementSystem.updateExistingItems(currentItems);
+        // THEN set the selected object
         this.measurementSystem.setSelectedObject(this.selectedObject);
       }
 
@@ -345,7 +349,6 @@ export class EventHandlers {
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
-      const currentItems = this.getCurrentItems();
       const currentItem = currentItems.find(item => item.id === itemId);
       const currentPosition = this.selectedObject.position;
       const isColliding = wouldCollideWithExisting(

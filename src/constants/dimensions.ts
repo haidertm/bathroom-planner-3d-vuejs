@@ -61,24 +61,7 @@ export const HEIGHT_LIMITS: HeightLimits = {
   MIRROR_MAX: 250
 } as const;
 
-// 🚨 DEPRECATED: Use getDimensions() from utils/constraints.ts instead
-// This object is kept for backward compatibility but should not be used directly
-// The getDimensions() function prioritizes product data from productData.ts
-/**
- * @deprecated Use getDimensions() from utils/constraints.ts instead
- * This provides product-specific dimensions from productData.ts
- */
-export const MODEL_DIMENSIONS = {
-  Toilet: { width: 45, depth: 80, height: 80 },
-  Sink: { width: 60, depth: 50, height: 90 },
-  Bath: { width: 75, depth: 43, height: 60 },
-  Shower: { width: 80, depth: 80, height: 200 },
-  Radiator: { width: 70, depth: 20, height: 140 },
-  Mirror: { width: 80, depth: 5, height: 0 },
-  Door: { width: 80, depth: 10, height: 200 }
-};
-
-export type ComponentType = keyof typeof MODEL_DIMENSIONS;
+export type ComponentType = 'Toilet' | 'Sink' | 'Bath' | 'Shower' | 'Radiator' | 'Mirror' | 'Door';
 
 export const MEASUREMENT_SETTINGS = {
   MIN_DISPLAY_DISTANCE: 5, // Don't show measurements less than 10cm
