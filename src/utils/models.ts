@@ -167,7 +167,7 @@ export const canRotateFreely = (objectType: ComponentType, item?: BathroomItem):
 export const getHeightConstraints = (objectType: ComponentType, item?: BathroomItem): { min: number; max: number } => {
   const movementConfig = getMovementConfig(objectType, item);
   return {
-    min: movementConfig.minHeight || 0,
+    min: movementConfig.minHeight ?? 0,
     max: movementConfig.maxHeight ?? 250
   };
 };
