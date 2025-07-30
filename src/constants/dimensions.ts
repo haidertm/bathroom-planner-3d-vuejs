@@ -61,7 +61,13 @@ export const HEIGHT_LIMITS: HeightLimits = {
   MIRROR_MAX: 250
 } as const;
 
-// Add model dimensions for better constraint handling
+// 🚨 DEPRECATED: Use getDimensions() from utils/constraints.ts instead
+// This object is kept for backward compatibility but should not be used directly
+// The getDimensions() function prioritizes product data from productData.ts
+/**
+ * @deprecated Use getDimensions() from utils/constraints.ts instead
+ * This provides product-specific dimensions from productData.ts
+ */
 export const MODEL_DIMENSIONS = {
   Toilet: { width: 45, depth: 80, height: 80 },
   Sink: { width: 60, depth: 50, height: 90 },

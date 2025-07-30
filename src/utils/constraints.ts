@@ -268,7 +268,7 @@ export const constrainToRoom = (
   }
 ): { position: Position; rotation: number } => {
   // Get object dimensions for better boundary calculation
-  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) / 2 : CONSTRAINTS.OBJECT_BUFFER;
+  const buffer = objectType ? getObjectWallBuffer({ orientation, scale, type: objectType }) : CONSTRAINTS.OBJECT_BUFFER;
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
@@ -398,7 +398,7 @@ export const findFreeWallPosition = (
   orientation: OrientationConfig = DEFAULT_ORIENTATION
 ): { position: Position; rotation: number } => {
   // Use configurable wall buffer instead of generic buffer
-  const buffer = getObjectWallBuffer({ orientation, scale });
+  const buffer = getObjectWallBuffer({ orientation, scale, type: objectType });
 
   console.log('findFreeWallPosition>>>>>Orientation', orientation);
 

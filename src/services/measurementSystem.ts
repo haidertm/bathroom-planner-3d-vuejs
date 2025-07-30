@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
-import { MODEL_DIMENSIONS, WALL_SETTINGS } from '../constants/dimensions';
+import { WALL_SETTINGS } from '../constants/dimensions';
+import { getDimensions } from '../utils/constraints'; // Import the enhanced dimension function
 
 export interface MeasurementData {
   objectWidth: number;
@@ -111,12 +112,30 @@ export class MeasurementSystem {
     const objectType = this.selectedObject.userData.type as ComponentType;
     const objectScale = this.selectedObject.scale.x;
     const objectPosition = this.selectedObject.position;
+    const itemId = this.selectedObject.userData.itemId;
 
-    // this.selectedObject
+    // 🚀 UPDATED: Get the current item data to access SKU and model information
+    const currentItem = this.existingItems.find(item => item.id === itemId);
 
-    if (!objectType || !MODEL_DIMENSIONS[objectType]) return null;
+    // 🚀 UPDATED: Use enhanced dimension lookup that prioritizes product data
+    const dimensions = getDimensions(
+        objectType,
+        currentItem?.sku,        // Pass SKU for product-specific dimensions
+        currentItem?.model       // Pass model data for most accurate dimensions
+    );
 
-    const dimensions = MODEL_DIMENSIONS[objectType];
+    console.log(`📏 Using dimensions for ${objectType}:`, {
+      sku: currentItem?.sku,
+      dimensions,
+      source: currentItem?.sku ? 'Product Data' : 'Generic Type'
+    });
+
+    if (!dimensions) {
+      console.warn(`❌ No dimensions found for ${objectType}`);
+      return null;
+    }
+
+    // Apply scale to the product-specific dimensions
     const scaledWidth = dimensions.width * objectScale;
     const scaledDepth = dimensions.depth * objectScale;
     const scaledHeight = dimensions.height * objectScale;
@@ -217,13 +236,21 @@ export class MeasurementSystem {
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return;
 
-      const itemDimensions = MODEL_DIMENSIONS[item.type];
-      if (!itemDimensions) return;
+// 🚀 UPDATED: Use enhanced dimension lookup for other objects too
+      const itemDimensions = getDimensions(
+          item.type,
+          item.sku,        // Use SKU for product-specific dimensions
+          item.model       // Use model data if available
+      );
+
+      if (!itemDimensions) {
+        console.warn(`⚠️ No dimensions found for item ${item.id} of type ${item.type}`);
+        return;
+      }
 
       const itemScale = item.scale || 1.0;
       const itemWidth = itemDimensions.width * itemScale;
       const itemDepth = itemDimensions.depth * itemScale;
-      // const itemHeight = itemDimensions.height * itemScale;
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
 
