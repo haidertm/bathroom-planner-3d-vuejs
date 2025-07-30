@@ -1,4 +1,6 @@
+// src/services/simpleWallCulling.ts - UPDATED for Interior Walls System
 import * as THREE from 'three';
+import { WALL_SETTINGS } from '../constants/dimensions';
 
 // Type definitions
 type WallDirection = 'north' | 'south' | 'east' | 'west';
@@ -19,7 +21,7 @@ export class SimpleWallCulling {
   public enabled: boolean;
   private roomSize: RoomSize;
   private wallMap: Map<THREE.Mesh, WallDirection>;
-  private wallGridMap: Map<THREE.Mesh, THREE.Line[]>; // NEW: Track grid lines for each wall
+  private wallGridMap: Map<THREE.Mesh, THREE.Line[]>;
 
   constructor () {
     this.walls = [];
@@ -27,7 +29,7 @@ export class SimpleWallCulling {
     this.enabled = true;
     this.roomSize = { width: 10, height: 10 };
     this.wallMap = new Map<THREE.Mesh, WallDirection>();
-    this.wallGridMap = new Map<THREE.Mesh, THREE.Line[]>(); // NEW: Initialize grid map
+    this.wallGridMap = new Map<THREE.Mesh, THREE.Line[]>();
   }
 
   initialize (walls: THREE.Mesh[], camera: THREE.Camera): void {
@@ -36,46 +38,69 @@ export class SimpleWallCulling {
     this.identifyWalls();
   }
 
-  // NEW: Method to register grid lines for each wall
   registerWallGridLines (wall: THREE.Mesh, gridLines: THREE.Line[]): void {
     this.wallGridMap.set(wall, gridLines);
   }
 
-  // NEW: Method to clear grid line associations
   clearWallGridLines (): void {
     this.wallGridMap.clear();
   }
 
+  /**
+   * UPDATED: Wall identification for interior walls system
+   */
   private identifyWalls (): void {
-    // Clear the map
+    console.log('🔍 Identifying walls for interior wall system...');
     this.wallMap.clear();
 
     const roomHalfWidth: number = this.roomSize.width / 2;
     const roomHalfHeight: number = this.roomSize.height / 2;
+    const wallThickness = WALL_SETTINGS.THICKNESS;
+    const wallOffset = wallThickness / 2;
 
-    // Identify each wall by its position
-    this.walls.forEach((wall: THREE.Mesh) => {
+    // Calculate expected wall positions for interior walls system
+    const expectedPositions = {
+      north: -roomHalfHeight + wallOffset,
+      south: roomHalfHeight - wallOffset,
+      east: roomHalfWidth - wallOffset,
+      west: -roomHalfWidth + wallOffset
+    };
+
+    console.log('Expected wall positions (interior system):', expectedPositions);
+
+    // Identify each wall by its position with updated logic
+    this.walls.forEach((wall: THREE.Mesh, index) => {
       const pos = wall.position;
+      console.log(`Wall ${index} position:`, { x: pos.x.toFixed(2), z: pos.z.toFixed(2) });
 
-      // North wall (negative Z)
-      if (Math.abs(pos.z + roomHalfHeight) < 0.5) {
+      const tolerance = wallThickness; // Use wall thickness as tolerance
+
+      // North wall (negative Z, interior position)
+      if (Math.abs(pos.z - expectedPositions.north) < tolerance) {
         this.wallMap.set(wall, 'north');
+        console.log(`✅ Wall ${index} identified as NORTH wall`);
       }
-      // South wall (positive Z)
-      else if (Math.abs(pos.z - roomHalfHeight) < 0.5) {
+      // South wall (positive Z, interior position)
+      else if (Math.abs(pos.z - expectedPositions.south) < tolerance) {
         this.wallMap.set(wall, 'south');
+        console.log(`✅ Wall ${index} identified as SOUTH wall`);
       }
-      // East wall (positive X)
-      else if (Math.abs(pos.x - roomHalfWidth) < 0.5) {
+      // East wall (positive X, interior position)
+      else if (Math.abs(pos.x - expectedPositions.east) < tolerance) {
         this.wallMap.set(wall, 'east');
+        console.log(`✅ Wall ${index} identified as EAST wall`);
       }
-      // West wall (negative X)
-      else if (Math.abs(pos.x + roomHalfWidth) < 0.5) {
+      // West wall (negative X, interior position)
+      else if (Math.abs(pos.x - expectedPositions.west) < tolerance) {
         this.wallMap.set(wall, 'west');
+        console.log(`✅ Wall ${index} identified as WEST wall`);
+      }
+      else {
+        console.warn(`⚠️ Wall ${index} could not be identified! Position: (${pos.x.toFixed(2)}, ${pos.z.toFixed(2)})`);
       }
     });
 
-    console.log('Wall identification:', Array.from(this.wallMap.entries()).map(([wall, direction]) =>
+    console.log('Wall identification complete:', Array.from(this.wallMap.entries()).map(([wall, direction]) =>
       `${direction}: (${wall.position.x.toFixed(1)}, ${wall.position.z.toFixed(1)})`
     ));
   }
@@ -90,8 +115,8 @@ export class SimpleWallCulling {
   private showAllWalls (): void {
     this.walls.forEach((wall: THREE.Mesh) => {
       wall.visible = true;
-      // Reset material if it was made transparent
-      // Handle both single material and material array
+
+      // Reset material transparency
       if (Array.isArray(wall.material)) {
         wall.material.forEach((mat: THREE.Material) => {
           if (mat.transparent) {
@@ -106,7 +131,7 @@ export class SimpleWallCulling {
         }
       }
 
-      // NEW: Show associated grid lines when showing wall
+      // Show associated grid lines
       const gridLines = this.wallGridMap.get(wall);
       if (gridLines) {
         gridLines.forEach(line => {
@@ -124,13 +149,13 @@ export class SimpleWallCulling {
     }
   }
 
+  /**
+   * UPDATED: Wall visibility logic for interior walls system
+   */
   updateWallVisibility (): void {
     if (!this.enabled || !this.camera) {
       return;
     }
-
-    // console.log('🔄 ===== WALL CULLING UPDATE =====');
-    // console.log(`📷 Camera position: (${this.camera.position.x.toFixed(1)}, ${this.camera.position.y.toFixed(1)}, ${this.camera.position.z.toFixed(1)})`);
 
     // First, show all walls and their grid lines
     this.walls.forEach((wall: THREE.Mesh) => {
@@ -143,28 +168,44 @@ export class SimpleWallCulling {
       }
     });
 
-    // Get camera position and calculate which walls to hide
+    // Get camera position and room dimensions
     const cameraPos = this.camera.position;
-    const wallsToHide: WallToHide[] = [];
     const roomHalfWidth: number = this.roomSize.width / 2;
     const roomHalfHeight: number = this.roomSize.height / 2;
+    const wallThickness = WALL_SETTINGS.THICKNESS;
 
-    // Check each wall
+    // Calculate wall hiding zones (areas where camera should hide walls)
+    // For interior walls, we need to account for the actual wall positions
+    const hideDistance = wallThickness + 20; // Distance from wall center to start hiding
+
+    const wallsToHide: WallToHide[] = [];
+
     this.wallMap.forEach((direction: WallDirection, wall: THREE.Mesh) => {
       let shouldHide: boolean = false;
 
       switch (direction) {
         case 'north':
-          shouldHide = cameraPos.z < -roomHalfHeight + 2;
+          // Hide north wall if camera is north of the wall position
+          const northWallPos = -roomHalfHeight + wallThickness / 2;
+          shouldHide = cameraPos.z < northWallPos - hideDistance;
           break;
+
         case 'south':
-          shouldHide = cameraPos.z > roomHalfHeight - 2;
+          // Hide south wall if camera is south of the wall position
+          const southWallPos = roomHalfHeight - wallThickness / 2;
+          shouldHide = cameraPos.z > southWallPos + hideDistance;
           break;
+
         case 'east':
-          shouldHide = cameraPos.x > roomHalfWidth - 2;
+          // Hide east wall if camera is east of the wall position
+          const eastWallPos = roomHalfWidth - wallThickness / 2;
+          shouldHide = cameraPos.x > eastWallPos + hideDistance;
           break;
+
         case 'west':
-          shouldHide = cameraPos.x < -roomHalfWidth + 2;
+          // Hide west wall if camera is west of the wall position
+          const westWallPos = -roomHalfWidth + wallThickness / 2;
+          shouldHide = cameraPos.x < westWallPos - hideDistance;
           break;
       }
 
@@ -173,10 +214,8 @@ export class SimpleWallCulling {
       }
     });
 
-    // Hide walls and their grid lines
+    // Hide the identified walls and their grid lines
     wallsToHide.forEach(({ wall, direction }: WallToHide) => {
-      // console.log(`🚫 Hiding ${direction} wall...`);
-
       // Hide the wall
       wall.visible = false;
 
@@ -186,23 +225,28 @@ export class SimpleWallCulling {
         gridLines.forEach(line => {
           line.visible = false;
         });
-        // console.log(`✅ Hid ${gridLines.length} grid lines for ${direction} wall`);
-      } else {
-        console.log(`❌ NO GRID LINES FOUND FOR ${direction} WALL - THIS IS THE PROBLEM!`);
+
+        // Only log occasionally to avoid spam
+        if (Math.random() < 0.05) { // 5% chance
+          console.log(`🔄 Hiding ${direction} wall and ${gridLines.length} grid lines`);
+        }
       }
     });
 
-    // console.log('🔄 ===== WALL CULLING UPDATE END =====');
+    // Debug output (occasional)
+    if (wallsToHide.length > 0 && Math.random() < 0.02) { // 2% chance
+      console.log(`📷 Camera at (${cameraPos.x.toFixed(1)}, ${cameraPos.z.toFixed(1)}) - Hiding: ${wallsToHide.map(w => w.direction).join(', ')}`);
+    }
   }
 
   dispose (): void {
     this.walls = [];
     this.camera = null;
     this.wallMap.clear();
-    this.wallGridMap.clear(); // NEW: Clear grid map
+    this.wallGridMap.clear();
   }
 
-  // Additional utility methods for better functionality
+  // Utility methods
   getWallCount (): number {
     return this.walls.length;
   }
@@ -232,14 +276,29 @@ export class SimpleWallCulling {
     direction: WallDirection;
     visible: boolean;
     position: { x: number; z: number }
+    expectedPosition: { x?: number; z?: number }
   }> {
+    const roomHalfWidth: number = this.roomSize.width / 2;
+    const roomHalfHeight: number = this.roomSize.height / 2;
+    const wallThickness = WALL_SETTINGS.THICKNESS;
+    const wallOffset = wallThickness / 2;
+
+    const expectedPositions = {
+      north: { z: -roomHalfHeight + wallOffset },
+      south: { z: roomHalfHeight - wallOffset },
+      east: { x: roomHalfWidth - wallOffset },
+      west: { x: -roomHalfWidth + wallOffset }
+    };
+
     return Array.from(this.wallMap.entries()).map(([wall, direction]) => ({
       direction,
       visible: wall.visible,
-      position: { x: wall.position.x, z: wall.position.z }
+      position: { x: wall.position.x, z: wall.position.z },
+      expectedPosition: expectedPositions[direction] || {}
     }));
   }
 
+  // Debug method for grid line status
   getGridLineStatus (): Array<{
     direction: WallDirection;
     gridLineCount: number;

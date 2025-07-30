@@ -1,9 +1,9 @@
 // src/utils/constraints.ts - ENHANCED with proper movement integration
-import { CONSTRAINTS } from '../constants/dimensions';
+import { CONSTRAINTS, WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { getMovementConfig } from '../utils/models';
 import { type OrientationConfig, MovementConfig, DEFAULT_ORIENTATION } from '../constants/models';
-import { getObjectWallBuffer, getObjectRotationForWall, getOrientationInfo } from '../utils/models';
+import { getObjectWallBuffer, getObjectRotationForWall } from '../utils/models';
 import productData from '../mocks/productData';
 
 // Interface for position
@@ -225,6 +225,32 @@ export const checkCollision = (
   return hasCollision;
 };
 
+/**
+ * NEW: Get interior room boundaries for the new wall system
+ */
+export const getInteriorBoundaries = (roomWidth: number, roomHeight: number) => {
+  const wallThickness = WALL_SETTINGS.THICKNESS;
+
+  return {
+    // Interior usable space (where objects can be placed)
+    interior: {
+      width: roomWidth - (wallThickness * 2),
+      height: roomHeight - (wallThickness * 2),
+      minX: -(roomWidth / 2) + wallThickness,
+      maxX: (roomWidth / 2) - wallThickness,
+      minZ: -(roomHeight / 2) + wallThickness,
+      maxZ: (roomHeight / 2) - wallThickness
+    },
+    // Wall inner face positions (for wall-mounted objects)
+    wallFaces: {
+      north: -(roomHeight / 2) + wallThickness,
+      south: (roomHeight / 2) - wallThickness,
+      east: (roomWidth / 2) - wallThickness,
+      west: -(roomWidth / 2) + wallThickness
+    }
+  };
+};
+
 // ENHANCED: Check if a position would cause collision with existing objects
 export const wouldCollideWithExisting = (
   position: Position,
@@ -267,7 +293,10 @@ export const wouldCollideWithExisting = (
   return false;
 };
 
-// 🆕 ENHANCED: Constrain movement to room bounds for free-standing objects
+/**
+ * UPDATED: Constrain movement to room bounds for free-standing objects
+ * Now uses interior boundaries
+ */
 export const constrainToRoom = (
   position: Position,
   roomWidth: number,
@@ -285,40 +314,35 @@ export const constrainToRoom = (
   }
 ): { position: Position; rotation: number } => {
 
-  // 🆕 CRITICAL: Get movement configuration for the object
   const movementConfig = objectType ? getMovementConfig(objectType, item) : null;
+  const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  // Get object dimensions for better boundary calculation
-  const buffer = objectType ? getObjectWallBuffer({ orientation, scale, type: objectType }) : CONSTRAINTS.OBJECT_BUFFER;
+  // Get object dimensions for boundary calculation
+  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) / 2 : CONSTRAINTS.OBJECT_BUFFER;
 
-  const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
+  // Calculate the boundaries within INTERIOR space
+  const minX = interior.minX + buffer;
+  const maxX = interior.maxX - buffer;
+  const minZ = interior.minZ + buffer;
+  const maxZ = interior.maxZ - buffer;
 
-  // Calculate the boundaries (inside the room, away from walls)
-  const minX = -roomHalfWidth + buffer;
-  const maxX = roomHalfWidth - buffer;
-  const minZ = -roomHalfHeight + buffer;
-  const maxZ = roomHalfHeight - buffer;
-
-  // Constrain position to room boundaries
+  // Constrain position to interior boundaries
   const constrainedPosition = {
     x: Math.max(minX, Math.min(maxX, position.x)),
-    y: Math.max(0, position.y), // Keep above floor
+    y: Math.max(0, position.y),
     z: Math.max(minZ, Math.min(maxZ, position.z))
   };
 
-  // 🆕 CRITICAL: Handle vertical position based on movement configuration
+  // Handle vertical position based on movement configuration
   if (movementConfig) {
     if (!movementConfig.allowVerticalMovement) {
       // Force free-standing objects to floor level
       constrainedPosition.y = 0;
-      console.log(`🔒 Forced ${objectType} to floor level (no vertical movement allowed)`);
     } else {
       // Allow vertical movement within limits
       const minHeight = movementConfig.minHeight || 0;
       const maxHeight = movementConfig.maxHeight || 250;
       constrainedPosition.y = Math.max(minHeight, Math.min(maxHeight, position.y));
-      console.log(`📏 Vertical position constrained for ${objectType}: ${constrainedPosition.y}cm`);
     }
   } else {
     // Default: keep above floor
@@ -329,26 +353,28 @@ export const constrainToRoom = (
   // (no automatic rotation based on position)
   const currentRotation = 0; // Default rotation for free objects
 
-  console.log(`🏠 Room constraint applied to ${objectType}:`, {
+  console.log(`🏠 Interior room constraint applied to ${objectType}:`, {
     original: { x: position.x.toFixed(1), y: position.y.toFixed(1), z: position.z.toFixed(1) },
     constrained: {
       x: constrainedPosition.x.toFixed(1),
       y: constrainedPosition.y.toFixed(1),
       z: constrainedPosition.z.toFixed(1)
     },
-    roomBounds: {
+    interiorBounds: {
       x: `${minX.toFixed(1)} to ${maxX.toFixed(1)}`,
       z: `${minZ.toFixed(1)} to ${maxZ.toFixed(1)}`
     },
-    buffer: buffer.toFixed(1),
-    movementType: movementConfig?.snapToWall ? 'WALL-SNAPPED' : 'FREE-STANDING',
-    verticalMovement: movementConfig?.allowVerticalMovement ? 'allowed' : 'restricted'
+    movementType: movementConfig?.snapToWall ? 'WALL-SNAPPED' : 'FREE-STANDING'
   });
 
   return { position: constrainedPosition, rotation: currentRotation };
 };
 
-// 🆕 ENHANCED: Constrain movement to walls with movement configuration
+
+
+/**
+ * UPDATED: Constrain movement to walls using interior wall system
+ */
 export const constrainToWalls = (
   position: Position,
   roomWidth: number,
@@ -366,30 +392,27 @@ export const constrainToWalls = (
   }
 ): { position: Position; rotation: number } => {
 
-  console.log('🔗 Constraining to walls:', objectType, { scale, orientation: orientation?.type });
+  console.log('🔗 Constraining to interior walls:', objectType, { scale, orientation: orientation?.type });
 
-  // 🆕 Get movement configuration
   const movementConfig = objectType ? getMovementConfig(objectType, item) : null;
-
-  // Use configurable wall buffer instead of generic buffer
   const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) : CONSTRAINTS.OBJECT_BUFFER;
+  const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
-
-  // Wall positions (accounting for object-specific buffer)
-  const northWallZ = -roomHalfHeight + buffer;
-  const southWallZ = roomHalfHeight - buffer;
-  const eastWallX = roomHalfWidth - buffer;
-  const westWallX = -roomHalfWidth + buffer;
+  // Wall positions for wall-mounted objects (inner faces + buffer)
+  const wallPositions = {
+    north: wallFaces.north - buffer,
+    south: wallFaces.south + buffer,
+    east: wallFaces.east - buffer,
+    west: wallFaces.west + buffer
+  };
 
   // Calculate distances to each wall
-  const distanceToNorth = Math.abs(position.z - northWallZ);
-  const distanceToSouth = Math.abs(position.z - southWallZ);
-  const distanceToEast = Math.abs(position.x - eastWallX);
-  const distanceToWest = Math.abs(position.x - westWallX);
+  const distanceToNorth = Math.abs(position.z - wallPositions.north);
+  const distanceToSouth = Math.abs(position.z - wallPositions.south);
+  const distanceToEast = Math.abs(position.x - wallPositions.east);
+  const distanceToWest = Math.abs(position.x - wallPositions.west);
 
-  // Find the minimum distance to determine which wall to snap to
+  // Find the closest wall
   const minDistance = Math.min(distanceToNorth, distanceToSouth, distanceToEast, distanceToWest);
 
   let constrainedPosition = { ...position };
@@ -398,38 +421,36 @@ export const constrainToWalls = (
 
   if (minDistance === distanceToNorth) {
     // Snap to north wall
-    constrainedPosition.z = northWallZ;
-    constrainedPosition.x = Math.max(westWallX, Math.min(eastWallX, position.x));
+    constrainedPosition.z = wallPositions.north;
+    constrainedPosition.x = Math.max(interior.minX, Math.min(interior.maxX, position.x));
     wallType = 'north';
   } else if (minDistance === distanceToSouth) {
     // Snap to south wall
-    constrainedPosition.z = southWallZ;
-    constrainedPosition.x = Math.max(westWallX, Math.min(eastWallX, position.x));
+    constrainedPosition.z = wallPositions.south;
+    constrainedPosition.x = Math.max(interior.minX, Math.min(interior.maxX, position.x));
     wallType = 'south';
   } else if (minDistance === distanceToEast) {
     // Snap to east wall
-    constrainedPosition.x = eastWallX;
-    constrainedPosition.z = Math.max(northWallZ, Math.min(southWallZ, position.z));
+    constrainedPosition.x = wallPositions.east;
+    constrainedPosition.z = Math.max(interior.minZ, Math.min(interior.maxZ, position.z));
     wallType = 'east';
   } else {
     // Snap to west wall
-    constrainedPosition.x = westWallX;
-    constrainedPosition.z = Math.max(northWallZ, Math.min(southWallZ, position.z));
+    constrainedPosition.x = wallPositions.west;
+    constrainedPosition.z = Math.max(interior.minZ, Math.min(interior.maxZ, position.z));
     wallType = 'west';
   }
 
-  // 🆕 ENHANCED: Handle vertical position based on movement configuration
+  // Handle vertical position based on movement configuration
   if (movementConfig) {
     if (movementConfig.allowVerticalMovement) {
       // Allow vertical movement within specified limits
       const minHeight = movementConfig.minHeight || 0;
       const maxHeight = movementConfig.maxHeight || 250;
       constrainedPosition.y = Math.max(minHeight, Math.min(maxHeight, position.y));
-      console.log(`📏 Wall-mounted ${objectType} vertical position: ${constrainedPosition.y}cm (range: ${minHeight}-${maxHeight}cm)`);
     } else {
       // Force to floor level or specific height
       constrainedPosition.y = movementConfig.minHeight || 0;
-      console.log(`🔒 Wall-mounted ${objectType} forced to height: ${constrainedPosition.y}cm`);
     }
   } else {
     // Default: keep at floor level
@@ -441,16 +462,16 @@ export const constrainToWalls = (
     wallRotation = getObjectRotationForWall(objectType, wallType, orientation);
   }
 
-  console.log(`🔗 Wall constraint result for ${objectType}:`, {
+  console.log(`🔗 Interior wall constraint result for ${objectType}:`, {
     wallType,
-    position: {
+    wallFacePosition: wallFaces[wallType],
+    objectPosition: {
       x: constrainedPosition.x.toFixed(1),
       y: constrainedPosition.y.toFixed(1),
       z: constrainedPosition.z.toFixed(1)
     },
     rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
-    buffer: `${buffer.toFixed(1)}cm`,
-    verticalMovement: movementConfig?.allowVerticalMovement ? 'allowed' : 'restricted'
+    buffer: `${buffer.toFixed(1)}cm`
   });
 
   return { position: constrainedPosition, rotation: wallRotation };
@@ -471,7 +492,9 @@ export const snapToNearestWall = (
   return constrainToWalls(position, roomWidth, roomHeight, orientationDetails);
 };
 
-// 🆕 ENHANCED: Find a free position with movement-aware placement
+/**
+ * UPDATED: Find free wall position using interior wall system
+ */
 export const findFreeWallPosition = (
   roomWidth: number,
   roomHeight: number,
@@ -483,58 +506,52 @@ export const findFreeWallPosition = (
   movement?: MovementConfig
 ): { position: Position; rotation: number } => {
 
-  console.log('🎯 Finding free position for:', objectType, 'with movement config');
+  console.log('🎯 Finding free position on interior walls for:', objectType);
 
-  // 🆕 Get movement configuration to determine placement strategy
   const movementConfig = movement ?? getMovementConfig(objectType);
 
-  // 🆕 ENHANCED: Handle free-standing objects differently
   if (!movementConfig.snapToWall) {
-    console.log('🏊 Finding free-standing position for:', objectType);
     return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig);
   }
 
-  // Continue with wall-based placement for wall-snapped objects
   const buffer = getObjectWallBuffer({ orientation, scale });
+  const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
-
-  // Define the four walls with configurable orientations and buffers
+  // Define walls with proper interior positioning
   const walls = [
-    { // North wall
+    {
       name: 'north',
       getPosition: (t: number) => ({
-        x: -roomHalfWidth + buffer + t * (roomWidth - 2 * buffer),
+        x: interior.minX + t * (interior.maxX - interior.minX),
         y: getWallPositionY(objectType, movementConfig),
-        z: -roomHalfHeight + buffer
+        z: wallFaces.north - buffer
       }),
       rotation: getObjectRotationForWall(objectType, 'north', orientation)
     },
-    { // South wall
+    {
       name: 'south',
       getPosition: (t: number) => ({
-        x: -roomHalfWidth + buffer + t * (roomWidth - 2 * buffer),
+        x: interior.minX + t * (interior.maxX - interior.minX),
         y: getWallPositionY(objectType, movementConfig),
-        z: roomHalfHeight - buffer
+        z: wallFaces.south + buffer
       }),
       rotation: getObjectRotationForWall(objectType, 'south', orientation)
     },
-    { // East wall
+    {
       name: 'east',
       getPosition: (t: number) => ({
-        x: roomHalfWidth - buffer,
+        x: wallFaces.east - buffer,
         y: getWallPositionY(objectType, movementConfig),
-        z: -roomHalfHeight + buffer + t * (roomHeight - 2 * buffer)
+        z: interior.minZ + t * (interior.maxZ - interior.minZ)
       }),
       rotation: getObjectRotationForWall(objectType, 'east', orientation)
     },
-    { // West wall
+    {
       name: 'west',
       getPosition: (t: number) => ({
-        x: -roomHalfWidth + buffer,
+        x: wallFaces.west + buffer,
         y: getWallPositionY(objectType, movementConfig),
-        z: -roomHalfHeight + buffer + t * (roomHeight - 2 * buffer)
+        z: interior.minZ + t * (interior.maxZ - interior.minZ)
       }),
       rotation: getObjectRotationForWall(objectType, 'west', orientation)
     }
@@ -549,7 +566,7 @@ export const findFreeWallPosition = (
     const t = Math.random();
     const position = wall.getPosition(t);
 
-    // Check if this position collides with any existing items
+    // Check collision with existing items
     let hasCollision = false;
     for (const item of existingItems) {
       if (checkCollision(
@@ -568,32 +585,29 @@ export const findFreeWallPosition = (
     }
 
     if (!hasCollision) {
-      const orientationInfo = getOrientationInfo(orientation);
-      console.log(`🎯 Found free wall position for ${objectType} on ${wall.name} wall:`, {
-        position: { x: position.x.toFixed(3), y: position.y.toFixed(1), z: position.z.toFixed(3) },
-        wallBuffer: `${buffer.toFixed(3)}cm`,
+      console.log(`🎯 Found free interior wall position for ${objectType} on ${wall.name} wall:`, {
+        position: { x: position.x.toFixed(1), y: position.y.toFixed(1), z: position.z.toFixed(1) },
+        wallFaceDistance: `${buffer.toFixed(1)}cm from wall`,
         rotation: `${(wall.rotation * 180 / Math.PI).toFixed(0)}°`,
-        orientation: orientationInfo.description,
-        attempt: attempt + 1,
-        movementType: 'WALL-SNAPPED'
+        attempt: attempt + 1
       });
       return { position, rotation: wall.rotation };
     }
   }
 
-  // Fallback position for wall-snapped objects
+  // Fallback position
   const fallbackRotation = getObjectRotationForWall(objectType, 'south', orientation);
   return {
     position: {
       x: 0,
       y: getWallPositionY(objectType, movementConfig),
-      z: roomHalfHeight - buffer
+      z: wallFaces.south + buffer
     },
     rotation: fallbackRotation
   };
 };
 
-// 🆕 NEW: Find free-standing position for objects that don't snap to walls
+// Helper function for free-standing objects (updated for interior space)
 const findFreeStandingPosition = (
   roomWidth: number,
   roomHeight: number,
@@ -605,37 +619,33 @@ const findFreeStandingPosition = (
 ): { position: Position; rotation: number } => {
 
   const movementConfig = movement ?? getMovementConfig(objectType);
-  const buffer = 50; // 50cm buffer from walls for free-standing objects
+  const buffer = 30; // Buffer from walls for free-standing objects
+  const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
-
-  // Define free-standing area (away from walls)
-  const minX = -roomHalfWidth + buffer;
-  const maxX = roomHalfWidth - buffer;
-  const minZ = -roomHalfHeight + buffer;
-  const maxZ = roomHalfHeight - buffer;
+  // Define free-standing area within interior space
+  const minX = interior.minX + buffer;
+  const maxX = interior.maxX - buffer;
+  const minZ = interior.minZ + buffer;
+  const maxZ = interior.maxZ - buffer;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    // Random position in the free area
     const position = {
       x: minX + Math.random() * (maxX - minX),
       y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
       z: minZ + Math.random() * (maxZ - minZ)
     };
 
-    // Random rotation if allowed
     const rotation = movementConfig.allowFreeRotation ? Math.random() * Math.PI * 2 : 0;
 
-    // ✅ FIXED: Create temporary item for enhanced collision detection
+    // Create temporary item for collision detection
     const tempItem: BathroomItem = {
-      id: -1, // Temporary ID
+      id: -1,
       type: objectType,
       position: [position.x, position.y, position.z] as [number, number, number],
       scale: scale
     };
 
-    // Check for collisions with enhanced detection
+    // Check for collisions
     let hasCollision = false;
     for (const item of existingItems) {
       if (checkCollision(
@@ -654,54 +664,50 @@ const findFreeStandingPosition = (
     }
 
     if (!hasCollision) {
-      console.log(`🏊 Found free-standing position for ${objectType}:`, {
-        position: { x: position.x.toFixed(3), y: position.y.toFixed(1), z: position.z.toFixed(3) },
+      console.log(`🏊 Found free-standing position in interior space for ${objectType}:`, {
+        position: { x: position.x.toFixed(1), y: position.y.toFixed(1), z: position.z.toFixed(1) },
         rotation: `${(rotation * 180 / Math.PI).toFixed(0)}°`,
-        attempt: attempt + 1,
-        movementType: 'FREE-STANDING'
+        interiorSpace: `${interior.width.toFixed(1)}x${interior.height.toFixed(1)}cm`,
+        attempt: attempt + 1
       });
       return { position, rotation };
     }
   }
 
-  // Fallback to center of room
-  console.log(`⚠️ Using fallback center position for free-standing ${objectType}`);
+  // Fallback to center of interior space
+  console.log(`⚠️ Using fallback center position in interior space for ${objectType}`);
   return {
     position: {
-      x: 0,
+      x: (interior.minX + interior.maxX) / 2,
       y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
-      z: 0
+      z: (interior.minZ + interior.maxZ) / 2
     },
-    rotation: movementConfig.allowFreeRotation ? 0 : 0
+    rotation: 0
   };
 };
 
-// 🆕 NEW: Helper to get appropriate Y position for wall-mounted objects
+// Helper to get appropriate Y position for wall-mounted objects
 const getWallPositionY = (_objectType: ComponentType, movementConfig: MovementConfig): number => {
   return movementConfig.minHeight || 0; // Floor level for most objects
 };
 
-// 🆕 ENHANCED: Function that respects movement configuration
+/**
+ * UPDATED: Constrain all objects to interior room boundaries
+ */
 export const constrainAllObjectsToRoom = (
   items: BathroomItem[],
   roomWidth: number,
   roomHeight: number
 ): BathroomItem[] => {
   return items.map(item => {
-
     const position = { x: item.position[0], y: item.position[1], z: item.position[2] };
+    const movementConfig = getMovementConfig(item.type, item);
 
     let constrainedPosition: Position;
     let constrainedRotation: number;
 
-    console.log('🔧 Constraining object:', item.type, item.sku);
-
-    // 🆕 ENHANCED: Use movement configuration to determine constraint type
-    const movementConfig = getMovementConfig(item.type, item);
-
     if (movementConfig.snapToWall) {
-      // Wall-snapped objects - constrain to walls
-      console.log(`🔗 Applying wall constraints to ${item.type}`);
+      // Wall-snapped objects - constrain to interior walls
       const result = constrainToWalls(position, roomWidth, roomHeight, {
         type: item.type,
         scale: item.scale,
@@ -711,8 +717,7 @@ export const constrainAllObjectsToRoom = (
       constrainedPosition = result.position;
       constrainedRotation = result.rotation;
     } else {
-      // Free-standing objects - constrain to room bounds
-      console.log(`🏊 Applying room constraints to ${item.type}`);
+      // Free-standing objects - constrain to interior room bounds
       const result = constrainToRoom(position, roomWidth, roomHeight, {
         type: item.type,
         scale: item.scale,
@@ -720,7 +725,7 @@ export const constrainAllObjectsToRoom = (
         item
       });
       constrainedPosition = result.position;
-      constrainedRotation = item.rotation || 0; // Keep current rotation for free-standing
+      constrainedRotation = item.rotation || 0;
     }
 
     return {
