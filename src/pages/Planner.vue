@@ -111,6 +111,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, watch, computed, nextTick, markRaw, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
+import { loadRoomDimensionsFromStorage, saveRoomDimensionsToStorage } from '../constants/dimensions'
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
 import * as THREE from 'three';
 import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
@@ -370,10 +371,19 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   roomWidth.value = newWidth
   roomHeight.value = newHeight
 
+  // Update refs
+  roomWidthRef.value = newWidth
+  roomHeightRef.value = newHeight
+
+  // Save the updated dimensions to localStorage using utility function
+  saveRoomDimensionsToStorage(newWidth, newHeight)
+
+  // Constrain objects and update scene
   const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight)
   items.value = constrainedItems
   lastUpdateSource.value = 'roomSize'
 
+  // Save to history
   setTimeout(() => {
     saveToHistory({
       items: constrainedItems,
@@ -595,9 +605,51 @@ const handleMeasurementUpdate = () => {
 const handleMeasurementToggle = () => {
   handleToggleMeasurements()
 }
+// Add this function to load saved room dimensions
+const loadSavedRoomDimensions = () => {
+  const dimensions = loadRoomDimensionsFromStorage()
+
+  if (dimensions) {
+    roomWidth.value = dimensions.width
+    roomHeight.value = dimensions.height
+
+    // Update the refs used by SceneManager
+    roomWidthRef.value = dimensions.width
+    roomHeightRef.value = dimensions.height
+
+    console.log('Room dimensions loaded (CM):', {
+      width: dimensions.width + 'cm',
+      height: dimensions.height + 'cm'
+    })
+
+    return true
+  }
+
+  // Fallback to defaults if loading fails
+  roomWidth.value = ROOM_DEFAULTS.WIDTH  // 300cm
+  roomHeight.value = ROOM_DEFAULTS.HEIGHT // 250cm
+  roomWidthRef.value = ROOM_DEFAULTS.WIDTH
+  roomHeightRef.value = ROOM_DEFAULTS.HEIGHT
+
+  return false
+}
 
 // Initialize scene
 onMounted(async () => {
+
+  const dimensionsLoaded = loadSavedRoomDimensions()
+
+  if (dimensionsLoaded) {
+    console.log('Using saved room dimensions (CM):', {
+      width: roomWidth.value + 'cm',
+      height: roomHeight.value + 'cm'
+    })
+  } else {
+    console.log('Using default room dimensions (CM):', {
+      width: ROOM_DEFAULTS.WIDTH + 'cm',
+      height: ROOM_DEFAULTS.HEIGHT + 'cm'
+    })
+  }
   // Initialize scene manager
   const sceneManager = markRaw(new SceneManager())
   sceneManagerRef.value = sceneManager

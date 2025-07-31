@@ -54,16 +54,6 @@
                 <span v-if="hasPendingChanges(input)" class="pending-indicator">*</span>
               </div>
             </div>
-
-            <!-- Apply Changes Button -->
-            <div v-if="hasAnyPendingChanges" class="apply-changes-container">
-              <button class="apply-changes-btn" @click="applyPendingChanges">
-                Apply Changes
-              </button>
-              <button class="cancel-changes-btn" @click="cancelAllPendingChanges">
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -80,6 +70,9 @@
 
 <script setup>
 import {ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
+
+// Import the utility functions
+import { loadRoomDimensionsFromStorage, saveRoomDimensionsToStorage } from '../constants/dimensions'
 import {useRouter} from 'vue-router'
 import {isMobile} from "../utils/helpers.js"
 import {ROOM_DEFAULTS} from '../constants/dimensions.js';
@@ -166,31 +159,14 @@ const hasAnyPendingChanges = computed(() => {
 
 // Methods
 const goToPlanner = () => {
-  // Save room dimensions to localStorage (convert from cm to meters)
-  const roomDimensionsInMeters = {
-    width: roomDimensions.width / 100,  // Convert cm to meters
-    height: roomDimensions.height / 100, // Convert cm to meters
-    timestamp: Date.now() // Add timestamp for cache management
-  }
-
-  try {
-    localStorage.setItem('room-dimensions', JSON.stringify(roomDimensionsInMeters))
-    console.log('Room dimensions saved:', roomDimensionsInMeters)
-  } catch (error) {
-    console.warn('Failed to save room dimensions:', error)
-    // Continue navigation even if storage fails
-  }
+  // Save room dimensions to localStorage using utility function
+  saveRoomDimensionsToStorage(roomDimensions.width, roomDimensions.height)
 
   // Navigate to planner
   router.push('/planner')
 }
 
 const applyAndContinue = () => {
-  // Apply any pending changes first
-  if (hasAnyPendingChanges.value) {
-    applyPendingChanges()
-  }
-
   // Then navigate with the final dimensions
   goToPlanner()
 }
@@ -408,19 +384,6 @@ const hasPendingChanges = (input) => {
   } else {
     return pendingDimensions.height !== null && pendingDimensions.height !== roomDimensions.height
   }
-}
-
-const applyPendingChanges = () => {
-  if (pendingDimensions.width !== null) {
-    roomDimensions.width = pendingDimensions.width
-  }
-  if (pendingDimensions.height !== null) {
-    roomDimensions.height = pendingDimensions.height
-  }
-
-  // Clear pending changes
-  pendingDimensions.width = null
-  pendingDimensions.height = null
 }
 
 const cancelAllPendingChanges = () => {
@@ -879,8 +842,35 @@ watch(zoomLevel, () => {
   updateDimensionInputs()
 })
 
+const loadExistingDimensions = () => {
+  const dimensions = loadRoomDimensionsFromStorage()
+
+  if (dimensions) {
+    roomDimensions.width = dimensions.width
+    roomDimensions.height = dimensions.height
+
+    console.log('Existing dimensions loaded:', {
+      width: dimensions.width + 'cm',
+      height: dimensions.height + 'cm'
+    })
+
+    return true
+  }
+
+  return false
+}
+
 // Lifecycle hooks
 onMounted(() => {
+
+  const existingLoaded = loadExistingDimensions()
+
+  if (existingLoaded) {
+    console.log('Using existing room dimensions from previous session')
+  } else {
+    console.log('Using default room dimensions')
+  }
+
   initCanvas()
   updateHandles()
   updateDimensionInputs()

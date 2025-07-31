@@ -463,6 +463,21 @@ watch(isSidebarVisible, (newVal) => {
   console.log('🔍 Sidebar visible state changed:', newVal)
 })
 
+// Update the watch functions - props are in centimeters, no conversion needed
+watch(() => props.roomWidth, (newWidth) => {
+  if (!isInternalUpdate.value) {
+    // Values are already in centimeters
+    localRoomWidth.value = Number(newWidth) || ROOM_DEFAULTS.WIDTH
+  }
+})
+
+watch(() => props.roomHeight, (newHeight) => {
+  if (!isInternalUpdate.value) {
+    // Values are already in centimeters
+    localRoomHeight.value = Number(newHeight) || ROOM_DEFAULTS.HEIGHT
+  }
+})
+
 // FIXED: Product drawer methods
 const openProductDrawer = (category) => {
   console.log('🔍 Opening product drawer for category:', category)
@@ -636,38 +651,26 @@ const updateHeightFromSlider = (event) => {
   }, 100)
 }
 
-const validateAndUpdateWidth = () => {
-  const validatedValue = validateValue(
-      localRoomWidth.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomWidth.value) {
-    localRoomWidth.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', validatedValue, localRoomHeight.value)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
+const validateAndUpdateWidth = (event) => {
+  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, ROOM_DEFAULTS.MAX_SIZE)
+  localRoomWidth.value = newValue
+  isInternalUpdate.value = true
+  // Emit values in centimeters (no conversion needed)
+  emit('room-size-change', newValue, localRoomHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
 }
 
-const validateAndUpdateHeight = () => {
-  const validatedValue = validateValue(
-      localRoomHeight.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomHeight.value) {
-    localRoomHeight.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', localRoomWidth.value, validatedValue)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
+const validateAndUpdateHeight = (event) => {
+  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, ROOM_DEFAULTS.MAX_SIZE)
+  localRoomHeight.value = newValue
+  isInternalUpdate.value = true
+  // Emit values in centimeters (no conversion needed)
+  emit('room-size-change', localRoomWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
 }
 
 // Style helper methods
