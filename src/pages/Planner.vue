@@ -880,13 +880,33 @@ const handleSmartUpdate = async (newItems, updateSource) => {
 }
 
 const handleClearAll = () => {
-  // Clear all items
-  const clearedItems = []
+  console.log('🧹 Starting clear all operation...')
 
+  // CRITICAL: Clear items from Three.js scene FIRST
+  if (sceneManagerRef.value) {
+    try {
+      sceneManagerRef.value.clearAllItems()
+      console.log('✅ Items cleared from Three.js scene')
+    } catch (error) {
+      console.error('❌ Error clearing items from scene:', error)
+    }
+  }
+
+  // Clear Vue reactive state
+  const clearedItems = []
   items.value = clearedItems
   lastUpdateSource.value = 'clear'
 
-  // Save to history for undo capability
+  // Clear any active selections
+  if (sceneManagerRef.value?.measurementSystem) {
+    sceneManagerRef.value.measurementSystem.setSelectedObject(null)
+  }
+
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
+  }
+
+  // Save to history for undo
   saveToHistory({
     items: clearedItems,
     roomWidth: roomWidth.value,
