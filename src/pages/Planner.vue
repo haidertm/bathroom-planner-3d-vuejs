@@ -728,6 +728,14 @@ onMounted(async () => {
   window.addEventListener('object-moved', handleMeasurementUpdate)
   window.addEventListener('toggle-measurements', handleMeasurementToggle)
 
+  saveToHistory({
+    items: items.value, // This should be empty initially
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value,
+    currentFloorTexture: currentFloorTexture.value,
+    currentWallTexture: currentWallTexture.value
+  })
+
 })
 
 // Watch for room geometry changes
