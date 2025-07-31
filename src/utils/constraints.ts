@@ -289,7 +289,7 @@ export const constrainToRoom = (
   const movementConfig = objectType ? getMovementConfig(objectType, item) : null;
 
   // Get object dimensions for better boundary calculation
-  const buffer = objectType ? getObjectWallBuffer({ orientation, scale, type: objectType }) : CONSTRAINTS.OBJECT_BUFFER;
+  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) / 2 : CONSTRAINTS.OBJECT_BUFFER;
 
   const roomHalfWidth = roomWidth / 2;
   const roomHalfHeight = roomHeight / 2;
