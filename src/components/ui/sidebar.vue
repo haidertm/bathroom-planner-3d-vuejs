@@ -182,36 +182,6 @@
         </div>
       </div>
 
-      <!-- Measurement section -->
-      <div :style="accordionSectionStyle">
-        <div
-            @click="toggleMeasurementSection"
-            :style="mainAccordionHeaderStyle"
-        >
-          <h4 :style="accordionTitleStyle">📏 Measurements</h4>
-          <span :style="getArrowStyle(isMeasurementExpanded)">▼</span>
-        </div>
-        <div :style="getAccordionContentStyle(isMeasurementExpanded)">
-          <div :style="controlGroupStyle">
-            <label :style="checkboxLabelStyle">
-              <input
-                  type="checkbox"
-                  :checked="measurementEnabled"
-                  @change="$emit('toggle-measurements')"
-                  :style="checkboxStyle"
-              />
-              Enable Ruler Mode
-            </label>
-          </div>
-          <div :style="controlGroupStyle">
-            <p :style="helpTextStyle">
-              Select an object to see its dimensions and available space around it.
-              Press 'M' key to toggle this mode.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <!-- Textures Button -->
       <div :style="accordionSectionStyle">
         <button
@@ -313,13 +283,6 @@ import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
 
-
-const isMeasurementExpanded = ref(false)
-
-const toggleMeasurementSection = () => {
-  isMeasurementExpanded.value = !isMeasurementExpanded.value
-}
-
 // Define props
 const props = defineProps({
   currentFloor: {
@@ -376,32 +339,60 @@ const bathroomCategories = [
     id: 'baths',
     label: 'Baths',
     component: 'Bath',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 12h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-6z"/>
-      <path d="M2 18h20"/>
-      <circle cx="7" cy="21" r="1"/>
-      <circle cx="17" cy="21" r="1"/>
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Bath tub body -->
+      <path d="M3 14h18v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3z"/>
+      <!-- Bath tub rim -->
+      <path d="M2 14h20"/>
+      <!-- Faucet -->
+      <path d="M4 14v-2a1 1 0 0 1 1-1h1"/>
+      <circle cx="6" cy="10" r="0.5"/>
+      <!-- Legs -->
+      <path d="M5 19v2"/>
+      <path d="M19 19v2"/>
+      <!-- Drain -->
+      <circle cx="12" cy="16" r="0.5"/>
     </svg>`
   },
   {
     id: 'showers',
     label: 'Showers',
     component: 'Shower',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 4h16v16H4z"/>
-      <path d="M8 2v20"/>
-      <path d="M12 8v8"/>
-      <path d="M16 8v8"/>
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Shower enclosure -->
+      <path d="M6 4h12v16H6z"/>
+      <!-- Door -->
+      <path d="M12 4v16"/>
+      <circle cx="11" cy="12" r="0.5"/>
+      <!-- Shower head -->
+      <path d="M8 4V2"/>
+      <rect x="7" y="1" width="2" height="1" rx="0.5"/>
+      <!-- Water drops -->
+      <circle cx="8" cy="6" r="0.3"/>
+      <circle cx="10" cy="7" r="0.3"/>
+      <circle cx="9" cy="8" r="0.3"/>
+      <circle cx="7" cy="9" r="0.3"/>
+      <!-- Base tray -->
+      <path d="M6 20h12"/>
     </svg>`
   },
   {
     id: 'toilets',
     label: 'Toilets',
     component: 'Toilet',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M6 8h12v8a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8z"/>
-      <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-      <path d="M6 8H4a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2"/>
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Toilet bowl -->
+      <path d="M8 20v-6a4 4 0 0 1 4-4 4 4 0 0 1 4 4v6a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1z"/>
+      <!-- Toilet seat -->
+      <path d="M8 14h8"/>
+      <!-- Toilet tank -->
+      <rect x="9" y="6" width="6" height="6" rx="1"/>
+      <!-- Flush handle -->
+      <path d="M15 9h1"/>
+      <!-- Water line in bowl -->
+      <path d="M10 17h4"/>
+      <!-- Base -->
+      <path d="M7 21h10"/>
     </svg>`
   },
   {
@@ -409,36 +400,71 @@ const bathroomCategories = [
     label: 'Mirrors',
     component: 'Mirror',
     icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="4" y="4" width="16" height="16" rx="2"/>
-      <path d="M8 12l3 3 5-5"/>
+      <!-- Outer mirror frame -->
+      <ellipse cx="12" cy="10" rx="8" ry="7"/>
+      <!-- Inner mirror surface -->
+      <ellipse cx="12" cy="10" rx="6" ry="5"/>
+      <!-- Reflection lines -->
+      <path d="M8 8l2 2"/>
+      <path d="M10 6l2 2"/>
+      <path d="M14 12l2 2"/>
+      <!-- Mirror stand -->
+      <path d="M12 17v4"/>
+      <!-- Base -->
+      <path d="M9 21h6"/>
     </svg>`
   },
   {
-    id: 'Radiator',
+    id: 'radiator',
     label: 'Radiator',
     component: 'Radiator',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="4" y="6" width="16" height="12" rx="2"/>
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-      <path d="M8 18v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2"/>
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Radiator panels -->
+      <rect x="4" y="6" width="3" height="12" rx="0.5"/>
+      <rect x="8.5" y="6" width="3" height="12" rx="0.5"/>
+      <rect x="13" y="6" width="3" height="12" rx="0.5"/>
+      <rect x="17.5" y="6" width="2.5" height="12" rx="0.5"/>
+      <!-- Top connection pipe -->
+      <path d="M4 6h16"/>
+      <!-- Bottom connection pipe -->
+      <path d="M4 18h16"/>
+      <!-- Valve -->
+      <circle cx="2" cy="12" r="1"/>
+      <path d="M3 12h1"/>
+      <!-- Heat lines -->
+      <path d="M5.5 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
+      <path d="M10 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
+      <path d="M14.5 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
     </svg>`
   },
   {
     id: 'furniture',
     label: 'Furniture',
     component: 'Furniture',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="8" width="18" height="10" rx="2"/>
-      <path d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/>
-      <path d="M7 18v2"/>
-      <path d="M17 18v2"/>
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Vanity cabinet body -->
+      <rect x="3" y="10" width="18" height="8" rx="1"/>
+      <!-- Cabinet doors -->
+      <path d="M12 10v8"/>
+      <circle cx="8" cy="14" r="0.5"/>
+      <circle cx="16" cy="14" r="0.5"/>
+      <!-- Basin/sink on top -->
+      <path d="M5 10V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/>
+      <!-- Faucet -->
+      <path d="M12 8V6"/>
+      <path d="M11 6h2"/>
+      <!-- Legs/support -->
+      <path d="M6 18v2"/>
+      <path d="M18 18v2"/>
+      <!-- Drawer handle -->
+      <circle cx="12" cy="14" r="0.3"/>
     </svg>`
-  },
+  }
 ]
 
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
-const isRoomSettingsExpanded = ref(true)
+const isRoomSettingsExpanded = ref(false)
 const isTextureDrawerOpen = ref(false)
 const isFloorExpanded = ref(true)
 const isWallExpanded = ref(false)
@@ -461,6 +487,21 @@ watch(isProductDrawerOpen, (newVal) => {
 
 watch(isSidebarVisible, (newVal) => {
   console.log('🔍 Sidebar visible state changed:', newVal)
+})
+
+// Update the watch functions - props are in centimeters, no conversion needed
+watch(() => props.roomWidth, (newWidth) => {
+  if (!isInternalUpdate.value) {
+    // Values are already in centimeters
+    localRoomWidth.value = Number(newWidth) || ROOM_DEFAULTS.WIDTH
+  }
+})
+
+watch(() => props.roomHeight, (newHeight) => {
+  if (!isInternalUpdate.value) {
+    // Values are already in centimeters
+    localRoomHeight.value = Number(newHeight) || ROOM_DEFAULTS.HEIGHT
+  }
 })
 
 // FIXED: Product drawer methods
@@ -636,38 +677,26 @@ const updateHeightFromSlider = (event) => {
   }, 100)
 }
 
-const validateAndUpdateWidth = () => {
-  const validatedValue = validateValue(
-      localRoomWidth.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomWidth.value) {
-    localRoomWidth.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', validatedValue, localRoomHeight.value)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
+const validateAndUpdateWidth = (event) => {
+  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, ROOM_DEFAULTS.MAX_SIZE)
+  localRoomWidth.value = newValue
+  isInternalUpdate.value = true
+  // Emit values in centimeters (no conversion needed)
+  emit('room-size-change', newValue, localRoomHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
 }
 
-const validateAndUpdateHeight = () => {
-  const validatedValue = validateValue(
-      localRoomHeight.value,
-      ROOM_DEFAULTS.MIN_SIZE,
-      ROOM_DEFAULTS.MAX_SIZE
-  )
-
-  if (validatedValue !== localRoomHeight.value) {
-    localRoomHeight.value = validatedValue
-    isInternalUpdate.value = true
-    emit('room-size-change', localRoomWidth.value, validatedValue)
-    setTimeout(() => {
-      isInternalUpdate.value = false
-    }, 100)
-  }
+const validateAndUpdateHeight = (event) => {
+  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, ROOM_DEFAULTS.MAX_SIZE)
+  localRoomHeight.value = newValue
+  isInternalUpdate.value = true
+  // Emit values in centimeters (no conversion needed)
+  emit('room-size-change', localRoomWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
 }
 
 // Style helper methods

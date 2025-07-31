@@ -68,3 +68,40 @@ export const MEASUREMENT_SETTINGS = {
   TOLERANCE: 20,             // Alignment tolerance for objects
   UPDATE_INTERVAL: 500       // Measurement update interval in ms
 } as const;
+
+// Storage utilities - localStorage stores in meters for consistency with existing data
+export const saveRoomDimensionsToStorage = (widthCm: number, heightCm: number): void => {
+  try {
+    const roomDimensionsInMeters = {
+      width: widthCm / 100,  // Convert cm to meters inline
+      height: heightCm / 100, // Convert cm to meters inline
+      timestamp: Date.now()
+    };
+    localStorage.setItem('room-dimensions', JSON.stringify(roomDimensionsInMeters));
+    console.log('Room dimensions saved to localStorage:', roomDimensionsInMeters);
+    console.log('Original values in CM:', { width: widthCm + 'cm', height: heightCm + 'cm' });
+  } catch (error) {
+    console.warn('Failed to save room dimensions:', error);
+  }
+};
+
+export const loadRoomDimensionsFromStorage = (): { width: number; height: number } | null => {
+  try {
+    const savedDimensions = localStorage.getItem('room-dimensions');
+    if (savedDimensions) {
+      const dimensions = JSON.parse(savedDimensions);
+      if (dimensions.width && dimensions.height) {
+        // Convert from meters (storage format) back to centimeters (app format)
+        const result = {
+          width: Math.round(dimensions.width * 100), // Convert meters to cm inline
+          height: Math.round(dimensions.height * 100) // Convert meters to cm inline
+        };
+        console.log('Room dimensions loaded from localStorage and converted to CM:', result);
+        return result;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load room dimensions:', error);
+  }
+  return null;
+};
