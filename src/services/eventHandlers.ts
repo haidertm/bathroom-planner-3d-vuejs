@@ -287,9 +287,8 @@ export class EventHandlers {
       event.preventDefault();
       const itemId = this.selectedObject.userData.itemId as number;
 
-      // Clear selection and highlight
-      highlightObject(this.selectedObject, false);
-      this.selectedObject = null;
+      // FIXED: Use clearSelection method to properly clean up measurements
+      this.clearSelection();
 
       console.log('itemToBeDeleted>>>', itemId);
 
