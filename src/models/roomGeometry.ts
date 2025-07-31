@@ -88,127 +88,59 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
   return floorGridGroup;
 };
 
-export const createTestWallGridLines = (
-  wallDirection: 'north' | 'south' | 'east' | 'west',
-  roomWidth: number,
-  roomHeight: number
-): THREE.Line[] => {
-  console.log(`🧪 Creating TEST wall grid lines for ${wallDirection} wall (bright colors)`);
+/**
+ * UPDATED CONSTRAINT FUNCTIONS for interior walls
+ */
 
-  const wallHeight = WALL_SETTINGS.HEIGHT;
-  const wallGridLines: THREE.Line[] = [];
+// Get the actual interior room boundaries (accounting for wall thickness)
+export const getInteriorBoundaries = (roomWidth: number, roomHeight: number) => {
+  const wallThickness = WALL_SETTINGS.THICKNESS;
 
-  // Create VERY bright, obvious materials for testing
-  const colors = {
-    north: 0xff0000,  // Bright red
-    south: 0x00ff00,  // Bright green
-    east: 0x0000ff,   // Bright blue
-    west: 0xffff00    // Bright yellow
+  return {
+    // Interior usable space (where objects can be placed)
+    interior: {
+      width: roomWidth - (wallThickness * 2),
+      height: roomHeight - (wallThickness * 2),
+      minX: -(roomWidth / 2) + wallThickness,
+      maxX: (roomWidth / 2) - wallThickness,
+      minZ: -(roomHeight / 2) + wallThickness,
+      maxZ: (roomHeight / 2) - wallThickness
+    },
+    // Wall inner face positions (for wall-mounted objects)
+    wallFaces: {
+      north: -(roomHeight / 2) + wallThickness,
+      south: (roomHeight / 2) - wallThickness,
+      east: (roomWidth / 2) - wallThickness,
+      west: -(roomWidth / 2) + wallThickness
+    }
   };
-
-  const testWallGridMaterial = new THREE.LineBasicMaterial({
-    color: colors[wallDirection],
-    linewidth: 5,     // Thick lines
-    opacity: 1.0,     // Fully opaque
-    transparent: false
-  });
-
-  console.log(`🎨 Test material color for ${wallDirection}:`, testWallGridMaterial.color.getHexString());
-
-  // Create just a few test lines to avoid clutter
-  if (wallDirection === 'north' || wallDirection === 'south') {
-    const wallZ = wallDirection === 'north' ? -roomHeight / 2 : roomHeight / 2;
-
-    // Create 3 vertical test lines
-    for (let i = 0; i < 3; i++) {
-      const x = (i - 1) * (roomWidth / 4); // -1/4, 0, 1/4 of room width
-      const points: THREE.Vector3[] = [
-        new THREE.Vector3(x, 0, wallZ),
-        new THREE.Vector3(x, wallHeight, wallZ)
-      ];
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, testWallGridMaterial);
-      line.name = `TestWallGrid_${wallDirection}_v${i}`;
-      wallGridLines.push(line);
-    }
-
-    // Create 3 horizontal test lines
-    for (let i = 0; i < 3; i++) {
-      const y = (i + 1) * (wallHeight / 4); // 1/4, 2/4, 3/4 of wall height
-      const points: THREE.Vector3[] = [
-        new THREE.Vector3(-roomWidth / 2, y, wallZ),
-        new THREE.Vector3(roomWidth / 2, y, wallZ)
-      ];
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, testWallGridMaterial);
-      line.name = `TestWallGrid_${wallDirection}_h${i}`;
-      wallGridLines.push(line);
-    }
-  } else if (wallDirection === 'east' || wallDirection === 'west') {
-    const wallX = wallDirection === 'east' ? roomWidth / 2 : -roomWidth / 2;
-
-    // Create 3 vertical test lines
-    for (let i = 0; i < 3; i++) {
-      const z = (i - 1) * (roomHeight / 4); // -1/4, 0, 1/4 of room height
-      const points: THREE.Vector3[] = [
-        new THREE.Vector3(wallX, 0, z),
-        new THREE.Vector3(wallX, wallHeight, z)
-      ];
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, testWallGridMaterial);
-      line.name = `TestWallGrid_${wallDirection}_v${i}`;
-      wallGridLines.push(line);
-    }
-
-    // Create 3 horizontal test lines
-    for (let i = 0; i < 3; i++) {
-      const y = (i + 1) * (wallHeight / 4); // 1/4, 2/4, 3/4 of wall height
-      const points: THREE.Vector3[] = [
-        new THREE.Vector3(wallX, y, -roomHeight / 2),
-        new THREE.Vector3(wallX, y, roomHeight / 2)
-      ];
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, testWallGridMaterial);
-      line.name = `TestWallGrid_${wallDirection}_h${i}`;
-      wallGridLines.push(line);
-    }
-  }
-
-  console.log(`🧪 Created ${wallGridLines.length} TEST grid lines for ${wallDirection} wall`);
-  return wallGridLines;
 };
 
-// Function to create wall grid lines for a specific wall direction
+
+/**
+ * WALL GRID for interior walls
+ */
 export const createWallGridLines = (
   wallDirection: 'north' | 'south' | 'east' | 'west',
   roomWidth: number,
   roomHeight: number
 ): THREE.Line[] => {
-  console.log(`🧱 Creating wall grid lines for ${wallDirection} wall:`, { roomWidth, roomHeight });
+  console.log(`🧱 Creating wall grid for ${wallDirection} wall (interior system)`);
 
   const { GRID_SPACING } = CONSTRAINTS;
   const wallHeight = WALL_SETTINGS.HEIGHT;
-  const wallThickness = WALL_SETTINGS.THICKNESS;
+  const { wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
+
   const wallGridLines: THREE.Line[] = [];
 
   // Use single material creation
   const { wallGridMaterial } = createGridMaterials();
 
-  // FIXED: Calculate inner wall surface positions (offset by half wall thickness)
-  const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
-  const halfWallThickness = wallThickness / 2;
-
   if (wallDirection === 'north' || wallDirection === 'south') {
-    // For north/south walls, adjust Z position to be on inner surface
-    const wallZ = wallDirection === 'north'
-      ? -roomHalfHeight + halfWallThickness  // North wall inner surface
-      : roomHalfHeight - halfWallThickness;  // South wall inner surface
+    const wallZ = wallFaces[wallDirection];
 
-    console.log(`📍 ${wallDirection} wall inner surface Z position:`, wallZ);
-
-    // Vertical lines on north/south walls
-    for (let x = -roomHalfWidth; x <= roomHalfWidth; x += GRID_SPACING) {
+    // Vertical lines
+    for (let x = -(roomWidth / 2); x <= (roomWidth / 2); x += GRID_SPACING) {
       const points: THREE.Vector3[] = [
         new THREE.Vector3(x, 0, wallZ),
         new THREE.Vector3(x, wallHeight, wallZ)
@@ -219,11 +151,11 @@ export const createWallGridLines = (
       wallGridLines.push(line);
     }
 
-    // Horizontal lines on north/south walls
+    // Horizontal lines
     for (let y = 0; y <= wallHeight; y += GRID_SPACING) {
       const points: THREE.Vector3[] = [
-        new THREE.Vector3(-roomHalfWidth, y, wallZ),
-        new THREE.Vector3(roomHalfWidth, y, wallZ)
+        new THREE.Vector3(-(roomWidth / 2), y, wallZ),
+        new THREE.Vector3((roomWidth / 2), y, wallZ)
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const line = new THREE.Line(geometry, wallGridMaterial);
@@ -231,15 +163,10 @@ export const createWallGridLines = (
       wallGridLines.push(line);
     }
   } else if (wallDirection === 'east' || wallDirection === 'west') {
-    // For east/west walls, adjust X position to be on inner surface
-    const wallX = wallDirection === 'east'
-      ? roomHalfWidth - halfWallThickness   // East wall inner surface
-      : -roomHalfWidth + halfWallThickness; // West wall inner surface
+    const wallX = wallFaces[wallDirection];
 
-    console.log(`📍 ${wallDirection} wall inner surface X position:`, wallX);
-
-    // Vertical lines on east/west walls
-    for (let z = -roomHalfHeight; z <= roomHalfHeight; z += GRID_SPACING) {
+    // Vertical lines
+    for (let z = -(roomHeight / 2); z <= (roomHeight / 2); z += GRID_SPACING) {
       const points: THREE.Vector3[] = [
         new THREE.Vector3(wallX, 0, z),
         new THREE.Vector3(wallX, wallHeight, z)
@@ -250,11 +177,11 @@ export const createWallGridLines = (
       wallGridLines.push(line);
     }
 
-    // Horizontal lines on east/west walls
+    // Horizontal lines
     for (let y = 0; y <= wallHeight; y += GRID_SPACING) {
       const points: THREE.Vector3[] = [
-        new THREE.Vector3(wallX, y, -roomHalfHeight),
-        new THREE.Vector3(wallX, y, roomHalfHeight)
+        new THREE.Vector3(wallX, y, -(roomHeight / 2)),
+        new THREE.Vector3(wallX, y, (roomHeight / 2))
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const line = new THREE.Line(geometry, wallGridMaterial);
@@ -263,47 +190,56 @@ export const createWallGridLines = (
     }
   }
 
-  console.log(`✅ Wall grid lines created for ${wallDirection}:`, {
-    lineCount: wallGridLines.length,
-    wallHeight,
-    gridSpacing: GRID_SPACING,
-    wallThickness,
-    innerSurfaceOffset: halfWallThickness
-  });
-
+  console.log(`✅ Wall grid created for ${wallDirection}: ${wallGridLines.length} lines`);
   return wallGridLines;
 };
 
+/**
+ * INTERIOR WALLS APPROACH - RECOMMENDED
+ *
+ * Floor dimensions = Interior usable space
+ * Walls extend INWARD from floor edges by wall thickness
+ * Clean alignment, no overhang issues
+ */
 export const createWalls = (
   roomWidth: number,
   roomHeight: number,
   wallMaterial: THREE.Material
 ): THREE.Mesh[] => {
-  console.log('🏗️ Creating walls with dimensions:', { roomWidth, roomHeight });
+  console.log('🏗️ Creating interior walls with dimensions:', { roomWidth, roomHeight });
 
   const { HEIGHT: wallHeight, THICKNESS: wallThickness } = WALL_SETTINGS;
-  const roomSizeX = roomWidth / 2;
-  const roomSizeZ = roomHeight / 2;
+
+  // Calculate half dimensions for positioning
+  const roomHalfWidth = roomWidth / 2;
+  const roomHalfHeight = roomHeight / 2;
+
+  // Calculate wall positions - INTERIOR APPROACH
+  // Walls sit INSIDE the floor boundaries
+  const wallOffset = wallThickness / 2;
 
   const walls: THREE.Mesh[] = [];
 
-  // FIXED: Position walls to start from floor level (y=0) and extend upward
   const wallConfigs: WallConfig[] = [
-    { // North wall
+    {
+      // North wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
-      position: [0, wallHeight / 2, -roomSizeZ] // Bottom at y=0, top at y=wallHeight
+      position: [0, wallHeight / 2, -roomHalfHeight + wallOffset]
     },
-    { // South wall
+    {
+      // South wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
-      position: [0, wallHeight / 2, roomSizeZ] // Bottom at y=0, top at y=wallHeight
+      position: [0, wallHeight / 2, roomHalfHeight - wallOffset]
     },
-    { // East wall
+    {
+      // East wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(wallThickness, wallHeight, roomHeight),
-      position: [roomSizeX, wallHeight / 2, 0] // Bottom at y=0, top at y=wallHeight
+      position: [roomHalfWidth - wallOffset, wallHeight / 2, 0]
     },
-    { // West wall
+    {
+      // West wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(wallThickness, wallHeight, roomHeight),
-      position: [-roomSizeX, wallHeight / 2, 0] // Bottom at y=0, top at y=wallHeight
+      position: [-roomHalfWidth + wallOffset, wallHeight / 2, 0]
     }
   ];
 
@@ -311,25 +247,55 @@ export const createWalls = (
     const wall = new THREE.Mesh(wallData.geometry, wallMaterial);
     wall.position.set(wallData.position[0], wallData.position[1], wallData.position[2]);
     wall.receiveShadow = true;
+    // wall.castShadow = true;
     wall.userData.isWall = true;
 
-    // Add wall direction to userData for easier identification
+    // Add wall direction for easier identification
     const directions = ['north', 'south', 'east', 'west'];
     wall.userData.wallDirection = directions[index];
-    wall.name = `Wall_${directions[index]}`; // Add name for debugging
+    wall.name = `Wall_${directions[index]}`;
 
     walls.push(wall);
   });
 
-  console.log('✅ Walls created:', walls.map(wall => ({
-    name: wall.name,
-    direction: wall.userData.wallDirection,
-    position: wall.position
-  })));
+  console.log('✅ Interior walls created - no overhang issues:',
+    walls.map(wall => ({
+      name: wall.name,
+      direction: wall.userData.wallDirection,
+      position: wall.position,
+      innerFacePosition: getInnerFacePosition(wall)
+    }))
+  );
 
   return walls;
 };
 
+/**
+ * Helper function to get inner face position of walls
+ * Useful for object placement calculations
+ */
+function getInnerFacePosition(wall: THREE.Mesh): { x?: number, z?: number } {
+  const direction = wall.userData.wallDirection;
+  const wallThickness = WALL_SETTINGS.THICKNESS;
+  const halfThickness = wallThickness / 2;
+
+  switch (direction) {
+    case 'north':
+      return { z: wall.position.z + halfThickness };
+    case 'south':
+      return { z: wall.position.z - halfThickness };
+    case 'east':
+      return { x: wall.position.x - halfThickness };
+    case 'west':
+      return { x: wall.position.x + halfThickness };
+    default:
+      return {};
+  }
+}
+
+/**
+ * IMPROVED FLOOR - perfectly aligned with interior walls
+ */
 export const createFloor = (
   roomWidth: number,
   roomHeight: number,
@@ -337,22 +303,17 @@ export const createFloor = (
 ): THREE.Mesh => {
   console.log('🏗️ Creating floor with dimensions:', { roomWidth, roomHeight });
 
-  // FIXED: Create a thinner floor that sits exactly at y=0 (floor level)
-  const floorThickness = 2; // Reduced thickness for better appearance
+  const floorThickness = 1; // Thin floor for better appearance
   const floorGeometry = new THREE.BoxGeometry(roomWidth, floorThickness, roomHeight);
   const floor = new THREE.Mesh(floorGeometry, floorMaterial);
 
-  // FIXED: Position floor so its top surface is at y=0 (same level as wall bottoms)
-  floor.position.y = -floorThickness / 2; // This puts the top at y=0
+  // Position floor so its TOP surface is exactly at y=0 (floor level)
+  floor.position.y = -floorThickness / 2;
   floor.receiveShadow = true;
   floor.userData.isFloor = true;
-  floor.name = 'Floor'; // Add name for debugging
+  floor.name = 'Floor';
 
-  console.log('✅ Floor created:', {
-    name: floor.name,
-    position: floor.position,
-    thickness: floorThickness
-  });
+  console.log('✅ Floor created - perfectly aligned with interior walls');
 
   return floor;
 }

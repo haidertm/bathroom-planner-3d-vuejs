@@ -1,9 +1,9 @@
-// src/services/measurementSystem.ts - IKEA-style measurement system
+// src/services/measurementSystem.ts - Complete performance-optimized version
 import * as THREE from 'three';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
 import { WALL_SETTINGS } from '../constants/dimensions';
-import { getDimensions } from '../utils/constraints'; // Import the enhanced dimension function
+import { getDimensions } from '../utils/constraints';
 
 export interface MeasurementData {
   objectWidth: number;
@@ -30,8 +30,6 @@ export interface MeasurementLabel {
 
 export class MeasurementSystem {
   private scene: THREE.Scene;
-  // private _camera: THREE.Camera;
-  // private _renderer: THREE.WebGLRenderer;
   private enabled: boolean = false;
   private selectedObject: THREE.Object3D | null = null;
   private measurementLabels: THREE.Group;
@@ -41,10 +39,8 @@ export class MeasurementSystem {
   private roomHeight: number = 250;
   private existingItems: BathroomItem[] = [];
 
-  constructor(scene: THREE.Scene, _camera: THREE.Camera, _renderer: THREE.WebGLRenderer) {
+  constructor (scene: THREE.Scene, _camera: THREE.Camera, _renderer: THREE.WebGLRenderer) {
     this.scene = scene;
-    // this._camera = _camera;
-    // this._renderer = _renderer;
 
     // Create groups for measurement visuals
     this.measurementLabels = new THREE.Group();
@@ -56,7 +52,7 @@ export class MeasurementSystem {
     this.scene.add(this.measurementLines);
   }
 
-  public setEnabled(enabled: boolean): void {
+  public setEnabled (enabled: boolean): void {
     this.enabled = enabled;
     if (!enabled) {
       this.clearMeasurements();
@@ -65,13 +61,11 @@ export class MeasurementSystem {
     }
   }
 
-  public isEnabled(): boolean {
+  public isEnabled (): boolean {
     return this.enabled;
   }
 
-  public setSelectedObject(object: THREE.Object3D | null): void {
-
-    console.log('selectedObject>>> ', object);
+  public setSelectedObject (object: THREE.Object3D | null): void {
 
     this.selectedObject = object;
 
@@ -84,7 +78,7 @@ export class MeasurementSystem {
     }
   }
 
-  public updateRoomDimensions(width: number, height: number): void {
+  public updateRoomDimensions (width: number, height: number): void {
     this.roomWidth = width;
     this.roomHeight = height;
     if (this.enabled && this.selectedObject) {
@@ -92,14 +86,14 @@ export class MeasurementSystem {
     }
   }
 
-  public updateExistingItems(items: BathroomItem[]): void {
+  public updateExistingItems (items: BathroomItem[]): void {
     this.existingItems = items;
     if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
     }
   }
 
-  private updateMeasurements(): void {
+  private updateMeasurements (): void {
     this.clearMeasurements();
 
     if (!this.selectedObject || !this.enabled) return;
@@ -111,7 +105,7 @@ export class MeasurementSystem {
     this.createMeasurementVisuals(measurements);
   }
 
-  private calculateMeasurements(): MeasurementData | null {
+  private calculateMeasurements (): MeasurementData | null {
     if (!this.selectedObject) return null;
 
     const objectType = this.selectedObject.userData.type as ComponentType;
@@ -119,7 +113,7 @@ export class MeasurementSystem {
     const objectPosition = this.selectedObject.position;
     const itemId = this.selectedObject.userData.itemId;
 
-    // 🚀 UPDATED: Get the current item data to access SKU and model information
+    // Get the current item data to access SKU and model information
     const currentItem = this.existingItems.find(item => item.id === itemId);
 
     // 🆘 FALLBACK: If not found in existingItems, check if data is in userData
@@ -137,9 +131,9 @@ export class MeasurementSystem {
 
     // 🚀 UPDATED: Use enhanced dimension lookup that prioritizes product data
     const dimensions = getDimensions(
-        objectType,
-        itemForDimensions?.sku,        // Pass SKU for product-specific dimensions
-        itemForDimensions?.model       // Pass model data for most accurate dimensions
+      objectType,
+      itemForDimensions?.sku,        // Pass SKU for product-specific dimensions
+      itemForDimensions?.model       // Pass model data for most accurate dimensions
     );
 
     if (!dimensions || (dimensions.width === 0 && dimensions.height === 0 && dimensions.depth === 0)) {
@@ -174,7 +168,7 @@ export class MeasurementSystem {
     };
   }
 
-  private isObjectWallBound(position: THREE.Vector3, _width: number, _depth: number): boolean {
+  private isObjectWallBound (position: THREE.Vector3, _width: number, _depth: number): boolean {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
     const tolerance = 50; // 5cm tolerance
@@ -188,7 +182,7 @@ export class MeasurementSystem {
     return nearNorth || nearSouth || nearEast || nearWest;
   }
 
-  private getWallDirection(position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | undefined {
+  private getWallDirection (position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | undefined {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
     const tolerance = 50;
@@ -201,7 +195,7 @@ export class MeasurementSystem {
     return undefined;
   }
 
-  private calculateAvailableSpace(
+  private calculateAvailableSpace (
     position: THREE.Vector3,
     width: number,
     depth: number,
@@ -232,7 +226,7 @@ export class MeasurementSystem {
     };
   }
 
-  private calculateSpaceToOtherObjects(
+  private calculateSpaceToOtherObjects (
     position: THREE.Vector3,
     width: number,
     depth: number,
@@ -249,9 +243,9 @@ export class MeasurementSystem {
 
 // 🚀 UPDATED: Use enhanced dimension lookup for other objects too
       const itemDimensions = getDimensions(
-          item.type,
-          item.sku,        // Use SKU for product-specific dimensions
-          item.model       // Use model data if available
+        item.type,
+        item.sku,        // Use SKU for product-specific dimensions
+        item.model       // Use model data if available
       );
 
       if (!itemDimensions) {
@@ -266,10 +260,10 @@ export class MeasurementSystem {
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
 
       // Calculate distances between object edges
-      const leftDistance = Math.abs(position.x - width/2 - (itemPos.x + itemWidth/2));
-      const rightDistance = Math.abs(position.x + width/2 - (itemPos.x - itemWidth/2));
-      const frontDistance = Math.abs(position.z - depth/2 - (itemPos.z + itemDepth/2));
-      const backDistance = Math.abs(position.z + depth/2 - (itemPos.z - itemDepth/2));
+      const leftDistance = Math.abs(position.x - width / 2 - (itemPos.x + itemWidth / 2));
+      const rightDistance = Math.abs(position.x + width / 2 - (itemPos.x - itemWidth / 2));
+      const frontDistance = Math.abs(position.z - depth / 2 - (itemPos.z + itemDepth / 2));
+      const backDistance = Math.abs(position.z + depth / 2 - (itemPos.z - itemDepth / 2));
 
       // Update minimum distances (considering object alignment)
       if (this.objectsAlignedOnAxis(position, itemPos, 'x')) {
@@ -291,7 +285,7 @@ export class MeasurementSystem {
     };
   }
 
-  private objectsAlignedOnAxis(pos1: THREE.Vector3, pos2: THREE.Vector3, axis: 'x' | 'z'): boolean {
+  private objectsAlignedOnAxis (pos1: THREE.Vector3, pos2: THREE.Vector3, axis: 'x' | 'z'): boolean {
     const tolerance = 20; // 2cm tolerance
     if (axis === 'x') {
       return Math.abs(pos1.z - pos2.z) < tolerance;
@@ -300,7 +294,7 @@ export class MeasurementSystem {
     }
   }
 
-  private createMeasurementVisuals(measurements: MeasurementData): void {
+  private createMeasurementVisuals (measurements: MeasurementData): void {
     if (!this.selectedObject) return;
 
     const position = this.selectedObject.position;
@@ -321,7 +315,7 @@ export class MeasurementSystem {
     });
   }
 
-  private createWallBoundMeasurements(
+  private createWallBoundMeasurements (
     measurements: MeasurementData,
     position: THREE.Vector3,
     labels: MeasurementLabel[]
@@ -343,7 +337,7 @@ export class MeasurementSystem {
         labels.push({
           id: 'space-left',
           text: `${Math.round(spaceLeft)} cm`,
-          position: new THREE.Vector3(position.x - objectWidth/2 - spaceLeft/2, position.y + 60, position.z),
+          position: new THREE.Vector3(position.x - objectWidth / 2 - spaceLeft / 2, position.y + 60, position.z),
           direction: 'horizontal',
           color: '#4CAF50',
           isObjectDimension: false
@@ -354,7 +348,7 @@ export class MeasurementSystem {
         labels.push({
           id: 'space-right',
           text: `${Math.round(spaceRight)} cm`,
-          position: new THREE.Vector3(position.x + objectWidth/2 + spaceRight/2, position.y + 60, position.z),
+          position: new THREE.Vector3(position.x + objectWidth / 2 + spaceRight / 2, position.y + 60, position.z),
           direction: 'horizontal',
           color: '#4CAF50',
           isObjectDimension: false
@@ -375,7 +369,7 @@ export class MeasurementSystem {
         labels.push({
           id: 'space-front',
           text: `${Math.round(spaceFront)} cm`,
-          position: new THREE.Vector3(position.x, position.y + 60, position.z - objectDepth/2 - spaceFront/2),
+          position: new THREE.Vector3(position.x, position.y + 60, position.z - objectDepth / 2 - spaceFront / 2),
           direction: 'horizontal',
           color: '#4CAF50',
           isObjectDimension: false
@@ -386,7 +380,7 @@ export class MeasurementSystem {
         labels.push({
           id: 'space-back',
           text: `${Math.round(spaceBack)} cm`,
-          position: new THREE.Vector3(position.x, position.y + 60, position.z + objectDepth/2 + spaceBack/2),
+          position: new THREE.Vector3(position.x, position.y + 60, position.z + objectDepth / 2 + spaceBack / 2),
           direction: 'horizontal',
           color: '#4CAF50',
           isObjectDimension: false
@@ -395,7 +389,7 @@ export class MeasurementSystem {
     }
   }
 
-  private createFreeStandingMeasurements(
+  private createFreeStandingMeasurements (
     measurements: MeasurementData,
     position: THREE.Vector3,
     labels: MeasurementLabel[]
@@ -407,7 +401,7 @@ export class MeasurementSystem {
       labels.push({
         id: 'space-left',
         text: `${Math.round(spaceLeft)} cm`,
-        position: new THREE.Vector3(position.x - objectWidth/2 - spaceLeft/2, position.y + 80, position.z),
+        position: new THREE.Vector3(position.x - objectWidth / 2 - spaceLeft / 2, position.y + 80, position.z),
         direction: 'horizontal',
         color: '#4CAF50',
         isObjectDimension: false
@@ -418,7 +412,7 @@ export class MeasurementSystem {
       labels.push({
         id: 'space-right',
         text: `${Math.round(spaceRight)} cm`,
-        position: new THREE.Vector3(position.x + objectWidth/2 + spaceRight/2, position.y + 80, position.z),
+        position: new THREE.Vector3(position.x + objectWidth / 2 + spaceRight / 2, position.y + 80, position.z),
         direction: 'horizontal',
         color: '#4CAF50',
         isObjectDimension: false
@@ -429,7 +423,7 @@ export class MeasurementSystem {
       labels.push({
         id: 'space-front',
         text: `${Math.round(spaceFront)} cm`,
-        position: new THREE.Vector3(position.x, position.y + 80, position.z - objectDepth/2 - spaceFront/2),
+        position: new THREE.Vector3(position.x, position.y + 80, position.z - objectDepth / 2 - spaceFront / 2),
         direction: 'horizontal',
         color: '#4CAF50',
         isObjectDimension: false
@@ -440,7 +434,7 @@ export class MeasurementSystem {
       labels.push({
         id: 'space-back',
         text: `${Math.round(spaceBack)} cm`,
-        position: new THREE.Vector3(position.x, position.y + 80, position.z + objectDepth/2 + spaceBack/2),
+        position: new THREE.Vector3(position.x, position.y + 80, position.z + objectDepth / 2 + spaceBack / 2),
         direction: 'horizontal',
         color: '#4CAF50',
         isObjectDimension: false
@@ -458,65 +452,70 @@ export class MeasurementSystem {
     });
   }
 
-  public forceUpdateMeasurements(): void {
+  public forceUpdateMeasurements (): void {
     if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
     }
   }
 
-  private createMeasurementLabel(label: MeasurementLabel): void {
+  private createMeasurementLabel (label: MeasurementLabel): void {
     // Create text sprite for the measurement label
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (!context) return;
 
-  // IKEA-style smaller labels
-  const fontSize = 14;  // Much smaller (was 24)
-  const padding = 4;    // Less padding (was 8)
+    const fontSize = 14;  // Much smaller (was 24)
+    const padding = 4;    // Less padding (was 8)
+    const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+    context.font = `600 ${fontSize}px ${fontFamily}`;
+    const textWidth = context.measureText(label.text).width;
+    canvas.width = textWidth + padding * 2;
+    canvas.height = fontSize + padding * 2;
 
-  context.font = `bold ${fontSize}px Arial`;
-  const textWidth = context.measureText(label.text).width;
-  canvas.width = textWidth + padding * 2;
-  canvas.height = fontSize + padding * 2;
+    // Clear and redraw with IKEA-style background
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Clear and redraw with IKEA-style background
-  context.clearRect(0, 0, canvas.width, canvas.height);
+    // Subtle rounded rectangle background
+    context.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    if (context.roundRect) {
+      context.roundRect(0, 0, canvas.width, canvas.height, 2);
+    } else {
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    context.fill();
 
-  // Subtle rounded rectangle background
-  context.fillStyle = 'rgba(0, 0, 0, 0.75)';
-  if (context.roundRect) {
-    context.roundRect(0, 0, canvas.width, canvas.height, 3);
-  } else {
-    context.fillRect(0, 0, canvas.width, canvas.height);
+    // Clean white text
+    context.fillStyle = 'white';
+    context.font = `bold ${fontSize}px Arial`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(label.text, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.1,
+      depthTest: false,    // ✅ CRITICAL: Labels always visible
+      depthWrite: false,   // ✅ Don't interfere with depth buffer,
+      sizeAttenuation: true
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.position.copy(label.position);
+    sprite.renderOrder = 1000; // Ensure labels render on top
+
+    // Much smaller scale - IKEA style
+    const scale = 0.8;  // Much smaller (was 2)
+    const scaleX = canvas.width * scale;
+    const scaleY = canvas.height * scale;
+    sprite.scale.set(scaleX, scaleY, 1);
+
+    sprite.userData = { labelId: label.id };
+    this.measurementLabels.add(sprite);
   }
-  context.fill();
 
-  // Clean white text
-  context.fillStyle = 'white';
-  context.font = `bold ${fontSize}px Arial`;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(label.text, canvas.width / 2, canvas.height / 2);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const material = new THREE.SpriteMaterial({
-    map: texture,
-    transparent: true,
-    alphaTest: 0.1
-  });
-
-  const sprite = new THREE.Sprite(material);
-  sprite.position.copy(label.position);
-
-  // Much smaller scale - IKEA style
-  const scale = 0.8;  // Much smaller (was 2)
-  sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
-
-  sprite.userData = { labelId: label.id };
-  this.measurementLabels.add(sprite);
-}
-
-  private createMeasurementLine(label: MeasurementLabel, measurements: MeasurementData): void {
+  private createMeasurementLine (label: MeasurementLabel, measurements: MeasurementData): void {
     if (!this.selectedObject) return;
 
     const position = this.selectedObject.position;
@@ -615,10 +614,10 @@ export class MeasurementSystem {
 
       // IKEA-style line material - thin and professional
       const material = new THREE.LineBasicMaterial({
-        color: '#2196F3',
-        linewidth: 2,
-        transparent: true,
-        opacity: 0.8
+        color: '#000000',
+        linewidth: 1,
+        transparent: false,
+        opacity: 1
       });
 
       const line = new THREE.Line(geometry, material);
@@ -628,18 +627,18 @@ export class MeasurementSystem {
   }
 
   // NEW: Create end markers (small perpendicular lines at measurement ends)
-  private createEndMarker(position: THREE.Vector3, direction: 'horizontal' | 'vertical'): void {
+  private createEndMarker (position: THREE.Vector3, direction: 'horizontal' | 'vertical'): void {
     const markerSize = 8; // Small marker size
     const points: THREE.Vector3[] = [];
 
     if (direction === 'vertical') {
       // Vertical end marker
-      points.push(new THREE.Vector3(position.x, position.y - markerSize/2, position.z));
-      points.push(new THREE.Vector3(position.x, position.y + markerSize/2, position.z));
+      points.push(new THREE.Vector3(position.x, position.y - markerSize / 2, position.z));
+      points.push(new THREE.Vector3(position.x, position.y + markerSize / 2, position.z));
     } else {
       // Horizontal end marker
-      points.push(new THREE.Vector3(position.x, position.y, position.z - markerSize/2));
-      points.push(new THREE.Vector3(position.x, position.y, position.z + markerSize/2));
+      points.push(new THREE.Vector3(position.x, position.y, position.z - markerSize / 2));
+      points.push(new THREE.Vector3(position.x, position.y, position.z + markerSize / 2));
     }
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -654,17 +653,17 @@ export class MeasurementSystem {
     this.measurementLines.add(marker);
   }
 
-  private clearMeasurements(): void {
+  private clearMeasurements (): void {
     this.measurementLabels.clear();
     this.measurementLines.clear();
     this.currentMeasurements = null;
   }
 
-  public getCurrentMeasurements(): MeasurementData | null {
+  public getCurrentMeasurements (): MeasurementData | null {
     return this.currentMeasurements;
   }
 
-  public dispose(): void {
+  public dispose (): void {
     this.clearMeasurements();
     this.scene.remove(this.measurementLabels);
     this.scene.remove(this.measurementLines);
