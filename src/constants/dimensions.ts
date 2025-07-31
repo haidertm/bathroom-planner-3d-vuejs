@@ -61,8 +61,6 @@ export const HEIGHT_LIMITS: HeightLimits = {
   MIRROR_MAX: 250
 } as const;
 
-export type ComponentType = 'Toilet' | 'Sink' | 'Bath' | 'Shower' | 'Radiator' | 'Mirror' | 'Door';
-
 export const MEASUREMENT_SETTINGS = {
   MIN_DISPLAY_DISTANCE: 5, // Don't show measurements less than 10cm
   LABEL_HEIGHT_OFFSET: 80,   // Height above objects for labels

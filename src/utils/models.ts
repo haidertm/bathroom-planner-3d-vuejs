@@ -1,6 +1,8 @@
 // src/utils/models.ts - Enhanced movement system with type-based defaults and product overrides
 
 import { ComponentType } from '../constants/components';
+import { CONSTRAINTS } from '../constants/dimensions';
+import { BathroomItem } from './constraints.ts';
 import {
   DEFAULT_ORIENTATION,
   FixtureConfig,
@@ -9,7 +11,6 @@ import {
   OrientationConfig,
   WALL_ROTATIONS
 } from '../constants/models';
-import { getDimensions, type BathroomItem, type ObjectModel } from './constraints';
 import productData from '../mocks/productData';
 
 // ✅ SIMPLIFIED: Default movement configurations per object type
@@ -240,46 +241,9 @@ const getOrientationFromProductData = (sku: string, objectType: ComponentType): 
 
 // Existing helper functions (unchanged)
 export const getObjectWallBuffer = (
-    config: {
-      orientation?: OrientationConfig,
-      scale?: number,
-      type?: ComponentType,
-      sku?: string,
-      model?: ObjectModel
-    }
+    { orientation }: { orientation: OrientationConfig; scale?: number }
 ): number => {
-  const { orientation = DEFAULT_ORIENTATION, scale = 1.0, type, sku, model } = config;
-
-  // If custom buffer is specified in orientation, use it
-  if (orientation.wallBuffer !== undefined) {
-    return orientation.wallBuffer * scale;
-  }
-
-  // 🚀 UPDATED: Use product-specific dimensions if available
-  if (type) {
-    const dimensions = getDimensions(type, sku, model);
-
-    // Calculate buffer based on object depth and orientation type
-    switch (orientation.type) {
-      case 'flush_with_wall':
-        // For flush objects, use minimal buffer (just the depth/2)
-        return (dimensions.depth / 2) * scale;
-
-      case 'face_into_room':
-        // For objects facing into room, use depth + small gap
-        return (dimensions.depth + 10) * scale; // 10cm gap from wall
-
-      case 'custom':
-        // For custom orientation, use moderate buffer
-        return (dimensions.depth * 0.7) * scale;
-
-      default:
-        return (dimensions.depth + 5) * scale; // Default 5cm gap
-    }
-  }
-
-  // Fallback buffer if no type provided
-  return 40; // 40cm default buffer
+  return orientation?.wallBuffer ?? CONSTRAINTS.OBJECT_BUFFER;
 };
 
 export const getObjectRotationForWall = (
