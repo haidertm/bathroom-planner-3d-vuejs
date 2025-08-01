@@ -102,55 +102,6 @@ const activeMenu = ref(null)
 
 // Sample designs data (in real app, this would come from localStorage or API)
 const designs = ref([
-  {
-    id: 1,
-    name: 'Modern Ensuite',
-    description: 'A contemporary bathroom with clean lines and premium finishes',
-    roomWidth: 6,
-    roomHeight: 8,
-    itemCount: 5,
-    createdAt: new Date('2025-01-14'),
-    items: [
-      {id: 1, type: 'Toilet', position: [2, 0, 3], rotation: 0, scale: 1},
-      {id: 2, type: 'Sink', position: [-2, 0, 3], rotation: 0, scale: 1},
-      {id: 3, type: 'Bath', position: [0, 0, -3], rotation: 0, scale: 1},
-      {id: 4, type: 'Mirror', position: [-2, 1.2, 3], rotation: 0, scale: 1},
-      {id: 5, type: 'Radiator', position: [3, 0, 0], rotation: Math.PI / 2, scale: 1}
-    ]
-  },
-  {
-    id: 2,
-    name: 'Compact Family Bathroom',
-    description: 'Space-efficient design perfect for family use',
-    roomWidth: 4,
-    roomHeight: 6,
-    itemCount: 4,
-    createdAt: new Date('2025-01-11'),
-    items: [
-      {id: 1, type: 'Toilet', position: [1, 0, 2], rotation: 0, scale: 0.8},
-      {id: 2, type: 'Sink', position: [-1, 0, 2], rotation: 0, scale: 0.8},
-      {id: 3, type: 'Shower', position: [0, 0, -2], rotation: 0, scale: 1},
-      {id: 4, type: 'Mirror', position: [-1, 1.2, 2], rotation: 0, scale: 0.8}
-    ]
-  },
-  {
-    id: 3,
-    name: 'Luxury Master Suite',
-    description: 'Spacious master bathroom with premium fixtures',
-    roomWidth: 8,
-    roomHeight: 10,
-    itemCount: 7,
-    createdAt: new Date('2025-01-10'),
-    items: [
-      {id: 1, type: 'Toilet', position: [3, 0, 4], rotation: 0, scale: 1},
-      {id: 2, type: 'Sink', position: [-3, 0, 4], rotation: 0, scale: 1.2},
-      {id: 3, type: 'Bath', position: [0, 0, -4], rotation: 0, scale: 1.3},
-      {id: 4, type: 'Shower', position: [3, 0, -2], rotation: 0, scale: 1.1},
-      {id: 5, type: 'Mirror', position: [-3, 1.2, 4], rotation: 0, scale: 1.2},
-      {id: 6, type: 'Radiator', position: [4, 0, 0], rotation: Math.PI / 2, scale: 1},
-      {id: 7, type: 'Radiator', position: [-4, 0, 0], rotation: Math.PI / 2, scale: 1}
-    ]
-  }
 ])
 
 onMounted(() => {
