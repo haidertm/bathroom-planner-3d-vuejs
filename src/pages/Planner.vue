@@ -665,7 +665,10 @@ onMounted(async () => {
       setItems, // Use our custom setItems function
       getItems, // Use our custom getItems function
       deleteItem,
-      preventCollisionPlacement
+      preventCollisionPlacement,
+      saveToHistory,               // ADD THIS LINE
+      currentFloorTexture,         // ADD THIS LINE
+      currentWallTexture          // ADD THIS LINE
   ))
 
   // Set up initial scene
