@@ -94,8 +94,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import {ref, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
 
 const router = useRouter()
 const activeMenu = ref(null)
@@ -111,11 +111,11 @@ const designs = ref([
     itemCount: 5,
     createdAt: new Date('2025-01-14'),
     items: [
-      { id: 1, type: 'Toilet', position: [2, 0, 3], rotation: 0, scale: 1 },
-      { id: 2, type: 'Sink', position: [-2, 0, 3], rotation: 0, scale: 1 },
-      { id: 3, type: 'Bath', position: [0, 0, -3], rotation: 0, scale: 1 },
-      { id: 4, type: 'Mirror', position: [-2, 1.2, 3], rotation: 0, scale: 1 },
-      { id: 5, type: 'Radiator', position: [3, 0, 0], rotation: Math.PI/2, scale: 1 }
+      {id: 1, type: 'Toilet', position: [2, 0, 3], rotation: 0, scale: 1},
+      {id: 2, type: 'Sink', position: [-2, 0, 3], rotation: 0, scale: 1},
+      {id: 3, type: 'Bath', position: [0, 0, -3], rotation: 0, scale: 1},
+      {id: 4, type: 'Mirror', position: [-2, 1.2, 3], rotation: 0, scale: 1},
+      {id: 5, type: 'Radiator', position: [3, 0, 0], rotation: Math.PI / 2, scale: 1}
     ]
   },
   {
@@ -127,10 +127,10 @@ const designs = ref([
     itemCount: 4,
     createdAt: new Date('2025-01-11'),
     items: [
-      { id: 1, type: 'Toilet', position: [1, 0, 2], rotation: 0, scale: 0.8 },
-      { id: 2, type: 'Sink', position: [-1, 0, 2], rotation: 0, scale: 0.8 },
-      { id: 3, type: 'Shower', position: [0, 0, -2], rotation: 0, scale: 1 },
-      { id: 4, type: 'Mirror', position: [-1, 1.2, 2], rotation: 0, scale: 0.8 }
+      {id: 1, type: 'Toilet', position: [1, 0, 2], rotation: 0, scale: 0.8},
+      {id: 2, type: 'Sink', position: [-1, 0, 2], rotation: 0, scale: 0.8},
+      {id: 3, type: 'Shower', position: [0, 0, -2], rotation: 0, scale: 1},
+      {id: 4, type: 'Mirror', position: [-1, 1.2, 2], rotation: 0, scale: 0.8}
     ]
   },
   {
@@ -142,13 +142,13 @@ const designs = ref([
     itemCount: 7,
     createdAt: new Date('2025-01-10'),
     items: [
-      { id: 1, type: 'Toilet', position: [3, 0, 4], rotation: 0, scale: 1 },
-      { id: 2, type: 'Sink', position: [-3, 0, 4], rotation: 0, scale: 1.2 },
-      { id: 3, type: 'Bath', position: [0, 0, -4], rotation: 0, scale: 1.3 },
-      { id: 4, type: 'Shower', position: [3, 0, -2], rotation: 0, scale: 1.1 },
-      { id: 5, type: 'Mirror', position: [-3, 1.2, 4], rotation: 0, scale: 1.2 },
-      { id: 6, type: 'Radiator', position: [4, 0, 0], rotation: Math.PI/2, scale: 1 },
-      { id: 7, type: 'Radiator', position: [-4, 0, 0], rotation: Math.PI/2, scale: 1 }
+      {id: 1, type: 'Toilet', position: [3, 0, 4], rotation: 0, scale: 1},
+      {id: 2, type: 'Sink', position: [-3, 0, 4], rotation: 0, scale: 1.2},
+      {id: 3, type: 'Bath', position: [0, 0, -4], rotation: 0, scale: 1.3},
+      {id: 4, type: 'Shower', position: [3, 0, -2], rotation: 0, scale: 1.1},
+      {id: 5, type: 'Mirror', position: [-3, 1.2, 4], rotation: 0, scale: 1.2},
+      {id: 6, type: 'Radiator', position: [4, 0, 0], rotation: Math.PI / 2, scale: 1},
+      {id: 7, type: 'Radiator', position: [-4, 0, 0], rotation: Math.PI / 2, scale: 1}
     ]
   }
 ])
@@ -198,10 +198,10 @@ const loadDesign = (design) => {
     // Store the design to load in localStorage
     localStorage.setItem('design-to-load', JSON.stringify(designToLoad))
     // Try router navigation first
-    router.push('/planner').then(() => {
-    }).catch((error) => {
+    router.push('/planner').catch((error) => {
       console.error('❌ Router navigation failed:', error)
-      window.location.href = '/planner'
+      // Use router's base URL for better SPA compatibility
+      window.location.href = router.resolve('/planner').href
     })
 
   } catch (error) {

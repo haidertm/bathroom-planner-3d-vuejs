@@ -757,16 +757,10 @@ const loadDesignData = (designData) => {
     currentWallTexture.value = DEFAULT_WALL_TEXTURE
   }
 }
-const wasDesignLoaded = checkForDesignToLoad()
+
 // Initialize scene
 onMounted(async () => {
   window.addEventListener('header-save-design', handleSaveDesign)
-
-  // Debug listener to confirm event is received
-  window.addEventListener('header-save-design', () => {
-    console.log('🚀 header-save-design event received!')
-  })
-
   // Check if we need to load a specific design from MyDesigns page
   const wasDesignLoaded = checkForDesignToLoad()
   // If no design was loaded, load saved room dimensions as usual
