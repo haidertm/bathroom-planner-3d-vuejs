@@ -155,7 +155,7 @@ const designs = ref([
 
 onMounted(() => {
   // Load designs from localStorage if available
-  const savedDesigns = localStorage.getItem('bathroom-designs')
+  const savedDesigns = localStorage.getItem('saved-designs')
   if (savedDesigns) {
     designs.value = JSON.parse(savedDesigns)
   }
@@ -179,11 +179,35 @@ const toggleMenu = (designId) => {
 }
 
 const loadDesign = (design) => {
-  // Store the design to load in localStorage
-  localStorage.setItem('design-to-load', JSON.stringify(design))
+  try {
+    // Use the original data format that Planner.vue expects
+    const designToLoad = design.originalData || {
+      id: design.id,
+      name: design.name,
+      timestamp: design.timestamp,
+      items: design.items || [],
+      roomWidth: design.roomWidth || 300,
+      roomHeight: design.roomHeight || 250,
+      currentFloorTexture: 0,
+      currentWallTexture: 0,
+      preview: null
+    }
 
-  // Navigate back to planner
-  router.push('/')
+    console.log('💾 Design data to load:', designToLoad)
+
+    // Store the design to load in localStorage
+    localStorage.setItem('design-to-load', JSON.stringify(designToLoad))
+    // Try router navigation first
+    router.push('/planner').then(() => {
+    }).catch((error) => {
+      console.error('❌ Router navigation failed:', error)
+      window.location.href = '/planner'
+    })
+
+  } catch (error) {
+    console.error('❌ Error loading design:', error)
+    alert('Failed to load design. Please try again.')
+  }
 }
 
 const duplicateDesign = (design) => {
@@ -195,7 +219,7 @@ const duplicateDesign = (design) => {
   }
 
   designs.value.push(duplicatedDesign)
-  localStorage.setItem('bathroom-designs', JSON.stringify(designs.value))
+  localStorage.setItem('saved-designs', JSON.stringify(designs.value))
   activeMenu.value = null
 }
 
@@ -203,7 +227,7 @@ const renameDesign = (design) => {
   const newName = prompt('Enter new name for the design:', design.name)
   if (newName && newName.trim()) {
     design.name = newName.trim()
-    localStorage.setItem('bathroom-designs', JSON.stringify(designs.value))
+    localStorage.setItem('saved-designs', JSON.stringify(designs.value))
   }
   activeMenu.value = null
 }
@@ -211,7 +235,7 @@ const renameDesign = (design) => {
 const deleteDesign = (designId) => {
   if (confirm('Are you sure you want to delete this design? This action cannot be undone.')) {
     designs.value = designs.value.filter(d => d.id !== designId)
-    localStorage.setItem('bathroom-designs', JSON.stringify(designs.value))
+    localStorage.setItem('saved-designs', JSON.stringify(designs.value))
   }
   activeMenu.value = null
 }

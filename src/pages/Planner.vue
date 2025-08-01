@@ -1,10 +1,5 @@
 <template>
   <div :style="{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }">
-    <Header
-        logo="./assets/logo.svg"
-        backgroundColor="#fff"
-        logoHeight="45px"
-    />
     <MeasurementPanel
         :measurement-enabled="measurementEnabled"
         :current-measurements="currentMeasurements"
@@ -366,6 +361,56 @@ watch([roomWidth, roomHeight], ([newWidth, newHeight]) => {
   roomHeightRef.value = newHeight
 })
 
+const handleSaveDesign = () => {
+  try {
+    // Generate a more user-friendly name with time
+    const now = new Date()
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const dateString = now.toLocaleDateString()
+
+    const designData = {
+      id: Date.now(), // Simple timestamp-based ID
+      name: `Bathroom Design - ${dateString} ${timeString}`,
+      timestamp: Date.now(),
+      items: JSON.parse(JSON.stringify(items.value)), // Deep clone to avoid reference issues
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value,
+      preview: null // Could add canvas snapshot later
+    }
+    // Get existing designs from localStorage
+    let existingDesigns = []
+    try {
+      const savedDesigns = localStorage.getItem('saved-designs')
+      existingDesigns = JSON.parse(savedDesigns || '[]')
+    } catch (parseError) {
+      existingDesigns = []
+    }
+
+    // Add new design to the beginning of the array
+    existingDesigns.unshift(designData)
+
+    // Keep only last 20 designs to prevent storage bloat
+    const trimmedDesigns = existingDesigns.slice(0, 20)
+
+    // Save back to localStorage
+    localStorage.setItem('saved-designs', JSON.stringify(trimmedDesigns))
+
+    // Verify it was saved
+    const verification = localStorage.getItem('saved-designs')
+    // Show success feedback with better UX
+    if (window.confirm('Design saved successfully! Would you like to view your saved designs?')) {
+      // Navigate to My Designs page
+      router.push('/my-designs')
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to save design:', error)
+    alert('Failed to save design. Please try again.')
+  }
+}
+
 // Room size change handler
 const handleRoomSizeChange = (newWidth, newHeight) => {
   roomWidth.value = newWidth
@@ -634,21 +679,111 @@ const loadSavedRoomDimensions = () => {
   return false
 }
 
+
+const checkForDesignToLoad = () => {
+  try {
+    const designToLoad = localStorage.getItem('design-to-load')
+    if (designToLoad) {
+      const design = JSON.parse(designToLoad)
+
+      // Clear the flag so it doesn't load again
+      localStorage.removeItem('design-to-load')
+
+      // Load the design
+      loadDesignData(design)
+
+      console.log('✅ Design loaded from MyDesigns:', design.name)
+      return true
+    }
+  } catch (error) {
+    console.error('❌ Failed to check for design to load:', error)
+  }
+  return false
+}
+
+const loadDesignData = (designData) => {
+  try {
+    // Validate design data
+    if (!designData || typeof designData !== 'object') {
+      throw new Error('Invalid design data')
+    }
+
+    // Load items (furniture, fixtures, etc.)
+    items.value = designData.items || []
+
+    // Load room dimensions
+    roomWidth.value = designData.roomWidth || ROOM_DEFAULTS.WIDTH
+    roomHeight.value = designData.roomHeight || ROOM_DEFAULTS.HEIGHT
+
+    // Update refs for scene manager
+    roomWidthRef.value = roomWidth.value
+    roomHeightRef.value = roomHeight.value
+
+    // Load textures
+    currentFloorTexture.value = designData.currentFloorTexture || DEFAULT_FLOOR_TEXTURE
+    currentWallTexture.value = designData.currentWallTexture || DEFAULT_WALL_TEXTURE
+
+    // Save the loaded state to history
+    setTimeout(() => {
+      saveToHistory({
+        items: items.value,
+        roomWidth: roomWidth.value,
+        roomHeight: roomHeight.value,
+        currentFloorTexture: currentFloorTexture.value,
+        currentWallTexture: currentWallTexture.value
+      })
+    }, 100)
+
+    console.log('Design loaded successfully:', {
+      itemCount: items.value.length,
+      roomSize: `${roomWidth.value}x${roomHeight.value}cm`,
+      floorTexture: currentFloorTexture.value,
+      wallTexture: currentWallTexture.value
+    })
+
+  } catch (error) {
+    console.error('❌ Failed to load design data:', error)
+
+    // Show user-friendly error message
+    alert('Failed to load design. Using default settings instead.')
+
+    // Reset to defaults
+    items.value = []
+    roomWidth.value = ROOM_DEFAULTS.WIDTH
+    roomHeight.value = ROOM_DEFAULTS.HEIGHT
+    roomWidthRef.value = ROOM_DEFAULTS.WIDTH
+    roomHeightRef.value = ROOM_DEFAULTS.HEIGHT
+    currentFloorTexture.value = DEFAULT_FLOOR_TEXTURE
+    currentWallTexture.value = DEFAULT_WALL_TEXTURE
+  }
+}
+const wasDesignLoaded = checkForDesignToLoad()
 // Initialize scene
 onMounted(async () => {
+  window.addEventListener('header-save-design', handleSaveDesign)
 
-  const dimensionsLoaded = loadSavedRoomDimensions()
+  // Debug listener to confirm event is received
+  window.addEventListener('header-save-design', () => {
+    console.log('🚀 header-save-design event received!')
+  })
 
-  if (dimensionsLoaded) {
-    console.log('Using saved room dimensions (CM):', {
-      width: roomWidth.value + 'cm',
-      height: roomHeight.value + 'cm'
-    })
-  } else {
-    console.log('Using default room dimensions (CM):', {
-      width: ROOM_DEFAULTS.WIDTH + 'cm',
-      height: ROOM_DEFAULTS.HEIGHT + 'cm'
-    })
+  // Check if we need to load a specific design from MyDesigns page
+  const wasDesignLoaded = checkForDesignToLoad()
+  // If no design was loaded, load saved room dimensions as usual
+  if (!wasDesignLoaded) {
+    const dimensionsLoaded = loadSavedRoomDimensions()
+
+    if (dimensionsLoaded) {
+      console.log('Using saved room dimensions (CM):', {
+        width: roomWidth.value + 'cm',
+        height: roomHeight.value + 'cm'
+      })
+    } else {
+      console.log('Using default room dimensions (CM):', {
+        width: ROOM_DEFAULTS.WIDTH + 'cm',
+        height: ROOM_DEFAULTS.HEIGHT + 'cm'
+      })
+    }
   }
   // Initialize scene manager
   const sceneManager = markRaw(new SceneManager())
@@ -802,6 +937,7 @@ watch(measurementEnabled, (enabled) => {
 
 // Cleanup
 onUnmounted(() => {
+  window.removeEventListener('header-save-design', handleSaveDesign)
   if (eventHandlersRef.value) {
     eventHandlersRef.value.removeEventListeners()
   }
