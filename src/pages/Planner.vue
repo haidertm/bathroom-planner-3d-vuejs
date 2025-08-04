@@ -378,7 +378,7 @@ const handleSaveDesign = () => {
 
     const designData = {
       id: Date.now(), // Simple timestamp-based ID
-      name: `Bathroom Design - ${dateString} ${timeString}`,
+      name: `Bathroom Design - ${ dateString } ${ timeString }`,
       timestamp: Date.now(),
       items: JSON.parse(JSON.stringify(items.value)), // Deep clone to avoid reference issues
       roomWidth: roomWidth.value,
@@ -464,6 +464,9 @@ const addItem = async (type, productData = null) => {
 
   console.log('productData.selectedVariant?.orientation>>>:::', productData.selectedVariant?.orientation);
 
+  // ✅ CRITICAL: Get the correct orientation from productData
+  const productOrientation = productData?.selectedVariant?.orientation || DEFAULT_ORIENTATION;
+
   // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
       roomWidth.value,
@@ -472,7 +475,7 @@ const addItem = async (type, productData = null) => {
       defaults.scale,
       items.value,
       undefined, // No specific wall direction
-      productData.selectedVariant?.orientation,
+      productOrientation,
       productData.selectedVariant?.movement
   )
 
@@ -493,10 +496,10 @@ const addItem = async (type, productData = null) => {
         path: productData.selectedVariant?.path,
         scale: 100,
         orientation: {
-          type: 'flush_with_wall',
-          wallBuffer: 0, // Flush with wall - no gap
-          description: 'Item is part of wall opening',
-          ...(productData.selectedVariant?.orientation)
+          type: productOrientation.type || 'face_into_room',
+          wallBuffer: productOrientation.wallBuffer !== undefined ? productOrientation.wallBuffer : 0, // Flush with wall - no gap
+          description: productOrientation.description || 'Item is part of wall opening',
+          ...(productOrientation.rotationOffset && { rotationOffset: productOrientation.rotationOffset })
         },
         dimensions: productData.selectedVariant?.dimensions,
         ...(productData.selectedVariant?.movement && {
@@ -746,7 +749,7 @@ const loadDesignData = (designData) => {
 
     console.log('Design loaded successfully:', {
       itemCount: items.value.length,
-      roomSize: `${roomWidth.value}x${roomHeight.value}cm`,
+      roomSize: `${ roomWidth.value }x${ roomHeight.value }cm`,
       floorTexture: currentFloorTexture.value,
       wallTexture: currentWallTexture.value
     })
@@ -781,7 +784,7 @@ onMounted(async () => {
   })
 
 // Override browser refresh button
-  window.onbeforeunload = function(e) {
+  window.onbeforeunload = function (e) {
     if (hasUnsavedChanges.value) {
       e.preventDefault()
       return ''

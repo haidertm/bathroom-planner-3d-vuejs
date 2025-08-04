@@ -202,18 +202,38 @@ export class SceneManager {
 
   // Helper method to update existing model properties
   private updateExistingModel (model: THREE.Object3D, item: BathroomItem): void {
-    // Update position
-    model.position.set(item.position[0], item.position[1], item.position[2]);
+  // Update position
+  model.position.set(item.position[0], item.position[1], item.position[2]);
 
-    // Update rotation
-    model.rotation.y = item.rotation || 0;
+  // Update rotation
+  model.rotation.y = item.rotation || 0;
 
-    // Update scale
-    const scale = item.scale || 1.0;
-    model.scale.set(scale, scale, scale);
+  // Update scale
+  const scale = item.scale || 1.0;
+  model.scale.set(scale, scale, scale);
 
-    console.log(`✅ Updated item ${item.id} properties`);
+  // ✅ CRITICAL FIX: Ensure orientation data is maintained in userData
+  if (!model.userData.orientation && item.model?.orientation) {
+    model.userData.orientation = item.model.orientation;
+    console.log(`✅ Restored orientation data to existing model ${item.id}:`, model.userData.orientation);
   }
+
+  // ✅ Also ensure other critical userData is maintained
+  if (!model.userData.sku && item.sku) {
+    model.userData.sku = item.sku;
+  }
+
+  if (!model.userData.model && item.model) {
+    model.userData.model = item.model;
+  }
+
+  console.log(`✅ Updated item ${item.id} properties with preserved orientation:`, {
+    position: model.position,
+    rotation: model.rotation.y,
+    scale: model.scale.x,
+    orientation: model.userData.orientation
+  });
+}
 
   // Helper method to properly dispose of models
   private disposeModel (model: THREE.Object3D): void {
@@ -261,6 +281,26 @@ export class SceneManager {
         model.userData.isBathroomItem = true;
         model.userData.itemId = item.id;
         model.userData.type = item.type;
+
+        // ✅ CRITICAL FIX: Store orientation data in userData (same as updateBathroomItems)
+        model.userData.orientation = getOrientationForItem(item);
+
+        // ✅ ALSO STORE: Additional data for debugging and drag operations
+        if (item.sku) {
+          model.userData.sku = item.sku;
+        }
+
+        if (item.model) {
+          model.userData.model = item.model;
+        }
+
+        console.log(`✅ Stored orientation in addSingleItem:`, model.userData.orientation);
+        console.log(`✅ All userData stored:`, {
+          itemId: model.userData.itemId,
+          type: model.userData.type,
+          sku: model.userData.sku,
+          orientation: model.userData.orientation
+        });
 
         this.debugModelVisibility(model, item);
         this.enhanceModelMaterials(model);
