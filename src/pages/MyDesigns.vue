@@ -94,68 +94,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import {ref, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
 
 const router = useRouter()
 const activeMenu = ref(null)
 
 // Sample designs data (in real app, this would come from localStorage or API)
 const designs = ref([
-  {
-    id: 1,
-    name: 'Modern Ensuite',
-    description: 'A contemporary bathroom with clean lines and premium finishes',
-    roomWidth: 6,
-    roomHeight: 8,
-    itemCount: 5,
-    createdAt: new Date('2025-01-14'),
-    items: [
-      { id: 1, type: 'Toilet', position: [2, 0, 3], rotation: 0, scale: 1 },
-      { id: 2, type: 'Sink', position: [-2, 0, 3], rotation: 0, scale: 1 },
-      { id: 3, type: 'Bath', position: [0, 0, -3], rotation: 0, scale: 1 },
-      { id: 4, type: 'Mirror', position: [-2, 1.2, 3], rotation: 0, scale: 1 },
-      { id: 5, type: 'Radiator', position: [3, 0, 0], rotation: Math.PI/2, scale: 1 }
-    ]
-  },
-  {
-    id: 2,
-    name: 'Compact Family Bathroom',
-    description: 'Space-efficient design perfect for family use',
-    roomWidth: 4,
-    roomHeight: 6,
-    itemCount: 4,
-    createdAt: new Date('2025-01-11'),
-    items: [
-      { id: 1, type: 'Toilet', position: [1, 0, 2], rotation: 0, scale: 0.8 },
-      { id: 2, type: 'Sink', position: [-1, 0, 2], rotation: 0, scale: 0.8 },
-      { id: 3, type: 'Shower', position: [0, 0, -2], rotation: 0, scale: 1 },
-      { id: 4, type: 'Mirror', position: [-1, 1.2, 2], rotation: 0, scale: 0.8 }
-    ]
-  },
-  {
-    id: 3,
-    name: 'Luxury Master Suite',
-    description: 'Spacious master bathroom with premium fixtures',
-    roomWidth: 8,
-    roomHeight: 10,
-    itemCount: 7,
-    createdAt: new Date('2025-01-10'),
-    items: [
-      { id: 1, type: 'Toilet', position: [3, 0, 4], rotation: 0, scale: 1 },
-      { id: 2, type: 'Sink', position: [-3, 0, 4], rotation: 0, scale: 1.2 },
-      { id: 3, type: 'Bath', position: [0, 0, -4], rotation: 0, scale: 1.3 },
-      { id: 4, type: 'Shower', position: [3, 0, -2], rotation: 0, scale: 1.1 },
-      { id: 5, type: 'Mirror', position: [-3, 1.2, 4], rotation: 0, scale: 1.2 },
-      { id: 6, type: 'Radiator', position: [4, 0, 0], rotation: Math.PI/2, scale: 1 },
-      { id: 7, type: 'Radiator', position: [-4, 0, 0], rotation: Math.PI/2, scale: 1 }
-    ]
-  }
 ])
 
 onMounted(() => {
   // Load designs from localStorage if available
-  const savedDesigns = localStorage.getItem('bathroom-designs')
+  const savedDesigns = localStorage.getItem('saved-designs')
   if (savedDesigns) {
     designs.value = JSON.parse(savedDesigns)
   }
@@ -179,11 +130,35 @@ const toggleMenu = (designId) => {
 }
 
 const loadDesign = (design) => {
-  // Store the design to load in localStorage
-  localStorage.setItem('design-to-load', JSON.stringify(design))
+  try {
+    // Use the original data format that Planner.vue expects
+    const designToLoad = design.originalData || {
+      id: design.id,
+      name: design.name,
+      timestamp: design.timestamp,
+      items: design.items || [],
+      roomWidth: design.roomWidth || 300,
+      roomHeight: design.roomHeight || 250,
+      currentFloorTexture: 0,
+      currentWallTexture: 0,
+      preview: null
+    }
 
-  // Navigate back to planner
-  router.push('/')
+    console.log('💾 Design data to load:', designToLoad)
+
+    // Store the design to load in localStorage
+    localStorage.setItem('design-to-load', JSON.stringify(designToLoad))
+    // Try router navigation first
+    router.push('/planner').catch((error) => {
+      console.error('❌ Router navigation failed:', error)
+      // Use router's base URL for better SPA compatibility
+      window.location.href = router.resolve('/planner').href
+    })
+
+  } catch (error) {
+    console.error('❌ Error loading design:', error)
+    alert('Failed to load design. Please try again.')
+  }
 }
 
 const duplicateDesign = (design) => {
@@ -195,7 +170,7 @@ const duplicateDesign = (design) => {
   }
 
   designs.value.push(duplicatedDesign)
-  localStorage.setItem('bathroom-designs', JSON.stringify(designs.value))
+  localStorage.setItem('saved-designs', JSON.stringify(designs.value))
   activeMenu.value = null
 }
 
@@ -203,7 +178,7 @@ const renameDesign = (design) => {
   const newName = prompt('Enter new name for the design:', design.name)
   if (newName && newName.trim()) {
     design.name = newName.trim()
-    localStorage.setItem('bathroom-designs', JSON.stringify(designs.value))
+    localStorage.setItem('saved-designs', JSON.stringify(designs.value))
   }
   activeMenu.value = null
 }
@@ -211,7 +186,7 @@ const renameDesign = (design) => {
 const deleteDesign = (designId) => {
   if (confirm('Are you sure you want to delete this design? This action cannot be undone.')) {
     designs.value = designs.value.filter(d => d.id !== designId)
-    localStorage.setItem('bathroom-designs', JSON.stringify(designs.value))
+    localStorage.setItem('saved-designs', JSON.stringify(designs.value))
   }
   activeMenu.value = null
 }

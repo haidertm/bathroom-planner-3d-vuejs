@@ -1,6 +1,7 @@
 // src/services/eventHandlers.ts
 import * as THREE from 'three';
 import type { Ref } from 'vue';
+import type { BathroomPlannerState } from '../composables/useUndoRedo';
 import {
   updateMousePosition,
   updateTouchPosition,
@@ -39,12 +40,17 @@ interface UpdateData {
   [key: string]: any;
 }
 
+type SaveToHistoryFunction = (state: BathroomPlannerState) => void;
+
 // Function type definitions
 type SetItemsFunction = (updater: (items: BathroomItem[]) => BathroomItem[]) => void;
 type GetItemsFunction = () => BathroomItem[];
 type DeleteItemFunction = (itemId: number) => void;
 
 export class EventHandlers {
+  private saveToHistory: SaveToHistoryFunction;
+  private currentFloorTextureRef: Ref<number>;
+  private currentWallTextureRef: Ref<number>;
   // Core Three.js objects
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
@@ -111,7 +117,10 @@ export class EventHandlers {
     setItems: SetItemsFunction,
     getItems: GetItemsFunction,
     deleteItem: DeleteItemFunction,
-    preventCollisionPlacementRef: Ref<boolean> = ref(true) // NEW: Accept collision prevention setting
+    preventCollisionPlacementRef: Ref<boolean> = ref(true),// NEW: Accept collision prevention setting
+    saveToHistory: SaveToHistoryFunction,
+    currentFloorTextureRef: Ref<number>,
+    currentWallTextureRef: Ref<number>
   ) {
     // Assign core objects
     this.scene = scene;
@@ -163,6 +172,10 @@ export class EventHandlers {
     this.mouseDownPosition = new THREE.Vector2();
     this.hasMouseMoved = false;
     this.wasEmptySpaceClicked = false;
+
+    this.saveToHistory = saveToHistory;
+    this.currentFloorTextureRef = currentFloorTextureRef;
+    this.currentWallTextureRef = currentWallTextureRef;
 
     // Bind methods
     this.handleMouseDown = this.handleMouseDown.bind(this);
@@ -262,6 +275,16 @@ export class EventHandlers {
         return item;
       });
     });
+    setTimeout(() => {
+      const currentItems = this.getItems();
+      this.saveToHistory({
+        items: currentItems,
+        roomWidth: this.roomWidthRef.value,
+        roomHeight: this.roomHeightRef.value,
+        currentFloorTexture: this.currentFloorTextureRef.value,
+        currentWallTexture: this.currentWallTextureRef.value
+      });
+    }, 50);
   }
 
   // Method to queue updates during drag operations
@@ -273,10 +296,26 @@ export class EventHandlers {
         ...updateData
       });
     } else {
-      // Apply immediately if not dragging
-      this.setItems((prev: BathroomItem[]) => prev.map(item =>
-        item.id === itemId ? { ...item, ...updateData } : item
-      ));
+      // Not dragging: Apply immediately
+      this.setItems((prev: BathroomItem[]) =>
+          prev.map(item =>
+              item.id === itemId ? { ...item, ...updateData } : item
+          )
+      );
+
+      // For immediate updates, save to history right away
+      // This handles non-drag operations like keyboard shortcuts
+      setTimeout(() => {
+        const currentItems = this.getItems();
+        console.log('💾 Immediate save to history for item', itemId);
+        this.saveToHistory({
+          items: currentItems,
+          roomWidth: this.roomWidthRef.value,
+          roomHeight: this.roomHeightRef.value,
+          currentFloorTexture: this.currentFloorTextureRef.value,
+          currentWallTexture: this.currentWallTextureRef.value
+        });
+      }, 50);
     }
   }
 
