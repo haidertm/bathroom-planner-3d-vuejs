@@ -539,7 +539,6 @@ const handleAddToRoom = (product) => {
 
   // On mobile, auto-hide sidebar after adding item (this is the only time we auto-hide)
   if (isMobileDevice.value) {
-    console.log('🔍 Mobile: Auto-hiding sidebar after adding item')
     setTimeout(() => {
       hideSidebar()
     }, 300)
@@ -575,7 +574,6 @@ const showSidebar = () => {
 }
 
 const hideSidebar = () => {
-  console.log('🔍 Hiding sidebar')
   isSidebarVisible.value = false
 
   // Also close any open drawers when hiding sidebar
