@@ -149,6 +149,7 @@ const sceneManagerRef = shallowRef(null)
 const eventHandlersRef = shallowRef(null)
 const roomWidthRef = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeightRef = ref(ROOM_DEFAULTS.HEIGHT)
+const hasUnsavedChanges = ref(false)
 
 // ADD THIS: Missing reactive reference for instructions popup
 const showInstructions = ref(false)
@@ -163,6 +164,13 @@ const isInitialLoad = ref(true)
 // Generate unique ID function
 const generateUniqueId = () => {
   return nextIdRef.value++
+}
+
+const showReloadDialog = () => {
+  if (hasUnsavedChanges.value) {
+    return window.confirm('Reload site?\n\nChanges you made may not be saved.')
+  }
+  return true // Allow reload if no unsaved changes
 }
 
 // Default objects to load on page start - Properly oriented to face INTO room
@@ -400,6 +408,7 @@ const handleSaveDesign = () => {
     // Verify it was saved
     const verification = localStorage.getItem('saved-designs')
     // Show success feedback with better UX
+    hasUnsavedChanges.value = false
     if (window.confirm('Design saved successfully! Would you like to view your saved designs?')) {
       // Navigate to My Designs page
       router.push('/my-designs')
@@ -443,6 +452,7 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 // 6. Update your Home.vue addItem function to handle product data:
 const addItem = async (type, productData = null) => {
   console.log('addItem called with type:', type)
+  hasUnsavedChanges.value = true
   const defaults = {
     height: 0,
     scale: getScaleForUnits(1.0, 'meters'),
@@ -760,6 +770,23 @@ const loadDesignData = (designData) => {
 
 // Initialize scene
 onMounted(async () => {
+  // Override F5 and Ctrl+R
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+      e.preventDefault()
+      if (showReloadDialog()) {
+        window.location.reload()
+      }
+    }
+  })
+
+// Override browser refresh button
+  window.onbeforeunload = function(e) {
+    if (hasUnsavedChanges.value) {
+      e.preventDefault()
+      return ''
+    }
+  }
   window.addEventListener('header-save-design', handleSaveDesign)
   // Check if we need to load a specific design from MyDesigns page
   const wasDesignLoaded = checkForDesignToLoad()
