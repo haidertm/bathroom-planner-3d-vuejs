@@ -478,13 +478,15 @@ export const constrainToWalls = (
   const halfDepth = (dimensions.depth * scale) / 2;
 
   // Use wallBuffer from productData orientation config, or 0 if not specified
-  const wallBuffer = (orientation.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+  const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+  const isFlushMounted = wallBuffer === 0;
 
-  console.log(`🔧 FLUSH MOUNTING for ${objectType}:`, {
+  console.log(`🔧 FIXED WALL CONSTRAINT for ${objectType}:`, {
+    originalPosition: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
     productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
-    scaledDimensions: `${(dimensions.width * scale).toFixed(1)} × ${(dimensions.depth * scale).toFixed(1)}cm`,
-    wallBuffer: wallBuffer.toFixed(1) + 'cm (from productData)',
-    orientationType: orientation.type,
+    halfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
+    wallBuffer: wallBuffer.toFixed(1) + 'cm',
+    isFlushMounted,
     sku: item?.sku
   });
 
@@ -500,45 +502,116 @@ export const constrainToWalls = (
     wallDistances[a[0]] < wallDistances[b[0]] ? a : b
   )[0] as 'north' | 'south' | 'east' | 'west';
 
-  let constrainedPosition = { ...position };
+  let constrainedPosition = { ...position }; // ✅ Start with original position
   let wallRotation = 0;
 
-  // Position object against the nearest wall using ONLY productData values
+  // ✅ FIXED: Only constrain the coordinate affected by the specific wall
   switch (nearestWall) {
     case 'north':
-      // Position so back edge is at wall face + buffer
-      constrainedPosition.z = wallFaces.north + halfDepth + wallBuffer;
-      constrainedPosition.x = Math.max(
-        interior.minX + halfWidth,
-        Math.min(interior.maxX - halfWidth, position.x)
-      );
+      // ✅ Only modify Z coordinate for north wall
+      console.log('isFlushMounted>>>>', isFlushMounted);
+      if (isFlushMounted) {
+        constrainedPosition.z = wallFaces.north;
+      } else {
+        constrainedPosition.z = wallFaces.north + halfDepth + wallBuffer;
+      }
+
+      console.log('constrainedPosition.z>>>>>', constrainedPosition.z, constrainedPosition);
+
+      // ✅ CRITICAL FIX: Only constrain X if object would actually extend beyond room bounds
+      const wouldExtendWest = position.x - halfWidth < interior.minX;
+      const wouldExtendEast = position.x + halfWidth > interior.maxX;
+
+      if (wouldExtendWest || wouldExtendEast) {
+        constrainedPosition.x = Math.max(
+          interior.minX + halfWidth,
+          Math.min(interior.maxX - halfWidth, position.x)
+        );
+        console.log(`🔧 X constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+      } else {
+        // ✅ PRESERVE original X coordinate
+        constrainedPosition.x = position.x;
+        console.log(`🎯 X preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
+      }
+
       wallRotation = getObjectRotationForWall(objectType, 'north', orientation);
       break;
+
     case 'south':
-      // Position so back edge is at wall face - buffer
-      constrainedPosition.z = wallFaces.south - halfDepth - wallBuffer;
-      constrainedPosition.x = Math.max(
-        interior.minX + halfWidth,
-        Math.min(interior.maxX - halfWidth, position.x)
-      );
+      // ✅ Only modify Z coordinate for south wall
+      if (isFlushMounted) {
+        constrainedPosition.z = wallFaces.south;
+      } else {
+        constrainedPosition.z = wallFaces.south - halfDepth - wallBuffer;
+      }
+
+      // ✅ Only constrain X if object would actually extend beyond room bounds
+      const wouldExtendWestSouth = position.x - halfWidth < interior.minX;
+      const wouldExtendEastSouth = position.x + halfWidth > interior.maxX;
+
+      if (wouldExtendWestSouth || wouldExtendEastSouth) {
+        constrainedPosition.x = Math.max(
+          interior.minX + halfWidth,
+          Math.min(interior.maxX - halfWidth, position.x)
+        );
+        console.log(`🔧 X constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+      } else {
+        constrainedPosition.x = position.x;
+        console.log(`🎯 X preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
+      }
+
       wallRotation = getObjectRotationForWall(objectType, 'south', orientation);
       break;
+
     case 'east':
-      // Position so back edge is at wall face - buffer
-      constrainedPosition.x = wallFaces.east - halfDepth - wallBuffer;
-      constrainedPosition.z = Math.max(
-        interior.minZ + halfDepth,
-        Math.min(interior.maxZ - halfDepth, position.z)
-      );
+      // ✅ Only modify X coordinate for east wall
+      if (isFlushMounted) {
+        constrainedPosition.x = wallFaces.east;
+      } else {
+        constrainedPosition.x = wallFaces.east - halfDepth - wallBuffer;
+      }
+
+      // ✅ Only constrain Z if object would actually extend beyond room bounds
+      const wouldExtendNorth = position.z - halfDepth < interior.minZ;
+      const wouldExtendSouth = position.z + halfDepth > interior.maxZ;
+
+      if (wouldExtendNorth || wouldExtendSouth) {
+        constrainedPosition.z = Math.max(
+          interior.minZ + halfDepth,
+          Math.min(interior.maxZ - halfDepth, position.z)
+        );
+        console.log(`🔧 Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+      } else {
+        constrainedPosition.z = position.z;
+        console.log(`🎯 Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
+      }
+
       wallRotation = getObjectRotationForWall(objectType, 'east', orientation);
       break;
+
     case 'west':
-      // Position so back edge is at wall face + buffer
-      constrainedPosition.x = wallFaces.west + halfDepth + wallBuffer;
-      constrainedPosition.z = Math.max(
-        interior.minZ + halfDepth,
-        Math.min(interior.maxZ - halfDepth, position.z)
-      );
+      // ✅ Only modify X coordinate for west wall
+      if (isFlushMounted) {
+        constrainedPosition.x = wallFaces.west;
+      } else {
+        constrainedPosition.x = wallFaces.west + halfDepth + wallBuffer;
+      }
+
+      // ✅ Only constrain Z if object would actually extend beyond room bounds
+      const wouldExtendNorthWest = position.z - halfDepth < interior.minZ;
+      const wouldExtendSouthWest = position.z + halfDepth > interior.maxZ;
+
+      if (wouldExtendNorthWest || wouldExtendSouthWest) {
+        constrainedPosition.z = Math.max(
+          interior.minZ + halfDepth,
+          Math.min(interior.maxZ - halfDepth, position.z)
+        );
+        console.log(`🔧 Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+      } else {
+        constrainedPosition.z = position.z;
+        console.log(`🎯 Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
+      }
+
       wallRotation = getObjectRotationForWall(objectType, 'west', orientation);
       break;
   }
@@ -552,16 +625,19 @@ export const constrainToWalls = (
     constrainedPosition.y = movementConfig.minHeight || 0;
   }
 
-  console.log(`🔧 FLUSH MOUNTING result for ${objectType}:`, {
+  console.log(`🔧 FIXED CONSTRAINT result for ${objectType}:`, {
     nearestWall,
-    wallBuffer: wallBuffer.toFixed(1) + 'cm',
-    halfDepth: halfDepth.toFixed(1) + 'cm',
-    wallFacePosition: wallFaces[nearestWall].toFixed(1) + 'cm',
-    finalPosition: {
-      x: constrainedPosition.x.toFixed(1),
-      z: constrainedPosition.z.toFixed(1)
+    isFlushMounted,
+    originalPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+    finalPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
+    coordinateChanges: {
+      x: position.x !== constrainedPosition.x ? `${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}` : 'preserved',
+      z: position.z !== constrainedPosition.z ? `${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}` : 'preserved'
     },
-    calculation: `wallFace(${wallFaces[nearestWall].toFixed(1)}) ${nearestWall === 'north' || nearestWall === 'west' ? '+' : '-'} halfDepth(${halfDepth.toFixed(1)}) ${wallBuffer !== 0 ? `${wallBuffer > 0 ? '+' : '-'} buffer(${Math.abs(wallBuffer).toFixed(1)})` : ''} = ${nearestWall === 'north' || nearestWall === 'west' ? constrainedPosition.x || constrainedPosition.z : constrainedPosition.x || constrainedPosition.z}cm`
+    wallFacePosition: wallFaces[nearestWall].toFixed(1) + 'cm',
+    backEdgePosition: nearestWall === 'north' || nearestWall === 'south' ?
+      (nearestWall === 'north' ? (constrainedPosition.z - halfDepth).toFixed(1) : (constrainedPosition.z + halfDepth).toFixed(1)) + 'cm' :
+      (nearestWall === 'east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
   });
 
   return { position: constrainedPosition, rotation: wallRotation };

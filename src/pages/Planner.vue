@@ -835,6 +835,10 @@ onMounted(async () => {
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 
+  if (sceneManagerRef.value.debugLabelsEnabled && sceneManagerRef.value.wallLabelsDebug) {
+    sceneManagerRef.value.updateLabels(roomWidth.value, roomHeight.value)
+  }
+
   // Set initial wall culling state
   sceneManagerRef.value.setWallCullingEnabled(wallCullingEnabled.value)
 
