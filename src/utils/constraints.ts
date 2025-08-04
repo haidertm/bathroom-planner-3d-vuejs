@@ -140,8 +140,28 @@ export interface WallInfo {
   distance: number;
 }
 
+// Helper function to get orientation from product data (if not already available)
+const getOrientationFromProductData = (sku?: string, objectType?: ComponentType): OrientationConfig | null => {
+  if (!sku || !objectType || !productData[objectType]) {
+    return null;
+  }
+
+  // Search through products to find the SKU and its orientation
+  for (const product of productData[objectType]) {
+    if (product.variants) {
+      for (const variant of product.variants) {
+        if (variant.sku === sku && variant.orientation) {
+          return variant.orientation;
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
 /**
- * Simple wall collision detection using actual object dimensions
+ * Enhanced wall collision detection that accounts for flush-mounted objects
  */
 export const checkWallCollision = (
   position: Position,
@@ -155,6 +175,11 @@ export const checkWallCollision = (
   const dimensions = getDimensions(objectType, item?.sku, item?.model);
   if (!dimensions) return false;
 
+  // Get orientation config to check if object is flush-mounted
+  const orientationConfig = item?.model?.orientation || getOrientationFromProductData(item?.sku, objectType) || DEFAULT_ORIENTATION;
+  const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
+  const isFlushMounted = wallBuffer === 0;
+
   // Calculate actual object bounds using productData dimensions
   const halfWidth = (dimensions.width * scale) / 2;
   const halfDepth = (dimensions.depth * scale) / 2;
@@ -166,7 +191,7 @@ export const checkWallCollision = (
   const objectMaxZ = position.z + halfDepth;
 
   // Room interior boundaries (where objects can be placed)
-  const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
+  const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
 
   // Check if object extends beyond interior boundaries
   const collideWest = objectMinX < interior.minX;
@@ -174,11 +199,53 @@ export const checkWallCollision = (
   const collideNorth = objectMinZ < interior.minZ;
   const collideSouth = objectMaxZ > interior.maxZ;
 
+  // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
+  if (isFlushMounted) {
+    // Calculate distances to each wall face
+    const wallDistances = {
+      north: Math.abs(position.z - wallFaces.north),
+      south: Math.abs(position.z - wallFaces.south),
+      east: Math.abs(position.x - wallFaces.east),
+      west: Math.abs(position.x - wallFaces.west)
+    };
+
+    // Find the nearest wall
+    const nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+      wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+    )[0] as 'north' | 'south' | 'east' | 'west';
+
+    // Tolerance for flush mounting (2cm)
+    const flushTolerance = 2;
+
+    // Check if object is properly flush-mounted to the nearest wall
+    const isProperlyFlushMounted = wallDistances[nearestWall] <= flushTolerance;
+
+    if (isProperlyFlushMounted) {
+      // For flush-mounted objects positioned correctly, only check collisions on non-wall sides
+      switch (nearestWall) {
+        case 'north':
+          // Object is flush against north wall, only check east/west/south collisions
+          return collideEast || collideWest || collideSouth;
+        case 'south':
+          // Object is flush against south wall, only check east/west/north collisions
+          return collideEast || collideWest || collideNorth;
+        case 'east':
+          // Object is flush against east wall, only check north/south/west collisions
+          return collideNorth || collideSouth || collideWest;
+        case 'west':
+          // Object is flush against west wall, only check north/south/east collisions
+          return collideNorth || collideSouth || collideEast;
+      }
+    }
+  }
+
+  // Standard collision detection for non-flush-mounted objects or improperly positioned flush-mounted objects
   const hasWallCollision = collideWest || collideEast || collideNorth || collideSouth;
 
   if (hasWallCollision) {
     console.log('🔴 WALL COLLISION:', {
       objectType,
+      isFlushMounted,
       productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
       scaledSize: `${(dimensions.width * scale).toFixed(1)} × ${(dimensions.depth * scale).toFixed(1)}cm`,
       position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
@@ -188,6 +255,7 @@ export const checkWallCollision = (
 
   return hasWallCollision;
 };
+
 
 
 // ENHANCED: Collision detection with product-specific dimensions
