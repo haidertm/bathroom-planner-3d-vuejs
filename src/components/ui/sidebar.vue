@@ -613,7 +613,7 @@ watch(() => props.roomHeight, (newHeight) => {
   }
 })
 
-// ENHANCED: Product drawer methods with preloading awareness
+// FIXED: Product drawer methods
 const openProductDrawer = (category) => {
   console.log('🔍 Opening product drawer for category:', category)
   selectedCategory.value = category
@@ -957,7 +957,8 @@ const getTexturePreviewStyle = (texture) => ({
   backgroundPosition: 'center'
 })
 
-// All your existing style computed properties (keeping exactly the same)
+// All your existing style computed properties go here...
+// (I'll keep them the same as in your original code)
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
   bottom: '30px',
