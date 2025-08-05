@@ -289,8 +289,11 @@
     <ProductDrawer
         :is-open="isProductDrawerOpen"
         :selected-category="selectedCategory"
+        :is-loading="isCategoryLoading(selectedCategory)"
+        :loading-error="errorMessage"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
+        @retry-loading="retryLoadingCategory"
     />
   </div>
 </template>
@@ -517,17 +520,18 @@ const isInternalUpdate = ref(false)
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
 
+  // ALWAYS open the ProductDrawer immediately, regardless of loading state
+  openProductDrawer(category)
+
   // Skip if selective preload is disabled - proceed normally
   if (!CONFIG?.selectivePreload) {
     console.log('Selective preload disabled, proceeding normally...')
-    openProductDrawer(category)
     return
   }
 
   // Skip if already preloaded - proceed normally
   if (isCategoryPreloaded(category)) {
     console.log(`${category} models already preloaded ✅`)
-    openProductDrawer(category)
     return
   }
 
@@ -556,9 +560,6 @@ const handleCategoryClick = async (category) => {
     // Emit loading finished event
     emit('loading-finished', { category })
 
-    // Now proceed with opening the product drawer
-    openProductDrawer(category)
-
   } catch (error) {
     const errorMsg = `Failed to load ${category} models`
     console.error(`❌ ${errorMsg}:`, error)
@@ -574,7 +575,14 @@ const handleCategoryClick = async (category) => {
   }
 }
 
-// NEW: Helper functions for loading states
+// 2. ADD these new helper functions (don't replace existing ones):
+const retryLoadingCategory = () => {
+  if (selectedCategory.value) {
+    errorMessage.value = ''
+    handleCategoryClick(selectedCategory.value)
+  }
+}
+
 const isCategoryLoading = (category) => {
   return loadingCategories.value.has(category)
 }
