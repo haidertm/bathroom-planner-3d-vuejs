@@ -29,6 +29,12 @@
         ✕
       </button>
 
+      <!-- Error Message (if any) - Compact and non-intrusive -->
+      <div v-if="errorMessage" :style="compactErrorStyle" @click="clearError">
+        <span>{{ errorMessage }}</span>
+        <button :style="closeErrorStyle">×</button>
+      </div>
+
       <!-- Bathroom Items Accordion -->
       <div :style="accordionSectionStyle">
         <div
@@ -47,14 +53,28 @@
             <div
                 v-for="category in bathroomCategories"
                 :key="category.id"
-                @click.stop="openProductDrawer(category.component)"
-                :style="categoryItemStyle"
+                @click.stop="handleCategoryClick(category.component)"
+                :style="getEnhancedCategoryItemStyle(category.component)"
                 class="category-item"
             >
               <div :style="categoryIconStyle">
                 <span v-html="category.icon"></span>
+                <!-- Tiny loading spinner in corner (barely visible) -->
+                <div
+                    v-if="isCategoryLoading(category.component)"
+                    :style="tinyLoadingSpinnerStyle"
+                ></div>
               </div>
-              <span :style="categoryLabelStyle">{{ category.label }}</span>
+              <div :style="categoryTextContainerStyle">
+                <span :style="categoryLabelStyle">{{ category.label }}</span>
+                <!-- Tiny status text -->
+                <span
+                    v-if="isCategoryLoading(category.component)"
+                    :style="tinyStatusStyle"
+                >
+                  Loading...
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -283,6 +303,10 @@ import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
 
+// NEW: Import selective preloading functions
+import { preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
+import { CONFIG } from '../../constants/models.js'
+
 // Define props
 const props = defineProps({
   currentFloor: {
@@ -319,7 +343,7 @@ const props = defineProps({
   }
 })
 
-// Define emits
+// Define emits - ENHANCED: Added preloading events
 const emit = defineEmits([
   'floor-change',
   'wall-change',
@@ -330,10 +354,14 @@ const emit = defineEmits([
   'toggle-wall-grid',
   'constrain-objects',
   'toggle-wall-culling',
-  'toggle-measurements'
+  'toggle-measurements',
+  // NEW: Preloading events
+  'loading-started',
+  'loading-finished',
+  'loading-error'
 ])
 
-// Bathroom categories with icons (matching your design)
+// Bathroom categories with icons (keeping your exact design)
 const bathroomCategories = [
   {
     id: 'baths',
@@ -475,10 +503,89 @@ const isButtonPressed = ref(false)
 const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
+// NEW: Selective preloading state
+const loadingCategories = ref(new Set())
+const isLoading = ref(false)
+const errorMessage = ref('')
+
 // Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
 const isInternalUpdate = ref(false)
+
+// NEW: Enhanced category click handler with selective preloading
+const handleCategoryClick = async (category) => {
+  console.log(`🖱️ Category clicked: ${category}`)
+
+  // Skip if selective preload is disabled - proceed normally
+  if (!CONFIG?.selectivePreload) {
+    console.log('Selective preload disabled, proceeding normally...')
+    openProductDrawer(category)
+    return
+  }
+
+  // Skip if already preloaded - proceed normally
+  if (isCategoryPreloaded(category)) {
+    console.log(`${category} models already preloaded ✅`)
+    openProductDrawer(category)
+    return
+  }
+
+  // Skip if currently loading
+  if (loadingCategories.value.has(category)) {
+    console.log(`${category} models are currently loading...`)
+    return
+  }
+
+  try {
+    // Add to loading set
+    loadingCategories.value.add(category)
+    isLoading.value = true
+    errorMessage.value = ''
+
+    console.log(`🚀 Starting to preload ${category} models...`)
+
+    // Emit loading started event
+    emit('loading-started', { category })
+
+    // Preload models for this category
+    await preloadCategoryModels(category)
+
+    console.log(`✅ ${category} models preloaded successfully!`)
+
+    // Emit loading finished event
+    emit('loading-finished', { category })
+
+    // Now proceed with opening the product drawer
+    openProductDrawer(category)
+
+  } catch (error) {
+    const errorMsg = `Failed to load ${category} models`
+    console.error(`❌ ${errorMsg}:`, error)
+    errorMessage.value = errorMsg
+
+    // Emit error event
+    emit('loading-error', { category, error: errorMsg })
+
+  } finally {
+    // Remove from loading set
+    loadingCategories.value.delete(category)
+    isLoading.value = loadingCategories.value.size > 0
+  }
+}
+
+// NEW: Helper functions for loading states
+const isCategoryLoading = (category) => {
+  return loadingCategories.value.has(category)
+}
+
+const isCategoryReady = (category) => {
+  return isCategoryPreloaded(category) && !isCategoryLoading(category)
+}
+
+const clearError = () => {
+  errorMessage.value = ''
+}
 
 // DEBUG: Add console logs to track state changes
 watch(isProductDrawerOpen, (newVal) => {
@@ -504,7 +611,7 @@ watch(() => props.roomHeight, (newHeight) => {
   }
 })
 
-// FIXED: Product drawer methods
+// ENHANCED: Product drawer methods with preloading awareness
 const openProductDrawer = (category) => {
   console.log('🔍 Opening product drawer for category:', category)
   selectedCategory.value = category
@@ -528,8 +635,36 @@ const handleProductDrawerClose = () => {
 const handleAddToRoom = (product) => {
   console.log('🔍 Adding product to room:', product)
 
+  // ENHANCED: Validate item structure before emitting
+  if (!product) {
+    console.error('❌ No product provided to handleAddToRoom')
+    return
+  }
+
+  if (!product.type) {
+    console.error('❌ Product missing required type property:', product)
+    return
+  }
+
+  // ENHANCED: Ensure selectedVariant exists if productData is provided
+  if (product.selectedVariant === null || product.selectedVariant === undefined) {
+    console.warn('⚠️ Product missing selectedVariant, adding as basic item:', product)
+    // For basic items without product data, just pass the type
+    emit('add', product.type)
+    handleProductDrawerClose()
+    return
+  }
+
   // Extract component type from product data
   const componentType = product.type || 'Unknown'
+
+  // ENHANCED: Pass the complete item structure
+  console.log('✅ Adding item with complete product data:', {
+    type: product.type,
+    hasSelectedVariant: !!product.selectedVariant,
+    selectedVariantSku: product.selectedVariant?.sku,
+    selectedVariantName: product.selectedVariant?.name
+  })
 
   // Emit to parent component to add the item
   emit('add', componentType, product)
@@ -699,7 +834,101 @@ const validateAndUpdateHeight = (event) => {
   }, 100)
 }
 
-// Style helper methods
+// NEW: Enhanced category item style with subtle loading states
+const getEnhancedCategoryItemStyle = (category) => {
+  const baseStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '16px 20px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    marginBottom: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    gap: '16px',
+    fontFamily: 'Arial, sans-serif'
+  }
+
+  // Subtle visual enhancements for loading/ready states
+  if (isCategoryLoading(category)) {
+    return {
+      ...baseStyle,
+      opacity: '0.8',
+      cursor: 'not-allowed'
+    }
+  }
+
+  if (isCategoryReady(category)) {
+    return {
+      ...baseStyle,
+      borderColor: '#e5e7eb'
+    }
+  }
+
+  return baseStyle
+}
+
+// NEW: Tiny loading spinner style (barely visible)
+const tinyLoadingSpinnerStyle = {
+  position: 'absolute',
+  top: '-2px',
+  right: '-2px',
+  width: '6px',
+  height: '6px',
+  border: '1px solid #f3f4f6',
+  borderTop: '1px solid #f59e0b',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
+}
+
+// NEW: Category text container to stack label and status
+const categoryTextContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1
+}
+
+// NEW: Tiny status styles
+const tinyStatusStyle = {
+  fontSize: '8px',
+  color: '#f59e0b',
+  marginTop: '2px'
+}
+
+const tinyReadyStyle = {
+  fontSize: '8px',
+  color: '#10b981',
+  marginTop: '2px',
+  fontWeight: '500'
+}
+
+// NEW: Compact error style
+const compactErrorStyle = {
+  backgroundColor: '#fef2f2',
+  border: '1px solid #fecaca',
+  color: '#b91c1c',
+  padding: '6px 10px',
+  borderRadius: '4px',
+  margin: '8px 16px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  cursor: 'pointer',
+  fontSize: '10px'
+}
+
+const closeErrorStyle = {
+  background: 'none',
+  border: 'none',
+  fontSize: '12px',
+  cursor: 'pointer',
+  color: '#b91c1c',
+  padding: '0',
+  marginLeft: '6px'
+}
+
+// Style helper methods (keeping your exact original styles)
 const getArrowStyle = (isExpanded) => ({
   fontSize: '14px',
   color: '#ffffff',
@@ -760,8 +989,7 @@ const getTexturePreviewStyle = (texture) => ({
   backgroundPosition: 'center'
 })
 
-// All your existing style computed properties go here...
-// (I'll keep them the same as in your original code)
+// All your existing style computed properties (keeping exactly the same)
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
   bottom: '30px',
@@ -1111,24 +1339,6 @@ const categoriesContainerStyle = computed(() => ({
   backgroundColor: '#ffffff'
 }))
 
-const categoryItemStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: '16px 20px',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e5e7eb',
-  borderRadius: '8px',
-  marginBottom: '8px',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  gap: '16px',
-  fontFamily: 'Arial, sans-serif',
-  ':hover': {
-    backgroundColor: '#f9fafb',
-    borderColor: '#10b981'
-  }
-}))
-
 const categoryIconStyle = computed(() => ({
   width: '24px',
   height: '24px',
@@ -1136,7 +1346,8 @@ const categoryIconStyle = computed(() => ({
   alignItems: 'center',
   justifyContent: 'center',
   color: '#29275B',
-  flexShrink: 0
+  flexShrink: 0,
+  position: 'relative'
 }))
 
 //For measurement
@@ -1157,7 +1368,13 @@ const categoryLabelStyle = computed(() => ({
 </script>
 
 <style scoped>
-/* Category item hover effects */
+/* NEW: Keyframe animation for tiny loading spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Category item hover effects (keeping your exact original styles) */
 .category-item:hover {
   background-color: #f9fafb !important;
   border-color: #29275B !important;
@@ -1187,7 +1404,7 @@ const categoryLabelStyle = computed(() => ({
   background: #555;
 }
 
-/* Enhanced modern input styles */
+/* Enhanced modern input styles (keeping your exact original styles) */
 .modern-number-input {
   background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
   border: 2px solid #e5e7eb !important;
@@ -1221,7 +1438,7 @@ const categoryLabelStyle = computed(() => ({
   -moz-appearance: textfield !important;
 }
 
-/* Enhanced slider styles */
+/* Enhanced slider styles (keeping your exact original styles) */
 .modern-slider {
   appearance: none !important;
   height: 8px !important;
