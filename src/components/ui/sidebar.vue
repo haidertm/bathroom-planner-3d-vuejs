@@ -340,7 +340,7 @@ const props = defineProps({
   }
 })
 
-// Define emits - ENHANCED: Added preloading events
+// Define emits
 const emit = defineEmits([
   'floor-change',
   'wall-change',
@@ -358,7 +358,7 @@ const emit = defineEmits([
   'loading-error'
 ])
 
-// Bathroom categories with icons (keeping your exact design)
+// Bathroom categories with icons (matching your design)
 const bathroomCategories = [
   {
     id: 'baths',
