@@ -54,11 +54,6 @@
       <div v-if="isLoading && currentView === 'products'" :style="contentStyle">
         <!-- Skeleton Loading State -->
         <div :style="skeletonContainerStyle">
-<!--          <div :style="loadingHeaderStyle">-->
-<!--            <div :style="loadingSpinnerStyle"></div>-->
-<!--            <span>Loading {{ selectedCategory }} products...</span>-->
-<!--          </div>-->
-
           <!-- Skeleton Product Cards -->
           <div
               v-for="n in 3"

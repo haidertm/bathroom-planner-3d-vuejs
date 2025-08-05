@@ -1372,7 +1372,7 @@ const categoryLabelStyle = computed(() => ({
   background: #555;
 }
 
-/* Enhanced modern input styles (keeping your exact original styles) */
+/* Enhanced modern input styles */
 .modern-number-input {
   background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
   border: 2px solid #e5e7eb !important;
@@ -1406,7 +1406,7 @@ const categoryLabelStyle = computed(() => ({
   -moz-appearance: textfield !important;
 }
 
-/* Enhanced slider styles (keeping your exact original styles) */
+/* Enhanced slider styles */
 .modern-slider {
   appearance: none !important;
   height: 8px !important;
