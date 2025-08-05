@@ -215,7 +215,7 @@ export class SimpleWallCulling {
     });
 
     // Hide the identified walls and their grid lines
-    wallsToHide.forEach(({ wall, direction }: WallToHide) => {
+    wallsToHide.forEach(({ wall }: WallToHide) => {
       // Hide the wall
       wall.visible = false;
 
@@ -225,18 +225,8 @@ export class SimpleWallCulling {
         gridLines.forEach(line => {
           line.visible = false;
         });
-
-        // Only log occasionally to avoid spam
-        if (Math.random() < 0.05) { // 5% chance
-          console.log(`🔄 Hiding ${direction} wall and ${gridLines.length} grid lines`);
-        }
       }
     });
-
-    // Debug output (occasional)
-    if (wallsToHide.length > 0 && Math.random() < 0.02) { // 2% chance
-      console.log(`📷 Camera at (${cameraPos.x.toFixed(1)}, ${cameraPos.z.toFixed(1)}) - Hiding: ${wallsToHide.map(w => w.direction).join(', ')}`);
-    }
   }
 
   dispose (): void {

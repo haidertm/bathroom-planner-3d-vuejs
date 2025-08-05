@@ -305,6 +305,11 @@ const productData: ProductData = {
           name: '1600x560mm',
           path: '../../models/radiator/31022.glb',
           dimensions: { width: 65.8, height: 163.2, depth: 11.3 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
           sku: '31022',
           price: '289.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x560mm'
