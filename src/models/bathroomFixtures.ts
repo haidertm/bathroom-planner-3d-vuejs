@@ -253,13 +253,13 @@ class ModelManager {
     texture.needsUpdate = true;
   }
 
-  // Get maximum anisotropic filtering supported
-  private getMaxAnisotropy(): number {
+  // ✅ NEW: Get maximum anisotropic filtering supported
+  private getMaxAnisotropy (): number {
     // This should be called with a renderer context, but we'll use a reasonable default
     return 16; // Most modern GPUs support 16x anisotropic filtering
   }
 
-  clearCache(): void {
+  clearCache (): void {
     this.cache = {};
     this.loadingPromises = {};
     this.preloadComplete = false;
@@ -282,13 +282,13 @@ class ModelBasedFixture {
   private position: Position;
   private config: ObjectModel;
 
-  constructor(position: Position, productModel: ObjectModel) {
+  constructor (position: Position, productModel: ObjectModel) {
     this.modelManager = ModelManager.getInstance();
     this.position = position;
     this.config = productModel;
   }
 
-  async create(): Promise<THREE.Group> {
+  async create (): Promise<THREE.Group> {
     const group = new THREE.Group();
     group.position.set(this.position[0], this.position[1], this.position[2]);
 
@@ -305,12 +305,12 @@ class ModelBasedFixture {
 
 // Main export function with dynamic configuration
 export const createModel = async (
-    type: ComponentType,
-    position: Position,
-    rotation: number = 0,
-    scale: number = 1.0,
-    productModel?: ObjectModel,
-    productSKU?: string
+  type: ComponentType,
+  position: Position,
+  rotation: number = 0,
+  scale: number = 1.0,
+  productModel?: ObjectModel,
+  productSKU?: string
 ): Promise<THREE.Group | null> => {
   try {
 
@@ -332,7 +332,7 @@ export const createModel = async (
   }
 };
 
-// Existing preload models function
+// Preload models function
 export const preloadModels = async (): Promise<void> => {
   const modelManager = ModelManager.getInstance();
   await modelManager.preloadModels();

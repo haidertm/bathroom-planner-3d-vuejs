@@ -29,12 +29,6 @@
         ✕
       </button>
 
-      <!-- Error Message (if any) - Compact and non-intrusive -->
-      <div v-if="errorMessage" :style="compactErrorStyle" @click="clearError">
-        <span>{{ errorMessage }}</span>
-        <button :style="closeErrorStyle">×</button>
-      </div>
-
       <!-- Bathroom Items Accordion -->
       <div :style="accordionSectionStyle">
         <div
@@ -900,38 +894,6 @@ const tinyStatusStyle = {
   fontSize: '8px',
   color: '#f59e0b',
   marginTop: '2px'
-}
-
-const tinyReadyStyle = {
-  fontSize: '8px',
-  color: '#10b981',
-  marginTop: '2px',
-  fontWeight: '500'
-}
-
-// NEW: Compact error style
-const compactErrorStyle = {
-  backgroundColor: '#fef2f2',
-  border: '1px solid #fecaca',
-  color: '#b91c1c',
-  padding: '6px 10px',
-  borderRadius: '4px',
-  margin: '8px 16px',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  cursor: 'pointer',
-  fontSize: '10px'
-}
-
-const closeErrorStyle = {
-  background: 'none',
-  border: 'none',
-  fontSize: '12px',
-  cursor: 'pointer',
-  color: '#b91c1c',
-  padding: '0',
-  marginLeft: '6px'
 }
 
 // Style helper methods (keeping your exact original styles)
