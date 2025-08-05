@@ -126,7 +126,7 @@
 
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Height: {{ safeToFixed(localRoomHeight, 0) }}cm
+                Length: {{ safeToFixed(localRoomHeight, 0) }}cm
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
