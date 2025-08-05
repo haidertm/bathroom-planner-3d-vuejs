@@ -581,28 +581,25 @@ export class EventHandlers {
       let constrainedRotation = this.selectedObject.rotation.y;
       let rotationChanged = false;
 
-    // ✅ CRITICAL FIX: Apply movement constraints using CLEAN productData-based functions
-    if (movementConfig.snapToWall) {
-      console.log('🔗 Applying WALL SNAPPING with productData dimensions for flush mounting');
+      // ✅ CRITICAL FIX: Apply movement constraints using CLEAN productData-based functions
+      if (movementConfig.snapToWall) {
 
-      // ✅ Pass the correct orientation from userData or model
-      const objectOrientation = this.selectedObject?.userData?.orientation ||
-                               currentItem?.model?.orientation ||
-                               { type: 'face_into_room', wallBuffer: 0 };
+        // ✅ Pass the correct orientation from userData or model
+        const objectOrientation = this.selectedObject?.userData?.orientation ||
+          currentItem?.model?.orientation ||
+          { type: 'face_into_room', wallBuffer: 0 };
 
-      console.log('🔧 Object orientation during drag:', objectOrientation);
-
-      const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
-        { x: newPosition.x, y: newPosition.y, z: newPosition.z },
-        this.roomWidthRef.value,
-        this.roomHeightRef.value,
-        {
-          type: objectType,
-          scale: objectScale,
-          orientation: objectOrientation, // ✅ Use the correct orientation
-          item: currentItem // 🔧 Pass full item data for productData lookup
-        }
-      );
+        const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          {
+            type: objectType,
+            scale: objectScale,
+            orientation: objectOrientation, // ✅ Use the correct orientation
+            item: currentItem // 🔧 Pass full item data for productData lookup
+          }
+        );
 
         constrainedPosition.x = wallConstrainedPos.x;
         constrainedPosition.z = wallConstrainedPos.z;
@@ -621,18 +618,18 @@ export class EventHandlers {
           rotationChanged = true;
         }
 
-      // ✅ DEBUG: Log the wall constraint result
-      console.log('🔧 Wall constraint result during drag:', {
-        objectType,
-        sku: currentItem?.sku,
-        wallBuffer: objectOrientation.wallBuffer,
-        originalPos: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
-        constrainedPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
-        shouldBeFlush: objectOrientation.wallBuffer === 0
-      });
+        // ✅ DEBUG: Log the wall constraint result
+        console.log('🔧 Wall constraint result during drag:', {
+          objectType,
+          sku: currentItem?.sku,
+          wallBuffer: objectOrientation.wallBuffer,
+          originalPos: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
+          constrainedPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
+          shouldBeFlush: objectOrientation.wallBuffer === 0
+        });
 
-    } else {
-      console.log('🎯 Applying FREE MOVEMENT with productData dimensions');
+      } else {
+        console.log('🎯 Applying FREE MOVEMENT with productData dimensions');
 
         const { position: roomConstrainedPos } = constrainToRoom(
           { x: newPosition.x, y: newPosition.y, z: newPosition.z },
@@ -686,15 +683,15 @@ export class EventHandlers {
 
       this.queueUpdate(itemId, updateData);
 
-    console.log('🔧 CLEAN DRAG result using productData:', {
-      objectType,
-      sku: currentItem?.sku,
-      position: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
-      isColliding: isColliding ? 'YES (walls/objects)' : 'NO',
-      isFlushMounted: currentItem?.model?.orientation?.wallBuffer === 0
-    });
+      console.log('🔧 CLEAN DRAG result using productData:', {
+        objectType,
+        sku: currentItem?.sku,
+        position: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
+        isColliding: isColliding ? 'YES (walls/objects)' : 'NO',
+        isFlushMounted: currentItem?.model?.orientation?.wallBuffer === 0
+      });
 
-  } else if (this.isRotating) {
+    } else if (this.isRotating) {
       // Camera rotation logic (unchanged)
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;

@@ -182,13 +182,13 @@ export const checkWallCollision = (
 
   // Calculate actual object bounds using productData dimensions
   const halfWidth = (dimensions.width * scale) / 2;
-  const halfDepth = (dimensions.depth * scale) / 2;
+  // const halfDepth = (dimensions.depth * scale) / 2;
 
   // Object bounding box
   const objectMinX = position.x - halfWidth;
   const objectMaxX = position.x + halfWidth;
-  const objectMinZ = position.z - halfDepth;
-  const objectMaxZ = position.z + halfDepth;
+  const objectMinZ = position.z - halfWidth;
+  const objectMaxZ = position.z + halfWidth;
 
   // Room interior boundaries (where objects can be placed)
   const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
@@ -577,14 +577,14 @@ export const constrainToWalls = (
   switch (nearestWall) {
     case 'north':
       // ✅ Only modify Z coordinate for north wall
-      console.log('isFlushMounted>>>>', isFlushMounted);
+      console.log(':::: isFlushMounted>>>>', isFlushMounted);
       if (isFlushMounted) {
         constrainedPosition.z = wallFaces.north;
       } else {
         constrainedPosition.z = wallFaces.north + halfDepth + wallBuffer;
       }
 
-      console.log('constrainedPosition.z>>>>>', constrainedPosition.z, constrainedPosition);
+      console.log(' :::: constrainedPosition.z>>>>>', constrainedPosition.z, constrainedPosition);
 
       // ✅ CRITICAL FIX: Only constrain X if object would actually extend beyond room bounds
       const wouldExtendWest = position.x - halfWidth < interior.minX;
@@ -595,11 +595,11 @@ export const constrainToWalls = (
           interior.minX + halfWidth,
           Math.min(interior.maxX - halfWidth, position.x)
         );
-        console.log(`🔧 X constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+        console.log(`🔧 :::: X constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
       } else {
         // ✅ PRESERVE original X coordinate
         constrainedPosition.x = position.x;
-        console.log(`🎯 X preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
+        console.log(`🎯 :::: X preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
       }
 
       wallRotation = getObjectRotationForWall(objectType, 'north', orientation);
@@ -622,10 +622,10 @@ export const constrainToWalls = (
           interior.minX + halfWidth,
           Math.min(interior.maxX - halfWidth, position.x)
         );
-        console.log(`🔧 X constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+        console.log(`🔧 X :::: constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
       } else {
         constrainedPosition.x = position.x;
-        console.log(`🎯 X preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
+        console.log(`🎯 X :::: preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
       }
 
       wallRotation = getObjectRotationForWall(objectType, 'south', orientation);
@@ -640,18 +640,18 @@ export const constrainToWalls = (
       }
 
       // ✅ Only constrain Z if object would actually extend beyond room bounds
-      const wouldExtendNorth = position.z - halfDepth < interior.minZ;
-      const wouldExtendSouth = position.z + halfDepth > interior.maxZ;
+      const wouldExtendNorth = position.z - halfWidth < interior.minZ;
+      const wouldExtendSouth = position.z + halfWidth > interior.maxZ;
 
       if (wouldExtendNorth || wouldExtendSouth) {
         constrainedPosition.z = Math.max(
-          interior.minZ + halfDepth,
-          Math.min(interior.maxZ - halfDepth, position.z)
+          interior.minZ + halfWidth,
+          Math.min(interior.maxZ - halfWidth, position.z)
         );
-        console.log(`🔧 Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+        console.log(`🔧 :::: Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
       } else {
         constrainedPosition.z = position.z;
-        console.log(`🎯 Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
+        console.log(`🎯 :::: Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
       }
 
       wallRotation = getObjectRotationForWall(objectType, 'east', orientation);
@@ -666,18 +666,18 @@ export const constrainToWalls = (
       }
 
       // ✅ Only constrain Z if object would actually extend beyond room bounds
-      const wouldExtendNorthWest = position.z - halfDepth < interior.minZ;
-      const wouldExtendSouthWest = position.z + halfDepth > interior.maxZ;
+      const wouldExtendNorthWest = position.z - halfWidth < interior.minZ;
+      const wouldExtendSouthWest = position.z + halfWidth > interior.maxZ;
 
       if (wouldExtendNorthWest || wouldExtendSouthWest) {
         constrainedPosition.z = Math.max(
-          interior.minZ + halfDepth,
-          Math.min(interior.maxZ - halfDepth, position.z)
+          interior.minZ + halfWidth,
+          Math.min(interior.maxZ - halfWidth, position.z)
         );
-        console.log(`🔧 Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+        console.log(`🔧 :::: Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
       } else {
         constrainedPosition.z = position.z;
-        console.log(`🎯 Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
+        console.log(`🎯 :::: Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
       }
 
       wallRotation = getObjectRotationForWall(objectType, 'west', orientation);
@@ -693,7 +693,7 @@ export const constrainToWalls = (
     constrainedPosition.y = movementConfig.minHeight || 0;
   }
 
-  console.log(`🔧 FIXED CONSTRAINT result for ${objectType}:`, {
+  console.log(`🔧 :::: FIXED CONSTRAINT result for ${objectType}:`, {
     nearestWall,
     isFlushMounted,
     originalPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },

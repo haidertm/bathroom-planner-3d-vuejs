@@ -2,6 +2,7 @@
 // Easy integration utility for adding wall direction labels to your existing 3D scene
 
 import * as THREE from 'three';
+import { WALL_SETTINGS } from '../constants/dimensions.js';
 
 export class WallLabelsDebug {
   constructor() {
@@ -30,8 +31,8 @@ export class WallLabelsDebug {
     this.enabled = true;
     const roomHalfWidth = roomWidth / 2;
     const roomHalfHeight = roomHeight / 2;
-    const wallHeight = 250; // Matches your WALL_SETTINGS.HEIGHT
-    const wallThickness = 5; // Matches your WALL_SETTINGS.THICKNESS
+    const wallHeight = WALL_SETTINGS.HEIGHT; // Matches your WALL_SETTINGS.HEIGHT
+    const wallThickness = WALL_SETTINGS.THICKNESS; // Matches your WALL_SETTINGS.THICKNESS
     const wallOffset = wallThickness / 2;
 
     // Label configurations matching your interior walls system

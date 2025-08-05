@@ -203,16 +203,19 @@ export const createWallGridLines = (
  */
 export const createWalls = (
   roomWidth: number,
-  roomHeight: number,
+  roomHeight: number, // Length of the room
   wallMaterial: THREE.Material
 ): THREE.Mesh[] => {
   console.log('🏗️ Creating interior walls with dimensions:', { roomWidth, roomHeight });
 
   const { HEIGHT: wallHeight, THICKNESS: wallThickness } = WALL_SETTINGS;
 
+  console.log('room>>>>>Specs', { roomWidth, roomHeight });
+  console.log('wall>>>>>Specs', { HEIGHT: wallHeight, THICKNESS: wallThickness });
+
   // Calculate half dimensions for positioning
   const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
+  const roomHalfLength = roomHeight / 2;
 
   // Calculate wall positions - INTERIOR APPROACH
   // Walls sit INSIDE the floor boundaries
@@ -224,12 +227,12 @@ export const createWalls = (
     {
       // North wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
-      position: [0, wallHeight / 2, -roomHalfHeight + wallOffset]
+      position: [0, wallHeight / 2, -roomHalfLength + wallOffset]
     },
     {
       // South wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
-      position: [0, wallHeight / 2, roomHalfHeight - wallOffset]
+      position: [0, wallHeight / 2, roomHalfLength - wallOffset]
     },
     {
       // East wall - inner face at room boundary
