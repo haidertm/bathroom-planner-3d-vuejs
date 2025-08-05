@@ -43,7 +43,7 @@
       </div>
 
       <!-- Loading Error Display -->
-      <div v-if="loadingError && isLoading" :style="errorBannerStyle">
+      <div v-if="loadingError" :style="errorBannerStyle">
         <span>{{ loadingError }}</span>
         <button @click="$emit('retry-loading')" :style="retryButtonStyle">
           Retry

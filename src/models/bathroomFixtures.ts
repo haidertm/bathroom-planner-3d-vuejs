@@ -87,9 +87,12 @@ class ModelManager {
     });
 
     await Promise.all(preloadPromises);
-    this.preloadedCategories.add(category);
-
-    console.log(`🎉 ${category} preloading complete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
+    if (failedCount === 0) {
+        this.preloadedCategories.add(category);
+        console.log(`🎉 ${category} preloading complete! All ${loadedCount} models loaded successfully`);
+      } else {
+        console.warn(`⚠️ ${category} preloading incomplete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
+      }
   }
 
   // Existing preloadModels method (keep for backward compatibility)
