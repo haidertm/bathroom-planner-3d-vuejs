@@ -369,7 +369,7 @@ export class MeasurementSystem {
       // Object against north/south wall
       labels.push({
         id: 'object-width',
-        text: `${Math.round(objectWidth)} cm`,
+        text: `${objectWidth} cm`,
         position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
         direction: 'horizontal',
         color: '#ff6b35',
@@ -409,7 +409,7 @@ export class MeasurementSystem {
       // Object against east/west wall
       labels.push({
         id: 'object-width',
-        text: `${Math.round(objectWidth)} cm`,
+        text: `${objectWidth} cm`,
         position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
         direction: 'horizontal',
         color: '#ff6b35',
