@@ -3,6 +3,8 @@
 import * as THREE from 'three';
 import { type MeasurementData, MeasurementSystem } from './measurementSystem';
 import { createModel } from '../models/bathroomFixtures';
+import { WallLabelsDebug } from '../utils/wallLabelsDebug.js';
+import { AxisIndicatorsDebug } from '../utils/axisIndicatorsDebug.js';
 import {
   createFloor,
   createWalls,
@@ -56,10 +58,17 @@ export class SceneManager {
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
 
+  private wallLabelsDebug: WallLabelsDebug | null = null;
+  private axisIndicatorsDebug: AxisIndicatorsDebug | null = null;
+  public debugLabelsEnabled: boolean = false; // Set to true for debugging
+
   constructor () {
     this.wallCullingManager = new SimpleWallCulling();
     this.bathroomItemsGroup = new THREE.Group();
     this.bathroomItemsGroup.name = 'bathroomItems';
+    this.wallLabelsDebug = new WallLabelsDebug();
+    this.axisIndicatorsDebug = new AxisIndicatorsDebug(); // Add this
+    this.debugLabelsEnabled = false;
   }
 
   initializeScene (): SceneComponents {
@@ -212,7 +221,27 @@ export class SceneManager {
     const scale = item.scale || 1.0;
     model.scale.set(scale, scale, scale);
 
-    console.log(`✅ Updated item ${item.id} properties`);
+    // ✅ CRITICAL FIX: Ensure orientation data is maintained in userData
+    if (!model.userData.orientation && item.model?.orientation) {
+      model.userData.orientation = item.model.orientation;
+      console.log(`✅ Restored orientation data to existing model ${item.id}:`, model.userData.orientation);
+    }
+
+    // ✅ Also ensure other critical userData is maintained
+    if (!model.userData.sku && item.sku) {
+      model.userData.sku = item.sku;
+    }
+
+    if (!model.userData.model && item.model) {
+      model.userData.model = item.model;
+    }
+
+    console.log(`✅ Updated item ${item.id} properties with preserved orientation:`, {
+      position: model.position,
+      rotation: model.rotation.y,
+      scale: model.scale.x,
+      orientation: model.userData.orientation
+    });
   }
 
   // Helper method to properly dispose of models
@@ -261,6 +290,26 @@ export class SceneManager {
         model.userData.isBathroomItem = true;
         model.userData.itemId = item.id;
         model.userData.type = item.type;
+
+        // ✅ CRITICAL FIX: Store orientation data in userData (same as updateBathroomItems)
+        model.userData.orientation = getOrientationForItem(item);
+
+        // ✅ ALSO STORE: Additional data for debugging and drag operations
+        if (item.sku) {
+          model.userData.sku = item.sku;
+        }
+
+        if (item.model) {
+          model.userData.model = item.model;
+        }
+
+        console.log(`✅ Stored orientation in addSingleItem:`, model.userData.orientation);
+        console.log(`✅ All userData stored:`, {
+          itemId: model.userData.itemId,
+          type: model.userData.type,
+          sku: model.userData.sku,
+          orientation: model.userData.orientation
+        });
 
         this.debugModelVisibility(model, item);
         this.enhanceModelMaterials(model);
@@ -486,6 +535,14 @@ export class SceneManager {
     const wallMaterial = this.createEnhancedWallMaterial(wallTexture);
     this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
     this.wallRefs.forEach(wall => this.scene!.add(wall));
+    this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+    // NEW: Add axis indicators
+    this.axisIndicatorsDebug.createAxisIndicators(
+      this.scene,
+      roomWidth,
+      roomHeight,
+      this.debugLabelsEnabled
+    );
 
     // Update wall culling manager with new walls and room size
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
@@ -494,6 +551,10 @@ export class SceneManager {
     if (this.measurementSystem) {
       this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
     }
+  }
+
+  updateLabels (roomWidth: number, roomHeight: number): void {
+    this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
   }
 
   private createEnhancedWallMaterial (wallTexture: TextureConfig): THREE.MeshStandardMaterial {
@@ -573,11 +634,11 @@ export class SceneManager {
     this.wallGridVisible = showWallGrid;
 
     if (this.wallRefs.length > 0) {
-      console.log('📊 Available walls:', this.wallRefs.map(wall => ({
-        name: wall.name,
-        direction: wall.userData.wallDirection,
-        position: wall.position
-      })));
+      // console.log('📊 Available walls:', this.wallRefs.map(wall => ({
+      //   name: wall.name,
+      //   direction: wall.userData.wallDirection,
+      //   position: wall.position
+      // })));
 
       try {
         let totalWallGridLines = 0;
