@@ -19,6 +19,7 @@ export type ObjectModel = {
   title?: string;
   id?: string;
   image?: string;
+  link?: string;
   sku?: string;
   scale?: number;
   price?: number | string;
