@@ -933,14 +933,10 @@ const getWallPositionY = (movementConfig: MovementConfig, objectSpawnHeight?: nu
   const minHeight = movementConfig.minHeight ?? 0;
 
   if (!objectSpawnHeight && objectSpawnHeight !== 0) {
-    return minHeight; // Floor level for most objects
+    return minHeight; // Default to minimum height when no spawn height specified
   }
-
-  if (objectSpawnHeight > minHeight) {
-    return minHeight; // Use specified spawn height if available
-  }
-
-  return objectSpawnHeight;
+  // Use spawn height but ensure it's at least at minimum height
+  return Math.max(objectSpawnHeight, minHeight);
 };
 
 /**
