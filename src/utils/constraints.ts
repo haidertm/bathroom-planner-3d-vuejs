@@ -1,5 +1,5 @@
 // src/utils/constraints.ts - ENHANCED with proper movement integration
-import { CONSTRAINTS, WALL_SETTINGS } from '../constants/dimensions';
+import { WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { getMovementConfig } from '../utils/models';
 import { type OrientationConfig, MovementConfig, DEFAULT_ORIENTATION } from '../constants/models';
@@ -47,6 +47,29 @@ export interface BathroomItem {
   productName?: string;
   model?: ObjectModel;
 }
+
+/**
+ * Enhanced collision detection that includes walls
+ */
+export const wouldCollideWithExistingOrWalls = (
+  position: Position,
+  objectType: ComponentType,
+  scale: number,
+  objectId: number,
+  existingItems: BathroomItem[],
+  roomWidth: number,
+  roomHeight: number,
+  currentItem?: BathroomItem
+): boolean => {
+
+  // 1. Check wall collision using actual dimensions
+  if (checkWallCollision(position, objectType, scale, roomWidth, roomHeight, currentItem)) {
+    return true;
+  }
+
+  // 2. Check collision with existing objects
+  return wouldCollideWithExisting(position, objectType, scale, objectId, existingItems, currentItem);
+};
 
 // Function to get dimensions for a specific product
 const getProductDimensions = (sku: string, type: ComponentType): {
@@ -116,6 +139,124 @@ export interface WallInfo {
   position: Position;
   distance: number;
 }
+
+// Helper function to get orientation from product data (if not already available)
+const getOrientationFromProductData = (sku?: string, objectType?: ComponentType): OrientationConfig | null => {
+  if (!sku || !objectType || !productData[objectType]) {
+    return null;
+  }
+
+  // Search through products to find the SKU and its orientation
+  for (const product of productData[objectType]) {
+    if (product.variants) {
+      for (const variant of product.variants) {
+        if (variant.sku === sku && variant.orientation) {
+          return variant.orientation;
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Enhanced wall collision detection that accounts for flush-mounted objects
+ */
+export const checkWallCollision = (
+  position: Position,
+  objectType: ComponentType,
+  scale: number,
+  roomWidth: number,
+  roomHeight: number,
+  item?: BathroomItem
+): boolean => {
+
+  const dimensions = getDimensions(objectType, item?.sku, item?.model);
+  if (!dimensions) return false;
+
+  // Get orientation config to check if object is flush-mounted
+  const orientationConfig = item?.model?.orientation || getOrientationFromProductData(item?.sku, objectType) || DEFAULT_ORIENTATION;
+  const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
+  const isFlushMounted = wallBuffer === 0;
+
+  // Calculate actual object bounds using productData dimensions
+  const halfWidth = (dimensions.width * scale) / 2;
+  // const halfDepth = (dimensions.depth * scale) / 2;
+
+  // Object bounding box
+  const objectMinX = position.x - halfWidth;
+  const objectMaxX = position.x + halfWidth;
+  const objectMinZ = position.z - halfWidth;
+  const objectMaxZ = position.z + halfWidth;
+
+  // Room interior boundaries (where objects can be placed)
+  const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
+
+  // Check if object extends beyond interior boundaries
+  const collideWest = objectMinX < interior.minX;
+  const collideEast = objectMaxX > interior.maxX;
+  const collideNorth = objectMinZ < interior.minZ;
+  const collideSouth = objectMaxZ > interior.maxZ;
+
+  // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
+  if (isFlushMounted) {
+    // Calculate distances to each wall face
+    const wallDistances = {
+      north: Math.abs(position.z - wallFaces.north),
+      south: Math.abs(position.z - wallFaces.south),
+      east: Math.abs(position.x - wallFaces.east),
+      west: Math.abs(position.x - wallFaces.west)
+    };
+
+    // Find the nearest wall
+    const nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+      wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+    )[0] as 'north' | 'south' | 'east' | 'west';
+
+    // Tolerance for flush mounting (2cm)
+    const flushTolerance = 2;
+
+    // Check if object is properly flush-mounted to the nearest wall
+    const isProperlyFlushMounted = wallDistances[nearestWall] <= flushTolerance;
+
+    if (isProperlyFlushMounted) {
+      // For flush-mounted objects positioned correctly, only check collisions on non-wall sides
+      switch (nearestWall) {
+        case 'north':
+          // Object is flush against north wall, only check east/west/south collisions
+          return collideEast || collideWest || collideSouth;
+        case 'south':
+          // Object is flush against south wall, only check east/west/north collisions
+          return collideEast || collideWest || collideNorth;
+        case 'east':
+          // Object is flush against east wall, only check north/south/west collisions
+          return collideNorth || collideSouth || collideWest;
+        case 'west':
+          // Object is flush against west wall, only check north/south/east collisions
+          return collideNorth || collideSouth || collideEast;
+      }
+    }
+  }
+
+  // Standard collision detection for non-flush-mounted objects or improperly positioned flush-mounted objects
+  const hasWallCollision = collideWest || collideEast || collideNorth || collideSouth;
+
+  if (hasWallCollision) {
+    console.log('🔴 WALL COLLISION:', {
+      objectType,
+      isFlushMounted,
+      productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
+      scaledSize: `${(dimensions.width * scale).toFixed(1)} × ${(dimensions.depth * scale).toFixed(1)}cm`,
+      position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+      collisions: { west: collideWest, east: collideEast, north: collideNorth, south: collideSouth }
+    });
+  }
+
+  return hasWallCollision;
+};
+
+
 
 // ENHANCED: Collision detection with product-specific dimensions
 export const checkCollision = (
@@ -294,8 +435,7 @@ export const wouldCollideWithExisting = (
 };
 
 /**
- * UPDATED: Constrain movement to room bounds for free-standing objects
- * Now uses interior boundaries
+ * Clean room constraint using ONLY productData.ts values
  */
 export const constrainToRoom = (
   position: Position,
@@ -314,66 +454,64 @@ export const constrainToRoom = (
   }
 ): { position: Position; rotation: number } => {
 
-  const movementConfig = objectType ? getMovementConfig(objectType, item) : null;
+  if (!objectType) return { position, rotation: 0 };
+
+  console.warn(`orientation`, orientation);
+
+  const dimensions = getDimensions(objectType, item?.sku, item?.model);
+  if (!dimensions) {
+    console.warn(`No dimensions found for ${objectType}, using fallback`);
+    return { position, rotation: 0 };
+  }
+
+  const movementConfig = getMovementConfig(objectType, item);
   const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  // Get object dimensions for boundary calculation
-  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) / 2 : CONSTRAINTS.OBJECT_BUFFER;
+  // Use actual product dimensions
+  const halfWidth = (dimensions.width * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
 
-  // Calculate the boundaries within INTERIOR space
-  const minX = interior.minX + buffer;
-  const maxX = interior.maxX - buffer;
-  const minZ = interior.minZ + buffer;
-  const maxZ = interior.maxZ - buffer;
+  console.log(`🏠 Room constraint using productData for ${objectType}:`, {
+    productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
+    scaledHalfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
+    sku: item?.sku
+  });
 
-  // Constrain position to interior boundaries
+  // Calculate constrained position using actual object size
   const constrainedPosition = {
-    x: Math.max(minX, Math.min(maxX, position.x)),
+    x: Math.max(
+      interior.minX + halfWidth,
+      Math.min(interior.maxX - halfWidth, position.x)
+    ),
     y: Math.max(0, position.y),
-    z: Math.max(minZ, Math.min(maxZ, position.z))
+    z: Math.max(
+      interior.minZ + halfDepth,
+      Math.min(interior.maxZ - halfDepth, position.z)
+    )
   };
 
-  // Handle vertical position based on movement configuration
+  // Handle vertical movement
   if (movementConfig) {
     if (!movementConfig.allowVerticalMovement) {
-      // Force free-standing objects to floor level
-      constrainedPosition.y = 0;
+      constrainedPosition.y = 0; // Keep on floor
     } else {
-      // Allow vertical movement within limits
       const minHeight = movementConfig.minHeight || 0;
       const maxHeight = movementConfig.maxHeight || 250;
       constrainedPosition.y = Math.max(minHeight, Math.min(maxHeight, position.y));
     }
-  } else {
-    // Default: keep above floor
-    constrainedPosition.y = Math.max(0, position.y);
   }
 
-  // For room-constrained objects, maintain current rotation
-  // (no automatic rotation based on position)
-  const currentRotation = 0; // Default rotation for free objects
-
-  console.log(`🏠 Interior room constraint applied to ${objectType}:`, {
-    original: { x: position.x.toFixed(1), y: position.y.toFixed(1), z: position.z.toFixed(1) },
-    constrained: {
-      x: constrainedPosition.x.toFixed(1),
-      y: constrainedPosition.y.toFixed(1),
-      z: constrainedPosition.z.toFixed(1)
-    },
-    interiorBounds: {
-      x: `${minX.toFixed(1)} to ${maxX.toFixed(1)}`,
-      z: `${minZ.toFixed(1)} to ${maxZ.toFixed(1)}`
-    },
-    movementType: movementConfig?.snapToWall ? 'WALL-SNAPPED' : 'FREE-STANDING'
+  console.log(`🏠 Room constraint result:`, {
+    originalPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+    constrainedPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
+    objectBounds: `${halfWidth.toFixed(1)}cm from center`
   });
 
-  return { position: constrainedPosition, rotation: currentRotation };
+  return { position: constrainedPosition, rotation: 0 };
 };
 
-
-
 /**
- * UPDATED: Constrain movement to walls using interior wall system
+ * ✅ FIXED: Clean wall constraint for flush-mounted objects
  */
 export const constrainToWalls = (
   position: Position,
@@ -392,90 +530,187 @@ export const constrainToWalls = (
   }
 ): { position: Position; rotation: number } => {
 
-  console.log('🔗 Constraining to interior walls:', objectType, { scale, orientation: orientation?.type });
+  if (!objectType) return { position, rotation: 0 };
 
-  const movementConfig = objectType ? getMovementConfig(objectType, item) : null;
-  const buffer = objectType ? getObjectWallBuffer({ orientation, scale }) : CONSTRAINTS.OBJECT_BUFFER;
+  const dimensions = getDimensions(objectType, item?.sku, item?.model);
+  if (!dimensions) {
+    console.warn(`No dimensions found for ${objectType}, using fallback`);
+    return { position, rotation: 0 };
+  }
+
+  const movementConfig = getMovementConfig(objectType, item);
   const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  // Wall positions for wall-mounted objects (inner faces + buffer)
-  const wallPositions = {
-    north: wallFaces.north - buffer,
-    south: wallFaces.south + buffer,
-    east: wallFaces.east - buffer,
-    west: wallFaces.west + buffer
-  };
+  // Use actual product dimensions
+  const halfWidth = (dimensions.width * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
+
+  // Use wallBuffer from productData orientation config, or 0 if not specified
+  const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+  const isFlushMounted = wallBuffer === 0;
+
+  console.log(`🔧 FIXED WALL CONSTRAINT for ${objectType}:`, {
+    originalPosition: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+    productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
+    halfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
+    wallBuffer: wallBuffer.toFixed(1) + 'cm',
+    isFlushMounted,
+    sku: item?.sku
+  });
 
   // Calculate distances to each wall
-  const distanceToNorth = Math.abs(position.z - wallPositions.north);
-  const distanceToSouth = Math.abs(position.z - wallPositions.south);
-  const distanceToEast = Math.abs(position.x - wallPositions.east);
-  const distanceToWest = Math.abs(position.x - wallPositions.west);
+  const wallDistances = {
+    north: Math.abs(position.z - wallFaces.north),
+    south: Math.abs(position.z - wallFaces.south),
+    east: Math.abs(position.x - wallFaces.east),
+    west: Math.abs(position.x - wallFaces.west)
+  };
 
-  // Find the closest wall
-  const minDistance = Math.min(distanceToNorth, distanceToSouth, distanceToEast, distanceToWest);
+  const nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+    wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+  )[0] as 'north' | 'south' | 'east' | 'west';
 
-  let constrainedPosition = { ...position };
+  let constrainedPosition = { ...position }; // ✅ Start with original position
   let wallRotation = 0;
-  let wallType: 'north' | 'south' | 'east' | 'west' = 'south';
 
-  if (minDistance === distanceToNorth) {
-    // Snap to north wall
-    constrainedPosition.z = wallPositions.north;
-    constrainedPosition.x = Math.max(interior.minX, Math.min(interior.maxX, position.x));
-    wallType = 'north';
-  } else if (minDistance === distanceToSouth) {
-    // Snap to south wall
-    constrainedPosition.z = wallPositions.south;
-    constrainedPosition.x = Math.max(interior.minX, Math.min(interior.maxX, position.x));
-    wallType = 'south';
-  } else if (minDistance === distanceToEast) {
-    // Snap to east wall
-    constrainedPosition.x = wallPositions.east;
-    constrainedPosition.z = Math.max(interior.minZ, Math.min(interior.maxZ, position.z));
-    wallType = 'east';
+  // ✅ FIXED: Only constrain the coordinate affected by the specific wall
+  switch (nearestWall) {
+    case 'north':
+      // ✅ Only modify Z coordinate for north wall
+      console.log(':::: isFlushMounted>>>>', isFlushMounted);
+      if (isFlushMounted) {
+        constrainedPosition.z = wallFaces.north;
+      } else {
+        constrainedPosition.z = wallFaces.north + halfDepth + wallBuffer;
+      }
+
+      console.log(' :::: constrainedPosition.z>>>>>', constrainedPosition.z, constrainedPosition);
+
+      // ✅ CRITICAL FIX: Only constrain X if object would actually extend beyond room bounds
+      const wouldExtendWest = position.x - halfWidth < interior.minX;
+      const wouldExtendEast = position.x + halfWidth > interior.maxX;
+
+      if (wouldExtendWest || wouldExtendEast) {
+        constrainedPosition.x = Math.max(
+          interior.minX + halfWidth,
+          Math.min(interior.maxX - halfWidth, position.x)
+        );
+        console.log(`🔧 :::: X constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+      } else {
+        // ✅ PRESERVE original X coordinate
+        constrainedPosition.x = position.x;
+        console.log(`🎯 :::: X preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
+      }
+
+      wallRotation = getObjectRotationForWall(objectType, 'north', orientation);
+      break;
+
+    case 'south':
+      // ✅ Only modify Z coordinate for south wall
+      if (isFlushMounted) {
+        constrainedPosition.z = wallFaces.south;
+      } else {
+        constrainedPosition.z = wallFaces.south - halfDepth - wallBuffer;
+      }
+
+      // ✅ Only constrain X if object would actually extend beyond room bounds
+      const wouldExtendWestSouth = position.x - halfWidth < interior.minX;
+      const wouldExtendEastSouth = position.x + halfWidth > interior.maxX;
+
+      if (wouldExtendWestSouth || wouldExtendEastSouth) {
+        constrainedPosition.x = Math.max(
+          interior.minX + halfWidth,
+          Math.min(interior.maxX - halfWidth, position.x)
+        );
+        console.log(`🔧 X :::: constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+      } else {
+        constrainedPosition.x = position.x;
+        console.log(`🎯 X :::: preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
+      }
+
+      wallRotation = getObjectRotationForWall(objectType, 'south', orientation);
+      break;
+
+    case 'east':
+      // ✅ Only modify X coordinate for east wall
+      if (isFlushMounted) {
+        constrainedPosition.x = wallFaces.east;
+      } else {
+        constrainedPosition.x = wallFaces.east - halfDepth - wallBuffer;
+      }
+
+      // ✅ Only constrain Z if object would actually extend beyond room bounds
+      const wouldExtendNorth = position.z - halfWidth < interior.minZ;
+      const wouldExtendSouth = position.z + halfWidth > interior.maxZ;
+
+      if (wouldExtendNorth || wouldExtendSouth) {
+        constrainedPosition.z = Math.max(
+          interior.minZ + halfWidth,
+          Math.min(interior.maxZ - halfWidth, position.z)
+        );
+        console.log(`🔧 :::: Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+      } else {
+        constrainedPosition.z = position.z;
+        console.log(`🎯 :::: Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
+      }
+
+      wallRotation = getObjectRotationForWall(objectType, 'east', orientation);
+      break;
+
+    case 'west':
+      // ✅ Only modify X coordinate for west wall
+      if (isFlushMounted) {
+        constrainedPosition.x = wallFaces.west;
+      } else {
+        constrainedPosition.x = wallFaces.west + halfDepth + wallBuffer;
+      }
+
+      // ✅ Only constrain Z if object would actually extend beyond room bounds
+      const wouldExtendNorthWest = position.z - halfWidth < interior.minZ;
+      const wouldExtendSouthWest = position.z + halfWidth > interior.maxZ;
+
+      if (wouldExtendNorthWest || wouldExtendSouthWest) {
+        constrainedPosition.z = Math.max(
+          interior.minZ + halfWidth,
+          Math.min(interior.maxZ - halfWidth, position.z)
+        );
+        console.log(`🔧 :::: Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+      } else {
+        constrainedPosition.z = position.z;
+        console.log(`🎯 :::: Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
+      }
+
+      wallRotation = getObjectRotationForWall(objectType, 'west', orientation);
+      break;
+  }
+
+  // Handle vertical positioning
+  if (movementConfig.allowVerticalMovement) {
+    const minHeight = movementConfig.minHeight || 0;
+    const maxHeight = movementConfig.maxHeight || 250;
+    constrainedPosition.y = Math.max(minHeight, Math.min(maxHeight, position.y));
   } else {
-    // Snap to west wall
-    constrainedPosition.x = wallPositions.west;
-    constrainedPosition.z = Math.max(interior.minZ, Math.min(interior.maxZ, position.z));
-    wallType = 'west';
+    constrainedPosition.y = movementConfig.minHeight || 0;
   }
 
-  // Handle vertical position based on movement configuration
-  if (movementConfig) {
-    if (movementConfig.allowVerticalMovement) {
-      // Allow vertical movement within specified limits
-      const minHeight = movementConfig.minHeight || 0;
-      const maxHeight = movementConfig.maxHeight || 250;
-      constrainedPosition.y = Math.max(minHeight, Math.min(maxHeight, position.y));
-    } else {
-      // Force to floor level or specific height
-      constrainedPosition.y = movementConfig.minHeight || 0;
-    }
-  } else {
-    // Default: keep at floor level
-    constrainedPosition.y = Math.max(0, position.y);
-  }
-
-  // Calculate rotation based on wall and orientation
-  if (objectType) {
-    wallRotation = getObjectRotationForWall(objectType, wallType, orientation);
-  }
-
-  console.log(`🔗 Interior wall constraint result for ${objectType}:`, {
-    wallType,
-    wallFacePosition: wallFaces[wallType],
-    objectPosition: {
-      x: constrainedPosition.x.toFixed(1),
-      y: constrainedPosition.y.toFixed(1),
-      z: constrainedPosition.z.toFixed(1)
+  console.log(`🔧 :::: FIXED CONSTRAINT result for ${objectType}:`, {
+    nearestWall,
+    isFlushMounted,
+    originalPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+    finalPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
+    coordinateChanges: {
+      x: position.x !== constrainedPosition.x ? `${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}` : 'preserved',
+      z: position.z !== constrainedPosition.z ? `${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}` : 'preserved'
     },
-    rotation: `${(wallRotation * 180 / Math.PI).toFixed(0)}°`,
-    buffer: `${buffer.toFixed(1)}cm`
+    wallFacePosition: wallFaces[nearestWall].toFixed(1) + 'cm',
+    backEdgePosition: nearestWall === 'north' || nearestWall === 'south' ?
+      (nearestWall === 'north' ? (constrainedPosition.z - halfDepth).toFixed(1) : (constrainedPosition.z + halfDepth).toFixed(1)) + 'cm' :
+      (nearestWall === 'east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
   });
 
   return { position: constrainedPosition, rotation: wallRotation };
 };
+
 
 // Snap position to the nearest wall (same as constrainToWalls)
 export const snapToNearestWall = (

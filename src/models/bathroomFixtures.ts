@@ -17,7 +17,7 @@ interface LoadingPromise {
   [key: string]: Promise<THREE.Group>;
 }
 
-type Position = [number, number, number];
+export type Position = [number, number, number];
 
 // Singleton model manager with dynamic loading
 class ModelManager {

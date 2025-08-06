@@ -77,18 +77,18 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
   floorGridGroup.position.y = 0; // Position at floor level
   floorGridGroup.name = 'FloorGrid'; // Add name for debugging
 
-  console.log('✅ Floor grid created:', {
-    lineCount,
-    groupPosition: floorGridGroup.position,
-    groupName: floorGridGroup.name,
-    children: floorGridGroup.children.length
-  });
+  // console.log('✅ Floor grid created:', {
+  //   lineCount,
+  //   groupPosition: floorGridGroup.position,
+  //   groupName: floorGridGroup.name,
+  //   children: floorGridGroup.children.length
+  // });
 
   // FIXED: Return only the floor grid group
   return floorGridGroup;
 };
 
-/**
+ /**
  * UPDATED CONSTRAINT FUNCTIONS for interior walls
  */
 
@@ -190,7 +190,7 @@ export const createWallGridLines = (
     }
   }
 
-  console.log(`✅ Wall grid created for ${wallDirection}: ${wallGridLines.length} lines`);
+  // console.log(`✅ Wall grid created for ${wallDirection}: ${wallGridLines.length} lines`);
   return wallGridLines;
 };
 
@@ -203,16 +203,14 @@ export const createWallGridLines = (
  */
 export const createWalls = (
   roomWidth: number,
-  roomHeight: number,
+  roomHeight: number, // Length of the room
   wallMaterial: THREE.Material
 ): THREE.Mesh[] => {
-  console.log('🏗️ Creating interior walls with dimensions:', { roomWidth, roomHeight });
-
   const { HEIGHT: wallHeight, THICKNESS: wallThickness } = WALL_SETTINGS;
 
   // Calculate half dimensions for positioning
   const roomHalfWidth = roomWidth / 2;
-  const roomHalfHeight = roomHeight / 2;
+  const roomHalfLength = roomHeight / 2;
 
   // Calculate wall positions - INTERIOR APPROACH
   // Walls sit INSIDE the floor boundaries
@@ -224,12 +222,12 @@ export const createWalls = (
     {
       // North wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
-      position: [0, wallHeight / 2, -roomHalfHeight + wallOffset]
+      position: [0, wallHeight / 2, -roomHalfLength + wallOffset]
     },
     {
       // South wall - inner face at room boundary
       geometry: new THREE.BoxGeometry(roomWidth, wallHeight, wallThickness),
-      position: [0, wallHeight / 2, roomHalfHeight - wallOffset]
+      position: [0, wallHeight / 2, roomHalfLength - wallOffset]
     },
     {
       // East wall - inner face at room boundary
@@ -258,40 +256,8 @@ export const createWalls = (
     walls.push(wall);
   });
 
-  console.log('✅ Interior walls created - no overhang issues:',
-    walls.map(wall => ({
-      name: wall.name,
-      direction: wall.userData.wallDirection,
-      position: wall.position,
-      innerFacePosition: getInnerFacePosition(wall)
-    }))
-  );
-
   return walls;
 };
-
-/**
- * Helper function to get inner face position of walls
- * Useful for object placement calculations
- */
-function getInnerFacePosition(wall: THREE.Mesh): { x?: number, z?: number } {
-  const direction = wall.userData.wallDirection;
-  const wallThickness = WALL_SETTINGS.THICKNESS;
-  const halfThickness = wallThickness / 2;
-
-  switch (direction) {
-    case 'north':
-      return { z: wall.position.z + halfThickness };
-    case 'south':
-      return { z: wall.position.z - halfThickness };
-    case 'east':
-      return { x: wall.position.x - halfThickness };
-    case 'west':
-      return { x: wall.position.x + halfThickness };
-    default:
-      return {};
-  }
-}
 
 /**
  * IMPROVED FLOOR - perfectly aligned with interior walls
