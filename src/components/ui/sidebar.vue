@@ -47,14 +47,28 @@
             <div
                 v-for="category in bathroomCategories"
                 :key="category.id"
-                @click.stop="openProductDrawer(category.component)"
-                :style="categoryItemStyle"
+                @click.stop="handleCategoryClick(category.component)"
+                :style="getEnhancedCategoryItemStyle(category.component)"
                 class="category-item"
             >
               <div :style="categoryIconStyle">
                 <span v-html="category.icon"></span>
+                <!-- Tiny loading spinner in corner (barely visible) -->
+                <div
+                    v-if="isCategoryLoading(category.component)"
+                    :style="tinyLoadingSpinnerStyle"
+                ></div>
               </div>
-              <span :style="categoryLabelStyle">{{ category.label }}</span>
+              <div :style="categoryTextContainerStyle">
+                <span :style="categoryLabelStyle">{{ category.label }}</span>
+                <!-- Tiny status text -->
+                <span
+                    v-if="isCategoryLoading(category.component)"
+                    :style="tinyStatusStyle"
+                >
+                  Loading...
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -106,7 +120,7 @@
 
             <div :style="controlGroupStyle">
               <label :style="labelStyle">
-                Height: {{ safeToFixed(localRoomHeight, 0) }}cm
+                Length: {{ safeToFixed(localRoomHeight, 0) }}cm
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
@@ -269,8 +283,11 @@
     <ProductDrawer
         :is-open="isProductDrawerOpen"
         :selected-category="selectedCategory"
+        :is-loading="isCategoryLoading(selectedCategory)"
+        :loading-error="errorMessage"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
+        @retry-loading="retryLoadingCategory"
     />
   </div>
 </template>
@@ -282,6 +299,10 @@ import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
+
+// NEW: Import selective preloading functions
+import { preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
+import { CONFIG } from '../../constants/models.js'
 
 // Define props
 const props = defineProps({
@@ -330,7 +351,11 @@ const emit = defineEmits([
   'toggle-wall-grid',
   'constrain-objects',
   'toggle-wall-culling',
-  'toggle-measurements'
+  'toggle-measurements',
+  // NEW: Preloading events
+  'loading-started',
+  'loading-finished',
+  'loading-error'
 ])
 
 // Bathroom categories with icons (matching your design)
@@ -475,10 +500,94 @@ const isButtonPressed = ref(false)
 const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
+// NEW: Selective preloading state
+const loadingCategories = ref(new Set())
+const isLoading = ref(false)
+const errorMessage = ref('')
+
 // Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
 const isInternalUpdate = ref(false)
+
+// NEW: Enhanced category click handler with selective preloading
+const handleCategoryClick = async (category) => {
+  console.log(`🖱️ Category clicked: ${category}`)
+
+  // ALWAYS open the ProductDrawer immediately, regardless of loading state
+  openProductDrawer(category)
+
+  // Skip if selective preload is disabled - proceed normally
+  if (!CONFIG?.selectivePreload) {
+    console.log('Selective preload disabled, proceeding normally...')
+    return
+  }
+
+  // Skip if already preloaded - proceed normally
+  if (isCategoryPreloaded(category)) {
+    console.log(`${category} models already preloaded ✅`)
+    return
+  }
+
+  // Skip if currently loading
+  if (loadingCategories.value.has(category)) {
+    console.log(`${category} models are currently loading...`)
+    return
+  }
+
+  try {
+    // Add to loading set
+    loadingCategories.value.add(category)
+    isLoading.value = true
+    errorMessage.value = ''
+
+    console.log(`🚀 Starting to preload ${category} models...`)
+
+    // Emit loading started event
+    emit('loading-started', { category })
+
+    // Preload models for this category
+    await preloadCategoryModels(category)
+
+    console.log(`✅ ${category} models preloaded successfully!`)
+
+    // Emit loading finished event
+    emit('loading-finished', { category })
+
+  } catch (error) {
+    const errorMsg = `Failed to load ${category} models`
+    console.error(`❌ ${errorMsg}:`, error)
+    errorMessage.value = errorMsg
+
+    // Emit error event
+    emit('loading-error', { category, error: errorMsg })
+
+  } finally {
+    // Remove from loading set
+    loadingCategories.value.delete(category)
+    isLoading.value = loadingCategories.value.size > 0
+  }
+}
+
+// 2. ADD these new helper functions (don't replace existing ones):
+const retryLoadingCategory = () => {
+  if (selectedCategory.value) {
+    errorMessage.value = ''
+    handleCategoryClick(selectedCategory.value)
+  }
+}
+
+const isCategoryLoading = (category) => {
+  return loadingCategories.value.has(category)
+}
+
+const isCategoryReady = (category) => {
+  return isCategoryPreloaded(category) && !isCategoryLoading(category)
+}
+
+const clearError = () => {
+  errorMessage.value = ''
+}
 
 // DEBUG: Add console logs to track state changes
 watch(isProductDrawerOpen, (newVal) => {
@@ -528,8 +637,36 @@ const handleProductDrawerClose = () => {
 const handleAddToRoom = (product) => {
   console.log('🔍 Adding product to room:', product)
 
+  // ENHANCED: Validate item structure before emitting
+  if (!product) {
+    console.error('❌ No product provided to handleAddToRoom')
+    return
+  }
+
+  if (!product.type) {
+    console.error('❌ Product missing required type property:', product)
+    return
+  }
+
+  // ENHANCED: Ensure selectedVariant exists if productData is provided
+  if (product.selectedVariant === null || product.selectedVariant === undefined) {
+    console.warn('⚠️ Product missing selectedVariant, adding as basic item:', product)
+    // For basic items without product data, just pass the type
+    emit('add', product.type)
+    handleProductDrawerClose()
+    return
+  }
+
   // Extract component type from product data
   const componentType = product.type || 'Unknown'
+
+  // ENHANCED: Pass the complete item structure
+  console.log('✅ Adding item with complete product data:', {
+    type: product.type,
+    hasSelectedVariant: !!product.selectedVariant,
+    selectedVariantSku: product.selectedVariant?.sku,
+    selectedVariantName: product.selectedVariant?.name
+  })
 
   // Emit to parent component to add the item
   emit('add', componentType, product)
@@ -697,7 +834,69 @@ const validateAndUpdateHeight = (event) => {
   }, 100)
 }
 
-// Style helper methods
+// NEW: Enhanced category item style with subtle loading states
+const getEnhancedCategoryItemStyle = (category) => {
+  const baseStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '16px 20px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    marginBottom: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    gap: '16px',
+    fontFamily: 'Arial, sans-serif'
+  }
+
+  // Subtle visual enhancements for loading/ready states
+  if (isCategoryLoading(category)) {
+    return {
+      ...baseStyle,
+      opacity: '0.8',
+      cursor: 'not-allowed'
+    }
+  }
+
+  if (isCategoryReady(category)) {
+    return {
+      ...baseStyle,
+      borderColor: '#e5e7eb'
+    }
+  }
+
+  return baseStyle
+}
+
+// NEW: Tiny loading spinner style (barely visible)
+const tinyLoadingSpinnerStyle = {
+  position: 'absolute',
+  top: '-2px',
+  right: '-2px',
+  width: '6px',
+  height: '6px',
+  border: '1px solid #f3f4f6',
+  borderTop: '1px solid #f59e0b',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
+}
+
+// NEW: Category text container to stack label and status
+const categoryTextContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1
+}
+
+// NEW: Tiny status styles
+const tinyStatusStyle = {
+  fontSize: '8px',
+  color: '#f59e0b',
+  marginTop: '2px'
+}
+
+// Style helper methods (keeping your exact original styles)
 const getArrowStyle = (isExpanded) => ({
   fontSize: '14px',
   color: '#ffffff',
@@ -1109,24 +1308,6 @@ const categoriesContainerStyle = computed(() => ({
   backgroundColor: '#ffffff'
 }))
 
-const categoryItemStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  padding: '16px 20px',
-  backgroundColor: '#ffffff',
-  border: '1px solid #e5e7eb',
-  borderRadius: '8px',
-  marginBottom: '8px',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  gap: '16px',
-  fontFamily: 'Arial, sans-serif',
-  ':hover': {
-    backgroundColor: '#f9fafb',
-    borderColor: '#10b981'
-  }
-}))
-
 const categoryIconStyle = computed(() => ({
   width: '24px',
   height: '24px',
@@ -1134,7 +1315,8 @@ const categoryIconStyle = computed(() => ({
   alignItems: 'center',
   justifyContent: 'center',
   color: '#29275B',
-  flexShrink: 0
+  flexShrink: 0,
+  position: 'relative'
 }))
 
 //For measurement
@@ -1155,7 +1337,13 @@ const categoryLabelStyle = computed(() => ({
 </script>
 
 <style scoped>
-/* Category item hover effects */
+/* NEW: Keyframe animation for tiny loading spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Category item hover effects (keeping your exact original styles) */
 .category-item:hover {
   background-color: #f9fafb !important;
   border-color: #29275B !important;

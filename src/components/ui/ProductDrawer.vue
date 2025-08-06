@@ -42,8 +42,44 @@
         </button>
       </div>
 
-      <!-- PRODUCT LIST VIEW -->
-      <div v-if="currentView === 'products'" :style="contentStyle">
+      <!-- Loading Error Display -->
+      <div v-if="loadingError" :style="errorBannerStyle">
+        <span>{{ loadingError }}</span>
+        <button @click="$emit('retry-loading')" :style="retryButtonStyle">
+          Retry
+        </button>
+      </div>
+
+      <!-- SKELETON LOADER - Show when loading models -->
+      <div v-if="isLoading && currentView === 'products'" :style="contentStyle">
+        <!-- Skeleton Loading State -->
+        <div :style="skeletonContainerStyle">
+          <!-- Skeleton Product Cards -->
+          <div
+              v-for="n in 3"
+              :key="`skeleton-${n}`"
+              :style="skeletonCardStyle"
+              class="skeleton-card"
+          >
+            <!-- Skeleton Image -->
+            <div :style="skeletonImageStyle">
+              <div :style="skeletonShimmerStyle"></div>
+            </div>
+
+            <!-- Skeleton Content -->
+            <div :style="skeletonContentStyle">
+              <div :style="skeletonLineStyle"></div>
+              <div :style="skeletonLineStyle"></div>
+              <div :style="skeletonLineStyle"></div>
+              <div :style="skeletonLineStyle"></div>
+              <div :style="skeletonButtonStyle"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCT LIST VIEW - Show when not loading -->
+      <div v-else-if="currentView === 'products'" :style="contentStyle">
         <div
             v-for="product in getProductsForCategory(selectedCategory)"
             :key="product.id"
@@ -80,7 +116,7 @@
       </div>
 
       <!-- VARIANTS VIEW -->
-      <div v-if="currentView === 'variants' && selectedProduct" :style="contentStyle">
+      <div v-else-if="currentView === 'variants'" :style="variantsContentStyle">
         <!-- Product Summary -->
         <div :style="productSummaryStyle">
           <div :style="productImageStyle">
@@ -194,11 +230,19 @@ const props = defineProps({
   selectedCategory: {
     type: String,
     default: ''
+  },
+  isLoading: {
+    type: Boolean,
+    default: false
+  },
+  loadingError: {
+    type: String,
+    default: ''
   }
 })
 
 // Emits - ADD 'back' event for better control
-const emit = defineEmits(['close', 'add-to-room'])
+const emit = defineEmits(['close', 'add-to-room', 'retry-loading'])
 
 // Reactive state
 const currentView = ref('products') // 'products' or 'variants'
@@ -312,7 +356,112 @@ const closeDrawer = () => {
   emit('close')
 }
 
-// Styles
+// SKELETON LOADER STYLES
+const skeletonContainerStyle = computed(() => ({
+  padding: '20px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '20px'
+}))
+
+const loadingHeaderStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  padding: '16px',
+  backgroundColor: '#f8f9fa',
+  borderRadius: '8px',
+  fontSize: '16px',
+  fontWeight: '500',
+  color: '#666'
+}))
+
+const loadingSpinnerStyle = computed(() => ({
+  width: '20px',
+  height: '20px',
+  border: '2px solid #e0e0e0',
+  borderTop: '2px solid #007bff',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
+}))
+
+const skeletonCardStyle = computed(() => ({
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  padding: '20px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+  display: 'flex',
+  flexDirection: isMobileDevice.value ? 'column' : '',
+  gap: '15px',
+  position: 'relative',
+  overflow: 'hidden'
+}))
+
+const skeletonImageStyle = computed(() => ({
+  width: isMobileDevice.value ? '100%' : '200px',
+  height: '150px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '8px',
+  position: 'relative',
+  overflow: 'hidden'
+}))
+
+const skeletonShimmerStyle = computed(() => ({
+  position: 'absolute',
+  top: '0',
+  left: '-100%',
+  width: '100%',
+  height: '100%',
+  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+  animation: 'shimmer 1.5s infinite'
+}))
+
+const skeletonContentStyle = computed(() => ({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px'
+}))
+
+const skeletonLineStyle = computed(() => ({
+  height: '20px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '6px',
+  width: isMobileDevice.value ? '70%' : '90%',
+  marginTop: '8px'
+}))
+
+const skeletonButtonStyle = computed(() => ({
+  height: '36px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '4px',
+  width: '135px',
+  marginTop: '8px'
+}))
+
+// ERROR STYLES
+const errorBannerStyle = computed(() => ({
+  backgroundColor: '#fee',
+  border: '1px solid #fcc',
+  color: '#c33',
+  padding: '12px 20px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  fontSize: '14px'
+}))
+
+const retryButtonStyle = computed(() => ({
+  backgroundColor: '#c33',
+  color: 'white',
+  border: 'none',
+  padding: '6px 12px',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '12px'
+}))
+
+// EXISTING STYLES (keeping original styles)
 const overlayStyle = computed(() => ({
   position: 'fixed',
   top: '0',
@@ -493,6 +642,15 @@ const addToRoomButtonStyle = computed(() => ({
 }))
 
 // Variants View Styles
+const variantsContentStyle = computed(() => ({
+  flex: 1,
+  overflowY: 'auto',
+  padding: '25px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '25px'
+}))
+
 const productSummaryStyle = computed(() => ({
   display: 'flex',
   gap: '15px',

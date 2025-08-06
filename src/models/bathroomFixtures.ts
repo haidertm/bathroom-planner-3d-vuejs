@@ -26,6 +26,8 @@ class ModelManager {
   private cache: ModelCache = {};
   private loadingPromises: LoadingPromise = {};
   private preloadComplete = false;
+  // NEW: Track which categories have been preloaded
+  private preloadedCategories: Set<string> = new Set();
 
   private constructor () {
     this.loader = new GLTFLoader();
@@ -38,8 +40,63 @@ class ModelManager {
     return ModelManager.instance;
   }
 
-  // Preload commonly used models
-  async preloadModels (): Promise<void> {
+  // NEW: Preload models for specific category only
+  async preloadCategoryModels(category: ComponentType): Promise<void> {
+    // Check if this category is already preloaded
+    if (this.preloadedCategories.has(category)) {
+      console.log(`✅ ${category} models already preloaded, skipping...`);
+      return;
+    }
+
+    console.log(`🚀 Starting selective preload for ${category} models...`);
+
+    // Get models only for the specific category
+    const categoryModels = getCategoryModelPaths(category);
+
+    if (categoryModels.length === 0) {
+      console.warn(`⚠️ No models found for ${category} category`);
+      this.preloadedCategories.add(category);
+      return;
+    }
+
+    console.log(`📦 Preloading ${categoryModels.length} ${category} models...`);
+
+    let loadedCount = 0;
+    let failedCount = 0;
+
+    const preloadPromises = categoryModels.map(async ({ name, path, scale }) => {
+      try {
+        const tempObjectModel: ObjectModel = {
+          name,
+          path,
+          scale,
+          dimensions: {
+            width: 50,
+            height: 50,
+            depth: 50
+          }
+        };
+
+        await this.loadModel(name, tempObjectModel);
+        loadedCount++;
+        console.log(`✅ Preloaded ${category}: ${name}`);
+      } catch (error) {
+        failedCount++;
+        console.warn(`❌ Failed to preload ${category}: ${name}`, error);
+      }
+    });
+
+    await Promise.all(preloadPromises);
+    if (failedCount === 0) {
+        this.preloadedCategories.add(category);
+        console.log(`🎉 ${category} preloading complete! All ${loadedCount} models loaded successfully`);
+      } else {
+        console.warn(`⚠️ ${category} preloading incomplete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
+      }
+  }
+
+  // Existing preloadModels method (keep for backward compatibility)
+  async preloadModels(): Promise<void> {
     if (this.preloadComplete) {
       console.log('✅ Models already preloaded, skipping...');
       return;
@@ -60,9 +117,6 @@ class ModelManager {
     // Track preloading progress
     let loadedCount = 0;
     let failedCount = 0;
-
-    // const modelsToPreload = getPreloadModels();
-    // console.log('Preloading models:', modelsToPreload.map(m => m.name));
 
     const preloadPromises = allModelPaths.map(async ({ name, path, scale }) => {
       try {
@@ -88,150 +142,106 @@ class ModelManager {
 
     await Promise.all(preloadPromises);
     this.preloadComplete = true;
-    console.log('🎉 Model preloading complete!');
-    console.log(`📊 Results: ${loadedCount} loaded, ${failedCount} failed, ${Object.keys(this.cache).length} cached`);
+    console.log(`🎉 Global preloading complete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
   }
 
-  async loadModel (modelName: string, productModel: ObjectModel): Promise<THREE.Group> {
+  // NEW: Check if category is preloaded
+  isCategoryPreloaded(category: ComponentType): boolean {
+    return this.preloadedCategories.has(category);
+  }
+
+  // Existing loadModel method
+  async loadModel(modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
     // Return cached model if available
     if (this.cache[modelName]) {
       return this.cache[modelName].clone();
     }
 
-    console.log('loadModel|modelConfig>>>', productModel);
-
     // Return existing loading promise if already loading
     if (modelName in this.loadingPromises) {
-      const loadedModel = await this.loadingPromises[modelName];
-      return loadedModel.clone();
+      const loaded = await this.loadingPromises[modelName];
+      return loaded.clone();
     }
 
-    // Start loading
     this.loadingPromises[modelName] = new Promise((resolve, reject) => {
       this.loader.load(
-        productModel.path,
-        (gltf) => {
-          const model = gltf.scene;
+          modelConfig.path,
+          (gltf) => {
+            const model = gltf.scene;
+            model.name = modelName;
 
-          console.log('loaderLoad>>>>', productModel.scale);
-          // Apply model configuration
-          if (productModel.scale) {
-            model.scale.setScalar(productModel.scale);
-          }
-
-          console.log('modelConfig.rotation>>>>', productModel.rotation);
-
-          if (productModel.rotation) {
-            console.log('modelConfig.rotation>>>', productModel.rotation);
-            model.rotation.set(...productModel.rotation);
-          }
-
-          if (productModel.position) {
-            model.position.set(...productModel.position);
-          }
-
-          // Configure model for shadows
-          model.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-              child.castShadow = true;
-              child.receiveShadow = true;
+            // Apply scale
+            if (modelConfig.scale) {
+              model.scale.setScalar(modelConfig.scale);
             }
-          });
 
-          // ✅ CRITICAL: Fix pixelated models with proper material processing
-          this.processModelForSmoothRendering(model);
+            // Optimize model for smooth rendering
+            this.optimizeModelForSmoothing(model);
 
-          // Cache the model
-          this.cache[modelName] = model;
-
-          // Clean up loading promise
-          delete this.loadingPromises[modelName];
-
-          console.log(`${modelName} model loaded successfully`);
-          resolve(model);
-        },
-        (progress) => {
-          console.log(`${modelName} loading progress: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
-        },
-        (error) => {
-          console.error(`Error loading ${modelName} model:`, error);
-          delete this.loadingPromises[modelName];
-          reject(error);
-        }
+            this.cache[modelName] = model;
+            delete this.loadingPromises[modelName];
+            resolve(model);
+          },
+          (progress) => {
+            // Optional: Handle loading progress
+            console.log(`Loading ${modelName}: ${(progress.loaded / progress.total * 100)}%`);
+          },
+          (error) => {
+            console.error(`Error loading model ${modelName}:`, error);
+            delete this.loadingPromises[modelName];
+            reject(error);
+          }
       );
     });
 
-    const loadedModel = await this.loadingPromises[modelName];
-    return loadedModel.clone();
+    const loaded = await this.loadingPromises[modelName];
+    return loaded.clone();
   }
 
-  // ✅ NEW: Advanced geometry smoothing for low-poly models
-  private processModelForSmoothRendering (model: THREE.Object3D): void {
+  // Optimize model for smooth rendering
+  private optimizeModelForSmoothing(model: THREE.Group): void {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        // ✅ 1. Advanced geometry processing
-        if (child.geometry) {
-          // Compute smooth vertex normals
-          child.geometry.computeVertexNormals();
-
-          // ✅ ADVANCED: If model is very low-poly, try subdivision (optional)
-          // Uncomment if you want to smooth very blocky models
-          // if (this.isLowPolyGeometry(child.geometry)) {
-          //   child.geometry = this.subdivideGeometry(child.geometry);
-          // }
-
-          // Ensure geometry has proper attributes
-          if (!child.geometry.attributes.normal) {
-            child.geometry.computeVertexNormals();
-          }
-
-          // ✅ CRITICAL: Merge vertices and recompute normals for smoothness
-          child.geometry = child.geometry.toNonIndexed(); // Convert to non-indexed
-          child.geometry.computeVertexNormals(); // Recompute normals
-        }
-
-        // ✅ 2. Fix material properties for smooth rendering
-        if (child.material) {
-          const materials = Array.isArray(child.material) ? child.material : [child.material];
-
-          materials.forEach(material => {
-            if (material instanceof THREE.MeshStandardMaterial) {
-              // CRITICAL: Disable flat shading
-              material.flatShading = false;
-              material.needsUpdate = true;
-
-              // Fix texture filtering if textures exist
-              if (material.map) {
-                this.fixTextureFiltering(material.map);
-              }
-              if (material.normalMap) {
-                this.fixTextureFiltering(material.normalMap);
-              }
-              if (material.roughnessMap) {
-                this.fixTextureFiltering(material.roughnessMap);
-              }
-              if (material.metalnessMap) {
-                this.fixTextureFiltering(material.metalnessMap);
-              }
-
-              // ✅ ADDED: Better material properties for smooth appearance
-              material.roughness = Math.max(0.1, material.roughness || 0.5);
-              material.metalness = material.metalness || 0.0;
-            }
-          });
-        }
-
-        // Configure for shadows
+        // Enable shadows
         child.castShadow = true;
         child.receiveShadow = true;
+
+        // Optimize materials
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(mat => this.optimizeMaterial(mat));
+          } else {
+            this.optimizeMaterial(child.material);
+          }
+        }
+
+        // Fix texture filtering
+        if (child.material && 'map' in child.material && child.material.map) {
+          this.fixTextureFiltering(child.material.map);
+        }
       }
     });
 
     console.log(`✅ Model processed for smooth rendering: ${model.name || 'unnamed'}`);
   }
 
-  // ✅ NEW: Fix texture filtering to prevent pixelation
-  private fixTextureFiltering (texture: THREE.Texture): void {
+  // Optimize material properties
+  private optimizeMaterial(material: THREE.Material): void {
+    if (material instanceof THREE.MeshStandardMaterial ||
+        material instanceof THREE.MeshPhysicalMaterial) {
+      // Ensure proper material properties for realistic rendering
+      material.roughness = material.roughness ?? 0.7;
+      material.metalness = material.metalness ?? 0.1;
+    }
+
+    // Enable flat shading for better performance if needed
+    // material.flatShading = true;
+
+    material.needsUpdate = true;
+  }
+
+  // Fix texture filtering to prevent pixelation
+  private fixTextureFiltering(texture: THREE.Texture): void {
     // Use linear filtering for smooth textures
     texture.minFilter = THREE.LinearMipmapLinearFilter;
     texture.magFilter = THREE.LinearFilter;
@@ -256,12 +266,15 @@ class ModelManager {
     this.cache = {};
     this.loadingPromises = {};
     this.preloadComplete = false;
+    this.preloadedCategories.clear();
   }
 
-  getCacheStatus (): { cached: string[], loading: string[] } {
+  getCacheStatus() {
     return {
-      cached: Object.keys(this.cache),
-      loading: Object.keys(this.loadingPromises)
+      cachedModels: Object.keys(this.cache).length,
+      loadingModels: Object.keys(this.loadingPromises).length,
+      preloadComplete: this.preloadComplete,
+      preloadedCategories: Array.from(this.preloadedCategories)
     };
   }
 }
@@ -328,6 +341,18 @@ export const preloadModels = async (): Promise<void> => {
   await modelManager.preloadModels();
 };
 
+// NEW: Export function for selective preloading
+export const preloadCategoryModels = async (category: ComponentType): Promise<void> => {
+  const modelManager = ModelManager.getInstance();
+  return await modelManager.preloadCategoryModels(category);
+};
+
+// NEW: Check if category is preloaded
+export const isCategoryPreloaded = (category: ComponentType): boolean => {
+  const modelManager = ModelManager.getInstance();
+  return modelManager.isCategoryPreloaded(category);
+};
+
 // Utility function to clear model cache
 export const clearModelCache = (): void => {
   ModelManager.getInstance().clearCache();
@@ -338,7 +363,27 @@ export const getModelCacheStatus = () => {
   return ModelManager.getInstance().getCacheStatus();
 };
 
-// NEW: Function to extract all model paths from productData
+// NEW: Helper function to get model paths for specific category
+const getCategoryModelPaths = (category: ComponentType): ObjectModelWithCategory[] => {
+  const categoryModels: ObjectModelWithCategory[] = [];
+
+  if (productData[category]) {
+    productData[category].forEach(product => {
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach(variant => {
+          if (variant.path && variant.sku) {
+            categoryModels.push({ ...variant, category });
+          }
+        });
+      }
+    });
+  }
+
+  console.log(`📦 Found ${categoryModels.length} models for ${category} category`);
+  return categoryModels;
+};
+
+// Function to extract all model paths from productData
 const getAllModelPathsFromProductData = (): ObjectModelWithCategory[] => {
   const modelPaths: ObjectModelWithCategory[] = [];
 

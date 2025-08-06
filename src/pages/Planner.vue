@@ -459,13 +459,14 @@ const addItem = async (type, productData = null) => {
     orientation: DEFAULT_ORIENTATION
   }
 
-  // Extract SKU for real dimension lookup
-  const sku = productData?.selectedVariant?.sku || null;
+  // FIXED: Safe access to productData and selectedVariant
+  const selectedVariant = productData?.selectedVariant || null;
+  const sku = selectedVariant?.sku || null;
 
   console.log('productData.selectedVariant?.orientation>>>:::', productData.selectedVariant?.orientation);
 
   // ✅ CRITICAL: Get the correct orientation from productData
-  const productOrientation = productData?.selectedVariant?.orientation || DEFAULT_ORIENTATION;
+  const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
   // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
@@ -476,7 +477,7 @@ const addItem = async (type, productData = null) => {
       items.value,
       undefined, // No specific wall direction
       productOrientation,
-      productData.selectedVariant?.movement
+      selectedVariant?.movement
   )
 
   console.log('found free positioned on wall>>', freePosition, wallRotation);
@@ -487,13 +488,13 @@ const addItem = async (type, productData = null) => {
     position: [freePosition.x, freePosition.y, freePosition.z],
     rotation: wallRotation,
     scale: 1.0,
-    // Add product data if available
-    ...(productData && {
+    // FIXED: Only add product data if both productData and selectedVariant exist
+    ...(productData && selectedVariant && {
       sku,
-      productName: productData.selectedVariant?.name,
+      productName: selectedVariant.name,
       model: {
-        name: `${ type }-${ productData.selectedVariant?.sku }`,
-        path: productData.selectedVariant?.path,
+        name: `${type}-${selectedVariant.sku}`,
+        path: selectedVariant.path,
         scale: 100,
         orientation: {
           type: productOrientation.type || 'face_into_room',
@@ -501,13 +502,14 @@ const addItem = async (type, productData = null) => {
           description: productOrientation.description || 'Item is part of wall opening',
           ...(productOrientation.rotationOffset && { rotationOffset: productOrientation.rotationOffset })
         },
-        dimensions: productData.selectedVariant?.dimensions,
-        ...(productData.selectedVariant?.movement && {
-          movement: productData.selectedVariant?.movement
+        dimensions: selectedVariant.dimensions,
+        ...(selectedVariant.movement && {
+          movement: selectedVariant.movement
         }),
-        floorOffset: productData.selectedVariant?.floorOffset || 0
+        floorOffset: selectedVariant.floorOffset || 0
       },
-      price: productData.selectedVariant?.price,
+      price: selectedVariant.price,
+      productId: productData.product?.id,
       selectedColor: productData.selectedColor
     })
   }
@@ -518,7 +520,7 @@ const addItem = async (type, productData = null) => {
   if (sceneManagerRef.value && !isInitialLoad.value) {
     try {
       await sceneManagerRef.value.addSingleItem(newItem)
-      console.log(`✅ Added item ${ newItem.id } directly to scene`)
+      console.log(`✅ Added item ${newItem.id} directly to scene`)
     } catch (error) {
       console.error('❌ Failed to add item directly:', error)
       // Will fall back to full update via watcher
@@ -866,7 +868,7 @@ onMounted(async () => {
   }
 
   // PRELOAD MODELS - This will load all models defined in constants
-  console.log('Starting model preloading...')
+  console.log('Starting model preloading...', CONFIG)
 
   if (CONFIG && CONFIG.preloadModels) {
     try {

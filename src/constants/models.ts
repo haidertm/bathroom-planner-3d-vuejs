@@ -4,7 +4,8 @@ export type OrientationType = 'face_into_room' | 'flush_with_wall' | 'custom';
 
 
 export const CONFIG = {
-  preloadModels: false
+  preloadModels: false,
+  selectivePreload: true
 }
 
 export type OrientationConfig = {
