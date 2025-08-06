@@ -172,7 +172,7 @@ export class MeasurementSystem {
   private isObjectWallBound (position: THREE.Vector3, _width: number, _depth: number): boolean {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
-    const tolerance = 25; // 2.5cm tolerance for better wall detection
+    const tolerance = 25; // 25cm tolerance for better wall detection
 
     // Check if object is near any wall
     const nearNorth = Math.abs(position.z + roomHalfHeight) < tolerance;
