@@ -95,7 +95,6 @@
           <div :style="productInfoStyle">
             <div :style="brandStyle">{{ product.brand }}</div>
             <h3 :style="productNameStyle">{{ product.name }}</h3>
-            <div :style="brandStyle"><span style="font-weight: bold;">sku:</span> {{ product.sku }}</div>
             <div :style="priceStyle">£{{ product.price }}</div>
 
             <!-- More Info Link -->
@@ -120,12 +119,12 @@
         <!-- Product Summary -->
         <div :style="productSummaryStyle">
           <div :style="productImageStyle">
-            <img :src="selectedProduct.image" :alt="selectedProduct.name" :style="imageStyle" />
+            <img :src="getDisplayImage()" :alt="getDisplayName()" :style="imageStyle" />
           </div>
           <div :style="productInfoStyle">
-            <div :style="brandStyle">{{ selectedProduct.brand }}</div>
-            <h3 :style="productNameStyle">{{ selectedProduct.name }}</h3>
-            <div :style="priceStyle">£{{ selectedProduct.price }}</div>
+            <h3 :style="productNameStyle">{{ getDisplayName() }}</h3>
+            <div :style="brandStyle"><span style="font-weight: bold;">sku:</span> {{ getDisplaySku() }}</div>
+            <div :style="priceStyle">£{{ getDisplayPrice() }}</div>
           </div>
         </div>
 
@@ -289,6 +288,38 @@ const goBackToProductList = () => {
 const selectVariant = (variantId) => {
   selectedVariant.value = variantId
   console.log('selectedVariant>>>', selectedVariant.value);
+}
+
+// New display functions for variants
+const getDisplayImage = () => {
+  if (selectedVariant.value && selectedVariant.value.image) {
+    return selectedVariant.value.image
+  }
+  return selectedProduct.value?.image || ''
+}
+
+const getDisplayName = () => {
+  if (selectedVariant.value && selectedVariant.value.title) {
+    return selectedVariant.value.title
+  }
+  if (selectedVariant.value && selectedVariant.value.name) {
+    return `${selectedProduct.value?.name} - ${selectedVariant.value.name}`
+  }
+  return selectedProduct.value?.name || ''
+}
+
+const getDisplaySku = () => {
+  if (selectedVariant.value && selectedVariant.value.sku) {
+    return selectedVariant.value.sku
+  }
+  return selectedProduct.value?.sku || ''
+}
+
+const getDisplayPrice = () => {
+  if (selectedVariant.value && selectedVariant.value.price) {
+    return selectedVariant.value.price
+  }
+  return selectedProduct.value?.price || ''
 }
 
 const selectColor = (colorId) => {

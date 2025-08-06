@@ -6,7 +6,17 @@
     </div>
 
     <div :style="navStyle">
-      <!-- Hamburger Menu for BOTH desktop and mobile -->
+      <!-- Save Button (visible only on Planner page and outside hamburger menu) -->
+      <button
+          v-if="$route.name === 'Planner'"
+          @click="handleSaveDesign"
+          :style="saveButtonStyle"
+          title="Save Design"
+      >
+        💾 Save Design
+      </button>
+
+      <!-- Hamburger Menu for navigation -->
       <div :style="hamburgerNavStyle" data-menu-container>
         <button
             @click="toggleMenu"
@@ -14,6 +24,7 @@
             @mouseenter="e => e.target.style.backgroundColor = '#f0f0f0'"
             @mouseleave="e => e.target.style.backgroundColor = 'transparent'"
             title="Menu"
+            class="hamburger-button"
         >
           ☰
         </button>
@@ -21,13 +32,6 @@
         <!-- Dropdown Menu -->
         <div v-if="showMenu" :style="menuStyle">
           <template v-if="$route.name === 'Planner'">
-            <button
-                @click="handleSaveDesign"
-                :style="menuItemStyle"
-                class="menu-item"
-            >
-              💾 Save Design
-            </button>
             <router-link
                 to="/my-designs"
                 :style="menuItemStyle"
@@ -226,7 +230,26 @@ const titleStyle = computed(() => ({
 
 const navStyle = computed(() => ({
   display: 'flex',
-  alignItems: 'center'
+  alignItems: 'center',
+  gap: '15px' // Add gap between save button and hamburger menu
+}))
+
+// New save button style
+const saveButtonStyle = computed(() => ({
+  padding: '10px 16px',
+  backgroundColor: '#29275B',
+  color: 'white',
+  border: 'none',
+  borderRadius: '6px',
+  fontSize: '14px',
+  fontWeight: '600',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'all 0.2s ease',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  whiteSpace: 'nowrap'
 }))
 
 const hamburgerNavStyle = computed(() => ({
@@ -299,7 +322,7 @@ const overlayStyle = computed(() => ({
 }
 
 /* Hamburger button hover effect */
-button:hover {
+.hamburger-button button:hover {
   background-color: #f0f0f0 !important;
   border-color: #29275B !important;
 }
