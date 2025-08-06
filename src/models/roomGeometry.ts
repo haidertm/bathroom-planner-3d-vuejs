@@ -77,18 +77,18 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
   floorGridGroup.position.y = 0; // Position at floor level
   floorGridGroup.name = 'FloorGrid'; // Add name for debugging
 
-  console.log('✅ Floor grid created:', {
-    lineCount,
-    groupPosition: floorGridGroup.position,
-    groupName: floorGridGroup.name,
-    children: floorGridGroup.children.length
-  });
+  // console.log('✅ Floor grid created:', {
+  //   lineCount,
+  //   groupPosition: floorGridGroup.position,
+  //   groupName: floorGridGroup.name,
+  //   children: floorGridGroup.children.length
+  // });
 
   // FIXED: Return only the floor grid group
   return floorGridGroup;
 };
 
-/**
+ /**
  * UPDATED CONSTRAINT FUNCTIONS for interior walls
  */
 
@@ -190,7 +190,7 @@ export const createWallGridLines = (
     }
   }
 
-  console.log(`✅ Wall grid created for ${wallDirection}: ${wallGridLines.length} lines`);
+  // console.log(`✅ Wall grid created for ${wallDirection}: ${wallGridLines.length} lines`);
   return wallGridLines;
 };
 
@@ -261,40 +261,17 @@ export const createWalls = (
     walls.push(wall);
   });
 
-  console.log('✅ Interior walls created - no overhang issues:',
-    walls.map(wall => ({
-      name: wall.name,
-      direction: wall.userData.wallDirection,
-      position: wall.position,
-      innerFacePosition: getInnerFacePosition(wall)
-    }))
-  );
+  // console.log('✅ Interior walls created - no overhang issues:',
+  //   walls.map(wall => ({
+  //     name: wall.name,
+  //     direction: wall.userData.wallDirection,
+  //     position: wall.position,
+  //     innerFacePosition: getInnerFacePosition(wall)
+  //   }))
+  // );
 
   return walls;
 };
-
-/**
- * Helper function to get inner face position of walls
- * Useful for object placement calculations
- */
-function getInnerFacePosition(wall: THREE.Mesh): { x?: number, z?: number } {
-  const direction = wall.userData.wallDirection;
-  const wallThickness = WALL_SETTINGS.THICKNESS;
-  const halfThickness = wallThickness / 2;
-
-  switch (direction) {
-    case 'north':
-      return { z: wall.position.z + halfThickness };
-    case 'south':
-      return { z: wall.position.z - halfThickness };
-    case 'east':
-      return { x: wall.position.x - halfThickness };
-    case 'west':
-      return { x: wall.position.x + halfThickness };
-    default:
-      return {};
-  }
-}
 
 /**
  * IMPROVED FLOOR - perfectly aligned with interior walls

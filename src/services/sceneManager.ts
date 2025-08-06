@@ -68,7 +68,7 @@ export class SceneManager {
     this.bathroomItemsGroup.name = 'bathroomItems';
     this.wallLabelsDebug = new WallLabelsDebug();
     this.axisIndicatorsDebug = new AxisIndicatorsDebug(); // Add this
-    this.debugLabelsEnabled = true;
+    this.debugLabelsEnabled = false;
   }
 
   initializeScene (): SceneComponents {
@@ -634,11 +634,11 @@ export class SceneManager {
     this.wallGridVisible = showWallGrid;
 
     if (this.wallRefs.length > 0) {
-      console.log('📊 Available walls:', this.wallRefs.map(wall => ({
-        name: wall.name,
-        direction: wall.userData.wallDirection,
-        position: wall.position
-      })));
+      // console.log('📊 Available walls:', this.wallRefs.map(wall => ({
+      //   name: wall.name,
+      //   direction: wall.userData.wallDirection,
+      //   position: wall.position
+      // })));
 
       try {
         let totalWallGridLines = 0;
