@@ -504,6 +504,16 @@ const productData: ProductData = {
           name: 'Right Handed',
           path: '../../models/bath/C57499.glb',
           dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
           sku: 'C57499',
           price: '599.95',
           title: 'L Shaped 1700 Shower Bath with Front Panel & 6mm Easy Clean Brushed Brass Bath Screen - Right Handed'
