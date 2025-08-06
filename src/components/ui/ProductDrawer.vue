@@ -301,10 +301,7 @@ const getDisplayImage = () => {
   return selectedProduct.value?.image || ''
 }
 const getTotalPrice = () => {
-  if (selectedVariant.value && selectedVariant.value.price) {
-    return selectedVariant.value.price
-  }
-  return selectedProduct.value?.price || ''
+  return getDisplayPrice();
 }
 
 const getDisplayName = () => {
