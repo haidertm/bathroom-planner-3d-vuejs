@@ -125,6 +125,9 @@
             <h3 :style="productNameStyle">{{ getDisplayName() }}</h3>
             <div :style="brandStyle"><span style="font-weight: bold;">sku:</span> {{ getDisplaySku() }}</div>
             <div :style="priceStyle">£{{ getDisplayPrice() }}</div>
+            <a :href="getLink()" :style="moreInfoStyle" class="more-info-link" target="_blank">
+              More info ↗
+            </a>
           </div>
         </div>
 
@@ -189,7 +192,7 @@
         <!-- Total Price Summary -->
         <div :style="priceSummaryStyle">
           <div :style="totalPriceLabelStyle">Total Price:</div>
-          <div :style="totalPriceStyle">£{{ calculateTotalPrice() }}</div>
+          <div :style="totalPriceStyle">£{{ getTotalPrice() }}</div>
         </div>
 
         <!-- Action Buttons -->
@@ -297,6 +300,12 @@ const getDisplayImage = () => {
   }
   return selectedProduct.value?.image || ''
 }
+const getTotalPrice = () => {
+  if (selectedVariant.value && selectedVariant.value.image) {
+    return selectedVariant.value.price
+  }
+  return selectedProduct.value?.price || ''
+}
 
 const getDisplayName = () => {
   if (selectedVariant.value && selectedVariant.value.title) {
@@ -320,6 +329,13 @@ const getDisplayPrice = () => {
     return selectedVariant.value.price
   }
   return selectedProduct.value?.price || ''
+}
+
+const getLink = () => {
+  if (selectedVariant.value && selectedVariant.value.price) {
+    return selectedVariant.value.link
+  }
+  return selectedProduct.value?.link || ''
 }
 
 const selectColor = (colorId) => {
