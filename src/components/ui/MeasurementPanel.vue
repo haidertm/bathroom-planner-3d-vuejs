@@ -5,17 +5,17 @@
       <div :style="dimensionsRowStyle">
         <div :style="dimensionItemStyle">
           <span :style="labelStyle">Width:</span>
-          <span :style="valueStyle">{{ Math.round(currentMeasurements.objectWidth) }}cm</span>
+          <span :style="valueStyle">{{ currentMeasurements.objectWidth }}cm</span>
         </div>
         <div :style="separatorStyle">|</div>
         <div :style="dimensionItemStyle">
           <span :style="labelStyle">Depth:</span>
-          <span :style="valueStyle">{{ Math.round(currentMeasurements.objectDepth) }}cm</span>
+          <span :style="valueStyle">{{ currentMeasurements.objectDepth }}cm</span>
         </div>
         <div :style="separatorStyle">|</div>
         <div :style="dimensionItemStyle">
           <span :style="labelStyle">Height:</span>
-          <span :style="valueStyle">{{ Math.round(currentMeasurements.objectHeight) }}cm</span>
+          <span :style="valueStyle">{{ currentMeasurements.objectHeight }}cm</span>
         </div>
       </div>
     </div>
