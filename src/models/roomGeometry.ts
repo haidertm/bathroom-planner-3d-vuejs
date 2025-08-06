@@ -206,12 +206,7 @@ export const createWalls = (
   roomHeight: number, // Length of the room
   wallMaterial: THREE.Material
 ): THREE.Mesh[] => {
-  console.log('🏗️ Creating interior walls with dimensions:', { roomWidth, roomHeight });
-
   const { HEIGHT: wallHeight, THICKNESS: wallThickness } = WALL_SETTINGS;
-
-  console.log('room>>>>>Specs', { roomWidth, roomHeight });
-  console.log('wall>>>>>Specs', { HEIGHT: wallHeight, THICKNESS: wallThickness });
 
   // Calculate half dimensions for positioning
   const roomHalfWidth = roomWidth / 2;
@@ -260,15 +255,6 @@ export const createWalls = (
 
     walls.push(wall);
   });
-
-  // console.log('✅ Interior walls created - no overhang issues:',
-  //   walls.map(wall => ({
-  //     name: wall.name,
-  //     direction: wall.userData.wallDirection,
-  //     position: wall.position,
-  //     innerFacePosition: getInnerFacePosition(wall)
-  //   }))
-  // );
 
   return walls;
 };
