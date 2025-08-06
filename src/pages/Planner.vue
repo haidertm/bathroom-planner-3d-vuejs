@@ -477,15 +477,15 @@ const addItem = async (type, productData = null) => {
       items.value,
       undefined, // No specific wall direction
       productOrientation,
-      selectedVariant?.movement
+      selectedVariant?.movement,
+      selectedVariant?.spawnHeight,
+      selectedVariant?.floorOffset || 0
   )
-
-  console.log('found free positioned on wall>>', freePosition, wallRotation);
 
   const newItem = {
     id: generateUniqueId(),
     type,
-    position: [freePosition.x, freePosition.y, freePosition.z],
+    position: [freePosition.x, selectedVariant?.spawnHeight ?? freePosition.y, freePosition.z],
     rotation: wallRotation,
     scale: 1.0,
     // FIXED: Only add product data if both productData and selectedVariant exist
@@ -493,7 +493,7 @@ const addItem = async (type, productData = null) => {
       sku,
       productName: selectedVariant.name,
       model: {
-        name: `${type}-${selectedVariant.sku}`,
+        name: `${ type }-${ selectedVariant.sku }`,
         path: selectedVariant.path,
         scale: 100,
         orientation: {
@@ -506,7 +506,8 @@ const addItem = async (type, productData = null) => {
         ...(selectedVariant.movement && {
           movement: selectedVariant.movement
         }),
-        floorOffset: selectedVariant.floorOffset || 0
+        floorOffset: selectedVariant.floorOffset || 0,
+        spawnHeight: selectedVariant.spawnHeight || 0
       },
       price: selectedVariant.price,
       productId: productData.product?.id,
@@ -520,7 +521,7 @@ const addItem = async (type, productData = null) => {
   if (sceneManagerRef.value && !isInitialLoad.value) {
     try {
       await sceneManagerRef.value.addSingleItem(newItem)
-      console.log(`✅ Added item ${newItem.id} directly to scene`)
+      console.log(`✅ Added item ${ newItem.id } directly to scene`)
     } catch (error) {
       console.error('❌ Failed to add item directly:', error)
       // Will fall back to full update via watcher

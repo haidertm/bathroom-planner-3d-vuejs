@@ -27,7 +27,8 @@ export type ObjectModel = {
   position?: [number, number, number];
   movement?: MovementConfig;
   orientation?: OrientationConfig;
-  floorOffset?: number; // Floor offset in centimeters
+  floorOffset?: number; // Floor offset in centimeters, defines what is the height inside .glb file
+  spawnHeight?: number; // Height above floor when spawning in the room
   dimensions: {
     width: number;
     height: number;
@@ -79,6 +80,7 @@ const getProductDimensions = (sku: string, type: ComponentType): {
   depth: number;
   height: number;
   floorOffset: number;
+  spawnHeight: number; // Optional spawn height for the product
 } | null => {
 
   if (!type || !productData[type]) {
@@ -94,7 +96,8 @@ const getProductDimensions = (sku: string, type: ComponentType): {
             width: variant.dimensions.width,
             depth: variant.dimensions.depth || variant.dimensions.height, // Use height as depth if depth not available
             height: variant.dimensions.height,
-            floorOffset: variant.floorOffset || 0 // Use floor offset if available
+            floorOffset: variant.floorOffset || 0, // Use floor offset if available
+            spawnHeight: variant.spawnHeight || 0 // Use spawn height if available
           };
         }
       }
@@ -109,7 +112,7 @@ export const getDimensions = (
   type: ComponentType,
   sku?: string,
   model?: ObjectModel
-): { width: number; depth: number; height: number, floorOffset: number } => {
+): { width: number; depth: number; height: number, floorOffset: number, spawnHeight: number } => {
 
   // Priority 1: Try to get dimensions from model object if available
   if (model?.dimensions) {
@@ -117,7 +120,8 @@ export const getDimensions = (
       width: model.dimensions.width,
       depth: model.dimensions.depth || model.dimensions.height,
       height: model.dimensions.height,
-      floorOffset: model.floorOffset || 0 // Use model's floor offset if available
+      floorOffset: model.floorOffset || 0, // Use model's floor offset if available,
+      spawnHeight: model.spawnHeight || 0
     };
   }
 
@@ -130,7 +134,7 @@ export const getDimensions = (
     }
   }
 
-  return { width: 0, depth: 0, height: 0, floorOffset: 0 };
+  return { width: 0, depth: 0, height: 0, floorOffset: 0, spawnHeight: 0 }; // Fallback if no dimensions found
 };
 
 // Wall identification
@@ -257,7 +261,6 @@ export const checkWallCollision = (
 
   return hasWallCollision;
 };
-
 
 
 // ENHANCED: Collision detection with product-specific dimensions
@@ -740,7 +743,9 @@ export const findFreeWallPosition = (
   existingItems: BathroomItem[] = [],
   maxAttempts: number = 50,
   orientation: OrientationConfig = DEFAULT_ORIENTATION,
-  movement?: MovementConfig
+  movement?: MovementConfig,
+  spawnHeight?: number,
+  _floorOffset?: number
 ): { position: Position; rotation: number } => {
 
   console.log('🎯 Finding free position on interior walls for:', objectType);
@@ -760,7 +765,7 @@ export const findFreeWallPosition = (
       name: 'north',
       getPosition: (t: number) => ({
         x: interior.minX + t * (interior.maxX - interior.minX),
-        y: getWallPositionY(objectType, movementConfig),
+        y: getWallPositionY(movementConfig, spawnHeight),
         z: wallFaces.north - buffer
       }),
       rotation: getObjectRotationForWall(objectType, 'north', orientation)
@@ -769,7 +774,7 @@ export const findFreeWallPosition = (
       name: 'south',
       getPosition: (t: number) => ({
         x: interior.minX + t * (interior.maxX - interior.minX),
-        y: getWallPositionY(objectType, movementConfig),
+        y: getWallPositionY(movementConfig, spawnHeight),
         z: wallFaces.south + buffer
       }),
       rotation: getObjectRotationForWall(objectType, 'south', orientation)
@@ -778,7 +783,7 @@ export const findFreeWallPosition = (
       name: 'east',
       getPosition: (t: number) => ({
         x: wallFaces.east - buffer,
-        y: getWallPositionY(objectType, movementConfig),
+        y: getWallPositionY(movementConfig, spawnHeight),
         z: interior.minZ + t * (interior.maxZ - interior.minZ)
       }),
       rotation: getObjectRotationForWall(objectType, 'east', orientation)
@@ -787,7 +792,7 @@ export const findFreeWallPosition = (
       name: 'west',
       getPosition: (t: number) => ({
         x: wallFaces.west + buffer,
-        y: getWallPositionY(objectType, movementConfig),
+        y: getWallPositionY(movementConfig, spawnHeight),
         z: interior.minZ + t * (interior.maxZ - interior.minZ)
       }),
       rotation: getObjectRotationForWall(objectType, 'west', orientation)
@@ -837,7 +842,7 @@ export const findFreeWallPosition = (
   return {
     position: {
       x: 0,
-      y: getWallPositionY(objectType, movementConfig),
+      y: getWallPositionY(movementConfig, spawnHeight),
       z: wallFaces.south + buffer
     },
     rotation: fallbackRotation
@@ -924,8 +929,14 @@ const findFreeStandingPosition = (
 };
 
 // Helper to get appropriate Y position for wall-mounted objects
-const getWallPositionY = (_objectType: ComponentType, movementConfig: MovementConfig): number => {
-  return movementConfig.minHeight || 0; // Floor level for most objects
+const getWallPositionY = (movementConfig: MovementConfig, objectSpawnHeight?: number): number => {
+  const minHeight = movementConfig.minHeight ?? 0;
+
+  if (!objectSpawnHeight && objectSpawnHeight !== 0) {
+    return minHeight; // Default to minimum height when no spawn height specified
+  }
+  // Use spawn height but ensure it's at least at minimum height
+  return Math.max(objectSpawnHeight, minHeight);
 };
 
 /**
