@@ -410,6 +410,16 @@ const productData: ProductData = {
           image: 'assets/productImages/shower/C46247-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1000x700mm_3.webp',
           path: '../../models/shower/C46247.glb',
           dimensions: { width: 70, height: 185.5, depth: 100.4 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
           sku: 'C46247',
           price: '219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x700mm'
@@ -420,6 +430,17 @@ const productData: ProductData = {
           image: 'assets/productImages/shower/c46006-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x760mm.webp',
           path: '../../models/shower/C46006.glb',
           dimensions: { width: 76.1, height: 185.5, depth: 100.4 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening',
+            // rotationOffset: Math.PI // Rotate to face into room
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
           sku: 'C46006',
           price: '219.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x760mm'
