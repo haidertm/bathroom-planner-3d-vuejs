@@ -2,7 +2,6 @@
 import * as THREE from 'three';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
-import { WALL_SETTINGS } from '../constants/dimensions';
 import { getDimensions } from '../utils/constraints';
 
 export interface MeasurementData {
@@ -173,7 +172,7 @@ export class MeasurementSystem {
   private isObjectWallBound (position: THREE.Vector3, _width: number, _depth: number): boolean {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
-    const tolerance = 50; // 5cm tolerance
+    const tolerance = 25; // 2.5cm tolerance for better wall detection
 
     // Check if object is near any wall
     const nearNorth = Math.abs(position.z + roomHalfHeight) < tolerance;
@@ -339,114 +338,126 @@ export class MeasurementSystem {
     return position.y + measurements.floorOffset + measurements.objectHeight;
   }
 
-  private createWallBoundMeasurements (
-    measurements: MeasurementData,
-    position: THREE.Vector3,
-    labels: MeasurementLabel[]
-  ): void {
-    const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection } = measurements;
+// REPLACE your entire createWallBoundMeasurements method with this version
+// This completely eliminates room-extension measurements for wall-mounted objects
 
-    // ✅ CRITICAL: Calculate object center height for lines and label positions
-    const objectCenterY = this.getObjectCenterY(measurements, position);
-    const objectTopY = this.getObjectTopY(measurements, position);
-    const objectBottomY = this.getObjectBottomY(measurements, position);
+private createWallBoundMeasurements (
+  measurements: MeasurementData,
+  position: THREE.Vector3,
+  labels: MeasurementLabel[]
+): void {
+  const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection } = measurements;
 
-    // ✅ Position labels ABOVE the object, but lines at object center
-    const labelHeightOffset = 40; // 40cm above top of object
-    const spaceHeightOffset = 20; // 20cm above top of object for space labels
+  // Calculate object center height for lines and label positions
+  const objectTopY = this.getObjectTopY(measurements, position);
 
-    console.log(`📏 Wall-bound measurements for ${measurements.wallDirection}:`, {
-      scenePositionY: position.y.toFixed(1) + 'cm',
-      floorOffset: measurements.floorOffset.toFixed(1) + 'cm',
-      objectHeight: measurements.objectHeight.toFixed(1) + 'cm',
-      objectBottomY: objectBottomY.toFixed(1) + 'cm',
-      objectCenterY: objectCenterY.toFixed(1) + 'cm',
-      objectTopY: objectTopY.toFixed(1) + 'cm',
-      labelHeight: (objectTopY + labelHeightOffset).toFixed(1) + 'cm'
+  // Position labels ABOVE the object
+  const labelHeightOffset = 40; // 40cm above top of object
+  const spaceHeightOffset = 20; // 20cm above top of object for space labels
+
+  console.log(`📏 RESTRICTIVE wall-mounted measurements for ${wallDirection} wall:`, {
+    wallDirection,
+    position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+    availableSpaces: { left: spaceLeft.toFixed(1), right: spaceRight.toFixed(1), front: spaceFront.toFixed(1), back: spaceBack.toFixed(1) },
+    labelsToCreate: 'ONLY parallel-to-wall measurements'
+  });
+
+  // ✅ RESTRICTIVE APPROACH: Wall-mounted objects show ONLY parallel-to-wall measurements
+  if (wallDirection === 'north' || wallDirection === 'south') {
+    // Object against north/south wall - show ONLY width and left/right clearances
+    // ❌ NO front/back measurements (no room extension lines)
+
+    labels.push({
+      id: 'object-width',
+      text: `${Math.round(objectWidth)} cm`,
+      position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+      direction: 'horizontal',
+      color: '#ff6b35',
+      isObjectDimension: true
     });
 
-    if (wallDirection === 'north' || wallDirection === 'south') {
-      // Object against north/south wall
+    // Only show side clearances if significant
+    if (spaceLeft > 10) {
       labels.push({
-        id: 'object-width',
-        text: `${objectWidth} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+        id: 'space-left',
+        text: `${Math.round(spaceLeft)} cm`,
+        position: new THREE.Vector3(
+          position.x - objectWidth / 2 - spaceLeft / 2,
+          objectTopY + spaceHeightOffset,
+          position.z
+        ),
         direction: 'horizontal',
-        color: '#ff6b35',
-        isObjectDimension: true
+        color: '#4CAF50',
+        isObjectDimension: false
       });
-
-      if (spaceLeft > 10) {
-        labels.push({
-          id: 'space-left',
-          text: `${Math.round(spaceLeft)} cm`,
-          position: new THREE.Vector3(
-            position.x - objectWidth / 2 - spaceLeft / 2,
-            objectTopY + spaceHeightOffset,
-            position.z
-          ),
-          direction: 'horizontal',
-          color: '#4CAF50',
-          isObjectDimension: false
-        });
-      }
-
-      if (spaceRight > 10) {
-        labels.push({
-          id: 'space-right',
-          text: `${Math.round(spaceRight)} cm`,
-          position: new THREE.Vector3(
-            position.x + objectWidth / 2 + spaceRight / 2,
-            objectTopY + spaceHeightOffset,
-            position.z
-          ),
-          direction: 'horizontal',
-          color: '#4CAF50',
-          isObjectDimension: false
-        });
-      }
-    } else {
-      // Object against east/west wall
-      labels.push({
-        id: 'object-width',
-        text: `${objectWidth} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
-        direction: 'horizontal',
-        color: '#ff6b35',
-        isObjectDimension: true
-      });
-
-      if (spaceFront > 10) {
-        labels.push({
-          id: 'space-front',
-          text: `${Math.round(spaceFront)} cm`,
-          position: new THREE.Vector3(
-            position.x,
-            objectTopY + spaceHeightOffset,
-            position.z - objectDepth / 2 - spaceFront / 2
-          ),
-          direction: 'horizontal',
-          color: '#4CAF50',
-          isObjectDimension: false
-        });
-      }
-
-      if (spaceBack > 10) {
-        labels.push({
-          id: 'space-back',
-          text: `${Math.round(spaceBack)} cm`,
-          position: new THREE.Vector3(
-            position.x,
-            objectTopY + spaceHeightOffset,
-            position.z + objectDepth / 2 + spaceBack / 2
-          ),
-          direction: 'horizontal',
-          color: '#4CAF50',
-          isObjectDimension: false
-        });
-      }
     }
+
+    if (spaceRight > 10) {
+      labels.push({
+        id: 'space-right',
+        text: `${Math.round(spaceRight)} cm`,
+        position: new THREE.Vector3(
+          position.x + objectWidth / 2 + spaceRight / 2,
+          objectTopY + spaceHeightOffset,
+          position.z
+        ),
+        direction: 'horizontal',
+        color: '#4CAF50',
+        isObjectDimension: false
+      });
+    }
+
+    console.log(`✅ North/South wall object: Created ${labels.length} labels (width + left/right only)`);
+
+  } else if (wallDirection === 'east' || wallDirection === 'west') {
+    // Object against east/west wall - show ONLY depth and front/back clearances
+    // ❌ NO left/right measurements (no room extension lines)
+
+    labels.push({
+      id: 'object-depth',
+      text: `${Math.round(objectDepth)} cm`,
+      position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+      direction: 'vertical',
+      color: '#ff6b35',
+      isObjectDimension: true
+    });
+
+    // Only show parallel-to-wall clearances
+    if (spaceFront > 10) {
+      labels.push({
+        id: 'space-front',
+        text: `${Math.round(spaceFront)} cm`,
+        position: new THREE.Vector3(
+          position.x,
+          objectTopY + spaceHeightOffset,
+          position.z - objectDepth / 2 - spaceFront / 2
+        ),
+        direction: 'vertical',
+        color: '#4CAF50',
+        isObjectDimension: false
+      });
+    }
+
+    if (spaceBack > 10) {
+      labels.push({
+        id: 'space-back',
+        text: `${Math.round(spaceBack)} cm`,
+        position: new THREE.Vector3(
+          position.x,
+          objectTopY + spaceHeightOffset,
+          position.z + objectDepth / 2 + spaceBack / 2
+        ),
+        direction: 'vertical',
+        color: '#4CAF50',
+        isObjectDimension: false
+      });
+    }
+
+    console.log(`✅ East/West wall object: Created ${labels.length} labels (depth + front/back only)`);
   }
+
+  console.log(`🎯 FINAL: Created ${labels.length} total labels for wall-mounted object`);
+}
 
   private createFreeStandingMeasurements (
     measurements: MeasurementData,
@@ -609,8 +620,35 @@ export class MeasurementSystem {
     this.measurementLabels.add(sprite);
   }
 
+  private shouldSkipWallFacingLine(labelId: string, wallDirection: 'north' | 'south' | 'east' | 'west'): boolean {
+    // ✅ RESTRICTIVE: For wall-mounted objects, only allow measurements parallel to the wall
+    const restrictedLines = {
+      'north': ['space-front', 'space-back'],    // Only allow left/right for north wall objects
+      'south': ['space-front', 'space-back'],    // Only allow left/right for south wall objects
+      'east': ['space-left', 'space-right'],     // Only allow front/back for east wall objects
+      'west': ['space-left', 'space-right']      // Only allow front/back for west wall objects
+    };
+
+    const shouldSkip = restrictedLines[wallDirection]?.includes(labelId) || false;
+
+    if (shouldSkip) {
+      console.log(`🚫 Skipping room-extension line: ${labelId} for ${wallDirection} wall object`);
+    }
+
+    return shouldSkip;
+  }
+
   private createMeasurementLine (label: MeasurementLabel, measurements: MeasurementData): void {
     if (!this.selectedObject) return;
+
+    // ✅ SAFEGUARD: For wall-bound objects, don't create lines going into walls
+    if (measurements.isWallBound && measurements.wallDirection) {
+      const shouldSkipLine = this.shouldSkipWallFacingLine(label.id, measurements.wallDirection);
+      if (shouldSkipLine) {
+        console.log(`🚫 Skipping wall-facing line: ${label.id} for ${measurements.wallDirection} wall`);
+        return; // Don't create this line
+      }
+    }
 
     const position = this.selectedObject.position;
     const points: THREE.Vector3[] = [];
@@ -622,11 +660,6 @@ export class MeasurementSystem {
       objectCenterY: objectCenterY.toFixed(1) + 'cm',
       labelType: label.isObjectDimension ? 'OBJECT DIMENSION' : 'SPACE'
     });
-
-    // Wall thickness to stop lines at wall surface, not inside wall
-    const wallThickness = WALL_SETTINGS.THICKNESS;
-    const roomHalfWidth = this.roomWidth / 2;
-    const roomHalfHeight = this.roomHeight / 2;
 
     if (label.isObjectDimension) {
       // Lines showing object dimensions - these go along the object edges AT CENTER HEIGHT
@@ -656,8 +689,8 @@ export class MeasurementSystem {
       if (label.id === 'space-left') {
         const startX = position.x - measurements.objectWidth / 2;
         // Stop at wall inner surface, not room boundary
-        const wallSurfaceX = -roomHalfWidth + wallThickness / 2;
-        const endX = wallSurfaceX;
+        // const wallSurfaceX = -roomHalfWidth + wallThickness / 2;
+        const endX = startX - measurements.spaceLeft;
 
         points.push(new THREE.Vector3(startX, objectCenterY, position.z));
         points.push(new THREE.Vector3(endX, objectCenterY, position.z));
@@ -669,8 +702,7 @@ export class MeasurementSystem {
       } else if (label.id === 'space-right') {
         const startX = position.x + measurements.objectWidth / 2;
         // Stop at wall inner surface, not room boundary
-        const wallSurfaceX = roomHalfWidth - wallThickness / 2;
-        const endX = wallSurfaceX;
+        const endX = startX + measurements.spaceRight;
 
         points.push(new THREE.Vector3(startX, objectCenterY, position.z));
         points.push(new THREE.Vector3(endX, objectCenterY, position.z));
@@ -682,8 +714,7 @@ export class MeasurementSystem {
       } else if (label.id === 'space-front') {
         const startZ = position.z - measurements.objectDepth / 2;
         // Stop at wall inner surface, not room boundary
-        const wallSurfaceZ = -roomHalfHeight + wallThickness / 2;
-        const endZ = wallSurfaceZ;
+        const endZ = startZ - measurements.spaceFront;
 
         points.push(new THREE.Vector3(position.x, objectCenterY, startZ));
         points.push(new THREE.Vector3(position.x, objectCenterY, endZ));
@@ -695,8 +726,7 @@ export class MeasurementSystem {
       } else if (label.id === 'space-back') {
         const startZ = position.z + measurements.objectDepth / 2;
         // Stop at wall inner surface, not room boundary
-        const wallSurfaceZ = roomHalfHeight - wallThickness / 2;
-        const endZ = wallSurfaceZ;
+        const endZ = startZ + measurements.spaceBack;
 
         points.push(new THREE.Vector3(position.x, objectCenterY, startZ));
         points.push(new THREE.Vector3(position.x, objectCenterY, endZ));
