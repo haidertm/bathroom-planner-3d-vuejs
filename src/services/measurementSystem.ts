@@ -251,6 +251,7 @@ export class MeasurementSystem {
     // Calculate current object's actual vertical range
     const currentBottomY = position.y + currentFloorOffset;
     const currentTopY = currentBottomY + height;
+    console.log('>>> who is here', currentBottomY, currentTopY)
 
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return;
@@ -321,17 +322,48 @@ export class MeasurementSystem {
     }
   }
 
-  private createMeasurementVisuals (measurements: MeasurementData): void {
+  private createMeasurementVisuals(measurements: MeasurementData): void {
     if (!this.selectedObject) return;
 
     const position = this.selectedObject.position;
     const labels: MeasurementLabel[] = [];
 
+    // Calculate object bottom and top Y positions
+    const objectBottomY = this.getObjectBottomY(measurements, position);
+    const objectTopY = this.getObjectTopY(measurements, position);
+
+    // WALL/CEILING HEIGHT - This should be constant!
+    const CEILING_HEIGHT = 250; // From WALL_SETTINGS.HEIGHT
+
+    // Calculate space above object (to ceiling OR to object above)
+    const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, CEILING_HEIGHT);
+
+    // Calculate space below object (to floor OR to object below)
+    const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
+
+    // Add labels showing REMAINING SPACE (not absolute positions)
+    labels.push({
+      id: 'item-bottom-y',
+      text: `${Math.round(Math.max(0, spaceBelowObject))} cm`, // ✅ Space to object below OR floor
+      position: new THREE.Vector3(position.x, objectBottomY - 10, position.z),
+      direction: 'vertical',
+      color: '#007BFF',
+      isObjectDimension: false
+    });
+
+    labels.push({
+      id: 'item-top-y',
+      text: `${Math.round(Math.max(0, spaceAboveObject))} cm`, // ✅ Space to object above OR ceiling
+      position: new THREE.Vector3(position.x, objectTopY + 10, position.z),
+      direction: 'vertical',
+      color: '#007BFF',
+      isObjectDimension: false
+    });
+
+    // Existing logic for wall-bound or free-standing measurements
     if (measurements.isWallBound) {
-      // Wall-bound object: show object width and side spaces
       this.createWallBoundMeasurements(measurements, position, labels);
     } else {
-      // Free-standing object: show space in all directions
       this.createFreeStandingMeasurements(measurements, position, labels);
     }
 
@@ -340,6 +372,147 @@ export class MeasurementSystem {
       this.createMeasurementLabel(label);
       this.createMeasurementLine(label, measurements);
     });
+  }
+
+
+  // ✅ NEW METHOD: Calculate space below object (to nearest object below OR floor)
+  private calculateSpaceBelowObject(measurements: MeasurementData, position: THREE.Vector3, objectBottomY: number): number {
+    if (!this.selectedObject) return objectBottomY; // Fallback to floor distance
+
+    const excludeItemId = this.selectedObject.userData.itemId;
+    let nearestObjectBelowTopY = 0; // Start from floor level (Y=0)
+
+    // Get current object's horizontal bounds for overlap detection
+    const objectWidth = measurements.objectWidth;
+    const objectDepth = measurements.objectDepth;
+
+    this.existingItems.forEach(item => {
+      if (item.id === excludeItemId) return; // Skip current object
+
+      // Get other object's dimensions and position
+      const itemDimensions = getDimensions(item.type, item.sku, item.model);
+      if (!itemDimensions) return;
+
+      const itemScale = item.scale || 1.0;
+      const itemWidth = itemDimensions.width * itemScale;
+      const itemDepth = itemDimensions.depth * itemScale;
+      const itemHeight = itemDimensions.height * itemScale;
+      const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
+      const itemBottomY = itemPos.y + itemFloorOffset;
+      const itemTopY = itemBottomY + itemHeight;
+
+      // Check if other object is BELOW current object
+      if (itemTopY >= objectBottomY - 10) return; // Not below (with 10cm buffer)
+
+      // Check horizontal overlap (XZ plane)
+      const horizontalBuffer = 10; // 10cm buffer
+
+      // Current object bounds
+      const currentMinX = position.x - objectWidth / 2;
+      const currentMaxX = position.x + objectWidth / 2;
+      const currentMinZ = position.z - objectDepth / 2;
+      const currentMaxZ = position.z + objectDepth / 2;
+
+      // Other object bounds
+      const itemMinX = itemPos.x - itemWidth / 2;
+      const itemMaxX = itemPos.x + itemWidth / 2;
+      const itemMinZ = itemPos.z - itemDepth / 2;
+      const itemMaxZ = itemPos.z + itemDepth / 2;
+
+      // Check for horizontal overlap
+      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+
+      if (overlapX && overlapZ) {
+        // Objects overlap horizontally and other object is below
+        nearestObjectBelowTopY = Math.max(nearestObjectBelowTopY, itemTopY);
+        console.log(`📏 Found object below: ${item.type} at top Y=${itemTopY.toFixed(1)}cm`);
+      }
+    });
+
+    // Calculate space: from current object bottom to top of nearest object below (or floor)
+    const spaceBelow = objectBottomY - nearestObjectBelowTopY;
+
+    console.log(`📏 Space below calculation:`, {
+      objectBottomY: objectBottomY.toFixed(1),
+      nearestObjectBelowTopY: nearestObjectBelowTopY.toFixed(1),
+      spaceBelow: spaceBelow.toFixed(1),
+      hasObjectBelow: nearestObjectBelowTopY > 0
+    });
+
+    return Math.max(0, spaceBelow);
+  }
+
+// ✅ NEW METHOD: Calculate space above object (to nearest object above OR ceiling)
+  private calculateSpaceAboveObject(measurements: MeasurementData, position: THREE.Vector3, objectTopY: number, ceilingHeight: number): number {
+    if (!this.selectedObject) return ceilingHeight - objectTopY; // Fallback to ceiling distance
+
+    const excludeItemId = this.selectedObject.userData.itemId;
+    let nearestObjectAboveBottomY = ceilingHeight; // Start from ceiling level
+
+    // Get current object's horizontal bounds for overlap detection
+    const objectWidth = measurements.objectWidth;
+    const objectDepth = measurements.objectDepth;
+
+    this.existingItems.forEach(item => {
+      if (item.id === excludeItemId) return; // Skip current object
+
+      // Get other object's dimensions and position
+      const itemDimensions = getDimensions(item.type, item.sku, item.model);
+      if (!itemDimensions) return;
+
+      const itemScale = item.scale || 1.0;
+      const itemWidth = itemDimensions.width * itemScale;
+      const itemDepth = itemDimensions.depth * itemScale;
+      // const itemHeight = itemDimensions.height * itemScale;
+      const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
+      const itemBottomY = itemPos.y + itemFloorOffset;
+      // const itemTopY = itemBottomY + itemHeight;
+
+      // Check if other object is ABOVE current object
+      if (itemBottomY <= objectTopY + 10) return; // Not above (with 10cm buffer)
+
+      // Check horizontal overlap (XZ plane)
+      const horizontalBuffer = 10; // 10cm buffer
+
+      // Current object bounds
+      const currentMinX = position.x - objectWidth / 2;
+      const currentMaxX = position.x + objectWidth / 2;
+      const currentMinZ = position.z - objectDepth / 2;
+      const currentMaxZ = position.z + objectDepth / 2;
+
+      // Other object bounds
+      const itemMinX = itemPos.x - itemWidth / 2;
+      const itemMaxX = itemPos.x + itemWidth / 2;
+      const itemMinZ = itemPos.z - itemDepth / 2;
+      const itemMaxZ = itemPos.z + itemDepth / 2;
+
+      // Check for horizontal overlap
+      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+
+      if (overlapX && overlapZ) {
+        // Objects overlap horizontally and other object is above
+        nearestObjectAboveBottomY = Math.min(nearestObjectAboveBottomY, itemBottomY);
+        console.log(`📏 Found object above: ${item.type} at bottom Y=${itemBottomY.toFixed(1)}cm`);
+      }
+    });
+
+    // Calculate space: from current object top to bottom of nearest object above (or ceiling)
+    const spaceAbove = nearestObjectAboveBottomY - objectTopY;
+
+    console.log(`📏 Space above calculation:`, {
+      objectTopY: objectTopY.toFixed(1),
+      nearestObjectAboveBottomY: nearestObjectAboveBottomY.toFixed(1),
+      spaceAbove: spaceAbove.toFixed(1),
+      hasObjectAbove: nearestObjectAboveBottomY < ceilingHeight
+    });
+
+    return Math.max(0, spaceAbove);
   }
 
   // ✅ CRITICAL FIX: Calculate object's center height (middle of the actual 3D object)
@@ -378,7 +551,7 @@ export class MeasurementSystem {
     const objectTopY = this.getObjectTopY(measurements, position);
 
     // Position labels ABOVE the object
-    const labelHeightOffset = 40; // 40cm above top of object
+    // const labelHeightOffset = 40; // 40cm above top of object
     const spaceHeightOffset = 20; // 20cm above top of object for space labels
 
     console.log(`📏 RESTRICTIVE wall-mounted measurements for ${wallDirection} wall:`, {
@@ -401,7 +574,7 @@ export class MeasurementSystem {
       labels.push({
         id: 'object-width',
         text: `${Math.round(objectWidth)} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+        position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
         direction: 'horizontal',
         color: '#ff6b35',
         isObjectDimension: true
@@ -447,7 +620,7 @@ export class MeasurementSystem {
       labels.push({
         id: 'object-depth',
         text: `${Math.round(objectDepth)} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+        position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
         direction: 'vertical',
         color: '#ff6b35',
         isObjectDimension: true
@@ -581,7 +754,7 @@ export class MeasurementSystem {
     labels.push({
       id: 'object-width',
       text: `${Math.round(objectWidth)} cm`,
-      position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+      position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
       direction: 'horizontal',
       color: '#ff6b35',
       isObjectDimension: true
