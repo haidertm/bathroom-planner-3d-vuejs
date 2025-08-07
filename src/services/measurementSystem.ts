@@ -342,23 +342,28 @@ export class MeasurementSystem {
     const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
 
     // Add labels showing REMAINING SPACE (not absolute positions)
-    labels.push({
-      id: 'item-bottom-y',
-      text: `${Math.round(Math.max(0, spaceBelowObject))} cm`, // ✅ Space to object below OR floor
-      position: new THREE.Vector3(position.x, objectBottomY - 10, position.z),
-      direction: 'vertical',
-      color: '#007BFF',
-      isObjectDimension: false
-    });
+// Add labels showing REMAINING SPACE (not absolute positions)
+    if (spaceBelowObject > 0) {
+      labels.push({
+        id: 'item-bottom-y',
+        text: `${Math.round(Math.max(0, spaceBelowObject))} cm`,
+        position: new THREE.Vector3(position.x, objectBottomY - spaceBelowObject/2, position.z), // ❌ This positions it below object
+        direction: 'vertical',
+        color: '#007BFF',
+        isObjectDimension: false
+      });
+    }
 
-    labels.push({
-      id: 'item-top-y',
-      text: `${Math.round(Math.max(0, spaceAboveObject))} cm`, // ✅ Space to object above OR ceiling
-      position: new THREE.Vector3(position.x, objectTopY + 10, position.z),
-      direction: 'vertical',
-      color: '#007BFF',
-      isObjectDimension: false
-    });
+    if (spaceAboveObject > 0) {
+      labels.push({
+        id: 'item-top-y',
+        text: `${Math.round(Math.max(0, spaceAboveObject))} cm`,
+        position: new THREE.Vector3(position.x, objectTopY + spaceAboveObject/2, position.z), // ❌ This positions it above object
+        direction: 'vertical',
+        color: '#007BFF',
+        isObjectDimension: false
+      });
+    }
 
     // Existing logic for wall-bound or free-standing measurements
     if (measurements.isWallBound) {
@@ -938,6 +943,38 @@ export class MeasurementSystem {
         // Add end markers
         this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, startZ), 'horizontal');
         this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, endZ), 'horizontal');
+      }
+      else if (label.id === 'item-bottom-y') {
+        // Vertical line from object bottom to floor/object below
+        const objectBottomY = this.getObjectBottomY(measurements, position);
+        const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
+        const endY = objectBottomY - spaceBelowObject;
+
+        // Position line to the right side of object to avoid overlap
+        const lineX = position.x + measurements.objectWidth / 4;
+
+        points.push(new THREE.Vector3(lineX, objectBottomY, position.z)); // Start at object bottom
+        points.push(new THREE.Vector3(lineX, endY, position.z)); // End at floor/object below
+
+        // Add horizontal end markers for vertical line
+        this.createEndMarker(new THREE.Vector3(lineX, objectBottomY, position.z), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, endY, position.z), 'horizontal');
+
+      } else if (label.id === 'item-top-y') {
+        // Vertical line from object top to ceiling/object above
+        const objectTopY = this.getObjectTopY(measurements, position);
+        const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, 250); // 250 = ceiling height
+        const endY = objectTopY + spaceAboveObject;
+
+        // Position line to the left side of object to avoid overlap
+        const lineX = position.x - measurements.objectWidth / 4;
+
+        points.push(new THREE.Vector3(lineX, objectTopY, position.z)); // Start at object top
+        points.push(new THREE.Vector3(lineX, endY, position.z)); // End at ceiling/object above
+
+        // Add horizontal end markers for vertical line
+        this.createEndMarker(new THREE.Vector3(lineX, objectTopY, position.z), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, endY, position.z), 'horizontal');
       }
     }
 
