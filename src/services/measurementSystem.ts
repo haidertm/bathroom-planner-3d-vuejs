@@ -212,8 +212,8 @@ export class MeasurementSystem {
     // Calculate space to room boundaries
     const spaceToWestWall = (position.x + roomHalfWidth) - width / 2;
     const spaceToEastWall = (roomHalfWidth - position.x) - width / 2;
-    const spaceToNorthWall = (position.z + roomHalfHeight) - depth / 2;
-    const spaceToSouthWall = (roomHalfHeight - position.z) - depth / 2;
+    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2;
+    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2;
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
@@ -445,8 +445,8 @@ export class MeasurementSystem {
       // ❌ NO left/right measurements (no room extension lines)
 
       labels.push({
-        id: 'object-depth',
-        text: `${Math.round(objectDepth)} cm`,
+        id: 'object-width',
+        text: `${Math.round(objectWidth)} cm`,
         position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
         direction: 'vertical',
         color: '#ff6b35',

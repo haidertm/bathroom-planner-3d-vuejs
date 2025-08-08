@@ -22,8 +22,26 @@ export const DEFAULT_ORIENTATION: OrientationConfig = {
   description: 'Reflective surface faces into room'
 }
 
+export const DefaultCornerObjectRotation = {
+  'north-west': 0,
+  'north-east': -Math.PI / 2,
+  'south-east': Math.PI,
+  'south-west': Math.PI / 2
+}
+
+export type cornerInstallOnly = {
+  enabled: boolean;
+  rotation?: { // Optional, if not provided Default will be used
+    'north-west': number,
+    'north-east': number,
+    'south-west': number,
+    'south-east': number
+  }
+} | false
+
 export type MovementConfig = { // NEW: Sink movement configuration
   snapToWall: boolean,
+  cornerInstallOnly?: cornerInstallOnly,
   allowVerticalMovement?: boolean,
   allowFreeRotation?: boolean,
   minHeight?: number,
