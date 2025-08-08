@@ -202,20 +202,47 @@ export class MeasurementSystem {
   }
 
   private calculateAvailableSpace (
-    position: THREE.Vector3,
-    width: number,
-    depth: number,
-    height: number,
-    excludeItemId: number
+      position: THREE.Vector3,
+      width: number,
+      depth: number,
+      height: number,
+      excludeItemId: number
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
-    const roomHalfWidth = this.roomWidth / 2;
-    const roomHalfHeight = this.roomHeight / 2;
+    // ✅ FIXED: Use wall inner boundaries instead of room boundaries
+    const {interior} = getInteriorBoundaries(this.roomWidth, this.roomHeight);
 
-    // Calculate space to room boundaries
-    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2;
-    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2;
-    const spaceToNorthWall = (position.z + roomHalfHeight) - depth / 2;
-    const spaceToSouthWall = (roomHalfHeight - position.z) - depth / 2;
+    // ✅ CORRECTED: Calculate space to WALL INNER FACES (not room boundaries)
+    const spaceToWestWall = (position.x - interior.minX) - width / 2;   // Distance to west wall inner face
+    const spaceToEastWall = (interior.maxX - position.x) - width / 2;   // Distance to east wall inner face
+    const spaceToNorthWall = (position.z - interior.minZ) - depth / 2;  // Distance to north wall inner face ✅ FIXED: was using width
+    const spaceToSouthWall = (interior.maxZ - position.z) - depth / 2;  // Distance to south wall inner face ✅ FIXED: was using width
+
+    console.log(`🔍 WALL-AWARE SPACE DEBUG:`, {
+      roomDimensions: {width: this.roomWidth, height: this.roomHeight},
+      objectPosition: {x: position.x.toFixed(1), z: position.z.toFixed(1)},
+      objectDimensions: {width: width.toFixed(1), depth: depth.toFixed(1)},
+
+      interiorBoundaries: {
+        minX: interior.minX.toFixed(1),
+        maxX: interior.maxX.toFixed(1),
+        minZ: interior.minZ.toFixed(1),
+        maxZ: interior.maxZ.toFixed(1),
+        interiorWidth: interior.width.toFixed(1),
+        interiorHeight: interior.height.toFixed(1)
+      },
+
+      calculatedSpaces: {
+        left: spaceToWestWall.toFixed(1),
+        right: spaceToEastWall.toFixed(1),
+        front: spaceToNorthWall.toFixed(1),
+        back: spaceToSouthWall.toFixed(1)
+      },
+
+      verification: {
+        totalWidth: (spaceToWestWall + spaceToEastWall + width).toFixed(1) + 'cm (should equal ' + interior.width.toFixed(1) + 'cm)',
+        totalDepth: (spaceToNorthWall + spaceToSouthWall + depth).toFixed(1) + 'cm (should equal ' + interior.height.toFixed(1) + 'cm)'
+      }
+    });
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
@@ -600,7 +627,7 @@ export class MeasurementSystem {
 
       labels.push({
         id: 'object-width',
-        text: `${Math.round(objectWidth)} cm`,
+        text: `${objectWidth} cm`,
         position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
         direction: 'horizontal',
         color: '#ff6b35',
@@ -645,8 +672,8 @@ export class MeasurementSystem {
       // ❌ NO left/right measurements (no room extension lines)
 
       labels.push({
-        id: 'object-depth',
-        text: `${Math.round(objectDepth)} cm`,
+        id: 'object-width',
+        text: `${objectWidth} cm`,
         position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
         direction: 'vertical',
         color: '#ff6b35',
@@ -780,7 +807,7 @@ export class MeasurementSystem {
     // Show object dimensions
     labels.push({
       id: 'object-width',
-      text: `${Math.round(objectWidth)} cm`,
+      text: `${objectWidth} cm`,
       position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
       direction: 'horizontal',
       color: '#ff6b35',
@@ -925,7 +952,7 @@ export class MeasurementSystem {
         let lineZ = position.z;
         if (measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 20; // 20cm away from wall face
+          const offset = 5; // 20cm away from wall face
 
           switch (measurements.wallDirection) {
             case 'north': lineZ = wallFaces.north + offset; break; // Move south from north wall
@@ -948,7 +975,7 @@ export class MeasurementSystem {
         let lineZ = position.z;
         if (measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 20;
+          const offset = 5;
 
           switch (measurements.wallDirection) {
             case 'north': lineZ = wallFaces.north + offset; break;
@@ -971,7 +998,7 @@ export class MeasurementSystem {
         let lineX = position.x;
         if (measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 20;
+          const offset = 5;
 
           switch (measurements.wallDirection) {
             case 'north': lineX = position.x; break; // Keep original X for north/south walls
@@ -994,7 +1021,7 @@ export class MeasurementSystem {
         let lineX = position.x;
         if (measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 20;
+          const offset = 5;
 
           switch (measurements.wallDirection) {
             case 'north': lineX = position.x; break;
@@ -1020,7 +1047,7 @@ export class MeasurementSystem {
 
       if (measurements.isWallBound && measurements.wallDirection) {
         const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-        const offset = 20; // 20cm away from wall face (into the room)
+        const offset = 5; // 20cm away from wall face (into the room)
 
         switch (measurements.wallDirection) {
           case 'north':
@@ -1060,7 +1087,7 @@ export class MeasurementSystem {
 
       if (measurements.isWallBound && measurements.wallDirection) {
         const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-        const offset = 20; // 20cm away from wall face (into the room)
+        const offset = 5; // 20cm away from wall face (into the room)
 
         switch (measurements.wallDirection) {
           case 'north':
