@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
 import { getDimensions } from '../utils/constraints';
+import { getMovementConfig } from '../utils/models';
+import { getInteriorBoundaries } from '../models/roomGeometry';
 
 export interface MeasurementData {
   objectWidth: number;
@@ -332,37 +334,57 @@ export class MeasurementSystem {
     const objectBottomY = this.getObjectBottomY(measurements, position);
     const objectTopY = this.getObjectTopY(measurements, position);
 
-    // WALL/CEILING HEIGHT - This should be constant!
-    const CEILING_HEIGHT = 250; // From WALL_SETTINGS.HEIGHT
-
-    // Calculate space above object (to ceiling OR to object above)
+    const CEILING_HEIGHT = 250; // Wall height from WALL_SETTINGS.HEIGHT
     const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, CEILING_HEIGHT);
-
-    // Calculate space below object (to floor OR to object below)
     const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
 
-    // Add labels showing REMAINING SPACE (not absolute positions)
-// Add labels showing REMAINING SPACE (not absolute positions)
+    // ✅ Get movement config to check allowFreeRotation
+    const itemId = this.selectedObject.userData.itemId;
+    const currentItem = this.existingItems.find(item => item.id === itemId);
+    const movementConfig = getMovementConfig(currentItem?.type || 'Furniture', currentItem);
+
+    // ✅ Calculate if object POSITION is more than 40% up the wall height
+    // Use objectBottomY (where the object starts) to check mounting height
+    const objectMountingHeight = objectBottomY; // This is where the object is positioned
+    const mountingHeightPercentage = (objectMountingHeight / CEILING_HEIGHT) * 100;
+    const isObjectHighlyMounted = mountingHeightPercentage > 30;
+
+    console.log(`📏 Object mounting position check:`, {
+      objectBottomY: objectBottomY.toFixed(1) + 'cm',
+      wallHeight: CEILING_HEIGHT + 'cm',
+      mountingHeightPercentage: mountingHeightPercentage.toFixed(1) + '%',
+      isObjectHighlyMounted,
+      allowFreeRotation: movementConfig.allowFreeRotation
+    });
+
+    // Add bottom space for all objects
     if (spaceBelowObject > 0) {
       labels.push({
         id: 'item-bottom-y',
         text: `${Math.round(Math.max(0, spaceBelowObject))} cm`,
-        position: new THREE.Vector3(position.x, objectBottomY - spaceBelowObject/2, position.z), // ❌ This positions it below object
+        position: new THREE.Vector3(position.x, objectBottomY - spaceBelowObject/2, position.z),
         direction: 'vertical',
         color: '#007BFF',
         isObjectDimension: false
       });
     }
 
-    if (spaceAboveObject > 0) {
+    // ✅ CONDITIONAL: Show top space line when:
+    // 1. allowFreeRotation is FALSE AND
+    // 2. Object is mounted MORE than 40% up the wall height
+    if (spaceAboveObject > 0 && !movementConfig.allowFreeRotation && isObjectHighlyMounted) {
       labels.push({
         id: 'item-top-y',
         text: `${Math.round(Math.max(0, spaceAboveObject))} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + spaceAboveObject/2, position.z), // ❌ This positions it above object
+        position: new THREE.Vector3(position.x, objectTopY + spaceAboveObject/2, position.z),
         direction: 'vertical',
         color: '#007BFF',
         isObjectDimension: false
       });
+
+      console.log(`✅ Showing top space line: Object mounted at ${mountingHeightPercentage.toFixed(1)}% of wall height`);
+    } else if (!movementConfig.allowFreeRotation && !isObjectHighlyMounted) {
+      console.log(`🚫 Hiding top space line: Object mounted at only ${mountingHeightPercentage.toFixed(1)}% of wall height (< 40%)`);
     }
 
     // Existing logic for wall-bound or free-standing measurements
@@ -950,51 +972,99 @@ export class MeasurementSystem {
         const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
         const endY = objectBottomY - spaceBelowObject;
 
-        // Position line to the right side of object to avoid overlap
-        const lineX = position.x + measurements.objectWidth / 4;
+        let lineX = position.x;
+        let lineZ = position.z;
 
-        points.push(new THREE.Vector3(lineX, objectBottomY, position.z)); // Start at object bottom
-        points.push(new THREE.Vector3(lineX, endY, position.z)); // End at floor/object below
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 20; // 20cm away from wall face (into the room)
 
-        // Add horizontal end markers for vertical line
-        this.createEndMarker(new THREE.Vector3(lineX, objectBottomY, position.z), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(lineX, endY, position.z), 'horizontal');
+          switch (measurements.wallDirection) {
+            case 'north':
+              lineX = position.x;
+              lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
+              break;
+            case 'south':
+              lineX = position.x;
+              lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
+              break;
+            case 'east':
+              lineX = wallFaces.east - offset; // Move WEST (away from east wall)
+              lineZ = position.z;
+              break;
+            case 'west':
+              lineX = wallFaces.west + offset; // Move EAST (away from west wall)
+              lineZ = position.z;
+              break;
+          }
+        } else {
+          lineX = position.x + measurements.objectWidth / 4;
+          lineZ = position.z;
+        }
+
+        points.push(new THREE.Vector3(lineX, objectBottomY, lineZ));
+        points.push(new THREE.Vector3(lineX, endY, lineZ));
+        this.createEndMarker(new THREE.Vector3(lineX, objectBottomY, lineZ), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
 
       } else if (label.id === 'item-top-y') {
-        // Vertical line from object top to ceiling/object above
         const objectTopY = this.getObjectTopY(measurements, position);
-        const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, 250); // 250 = ceiling height
+        const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, 250);
         const endY = objectTopY + spaceAboveObject;
 
-        // Position line to the left side of object to avoid overlap
-        const lineX = position.x - measurements.objectWidth / 4;
+        let lineX = position.x;
+        let lineZ = position.z;
 
-        points.push(new THREE.Vector3(lineX, objectTopY, position.z)); // Start at object top
-        points.push(new THREE.Vector3(lineX, endY, position.z)); // End at ceiling/object above
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 20; // 20cm away from wall face (into the room)
 
-        // Add horizontal end markers for vertical line
-        this.createEndMarker(new THREE.Vector3(lineX, objectTopY, position.z), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(lineX, endY, position.z), 'horizontal');
+          switch (measurements.wallDirection) {
+            case 'north':
+              lineX = position.x;
+              lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
+              break;
+            case 'south':
+              lineX = position.x;
+              lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
+              break;
+            case 'east':
+              lineX = wallFaces.east - offset; // Move WEST (away from east wall)
+              lineZ = position.z;
+              break;
+            case 'west':
+              lineX = wallFaces.west + offset; // Move EAST (away from west wall)
+              lineZ = position.z;
+              break;
+          }
+        } else {
+          lineX = position.x - measurements.objectWidth / 4;
+          lineZ = position.z;
+        }
+
+        points.push(new THREE.Vector3(lineX, objectTopY, lineZ));
+        points.push(new THREE.Vector3(lineX, endY, lineZ));
+        this.createEndMarker(new THREE.Vector3(lineX, objectTopY, lineZ), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
+      }
+
+      if (points.length === 2) {
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+        // IKEA-style line material - thin and professional
+        const material = new THREE.LineBasicMaterial({
+          color: '#000000',
+          linewidth: 2,
+          transparent: false,
+          opacity: 1
+        });
+
+        const line = new THREE.Line(geometry, material);
+        line.userData = {lineId: label.id};
+        this.measurementLines.add(line);
       }
     }
-
-    if (points.length === 2) {
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-      // IKEA-style line material - thin and professional
-      const material = new THREE.LineBasicMaterial({
-        color: '#000000',
-        linewidth: 1,
-        transparent: false,
-        opacity: 1
-      });
-
-      const line = new THREE.Line(geometry, material);
-      line.userData = { lineId: label.id };
-      this.measurementLines.add(line);
-    }
   }
-
   // NEW: Create end markers (small perpendicular lines at measurement ends)
   private createEndMarker (position: THREE.Vector3, direction: 'horizontal' | 'vertical'): void {
     const markerSize = 8; // Small marker size
