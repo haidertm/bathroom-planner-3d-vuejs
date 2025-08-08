@@ -919,151 +919,194 @@ export class MeasurementSystem {
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
       if (label.id === 'space-left') {
         const startX = position.x - measurements.objectWidth / 2;
-        // Stop at wall inner surface, not room boundary
-        // const wallSurfaceX = -roomHalfWidth + wallThickness / 2;
         const endX = startX - measurements.spaceLeft;
 
-        points.push(new THREE.Vector3(startX, objectCenterY, position.z));
-        points.push(new THREE.Vector3(endX, objectCenterY, position.z));
+        // ✅ Apply wall offset for consistent positioning
+        let lineZ = position.z;
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 20; // 20cm away from wall face
 
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, position.z), 'vertical');
-        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, position.z), 'vertical');
+          switch (measurements.wallDirection) {
+            case 'north': lineZ = wallFaces.north + offset; break; // Move south from north wall
+            case 'south': lineZ = wallFaces.south - offset; break; // Move north from south wall
+            case 'east': lineZ = position.z; break; // Keep original Z for east/west walls
+            case 'west': lineZ = position.z; break; // Keep original Z for east/west walls
+          }
+        }
+
+        points.push(new THREE.Vector3(startX, objectCenterY, lineZ));
+        points.push(new THREE.Vector3(endX, objectCenterY, lineZ));
+        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, lineZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
 
       } else if (label.id === 'space-right') {
         const startX = position.x + measurements.objectWidth / 2;
-        // Stop at wall inner surface, not room boundary
         const endX = startX + measurements.spaceRight;
 
-        points.push(new THREE.Vector3(startX, objectCenterY, position.z));
-        points.push(new THREE.Vector3(endX, objectCenterY, position.z));
+        // ✅ Apply wall offset for consistent positioning
+        let lineZ = position.z;
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 20;
 
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, position.z), 'vertical');
-        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, position.z), 'vertical');
+          switch (measurements.wallDirection) {
+            case 'north': lineZ = wallFaces.north + offset; break;
+            case 'south': lineZ = wallFaces.south - offset; break;
+            case 'east': lineZ = position.z; break;
+            case 'west': lineZ = position.z; break;
+          }
+        }
+
+        points.push(new THREE.Vector3(startX, objectCenterY, lineZ));
+        points.push(new THREE.Vector3(endX, objectCenterY, lineZ));
+        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, lineZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
 
       } else if (label.id === 'space-front') {
         const startZ = position.z - measurements.objectDepth / 2;
-        // Stop at wall inner surface, not room boundary
         const endZ = startZ - measurements.spaceFront;
 
-        points.push(new THREE.Vector3(position.x, objectCenterY, startZ));
-        points.push(new THREE.Vector3(position.x, objectCenterY, endZ));
+        // ✅ Apply wall offset for consistent positioning
+        let lineX = position.x;
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 20;
 
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, startZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, endZ), 'horizontal');
+          switch (measurements.wallDirection) {
+            case 'north': lineX = position.x; break; // Keep original X for north/south walls
+            case 'south': lineX = position.x; break; // Keep original X for north/south walls
+            case 'east': lineX = wallFaces.east - offset; break; // Move west from east wall
+            case 'west': lineX = wallFaces.west + offset; break; // Move east from west wall
+          }
+        }
+
+        points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
+        points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'horizontal');
 
       } else if (label.id === 'space-back') {
         const startZ = position.z + measurements.objectDepth / 2;
-        // Stop at wall inner surface, not room boundary
         const endZ = startZ + measurements.spaceBack;
 
-        points.push(new THREE.Vector3(position.x, objectCenterY, startZ));
-        points.push(new THREE.Vector3(position.x, objectCenterY, endZ));
-
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, startZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, endZ), 'horizontal');
-      }
-      else if (label.id === 'item-bottom-y') {
-        // Vertical line from object bottom to floor/object below
-        const objectBottomY = this.getObjectBottomY(measurements, position);
-        const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
-        const endY = objectBottomY - spaceBelowObject;
-
+        // ✅ Apply wall offset for consistent positioning
         let lineX = position.x;
-        let lineZ = position.z;
-
         if (measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 20; // 20cm away from wall face (into the room)
+          const offset = 20;
 
           switch (measurements.wallDirection) {
-            case 'north':
-              lineX = position.x;
-              lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
-              break;
-            case 'south':
-              lineX = position.x;
-              lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
-              break;
-            case 'east':
-              lineX = wallFaces.east - offset; // Move WEST (away from east wall)
-              lineZ = position.z;
-              break;
-            case 'west':
-              lineX = wallFaces.west + offset; // Move EAST (away from west wall)
-              lineZ = position.z;
-              break;
+            case 'north': lineX = position.x; break;
+            case 'south': lineX = position.x; break;
+            case 'east': lineX = wallFaces.east - offset; break;
+            case 'west': lineX = wallFaces.west + offset; break;
           }
-        } else {
-          lineX = position.x + measurements.objectWidth / 4;
-          lineZ = position.z;
         }
 
-        points.push(new THREE.Vector3(lineX, objectBottomY, lineZ));
-        points.push(new THREE.Vector3(lineX, endY, lineZ));
-        this.createEndMarker(new THREE.Vector3(lineX, objectBottomY, lineZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
+        points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
+        points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'horizontal');
+      }
+    else if (label.id === 'item-bottom-y') {
+      // Vertical line from object bottom to floor/object below
+      const objectBottomY = this.getObjectBottomY(measurements, position);
+      const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
+      const endY = objectBottomY - spaceBelowObject;
 
-      } else if (label.id === 'item-top-y') {
-        const objectTopY = this.getObjectTopY(measurements, position);
-        const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, 250);
-        const endY = objectTopY + spaceAboveObject;
+      let lineX = position.x;
+      let lineZ = position.z;
 
-        let lineX = position.x;
-        let lineZ = position.z;
+      if (measurements.isWallBound && measurements.wallDirection) {
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 20; // 20cm away from wall face (into the room)
 
-        if (measurements.isWallBound && measurements.wallDirection) {
-          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 20; // 20cm away from wall face (into the room)
-
-          switch (measurements.wallDirection) {
-            case 'north':
-              lineX = position.x;
-              lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
-              break;
-            case 'south':
-              lineX = position.x;
-              lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
-              break;
-            case 'east':
-              lineX = wallFaces.east - offset; // Move WEST (away from east wall)
-              lineZ = position.z;
-              break;
-            case 'west':
-              lineX = wallFaces.west + offset; // Move EAST (away from west wall)
-              lineZ = position.z;
-              break;
-          }
-        } else {
-          lineX = position.x - measurements.objectWidth / 4;
-          lineZ = position.z;
+        switch (measurements.wallDirection) {
+          case 'north':
+            lineX = position.x;
+            lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
+            break;
+          case 'south':
+            lineX = position.x;
+            lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
+            break;
+          case 'east':
+            lineX = wallFaces.east - offset; // Move WEST (away from east wall)
+            lineZ = position.z;
+            break;
+          case 'west':
+            lineX = wallFaces.west + offset; // Move EAST (away from west wall)
+            lineZ = position.z;
+            break;
         }
-
-        points.push(new THREE.Vector3(lineX, objectTopY, lineZ));
-        points.push(new THREE.Vector3(lineX, endY, lineZ));
-        this.createEndMarker(new THREE.Vector3(lineX, objectTopY, lineZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
+      } else {
+        lineX = position.x + measurements.objectWidth / 4;
+        lineZ = position.z;
       }
 
-      if (points.length === 2) {
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      points.push(new THREE.Vector3(lineX, objectBottomY, lineZ));
+      points.push(new THREE.Vector3(lineX, endY, lineZ));
+      this.createEndMarker(new THREE.Vector3(lineX, objectBottomY, lineZ), 'horizontal');
+      this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
 
-        // IKEA-style line material - thin and professional
-        const material = new THREE.LineBasicMaterial({
-          color: '#000000',
-          linewidth: 2,
-          transparent: false,
-          opacity: 1
-        });
+    } else if (label.id === 'item-top-y') {
+      const objectTopY = this.getObjectTopY(measurements, position);
+      const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, 250);
+      const endY = objectTopY + spaceAboveObject;
 
-        const line = new THREE.Line(geometry, material);
-        line.userData = {lineId: label.id};
-        this.measurementLines.add(line);
+      let lineX = position.x;
+      let lineZ = position.z;
+
+      if (measurements.isWallBound && measurements.wallDirection) {
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 20; // 20cm away from wall face (into the room)
+
+        switch (measurements.wallDirection) {
+          case 'north':
+            lineX = position.x;
+            lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
+            break;
+          case 'south':
+            lineX = position.x;
+            lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
+            break;
+          case 'east':
+            lineX = wallFaces.east - offset; // Move WEST (away from east wall)
+            lineZ = position.z;
+            break;
+          case 'west':
+            lineX = wallFaces.west + offset; // Move EAST (away from west wall)
+            lineZ = position.z;
+            break;
+        }
+      } else {
+        lineX = position.x - measurements.objectWidth / 4;
+        lineZ = position.z;
       }
+
+      points.push(new THREE.Vector3(lineX, objectTopY, lineZ));
+      points.push(new THREE.Vector3(lineX, endY, lineZ));
+      this.createEndMarker(new THREE.Vector3(lineX, objectTopY, lineZ), 'horizontal');
+      this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
     }
+
+    if (points.length === 2) {
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+      // IKEA-style line material - thin and professional
+      const material = new THREE.LineBasicMaterial({
+        color: '#000000',
+        linewidth: 2,
+        transparent: false,
+        opacity: 1
+      });
+
+      const line = new THREE.Line(geometry, material);
+      line.userData = {lineId: label.id};
+      this.measurementLines.add(line);
+    }
+  }
   }
   // NEW: Create end markers (small perpendicular lines at measurement ends)
   private createEndMarker (position: THREE.Vector3, direction: 'horizontal' | 'vertical'): void {
