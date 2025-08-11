@@ -964,7 +964,7 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
 
       } else if (label.id === 'space-front') {
-        const startZ = position.z - measurements.objectDepth / 2;
+        const startZ = position.z - measurements.objectWidth / 2;
         const endZ = startZ - measurements.spaceFront;
 
         // ✅ Apply wall offset for consistent positioning
@@ -987,7 +987,7 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'horizontal');
 
       } else if (label.id === 'space-back') {
-        const startZ = position.z + measurements.objectDepth / 2;
+        const startZ = position.z + measurements.objectWidth / 2;
         const endZ = startZ + measurements.spaceBack;
 
         // ✅ Apply wall offset for consistent positioning
