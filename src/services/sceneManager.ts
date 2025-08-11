@@ -68,7 +68,7 @@ export class SceneManager {
     this.bathroomItemsGroup.name = 'bathroomItems';
     this.wallLabelsDebug = new WallLabelsDebug();
     this.axisIndicatorsDebug = new AxisIndicatorsDebug(); // Add this
-    this.debugLabelsEnabled = true;
+    this.debugLabelsEnabled = false;
   }
 
   initializeScene (): SceneComponents {
@@ -266,7 +266,7 @@ export class SceneManager {
   // Method to add single item (for real-time adding from Planner.vue)
   async addSingleItem (item: BathroomItem): Promise<void> {
 
-    console.log('>>>111 addSingleItem called with item:', item);
+    console.log('addSingleItem called with item:', item);
 
     if (this.existingItems.has(item.id)) {
       console.log(`Item ${item.id} already exists, updating instead`);

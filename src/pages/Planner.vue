@@ -468,8 +468,6 @@ const addItem = async (type, productData = null) => {
   // ✅ CRITICAL: Get the correct orientation from productData
   const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
-  console.log('>>>111 selectedVariant?.movement', selectedVariant?.movement);
-
   // Find a free position on any wall
   const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
       roomWidth.value,
@@ -482,7 +480,8 @@ const addItem = async (type, productData = null) => {
       selectedVariant?.movement,
       selectedVariant?.spawnHeight,
       selectedVariant?.floorOffset || 0,
-      selectedVariant.sku
+      selectedVariant.sku,
+
   )
 
   const newItem = {
@@ -518,15 +517,13 @@ const addItem = async (type, productData = null) => {
     })
   }
 
-  console.log('>>>111 newItemToBeAdded>>>', newItem);
-
   // PERFORMANCE BOOST: Add directly to scene first (if not initial load)
   if (sceneManagerRef.value && !isInitialLoad.value) {
     try {
       await sceneManagerRef.value.addSingleItem(newItem)
-      console.log(`>>>111 ✅ Added item ${ newItem.id } directly to scene`)
+      console.log(`✅ Added item ${ newItem.id } directly to scene`)
     } catch (error) {
-      console.error('>>>111 ❌ Failed to add item directly:', error)
+      console.error('❌ Failed to add item directly:', error)
       // Will fall back to full update via watcher
     }
   }
@@ -942,17 +939,12 @@ watch([items, lastUpdateSource], ([newItems, updateSource]) => {
 
   // For initial load, use the full update method
   if (isInitialLoad.value) {
-    console.log('>>>111 🚀 Initial load - using full update')
+    console.log('🚀 Initial load - using full update')
     sceneManagerRef.value.updateBathroomItems(newItems)
     previousItems.value = [...newItems]
     isInitialLoad.value = false
     return
   }
-
-  console.log('>>>111 smart update triggered:', {
-    source: updateSource,
-    itemCount: newItems.length
-  })
   // Use smart updates for better performance
   handleSmartUpdate(newItems, updateSource)
 

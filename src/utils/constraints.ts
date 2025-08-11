@@ -184,19 +184,21 @@ export const constrainToCorner = (
     scale = 1.0,
     orientation = DEFAULT_ORIENTATION,
     item,
-    movement
+    movement,
+    sku
   }: {
     type: ComponentType | null;
     scale?: number;
     orientation?: OrientationConfig;
     item?: BathroomItem;
     movement?: MovementConfig;
+    sku?: string;
   }
 ): { position: Position; rotation: number } => {
 
   if (!objectType) return { position, rotation: 0 };
 
-  const dimensions = getDimensions(objectType, item?.sku, item?.model);
+  const dimensions = getDimensions(objectType, item?.sku ?? sku, item?.model);
   if (!dimensions) {
     console.warn(`>>>111 No dimensions found for ${objectType}`);
     return { position, rotation: 0 };
@@ -262,8 +264,6 @@ export const constrainToCorner = (
       break;
   }
 
-  console.log('>>>111 constrainedPosition', constrainedPosition, nearestCorner.type);
-
   // Handle vertical positioning
   if (movementConfig.allowVerticalMovement) {
     const minHeight = movementConfig.minHeight || 0;
@@ -272,22 +272,6 @@ export const constrainToCorner = (
   } else {
     constrainedPosition.y = movementConfig.minHeight || 0;
   }
-
-  console.log(`🏠 Corner constraint for ${objectType}:`, {
-    nearestCorner: nearestCorner.type,
-    cornerWallPos: {
-      x: nearestCorner.position.x.toFixed(1),
-      z: nearestCorner.position.z.toFixed(1)
-    },
-    objectDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
-    halfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
-    wallBuffer: wallBuffer.toFixed(1) + 'cm',
-    finalPos: {
-      x: constrainedPosition.x.toFixed(1),
-      z: constrainedPosition.z.toFixed(1)
-    },
-    rotation: (rotation * 180 / Math.PI).toFixed(0) + '°'
-  });
 
   return { position: constrainedPosition, rotation };
 };
@@ -619,7 +603,8 @@ export const wouldCollideWithExisting = (
   scale: number,
   objectId: number,
   existingItems: BathroomItem[],
-  currentItem?: BathroomItem // Optional: the item being moved/placed
+  currentItem?: BathroomItem, // Optional: the item being moved/placed
+  _sku?: string
 ): boolean => {
   for (const item of existingItems) {
     if (item.id === objectId) {
@@ -1138,11 +1123,11 @@ export const findFreeCornerPosition = (
   // Try each corner
   for (const corner of corners) {
 
-    const offsetPosition = {
-      x: corner.position.x,
-      y: 0,
-      z: corner.position.z
-    };
+    // const offsetPosition = {
+    //   x: corner.position.x,
+    //   y: 0,
+    //   z: corner.position.z
+    // };
 
     // // Offset based on which corner we're in, using actual object dimensions
     // switch (corner.type) {
@@ -1164,11 +1149,12 @@ export const findFreeCornerPosition = (
     //     break;
     // }
 
-    const result = constrainToCorner(offsetPosition, roomWidth, roomHeight, {
+    const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
       type: objectType,
-      scale,
+      scale: 1.0,
       orientation,
-      movement
+      movement,
+      sku
     });
 
     // Check if this corner position would collide
