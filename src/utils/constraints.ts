@@ -216,7 +216,7 @@ export const constrainToCorner = (
   // For corner items, we position them flush in the corner
   // The object's center should be at half its dimensions from each wall
   const halfWidth = (dimensions.width * scale) / 2;
-  const halfDepth = (dimensions.depth * scale) / 2;
+  // const halfDepth = (dimensions.depth * scale) / 2;
 
   let constrainedPosition = { ...nearestCorner.position };
   let rotation = 0;
