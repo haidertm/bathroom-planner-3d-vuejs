@@ -208,45 +208,18 @@ export class MeasurementSystem {
       height: number,
       excludeItemId: number
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
-    // ✅ FIXED: Use wall inner boundaries instead of room boundaries
-    const {interior} = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+    const roomHalfWidth = this.roomWidth / 2;
+    const roomHalfHeight = this.roomHeight / 2;
 
-    // ✅ CORRECTED: Calculate space to WALL INNER FACES (not room boundaries)
-    const spaceToWestWall = (position.x - interior.minX) - width / 2;   // Distance to west wall inner face
-    const spaceToEastWall = (interior.maxX - position.x) - width / 2;   // Distance to east wall inner face
-    const spaceToNorthWall = (position.z - interior.minZ) - depth / 2;  // Distance to north wall inner face ✅ FIXED: was using width
-    const spaceToSouthWall = (interior.maxZ - position.z) - depth / 2;  // Distance to south wall inner face ✅ FIXED: was using width
-
-    console.log(`🔍 WALL-AWARE SPACE DEBUG:`, {
-      roomDimensions: {width: this.roomWidth, height: this.roomHeight},
-      objectPosition: {x: position.x.toFixed(1), z: position.z.toFixed(1)},
-      objectDimensions: {width: width.toFixed(1), depth: depth.toFixed(1)},
-
-      interiorBoundaries: {
-        minX: interior.minX.toFixed(1),
-        maxX: interior.maxX.toFixed(1),
-        minZ: interior.minZ.toFixed(1),
-        maxZ: interior.maxZ.toFixed(1),
-        interiorWidth: interior.width.toFixed(1),
-        interiorHeight: interior.height.toFixed(1)
-      },
-
-      calculatedSpaces: {
-        left: spaceToWestWall.toFixed(1),
-        right: spaceToEastWall.toFixed(1),
-        front: spaceToNorthWall.toFixed(1),
-        back: spaceToSouthWall.toFixed(1)
-      },
-
-      verification: {
-        totalWidth: (spaceToWestWall + spaceToEastWall + width).toFixed(1) + 'cm (should equal ' + interior.width.toFixed(1) + 'cm)',
-        totalDepth: (spaceToNorthWall + spaceToSouthWall + depth).toFixed(1) + 'cm (should equal ' + interior.height.toFixed(1) + 'cm)'
-      }
-    });
+    // Calculate space to room boundaries
+    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2;
+    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2;
+    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2;
+    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2;
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
-      position, width, depth, height, excludeItemId
+        position, width, depth, height, excludeItemId
     );
 
     return {
