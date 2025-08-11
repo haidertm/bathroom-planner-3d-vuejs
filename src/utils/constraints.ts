@@ -198,14 +198,14 @@ export const constrainToCorner = (
 
   const dimensions = getDimensions(objectType, item?.sku, item?.model);
   if (!dimensions) {
-    console.warn(`No dimensions found for ${objectType}`);
+    console.warn(`>>>111 No dimensions found for ${objectType}`);
     return { position, rotation: 0 };
   }
 
   const nearestCorner = getNearestCorner(position, roomWidth, roomHeight);
   const movementConfig = movement ?? getMovementConfig(objectType, item);
 
-  console.log('constrainging To Corner for movement', movementConfig);
+  console.log('>>>111 constrainging To Corner for movement', movementConfig);
 
   // Get the wall buffer (usually 0 for flush-mounted items)
   const wallBuffer = (orientation?.wallBuffer !== undefined) ?
@@ -219,11 +219,13 @@ export const constrainToCorner = (
   let constrainedPosition = { ...nearestCorner.position };
   let rotation = 0;
 
+  console.log('>>>111 halfWidth');
+
   // cornerInstallOnly is either false or an object
   if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
     rotation = movementConfig.cornerInstallOnly?.rotation?.[nearestCorner.type] ?? DefaultCornerObjectRotation[nearestCorner.type];
   } else {
-    console.error(`No corner rotation defined for ${objectType} in ${nearestCorner.type}`);
+    console.error(`>>>111 No corner rotation defined for ${objectType} in ${nearestCorner.type}`);
     return { position, rotation: 0 };
   }
 
@@ -259,6 +261,8 @@ export const constrainToCorner = (
       // rotation = Math.PI; // 180 degrees
       break;
   }
+
+  console.log('>>>111 constrainedPosition', constrainedPosition, nearestCorner.type);
 
   // Handle vertical positioning
   if (movementConfig.allowVerticalMovement) {
@@ -984,7 +988,8 @@ export const findFreeWallPosition = (
       scale,
       existingItems,
       orientation,
-      movementConfig
+      movementConfig,
+      sku
     );
   }
 
@@ -992,6 +997,7 @@ export const findFreeWallPosition = (
     return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig);
   }
 
+  console.log('>>>111 SKU', sku);
   // GET OBJECT DIMENSIONS - THIS IS WHAT'S MISSING!
   const dimensions = getDimensions(objectType, sku);
   const halfWidth = (dimensions.width) / 2;
@@ -1109,14 +1115,56 @@ export const findFreeCornerPosition = (
   scale: number = 1.0,
   existingItems: BathroomItem[] = [],
   orientation: OrientationConfig = DEFAULT_ORIENTATION,
-  movement?: MovementConfig
+  movement?: MovementConfig,
+  sku?: string
 ): { position: Position; rotation: number } => {
 
   const corners = getRoomCorners(roomWidth, roomHeight);
 
+  const dimensions = getDimensions(objectType, sku);
+
+  if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
+    console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
+    // Fallback if no dimensions found
+    return {
+      position: corners[0].position,
+      rotation: 0
+    };
+  }
+
+  const halfWidth = (dimensions.width * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
+
   // Try each corner
   for (const corner of corners) {
-    const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
+
+    const offsetPosition = {
+      x: corner.position.x,
+      y: 0,
+      z: corner.position.z
+    };
+
+    // // Offset based on which corner we're in, using actual object dimensions
+    // switch (corner.type) {
+    //   case 'north-west':
+    //     offsetPosition.x += halfWidth * 0.5;  // Offset slightly inward
+    //     offsetPosition.z += halfDepth * 0.5;
+    //     break;
+    //   case 'north-east':
+    //     offsetPosition.x -= halfWidth * 0.5;
+    //     offsetPosition.z += halfDepth * 0.5;
+    //     break;
+    //   case 'south-east':
+    //     offsetPosition.x -= halfWidth * 0.5;
+    //     offsetPosition.z -= halfDepth * 0.5;
+    //     break;
+    //   case 'south-west':
+    //     offsetPosition.x += halfWidth * 0.5;
+    //     offsetPosition.z -= halfDepth * 0.5;
+    //     break;
+    // }
+
+    const result = constrainToCorner(offsetPosition, roomWidth, roomHeight, {
       type: objectType,
       scale,
       orientation,
@@ -1140,7 +1188,16 @@ export const findFreeCornerPosition = (
 
   // If no free corner, return the first corner (user can manually move)
   console.warn('⚠️ No free corners available, using north-west');
-  return constrainToCorner(corners[0].position, roomWidth, roomHeight, {
+
+  // Apply the same dimension-based offset for the fallback position
+  const fallbackCorner = corners[0];
+  const fallbackOffset = {
+    x: fallbackCorner.position.x + halfWidth * 0.5,
+    y: 0,
+    z: fallbackCorner.position.z + halfDepth * 0.5
+  };
+
+  return constrainToCorner(fallbackOffset, roomWidth, roomHeight, {
     type: objectType,
     scale,
     orientation,
