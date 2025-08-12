@@ -1,27 +1,5 @@
 .
-├── .codesandbox
-│   ├── icon.png
-│   ├── tasks.json
-│   └── template.json
-├── .devcontainer
-│   └── devcontainer.json
 ├── .gitignore
-├── .idea
-│   ├── bathroom-planner-3d-vuejs.iml
-│   ├── compiler.xml
-│   ├── .gitignore
-│   ├── inspectionProfiles
-│   ├── jsLibraryMappings.xml
-│   ├── libraries
-│   │   └── tsconfig_json.xml
-│   ├── modules.xml
-│   ├── shelf
-│   │   ├── Uncommitted_changes_before_Update_at_8_6_25,_1_12_PM_[Changes]
-│   │   │   └── shelved.patch
-│   │   └── Uncommitted_changes_before_Update_at_8_6_25__1_12_PM__Changes_.xml
-│   ├── vcs.xml
-│   ├── webResources.xml
-│   └── workspace.xml
 ├── index.html
 ├── package.json
 ├── pnpm-lock.yaml
@@ -196,9 +174,7 @@
 ├── vite.config.d.ts
 ├── vite.config.js
 ├── vite.config.ts
-├── .vscode
-│   └── extensions.json
 ├── yarn-error.log
 └── yarn.lock
 
-40 directories, 161 files
+32 directories, 145 files
