@@ -190,7 +190,7 @@ export class MeasurementSystem {
   private getWallDirection (position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | undefined {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
-    const tolerance = 50;
+    const tolerance = 30;
 
     if (Math.abs(position.z + roomHalfHeight) < tolerance) return 'north';
     if (Math.abs(position.z - roomHalfHeight) < tolerance) return 'south';
@@ -276,7 +276,7 @@ export class MeasurementSystem {
       const itemTopY = itemBottomY + itemHeight;
 
       // ✅ KEY FIX: Only measure distance if objects have height overlap
-      const verticalOverlapBuffer = 11; // 20cm buffer
+      const verticalOverlapBuffer = 5; // 20cm buffer
       const hasVerticalOverlap = !(currentTopY + verticalOverlapBuffer < itemBottomY ||
         itemTopY + verticalOverlapBuffer < currentBottomY);
     console.log('>>> overlap', hasVerticalOverlap);
@@ -765,7 +765,7 @@ export class MeasurementSystem {
       });
     }
 
-    if (spaceBack > 10) {
+    if (spaceBack > 5) {
       labels.push({
         id: 'space-back',
         text: `${Math.round(spaceBack)} cm`,
