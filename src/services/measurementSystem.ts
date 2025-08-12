@@ -157,7 +157,6 @@ export class MeasurementSystem {
     const spaceCalculations = this.calculateAvailableSpace(
       objectPosition,
       scaledWidth,
-      scaledDepth,
       scaledHeight,
       this.selectedObject.userData.itemId
     );
@@ -204,7 +203,6 @@ export class MeasurementSystem {
   private calculateAvailableSpace (
       position: THREE.Vector3,
       width: number,
-      depth: number,
       height: number,
       excludeItemId: number
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
@@ -219,7 +217,7 @@ export class MeasurementSystem {
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
-        position, width, depth, height, excludeItemId
+        position, width, height, excludeItemId
     );
 
     return {
@@ -235,7 +233,6 @@ export class MeasurementSystem {
   private calculateSpaceToOtherObjects (
     position: THREE.Vector3,
     width: number,
-    depth: number,
     height: number, // ✅ Now we use the height parameter
     excludeItemId: number
   ): { left: number; right: number; front: number; back: number } {
@@ -268,7 +265,7 @@ export class MeasurementSystem {
 
       const itemScale = item.scale || 1.0;
       const itemWidth = itemDimensions.width * itemScale;
-      const itemDepth = itemDimensions.depth * itemScale;
+      // const itemDepth = itemDimensions.depth * itemScale;
       const itemHeight = itemDimensions.height * itemScale;
       const itemFloorOffset = itemDimensions.floorOffset * itemScale;
 
@@ -279,10 +276,10 @@ export class MeasurementSystem {
       const itemTopY = itemBottomY + itemHeight;
 
       // ✅ KEY FIX: Only measure distance if objects have height overlap
-      const verticalOverlapBuffer = 20; // 20cm buffer
+      const verticalOverlapBuffer = 11; // 20cm buffer
       const hasVerticalOverlap = !(currentTopY + verticalOverlapBuffer < itemBottomY ||
         itemTopY + verticalOverlapBuffer < currentBottomY);
-
+    console.log('>>> overlap', hasVerticalOverlap);
       if (!hasVerticalOverlap) {
         // Objects are at different heights - skip this object
         console.log(`⏭️ Skipping ${item.type} - different height level (${Math.abs(currentBottomY - itemBottomY).toFixed(1)}cm apart)`);
@@ -292,8 +289,8 @@ export class MeasurementSystem {
       // Rest of the method remains exactly the same
       const leftDistance = Math.abs(position.x - width / 2 - (itemPos.x + itemWidth / 2));
       const rightDistance = Math.abs(position.x + width / 2 - (itemPos.x - itemWidth / 2));
-      const frontDistance = Math.abs(position.z - depth / 2 - (itemPos.z + itemDepth / 2));
-      const backDistance = Math.abs(position.z + depth / 2 - (itemPos.z - itemDepth / 2));
+      const frontDistance = Math.abs(position.z - width / 2 - (itemPos.z + itemWidth / 2));
+      const backDistance = Math.abs(position.z + width / 2 - (itemPos.z - itemWidth / 2));
 
       // Update minimum distances (considering object alignment)
       if (this.objectsAlignedOnAxis(position, itemPos, 'x')) {
@@ -347,6 +344,7 @@ export class MeasurementSystem {
     // Use objectBottomY (where the object starts) to check mounting height
     const objectMountingHeight = objectBottomY; // This is where the object is positioned
     const mountingHeightPercentage = (objectMountingHeight / CEILING_HEIGHT) * 100;
+    const hasObjectAbove = spaceAboveObject < (CEILING_HEIGHT - objectTopY);
     const isObjectHighlyMounted = mountingHeightPercentage > 30;
 
     console.log(`📏 Object mounting position check:`, {
@@ -371,8 +369,13 @@ export class MeasurementSystem {
 
     // ✅ CONDITIONAL: Show top space line when:
     // 1. allowFreeRotation is FALSE AND
-    // 2. Object is mounted MORE than 40% up the wall height
-    if (spaceAboveObject > 0 && !movementConfig.allowFreeRotation && isObjectHighlyMounted) {
+    // 2. Object is mounted MORE than 30% up the wall height
+
+    const shouldShowTopSpace = spaceAboveObject > 0 &&
+        !movementConfig.allowFreeRotation &&
+        (isObjectHighlyMounted || hasObjectAbove);
+
+    if (shouldShowTopSpace) {
       labels.push({
         id: 'item-top-y',
         text: `${Math.round(Math.max(0, spaceAboveObject))} cm`,
