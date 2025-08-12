@@ -265,6 +265,9 @@ export class SceneManager {
   // Add method to add single item (for real-time adding)
   // Method to add single item (for real-time adding from Planner.vue)
   async addSingleItem (item: BathroomItem): Promise<void> {
+
+    console.log('addSingleItem called with item:', item);
+
     if (this.existingItems.has(item.id)) {
       console.log(`Item ${item.id} already exists, updating instead`);
       const existingModel = this.existingItems.get(item.id);
@@ -784,8 +787,8 @@ export class SceneManager {
 
     try {
       console.log('=== INCREMENTAL BATHROOM ITEMS UPDATE ===');
-      console.log('Items to process:', items.length);
-      console.log('Existing items in scene:', this.existingItems.size);
+      console.log('>>>111 Items to process:', items.length);
+      console.log('>>>111 Existing items in scene:', this.existingItems.size);
 
       // Get current item IDs
       const newItemIds = new Set(items.map(item => item.id));
@@ -818,8 +821,8 @@ export class SceneManager {
           }
         } else {
           // ADD new item (using your existing createModel function)
-          console.log(`➕ Adding new item ${item.id} to scene`);
-          console.log(`Creating model for item [${index}]:`, {
+          console.log(`>>>111 ➕ Adding new item ${item.id} to scene`);
+          console.log(`>>>111 Creating model for item [${index}]:`, {
             id: item.id,
             type: item.type,
             position: item.position,

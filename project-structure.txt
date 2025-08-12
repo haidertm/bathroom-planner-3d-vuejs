@@ -1,0 +1,180 @@
+.
+├── .gitignore
+├── index.html
+├── package.json
+├── pnpm-lock.yaml
+├── project-structure.txt
+├── public
+│   ├── assets
+│   │   ├── favIcon
+│   │   │   └── bath-mountain-180x180.png
+│   │   ├── logo.svg
+│   │   ├── productImages
+│   │   │   ├── bath
+│   │   │   │   ├── C51092-1000-Newham-V2-1500mm-Freestanding-Bath_6.webp
+│   │   │   │   ├── C51093-1000-Newham-V2-1700mm-Freestanding-Bath_6.webp
+│   │   │   │   ├── C51096-1000-Newham-1370mm-Freestanding-Bath_1.webp
+│   │   │   │   └── C57499-1000-L-Shaped-Shower-Bath-Front-Panel-Bath-Screen-Right.webp
+│   │   │   ├── furniture
+│   │   │   │   ├── C76236-1000-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp
+│   │   │   │   ├── C76237-1000-White-Basin-Drawer-Vanity-600mm_1.webp
+│   │   │   │   ├── C77605-1000-Bali-Gloss-White-Basin-Drawer_1.webp
+│   │   │   │   ├── C77606-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp
+│   │   │   │   ├── C77607-1000-Bali-Gloss-White-Basin-Drawer-_1.webp
+│   │   │   │   └── C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp
+│   │   │   ├── mirror
+│   │   │   │   ├── 73033v2-1000-evelyn-illuminated-led-mirror-700x500mm_1.webp
+│   │   │   │   ├── 73035v2-1000-evelyn-large-illuminated-led-mirror-500x1200mm_1.webp
+│   │   │   │   ├── 73103v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_1_1.webp
+│   │   │   │   ├── 73104v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp
+│   │   │   │   ├── 73153v2-1000-evelyn-illuminated-led-mirror-600x400mm_1.webp
+│   │   │   │   ├── 73154v2-1000-evelyn-illuminated-led-mirror-500x1000mm_1.webp
+│   │   │   │   └── 73189v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp
+│   │   │   ├── radiator
+│   │   │   │   ├── 31019-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x350mm_1.webp
+│   │   │   │   ├── 31022-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x560mm_1.webp
+│   │   │   │   ├── 31063-1000-anthracite-double-flat-panel-vertical-radiator-1800x560mm.webp
+│   │   │   │   ├── 32124-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x420mm_1.webp
+│   │   │   │   └── 32128-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x1190mm_1.webp
+│   │   │   ├── shower
+│   │   │   │   ├── c46006-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x760mm.webp
+│   │   │   │   ├── C46009-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x800mm_2.webp
+│   │   │   │   ├── C46175-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1400x900mm_1_1.webp
+│   │   │   │   └── C46247-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1000x700mm_3.webp
+│   │   │   └── toilet
+│   │   │       ├── c66174-1000-rimless-wall-hung-toilet-with-soft-close-seat.webp
+│   │   │       ├── c66175-1000-rimless-wall-hung-toilet-with-soft-close-slim-seat.webp
+│   │   │       ├── C66183-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp
+│   │   │       ├── C66184-1000-Back-to-Wall-Close-Coupled-Toilet-Slim-Seat.webp
+│   │   │       └── C66185-1000-Comfort-Height-Close-Coupled-Toilet-Slim-Seat.webp
+│   │   └── vue.svg
+│   ├── models
+│   │   ├── 31019.glb
+│   │   ├── bath
+│   │   │   ├── C51092.glb
+│   │   │   ├── C51093.glb
+│   │   │   ├── C51096.glb
+│   │   │   └── C57499.glb
+│   │   ├── bath.glb
+│   │   ├── door.glb
+│   │   ├── furniture
+│   │   │   └── basin
+│   │   │       ├── C76236.glb
+│   │   │       ├── C76236.glb.log
+│   │   │       ├── C76237.glb
+│   │   │       ├── C76237.glb.log
+│   │   │       ├── C77605.glb
+│   │   │       ├── C77605.glb.log
+│   │   │       ├── C77606.glb
+│   │   │       ├── C77606.glb.log
+│   │   │       ├── C77607.glb
+│   │   │       ├── C77607.glb.log
+│   │   │       ├── C77608.glb
+│   │   │       └── C77608.glb.log
+│   │   ├── mirror
+│   │   │   ├── 73033V2.glb
+│   │   │   ├── 73035V2.glb
+│   │   │   ├── 73103V2.glb
+│   │   │   ├── 73104V2.glb
+│   │   │   ├── 73153V2.glb
+│   │   │   ├── 73154V2.glb
+│   │   │   └── 73189V2.glb
+│   │   ├── mirror.glb
+│   │   ├── mirror_old.glb
+│   │   ├── radiator
+│   │   │   ├── 31019.glb
+│   │   │   ├── 31022.glb
+│   │   │   ├── 31063.glb
+│   │   │   ├── 32124.glb
+│   │   │   └── 32128.glb
+│   │   ├── radiator.glb
+│   │   ├── shower
+│   │   │   ├── C46006.glb
+│   │   │   ├── C46009.glb
+│   │   │   ├── C46175.glb
+│   │   │   └── C46247.glb
+│   │   ├── shower.glb
+│   │   ├── sink.glb
+│   │   ├── toilet
+│   │   │   ├── C66174.glb
+│   │   │   ├── C66175.glb
+│   │   │   ├── C66183.glb
+│   │   │   ├── C66184.glb
+│   │   │   └── C66185.glb
+│   │   └── toilet.glb
+│   ├── textures
+│   │   ├── floor_grey_tile.avif
+│   │   ├── floor_metropolis_star_black.webp
+│   │   ├── floor_red_terracotta.jpg
+│   │   ├── wall_brick.jpg
+│   │   └── wall_metro_white_tile.png
+│   └── vite.svg
+├── README.md
+├── scripts
+│   ├── get-glb-dimensions.js
+│   └── get-glb-dimensions.ts
+├── src
+│   ├── App.vue
+│   ├── assets
+│   ├── components
+│   │   └── ui
+│   │       ├── CameraDebugPanel.vue
+│   │       ├── Header.vue
+│   │       ├── MeasurementPanel.vue
+│   │       ├── MeasurementToggle.vue
+│   │       ├── ProductDrawer.vue
+│   │       ├── RoomSizePanel.vue
+│   │       ├── sidebar.vue
+│   │       ├── TexturePanel.vue
+│   │       ├── Toolbar.vue
+│   │       └── UndoRedoPanel.vue
+│   ├── composables
+│   │   └── useUndoRedo.ts
+│   ├── constants
+│   │   ├── camera.ts
+│   │   ├── components.ts
+│   │   ├── dimensions.ts
+│   │   ├── models.ts
+│   │   └── textures.ts
+│   ├── main.ts
+│   ├── mocks
+│   │   └── productData.ts
+│   ├── models
+│   │   ├── bathroomFixtures.ts
+│   │   └── roomGeometry.ts
+│   ├── pages
+│   │   ├── MyDesigns.vue
+│   │   ├── Planner.vue
+│   │   ├── RoomDimensions.vue
+│   │   └── RoomShapeSelector.vue
+│   ├── router
+│   │   └── index.ts
+│   ├── services
+│   │   ├── eventHandlers.ts
+│   │   ├── measurementSystem.ts
+│   │   ├── ModelCache.ts
+│   │   ├── ObjectPool.ts
+│   │   ├── sceneManager.ts
+│   │   ├── simpleWallCulling.ts
+│   │   └── textureManager.ts
+│   ├── style.css
+│   ├── utils
+│   │   ├── axisIndicatorsDebug.js
+│   │   ├── constraints.ts
+│   │   ├── glb.ts
+│   │   ├── helpers.ts
+│   │   ├── models.ts
+│   │   ├── roomDimensions.js
+│   │   ├── units.ts
+│   │   └── wallLabelsDebug.js
+│   └── vite-env.d.ts
+├── tsconfig.json
+├── tsconfig.node.json
+├── vercel.json
+├── vite.config.d.ts
+├── vite.config.js
+├── vite.config.ts
+├── yarn-error.log
+└── yarn.lock
+
+32 directories, 145 files

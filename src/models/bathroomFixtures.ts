@@ -41,7 +41,7 @@ class ModelManager {
   }
 
   // NEW: Preload models for specific category only
-  async preloadCategoryModels(category: ComponentType): Promise<void> {
+  async preloadCategoryModels (category: ComponentType): Promise<void> {
     // Check if this category is already preloaded
     if (this.preloadedCategories.has(category)) {
       console.log(`✅ ${category} models already preloaded, skipping...`);
@@ -88,15 +88,15 @@ class ModelManager {
 
     await Promise.all(preloadPromises);
     if (failedCount === 0) {
-        this.preloadedCategories.add(category);
-        console.log(`🎉 ${category} preloading complete! All ${loadedCount} models loaded successfully`);
-      } else {
-        console.warn(`⚠️ ${category} preloading incomplete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
-      }
+      this.preloadedCategories.add(category);
+      console.log(`🎉 ${category} preloading complete! All ${loadedCount} models loaded successfully`);
+    } else {
+      console.warn(`⚠️ ${category} preloading incomplete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
+    }
   }
 
   // Existing preloadModels method (keep for backward compatibility)
-  async preloadModels(): Promise<void> {
+  async preloadModels (): Promise<void> {
     if (this.preloadComplete) {
       console.log('✅ Models already preloaded, skipping...');
       return;
@@ -146,12 +146,12 @@ class ModelManager {
   }
 
   // NEW: Check if category is preloaded
-  isCategoryPreloaded(category: ComponentType): boolean {
+  isCategoryPreloaded (category: ComponentType): boolean {
     return this.preloadedCategories.has(category);
   }
 
   // Existing loadModel method
-  async loadModel(modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
+  async loadModel (modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
     // Return cached model if available
     if (this.cache[modelName]) {
       return this.cache[modelName].clone();
@@ -165,32 +165,32 @@ class ModelManager {
 
     this.loadingPromises[modelName] = new Promise((resolve, reject) => {
       this.loader.load(
-          modelConfig.path,
-          (gltf) => {
-            const model = gltf.scene;
-            model.name = modelName;
+        modelConfig.path,
+        (gltf) => {
+          const model = gltf.scene;
+          model.name = modelName;
 
-            // Apply scale
-            if (modelConfig.scale) {
-              model.scale.setScalar(modelConfig.scale);
-            }
-
-            // Optimize model for smooth rendering
-            this.optimizeModelForSmoothing(model);
-
-            this.cache[modelName] = model;
-            delete this.loadingPromises[modelName];
-            resolve(model);
-          },
-          (progress) => {
-            // Optional: Handle loading progress
-            console.log(`Loading ${modelName}: ${(progress.loaded / progress.total * 100)}%`);
-          },
-          (error) => {
-            console.error(`Error loading model ${modelName}:`, error);
-            delete this.loadingPromises[modelName];
-            reject(error);
+          // Apply scale
+          if (modelConfig.scale) {
+            model.scale.setScalar(modelConfig.scale);
           }
+
+          // Optimize model for smooth rendering
+          this.optimizeModelForSmoothing(model);
+
+          this.cache[modelName] = model;
+          delete this.loadingPromises[modelName];
+          resolve(model);
+        },
+        (progress) => {
+          // Optional: Handle loading progress
+          console.log(`Loading ${modelName}: ${(progress.loaded / progress.total * 100)}%`);
+        },
+        (error) => {
+          console.error(`Error loading model ${modelName}:`, error);
+          delete this.loadingPromises[modelName];
+          reject(error);
+        }
       );
     });
 
@@ -199,7 +199,7 @@ class ModelManager {
   }
 
   // Optimize model for smooth rendering
-  private optimizeModelForSmoothing(model: THREE.Group): void {
+  private optimizeModelForSmoothing (model: THREE.Group): void {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         // Enable shadows
@@ -226,9 +226,9 @@ class ModelManager {
   }
 
   // Optimize material properties
-  private optimizeMaterial(material: THREE.Material): void {
+  private optimizeMaterial (material: THREE.Material): void {
     if (material instanceof THREE.MeshStandardMaterial ||
-        material instanceof THREE.MeshPhysicalMaterial) {
+      material instanceof THREE.MeshPhysicalMaterial) {
       // Ensure proper material properties for realistic rendering
       material.roughness = material.roughness ?? 0.7;
       material.metalness = material.metalness ?? 0.1;
@@ -241,7 +241,7 @@ class ModelManager {
   }
 
   // Fix texture filtering to prevent pixelation
-  private fixTextureFiltering(texture: THREE.Texture): void {
+  private fixTextureFiltering (texture: THREE.Texture): void {
     // Use linear filtering for smooth textures
     texture.minFilter = THREE.LinearMipmapLinearFilter;
     texture.magFilter = THREE.LinearFilter;
@@ -269,7 +269,7 @@ class ModelManager {
     this.preloadedCategories.clear();
   }
 
-  getCacheStatus() {
+  getCacheStatus () {
     return {
       cachedModels: Object.keys(this.cache).length,
       loadingModels: Object.keys(this.loadingPromises).length,
@@ -293,10 +293,11 @@ class ModelBasedFixture {
 
   async create (): Promise<THREE.Group> {
     const group = new THREE.Group();
-    group.position.set(this.position[0], this.position[1], this.position[2]);
+    // group.position.set(this.position[0], this.position[1], this.position[2]);
 
     try {
       const model = await this.modelManager.loadModel(this.config.name, this.config);
+      group.position.set(this.position[0], this.position[1], this.position[2]);
       group.add(model);
       return group;
     } catch (error) {
@@ -325,6 +326,25 @@ export const createModel = async (
     // Create model-based fixture
     const fixture = new ModelBasedFixture(position, productModel);
     const model = await fixture.create();
+
+
+    // Calculate the model's bounding box to find its actual center
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+
+    console.log('📦 Model geometry analysis:', {
+      type,
+      boundingBoxCenter: center,
+      boundingBoxSize: size,
+      expectedDimensions: productModel.dimensions,
+      pivotOffset: {
+        x: center.x - model.position.x,
+        y: center.y - model.position.y,
+        z: center.z - model.position.z
+      }
+    });
+
     model.rotation.y = rotation;
     model.scale.set(scale, scale, scale);
     model.userData.type = type;
