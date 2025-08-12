@@ -2,9 +2,9 @@
 import * as THREE from 'three';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
-import { getDimensions } from '../utils/constraints';
+import { getDimensions, getInteriorBoundaries } from '../utils/constraints';
 import { getMovementConfig } from '../utils/models';
-import { getInteriorBoundaries } from '../models/roomGeometry';
+import {WALL_SETTINGS} from "../constants/dimensions.ts";
 
 export interface MeasurementData {
   objectWidth: number;
@@ -279,7 +279,6 @@ export class MeasurementSystem {
       const verticalOverlapBuffer = 5; // 20cm buffer
       const hasVerticalOverlap = !(currentTopY + verticalOverlapBuffer < itemBottomY ||
         itemTopY + verticalOverlapBuffer < currentBottomY);
-    console.log('>>> overlap', hasVerticalOverlap);
       if (!hasVerticalOverlap) {
         // Objects are at different heights - skip this object
         console.log(`⏭️ Skipping ${item.type} - different height level (${Math.abs(currentBottomY - itemBottomY).toFixed(1)}cm apart)`);
@@ -331,7 +330,7 @@ export class MeasurementSystem {
     const objectBottomY = this.getObjectBottomY(measurements, position);
     const objectTopY = this.getObjectTopY(measurements, position);
 
-    const CEILING_HEIGHT = 250; // Wall height from WALL_SETTINGS.HEIGHT
+    const CEILING_HEIGHT = WALL_SETTINGS.HEIGHT; // Wall height from WALL_SETTINGS.HEIGHT
     const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, CEILING_HEIGHT);
     const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
 
@@ -339,21 +338,13 @@ export class MeasurementSystem {
     const itemId = this.selectedObject.userData.itemId;
     const currentItem = this.existingItems.find(item => item.id === itemId);
     const movementConfig = getMovementConfig(currentItem?.type || 'Furniture', currentItem);
-
-    // ✅ Calculate if object POSITION is more than 40% up the wall height
+    const MOUNT_THRESHOLD_PERCENT = 30;
+    // ✅ Calculate if object POSITION is more than 30% up the wall height
     // Use objectBottomY (where the object starts) to check mounting height
     const objectMountingHeight = objectBottomY; // This is where the object is positioned
     const mountingHeightPercentage = (objectMountingHeight / CEILING_HEIGHT) * 100;
     const hasObjectAbove = spaceAboveObject < (CEILING_HEIGHT - objectTopY);
-    const isObjectHighlyMounted = mountingHeightPercentage > 30;
-
-    console.log(`📏 Object mounting position check:`, {
-      objectBottomY: objectBottomY.toFixed(1) + 'cm',
-      wallHeight: CEILING_HEIGHT + 'cm',
-      mountingHeightPercentage: mountingHeightPercentage.toFixed(1) + '%',
-      isObjectHighlyMounted,
-      allowFreeRotation: movementConfig.allowFreeRotation
-    });
+    const isObjectHighlyMounted = mountingHeightPercentage > MOUNT_THRESHOLD_PERCENT;
 
     // Add bottom space for all objects
     if (spaceBelowObject > 0) {
@@ -387,7 +378,7 @@ export class MeasurementSystem {
 
       console.log(`✅ Showing top space line: Object mounted at ${mountingHeightPercentage.toFixed(1)}% of wall height`);
     } else if (!movementConfig.allowFreeRotation && !isObjectHighlyMounted) {
-      console.log(`🚫 Hiding top space line: Object mounted at only ${mountingHeightPercentage.toFixed(1)}% of wall height (< 40%)`);
+      console.log(`🚫 Hiding top space line: Object mounted at only ${mountingHeightPercentage.toFixed(1)}% of wall height < ${MOUNT_THRESHOLD_PERCENT}%)`);
     }
 
     // Existing logic for wall-bound or free-standing measurements
@@ -918,7 +909,8 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth), 'horizontal');
         this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth), 'horizontal');
       }
-    } else {
+    }
+    else {
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
       if (label.id === 'space-left') {
         const startX = position.x - measurements.objectWidth / 2;
@@ -928,7 +920,7 @@ export class MeasurementSystem {
         let lineZ = position.z;
         if (measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 5; // 20cm away from wall face
+          const offset = 5; // 5cm away from wall face
 
           switch (measurements.wallDirection) {
             case 'north': lineZ = wallFaces.north + offset; break; // Move south from north wall
@@ -1055,7 +1047,7 @@ export class MeasurementSystem {
 
     } else if (label.id === 'item-top-y') {
       const objectTopY = this.getObjectTopY(measurements, position);
-      const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, 250);
+      const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, WALL_SETTINGS.HEIGHT);
       const endY = objectTopY + spaceAboveObject;
 
       let lineX = position.x;
@@ -1106,11 +1098,11 @@ export class MeasurementSystem {
       });
 
       const line = new THREE.Line(geometry, material);
-      line.userData = {lineId: label.id};
+      line.userData = { lineId: label.id };
       this.measurementLines.add(line);
     }
   }
-  }
+  };
   // NEW: Create end markers (small perpendicular lines at measurement ends)
   private createEndMarker (position: THREE.Vector3, direction: 'horizontal' | 'vertical'): void {
     const markerSize = 8; // Small marker size
