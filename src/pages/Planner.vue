@@ -479,7 +479,9 @@ const addItem = async (type, productData = null) => {
       productOrientation,
       selectedVariant?.movement,
       selectedVariant?.spawnHeight,
-      selectedVariant?.floorOffset || 0
+      selectedVariant?.floorOffset || 0,
+      selectedVariant.sku,
+
   )
 
   const newItem = {
@@ -514,8 +516,6 @@ const addItem = async (type, productData = null) => {
       selectedColor: productData.selectedColor
     })
   }
-
-  console.log('newItemToBeAdded>>>', newItem);
 
   // PERFORMANCE BOOST: Add directly to scene first (if not initial load)
   if (sceneManagerRef.value && !isInitialLoad.value) {
@@ -945,7 +945,6 @@ watch([items, lastUpdateSource], ([newItems, updateSource]) => {
     isInitialLoad.value = false
     return
   }
-
   // Use smart updates for better performance
   handleSmartUpdate(newItems, updateSource)
 

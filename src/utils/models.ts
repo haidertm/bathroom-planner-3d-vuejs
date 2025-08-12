@@ -4,7 +4,7 @@ import { ComponentType } from '../constants/components';
 import { CONSTRAINTS } from '../constants/dimensions';
 import { BathroomItem } from './constraints.ts';
 import {
-  DEFAULT_ORIENTATION,
+  DEFAULT_ORIENTATION, DefaultCornerObjectRotation,
   FixtureConfig,
   type ModelConfig,
   MovementConfig,
@@ -241,7 +241,7 @@ const getOrientationFromProductData = (sku: string, objectType: ComponentType): 
 
 // Existing helper functions (unchanged)
 export const getObjectWallBuffer = (
-    { orientation }: { orientation: OrientationConfig; scale?: number }
+  { orientation }: { orientation: OrientationConfig; scale?: number }
 ): number => {
   return orientation?.wallBuffer ?? CONSTRAINTS.OBJECT_BUFFER;
 };
@@ -275,4 +275,38 @@ export const getOrientationInfo = (orientation?: OrientationConfig) => {
 
 export const isModelBased = (config: FixtureConfig): config is ModelConfig => {
   return 'path' in config;
+};
+
+// Helper function to check if object must be in corner
+export const mustBeInCorner = (objectType: ComponentType, item?: BathroomItem): boolean => {
+  const movementConfig = getMovementConfig(objectType, item);
+  return !!(movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled);
+};
+
+// Get corner rotation for a specific corner
+export const getCornerRotation = (
+  corner: 'north-west' | 'north-east' | 'south-west' | 'south-east',
+  objectType: ComponentType,
+  item?: BathroomItem
+): number | null => {
+  const movementConfig = getMovementConfig(objectType, item);
+
+  if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
+    return movementConfig.cornerInstallOnly?.rotation?.[corner] ?? DefaultCornerObjectRotation[corner];
+  }
+
+  return null; // No rotation defined
+};
+
+// Check if corner installation is configured
+export const hasCornerConfig = (objectType: ComponentType, item?: BathroomItem): boolean => {
+  const movementConfig = getMovementConfig(objectType, item);
+  return !!(movementConfig.cornerInstallOnly && typeof movementConfig.cornerInstallOnly === 'object');
+};
+
+// Helper to get all corner-only object types
+export const getCornerOnlyObjectTypes = (): ComponentType[] => {
+  return Object.entries(DEFAULT_MOVEMENT_CONFIGS)
+    .filter(([_, config]) => config.cornerInstallOnly)
+    .map(([type, _]) => type as ComponentType);
 };
