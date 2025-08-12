@@ -603,8 +603,7 @@ export const wouldCollideWithExisting = (
   scale: number,
   objectId: number,
   existingItems: BathroomItem[],
-  currentItem?: BathroomItem, // Optional: the item being moved/placed
-  _sku?: string
+  currentItem?: BathroomItem // Optional: the item being moved/placed
 ): boolean => {
   for (const item of existingItems) {
     if (item.id === objectId) {
