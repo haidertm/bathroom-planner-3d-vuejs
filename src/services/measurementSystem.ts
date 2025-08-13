@@ -190,7 +190,7 @@ export class MeasurementSystem {
   private getWallDirection (position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | undefined {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
-    const tolerance = 30;
+    const tolerance = 20;
 
     if (Math.abs(position.z + roomHalfHeight) < tolerance) return 'north';
     if (Math.abs(position.z - roomHalfHeight) < tolerance) return 'south';
