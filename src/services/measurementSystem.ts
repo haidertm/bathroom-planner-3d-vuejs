@@ -208,12 +208,13 @@ export class MeasurementSystem {
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
+    const wallWidth = 7;
 
     // Calculate space to room boundaries
-    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2;
-    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2;
-    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2;
-    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2;
+    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallWidth;
+    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallWidth;
+    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2 - wallWidth;
+    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2 - wallWidth;
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
@@ -906,8 +907,8 @@ export class MeasurementSystem {
         points.push(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth));
 
         // Add end markers (small horizontal lines)
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth), 'vertical');
+        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth), 'vertical');
       }
     }
     else {
@@ -978,8 +979,8 @@ export class MeasurementSystem {
 
         points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
         points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'vertical');
 
       } else if (label.id === 'space-back') {
         const startZ = position.z + measurements.objectWidth / 2;
@@ -1001,8 +1002,8 @@ export class MeasurementSystem {
 
         points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
         points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'horizontal');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'vertical');
       }
     else if (label.id === 'item-bottom-y') {
       // Vertical line from object bottom to floor/object below
@@ -1042,8 +1043,16 @@ export class MeasurementSystem {
 
       points.push(new THREE.Vector3(lineX, objectBottomY, lineZ));
       points.push(new THREE.Vector3(lineX, endY, lineZ));
-      this.createEndMarker(new THREE.Vector3(lineX, objectBottomY, lineZ), 'horizontal');
-      this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
+        this.createEndMarker(
+            new THREE.Vector3(lineX, objectBottomY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
+        this.createEndMarker(
+            new THREE.Vector3(lineX, endY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
 
     } else if (label.id === 'item-top-y') {
       const objectTopY = this.getObjectTopY(measurements, position);
@@ -1082,8 +1091,16 @@ export class MeasurementSystem {
 
       points.push(new THREE.Vector3(lineX, objectTopY, lineZ));
       points.push(new THREE.Vector3(lineX, endY, lineZ));
-      this.createEndMarker(new THREE.Vector3(lineX, objectTopY, lineZ), 'horizontal');
-      this.createEndMarker(new THREE.Vector3(lineX, endY, lineZ), 'horizontal');
+        this.createEndMarker(
+            new THREE.Vector3(lineX, objectTopY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
+        this.createEndMarker(
+            new THREE.Vector3(lineX, endY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
     }
 
     if (points.length === 2) {
@@ -1104,23 +1121,34 @@ export class MeasurementSystem {
   }
   };
   // NEW: Create end markers (small perpendicular lines at measurement ends)
-  private createEndMarker (position: THREE.Vector3, direction: 'horizontal' | 'vertical'): void {
+  private createEndMarker(
+      position: THREE.Vector3,
+      direction: 'horizontal' | 'vertical',
+      wallDirection?: 'north' | 'south' | 'east' | 'west'
+  ): void {
     const markerSize = 8; // Small marker size
     const points: THREE.Vector3[] = [];
 
     if (direction === 'vertical') {
-      // Vertical end marker
+      // Vertical end marker (extends vertically)
       points.push(new THREE.Vector3(position.x, position.y - markerSize / 2, position.z));
       points.push(new THREE.Vector3(position.x, position.y + markerSize / 2, position.z));
     } else {
-      // Horizontal end marker
-      points.push(new THREE.Vector3(position.x, position.y, position.z - markerSize / 2));
-      points.push(new THREE.Vector3(position.x, position.y, position.z + markerSize / 2));
+      // Horizontal end marker - orientation depends on wall direction
+      if (wallDirection === 'north' || wallDirection === 'south') {
+        // For north/south walls, extend in X-axis (left/right) for front visibility
+        points.push(new THREE.Vector3(position.x - markerSize / 2, position.y, position.z));
+        points.push(new THREE.Vector3(position.x + markerSize / 2, position.y, position.z));
+      } else {
+        // For east/west walls (or no wall), extend in Z-axis (front/back) for side visibility
+        points.push(new THREE.Vector3(position.x, position.y, position.z - markerSize / 2));
+        points.push(new THREE.Vector3(position.x, position.y, position.z + markerSize / 2));
+      }
     }
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.LineBasicMaterial({
-      color: '#333333', // Dark gray for end markers
+      color: '#333333',
       linewidth: 2,
       transparent: true,
       opacity: 1.0
