@@ -95,6 +95,9 @@ export class EventHandlers {
   private mouseX: number;
   private mouseY: number;
   private measurementSystem: MeasurementSystem | null = null;
+  private lastMeasurementUpdate: number = 0;
+  private measurementUpdateThreshold: number = 16; // ~60fps throttling
+  // private pendingMeasurementUpdate: boolean = false;
 
   // Store original position for collision snap-back
   private originalDragPosition: THREE.Vector3;
@@ -249,6 +252,18 @@ export class EventHandlers {
   private getCurrentItemData (objectId: number): BathroomItem | undefined {
     const currentItems = this.getCurrentItems();
     return currentItems.find(item => item.id === objectId);
+  }
+
+  private updateMeasurementsThrottled(): void {
+    const now = performance.now();
+
+    // Only update if enough time has passed
+    if (now - this.lastMeasurementUpdate >= this.measurementUpdateThreshold) {
+      if (this.measurementSystem && this.selectedObject) {
+        this.measurementSystem.forceUpdateMeasurements();
+        this.lastMeasurementUpdate = now;
+      }
+    }
   }
 
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
@@ -497,13 +512,13 @@ export class EventHandlers {
       }
     } else {
       if (this.isDragging && this.selectedObject && this.measurementSystem) {
-        this.measurementSystem.forceUpdateMeasurements();
+        this.updateMeasurementsThrottled();
         // Emit event for real-time measurement updates
         window.dispatchEvent(new CustomEvent('object-moved'));
       }
       else if (this.isHeightAdjusting && this.selectedObject && this.measurementSystem) {
         // ✅ ADD THIS: Update measurements during height adjustment
-        this.measurementSystem.forceUpdateMeasurements();
+        this.updateMeasurementsThrottled();
         window.dispatchEvent(new CustomEvent('object-moved'));
       }
     }
@@ -544,6 +559,10 @@ export class EventHandlers {
         position: [this.selectedObject.position.x, newY, this.selectedObject.position.z]
       });
 
+      if (this.measurementSystem) {
+        this.updateMeasurementsThrottled();
+      }
+
     } else if (this.isObjectRotating && this.selectedObject) {
       // 🆕 ENHANCED: Rotation with movement configuration
       const objectType = this.selectedObject.userData.type as ComponentType;
@@ -568,6 +587,10 @@ export class EventHandlers {
       this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
 
     } else if (this.isDragging && this.selectedObject) {
+
+      if (this.measurementSystem) {
+        this.updateMeasurementsThrottled();
+      }
       // 🔧 UPDATED: Movement with clean productData-based constraints
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersectPoint = new THREE.Vector3();
@@ -810,6 +833,10 @@ export class EventHandlers {
 
       // Emit event for measurement updates
       window.dispatchEvent(new CustomEvent('object-selected'));
+    }
+
+    if (this.measurementSystem && this.selectedObject && (this.isDragging || this.isHeightAdjusting)) {
+      this.measurementSystem.forceUpdateMeasurements();
     }
 
     // Reset all states
@@ -1082,7 +1109,7 @@ export class EventHandlers {
         }
 
         if (this.measurementSystem) {
-          this.measurementSystem.forceUpdateMeasurements();
+          this.updateMeasurementsThrottled();
           window.dispatchEvent(new CustomEvent('object-moved'));
         }
 
