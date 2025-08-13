@@ -501,6 +501,11 @@ export class EventHandlers {
         // Emit event for real-time measurement updates
         window.dispatchEvent(new CustomEvent('object-moved'));
       }
+      else if (this.isHeightAdjusting && this.selectedObject && this.measurementSystem) {
+        // ✅ ADD THIS: Update measurements during height adjustment
+        this.measurementSystem.forceUpdateMeasurements();
+        window.dispatchEvent(new CustomEvent('object-moved'));
+      }
     }
 
     if (this.isScaling && this.selectedObject) {
