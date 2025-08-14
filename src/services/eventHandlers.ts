@@ -11,7 +11,7 @@ import {
   updateTouchPosition
 } from '../utils/helpers';
 import {
-  type BathroomItem,
+  type BathroomItem, constrainToCorner,
   constrainToRoom,
   getDimensions,
   wouldCollideWithExisting,
@@ -396,6 +396,26 @@ export class EventHandlers {
     if (intersected) {
       this.selectedObject = intersected.object;
 
+      // 🔍 DEBUG: Log initial toilet position when selected
+      if (this.selectedObject.userData.type === 'Toilet') {
+        const currentPos = this.selectedObject.position;
+        const dimensions = getDimensions(
+          'Toilet',
+          this.selectedObject.userData.sku,
+          this.selectedObject.userData.model
+        );
+        const halfDepth = (dimensions?.depth || 50) / 2;
+
+        console.log('🚽 TOILET SELECTED - INITIAL POSITION:', {
+          currentPosition: { x: currentPos.x, z: currentPos.z },
+          roomHalfHeight: this.roomHeightRef.value / 2,
+          halfDepth,
+          toiletBackEdgeZ: currentPos.z - halfDepth,
+          wallZ: -this.roomHeightRef.value / 2,
+          currentGap: Math.abs((-this.roomHeightRef.value / 2) - (currentPos.z - halfDepth))
+        });
+      }
+
       console.log('selectedObject >>>', this.selectedObject);
 
       // 🚀 FIXED: Get fresh items before updating measurement system
@@ -556,7 +576,9 @@ export class EventHandlers {
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
     const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
     const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
-    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer || 0) * objectScale;
+    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+
+    console.log('111>> object wallBuffer', wallBuffer);
 
     let x = currentPosition.x;
     let y = currentPosition.y; // Preserve height
@@ -778,7 +800,29 @@ export class EventHandlers {
       let rotationChanged = false;
 
       // ✅ CRITICAL FIX: Apply movement constraints using CLEAN productData-based functions
-      if (movementConfig.snapToWall) {
+      // ✅ NEW: Check if this is a corner-only object FIRST
+      if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
+        // Handle corner-only objects
+        const { position: cornerPos, rotation: cornerRot } = constrainToCorner(
+          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          {
+            type: objectType,
+            scale: objectScale,
+            orientation: currentItem?.model?.orientation,
+            item: currentItem,
+            movement: movementConfig
+          }
+        );
+
+        constrainedPosition.x = cornerPos.x;
+        constrainedPosition.z = cornerPos.z;
+        constrainedPosition.y = cornerPos.y;
+        constrainedRotation = cornerRot;
+        rotationChanged = true;
+
+      } else if (movementConfig.snapToWall) {
 
         // ✅ ADDITIONAL CHECK: If object is currently on a hidden wall, don't continue dragging
         // Force it to jump to visible wall first (this should have happened in handleMouseDown)
@@ -1615,7 +1659,9 @@ export class EventHandlers {
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
     const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
     const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
-    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer || 0) * objectScale;
+    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+
+    console.log('111>> object wallBuffer', wallBuffer, dimensions);
 
     // Get camera direction to determine viewing angle
     const cameraDirection = new THREE.Vector3();
@@ -1678,12 +1724,36 @@ export class EventHandlers {
         // Front wall - standard left/right movement with mouse X
         position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
         position.z = -roomHalfHeight + halfDepth + wallBuffer;
+
+        // 🔍 DEBUG: Log the calculation
+        console.log('🚽 NORTH WALL TOILET POSITION:', {
+          roomHalfHeight,
+          halfDepth,
+          wallBuffer,
+          calculatedZ: position.z,
+          wallFaceZ: -roomHalfHeight,
+          toiletBackEdgeZ: position.z - halfDepth,
+          gap: Math.abs((-roomHalfHeight) - (position.z - halfDepth))
+        });
+
         break;
 
       case 'south':
         // Back wall - standard left/right movement with mouse X
         position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
         position.z = roomHalfHeight - halfDepth - wallBuffer;
+
+        // 🔍 DEBUG: Log the calculation
+        console.log('🚽 SOUTH WALL TOILET POSITION:', {
+          roomHalfHeight,
+          halfDepth,
+          wallBuffer,
+          calculatedZ: position.z,
+          wallFaceZ: roomHalfHeight,
+          toiletBackEdgeZ: position.z + halfDepth,
+          gap: Math.abs(roomHalfHeight - (position.z + halfDepth))
+        });
+
         break;
 
       case 'east':
