@@ -208,7 +208,7 @@ export class MeasurementSystem {
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
-    const wallWidth = 7;
+    const wallWidth = WALL_SETTINGS.THICKNESS + 1; // Use wall width from WALL_SETTINGS
 
     // Calculate space to room boundaries
     const spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallWidth;
