@@ -208,13 +208,13 @@ export class MeasurementSystem {
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
-    const wallWidth = 7;
+    const wallThickness = WALL_SETTINGS.THICKNESS + 1; // Use wall width from WALL_SETTINGS
 
     // Calculate space to room boundaries
-    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallWidth;
-    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallWidth;
-    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2 - wallWidth;
-    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2 - wallWidth;
+    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallThickness;
+    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallThickness;
+    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2 - wallThickness;
+    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2 - wallThickness;
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
