@@ -837,6 +837,7 @@ onMounted(async () => {
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+  eventHandlersRef.value.setWallCulling(sceneManager.wallCulling)
 
   if (sceneManagerRef.value.debugLabelsEnabled && sceneManagerRef.value.wallLabelsDebug) {
     sceneManagerRef.value.updateLabels(roomWidth.value, roomHeight.value)

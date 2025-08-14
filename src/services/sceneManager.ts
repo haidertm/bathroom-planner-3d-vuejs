@@ -68,7 +68,7 @@ export class SceneManager {
     this.bathroomItemsGroup.name = 'bathroomItems';
     this.wallLabelsDebug = new WallLabelsDebug();
     this.axisIndicatorsDebug = new AxisIndicatorsDebug(); // Add this
-    this.debugLabelsEnabled = false;
+    this.debugLabelsEnabled = true;
   }
 
   initializeScene (): SceneComponents {
@@ -134,6 +134,10 @@ export class SceneManager {
       camera: this.camera,
       renderer: this.renderer
     };
+  }
+
+  get wallCulling(): SimpleWallCulling {
+    return this.wallCullingManager;
   }
 
   // Add methods to control measurement system
