@@ -672,6 +672,11 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
           sku: 'C66175',
           price: '143',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
