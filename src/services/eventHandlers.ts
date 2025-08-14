@@ -97,6 +97,7 @@ export class EventHandlers {
   private measurementSystem: MeasurementSystem | null = null;
   private lastMeasurementUpdate: number = 0;
   private measurementUpdateThreshold: number = 16; // ~60fps throttling
+  private pendingMeasurementTimeout: NodeJS.Timeout | null = null;
   // private pendingMeasurementUpdate: boolean = false;
 
   // Store original position for collision snap-back
@@ -264,6 +265,16 @@ export class EventHandlers {
         this.lastMeasurementUpdate = now;
       }
     }
+      // Clear any pending debounced update
+    if (this.pendingMeasurementTimeout) {
+      clearTimeout(this.pendingMeasurementTimeout);
+    }
+    // Schedule a final update after interaction stops
+    this.pendingMeasurementTimeout = setTimeout(() => {
+      if (this.measurementSystem && this.selectedObject) {
+        this.measurementSystem.forceUpdateMeasurements();
+       }
+      }, 100);
   }
 
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
@@ -833,10 +844,6 @@ export class EventHandlers {
 
       // Emit event for measurement updates
       window.dispatchEvent(new CustomEvent('object-selected'));
-    }
-
-    if (this.measurementSystem && this.selectedObject && (this.isDragging || this.isHeightAdjusting)) {
-      this.measurementSystem.forceUpdateMeasurements();
     }
 
     // Reset all states

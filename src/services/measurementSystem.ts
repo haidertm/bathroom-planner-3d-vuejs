@@ -906,7 +906,7 @@ export class MeasurementSystem {
         points.push(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth));
         points.push(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth));
 
-        // Add end markers (small horizontal lines)
+        // Add end markers (small vertical lines)
         this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth), 'vertical');
         this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth), 'vertical');
       }
@@ -1148,7 +1148,7 @@ export class MeasurementSystem {
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.LineBasicMaterial({
-      color: '#333333',
+      color: '#000000',
       linewidth: 2,
       transparent: true,
       opacity: 1.0
