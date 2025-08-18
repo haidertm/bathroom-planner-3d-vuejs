@@ -17,7 +17,7 @@ import {
   wouldCollideWithExisting,
   wouldCollideWithExistingOrWalls
 } from '../utils/constraints';
-import { SCALE_LIMITS } from '../constants/dimensions';
+import { SCALE_LIMITS, WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
@@ -255,7 +255,7 @@ export class EventHandlers {
     return currentItems.find(item => item.id === objectId);
   }
 
-  private updateMeasurementsThrottled(): void {
+  private updateMeasurementsThrottled (): void {
     const now = performance.now();
 
     // Only update if enough time has passed
@@ -265,7 +265,7 @@ export class EventHandlers {
         this.lastMeasurementUpdate = now;
       }
     }
-      // Clear any pending debounced update
+    // Clear any pending debounced update
     if (this.pendingMeasurementTimeout) {
       clearTimeout(this.pendingMeasurementTimeout);
     }
@@ -273,8 +273,8 @@ export class EventHandlers {
     this.pendingMeasurementTimeout = setTimeout(() => {
       if (this.measurementSystem && this.selectedObject) {
         this.measurementSystem.forceUpdateMeasurements();
-       }
-      }, 100);
+      }
+    }, 100);
   }
 
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
@@ -644,7 +644,7 @@ export class EventHandlers {
    * Helper method to determine which wall an object is currently on
    */
 // Helper method to determine which wall an object is currently on
-  private determineCurrentWall(position: THREE.Vector3): 'north' | 'south' | 'east' | 'west' {
+  private determineCurrentWall (position: THREE.Vector3): 'north' | 'south' | 'east' | 'west' {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const tolerance = 30; // 30cm tolerance for wall detection
@@ -672,7 +672,7 @@ export class EventHandlers {
    * Get the opposite wall or best visible wall
    */
 // Get the opposite wall or best visible wall
-  private getOppositeOrBestWall(
+  private getOppositeOrBestWall (
     currentWall: 'north' | 'south' | 'east' | 'west',
     visibleWalls: Set<string>
   ): 'north' | 'south' | 'east' | 'west' {
@@ -711,7 +711,7 @@ export class EventHandlers {
   }
 
 
-  private handleMouseMove(event: MouseEvent): void {
+  private handleMouseMove (event: MouseEvent): void {
     // Track mouse movement for click vs drag detection
     const mouseDistance = this.mouseDownPosition.distanceTo(new THREE.Vector2(event.clientX, event.clientY));
     if (mouseDistance > this.MOUSE_MOVE_THRESHOLD) {
@@ -733,8 +733,7 @@ export class EventHandlers {
         this.updateMeasurementsThrottled();
         // Emit event for real-time measurement updates
         window.dispatchEvent(new CustomEvent('object-moved'));
-      }
-      else if (this.isHeightAdjusting && this.selectedObject && this.measurementSystem) {
+      } else if (this.isHeightAdjusting && this.selectedObject && this.measurementSystem) {
         // ✅ ADD THIS: Update measurements during height adjustment
         this.updateMeasurementsThrottled();
         window.dispatchEvent(new CustomEvent('object-moved'));
@@ -1762,7 +1761,7 @@ export class EventHandlers {
       case 'north':
         // Front wall - standard left/right movement with mouse X
         position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
-        position.z = -roomHalfHeight + (wallBuffer + 5);
+        position.z = -roomHalfHeight + (wallBuffer + WALL_SETTINGS.THICKNESS);
 
         // 🔍 DEBUG: Log the calculation
         console.log('🚽 NORTH WALL TOILET POSITION:', {
@@ -1780,7 +1779,7 @@ export class EventHandlers {
       case 'south':
         // Back wall - standard left/right movement with mouse X
         position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
-        position.z = roomHalfHeight - halfDepth - wallBuffer;
+        position.z = roomHalfHeight - wallBuffer - WALL_SETTINGS.THICKNESS;
 
         // 🔍 DEBUG: Log the calculation
         console.log('🚽 SOUTH WALL TOILET POSITION:', {
@@ -1797,7 +1796,7 @@ export class EventHandlers {
 
       case 'east':
         // Right wall
-        position.x = roomHalfWidth - halfDepth - wallBuffer;
+        position.x = roomHalfWidth - wallBuffer - WALL_SETTINGS.THICKNESS;
 
         if (viewingFromFrontBack) {
           // When viewing from front/back: use Y (vertical) mouse movement for Z position
@@ -1817,7 +1816,7 @@ export class EventHandlers {
 
       case 'west':
         // Left wall
-        position.x = -roomHalfWidth + halfDepth + wallBuffer;
+        position.x = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
 
         if (viewingFromFrontBack) {
           // When viewing from front/back: use Y (vertical) mouse movement for Z position
