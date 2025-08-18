@@ -15,7 +15,8 @@ import {
   constrainToRoom,
   getDimensions,
   wouldCollideWithExisting,
-  wouldCollideWithExistingOrWalls
+  wouldCollideWithExistingOrWalls,
+  getInteriorBoundaries
 } from '../utils/constraints';
 import { SCALE_LIMITS, WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
@@ -832,6 +833,27 @@ export class EventHandlers {
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
+
+        // Add wall constraint to stop at wall boundaries
+        const { interior } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
+        const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+
+        if (dimensions) {
+            const halfWidth = (dimensions.width * objectScale) / 2;
+            const halfDepth = (dimensions.depth * objectScale) / 2;
+
+            // Constrain X position to stay within walls
+            newPosition.x = Math.max(
+                interior.minX + halfWidth,
+                Math.min(interior.maxX - halfWidth, newPosition.x)
+            );
+
+            // Constrain Z position to stay within walls
+            newPosition.z = Math.max(
+                interior.minZ + halfDepth,
+                Math.min(interior.maxZ - halfDepth, newPosition.z)
+            );
+        }
 
       let constrainedPosition = { ...newPosition };
       let constrainedRotation = this.selectedObject.rotation.y;
