@@ -2,7 +2,9 @@
 import * as THREE from 'three';
 import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
-import { getDimensions } from '../utils/constraints';
+import { getDimensions, getInteriorBoundaries } from '../utils/constraints';
+import { getMovementConfig } from '../utils/models';
+import {WALL_SETTINGS} from "../constants/dimensions.ts";
 
 export interface MeasurementData {
   objectWidth: number;
@@ -155,7 +157,6 @@ export class MeasurementSystem {
     const spaceCalculations = this.calculateAvailableSpace(
       objectPosition,
       scaledWidth,
-      scaledDepth,
       scaledHeight,
       this.selectedObject.userData.itemId
     );
@@ -189,7 +190,7 @@ export class MeasurementSystem {
   private getWallDirection (position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | undefined {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
-    const tolerance = 50;
+    const tolerance = 20;
 
     if (Math.abs(position.z + roomHalfHeight) < tolerance) return 'north';
     if (Math.abs(position.z - roomHalfHeight) < tolerance) return 'south';
@@ -200,24 +201,24 @@ export class MeasurementSystem {
   }
 
   private calculateAvailableSpace (
-    position: THREE.Vector3,
-    width: number,
-    depth: number,
-    height: number,
-    excludeItemId: number
+      position: THREE.Vector3,
+      width: number,
+      height: number,
+      excludeItemId: number
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
+    const wallThickness = WALL_SETTINGS.THICKNESS + 1; // Use wall width from WALL_SETTINGS
 
     // Calculate space to room boundaries
-    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2;
-    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2;
-    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2;
-    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2;
+    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallThickness;
+    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallThickness;
+    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2 - wallThickness;
+    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2 - wallThickness;
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
-      position, width, depth, height, excludeItemId
+        position, width, height, excludeItemId
     );
 
     return {
@@ -233,7 +234,6 @@ export class MeasurementSystem {
   private calculateSpaceToOtherObjects (
     position: THREE.Vector3,
     width: number,
-    depth: number,
     height: number, // ✅ Now we use the height parameter
     excludeItemId: number
   ): { left: number; right: number; front: number; back: number } {
@@ -251,6 +251,7 @@ export class MeasurementSystem {
     // Calculate current object's actual vertical range
     const currentBottomY = position.y + currentFloorOffset;
     const currentTopY = currentBottomY + height;
+    console.log('>>> who is here', currentBottomY, currentTopY)
 
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return;
@@ -265,7 +266,7 @@ export class MeasurementSystem {
 
       const itemScale = item.scale || 1.0;
       const itemWidth = itemDimensions.width * itemScale;
-      const itemDepth = itemDimensions.depth * itemScale;
+      // const itemDepth = itemDimensions.depth * itemScale;
       const itemHeight = itemDimensions.height * itemScale;
       const itemFloorOffset = itemDimensions.floorOffset * itemScale;
 
@@ -276,10 +277,9 @@ export class MeasurementSystem {
       const itemTopY = itemBottomY + itemHeight;
 
       // ✅ KEY FIX: Only measure distance if objects have height overlap
-      const verticalOverlapBuffer = 20; // 20cm buffer
+      const verticalOverlapBuffer = 5; // 20cm buffer
       const hasVerticalOverlap = !(currentTopY + verticalOverlapBuffer < itemBottomY ||
         itemTopY + verticalOverlapBuffer < currentBottomY);
-
       if (!hasVerticalOverlap) {
         // Objects are at different heights - skip this object
         console.log(`⏭️ Skipping ${item.type} - different height level (${Math.abs(currentBottomY - itemBottomY).toFixed(1)}cm apart)`);
@@ -289,8 +289,8 @@ export class MeasurementSystem {
       // Rest of the method remains exactly the same
       const leftDistance = Math.abs(position.x - width / 2 - (itemPos.x + itemWidth / 2));
       const rightDistance = Math.abs(position.x + width / 2 - (itemPos.x - itemWidth / 2));
-      const frontDistance = Math.abs(position.z - depth / 2 - (itemPos.z + itemDepth / 2));
-      const backDistance = Math.abs(position.z + depth / 2 - (itemPos.z - itemDepth / 2));
+      const frontDistance = Math.abs(position.z - width / 2 - (itemPos.z + itemWidth / 2));
+      const backDistance = Math.abs(position.z + width / 2 - (itemPos.z - itemWidth / 2));
 
       // Update minimum distances (considering object alignment)
       if (this.objectsAlignedOnAxis(position, itemPos, 'x')) {
@@ -321,17 +321,71 @@ export class MeasurementSystem {
     }
   }
 
-  private createMeasurementVisuals (measurements: MeasurementData): void {
+  private createMeasurementVisuals(measurements: MeasurementData): void {
     if (!this.selectedObject) return;
 
     const position = this.selectedObject.position;
     const labels: MeasurementLabel[] = [];
 
+    // Calculate object bottom and top Y positions
+    const objectBottomY = this.getObjectBottomY(measurements, position);
+    const objectTopY = this.getObjectTopY(measurements, position);
+
+    const CEILING_HEIGHT = WALL_SETTINGS.HEIGHT; // Wall height from WALL_SETTINGS.HEIGHT
+    const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, CEILING_HEIGHT);
+    const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
+
+    // ✅ Get movement config to check allowFreeRotation
+    const itemId = this.selectedObject.userData.itemId;
+    const currentItem = this.existingItems.find(item => item.id === itemId);
+    const movementConfig = getMovementConfig(currentItem?.type || 'Furniture', currentItem);
+    const MOUNT_THRESHOLD_PERCENT = 30;
+    // ✅ Calculate if object POSITION is more than 30% up the wall height
+    // Use objectBottomY (where the object starts) to check mounting height
+    const objectMountingHeight = objectBottomY; // This is where the object is positioned
+    const mountingHeightPercentage = (objectMountingHeight / CEILING_HEIGHT) * 100;
+    const hasObjectAbove = spaceAboveObject < (CEILING_HEIGHT - objectTopY);
+    const isObjectHighlyMounted = mountingHeightPercentage > MOUNT_THRESHOLD_PERCENT;
+
+    // Add bottom space for all objects
+    if (spaceBelowObject > 0) {
+      labels.push({
+        id: 'item-bottom-y',
+        text: `${Math.round(Math.max(0, spaceBelowObject))} cm`,
+        position: new THREE.Vector3(position.x, objectBottomY - spaceBelowObject/2, position.z),
+        direction: 'vertical',
+        color: '#007BFF',
+        isObjectDimension: false
+      });
+    }
+
+    // ✅ CONDITIONAL: Show top space line when:
+    // 1. allowFreeRotation is FALSE AND
+    // 2. Object is mounted MORE than 30% up the wall height
+
+    const shouldShowTopSpace = spaceAboveObject > 0 &&
+        !movementConfig.allowFreeRotation &&
+        (isObjectHighlyMounted || hasObjectAbove);
+
+    if (shouldShowTopSpace) {
+      labels.push({
+        id: 'item-top-y',
+        text: `${Math.round(Math.max(0, spaceAboveObject))} cm`,
+        position: new THREE.Vector3(position.x, objectTopY + spaceAboveObject/2, position.z),
+        direction: 'vertical',
+        color: '#007BFF',
+        isObjectDimension: false
+      });
+
+      console.log(`✅ Showing top space line: Object mounted at ${mountingHeightPercentage.toFixed(1)}% of wall height`);
+    } else if (!movementConfig.allowFreeRotation && !isObjectHighlyMounted) {
+      console.log(`🚫 Hiding top space line: Object mounted at only ${mountingHeightPercentage.toFixed(1)}% of wall height < ${MOUNT_THRESHOLD_PERCENT}%)`);
+    }
+
+    // Existing logic for wall-bound or free-standing measurements
     if (measurements.isWallBound) {
-      // Wall-bound object: show object width and side spaces
       this.createWallBoundMeasurements(measurements, position, labels);
     } else {
-      // Free-standing object: show space in all directions
       this.createFreeStandingMeasurements(measurements, position, labels);
     }
 
@@ -340,6 +394,147 @@ export class MeasurementSystem {
       this.createMeasurementLabel(label);
       this.createMeasurementLine(label, measurements);
     });
+  }
+
+
+  // ✅ NEW METHOD: Calculate space below object (to nearest object below OR floor)
+  private calculateSpaceBelowObject(measurements: MeasurementData, position: THREE.Vector3, objectBottomY: number): number {
+    if (!this.selectedObject) return objectBottomY; // Fallback to floor distance
+
+    const excludeItemId = this.selectedObject.userData.itemId;
+    let nearestObjectBelowTopY = 0; // Start from floor level (Y=0)
+
+    // Get current object's horizontal bounds for overlap detection
+    const objectWidth = measurements.objectWidth;
+    const objectDepth = measurements.objectDepth;
+
+    this.existingItems.forEach(item => {
+      if (item.id === excludeItemId) return; // Skip current object
+
+      // Get other object's dimensions and position
+      const itemDimensions = getDimensions(item.type, item.sku, item.model);
+      if (!itemDimensions) return;
+
+      const itemScale = item.scale || 1.0;
+      const itemWidth = itemDimensions.width * itemScale;
+      const itemDepth = itemDimensions.depth * itemScale;
+      const itemHeight = itemDimensions.height * itemScale;
+      const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
+      const itemBottomY = itemPos.y + itemFloorOffset;
+      const itemTopY = itemBottomY + itemHeight;
+
+      // Check if other object is BELOW current object
+      if (itemTopY >= objectBottomY - 10) return; // Not below (with 10cm buffer)
+
+      // Check horizontal overlap (XZ plane)
+      const horizontalBuffer = 10; // 10cm buffer
+
+      // Current object bounds
+      const currentMinX = position.x - objectWidth / 2;
+      const currentMaxX = position.x + objectWidth / 2;
+      const currentMinZ = position.z - objectDepth / 2;
+      const currentMaxZ = position.z + objectDepth / 2;
+
+      // Other object bounds
+      const itemMinX = itemPos.x - itemWidth / 2;
+      const itemMaxX = itemPos.x + itemWidth / 2;
+      const itemMinZ = itemPos.z - itemDepth / 2;
+      const itemMaxZ = itemPos.z + itemDepth / 2;
+
+      // Check for horizontal overlap
+      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+
+      if (overlapX && overlapZ) {
+        // Objects overlap horizontally and other object is below
+        nearestObjectBelowTopY = Math.max(nearestObjectBelowTopY, itemTopY);
+        console.log(`📏 Found object below: ${item.type} at top Y=${itemTopY.toFixed(1)}cm`);
+      }
+    });
+
+    // Calculate space: from current object bottom to top of nearest object below (or floor)
+    const spaceBelow = objectBottomY - nearestObjectBelowTopY;
+
+    console.log(`📏 Space below calculation:`, {
+      objectBottomY: objectBottomY.toFixed(1),
+      nearestObjectBelowTopY: nearestObjectBelowTopY.toFixed(1),
+      spaceBelow: spaceBelow.toFixed(1),
+      hasObjectBelow: nearestObjectBelowTopY > 0
+    });
+
+    return Math.max(0, spaceBelow);
+  }
+
+// ✅ NEW METHOD: Calculate space above object (to nearest object above OR ceiling)
+  private calculateSpaceAboveObject(measurements: MeasurementData, position: THREE.Vector3, objectTopY: number, ceilingHeight: number): number {
+    if (!this.selectedObject) return ceilingHeight - objectTopY; // Fallback to ceiling distance
+
+    const excludeItemId = this.selectedObject.userData.itemId;
+    let nearestObjectAboveBottomY = ceilingHeight; // Start from ceiling level
+
+    // Get current object's horizontal bounds for overlap detection
+    const objectWidth = measurements.objectWidth;
+    const objectDepth = measurements.objectDepth;
+
+    this.existingItems.forEach(item => {
+      if (item.id === excludeItemId) return; // Skip current object
+
+      // Get other object's dimensions and position
+      const itemDimensions = getDimensions(item.type, item.sku, item.model);
+      if (!itemDimensions) return;
+
+      const itemScale = item.scale || 1.0;
+      const itemWidth = itemDimensions.width * itemScale;
+      const itemDepth = itemDimensions.depth * itemScale;
+      // const itemHeight = itemDimensions.height * itemScale;
+      const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
+      const itemBottomY = itemPos.y + itemFloorOffset;
+      // const itemTopY = itemBottomY + itemHeight;
+
+      // Check if other object is ABOVE current object
+      if (itemBottomY <= objectTopY + 10) return; // Not above (with 10cm buffer)
+
+      // Check horizontal overlap (XZ plane)
+      const horizontalBuffer = 10; // 10cm buffer
+
+      // Current object bounds
+      const currentMinX = position.x - objectWidth / 2;
+      const currentMaxX = position.x + objectWidth / 2;
+      const currentMinZ = position.z - objectDepth / 2;
+      const currentMaxZ = position.z + objectDepth / 2;
+
+      // Other object bounds
+      const itemMinX = itemPos.x - itemWidth / 2;
+      const itemMaxX = itemPos.x + itemWidth / 2;
+      const itemMinZ = itemPos.z - itemDepth / 2;
+      const itemMaxZ = itemPos.z + itemDepth / 2;
+
+      // Check for horizontal overlap
+      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+
+      if (overlapX && overlapZ) {
+        // Objects overlap horizontally and other object is above
+        nearestObjectAboveBottomY = Math.min(nearestObjectAboveBottomY, itemBottomY);
+        console.log(`📏 Found object above: ${item.type} at bottom Y=${itemBottomY.toFixed(1)}cm`);
+      }
+    });
+
+    // Calculate space: from current object top to bottom of nearest object above (or ceiling)
+    const spaceAbove = nearestObjectAboveBottomY - objectTopY;
+
+    console.log(`📏 Space above calculation:`, {
+      objectTopY: objectTopY.toFixed(1),
+      nearestObjectAboveBottomY: nearestObjectAboveBottomY.toFixed(1),
+      spaceAbove: spaceAbove.toFixed(1),
+      hasObjectAbove: nearestObjectAboveBottomY < ceilingHeight
+    });
+
+    return Math.max(0, spaceAbove);
   }
 
   // ✅ CRITICAL FIX: Calculate object's center height (middle of the actual 3D object)
@@ -378,7 +573,7 @@ export class MeasurementSystem {
     const objectTopY = this.getObjectTopY(measurements, position);
 
     // Position labels ABOVE the object
-    const labelHeightOffset = 40; // 40cm above top of object
+    // const labelHeightOffset = 40; // 40cm above top of object
     const spaceHeightOffset = 20; // 20cm above top of object for space labels
 
     console.log(`📏 RESTRICTIVE wall-mounted measurements for ${wallDirection} wall:`, {
@@ -400,8 +595,8 @@ export class MeasurementSystem {
 
       labels.push({
         id: 'object-width',
-        text: `${Math.round(objectWidth)} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+        text: `${objectWidth} cm`,
+        position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
         direction: 'horizontal',
         color: '#ff6b35',
         isObjectDimension: true
@@ -446,8 +641,8 @@ export class MeasurementSystem {
 
       labels.push({
         id: 'object-width',
-        text: `${Math.round(objectWidth)} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+        text: `${objectWidth} cm`,
+        position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
         direction: 'vertical',
         color: '#ff6b35',
         isObjectDimension: true
@@ -562,7 +757,7 @@ export class MeasurementSystem {
       });
     }
 
-    if (spaceBack > 10) {
+    if (spaceBack > 5) {
       labels.push({
         id: 'space-back',
         text: `${Math.round(spaceBack)} cm`,
@@ -580,8 +775,8 @@ export class MeasurementSystem {
     // Show object dimensions
     labels.push({
       id: 'object-width',
-      text: `${Math.round(objectWidth)} cm`,
-      position: new THREE.Vector3(position.x, objectTopY + labelHeightOffset, position.z),
+      text: `${objectWidth} cm`,
+      position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), position.z),
       direction: 'horizontal',
       color: '#ff6b35',
       isObjectDimension: true
@@ -711,61 +906,201 @@ export class MeasurementSystem {
         points.push(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth));
         points.push(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth));
 
-        // Add end markers (small horizontal lines)
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth), 'horizontal');
+        // Add end markers (small vertical lines)
+        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth), 'vertical');
+        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth), 'vertical');
       }
-    } else {
+    }
+    else {
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
       if (label.id === 'space-left') {
         const startX = position.x - measurements.objectWidth / 2;
-        // Stop at wall inner surface, not room boundary
-        // const wallSurfaceX = -roomHalfWidth + wallThickness / 2;
         const endX = startX - measurements.spaceLeft;
 
-        points.push(new THREE.Vector3(startX, objectCenterY, position.z));
-        points.push(new THREE.Vector3(endX, objectCenterY, position.z));
+        // ✅ Apply wall offset for consistent positioning
+        let lineZ = position.z;
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 5; // 5cm away from wall face
 
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, position.z), 'vertical');
-        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, position.z), 'vertical');
+          switch (measurements.wallDirection) {
+            case 'north': lineZ = wallFaces.north + offset; break; // Move south from north wall
+            case 'south': lineZ = wallFaces.south - offset; break; // Move north from south wall
+            case 'east': lineZ = position.z; break; // Keep original Z for east/west walls
+            case 'west': lineZ = position.z; break; // Keep original Z for east/west walls
+          }
+        }
+
+        points.push(new THREE.Vector3(startX, objectCenterY, lineZ));
+        points.push(new THREE.Vector3(endX, objectCenterY, lineZ));
+        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, lineZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
 
       } else if (label.id === 'space-right') {
         const startX = position.x + measurements.objectWidth / 2;
-        // Stop at wall inner surface, not room boundary
         const endX = startX + measurements.spaceRight;
 
-        points.push(new THREE.Vector3(startX, objectCenterY, position.z));
-        points.push(new THREE.Vector3(endX, objectCenterY, position.z));
+        // ✅ Apply wall offset for consistent positioning
+        let lineZ = position.z;
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 5;
 
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, position.z), 'vertical');
-        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, position.z), 'vertical');
+          switch (measurements.wallDirection) {
+            case 'north': lineZ = wallFaces.north + offset; break;
+            case 'south': lineZ = wallFaces.south - offset; break;
+            case 'east': lineZ = position.z; break;
+            case 'west': lineZ = position.z; break;
+          }
+        }
+
+        points.push(new THREE.Vector3(startX, objectCenterY, lineZ));
+        points.push(new THREE.Vector3(endX, objectCenterY, lineZ));
+        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, lineZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
 
       } else if (label.id === 'space-front') {
-        const startZ = position.z - measurements.objectDepth / 2;
-        // Stop at wall inner surface, not room boundary
+        const startZ = position.z - measurements.objectWidth / 2;
         const endZ = startZ - measurements.spaceFront;
 
-        points.push(new THREE.Vector3(position.x, objectCenterY, startZ));
-        points.push(new THREE.Vector3(position.x, objectCenterY, endZ));
+        // ✅ Apply wall offset for consistent positioning
+        let lineX = position.x;
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 5;
 
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, startZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, endZ), 'horizontal');
+          switch (measurements.wallDirection) {
+            case 'north': lineX = position.x; break; // Keep original X for north/south walls
+            case 'south': lineX = position.x; break; // Keep original X for north/south walls
+            case 'east': lineX = wallFaces.east - offset; break; // Move west from east wall
+            case 'west': lineX = wallFaces.west + offset; break; // Move east from west wall
+          }
+        }
+
+        points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
+        points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'vertical');
 
       } else if (label.id === 'space-back') {
-        const startZ = position.z + measurements.objectDepth / 2;
-        // Stop at wall inner surface, not room boundary
+        const startZ = position.z + measurements.objectWidth / 2;
         const endZ = startZ + measurements.spaceBack;
 
-        points.push(new THREE.Vector3(position.x, objectCenterY, startZ));
-        points.push(new THREE.Vector3(position.x, objectCenterY, endZ));
+        // ✅ Apply wall offset for consistent positioning
+        let lineX = position.x;
+        if (measurements.isWallBound && measurements.wallDirection) {
+          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+          const offset = 5;
 
-        // Add end markers
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, startZ), 'horizontal');
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, endZ), 'horizontal');
+          switch (measurements.wallDirection) {
+            case 'north': lineX = position.x; break;
+            case 'south': lineX = position.x; break;
+            case 'east': lineX = wallFaces.east - offset; break;
+            case 'west': lineX = wallFaces.west + offset; break;
+          }
+        }
+
+        points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
+        points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'vertical');
       }
+    else if (label.id === 'item-bottom-y') {
+      // Vertical line from object bottom to floor/object below
+      const objectBottomY = this.getObjectBottomY(measurements, position);
+      const spaceBelowObject = this.calculateSpaceBelowObject(measurements, position, objectBottomY);
+      const endY = objectBottomY - spaceBelowObject;
+
+      let lineX = position.x;
+      let lineZ = position.z;
+
+      if (measurements.isWallBound && measurements.wallDirection) {
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 5; // 20cm away from wall face (into the room)
+
+        switch (measurements.wallDirection) {
+          case 'north':
+            lineX = position.x;
+            lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
+            break;
+          case 'south':
+            lineX = position.x;
+            lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
+            break;
+          case 'east':
+            lineX = wallFaces.east - offset; // Move WEST (away from east wall)
+            lineZ = position.z;
+            break;
+          case 'west':
+            lineX = wallFaces.west + offset; // Move EAST (away from west wall)
+            lineZ = position.z;
+            break;
+        }
+      } else {
+        lineX = position.x + measurements.objectWidth / 4;
+        lineZ = position.z;
+      }
+
+      points.push(new THREE.Vector3(lineX, objectBottomY, lineZ));
+      points.push(new THREE.Vector3(lineX, endY, lineZ));
+        this.createEndMarker(
+            new THREE.Vector3(lineX, objectBottomY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
+        this.createEndMarker(
+            new THREE.Vector3(lineX, endY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
+
+    } else if (label.id === 'item-top-y') {
+      const objectTopY = this.getObjectTopY(measurements, position);
+      const spaceAboveObject = this.calculateSpaceAboveObject(measurements, position, objectTopY, WALL_SETTINGS.HEIGHT);
+      const endY = objectTopY + spaceAboveObject;
+
+      let lineX = position.x;
+      let lineZ = position.z;
+
+      if (measurements.isWallBound && measurements.wallDirection) {
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 5; // 20cm away from wall face (into the room)
+
+        switch (measurements.wallDirection) {
+          case 'north':
+            lineX = position.x;
+            lineZ = wallFaces.north + offset; // Move SOUTH (away from north wall)
+            break;
+          case 'south':
+            lineX = position.x;
+            lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
+            break;
+          case 'east':
+            lineX = wallFaces.east - offset; // Move WEST (away from east wall)
+            lineZ = position.z;
+            break;
+          case 'west':
+            lineX = wallFaces.west + offset; // Move EAST (away from west wall)
+            lineZ = position.z;
+            break;
+        }
+      } else {
+        lineX = position.x - measurements.objectWidth / 4;
+        lineZ = position.z;
+      }
+
+      points.push(new THREE.Vector3(lineX, objectTopY, lineZ));
+      points.push(new THREE.Vector3(lineX, endY, lineZ));
+        this.createEndMarker(
+            new THREE.Vector3(lineX, objectTopY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
+        this.createEndMarker(
+            new THREE.Vector3(lineX, endY, lineZ),
+            'horizontal',
+            measurements.wallDirection
+        );
     }
 
     if (points.length === 2) {
@@ -774,7 +1109,7 @@ export class MeasurementSystem {
       // IKEA-style line material - thin and professional
       const material = new THREE.LineBasicMaterial({
         color: '#000000',
-        linewidth: 1,
+        linewidth: 2,
         transparent: false,
         opacity: 1
       });
@@ -784,25 +1119,36 @@ export class MeasurementSystem {
       this.measurementLines.add(line);
     }
   }
-
+  };
   // NEW: Create end markers (small perpendicular lines at measurement ends)
-  private createEndMarker (position: THREE.Vector3, direction: 'horizontal' | 'vertical'): void {
+  private createEndMarker(
+      position: THREE.Vector3,
+      direction: 'horizontal' | 'vertical',
+      wallDirection?: 'north' | 'south' | 'east' | 'west'
+  ): void {
     const markerSize = 8; // Small marker size
     const points: THREE.Vector3[] = [];
 
     if (direction === 'vertical') {
-      // Vertical end marker
+      // Vertical end marker (extends vertically)
       points.push(new THREE.Vector3(position.x, position.y - markerSize / 2, position.z));
       points.push(new THREE.Vector3(position.x, position.y + markerSize / 2, position.z));
     } else {
-      // Horizontal end marker
-      points.push(new THREE.Vector3(position.x, position.y, position.z - markerSize / 2));
-      points.push(new THREE.Vector3(position.x, position.y, position.z + markerSize / 2));
+      // Horizontal end marker - orientation depends on wall direction
+      if (wallDirection === 'north' || wallDirection === 'south') {
+        // For north/south walls, extend in X-axis (left/right) for front visibility
+        points.push(new THREE.Vector3(position.x - markerSize / 2, position.y, position.z));
+        points.push(new THREE.Vector3(position.x + markerSize / 2, position.y, position.z));
+      } else {
+        // For east/west walls (or no wall), extend in Z-axis (front/back) for side visibility
+        points.push(new THREE.Vector3(position.x, position.y, position.z - markerSize / 2));
+        points.push(new THREE.Vector3(position.x, position.y, position.z + markerSize / 2));
+      }
     }
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const material = new THREE.LineBasicMaterial({
-      color: '#333333', // Dark gray for end markers
+      color: '#000000',
       linewidth: 2,
       transparent: true,
       opacity: 1.0

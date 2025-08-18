@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WALL_SETTINGS, CONSTRAINTS } from '../constants/dimensions';
+import { getInteriorBoundaries } from '../utils/constraints';
 
 // Type definitions for internal use
 interface WallConfig {
@@ -87,35 +88,6 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
   // FIXED: Return only the floor grid group
   return floorGridGroup;
 };
-
- /**
- * UPDATED CONSTRAINT FUNCTIONS for interior walls
- */
-
-// Get the actual interior room boundaries (accounting for wall thickness)
-export const getInteriorBoundaries = (roomWidth: number, roomHeight: number) => {
-  const wallThickness = WALL_SETTINGS.THICKNESS;
-
-  return {
-    // Interior usable space (where objects can be placed)
-    interior: {
-      width: roomWidth - (wallThickness * 2),
-      height: roomHeight - (wallThickness * 2),
-      minX: -(roomWidth / 2) + wallThickness,
-      maxX: (roomWidth / 2) - wallThickness,
-      minZ: -(roomHeight / 2) + wallThickness,
-      maxZ: (roomHeight / 2) - wallThickness
-    },
-    // Wall inner face positions (for wall-mounted objects)
-    wallFaces: {
-      north: -(roomHeight / 2) + wallThickness,
-      south: (roomHeight / 2) - wallThickness,
-      east: (roomWidth / 2) - wallThickness,
-      west: -(roomWidth / 2) + wallThickness
-    }
-  };
-};
-
 
 /**
  * WALL GRID for interior walls
