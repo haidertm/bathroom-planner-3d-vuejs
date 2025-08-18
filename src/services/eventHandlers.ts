@@ -1723,7 +1723,7 @@ export class EventHandlers {
       case 'north':
         // Front wall - standard left/right movement with mouse X
         position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
-        position.z = -roomHalfHeight + halfDepth + wallBuffer;
+        position.z = -roomHalfHeight + (wallBuffer + 5);
 
         // 🔍 DEBUG: Log the calculation
         console.log('🚽 NORTH WALL TOILET POSITION:', {

@@ -673,6 +673,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
           path: '../../models/toilet/C66175.glb',
           dimensions: { width: 35.2, height: 40.5, depth: 52.7 },
+          floorOffset: 5.7,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
