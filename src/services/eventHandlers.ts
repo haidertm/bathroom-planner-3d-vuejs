@@ -1,35 +1,30 @@
 // src/services/eventHandlers.ts
 import * as THREE from 'three';
 import type { Ref } from 'vue';
+import { ref } from 'vue';
 import type { BathroomPlannerState } from '../composables/useUndoRedo';
 import {
-  updateMousePosition,
-  updateTouchPosition,
   getTouchDistance,
   highlightObject,
-  setOutlineColor
+  setOutlineColor,
+  updateMousePosition,
+  updateTouchPosition
 } from '../utils/helpers';
 import {
-  constrainToWalls,
-  snapToNearestWall,
+  type BathroomItem, constrainToCorner,
+  constrainToRoom,
+  getDimensions,
   wouldCollideWithExisting,
-  type BathroomItem,
-  wouldCollideWithExistingOrWalls, // 🔧 NEW: Import enhanced collision detection
-  constrainToRoom
+  wouldCollideWithExistingOrWalls
 } from '../utils/constraints';
-import { SCALE_LIMITS } from '../constants/dimensions';
+import { SCALE_LIMITS, WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
-import { LOOK_AT, CAMERA_CONTROLS } from '../constants/camera';
-import { ref } from 'vue';
-import {
-  getHeightConstraints,
-  getMovementConfig,
-  canMoveVertically,
-  canRotateFreely
-} from '../utils/models';
+import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
+import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
 import { MeasurementSystem } from './measurementSystem';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
+import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -115,6 +110,7 @@ export class EventHandlers {
 
   // Smooth zoom properties using constants
   private targetCameraPosition: THREE.Vector3;
+  private wallCulling: SimpleWallCulling | null = null;
 
   constructor (
     scene: THREE.Scene,
@@ -203,6 +199,10 @@ export class EventHandlers {
     this.startSimpleZoomAnimation();
   }
 
+  public setWallCulling (wallCulling: SimpleWallCulling): void {
+    this.wallCulling = wallCulling;
+  }
+
   private startSimpleZoomAnimation (): void {
     const animate = () => {
       requestAnimationFrame(animate);
@@ -255,7 +255,7 @@ export class EventHandlers {
     return currentItems.find(item => item.id === objectId);
   }
 
-  private updateMeasurementsThrottled(): void {
+  private updateMeasurementsThrottled (): void {
     const now = performance.now();
 
     // Only update if enough time has passed
@@ -265,7 +265,7 @@ export class EventHandlers {
         this.lastMeasurementUpdate = now;
       }
     }
-      // Clear any pending debounced update
+    // Clear any pending debounced update
     if (this.pendingMeasurementTimeout) {
       clearTimeout(this.pendingMeasurementTimeout);
     }
@@ -273,8 +273,8 @@ export class EventHandlers {
     this.pendingMeasurementTimeout = setTimeout(() => {
       if (this.measurementSystem && this.selectedObject) {
         this.measurementSystem.forceUpdateMeasurements();
-       }
-      }, 100);
+      }
+    }, 100);
   }
 
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
@@ -422,6 +422,26 @@ export class EventHandlers {
     if (intersected) {
       this.selectedObject = intersected.object;
 
+      // 🔍 DEBUG: Log initial toilet position when selected
+      if (this.selectedObject.userData.type === 'Toilet') {
+        const currentPos = this.selectedObject.position;
+        const dimensions = getDimensions(
+          'Toilet',
+          this.selectedObject.userData.sku,
+          this.selectedObject.userData.model
+        );
+        const halfDepth = (dimensions?.depth || 50) / 2;
+
+        console.log('🚽 TOILET SELECTED - INITIAL POSITION:', {
+          currentPosition: { x: currentPos.x, z: currentPos.z },
+          roomHalfHeight: this.roomHeightRef.value / 2,
+          halfDepth,
+          toiletBackEdgeZ: currentPos.z - halfDepth,
+          wallZ: -this.roomHeightRef.value / 2,
+          currentGap: Math.abs((-this.roomHeightRef.value / 2) - (currentPos.z - halfDepth))
+        });
+      }
+
       console.log('selectedObject >>>', this.selectedObject);
 
       // 🚀 FIXED: Get fresh items before updating measurement system
@@ -436,11 +456,71 @@ export class EventHandlers {
       // Emit event for measurement updates
       window.dispatchEvent(new CustomEvent('object-selected'));
 
-      // Check collision state immediately when object is selected
+      // ✅ NEW: Auto-move objects from hidden walls to visible walls
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = currentItems.find(item => item.id === itemId);
+      const movementConfig = getMovementConfig(objectType, currentItem);
+
+      // Only do this for wall-bound objects
+      if (movementConfig?.snapToWall) {
+        // Check which wall the object is currently on
+        const currentWall = this.determineCurrentWall(this.selectedObject.position);
+
+        // Check if this wall is visible
+        if (this.wallCulling && this.wallCulling.enabled) {
+          const wallVisibility = this.wallCulling.getWallVisibilityStatus();
+          const visibleWalls = new Set(
+            wallVisibility
+              .filter(status => status.visible)
+              .map(status => status.direction)
+          );
+
+          // If object is on a hidden wall, move it to the opposite visible wall
+          if (!visibleWalls.has(currentWall)) {
+            console.log(`🔄 Object is on hidden ${currentWall} wall, moving to visible wall`);
+
+            // Determine the best visible wall (usually opposite wall)
+            const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
+
+            // Move object to the target wall immediately
+            const newPosition = this.getPositionOnWall(
+              targetWall,
+              this.selectedObject.position,
+              objectType,
+              objectScale,
+              currentItem
+            );
+
+            // Apply the new position
+            this.selectedObject.position.set(newPosition.x, newPosition.y, newPosition.z);
+
+            // Apply the correct rotation for the new wall
+            if (!movementConfig.allowFreeRotation) {
+              this.selectedObject.rotation.y = newPosition.rotation;
+            }
+
+            // Update the item data immediately
+            this.setItems((prevItems: BathroomItem[]) => {
+              return prevItems.map(item =>
+                item.id === itemId
+                  ? {
+                    ...item,
+                    position: [newPosition.x, newPosition.y, newPosition.z],
+                    rotation: newPosition.rotation
+                  }
+                  : item
+              );
+            });
+
+            console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall`);
+          }
+        }
+      }
+      // ✅ END OF NEW SECTION
+
+      // Check collision state immediately when object is selected
       const currentPosition = this.selectedObject.position;
       const isColliding = wouldCollideWithExisting(
         { x: currentPosition.x, y: currentPosition.y, z: currentPosition.z },
@@ -482,9 +562,12 @@ export class EventHandlers {
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
 
-        // NEW: Store original position for potential snap-back
+        // Store original position for potential snap-back
+        // Note: If we just moved the object, this will store the NEW position
         this.originalDragPosition.copy(this.selectedObject.position);
         this.originalDragRotation = this.selectedObject.rotation.y;
+
+        this.updateDragPlane(this.selectedObject);
 
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
@@ -503,6 +586,130 @@ export class EventHandlers {
       window.dispatchEvent(new CustomEvent('object-selected'));
     }
   }
+
+  /**
+   * Calculate position on a specific wall
+   */
+  private getPositionOnWall (
+    wall: string,
+    currentPosition: THREE.Vector3,
+    objectType: ComponentType,
+    objectScale: number,
+    currentItem?: BathroomItem
+  ): { x: number; y: number; z: number; rotation: number } {
+    const roomHalfWidth = this.roomWidthRef.value / 2;
+    const roomHalfHeight = this.roomHeightRef.value / 2;
+    const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+    const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
+    const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
+    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+
+    console.log('111>> object wallBuffer', wallBuffer);
+
+    let x = currentPosition.x;
+    let y = currentPosition.y; // Preserve height
+    let z = currentPosition.z;
+    let rotation = 0;
+
+    switch (wall) {
+      case 'north':
+        z = -roomHalfHeight + halfDepth + wallBuffer;
+        x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+        rotation = 0;
+        break;
+
+      case 'south':
+        z = roomHalfHeight - halfDepth - wallBuffer;
+        x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+        rotation = Math.PI;
+        break;
+
+      case 'east':
+        x = roomHalfWidth - halfDepth - wallBuffer;
+        z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+        rotation = -Math.PI / 2;
+        break;
+
+      case 'west':
+        x = -roomHalfWidth + halfDepth + wallBuffer;
+        z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+        rotation = Math.PI / 2;
+        break;
+    }
+
+    return { x, y, z, rotation };
+  }
+
+  /**
+   * Helper method to determine which wall an object is currently on
+   */
+// Helper method to determine which wall an object is currently on
+  private determineCurrentWall (position: THREE.Vector3): 'north' | 'south' | 'east' | 'west' {
+    const roomHalfWidth = this.roomWidthRef.value / 2;
+    const roomHalfHeight = this.roomHeightRef.value / 2;
+    const tolerance = 30; // 30cm tolerance for wall detection
+
+    // Check each wall
+    if (Math.abs(position.z + roomHalfHeight) < tolerance) return 'north';
+    if (Math.abs(position.z - roomHalfHeight) < tolerance) return 'south';
+    if (Math.abs(position.x - roomHalfWidth) < tolerance) return 'east';
+    if (Math.abs(position.x + roomHalfWidth) < tolerance) return 'west';
+
+    // If not clearly on any wall, find nearest
+    const distances = {
+      north: Math.abs(position.z + roomHalfHeight),
+      south: Math.abs(position.z - roomHalfHeight),
+      east: Math.abs(position.x - roomHalfWidth),
+      west: Math.abs(position.x + roomHalfWidth)
+    };
+
+    return Object.entries(distances).reduce((a, b) =>
+      distances[a[0] as 'north' | 'south' | 'east' | 'west'] < distances[b[0] as 'north' | 'south' | 'east' | 'west'] ? a : b
+    )[0] as 'north' | 'south' | 'east' | 'west';
+  }
+
+  /**
+   * Get the opposite wall or best visible wall
+   */
+// Get the opposite wall or best visible wall
+  private getOppositeOrBestWall (
+    currentWall: 'north' | 'south' | 'east' | 'west',
+    visibleWalls: Set<string>
+  ): 'north' | 'south' | 'east' | 'west' {
+    // Define opposite walls
+    const opposites: { [key in 'north' | 'south' | 'east' | 'west']: 'north' | 'south' | 'east' | 'west' } = {
+      north: 'south',
+      south: 'north',
+      east: 'west',
+      west: 'east'
+    };
+
+    const oppositeWall = opposites[currentWall];
+
+    // If opposite wall is visible, use it
+    if (visibleWalls.has(oppositeWall)) {
+      return oppositeWall;
+    }
+
+    // Otherwise, return any visible wall (prefer front-facing walls based on camera)
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+
+    // Determine which wall we're mainly looking at
+    if (Math.abs(cameraDirection.z) > Math.abs(cameraDirection.x)) {
+      // Looking north/south
+      if (cameraDirection.z < 0 && visibleWalls.has('north')) return 'north';
+      if (cameraDirection.z > 0 && visibleWalls.has('south')) return 'south';
+    } else {
+      // Looking east/west
+      if (cameraDirection.x > 0 && visibleWalls.has('east')) return 'east';
+      if (cameraDirection.x < 0 && visibleWalls.has('west')) return 'west';
+    }
+
+    // Return first available visible wall
+    return (Array.from(visibleWalls)[0] || 'north') as 'north' | 'south' | 'east' | 'west';
+  }
+
 
   private handleMouseMove (event: MouseEvent): void {
     // Track mouse movement for click vs drag detection
@@ -526,8 +733,7 @@ export class EventHandlers {
         this.updateMeasurementsThrottled();
         // Emit event for real-time measurement updates
         window.dispatchEvent(new CustomEvent('object-moved'));
-      }
-      else if (this.isHeightAdjusting && this.selectedObject && this.measurementSystem) {
+      } else if (this.isHeightAdjusting && this.selectedObject && this.measurementSystem) {
         // ✅ ADD THIS: Update measurements during height adjustment
         this.updateMeasurementsThrottled();
         window.dispatchEvent(new CustomEvent('object-moved'));
@@ -557,17 +763,25 @@ export class EventHandlers {
         return; // Don't allow height adjustment
       }
 
-      const deltaY = (this.mouseStartY - event.clientY) * 1.0;
-      let newY = this.heightStartY + deltaY;
+      const heightConstraints = this.getProperHeightConstraints(
+        objectType,
+        currentItem
+      );
 
-      // Use movement-specific height constraints
-      const heightConstraints = getHeightConstraints(objectType, currentItem);
-      newY = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newY));
+      const deltaY = (event.clientY - this.mouseStartY) * -0.5;
 
-      this.selectedObject.position.y = newY;
+      // ✅ FIX: Calculate new height properly
+      const newHeight = Math.max(
+        heightConstraints.min,
+        Math.min(heightConstraints.max, this.heightStartY + deltaY)
+      );
 
+      // Set the new height
+      this.selectedObject.position.y = newHeight;
+
+      // ✅ FIX: Queue update with correct position
       this.queueUpdate(itemId, {
-        position: [this.selectedObject.position.x, newY, this.selectedObject.position.z]
+        position: [this.selectedObject.position.x, newHeight, this.selectedObject.position.z]
       });
 
       if (this.measurementSystem) {
@@ -602,6 +816,9 @@ export class EventHandlers {
       if (this.measurementSystem) {
         this.updateMeasurementsThrottled();
       }
+
+      this.updateDragPlane(this.selectedObject);
+
       // 🔧 UPDATED: Movement with clean productData-based constraints
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const intersectPoint = new THREE.Vector3();
@@ -621,55 +838,115 @@ export class EventHandlers {
       let rotationChanged = false;
 
       // ✅ CRITICAL FIX: Apply movement constraints using CLEAN productData-based functions
-      if (movementConfig.snapToWall) {
-
-        // ✅ Pass the correct orientation from userData or model
-        const objectOrientation = this.selectedObject?.userData?.orientation ||
-          currentItem?.model?.orientation ||
-          { type: 'face_into_room', wallBuffer: 0 };
-
-        const { position: wallConstrainedPos, rotation: wallRotation } = constrainToWalls(
+      // ✅ NEW: Check if this is a corner-only object FIRST
+      if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
+        // Handle corner-only objects
+        const { position: cornerPos, rotation: cornerRot } = constrainToCorner(
           { x: newPosition.x, y: newPosition.y, z: newPosition.z },
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
             type: objectType,
             scale: objectScale,
-            orientation: objectOrientation, // ✅ Use the correct orientation
-            item: currentItem // 🔧 Pass full item data for productData lookup
+            orientation: currentItem?.model?.orientation,
+            item: currentItem,
+            movement: movementConfig
           }
         );
 
-        constrainedPosition.x = wallConstrainedPos.x;
-        constrainedPosition.z = wallConstrainedPos.z;
+        constrainedPosition.x = cornerPos.x;
+        constrainedPosition.z = cornerPos.z;
+        constrainedPosition.y = cornerPos.y;
+        constrainedRotation = cornerRot;
+        rotationChanged = true;
 
-        // Handle vertical movement
-        if (movementConfig.allowVerticalMovement) {
-          const heightConstraints = getHeightConstraints(objectType, currentItem);
-          constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
-        } else {
-          constrainedPosition.y = wallConstrainedPos.y;
+      } else if (movementConfig.snapToWall) {
+
+        // ✅ ADDITIONAL CHECK: If object is currently on a hidden wall, don't continue dragging
+        // Force it to jump to visible wall first (this should have happened in handleMouseDown)
+        const currentWall = this.determineCurrentWall(this.selectedObject.position);
+
+        if (this.wallCulling && this.wallCulling.enabled) {
+          const wallVisibility = this.wallCulling.getWallVisibilityStatus();
+          const visibleWalls = new Set(
+            wallVisibility
+              .filter(status => status.visible)
+              .map(status => status.direction)
+          );
+
+          // If still on hidden wall (shouldn't happen if handleMouseDown worked), fix it now
+          if (!visibleWalls.has(currentWall)) {
+            console.warn('⚠️ Object still on hidden wall during drag, forcing to visible wall');
+            const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
+            const forcedPosition = this.getPositionOnWall(
+              targetWall,
+              this.selectedObject.position,
+              objectType,
+              objectScale,
+              currentItem
+            );
+            this.selectedObject.position.set(forcedPosition.x, forcedPosition.y, forcedPosition.z);
+            this.selectedObject.rotation.y = forcedPosition.rotation;
+
+            // Recalculate drag offset for the new position
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            const newIntersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(this.dragPlane, newIntersectPoint);
+            this.dragOffset.subVectors(this.selectedObject.position, newIntersectPoint);
+
+            // Update stored original position
+            this.originalDragPosition.copy(this.selectedObject.position);
+            this.originalDragRotation = this.selectedObject.rotation.y;
+          }
         }
 
-        // Handle rotation
+        // ✅ Now continue with normal wall projection (which only considers visible walls)
+        const wallProjection = this.getMouseProjectedWallPosition(
+          newPosition,
+          objectType,
+          objectScale,
+          currentItem
+        );
+
+        // ✅ ALWAYS apply wall constraint for wall-bound objects
+        constrainedPosition.x = wallProjection.position.x;
+        constrainedPosition.z = wallProjection.position.z;
+
+        // Set rotation based on wall
         if (!movementConfig.allowFreeRotation) {
-          constrainedRotation = wallRotation;
+          switch (wallProjection.wall) {
+            case 'north':
+              constrainedRotation = 0;
+              break;
+            case 'south':
+              constrainedRotation = Math.PI;
+              break;
+            case 'east':
+              constrainedRotation = -Math.PI / 2;
+              break;
+            case 'west':
+              constrainedRotation = Math.PI / 2;
+              break;
+          }
           rotationChanged = true;
         }
 
-        // ✅ DEBUG: Log the wall constraint result
-        console.log('🔧 Wall constraint result during drag:', {
-          objectType,
-          sku: currentItem?.sku,
-          wallBuffer: objectOrientation.wallBuffer,
-          originalPos: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
-          constrainedPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
-          shouldBeFlush: objectOrientation.wallBuffer === 0
-        });
-
+        // Handle vertical movement
+        if (movementConfig.allowVerticalMovement) {
+          const heightConstraints = this.getProperHeightConstraints(
+            objectType,
+            currentItem
+          );
+          constrainedPosition.y = Math.max(
+            heightConstraints.min,
+            Math.min(heightConstraints.max, newPosition.y)
+          );
+        } else {
+          // Keep at current height
+          constrainedPosition.y = this.selectedObject.position.y;
+        }
       } else {
-        console.log('🎯 Applying FREE MOVEMENT with productData dimensions');
-
+        // Free movement objects (tables, chairs, etc.)
         const { position: roomConstrainedPos } = constrainToRoom(
           { x: newPosition.x, y: newPosition.y, z: newPosition.z },
           this.roomWidthRef.value,
@@ -678,21 +955,22 @@ export class EventHandlers {
             type: objectType,
             scale: objectScale,
             orientation: this.selectedObject?.userData?.orientation,
-            item: currentItem // 🔧 Pass full item data for productData lookup
+            item: currentItem
           }
         );
 
         constrainedPosition.x = roomConstrainedPos.x;
         constrainedPosition.z = roomConstrainedPos.z;
 
-        if (!movementConfig.allowVerticalMovement) {
-          constrainedPosition.y = 0;
+        if (movementConfig.allowVerticalMovement) {
+          const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
+          constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
         } else {
-          constrainedPosition.y = roomConstrainedPos.y;
+          constrainedPosition.y = 0;
         }
       }
 
-      // 🔧 Check collisions using the new method
+      // Check collisions
       const isColliding = this.checkCollisionState(
         { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
         objectType,
@@ -722,14 +1000,6 @@ export class EventHandlers {
 
       this.queueUpdate(itemId, updateData);
 
-      console.log('🔧 CLEAN DRAG result using productData:', {
-        objectType,
-        sku: currentItem?.sku,
-        position: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
-        isColliding: isColliding ? 'YES (walls/objects)' : 'NO',
-        isFlushMounted: currentItem?.model?.orientation?.wallBuffer === 0
-      });
-
     } else if (this.isRotating) {
       // Camera rotation logic (unchanged)
       const deltaX = event.clientX - this.mouseX;
@@ -741,9 +1011,6 @@ export class EventHandlers {
       spherical.phi -= deltaY * 0.01;
 
       // Constrain phi to prevent camera from going below floor
-      // phi = 0 is looking straight down from above
-      // phi = Math.PI/2 is looking horizontally
-      // We want to limit phi to keep camera above floor level
       spherical.phi = Math.max(0.1, Math.min(this.MAX_PHI_ANGLE, spherical.phi));
 
       // Apply the constrained position
@@ -1030,28 +1297,55 @@ export class EventHandlers {
 
         // Apply the same movement logic as mouse
         if (movementConfig.snapToWall) {
-          const { position: wallConstrainedPos } = constrainToWalls(
-            { x: newPosition.x, y: newPosition.y, z: newPosition.z },
-            this.roomWidthRef.value,
-            this.roomHeightRef.value,
-            {
-              type: objectType,
-              scale: objectScale,
-              orientation: this.selectedObject?.userData?.orientation
-            }
+
+          // ✅ NEW APPROACH: Project mouse to nearest wall for better following
+          const wallProjection = this.getMouseProjectedWallPosition(
+            newPosition,
+            objectType,
+            objectScale,
+            currentItem
           );
 
-          constrainedPosition.x = wallConstrainedPos.x;
-          constrainedPosition.z = wallConstrainedPos.z;
+          // const { position: wallConstrainedPos } = constrainToWalls(
+          //   { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+          //   this.roomWidthRef.value,
+          //   this.roomHeightRef.value,
+          //   {
+          //     type: objectType,
+          //     scale: objectScale,
+          //     orientation: this.selectedObject?.userData?.orientation
+          //   }
+          // );
 
-          if (movementConfig.allowVerticalMovement) {
-            const heightConstraints = getHeightConstraints(objectType, currentItem);
-            constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
-          } else {
-            constrainedPosition.y = wallConstrainedPos.y;
-          }
+          constrainedPosition.x = wallProjection.position.x;
+          constrainedPosition.z = wallProjection.position.z;
 
           if (!movementConfig.allowFreeRotation) {
+            switch (wallProjection.wall) {
+              case 'north':
+                constrainedRotation = 0;
+                break;
+              case 'south':
+                constrainedRotation = Math.PI;
+                break;
+              case 'east':
+                constrainedRotation = -Math.PI / 2;
+                break;
+              case 'west':
+                constrainedRotation = Math.PI / 2;
+                break;
+            }
+            rotationChanged = true;
+          }
+
+          if (movementConfig.allowVerticalMovement) {
+            const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
+            constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
+          } else {
+            constrainedPosition.y = this.selectedObject.position.y;
+          }
+
+          /*if (!movementConfig.allowFreeRotation) {
             const { rotation: wallRotation } = snapToNearestWall(
               { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
               this.roomWidthRef.value,
@@ -1064,7 +1358,7 @@ export class EventHandlers {
             );
             constrainedRotation = wallRotation;
             rotationChanged = true;
-          }
+          }*/
         } else {
           const { position: roomConstrainedPos } = constrainToRoom(
             { x: newPosition.x, y: newPosition.y, z: newPosition.z },
@@ -1386,5 +1680,289 @@ export class EventHandlers {
   // NEW: Utility method to check collision prevention status
   public isCollisionPreventionEnabled (): boolean {
     return this.preventCollisionPlacementRef.value;
+  }
+
+  /**
+   * Enhanced wall position calculation that uses vertical mouse movement
+   * to control position along side walls when viewing from front/back
+   */
+  private getMouseProjectedWallPosition (
+    mouseWorldPos: { x: number; y: number; z: number },
+    objectType: ComponentType,
+    objectScale: number,
+    currentItem?: BathroomItem
+  ): { wall: string; position: { x: number; z: number } } {
+    const roomHalfWidth = this.roomWidthRef.value / 2;
+    const roomHalfHeight = this.roomHeightRef.value / 2;
+    const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+    const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
+    const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
+    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+
+    console.log('111>> object wallBuffer', wallBuffer, dimensions);
+
+    // Get camera direction to determine viewing angle
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+
+    // Determine if we're viewing mainly from front/back or sides
+    const viewingFromFrontBack = Math.abs(cameraDirection.z) > Math.abs(cameraDirection.x);
+
+    // Calculate wall distances
+    const wallDistances = {
+      north: Math.abs(mouseWorldPos.z + roomHalfHeight),
+      south: Math.abs(mouseWorldPos.z - roomHalfHeight),
+      east: Math.abs(mouseWorldPos.x - roomHalfWidth),
+      west: Math.abs(mouseWorldPos.x + roomHalfWidth)
+    };
+
+    // ✅ Use existing wall visibility from SimpleWallCulling
+    let visibleWalls: Set<string>;
+
+    if (this.wallCulling && this.wallCulling.enabled) {
+      // Get actual wall visibility from the culling system
+      const wallVisibility = this.wallCulling.getWallVisibilityStatus();
+      visibleWalls = new Set(
+        wallVisibility
+          .filter(status => status.visible)
+          .map(status => status.direction)
+      );
+
+      console.log('📊 Using actual wall visibility:', Array.from(visibleWalls));
+    } else {
+      // Fallback: all walls are visible if culling is disabled
+      visibleWalls = new Set(['north', 'south', 'east', 'west']);
+    }
+
+    // Find nearest VISIBLE wall
+    let nearestWall = 'north'; // default
+    let minDistance = Infinity;
+
+    for (const [wall, distance] of Object.entries(wallDistances)) {
+      // Only consider visible walls
+      if (visibleWalls.has(wall) && distance < minDistance) {
+        minDistance = distance;
+        nearestWall = wall;
+      }
+    }
+
+    // If no visible walls found (shouldn't happen), use nearest
+    if (!visibleWalls.has(nearestWall)) {
+      nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+        wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+      )[0];
+      console.warn('⚠️ No visible wall found, using nearest:', nearestWall);
+    }
+
+    // Calculate position on the selected wall
+    let position = { x: 0, z: 0 };
+
+    switch (nearestWall) {
+      case 'north':
+        // Front wall - standard left/right movement with mouse X
+        position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
+        position.z = -roomHalfHeight + (wallBuffer + WALL_SETTINGS.THICKNESS);
+
+        // 🔍 DEBUG: Log the calculation
+        console.log('🚽 NORTH WALL TOILET POSITION:', {
+          roomHalfHeight,
+          halfDepth,
+          wallBuffer,
+          calculatedZ: position.z,
+          wallFaceZ: -roomHalfHeight,
+          toiletBackEdgeZ: position.z - halfDepth,
+          gap: Math.abs((-roomHalfHeight) - (position.z - halfDepth))
+        });
+
+        break;
+
+      case 'south':
+        // Back wall - standard left/right movement with mouse X
+        position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
+        position.z = roomHalfHeight - wallBuffer - WALL_SETTINGS.THICKNESS;
+
+        // 🔍 DEBUG: Log the calculation
+        console.log('🚽 SOUTH WALL TOILET POSITION:', {
+          roomHalfHeight,
+          halfDepth,
+          wallBuffer,
+          calculatedZ: position.z,
+          wallFaceZ: roomHalfHeight,
+          toiletBackEdgeZ: position.z + halfDepth,
+          gap: Math.abs(roomHalfHeight - (position.z + halfDepth))
+        });
+
+        break;
+
+      case 'east':
+        // Right wall
+        position.x = roomHalfWidth - wallBuffer - WALL_SETTINGS.THICKNESS;
+
+        if (viewingFromFrontBack) {
+          // When viewing from front/back: use Y (vertical) mouse movement for Z position
+          const screenY = this.mouse.y; // Range: -1 to 1 (bottom to top)
+
+          // Map screen Y to world Z
+          const zRange = (roomHalfHeight * 2) - (halfWidth * 2);
+          const zOffset = -roomHalfHeight + halfWidth;
+          position.z = zOffset + ((-screenY + 1) / 2) * zRange;
+
+          console.log(`📐 East wall: Using vertical mouse for Z`);
+        } else {
+          // Viewing from sides: use mouse Z normally
+          position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
+        }
+        break;
+
+      case 'west':
+        // Left wall
+        position.x = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
+
+        if (viewingFromFrontBack) {
+          // When viewing from front/back: use Y (vertical) mouse movement for Z position
+          const screenY = this.mouse.y;
+
+          const zRange = (roomHalfHeight * 2) - (halfWidth * 2);
+          const zOffset = -roomHalfHeight + halfWidth;
+          position.z = zOffset + ((-screenY + 1) / 2) * zRange;
+
+          console.log(`📐 West wall: Using vertical mouse for Z`);
+        } else {
+          // Viewing from sides: use mouse Z normally
+          position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
+        }
+        break;
+    }
+
+    console.log(`🎯 Wall: ${nearestWall}, Pos: (${position.x.toFixed(0)}, ${position.z.toFixed(0)})`);
+
+    return {
+      wall: nearestWall,
+      position: position
+    };
+  }
+
+  private updateDragPlane (object: THREE.Object3D): void {
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+
+    // Check if looking mostly down/up
+    const lookingVertically = Math.abs(cameraDirection.y) > 0.7;
+
+    if (lookingVertically) {
+      // Top-down view: use horizontal plane for intuitive movement
+      this.dragPlane.setFromNormalAndCoplanarPoint(
+        new THREE.Vector3(0, 1, 0),
+        object.position
+      );
+      console.log('✅ Top view - horizontal plane');
+    } else {
+      // All other views: use plane perpendicular to camera
+      // This gives smooth movement in screen space
+      this.dragPlane.setFromNormalAndCoplanarPoint(
+        cameraDirection,
+        object.position
+      );
+      console.log('✅ Front/side view - camera-perpendicular plane');
+    }
+  }
+
+  /**
+   * Calculates proper vertical movement constraints for objects, accounting for floor offset
+   * from GLB models and movement configuration limits.
+   *
+   * This method handles the complex relationship between:
+   * - position.y (Three.js position)
+   * - floorOffset (elevation built into the GLB model)
+   * - actual visual height (position.y + floorOffset)
+   *
+   * Key behaviors:
+   * - Objects with floorOffset can have negative position.y to reach floor level
+   * - maxHeight = -1 or undefined means no limit except ceiling
+   * - Always prevents objects from going through the ceiling
+   * - Uses actual room height from roomHeightRef
+   *
+   * @param {ComponentType} objectType - Type of bathroom fixture (e.g., 'sink', 'mirror')
+   * @param {BathroomItem | undefined} currentItem - Current item containing SKU, model info, and movement config
+   *
+   * @returns {{min: number, max: number}} Object with min/max position.y values
+   *
+   * @example
+   * // Mirror with 110cm floor offset, wanting to reach floor
+   * // minHeight: 0, floorOffset: 110
+   * // Returns: { min: -110, max: ... }
+   * // At position.y = -110, actual bottom = -110 + 110 = 0 (floor level)
+   *
+   * @example
+   * // Sink with restricted height range
+   * // minHeight: 75, maxHeight: 85, floorOffset: 80
+   * // Returns: { min: -5, max: 5 }
+   * // Object can only move within 75-85cm from floor
+   *
+   * @private
+   */
+  private getProperHeightConstraints (
+    objectType: ComponentType,
+    currentItem: BathroomItem | undefined
+  ): { min: number; max: number } {
+    // Get the product dimensions including floorOffset
+    const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+    const movementConfig = getMovementConfig(objectType, currentItem);
+
+    // Get object's actual height and floor offset
+    const objectHeight = dimensions?.height || 100; // Default 100cm if not found
+    const floorOffset = dimensions?.floorOffset || 0;
+
+    // Use actual room height from the ref
+    const ROOM_CEILING_HEIGHT = this.roomHeightRef.value;
+
+    // Calculate minimum position.y
+    // Account for floorOffset - object can go negative to reach floor level
+    // When position.y = minY, the actual bottom = minY + floorOffset = desired minHeight
+    // Example: Mirror with floorOffset=110.1cm and minHeight=0:
+    //   minY = 0 - 110.1 = -110.1cm
+    //   Actual bottom = -110.1 + 110.1 = 0cm (floor level)
+    const desiredMinHeight = movementConfig.minHeight || 0;
+    let minY = desiredMinHeight - floorOffset;
+
+    // Calculate maximum position.y
+    // Two constraints to consider:
+    // 1. Ceiling constraint: Object's top shouldn't go through ceiling
+    //    Object's top = position.y + floorOffset + objectHeight
+    //    So: position.y <= ROOM_CEILING_HEIGHT - floorOffset - objectHeight
+    const ceilingConstraint = ROOM_CEILING_HEIGHT - floorOffset - objectHeight;
+
+    // 2. Movement config maxHeight: Maximum height from floor for object's bottom
+    //    When position.y = maxY, actual bottom = maxY + floorOffset = desired maxHeight
+    //    So: maxY = desiredMaxHeight - floorOffset
+    //    Special case: maxHeight = -1 means "no limit except ceiling"
+    //    Example: Mirror with floorOffset=110.1cm and maxHeight=100cm:
+    //      maxY = 100 - 110.1 = -10.1cm
+    //      Actual bottom = -10.1 + 110.1 = 100cm from floor ✅
+    let maxY = ceilingConstraint; // Default to ceiling constraint
+
+    if (movementConfig.maxHeight !== undefined && movementConfig.maxHeight !== -1) {
+      // Only apply maxHeight limit if it's defined and not -1
+      const configMaxY = movementConfig.maxHeight - floorOffset;
+      maxY = Math.min(ceilingConstraint, configMaxY);
+    }
+    // If maxHeight is undefined or -1, use ceiling constraint only
+
+    // Ensure min doesn't exceed max
+    minY = Math.min(minY, maxY);
+
+    console.log(`📏 Height constraints for ${objectType}:`, {
+      objectHeight: objectHeight + 'cm',
+      floorOffset: floorOffset + 'cm',
+      actualBottomWhenAtMinY: (minY + floorOffset) + 'cm from floor',
+      actualBottomWhenAtMaxY: (maxY + floorOffset) + 'cm from floor',
+      actualTopWhenAtMaxY: (maxY + floorOffset + objectHeight) + 'cm from floor',
+      positionYRange: `${minY.toFixed(1)} to ${maxY.toFixed(1)}cm`,
+      configMinHeight: movementConfig.minHeight || 0,
+      configMaxHeight: movementConfig.maxHeight === -1 ? 'ceiling' : (movementConfig.maxHeight || 'ceiling'),
+      sku: currentItem?.sku
+    });
+
+    return { min: minY, max: maxY };
   }
 }

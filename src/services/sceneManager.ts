@@ -136,6 +136,10 @@ export class SceneManager {
     };
   }
 
+  get wallCulling(): SimpleWallCulling {
+    return this.wallCullingManager;
+  }
+
   // Add methods to control measurement system
   public enableMeasurements (enabled: boolean): void {
     if (this.measurementSystem) {

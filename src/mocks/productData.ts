@@ -187,6 +187,13 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
+          movement: {
+            snapToWall: true,
+            allowVerticalMovement: true, // Fixed height
+            allowFreeRotation: false,
+            minHeight: 0, // Minimum height from floor
+            maxHeight: -1
+          },
           sku: '73189V2',
           price: '399',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm'
@@ -667,6 +674,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
           path: '../../models/toilet/C66175.glb',
           dimensions: { width: 35.2, height: 40.5, depth: 52.7 },
+          floorOffset: 5.7,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -692,6 +700,11 @@ const productData: ProductData = {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
           },
           sku: 'C66174',
           price: '179.99',
@@ -725,6 +738,11 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
           sku: 'C66183',
           price: '169.99',
           title: 'Portland Close Coupled Toilet With Soft Close Slim Seat'
@@ -741,6 +759,11 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
           sku: 'C66185',
           price: '209.99',
           title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Slim Seat'
@@ -756,6 +779,11 @@ const productData: ProductData = {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
           },
           sku: 'C66184',
           price: '151',
