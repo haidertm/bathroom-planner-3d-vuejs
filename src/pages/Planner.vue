@@ -5,6 +5,15 @@
         :current-measurements="currentMeasurements"
         @toggle-measurements="handleToggleMeasurements"
     />
+    <LightingPanel
+        v-if="showLightingPanel"
+        :lighting-info="currentLightingInfo"
+        @preset-change="handleLightingPresetChange"
+        @time-change="handleTimeOfDayChange"
+        @intensity-change="handleLightingIntensityChange"
+        @shadows-toggle="handleShadowsToggle"
+        @close="handleLightingPanelClose"
+    />
     <Sidebar
         v-if="showTexturePanel"
         @floor-change="handleFloorChange"
@@ -62,6 +71,8 @@
         @toggle-measurements="handleToggleMeasurements"
         size="large"
     />
+    <button :style="toggleMeasurementStyle" @click="handleShowLightingPanel()"> show lighting panel </button>
+
 
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
@@ -111,12 +122,14 @@ import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
 import * as THREE from 'three';
 import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
 
+
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
 import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
 import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
+import LightingPanel from '../components/ui/LightingPanel.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
@@ -150,6 +163,15 @@ const eventHandlersRef = shallowRef(null)
 const roomWidthRef = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeightRef = ref(ROOM_DEFAULTS.HEIGHT)
 const hasUnsavedChanges = ref(false)
+
+const showLightingPanel = ref(false)
+const currentLightingInfo = ref({
+  preset: 'natural',
+  timeOfDay: 'noon',
+  intensity: 1.0,
+  shadowsEnabled: true,
+  lightCount: 0
+})
 
 // ADD THIS: Missing reactive reference for instructions popup
 const showInstructions = ref(false)
@@ -771,6 +793,50 @@ const loadDesignData = (designData) => {
     roomHeightRef.value = ROOM_DEFAULTS.HEIGHT
     currentFloorTexture.value = DEFAULT_FLOOR_TEXTURE
     currentWallTexture.value = DEFAULT_WALL_TEXTURE
+  }
+}
+// Lighting control handlers
+const handleLightingPresetChange = (preset) => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.setLightingPreset(preset)
+    updateLightingInfo()
+  }
+}
+
+const handleTimeOfDayChange = (timeOfDay) => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.setTimeOfDay(timeOfDay)
+    updateLightingInfo()
+  }
+}
+
+const handleLightingIntensityChange = (intensity) => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.setLightingIntensity(intensity)
+    updateLightingInfo()
+  }
+}
+
+const handleShadowsToggle = (enabled) => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.toggleShadows(enabled)
+    updateLightingInfo()
+  }
+}
+
+const handleShowLightingPanel = () => {
+  showLightingPanel.value = true
+  showTexturePanel.value = false
+  updateLightingInfo()
+}
+
+const handleLightingPanelClose = () => {
+  showLightingPanel.value = false
+}
+
+const updateLightingInfo = () => {
+  if (sceneManagerRef.value) {
+    currentLightingInfo.value = sceneManagerRef.value.getCurrentLightingInfo()
   }
 }
 

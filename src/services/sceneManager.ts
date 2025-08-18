@@ -24,6 +24,28 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { getOrientationForItem } from '../utils/models';
+export type LightingPreset = 'natural' | 'warm' | 'cool' | 'bright' | 'dramatic' | 'soft';
+export type TimeOfDay = 'morning' | 'noon' | 'afternoon' | 'evening' | 'night';
+
+interface LightingConfig {
+  ambient: {
+    color: number;
+    intensity: number;
+  };
+  main: {
+    color: number;
+    intensity: number;
+    position: [number, number, number];
+  };
+  fill: Array<{
+    color: number;
+    intensity: number;
+    position: [number, number, number];
+  }>;
+  environment?: {
+    intensity: number;
+  };
+}
 
 interface SceneComponents {
   scene: THREE.Scene;
@@ -57,6 +79,11 @@ export class SceneManager {
 
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
+
+  private currentLightingPreset: LightingPreset = 'natural';
+  private currentTimeOfDay: TimeOfDay = 'noon';
+  private lightingIntensity: number = 1.0;
+  private shadowsEnabled: boolean = true;
 
   private wallLabelsDebug: WallLabelsDebug | null = null;
   private axisIndicatorsDebug: AxisIndicatorsDebug | null = null;
@@ -488,6 +515,250 @@ export class SceneManager {
     this.lights.push(fillLight2);
 
     console.log(`✅ Optimized lighting: ${this.lights.length} lights (only 1 with shadows)`);
+  }
+
+  private setupRealisticLighting (): void {
+    if (!this.scene) return;
+
+    // Clear existing lights
+    this.lights.forEach(light => this.scene!.remove(light));
+    this.lights = [];
+
+    const config = this.getLightingConfig(this.currentLightingPreset, this.currentTimeOfDay);
+
+    // 1. Ambient light for overall scene illumination
+    const ambientLight = new THREE.AmbientLight(config.ambient.color, config.ambient.intensity);
+    this.scene.add(ambientLight);
+    this.lights.push(ambientLight);
+
+    // 2. Main directional light (sun/primary light source)
+    const mainLight = new THREE.DirectionalLight(config.main.color, config.main.intensity);
+    mainLight.position.set(...config.main.position);
+
+    if (this.shadowsEnabled) {
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      mainLight.shadow.camera.near = 10;
+      mainLight.shadow.camera.far = 2000;
+      mainLight.shadow.camera.left = -1000;
+      mainLight.shadow.camera.right = 1000;
+      mainLight.shadow.camera.top = 1000;
+      mainLight.shadow.camera.bottom = -1000;
+      mainLight.shadow.bias = -0.001;
+    }
+
+    this.scene.add(mainLight);
+    this.lights.push(mainLight);
+
+    // 3. Fill lights for realistic lighting
+    config.fill.forEach((fillConfig) => {
+      const fillLight = new THREE.DirectionalLight(fillConfig.color, fillConfig.intensity);
+      fillLight.position.set(...fillConfig.position);
+      // Fill lights don't cast shadows for performance
+      this.scene?.add(fillLight);
+      this.lights.push(fillLight);
+    });
+
+    // 4. Add environment map if specified
+    if (config.environment) {
+      this.setupEnvironmentLighting(config.environment.intensity);
+    }
+
+    console.log(`✅ Realistic lighting setup: ${this.lights.length} lights (Preset: ${this.currentLightingPreset}, Time: ${this.currentTimeOfDay})`);
+  }
+
+  private setupEnvironmentLighting(intensity: number): void {
+    // Create a simple HDR-like environment using a gradient texture
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+
+    const context = canvas.getContext('2d')!;
+
+    // Create gradient for environment lighting
+    const gradient = context.createLinearGradient(0, 0, 0, size);
+    gradient.addColorStop(0, '#87CEEB'); // Sky blue
+    gradient.addColorStop(0.5, '#E0F6FF'); // Light blue
+    gradient.addColorStop(1, '#FFFACD'); // Light cream
+
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, size, size);
+
+    const envTexture = new THREE.CanvasTexture(canvas);
+    envTexture.mapping = THREE.EquirectangularReflectionMapping;
+
+    if (this.scene) {
+      this.scene.environment = envTexture;
+      this.scene.environmentIntensity = intensity;
+    }
+  }
+
+  private getLightingConfig(preset: LightingPreset, timeOfDay: TimeOfDay): LightingConfig {
+    const configs: Record<string, LightingConfig> = {
+      // Natural lighting configurations
+      'natural-morning': {
+        ambient: { color: 0xfff8e1, intensity: 0.4 },
+        main: { color: 0xfff8dc, intensity: 1.2, position: [-500, 800, 300] },
+        fill: [
+          { color: 0xffe4b5, intensity: 0.3, position: [300, 600, -400] },
+          { color: 0xf0f8ff, intensity: 0.2, position: [-200, 400, 500] }
+        ],
+        environment: { intensity: 0.3 }
+      },
+      'natural-noon': {
+        ambient: { color: 0xffffff, intensity: 0.5 },
+        main: { color: 0xffffff, intensity: 1.5, position: [0, 1000, 200] },
+        fill: [
+          { color: 0xf0f8ff, intensity: 0.4, position: [-500, 800, -500] },
+          { color: 0xf0f8ff, intensity: 0.3, position: [500, 800, 500] }
+        ],
+        environment: { intensity: 0.4 }
+      },
+      'natural-afternoon': {
+        ambient: { color: 0xfff8dc, intensity: 0.4 },
+        main: { color: 0xffd700, intensity: 1.3, position: [800, 600, -200] },
+        fill: [
+          { color: 0xffe4b5, intensity: 0.3, position: [-400, 500, 400] },
+          { color: 0xf5f5dc, intensity: 0.2, position: [200, 700, -600] }
+        ],
+        environment: { intensity: 0.35 }
+      },
+      'natural-evening': {
+        ambient: { color: 0xffa500, intensity: 0.3 },
+        main: { color: 0xff8c00, intensity: 1.0, position: [600, 400, -800] },
+        fill: [
+          { color: 0xffd700, intensity: 0.2, position: [-300, 300, 200] },
+          { color: 0xff6347, intensity: 0.15, position: [100, 200, 600] }
+        ],
+        environment: { intensity: 0.2 }
+      },
+      'natural-night': {
+        ambient: { color: 0x404080, intensity: 0.1 },
+        main: { color: 0x6495ed, intensity: 0.3, position: [0, 800, 0] },
+        fill: [
+          { color: 0x483d8b, intensity: 0.1, position: [-200, 400, 300] },
+          { color: 0x2f4f4f, intensity: 0.05, position: [200, 300, -300] }
+        ],
+        environment: { intensity: 0.1 }
+      },
+
+      // Warm lighting configurations
+      'warm-morning': {
+        ambient: { color: 0xffe4b5, intensity: 0.5 },
+        main: { color: 0xffd700, intensity: 1.3, position: [-400, 700, 200] },
+        fill: [
+          { color: 0xffa500, intensity: 0.4, position: [300, 500, -300] },
+          { color: 0xffb347, intensity: 0.3, position: [-200, 400, 400] }
+        ]
+      },
+      'warm-noon': {
+        ambient: { color: 0xfff8dc, intensity: 0.6 },
+        main: { color: 0xffd700, intensity: 1.4, position: [0, 900, 100] },
+        fill: [
+          { color: 0xffa500, intensity: 0.5, position: [-400, 600, -400] },
+          { color: 0xffb347, intensity: 0.4, position: [400, 600, 400] }
+        ]
+      },
+
+      // Cool lighting configurations
+      'cool-morning': {
+        ambient: { color: 0xe6f3ff, intensity: 0.4 },
+        main: { color: 0x87ceeb, intensity: 1.2, position: [-500, 800, 300] },
+        fill: [
+          { color: 0xb0e0e6, intensity: 0.3, position: [300, 600, -400] },
+          { color: 0xf0f8ff, intensity: 0.2, position: [-200, 400, 500] }
+        ]
+      },
+      'cool-noon': {
+        ambient: { color: 0xf0f8ff, intensity: 0.5 },
+        main: { color: 0x87ceeb, intensity: 1.5, position: [0, 1000, 200] },
+        fill: [
+          { color: 0xb0e0e6, intensity: 0.4, position: [-500, 800, -500] },
+          { color: 0xe0f6ff, intensity: 0.3, position: [500, 800, 500] }
+        ]
+      },
+
+      // Bright lighting
+      'bright-noon': {
+        ambient: { color: 0xffffff, intensity: 0.7 },
+        main: { color: 0xffffff, intensity: 2.0, position: [0, 1000, 200] },
+        fill: [
+          { color: 0xffffff, intensity: 0.6, position: [-500, 800, -500] },
+          { color: 0xffffff, intensity: 0.5, position: [500, 800, 500] }
+        ]
+      },
+
+      // Dramatic lighting
+      'dramatic-noon': {
+        ambient: { color: 0x404040, intensity: 0.2 },
+        main: { color: 0xffffff, intensity: 2.5, position: [300, 1200, -300] },
+        fill: [
+          { color: 0x808080, intensity: 0.3, position: [-800, 400, 600] }
+        ]
+      },
+
+      // Soft lighting
+      'soft-noon': {
+        ambient: { color: 0xfff8f0, intensity: 0.8 },
+        main: { color: 0xfff8dc, intensity: 0.8, position: [0, 800, 400] },
+        fill: [
+          { color: 0xffefd5, intensity: 0.4, position: [-400, 600, -400] },
+          { color: 0xffefd5, intensity: 0.4, position: [400, 600, 400] },
+          { color: 0xfffff0, intensity: 0.3, position: [0, 400, -600] }
+        ]
+      }
+    };
+
+    const key = `${preset}-${timeOfDay}`;
+    return configs[key] || configs['natural-noon'];
+  }
+
+// Public methods for lighting control
+  public setLightingPreset(preset: LightingPreset): void {
+    this.currentLightingPreset = preset;
+    this.setupRealisticLighting();
+  }
+
+  public setTimeOfDay(timeOfDay: TimeOfDay): void {
+    this.currentTimeOfDay = timeOfDay;
+    this.setupRealisticLighting();
+  }
+
+  public setLightingIntensity(intensity: number): void {
+    this.lightingIntensity = Math.max(0.1, Math.min(3.0, intensity));
+    this.lights.forEach(light => {
+      if (light instanceof THREE.DirectionalLight || light instanceof THREE.AmbientLight) {
+        const baseIntensity = light.userData.baseIntensity || light.intensity;
+        light.userData.baseIntensity = baseIntensity;
+        light.intensity = baseIntensity * this.lightingIntensity;
+      }
+    });
+  }
+
+  public toggleShadows(enabled: boolean): void {
+    this.shadowsEnabled = enabled;
+    if (this.renderer) {
+      this.renderer.shadowMap.enabled = enabled;
+    }
+    this.setupRealisticLighting();
+  }
+
+  public getCurrentLightingInfo(): {
+    preset: LightingPreset;
+    timeOfDay: TimeOfDay;
+    intensity: number;
+    shadowsEnabled: boolean;
+    lightCount: number;
+  } {
+    return {
+      preset: this.currentLightingPreset,
+      timeOfDay: this.currentTimeOfDay,
+      intensity: this.lightingIntensity,
+      shadowsEnabled: this.shadowsEnabled,
+      lightCount: this.lights.length
+    };
   }
 
   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
@@ -1084,40 +1355,40 @@ export class SceneManager {
   }
 
   // Method to switch lighting presets
-  setLightingPreset (preset: 'natural' | 'warm' | 'cool'): void {
-    this.lights.forEach(light => {
-      if (light instanceof THREE.AmbientLight) {
-        switch (preset) {
-          case 'warm':
-            light.color.setHex(0xfff8dc);
-            light.intensity = 0.3;
-            break;
-          case 'cool':
-            light.color.setHex(0xe6f3ff);
-            light.intensity = 0.3;
-            break;
-          case 'natural':
-          default:
-            light.color.setHex(0xffffff);
-            light.intensity = 0.3;
-            break;
-        }
-      } else if (light instanceof THREE.DirectionalLight) {
-        switch (preset) {
-          case 'warm':
-            light.color.setHex(0xfff8dc);
-            break;
-          case 'cool':
-            light.color.setHex(0xe6f3ff);
-            break;
-          case 'natural':
-          default:
-            light.color.setHex(0xffffff);
-            break;
-        }
-      }
-    });
-  }
+  // setLightingPreset (preset: 'natural' | 'warm' | 'cool'): void {
+  //   this.lights.forEach(light => {
+  //     if (light instanceof THREE.AmbientLight) {
+  //       switch (preset) {
+  //         case 'warm':
+  //           light.color.setHex(0xfff8dc);
+  //           light.intensity = 0.3;
+  //           break;
+  //         case 'cool':
+  //           light.color.setHex(0xe6f3ff);
+  //           light.intensity = 0.3;
+  //           break;
+  //         case 'natural':
+  //         default:
+  //           light.color.setHex(0xffffff);
+  //           light.intensity = 0.3;
+  //           break;
+  //       }
+  //     } else if (light instanceof THREE.DirectionalLight) {
+  //       switch (preset) {
+  //         case 'warm':
+  //           light.color.setHex(0xfff8dc);
+  //           break;
+  //         case 'cool':
+  //           light.color.setHex(0xe6f3ff);
+  //           break;
+  //         case 'natural':
+  //         default:
+  //           light.color.setHex(0xffffff);
+  //           break;
+  //       }
+  //     }
+  //   });
+  // }
 
   // Method to get current lighting information
   getLightingInfo (): { lightCount: number; shadowsEnabled: boolean } {
