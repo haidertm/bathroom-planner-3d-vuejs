@@ -1,7 +1,7 @@
 // src/utils/constraints.ts - ENHANCED with proper movement integration
 import { WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
-import { getMovementConfig } from '../utils/models';
+import { getMovementConfig, getOrientationForItem } from '../utils/models';
 import {
   type OrientationConfig,
   MovementConfig,
@@ -152,8 +152,9 @@ export const checkWallCollisionAtRotation = (
     const minZ = position.z - halfRotatedDepth;
     const maxZ = position.z + halfRotatedDepth;
 
-    // Check wall collisions
-    const buffer = WALL_SETTINGS.MOVEMENT_BUFFER;
+    const orientationConfig = currentItem ? getOrientationForItem(currentItem) : DEFAULT_ORIENTATION;
+    const buffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
+
     const collideWest = minX < interior.minX + buffer;
     const collideEast = maxX > interior.maxX - buffer;
     const collideNorth = minZ < interior.minZ + buffer;
