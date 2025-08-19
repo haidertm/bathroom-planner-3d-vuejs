@@ -4,19 +4,19 @@ import type { Ref } from 'vue';
 import { ref } from 'vue';
 import type { BathroomPlannerState } from '../composables/useUndoRedo';
 import {
-  getTouchDistance,
-  highlightObject,
-  setOutlineColor,
-  updateMousePosition,
-  updateTouchPosition
+    getTouchDistance,
+    highlightObject,
+    setOutlineColor, showRotationFeedback,
+    updateMousePosition,
+    updateTouchPosition
 } from '../utils/helpers';
 import {
-  type BathroomItem, constrainToCorner,
-  constrainToRoom,
-  getDimensions,
-  wouldCollideWithExisting,
-  wouldCollideWithExistingOrWalls,
-  getInteriorBoundaries
+    type BathroomItem, constrainToCorner,
+    constrainToRoom,
+    getDimensions,
+    wouldCollideWithExisting,
+    wouldCollideWithExistingOrWalls,
+    getInteriorBoundaries, clampRotationToSafeBounds, checkWallCollisionAtRotation, preventWallClippingDuringMovement
 } from '../utils/constraints';
 import { SCALE_LIMITS, WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
@@ -790,28 +790,84 @@ export class EventHandlers {
       }
 
     } else if (this.isObjectRotating && this.selectedObject) {
-      // 🆕 ENHANCED: Rotation with movement configuration
-      const objectType = this.selectedObject.userData.type as ComponentType;
-      const itemId = this.selectedObject.userData.itemId as number;
-      const currentItem = this.getCurrentItemData(itemId);
+        // 🆕 ENHANCED: Rotation with movement configuration AND wall collision check
+        const objectType = this.selectedObject.userData.type as ComponentType;
+        const itemId = this.selectedObject.userData.itemId as number;
+        const currentItem = this.getCurrentItemData(itemId);
+        const objectScale = this.selectedObject.scale.x;
 
-      // Check if free rotation is allowed
-      if (!canRotateFreely(objectType, currentItem)) {
-        console.log('⚠️ Free rotation not allowed for', objectType);
-        return; // Don't allow free rotation
-      }
+        // Check if free rotation is allowed
+        if (!canRotateFreely(objectType, currentItem)) {
+            console.log('⚠️ Free rotation not allowed for', objectType);
+            return; // Don't allow free rotation
+        }
 
-      // Rotate object
-      const rect = this.renderer.domElement.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      const currentAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
-      const deltaAngle = currentAngle - this.rotationStartAngle;
+        // Calculate target rotation
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const currentAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
+        const deltaAngle = currentAngle - this.rotationStartAngle;
+        const targetRotation = this.objectStartRotation + deltaAngle;
 
-      this.selectedObject.rotation.y = this.objectStartRotation + deltaAngle;
+        // 🆕 NEW: Check for wall collision at target rotation
+        const currentPosition = this.selectedObject.position;
+        const position = { x: currentPosition.x, y: currentPosition.y, z: currentPosition.z };
 
-      this.queueUpdate(itemId, { rotation: this.selectedObject.rotation.y });
+        // Check if collision prevention is enabled
+        if (this.preventCollisionPlacementRef.value) {
+            // Use collision-safe rotation
+            const safeRotation = clampRotationToSafeBounds(
+                position,
+                objectType,
+                objectScale,
+                targetRotation,
+                this.roomWidthRef.value,
+                this.roomHeightRef.value,
+                currentItem
+            );
 
+            this.selectedObject.rotation.y = safeRotation;
+
+            showRotationFeedback(
+                this.selectedObject,
+                targetRotation,
+                safeRotation,
+                this.preventCollisionPlacementRef.value
+            );
+
+            // Visual feedback if rotation was clamped
+            if (Math.abs(safeRotation - targetRotation) > 0.01) {
+                // Show red outline to indicate collision constraint
+                setOutlineColor(true);
+
+                // Optional: Add haptic feedback or sound
+                console.log(`🚫 Rotation blocked by wall collision`);
+            } else {
+                // Show normal outline
+                setOutlineColor(false);
+            }
+
+            this.queueUpdate(itemId, { rotation: safeRotation });
+        } else {
+            // Allow free rotation even if it causes collision (original behavior)
+            this.selectedObject.rotation.y = targetRotation;
+
+            // Still show visual feedback about collision
+            const wouldCollide = checkWallCollisionAtRotation(
+                position,
+                objectType,
+                objectScale,
+                targetRotation,
+                this.roomWidthRef.value,
+                this.roomHeightRef.value,
+                currentItem
+            );
+
+            setOutlineColor(wouldCollide);
+
+            this.queueUpdate(itemId, { rotation: targetRotation });
+        }
     } else if (this.isDragging && this.selectedObject) {
 
       if (this.measurementSystem) {
@@ -833,12 +889,10 @@ export class EventHandlers {
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
-
-        // Add wall constraint to stop at wall boundaries
-        const { interior } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
-        const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-
-        if (dimensions) {
+        // Add interior constraint only for free-movement objects
+        if (movementConfig.snapToWall) {
+            const { interior } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
+            const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
             const halfWidth = (dimensions.width * objectScale) / 2;
             const halfDepth = (dimensions.depth * objectScale) / 2;
 
@@ -967,29 +1021,41 @@ export class EventHandlers {
           // Keep at current height
           constrainedPosition.y = this.selectedObject.position.y;
         }
-      } else {
-        // Free movement objects (tables, chairs, etc.)
-        const { position: roomConstrainedPos } = constrainToRoom(
-          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
-          this.roomWidthRef.value,
-          this.roomHeightRef.value,
-          {
-            type: objectType,
-            scale: objectScale,
-            orientation: this.selectedObject?.userData?.orientation,
-            item: currentItem
+      }  else {
+          // Free movement objects (tables, chairs, etc.)
+          // 🛡️ SIMPLE FIX: Prevent wall clipping during movement
+
+          const currentRotation = this.selectedObject.rotation.y;
+
+          // Apply wall collision prevention with rotation awareness
+          const safePosition = preventWallClippingDuringMovement(
+              { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+              objectType,
+              objectScale,
+              currentRotation,
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              currentItem
+          );
+
+          constrainedPosition.x = safePosition.x;
+          constrainedPosition.z = safePosition.z;
+
+          // Handle vertical movement
+          if (!movementConfig.allowVerticalMovement) {
+              constrainedPosition.y = 0; // Keep on floor
+          } else {
+              constrainedPosition.y = safePosition.y;
           }
-        );
 
-        constrainedPosition.x = roomConstrainedPos.x;
-        constrainedPosition.z = roomConstrainedPos.z;
+          // Visual feedback: Check if movement was constrained
+          const wasConstrained = (
+              Math.abs(safePosition.x - newPosition.x) > 0.1 ||
+              Math.abs(safePosition.z - newPosition.z) > 0.1
+          );
 
-        if (movementConfig.allowVerticalMovement) {
-          const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
-          constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
-        } else {
-          constrainedPosition.y = 0;
-        }
+          // Show red outline when movement is constrained by walls
+          setOutlineColor(wasConstrained);
       }
 
       // Check collisions

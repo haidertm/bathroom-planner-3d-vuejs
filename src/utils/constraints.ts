@@ -123,6 +123,200 @@ export const getRoomCorners = (
   ];
 };
 
+export const checkWallCollisionAtRotation = (
+    position: Position,
+    objectType: ComponentType,
+    scale: number,
+    rotation: number,
+    roomWidth: number,
+    roomHeight: number,
+    currentItem?: BathroomItem
+): boolean => {
+    const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+    if (!dimensions) {
+        console.warn(`No dimensions found for ${objectType} collision check`);
+        return false;
+    }
+
+    // Calculate rotated bounding box
+    const width = dimensions.width * scale;
+    const depth = dimensions.depth * scale;
+
+    // Get the rotated dimensions (bounding box after rotation)
+    const rotatedBounds = getRotatedBoundingBox(width, depth, rotation);
+
+    const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
+
+    // Check if rotated object would extend beyond room boundaries
+    const halfRotatedWidth = rotatedBounds.width / 2;
+    const halfRotatedDepth = rotatedBounds.depth / 2;
+
+    const minX = position.x - halfRotatedWidth;
+    const maxX = position.x + halfRotatedWidth;
+    const minZ = position.z - halfRotatedDepth;
+    const maxZ = position.z + halfRotatedDepth;
+
+    // Check wall collisions
+    const collideWest = minX < interior.minX;
+    const collideEast = maxX > interior.maxX;
+    const collideNorth = minZ < interior.minZ;
+    const collideSouth = maxZ > interior.maxZ;
+
+    const hasWallCollision = collideWest || collideEast || collideNorth || collideSouth;
+
+    if (hasWallCollision) {
+        console.log('🔴 ROTATION WALL COLLISION:', {
+            objectType,
+            rotation: `${(rotation * 180 / Math.PI).toFixed(1)}°`,
+            position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+            originalSize: `${width.toFixed(1)} × ${depth.toFixed(1)}cm`,
+            rotatedSize: `${rotatedBounds.width.toFixed(1)} × ${rotatedBounds.depth.toFixed(1)}cm`,
+            collisions: { west: collideWest, east: collideEast, north: collideNorth, south: collideSouth }
+        });
+    }
+
+    return hasWallCollision;
+};
+
+/**
+ * Calculate the bounding box dimensions after rotation
+ * Returns the axis-aligned bounding box that contains the rotated object
+ */
+export const getRotatedBoundingBox = (
+    width: number,
+    depth: number,
+    rotation: number
+): { width: number; depth: number } => {
+    // Calculate the corners of the original rectangle
+    const halfWidth = width / 2;
+    const halfDepth = depth / 2;
+
+    const corners = [
+        { x: -halfWidth, z: -halfDepth },
+        { x: halfWidth, z: -halfDepth },
+        { x: halfWidth, z: halfDepth },
+        { x: -halfWidth, z: halfDepth }
+    ];
+
+    // Rotate each corner
+    const rotatedCorners = corners.map(corner => ({
+        x: corner.x * Math.cos(rotation) - corner.z * Math.sin(rotation),
+        z: corner.x * Math.sin(rotation) + corner.z * Math.cos(rotation)
+    }));
+
+    // Find the min/max of rotated corners to get the bounding box
+    const minX = Math.min(...rotatedCorners.map(c => c.x));
+    const maxX = Math.max(...rotatedCorners.map(c => c.x));
+    const minZ = Math.min(...rotatedCorners.map(c => c.z));
+    const maxZ = Math.max(...rotatedCorners.map(c => c.z));
+
+    return {
+        width: maxX - minX,
+        depth: maxZ - minZ
+    };
+};
+
+/**
+ * Find the maximum safe rotation angle that doesn't cause wall collision
+ * Returns the rotation clamped to safe bounds
+ */
+export const clampRotationToSafeBounds = (
+    position: Position,
+    objectType: ComponentType,
+    scale: number,
+    targetRotation: number,
+    roomWidth: number,
+    roomHeight: number,
+    currentItem?: BathroomItem,
+    angleStep: number = Math.PI / 36 // 5-degree steps
+): number => {
+    // If target rotation is safe, return it
+    if (!checkWallCollisionAtRotation(position, objectType, scale, targetRotation, roomWidth, roomHeight, currentItem)) {
+        return targetRotation;
+    }
+
+    // Find the closest safe rotation by checking angles in both directions
+    const maxSteps = Math.floor(Math.PI * 2 / angleStep); // Full circle
+
+    for (let step = 1; step <= maxSteps; step++) {
+        // Try clockwise
+        const clockwiseAngle = targetRotation - (step * angleStep);
+        if (!checkWallCollisionAtRotation(position, objectType, scale, clockwiseAngle, roomWidth, roomHeight, currentItem)) {
+            console.log(`🔧 Rotation clamped clockwise: ${(targetRotation * 180 / Math.PI).toFixed(1)}° → ${(clockwiseAngle * 180 / Math.PI).toFixed(1)}°`);
+            return clockwiseAngle;
+        }
+
+        // Try counter-clockwise
+        const counterClockwiseAngle = targetRotation + (step * angleStep);
+        if (!checkWallCollisionAtRotation(position, objectType, scale, counterClockwiseAngle, roomWidth, roomHeight, currentItem)) {
+            console.log(`🔧 Rotation clamped counter-clockwise: ${(targetRotation * 180 / Math.PI).toFixed(1)}° → ${(counterClockwiseAngle * 180 / Math.PI).toFixed(1)}°`);
+            return counterClockwiseAngle;
+        }
+    }
+
+    // If no safe rotation found, return 0 (default safe rotation)
+    console.warn(`⚠️ No safe rotation found, reverting to 0°`);
+    return 0;
+};
+
+export const preventWallClippingDuringMovement = (
+    newPosition: Position,
+    objectType: ComponentType,
+    scale: number,
+    rotation: number,
+    roomWidth: number,
+    roomHeight: number,
+    currentItem?: BathroomItem
+): Position => {
+
+    const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+    if (!dimensions) {
+        console.warn(`No dimensions found for ${objectType} - allowing movement`);
+        return newPosition;
+    }
+
+    // Calculate rotated bounding box
+    const rotatedBounds = getRotatedBoundingBox(
+        dimensions.width * scale,
+        dimensions.depth * scale,
+        rotation
+    );
+
+    const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
+
+    // Calculate safe boundaries considering rotated object size
+    const halfRotatedWidth = rotatedBounds.width / 2;
+    const halfRotatedDepth = rotatedBounds.depth / 2;
+
+    // Add small buffer to prevent touching walls
+    const buffer = 5; // 5cm buffer from walls
+
+    const safeMinX = interior.minX + halfRotatedWidth + buffer;
+    const safeMaxX = interior.maxX - halfRotatedWidth - buffer;
+    const safeMinZ = interior.minZ + halfRotatedDepth + buffer;
+    const safeMaxZ = interior.maxZ - halfRotatedDepth - buffer;
+
+    // Constrain position to safe boundaries
+    const constrainedPosition = {
+        x: Math.max(safeMinX, Math.min(safeMaxX, newPosition.x)),
+        y: newPosition.y, // Don't modify height
+        z: Math.max(safeMinZ, Math.min(safeMaxZ, newPosition.z))
+    };
+
+    // Log if position was constrained
+    if (constrainedPosition.x !== newPosition.x || constrainedPosition.z !== newPosition.z) {
+        console.log('🛡️ Wall clipping prevented:', {
+            objectType,
+            rotation: `${(rotation * 180 / Math.PI).toFixed(1)}°`,
+            attempted: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
+            safe: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
+            rotatedSize: `${rotatedBounds.width.toFixed(1)} × ${rotatedBounds.depth.toFixed(1)}cm`
+        });
+    }
+
+    return constrainedPosition;
+};
+
 /**
  * Find the nearest corner to a given position
  */
