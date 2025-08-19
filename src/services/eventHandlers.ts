@@ -6,7 +6,7 @@ import type { BathroomPlannerState } from '../composables/useUndoRedo';
 import {
     getTouchDistance,
     highlightObject,
-    setOutlineColor, showRotationFeedback,
+    setOutlineColor,
     updateMousePosition,
     updateTouchPosition
 } from '../utils/helpers';
@@ -828,14 +828,6 @@ export class EventHandlers {
             );
 
             this.selectedObject.rotation.y = safeRotation;
-
-            showRotationFeedback(
-                this.selectedObject,
-                targetRotation,
-                safeRotation,
-                this.preventCollisionPlacementRef.value
-            );
-
             // Visual feedback if rotation was clamped
             if (Math.abs(safeRotation - targetRotation) > 0.01) {
                 // Show red outline to indicate collision constraint
