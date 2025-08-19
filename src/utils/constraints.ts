@@ -164,17 +164,6 @@ export const checkWallCollisionAtRotation = (
 
     const hasWallCollision = collideWest || collideEast || collideNorth || collideSouth;
 
-    if (hasWallCollision) {
-        console.log('🔴 ROTATION WALL COLLISION:', {
-            objectType,
-            rotation: `${(rotation * 180 / Math.PI).toFixed(1)}°`,
-            position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-            originalSize: `${width.toFixed(1)} × ${depth.toFixed(1)}cm`,
-            rotatedSize: `${rotatedBounds.width.toFixed(1)} × ${rotatedBounds.depth.toFixed(1)}cm`,
-            collisions: { west: collideWest, east: collideEast, north: collideNorth, south: collideSouth }
-        });
-    }
-
     return hasWallCollision;
 };
 
@@ -199,9 +188,11 @@ export const getRotatedBoundingBox = (
     ];
 
     // Rotate each corner
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
     const rotatedCorners = corners.map(corner => ({
-        x: corner.x * Math.cos(rotation) - corner.z * Math.sin(rotation),
-        z: corner.x * Math.sin(rotation) + corner.z * Math.cos(rotation)
+     x: corner.x * cos - corner.z * sin,
+       z: corner.x * sin + corner.z * cos
     }));
 
     // Find the min/max of rotated corners to get the bounding box
@@ -230,9 +221,17 @@ export const clampRotationToSafeBounds = (
     currentItem?: BathroomItem,
     angleStep: number = Math.PI / 36 // 5-degree steps
 ): number => {
+    const normalize = (a: number) => {
+        const twoPi = Math.PI * 2;
+        a = a % twoPi;
+        if (a <= -Math.PI) a += twoPi;
+        if (a > Math.PI) a -= twoPi;
+        return a;
+    };
+    const target = normalize(targetRotation);
     // If target rotation is safe, return it
-    if (!checkWallCollisionAtRotation(position, objectType, scale, targetRotation, roomWidth, roomHeight, currentItem)) {
-        return targetRotation;
+    if (!checkWallCollisionAtRotation(position, objectType, scale, target, roomWidth, roomHeight, currentItem)) {
+        return target;
     }
 
     // Find the closest safe rotation by checking angles in both directions
@@ -240,14 +239,14 @@ export const clampRotationToSafeBounds = (
 
     for (let step = 1; step <= maxSteps; step++) {
         // Try clockwise
-        const clockwiseAngle = targetRotation - (step * angleStep);
+        const clockwiseAngle = normalize(target - (step * angleStep));
         if (!checkWallCollisionAtRotation(position, objectType, scale, clockwiseAngle, roomWidth, roomHeight, currentItem)) {
             console.log(`🔧 Rotation clamped clockwise: ${(targetRotation * 180 / Math.PI).toFixed(1)}° → ${(clockwiseAngle * 180 / Math.PI).toFixed(1)}°`);
             return clockwiseAngle;
         }
 
         // Try counter-clockwise
-        const counterClockwiseAngle = targetRotation + (step * angleStep);
+        const counterClockwiseAngle = normalize(target + (step * angleStep));
         if (!checkWallCollisionAtRotation(position, objectType, scale, counterClockwiseAngle, roomWidth, roomHeight, currentItem)) {
             console.log(`🔧 Rotation clamped counter-clockwise: ${(targetRotation * 180 / Math.PI).toFixed(1)}° → ${(counterClockwiseAngle * 180 / Math.PI).toFixed(1)}°`);
             return counterClockwiseAngle;
@@ -289,7 +288,7 @@ export const preventWallClippingDuringMovement = (
     const halfRotatedDepth = rotatedBounds.depth / 2;
 
     // Add small buffer to prevent touching walls
-    const buffer = 5; // 5cm buffer from walls
+    const buffer = WALL_SETTINGS.MOVEMENT_BUFFER; // 5cm default
 
     const safeMinX = interior.minX + halfRotatedWidth + buffer;
     const safeMaxX = interior.maxX - halfRotatedWidth - buffer;
@@ -297,22 +296,15 @@ export const preventWallClippingDuringMovement = (
     const safeMaxZ = interior.maxZ - halfRotatedDepth - buffer;
 
     // Constrain position to safe boundaries
+    const invalidX = safeMinX > safeMaxX;
+    const invalidZ = safeMinZ > safeMaxZ;
+    const centerX = (interior.minX + interior.maxX) / 2;
+    const centerZ = (interior.minZ + interior.maxZ) / 2;
     const constrainedPosition = {
-        x: Math.max(safeMinX, Math.min(safeMaxX, newPosition.x)),
+        x: invalidX ? centerX : Math.max(safeMinX, Math.min(safeMaxX, newPosition.x)),
         y: newPosition.y, // Don't modify height
-        z: Math.max(safeMinZ, Math.min(safeMaxZ, newPosition.z))
+        z: invalidZ ? centerZ : Math.max(safeMinZ, Math.min(safeMaxZ, newPosition.z))
     };
-
-    // Log if position was constrained
-    if (constrainedPosition.x !== newPosition.x || constrainedPosition.z !== newPosition.z) {
-        console.log('🛡️ Wall clipping prevented:', {
-            objectType,
-            rotation: `${(rotation * 180 / Math.PI).toFixed(1)}°`,
-            attempted: { x: newPosition.x.toFixed(1), z: newPosition.z.toFixed(1) },
-            safe: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
-            rotatedSize: `${rotatedBounds.width.toFixed(1)} × ${rotatedBounds.depth.toFixed(1)}cm`
-        });
-    }
 
     return constrainedPosition;
 };

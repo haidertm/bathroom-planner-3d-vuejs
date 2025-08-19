@@ -19,11 +19,13 @@ export const ROOM_DEFAULTS: RoomDefaults = {
 export interface WallSettings {
   readonly HEIGHT: number;
   readonly THICKNESS: number;
+  readonly MOVEMENT_BUFFER: number;
 }
 
 export const WALL_SETTINGS: WallSettings = {
   HEIGHT: 250,
-  THICKNESS: 5
+  THICKNESS: 5,
+  MOVEMENT_BUFFER: 5
 } as const;
 
 

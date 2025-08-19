@@ -26,7 +26,7 @@ import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/
 import { MeasurementSystem } from './measurementSystem';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
-import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
+import { SimpleWallCulling } from './simpleWallCulling.ts';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -818,7 +818,7 @@ export class EventHandlers {
         // Check if collision prevention is enabled
         if (this.preventCollisionPlacementRef.value) {
             // Use collision-safe rotation
-            const safeRotation = clampRotationToSafeBounds(
+            let safeRotation = clampRotationToSafeBounds(
                 position,
                 objectType,
                 objectScale,
@@ -827,6 +827,9 @@ export class EventHandlers {
                 this.roomHeightRef.value,
                 currentItem
             );
+            // Normalize to [-π, π]
+            const twoPi = Math.PI * 2;
+            safeRotation = ((safeRotation + Math.PI) % twoPi + twoPi) % twoPi - Math.PI;
 
             this.selectedObject.rotation.y = safeRotation;
             // Visual feedback if rotation was clamped
@@ -834,17 +837,20 @@ export class EventHandlers {
                 // Show red outline to indicate collision constraint
                 setOutlineColor(true);
 
-                // Optional: Add haptic feedback or sound
-                console.log(`🚫 Rotation blocked by wall collision`);
             } else {
                 // Show normal outline
                 setOutlineColor(false);
             }
 
-            this.queueUpdate(itemId, { rotation: safeRotation });
+             if (Math.abs(safeRotation - this.selectedObject.rotation.y) > 1e-3) {
+                 this.queueUpdate(itemId, { rotation: safeRotation });
+             }
         } else {
             // Allow free rotation even if it causes collision (original behavior)
-            this.selectedObject.rotation.y = targetRotation;
+            // Normalize target rotation to [-π, π]
+            const twoPi = Math.PI * 2;
+            const normalizedTarget = ((targetRotation + Math.PI) % twoPi + twoPi) % twoPi - Math.PI;
+            this.selectedObject.rotation.y = normalizedTarget;
 
             // Still show visual feedback about collision
             const wouldCollide = checkWallCollisionAtRotation(
@@ -859,7 +865,9 @@ export class EventHandlers {
 
             setOutlineColor(wouldCollide);
 
-            this.queueUpdate(itemId, { rotation: targetRotation });
+            if (Math.abs(normalizedTarget - this.selectedObject.rotation.y) > 1e-3) {
+                 this.queueUpdate(itemId, { rotation: normalizedTarget });
+            }
         }
     } else if (this.isDragging && this.selectedObject) {
 
@@ -1041,14 +1049,19 @@ export class EventHandlers {
               constrainedPosition.y = safePosition.y;
           }
 
-          // Visual feedback: Check if movement was constrained
+          // Track if movement was constrained and keep cursor aligned to object on boundaries
           const wasConstrained = (
               Math.abs(safePosition.x - newPosition.x) > 0.1 ||
               Math.abs(safePosition.z - newPosition.z) > 0.1
-          );
-
-          // Show red outline when movement is constrained by walls
-          setOutlineColor(wasConstrained);
+              );
+         if (wasConstrained) {
+             // Recompute drag offset so the object sticks under the cursor along the boundary
+             // NOTE: 'intersectPoint' is defined earlier in this scope
+             this.dragOffset.subVectors(
+                 new THREE.Vector3(constrainedPosition.x, this.selectedObject.position.y, constrainedPosition.z),
+                 intersectPoint
+             );
+         }
       }
 
       // Check collisions
