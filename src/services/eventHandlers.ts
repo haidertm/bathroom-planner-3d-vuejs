@@ -4,19 +4,20 @@ import type { Ref } from 'vue';
 import { ref } from 'vue';
 import type { BathroomPlannerState } from '../composables/useUndoRedo';
 import {
-    getTouchDistance,
-    highlightObject,
-    setOutlineColor,
-    updateMousePosition,
-    updateTouchPosition
+  getTouchDistance,
+  highlightObject,
+  setOutlineColor,
+  updateMousePosition,
+  updateTouchPosition
+
 } from '../utils/helpers';
 import {
-    type BathroomItem, constrainToCorner,
-    constrainToRoom,
-    getDimensions,
-    wouldCollideWithExisting,
-    wouldCollideWithExistingOrWalls,
-    getInteriorBoundaries, clampRotationToSafeBounds, checkWallCollisionAtRotation, preventWallClippingDuringMovement
+  type BathroomItem, constrainToCorner,
+  constrainToRoom,
+  getDimensions,
+  wouldCollideWithExisting,
+  wouldCollideWithExistingOrWalls,
+  getInteriorBoundaries, clampRotationToSafeBounds, checkWallCollisionAtRotation, preventWallClippingDuringMovement
 } from '../utils/constraints';
 import { SCALE_LIMITS, WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
