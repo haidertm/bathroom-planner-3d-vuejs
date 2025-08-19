@@ -985,7 +985,6 @@ export const findFreeWallPosition = (
   // GET OBJECT DIMENSIONS - THIS IS WHAT'S MISSING!
   const dimensions = getDimensions(objectType, sku);
   const halfWidth = (dimensions.width) / 2;
-  const halfDepth = (dimensions.depth) / 2;
 
   const buffer = getObjectWallBuffer({ orientation, scale });
   const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
@@ -1001,7 +1000,7 @@ export const findFreeWallPosition = (
         return {
           x: minX + t * (maxX - minX),
           y: getWallPositionY(movementConfig, spawnHeight),
-          z: wallFaces.north + halfDepth + buffer  // Object's back edge at wall
+          z: wallFaces.north + buffer  // Object's back edge at wall
         }
       },
       rotation: getObjectRotationForWall(objectType, 'north', orientation)
