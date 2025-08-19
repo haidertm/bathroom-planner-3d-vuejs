@@ -850,6 +850,7 @@ export class EventHandlers {
             // Normalize target rotation to [-π, π]
             const twoPi = Math.PI * 2;
             const normalizedTarget = ((targetRotation + Math.PI) % twoPi + twoPi) % twoPi - Math.PI;
+            const prevRotation = this.selectedObject.rotation.y;
             this.selectedObject.rotation.y = normalizedTarget;
 
             // Still show visual feedback about collision
@@ -857,7 +858,7 @@ export class EventHandlers {
                 position,
                 objectType,
                 objectScale,
-                targetRotation,
+                normalizedTarget,
                 this.roomWidthRef.value,
                 this.roomHeightRef.value,
                 currentItem
@@ -865,8 +866,8 @@ export class EventHandlers {
 
             setOutlineColor(wouldCollide);
 
-            if (Math.abs(normalizedTarget - this.selectedObject.rotation.y) > 1e-3) {
-                 this.queueUpdate(itemId, { rotation: normalizedTarget });
+            if (Math.abs(normalizedTarget - prevRotation) > 1e-3) {
+                this.queueUpdate(itemId, { rotation: normalizedTarget });
             }
         }
     } else if (this.isDragging && this.selectedObject) {

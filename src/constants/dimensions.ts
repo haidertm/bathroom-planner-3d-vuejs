@@ -19,7 +19,7 @@ export const ROOM_DEFAULTS: RoomDefaults = {
 export interface WallSettings {
   readonly HEIGHT: number;
   readonly THICKNESS: number;
-  readonly MOVEMENT_BUFFER: number;
+  readonly MOVEMENT_BUFFER: number; // in centimeters
 }
 
 export const WALL_SETTINGS: WallSettings = {

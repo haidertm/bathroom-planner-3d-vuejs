@@ -133,10 +133,6 @@ export const checkWallCollisionAtRotation = (
     currentItem?: BathroomItem
 ): boolean => {
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    if (!dimensions) {
-        console.warn(`No dimensions found for ${objectType} collision check`);
-        return false;
-    }
 
     // Calculate rotated bounding box
     const width = dimensions.width * scale;
@@ -269,10 +265,6 @@ export const preventWallClippingDuringMovement = (
 ): Position => {
 
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    if (!dimensions) {
-        console.warn(`No dimensions found for ${objectType} - allowing movement`);
-        return newPosition;
-    }
 
     // Calculate rotated bounding box
     const rotatedBounds = getRotatedBoundingBox(
