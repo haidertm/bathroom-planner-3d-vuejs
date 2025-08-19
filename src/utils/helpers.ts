@@ -14,7 +14,6 @@ export const updateMousePosition = (event: MouseEvent, rect: DOMRect) => {
   };
 };
 
-
 export const updateTouchPosition = (touch: Touch, rect: DOMRect) => {
   return {
     x: ((touch.clientX - rect.left) / rect.width) * 2 - 1,
