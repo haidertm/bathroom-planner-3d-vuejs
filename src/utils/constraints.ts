@@ -153,10 +153,11 @@ export const checkWallCollisionAtRotation = (
     const maxZ = position.z + halfRotatedDepth;
 
     // Check wall collisions
-    const collideWest = minX < interior.minX;
-    const collideEast = maxX > interior.maxX;
-    const collideNorth = minZ < interior.minZ;
-    const collideSouth = maxZ > interior.maxZ;
+    const buffer = WALL_SETTINGS.MOVEMENT_BUFFER;
+    const collideWest = minX < interior.minX + buffer;
+    const collideEast = maxX > interior.maxX - buffer;
+    const collideNorth = minZ < interior.minZ + buffer;
+    const collideSouth = maxZ > interior.maxZ - buffer;
 
     const hasWallCollision = collideWest || collideEast || collideNorth || collideSouth;
 
@@ -172,34 +173,11 @@ export const getRotatedBoundingBox = (
     depth: number,
     rotation: number
 ): { width: number; depth: number } => {
-    // Calculate the corners of the original rectangle
-    const halfWidth = width / 2;
-    const halfDepth = depth / 2;
-
-    const corners = [
-        { x: -halfWidth, z: -halfDepth },
-        { x: halfWidth, z: -halfDepth },
-        { x: halfWidth, z: halfDepth },
-        { x: -halfWidth, z: halfDepth }
-    ];
-
-    // Rotate each corner
-    const cos = Math.cos(rotation);
-    const sin = Math.sin(rotation);
-    const rotatedCorners = corners.map(corner => ({
-     x: corner.x * cos - corner.z * sin,
-       z: corner.x * sin + corner.z * cos
-    }));
-
-    // Find the min/max of rotated corners to get the bounding box
-    const minX = Math.min(...rotatedCorners.map(c => c.x));
-    const maxX = Math.max(...rotatedCorners.map(c => c.x));
-    const minZ = Math.min(...rotatedCorners.map(c => c.z));
-    const maxZ = Math.max(...rotatedCorners.map(c => c.z));
-
+    const c = Math.abs(Math.cos(rotation));
+    const s = Math.abs(Math.sin(rotation));
     return {
-        width: maxX - minX,
-        depth: maxZ - minZ
+        width: width * c + depth * s,
+        depth: width * s + depth * c
     };
 };
 

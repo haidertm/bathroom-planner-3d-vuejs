@@ -831,6 +831,7 @@ export class EventHandlers {
             const twoPi = Math.PI * 2;
             safeRotation = ((safeRotation + Math.PI) % twoPi + twoPi) % twoPi - Math.PI;
 
+            const prevRotation = this.selectedObject.rotation.y;
             this.selectedObject.rotation.y = safeRotation;
             // Visual feedback if rotation was clamped
             if (Math.abs(safeRotation - targetRotation) > 0.01) {
@@ -842,9 +843,9 @@ export class EventHandlers {
                 setOutlineColor(false);
             }
 
-             if (Math.abs(safeRotation - this.selectedObject.rotation.y) > 1e-3) {
-                 this.queueUpdate(itemId, { rotation: safeRotation });
-             }
+            if (Math.abs(safeRotation - prevRotation) > 1e-3) {
+                this.queueUpdate(itemId, { rotation: safeRotation });
+            }
         } else {
             // Allow free rotation even if it causes collision (original behavior)
             // Normalize target rotation to [-π, π]
@@ -1055,14 +1056,16 @@ export class EventHandlers {
               Math.abs(safePosition.x - newPosition.x) > 0.1 ||
               Math.abs(safePosition.z - newPosition.z) > 0.1
               );
-         if (wasConstrained) {
-             // Recompute drag offset so the object sticks under the cursor along the boundary
-             // NOTE: 'intersectPoint' is defined earlier in this scope
-             this.dragOffset.subVectors(
-                 new THREE.Vector3(constrainedPosition.x, this.selectedObject.position.y, constrainedPosition.z),
-                 intersectPoint
-             );
-         }
+          if (wasConstrained) {
+              // Recompute drag offset so the object sticks under the cursor along the boundary
+              const planeIntersect = new THREE.Vector3();
+              this.raycaster.setFromCamera(this.mouse, this.camera);
+              this.raycaster.ray.intersectPlane(this.dragPlane, planeIntersect);
+              this.dragOffset.subVectors(
+                  new THREE.Vector3(constrainedPosition.x, this.selectedObject.position.y, constrainedPosition.z),
+                  planeIntersect
+              );
+          }
       }
 
       // Check collisions
