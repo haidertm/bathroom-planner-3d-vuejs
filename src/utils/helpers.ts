@@ -14,49 +14,6 @@ export const updateMousePosition = (event: MouseEvent, rect: DOMRect) => {
   };
 };
 
-/**
- * Create a preview ghost of the object at target rotation
- * This helps users see where the object would be if rotation wasn't blocked
- */
-export const createRotationPreview = (
-    object: THREE.Object3D,
-    targetRotation: number,
-    scene: THREE.Scene
-): THREE.Object3D | null => {
-    try {
-        const ghost = object.clone();
-
-        // Make it semi-transparent and wireframe
-        ghost.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                const material = child.material.clone();
-                material.transparent = true;
-                material.opacity = 0.3;
-                material.wireframe = true;
-                material.color = new THREE.Color(0xff0000); // Red wireframe
-                child.material = material;
-            }
-        });
-
-        // Set target rotation
-        ghost.rotation.y = targetRotation;
-        ghost.position.copy(object.position);
-        ghost.scale.copy(object.scale);
-
-        // Add to scene temporarily
-        scene.add(ghost);
-
-        // Auto-remove after a short time
-        setTimeout(() => {
-            scene.remove(ghost);
-        }, 1000);
-
-        return ghost;
-    } catch (error) {
-        console.warn('Could not create rotation preview:', error);
-        return null;
-    }
-};
 
 export const updateTouchPosition = (touch: Touch, rect: DOMRect) => {
   return {
