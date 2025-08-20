@@ -15,10 +15,9 @@ import {
   constrainToRoom,
   getDimensions,
   wouldCollideWithExisting,
-  wouldCollideWithExistingOrWalls,
-  getInteriorBoundaries
+  wouldCollideWithExistingOrWalls
 } from '../utils/constraints';
-import { SCALE_LIMITS, WALL_SETTINGS } from '../constants/dimensions';
+import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
@@ -112,10 +111,6 @@ export class EventHandlers {
   // Smooth zoom properties using constants
   private targetCameraPosition: THREE.Vector3;
   private wallCulling: SimpleWallCulling | null = null;
-
-  private lastDragMouseX: number = 0;
-  private lastDragMouseY: number = 0;
-
   private dragPlaneHelper: THREE.Mesh | null = null;
   private showDragPlaneDebug: boolean = false; // Toggle this for debug visualization
   // Also add intersection point visualization in handleMouseMove:
@@ -642,10 +637,6 @@ export class EventHandlers {
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
 
-        // ✅ ADD THESE TWO LINES HERE:
-        this.lastDragMouseX = event.clientX;
-        this.lastDragMouseY = event.clientY;
-
         // Store original position for potential snap-back
         // Note: If we just moved the object, this will store the NEW position
         this.originalDragPosition.copy(this.selectedObject.position);
@@ -728,7 +719,7 @@ export class EventHandlers {
    * Helper method to determine which wall an object is currently on
    */
 // Helper method to determine which wall an object is currently on
-  private determineCurrentWall (position: THREE.Vector3): 'north' | 'south' | 'east' | 'west' {
+  private determineCurrentWall (position: THREE.Vector3): WallType {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const tolerance = 30; // 30cm tolerance for wall detection
@@ -757,11 +748,11 @@ export class EventHandlers {
    */
 // Get the opposite wall or best visible wall
   private getOppositeOrBestWall (
-    currentWall: 'north' | 'south' | 'east' | 'west',
+    currentWall: WallType,
     visibleWalls: Set<string>
-  ): 'north' | 'south' | 'east' | 'west' {
+  ): WallType {
     // Define opposite walls
-    const opposites: { [key in 'north' | 'south' | 'east' | 'west']: 'north' | 'south' | 'east' | 'west' } = {
+    const opposites: { [key in WallType]: WallType } = {
       north: 'south',
       south: 'north',
       east: 'west',
@@ -944,7 +935,7 @@ export class EventHandlers {
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         // Create planes for each wall
-        const wallPlanes = {
+        const wallPlanes:  { [key in WallType]: THREE.Plane } = {
           north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
           south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
           east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
@@ -975,7 +966,7 @@ export class EventHandlers {
               // Use the closest valid intersection
               if (distance < minDistance) {
                 minDistance = distance;
-                closestWall = wall;
+                closestWall = wall as WallType;
                 closestPoint.copy(intersectPoint);
                 foundValidIntersection = true;
               }
@@ -1845,14 +1836,11 @@ export class EventHandlers {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
-    const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
+    const halfWidth = ((dimensions.width) * objectScale) / 2;
     const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
     // ✅ ADD: Wall switching threshold - makes it easier to switch walls
     const WALL_SWITCH_THRESHOLD = 100; // 100cm threshold for easier wall switching
-
-    console.log('111>> object wallBuffer', wallBuffer, dimensions);
 
     // Get camera direction to determine viewing angle
     const cameraDirection = new THREE.Vector3();
@@ -1860,25 +1848,13 @@ export class EventHandlers {
 
     // ✅ NEW: Check if we're viewing from top or side
     const isTopView = Math.abs(cameraDirection.y) > 0.7; // Looking mostly down/up
-    const isSideView = !isTopView; // Looking horizontally
+    // const isSideView = !isTopView; // Looking horizontally
 
     // ✅ FIX: Use correct dimensions for wall distances based on object orientation
     // For objects on north/south walls, use halfDepth for Z extent, halfWidth for X extent
     // For objects on east/west walls, use halfWidth for Z extent, halfDepth for X extent
     const currentWall = this.selectedObject ?
       this.determineCurrentWall(this.selectedObject.position) : null;
-
-    let effectiveHalfX = halfWidth; // How far object extends in X direction
-    let effectiveHalfZ = halfWidth; // How far object extends in Z direction
-
-    // Adjust based on which wall the object is currently on
-    if (currentWall === 'north' || currentWall === 'south') {
-      effectiveHalfX = halfWidth;  // Mirror is 60cm wide on north/south walls
-      effectiveHalfZ = halfDepth;  // But only 1.2cm deep
-    } else if (currentWall === 'east' || currentWall === 'west') {
-      effectiveHalfX = halfDepth;  // Mirror is only 1.2cm deep on east/west walls
-      effectiveHalfZ = halfWidth;  // But 60cm wide (extending in Z direction)
-    }
 
     // Calculate wall distances
     const wallDistances = {
