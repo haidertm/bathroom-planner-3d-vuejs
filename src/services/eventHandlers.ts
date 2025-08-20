@@ -1709,120 +1709,120 @@ export class EventHandlers {
    * to control position along side walls when viewing from front/back
    */
   private getMouseProjectedWallPosition (
-      mouseWorldPos: { x: number; y: number; z: number },
-      objectType: ComponentType,
-      objectScale: number,
-      currentItem?: BathroomItem
+    mouseWorldPos: { x: number; y: number; z: number },
+    objectType: ComponentType,
+    objectScale: number,
+    currentItem?: BathroomItem
   ): { wall: string; position: { x: number; z: number } } {
-      const roomHalfWidth = this.roomWidthRef.value / 2;
-      const roomHalfHeight = this.roomHeightRef.value / 2;
-      const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-      const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
-      // const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
-      const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+    const roomHalfWidth = this.roomWidthRef.value / 2;
+    const roomHalfHeight = this.roomHeightRef.value / 2;
+    const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+    const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
+    // const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
+    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
-      console.log('111>> object wallBuffer', wallBuffer, dimensions);
+    console.log('111>> object wallBuffer', wallBuffer, dimensions);
 
-      // Get camera direction to determine viewing angle
-      const cameraDirection = new THREE.Vector3();
-      this.camera.getWorldDirection(cameraDirection);
+    // Get camera direction to determine viewing angle
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
 
-      // Determine if we're viewing mainly from front/back or sides
-      // const viewingFromFrontBack = Math.abs(cameraDirection.z) > Math.abs(cameraDirection.x);
+    // Determine if we're viewing mainly from front/back or sides
+    // const viewingFromFrontBack = Math.abs(cameraDirection.z) > Math.abs(cameraDirection.x);
 
-      // Calculate wall distances
-      const wallDistances = {
-          north: Math.abs(mouseWorldPos.z + roomHalfHeight),
-          south: Math.abs(mouseWorldPos.z - roomHalfHeight),
-          east: Math.abs(mouseWorldPos.x - roomHalfWidth),
-          west: Math.abs(mouseWorldPos.x + roomHalfWidth)
-      };
+    // Calculate wall distances
+    const wallDistances = {
+      north: Math.abs(mouseWorldPos.z + roomHalfHeight),
+      south: Math.abs(mouseWorldPos.z - roomHalfHeight),
+      east: Math.abs(mouseWorldPos.x - roomHalfWidth),
+      west: Math.abs(mouseWorldPos.x + roomHalfWidth)
+    };
 
-      // ✅ Use existing wall visibility from SimpleWallCulling
-      let visibleWalls: Set<string>;
+    // ✅ Use existing wall visibility from SimpleWallCulling
+    let visibleWalls: Set<string>;
 
-      if (this.wallCulling && this.wallCulling.enabled) {
-          // Get actual wall visibility from the culling system
-          const wallVisibility = this.wallCulling.getWallVisibilityStatus();
-          visibleWalls = new Set(
-              wallVisibility
-                  .filter(status => status.visible)
-                  .map(status => status.direction)
-          );
+    if (this.wallCulling && this.wallCulling.enabled) {
+      // Get actual wall visibility from the culling system
+      const wallVisibility = this.wallCulling.getWallVisibilityStatus();
+      visibleWalls = new Set(
+        wallVisibility
+          .filter(status => status.visible)
+          .map(status => status.direction)
+      );
 
-          console.log('📊 Using actual wall visibility:', Array.from(visibleWalls));
-      } else {
-          // Fallback: all walls are visible if culling is disabled
-          visibleWalls = new Set(['north', 'south', 'east', 'west']);
+      console.log('📊 Using actual wall visibility:', Array.from(visibleWalls));
+    } else {
+      // Fallback: all walls are visible if culling is disabled
+      visibleWalls = new Set(['north', 'south', 'east', 'west']);
+    }
+
+    // Find nearest VISIBLE wall
+    let nearestWall = 'north'; // default
+    let minDistance = Infinity;
+
+    for (const [wall, distance] of Object.entries(wallDistances)) {
+      // Only consider visible walls
+      if (visibleWalls.has(wall) && distance < minDistance) {
+        minDistance = distance;
+        nearestWall = wall;
       }
+    }
 
-      // Find nearest VISIBLE wall
-      let nearestWall = 'north'; // default
-      let minDistance = Infinity;
+    // If no visible walls found (shouldn't happen), use nearest
+    if (!visibleWalls.has(nearestWall)) {
+      nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+        wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+      )[0];
+      console.warn('⚠️ No visible wall found, using nearest:', nearestWall);
+    }
 
-      for (const [wall, distance] of Object.entries(wallDistances)) {
-          // Only consider visible walls
-          if (visibleWalls.has(wall) && distance < minDistance) {
-              minDistance = distance;
-              nearestWall = wall;
-          }
-      }
+    // Calculate position on the selected wall
+    let position = { x: 0, z: 0 };
 
-      // If no visible walls found (shouldn't happen), use nearest
-      if (!visibleWalls.has(nearestWall)) {
-          nearestWall = Object.entries(wallDistances).reduce((a, b) =>
-              wallDistances[a[0]] < wallDistances[b[0]] ? a : b
-          )[0];
-          console.warn('⚠️ No visible wall found, using nearest:', nearestWall);
-      }
+    switch (nearestWall) {
+        case 'east':
+            // Right wall
+            position.x = roomHalfWidth - wallBuffer - WALL_SETTINGS.THICKNESS;
 
-      // Calculate position on the selected wall
-      let position = { x: 0, z: 0 };
+            // 🔧 FIX: Always use mouse world Z for consistent behavior
+            // Remove the viewingFromFrontBack special case that causes jumping
+            position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
 
-      switch (nearestWall) {
-          case 'east':
-              // Right wall
-              position.x = roomHalfWidth - wallBuffer - WALL_SETTINGS.THICKNESS;
+            console.log(`📐 East wall: Using mouse world Z for consistent positioning`);
+            break;
 
-              // 🔧 FIX: Always use mouse world Z for consistent behavior
-              // Remove the viewingFromFrontBack special case that causes jumping
-              position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
+        case 'west':
+            // Left wall
+            position.x = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
 
-              console.log(`📐 East wall: Using mouse world Z for consistent positioning`);
-              break;
+            // 🔧 FIX: Always use mouse world Z for consistent behavior
+            // Remove the viewingFromFrontBack special case that causes jumping
+            position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
 
-          case 'west':
-              // Left wall
-              position.x = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
-
-              // 🔧 FIX: Always use mouse world Z for consistent behavior
-              // Remove the viewingFromFrontBack special case that causes jumping
-              position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
-
-              console.log(`📐 West wall: Using mouse world Z for consistent positioning`);
-              break;
+            console.log(`📐 West wall: Using mouse world Z for consistent positioning`);
+            break;
 
 // Keep north and south wall cases exactly as they are (they work fine):
 
-          case 'north':
-              // Front wall - standard left/right movement with mouse X
-              position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
-              position.z = -roomHalfHeight + (wallBuffer + WALL_SETTINGS.THICKNESS);
-              break;
+        case 'north':
+            // Front wall - standard left/right movement with mouse X
+            position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
+            position.z = -roomHalfHeight + (wallBuffer + WALL_SETTINGS.THICKNESS);
+            break;
 
-          case 'south':
-              // Back wall - standard left/right movement with mouse X
-              position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
-              position.z = roomHalfHeight - wallBuffer - WALL_SETTINGS.THICKNESS;
-              break;
-      }
+        case 'south':
+            // Back wall - standard left/right movement with mouse X
+            position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
+            position.z = roomHalfHeight - wallBuffer - WALL_SETTINGS.THICKNESS;
+            break;
+    }
 
-      console.log(`🎯 Wall: ${nearestWall}, Pos: (${position.x.toFixed(0)}, ${position.z.toFixed(0)})`);
+    console.log(`🎯 Wall: ${nearestWall}, Pos: (${position.x.toFixed(0)}, ${position.z.toFixed(0)})`);
 
-      return {
-          wall: nearestWall,
-          position: position
-      };
+    return {
+      wall: nearestWall,
+      position: position
+    };
   }
 
   private updateDragPlane (object: THREE.Object3D): void {
