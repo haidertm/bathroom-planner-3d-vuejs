@@ -104,7 +104,7 @@ export const getMovementConfig = (objectType: ComponentType, item?: BathroomItem
   // Priority 3: Use default config for object type
   const defaultConfig = DEFAULT_MOVEMENT_CONFIGS[objectType];
   if (defaultConfig) {
-    console.log('✅ Using default movement config for type:', objectType, defaultConfig);
+    // console.log('✅ Using default movement config for type:', objectType, defaultConfig);
     return defaultConfig;
   }
 
