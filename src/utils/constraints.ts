@@ -216,14 +216,12 @@ export const clampRotationToSafeBounds = (
         // Try clockwise
         const clockwiseAngle = normalize(target - (step * angleStep));
         if (!checkWallCollisionAtRotation(position, objectType, scale, clockwiseAngle, roomWidth, roomHeight, currentItem)) {
-            console.log(`🔧 Rotation clamped clockwise: ${(targetRotation * 180 / Math.PI).toFixed(1)}° → ${(clockwiseAngle * 180 / Math.PI).toFixed(1)}°`);
             return clockwiseAngle;
         }
 
         // Try counter-clockwise
         const counterClockwiseAngle = normalize(target + (step * angleStep));
         if (!checkWallCollisionAtRotation(position, objectType, scale, counterClockwiseAngle, roomWidth, roomHeight, currentItem)) {
-            console.log(`🔧 Rotation clamped counter-clockwise: ${(targetRotation * 180 / Math.PI).toFixed(1)}° → ${(counterClockwiseAngle * 180 / Math.PI).toFixed(1)}°`);
             return counterClockwiseAngle;
         }
     }
@@ -259,7 +257,8 @@ export const preventWallClippingDuringMovement = (
     const halfRotatedDepth = rotatedBounds.depth / 2;
 
     // Add small buffer to prevent touching walls
-    const buffer = WALL_SETTINGS.MOVEMENT_BUFFER; // 5cm default
+    const orientationConfig = currentItem ? getOrientationForItem(currentItem) : DEFAULT_ORIENTATION;
+    const buffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
 
     const safeMinX = interior.minX + halfRotatedWidth + buffer;
     const safeMaxX = interior.maxX - halfRotatedWidth - buffer;
