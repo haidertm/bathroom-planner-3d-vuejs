@@ -212,6 +212,13 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
+          movement: {
+            snapToWall: true,
+            allowVerticalMovement: true, // Fixed height
+            allowFreeRotation: false,
+            minHeight: 0, // Minimum height from floor
+            maxHeight: -1
+          },
           sku: '73104V2',
           price: '319.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm'
@@ -232,8 +239,8 @@ const productData: ProductData = {
             snapToWall: true,
             allowVerticalMovement: true, // Fixed height
             allowFreeRotation: false,
-            minHeight: 10, // Minimum height from floor
-            maxHeight: 150
+            minHeight: 0, // Minimum height from floor
+            maxHeight: -1
           },
           floorOffset: 0,
           spawnHeight: 110.1,
