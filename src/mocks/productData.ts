@@ -182,6 +182,7 @@ const productData: ProductData = {
           path: '../../models/mirror/73189V2.glb',
           dimensions: { width: 119.8, height: 64.8, depth: 13.8 },
           floorOffset: 110.1,
+          spawnHeight: 41.9,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -206,7 +207,7 @@ const productData: ProductData = {
           path: '../../models/mirror/73104V2.glb',
           dimensions: { width: 59, height: 59.9, depth: 13.5 },
           floorOffset: 110,
-          spawnHeight: 0,
+          spawnHeight: 41.9,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -243,7 +244,7 @@ const productData: ProductData = {
             maxHeight: -1
           },
           floorOffset: 0,
-          spawnHeight: 110.1,
+          spawnHeight: 152,
           sku: '73103V2',
           price: '259.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x450mm'
@@ -271,6 +272,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/evelyn-large-illuminated-led-mirror-500x1200mm',
           dimensions: { width: 119.5, height: 49.9, depth: 5.1 },
           floorOffset: 99.5,
+          spawnHeight: 52.5,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -289,6 +291,7 @@ const productData: ProductData = {
           path: '../../models/mirror/73154V2.glb',
           dimensions: { width: 100, height: 50, depth: 5.3 },
           floorOffset: 99.5,
+          spawnHeight: 52.5,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -306,6 +309,7 @@ const productData: ProductData = {
           path: '../../models/mirror/73153V2.glb',
           dimensions: { width: 39.8, height: 59.9, depth: 5.3 },
           floorOffset: 0,
+          spawnHeight: 152,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -323,6 +327,7 @@ const productData: ProductData = {
           path: '../../models/mirror/73033V2.glb',
           dimensions: { width: 50, height: 70, depth: 5.1 },
           floorOffset: 99.5,
+          spawnHeight: 52.5,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
