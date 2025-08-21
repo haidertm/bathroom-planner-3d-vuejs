@@ -14,6 +14,7 @@ import {
   type BathroomItem, constrainToCorner,
   constrainToRoom,
   getDimensions,
+  getInteriorBoundaries,
   wouldCollideWithExisting,
   wouldCollideWithExistingOrWalls
 } from '../utils/constraints';
@@ -992,32 +993,55 @@ export class EventHandlers {
             newY = this.selectedObject.position.y;
           }
 
+            const { interior, wallFaces } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
+            const objectWidth = (dimensions?.width || 50) * objectScale;
+            const halfObjectWidth = objectWidth / 2;
           // Adjust position based on which wall and apply constraints
           switch (closestWall) {
-            case 'north':
-              newX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, closestPoint.x));
-              newZ = -roomHalfHeight + (wallBuffer + WALL_SETTINGS.THICKNESS);
-              constrainedRotation = 0;
-              break;
+                case 'north':
+                    // Keep object flush to north wall
+                    newZ = wallFaces.north + wallBuffer;
+                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                    newX = Math.max(
+                        interior.minX + halfObjectWidth,  // Don't go into west wall
+                        Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
+                    );
+                    constrainedRotation = 0;
+                    break;
 
-            case 'south':
-              newX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, closestPoint.x));
-              newZ = roomHalfHeight - wallBuffer - WALL_SETTINGS.THICKNESS;
-              constrainedRotation = Math.PI;
-              break;
+                case 'south':
+                    // Keep object flush to south wall
+                    newZ = wallFaces.south - wallBuffer;
+                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                    newX = Math.max(
+                        interior.minX + halfObjectWidth,  // Don't go into west wall
+                        Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
+                    );
+                    constrainedRotation = Math.PI;
+                    break;
 
-            case 'east':
-              newX = roomHalfWidth - wallBuffer - WALL_SETTINGS.THICKNESS;
-              newZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, closestPoint.z));
-              constrainedRotation = -Math.PI / 2;
-              break;
+                case 'east':
+                    // Keep object flush to east wall
+                    newX = wallFaces.east - wallBuffer;
+                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                    newZ = Math.max(
+                        interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
+                        Math.min(interior.maxZ - halfObjectWidth, closestPoint.z)  // Don't go into south wall
+                    );
+                    constrainedRotation = -Math.PI / 2;
+                    break;
 
-            case 'west':
-              newX = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
-              newZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, closestPoint.z));
-              constrainedRotation = Math.PI / 2;
-              break;
-          }
+                case 'west':
+                    // Keep object flush to west wall
+                    newX = wallFaces.west + wallBuffer;
+                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                    newZ = Math.max(
+                        interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
+                        Math.min(interior.maxZ - halfObjectWidth, closestPoint.z)  // Don't go into south wall
+                    );
+                    constrainedRotation = Math.PI / 2;
+                    break;
+            }
 
           constrainedPosition.x = newX;
           constrainedPosition.z = newZ;
