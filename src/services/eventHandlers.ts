@@ -996,39 +996,39 @@ export class EventHandlers {
             const objectWidth = (dimensions?.width || 50) * objectScale;
             const halfObjectWidth = objectWidth / 2;
           // Adjust position based on which wall and apply constraints
-          switch (closestWall) {
-                case 'north':
-                    // Keep object flush to north wall
-                    newZ = wallFaces.north + wallBuffer;
-                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
-                    newX = Math.max(
-                        interior.minX + halfObjectWidth,  // Don't go into west wall
-                        Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
-                    );
-                    constrainedRotation = 0;
-                    break;
+           switch (closestWall) {
+              case 'north':
+                  // Keep object flush to north wall
+                  newZ = wallFaces.north + wallBuffer;
+                  // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                  newX = Math.max(
+                      interior.minX + halfObjectWidth,  // Don't go into west wall
+                      Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
+                  );
+                  constrainedRotation = 0;
+                  break;
 
-                case 'south':
-                    // Keep object flush to south wall
-                    newZ = wallFaces.south - wallBuffer;
+               case 'south':
+                   // Keep object flush to south wall
+                   newZ = wallFaces.south - wallBuffer;
                     // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
-                    newX = Math.max(
-                        interior.minX + halfObjectWidth,  // Don't go into west wall
-                        Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
-                    );
-                    constrainedRotation = Math.PI;
-                    break;
+                   newX = Math.max(
+                       interior.minX + halfObjectWidth,  // Don't go into west wall
+                       Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
+                   );
+                   constrainedRotation = Math.PI;
+                   break;
 
-                case 'east':
-                    // Keep object flush to east wall
-                    newX = wallFaces.east - wallBuffer;
-                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
-                    newZ = Math.max(
-                        interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
-                        Math.min(interior.maxZ - halfObjectWidth, closestPoint.z)  // Don't go into south wall
-                    );
-                    constrainedRotation = -Math.PI / 2;
-                    break;
+               case 'east':
+                   // Keep object flush to east wall
+                   newX = wallFaces.east - wallBuffer;
+                   // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                   newZ = Math.max(
+                       interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
+                       Math.min(interior.maxZ - halfObjectWidth, closestPoint.z)  // Don't go into south wall
+                   );
+                   constrainedRotation = -Math.PI / 2;
+                   break;
 
                 case 'west':
                     // Keep object flush to west wall
