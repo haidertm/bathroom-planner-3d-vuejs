@@ -589,15 +589,6 @@ const clearError = () => {
   errorMessage.value = ''
 }
 
-// DEBUG: Add console logs to track state changes
-watch(isProductDrawerOpen, (newVal) => {
-  console.log('🔍 Product drawer open state changed:', newVal)
-})
-
-watch(isSidebarVisible, (newVal) => {
-  console.log('🔍 Sidebar visible state changed:', newVal)
-})
-
 // Update the watch functions - props are in centimeters, no conversion needed
 watch(() => props.roomWidth, (newWidth) => {
   if (!isInternalUpdate.value) {

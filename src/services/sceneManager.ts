@@ -955,11 +955,6 @@ export class SceneManager {
     // Scale outline thickness and strength with distance
     this.outlinePass.edgeThickness = Math.min(10, 3 * distanceFactor);
     this.outlinePass.edgeStrength = Math.min(20, 8 * distanceFactor);
-
-    // Only log occasionally to avoid spam
-    if (Math.random() < 0.01) { // 1% chance
-      console.log(`Outline adjusted for distance: ${averageDistance.toFixed(1)} units`);
-    }
   }
 
   startAnimationLoop (): void {

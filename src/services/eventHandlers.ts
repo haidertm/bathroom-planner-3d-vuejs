@@ -15,10 +15,9 @@ import {
   constrainToRoom,
   getDimensions,
   wouldCollideWithExisting,
-  wouldCollideWithExistingOrWalls,
-  getInteriorBoundaries
+  wouldCollideWithExistingOrWalls
 } from '../utils/constraints';
-import { SCALE_LIMITS, WALL_SETTINGS } from '../constants/dimensions';
+import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
@@ -112,6 +111,10 @@ export class EventHandlers {
   // Smooth zoom properties using constants
   private targetCameraPosition: THREE.Vector3;
   private wallCulling: SimpleWallCulling | null = null;
+  private dragPlaneHelper: THREE.Mesh | null = null;
+  private showDragPlaneDebug: boolean = false; // Toggle this for debug visualization
+  // Also add intersection point visualization in handleMouseMove:
+  private debugIntersectionPoint: THREE.Mesh | null = null;
 
   constructor (
     scene: THREE.Scene,
@@ -198,6 +201,97 @@ export class EventHandlers {
 
     // Simple animation loop ONLY for zoom
     this.startSimpleZoomAnimation();
+  }
+
+// Add this method to create/update the drag plane visualization:
+  private updateDragPlaneVisualization (): void {
+    if (!this.showDragPlaneDebug) {
+      if (this.dragPlaneHelper) {
+        this.scene.remove(this.dragPlaneHelper);
+        this.dragPlaneHelper = null;
+      }
+      return;
+    }
+
+    // Remove old helper if it exists
+    if (this.dragPlaneHelper) {
+      this.scene.remove(this.dragPlaneHelper);
+    }
+
+    // Create a visual representation of the drag plane
+    const planeSize = 500; // 5m x 5m visual plane
+    const geometry = new THREE.PlaneGeometry(planeSize, planeSize);
+
+    // Create semi-transparent material
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x00ff00, // Green color
+      opacity: 0.3,
+      transparent: true,
+      side: THREE.DoubleSide,
+      wireframe: false
+    });
+
+    this.dragPlaneHelper = new THREE.Mesh(geometry, material);
+
+    // Position the plane helper based on the drag plane
+    const normal = this.dragPlane.normal;
+    const constant = this.dragPlane.constant;
+
+    // Calculate a point on the plane
+    const pointOnPlane = normal.clone().multiplyScalar(-constant);
+    this.dragPlaneHelper.position.copy(pointOnPlane);
+
+    // Orient the plane to match the drag plane normal
+    this.dragPlaneHelper.lookAt(pointOnPlane.clone().add(normal));
+
+    // Add edge highlighting
+    const edges = new THREE.EdgesGeometry(geometry);
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
+    const edgeLines = new THREE.LineSegments(edges, lineMaterial);
+    this.dragPlaneHelper.add(edgeLines);
+
+    // Add normal vector visualization
+    const arrowHelper = new THREE.ArrowHelper(
+      normal,
+      pointOnPlane,
+      100, // Arrow length
+      0xff0000, // Red color for normal
+      20, // Head length
+      10  // Head width
+    );
+    this.scene.add(arrowHelper);
+
+    // Store arrow helper reference for cleanup
+    (this.dragPlaneHelper as any).arrowHelper = arrowHelper;
+
+    this.scene.add(this.dragPlaneHelper);
+  }
+
+  private updateIntersectionPointVisualization (point: THREE.Vector3): void {
+    if (!this.showDragPlaneDebug) {
+      if (this.debugIntersectionPoint) {
+        this.scene.remove(this.debugIntersectionPoint);
+        this.debugIntersectionPoint = null;
+      }
+      return;
+    }
+
+    // Remove old helper if it exists
+    if (this.debugIntersectionPoint) {
+      this.scene.remove(this.debugIntersectionPoint);
+    }
+
+    // Create a sphere at the intersection point
+    const geometry = new THREE.SphereGeometry(5, 16, 16); // 5cm radius sphere
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff00ff, // Magenta for intersection point
+      opacity: 0.8,
+      transparent: true
+    });
+
+    this.debugIntersectionPoint = new THREE.Mesh(geometry, material);
+    this.debugIntersectionPoint.position.copy(point);
+    this.scene.add(this.debugIntersectionPoint);
   }
 
   public setWallCulling (wallCulling: SimpleWallCulling): void {
@@ -423,26 +517,6 @@ export class EventHandlers {
     if (intersected) {
       this.selectedObject = intersected.object;
 
-      // 🔍 DEBUG: Log initial toilet position when selected
-      if (this.selectedObject.userData.type === 'Toilet') {
-        const currentPos = this.selectedObject.position;
-        const dimensions = getDimensions(
-          'Toilet',
-          this.selectedObject.userData.sku,
-          this.selectedObject.userData.model
-        );
-        const halfDepth = (dimensions?.depth || 50) / 2;
-
-        console.log('🚽 TOILET SELECTED - INITIAL POSITION:', {
-          currentPosition: { x: currentPos.x, z: currentPos.z },
-          roomHalfHeight: this.roomHeightRef.value / 2,
-          halfDepth,
-          toiletBackEdgeZ: currentPos.z - halfDepth,
-          wallZ: -this.roomHeightRef.value / 2,
-          currentGap: Math.abs((-this.roomHeightRef.value / 2) - (currentPos.z - halfDepth))
-        });
-      }
-
       console.log('selectedObject >>>', this.selectedObject);
 
       // 🚀 FIXED: Get fresh items before updating measurement system
@@ -645,7 +719,7 @@ export class EventHandlers {
    * Helper method to determine which wall an object is currently on
    */
 // Helper method to determine which wall an object is currently on
-  private determineCurrentWall (position: THREE.Vector3): 'north' | 'south' | 'east' | 'west' {
+  private determineCurrentWall (position: THREE.Vector3): WallType {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const tolerance = 30; // 30cm tolerance for wall detection
@@ -674,11 +748,11 @@ export class EventHandlers {
    */
 // Get the opposite wall or best visible wall
   private getOppositeOrBestWall (
-    currentWall: 'north' | 'south' | 'east' | 'west',
+    currentWall: WallType,
     visibleWalls: Set<string>
-  ): 'north' | 'south' | 'east' | 'west' {
+  ): WallType {
     // Define opposite walls
-    const opposites: { [key in 'north' | 'south' | 'east' | 'west']: 'north' | 'south' | 'east' | 'west' } = {
+    const opposites: { [key in WallType]: WallType } = {
       north: 'south',
       south: 'north',
       east: 'west',
@@ -818,15 +892,6 @@ export class EventHandlers {
         this.updateMeasurementsThrottled();
       }
 
-      this.updateDragPlane(this.selectedObject);
-
-      // 🔧 UPDATED: Movement with clean productData-based constraints
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const intersectPoint = new THREE.Vector3();
-      this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
-
-      const newPosition = intersectPoint.add(this.dragOffset);
-
       // Get object movement configuration
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
@@ -834,37 +899,157 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
-        // Add wall constraint to stop at wall boundaries
-        const { interior } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
-        const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-
-        if (dimensions) {
-            const halfWidth = (dimensions.width * objectScale) / 2;
-            const halfDepth = (dimensions.depth * objectScale) / 2;
-
-            // Constrain X position to stay within walls
-            newPosition.x = Math.max(
-                interior.minX + halfWidth,
-                Math.min(interior.maxX - halfWidth, newPosition.x)
-            );
-
-            // Constrain Z position to stay within walls
-            newPosition.z = Math.max(
-                interior.minZ + halfDepth,
-                Math.min(interior.maxZ - halfDepth, newPosition.z)
-            );
-        }
-
-      let constrainedPosition = { ...newPosition };
+      let constrainedPosition = { x: 0, y: 0, z: 0 };
       let constrainedRotation = this.selectedObject.rotation.y;
       let rotationChanged = false;
 
-      // ✅ CRITICAL FIX: Apply movement constraints using CLEAN productData-based functions
-      // ✅ NEW: Check if this is a corner-only object FIRST
-      if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
-        // Handle corner-only objects
+      // ✅ SIMPLIFIED: Direct cursor following for wall-snapping objects
+      if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+        // Get room and object dimensions
+        const roomHalfWidth = this.roomWidthRef.value / 2;
+        const roomHalfHeight = this.roomHeightRef.value / 2;
+        const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+        const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
+        const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+
+        // ✅ NEW: Get floorOffset to adjust visual positioning
+        const floorOffset = (dimensions?.floorOffset || 0) * objectScale;
+
+        // ✅ NEW: Track current wall to prevent jumping
+        const currentWall = this.determineCurrentWall(this.selectedObject.position);
+
+        // ✅ Get visible walls FIRST
+        let visibleWalls: Set<string>;
+        if (this.wallCulling && this.wallCulling.enabled) {
+          const wallVisibility = this.wallCulling.getWallVisibilityStatus();
+          visibleWalls = new Set(
+            wallVisibility
+              .filter(status => status.visible)
+              .map(status => status.direction)
+          );
+        } else {
+          visibleWalls = new Set(['north', 'south', 'east', 'west']);
+        }
+
+        // ✅ FIX: Project cursor onto ALL wall planes and use the closest intersection
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // Create planes for each wall
+        const wallPlanes:  { [key in WallType]: THREE.Plane } = {
+          north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
+          south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
+          east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
+          west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
+        };
+
+        // Find where cursor ray intersects each wall
+        let closestWall = currentWall || 'north';
+        let closestPoint = new THREE.Vector3();
+        let minDistance = Infinity;
+        let foundValidIntersection = false;
+
+        for (const [wall, plane] of Object.entries(wallPlanes)) {
+          // ✅ CRITICAL: Skip invisible walls
+          if (!visibleWalls.has(wall)) {
+            continue;
+          }
+          const intersectPoint = new THREE.Vector3();
+          if (this.raycaster.ray.intersectPlane(plane, intersectPoint)) {
+            // Check if this intersection is within room bounds
+            if (Math.abs(intersectPoint.x) <= roomHalfWidth &&
+              Math.abs(intersectPoint.z) <= roomHalfHeight &&
+              intersectPoint.y >= -50 && intersectPoint.y <= 300) { // Reasonable Y range
+
+              // Calculate distance from camera to this intersection
+              const distance = this.camera.position.distanceTo(intersectPoint);
+
+              // Use the closest valid intersection
+              if (distance < minDistance) {
+                minDistance = distance;
+                closestWall = wall as WallType;
+                closestPoint.copy(intersectPoint);
+                foundValidIntersection = true;
+              }
+            }
+          }
+        }
+
+        if (!foundValidIntersection) {
+          console.warn('No valid intersection found for cursor on walls');
+          return; // Exit if no valid intersection
+        } else {
+          // ✅ Now position the object at the cursor position on the nearest wall
+          let newX = closestPoint.x;
+          let newZ = closestPoint.z;
+          let newY;
+
+          // ✅ Adjust Y position for floor offset
+          if (movementConfig.allowVerticalMovement) {
+            // Cursor is pointing at visual position, so subtract floorOffset to get pivot position
+            newY = closestPoint.y - floorOffset;
+          } else {
+            // Keep current Y if not allowing vertical movement
+            newY = this.selectedObject.position.y;
+          }
+
+          // Adjust position based on which wall and apply constraints
+          switch (closestWall) {
+            case 'north':
+              newX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, closestPoint.x));
+              newZ = -roomHalfHeight + (wallBuffer + WALL_SETTINGS.THICKNESS);
+              constrainedRotation = 0;
+              break;
+
+            case 'south':
+              newX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, closestPoint.x));
+              newZ = roomHalfHeight - wallBuffer - WALL_SETTINGS.THICKNESS;
+              constrainedRotation = Math.PI;
+              break;
+
+            case 'east':
+              newX = roomHalfWidth - wallBuffer - WALL_SETTINGS.THICKNESS;
+              newZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, closestPoint.z));
+              constrainedRotation = -Math.PI / 2;
+              break;
+
+            case 'west':
+              newX = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
+              newZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, closestPoint.z));
+              constrainedRotation = Math.PI / 2;
+              break;
+          }
+
+          constrainedPosition.x = newX;
+          constrainedPosition.z = newZ;
+          constrainedPosition.y = newY;
+          rotationChanged = true;
+
+          // Handle vertical movement if allowed
+          if (movementConfig.allowVerticalMovement) {
+            const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
+            constrainedPosition.y = Math.max(
+              heightConstraints.min,
+              Math.min(heightConstraints.max, constrainedPosition.y)
+            );
+          }
+
+          console.log(`📍 Cursor on ${closestWall} wall at (${newX.toFixed(0)}, ${newZ.toFixed(0)})`);
+        }
+
+      } else if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
+        // Handle corner-only objects - direct cursor tracking
+        const heightPlane = new THREE.Plane(
+          new THREE.Vector3(0, 1, 0),
+          -this.selectedObject.position.y
+        );
+
+        this.updateDragPlane(this.selectedObject);
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const cursorWorldPos = new THREE.Vector3();
+        this.raycaster.ray.intersectPlane(heightPlane, cursorWorldPos);
+
         const { position: cornerPos, rotation: cornerRot } = constrainToCorner(
-          { x: newPosition.x, y: newPosition.y, z: newPosition.z },
+          { x: cursorWorldPos.x, y: cursorWorldPos.y, z: cursorWorldPos.z },
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
@@ -882,93 +1067,18 @@ export class EventHandlers {
         constrainedRotation = cornerRot;
         rotationChanged = true;
 
-      } else if (movementConfig.snapToWall) {
-
-        // ✅ ADDITIONAL CHECK: If object is currently on a hidden wall, don't continue dragging
-        // Force it to jump to visible wall first (this should have happened in handleMouseDown)
-        const currentWall = this.determineCurrentWall(this.selectedObject.position);
-
-        if (this.wallCulling && this.wallCulling.enabled) {
-          const wallVisibility = this.wallCulling.getWallVisibilityStatus();
-          const visibleWalls = new Set(
-            wallVisibility
-              .filter(status => status.visible)
-              .map(status => status.direction)
-          );
-
-          // If still on hidden wall (shouldn't happen if handleMouseDown worked), fix it now
-          if (!visibleWalls.has(currentWall)) {
-            console.warn('⚠️ Object still on hidden wall during drag, forcing to visible wall');
-            const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
-            const forcedPosition = this.getPositionOnWall(
-              targetWall,
-              this.selectedObject.position,
-              objectType,
-              objectScale,
-              currentItem
-            );
-            this.selectedObject.position.set(forcedPosition.x, forcedPosition.y, forcedPosition.z);
-            this.selectedObject.rotation.y = forcedPosition.rotation;
-
-            // Recalculate drag offset for the new position
-            this.raycaster.setFromCamera(this.mouse, this.camera);
-            const newIntersectPoint = new THREE.Vector3();
-            this.raycaster.ray.intersectPlane(this.dragPlane, newIntersectPoint);
-            this.dragOffset.subVectors(this.selectedObject.position, newIntersectPoint);
-
-            // Update stored original position
-            this.originalDragPosition.copy(this.selectedObject.position);
-            this.originalDragRotation = this.selectedObject.rotation.y;
-          }
-        }
-
-        // ✅ Now continue with normal wall projection (which only considers visible walls)
-        const wallProjection = this.getMouseProjectedWallPosition(
-          newPosition,
-          objectType,
-          objectScale,
-          currentItem
-        );
-
-        // ✅ ALWAYS apply wall constraint for wall-bound objects
-        constrainedPosition.x = wallProjection.position.x;
-        constrainedPosition.z = wallProjection.position.z;
-
-        // Set rotation based on wall
-        if (!movementConfig.allowFreeRotation) {
-          switch (wallProjection.wall) {
-            case 'north':
-              constrainedRotation = 0;
-              break;
-            case 'south':
-              constrainedRotation = Math.PI;
-              break;
-            case 'east':
-              constrainedRotation = -Math.PI / 2;
-              break;
-            case 'west':
-              constrainedRotation = Math.PI / 2;
-              break;
-          }
-          rotationChanged = true;
-        }
-
-        // Handle vertical movement
-        if (movementConfig.allowVerticalMovement) {
-          const heightConstraints = this.getProperHeightConstraints(
-            objectType,
-            currentItem
-          );
-          constrainedPosition.y = Math.max(
-            heightConstraints.min,
-            Math.min(heightConstraints.max, newPosition.y)
-          );
-        } else {
-          // Keep at current height
-          constrainedPosition.y = this.selectedObject.position.y;
-        }
       } else {
-        // Free movement objects (tables, chairs, etc.)
+        // Free movement objects - use traditional drag with offset
+        this.updateDragPlane(this.selectedObject);
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const intersectPoint = new THREE.Vector3();
+        this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
+
+        // ✅ ADD: Visualize the intersection point
+        this.updateIntersectionPointVisualization(intersectPoint);
+
+        const newPosition = intersectPoint.add(this.dragOffset);
+
         const { position: roomConstrainedPos } = constrainToRoom(
           { x: newPosition.x, y: newPosition.y, z: newPosition.z },
           this.roomWidthRef.value,
@@ -1619,6 +1729,15 @@ export class EventHandlers {
     // Reset cursor
     this.renderer.domElement.style.cursor = 'default';
 
+    // ✅ ADD: Clean up drag plane visualization
+    if (this.dragPlaneHelper) {
+      if ((this.dragPlaneHelper as any).arrowHelper) {
+        this.scene.remove((this.dragPlaneHelper as any).arrowHelper);
+      }
+      this.scene.remove(this.dragPlaneHelper);
+      this.dragPlaneHelper = null;
+    }
+
     // Log for debugging
     console.log('🛑 All drag operations stopped');
   }
@@ -1717,18 +1836,25 @@ export class EventHandlers {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
-    const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
+    const halfWidth = ((dimensions.width) * objectScale) / 2;
     const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
-    console.log('111>> object wallBuffer', wallBuffer, dimensions);
+    // ✅ ADD: Wall switching threshold - makes it easier to switch walls
+    const WALL_SWITCH_THRESHOLD = 100; // 100cm threshold for easier wall switching
 
     // Get camera direction to determine viewing angle
     const cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
 
-    // Determine if we're viewing mainly from front/back or sides
-    const viewingFromFrontBack = Math.abs(cameraDirection.z) > Math.abs(cameraDirection.x);
+    // ✅ NEW: Check if we're viewing from top or side
+    const isTopView = Math.abs(cameraDirection.y) > 0.7; // Looking mostly down/up
+    // const isSideView = !isTopView; // Looking horizontally
+
+    // ✅ FIX: Use correct dimensions for wall distances based on object orientation
+    // For objects on north/south walls, use halfDepth for Z extent, halfWidth for X extent
+    // For objects on east/west walls, use halfWidth for Z extent, halfDepth for X extent
+    const currentWall = this.selectedObject ?
+      this.determineCurrentWall(this.selectedObject.position) : null;
 
     // Calculate wall distances
     const wallDistances = {
@@ -1737,6 +1863,10 @@ export class EventHandlers {
       east: Math.abs(mouseWorldPos.x - roomHalfWidth),
       west: Math.abs(mouseWorldPos.x + roomHalfWidth)
     };
+
+    const sortedWalls = Object.entries(wallDistances).sort((a, b) => a[1] - b[1]);
+    const closestWall = sortedWalls[0][0];
+    const secondClosestWall = sortedWalls[1][0];
 
     // ✅ Use existing wall visibility from SimpleWallCulling
     let visibleWalls: Set<string>;
@@ -1760,11 +1890,50 @@ export class EventHandlers {
     let nearestWall = 'north'; // default
     let minDistance = Infinity;
 
-    for (const [wall, distance] of Object.entries(wallDistances)) {
-      // Only consider visible walls
-      if (visibleWalls.has(wall) && distance < minDistance) {
-        minDistance = distance;
-        nearestWall = wall;
+    // ✅ CRITICAL: Different logic for top view vs side view
+    if (isTopView) {
+      // TOP VIEW: Use your existing logic that works well
+      const useClosestWall = wallDistances[closestWall] < wallDistances[secondClosestWall] - WALL_SWITCH_THRESHOLD;
+
+      if (useClosestWall && visibleWalls.has(closestWall)) {
+        nearestWall = closestWall;
+      } else {
+        // Original logic for finding nearest visible wall
+        for (const [wall, distance] of Object.entries(wallDistances)) {
+          if (visibleWalls.has(wall) && distance < minDistance) {
+            minDistance = distance;
+            nearestWall = wall;
+          }
+        }
+      }
+    } else {
+      // SIDE/FRONT VIEW: Strong preference for current wall
+      if (currentWall && visibleWalls.has(currentWall)) {
+        // Stay on current wall unless cursor is VERY close to another wall
+        nearestWall = currentWall;
+
+        // ✅ FIX: More lenient switching for wide objects like mirrors
+        // Only switch if cursor is very close to another wall
+        for (const [wall, distance] of Object.entries(wallDistances)) {
+          if (wall !== currentWall && visibleWalls.has(wall)) {
+            // For wide objects (mirrors), be even more conservative about switching
+            const switchThreshold = halfWidth > 30 ? 20 : 30; // Tighter threshold for wide objects
+            const farThreshold = halfWidth > 30 ? 150 : 100; // Need to be farther from current wall
+
+            if (distance < switchThreshold && wallDistances[currentWall] > farThreshold) {
+              nearestWall = wall;
+              break;
+            }
+          }
+        }
+      } else {
+        // No current wall or it's hidden - find nearest visible wall
+        for (const [wall, distance] of Object.entries(wallDistances)) {
+          if (visibleWalls.has(wall) && distance < minDistance) {
+            minDistance = distance;
+            nearestWall = wall;
+          }
+        }
       }
     }
 
@@ -1776,83 +1945,32 @@ export class EventHandlers {
       console.warn('⚠️ No visible wall found, using nearest:', nearestWall);
     }
 
-    // Calculate position on the selected wall
+    // ✅ FIX: Calculate position with correct dimension constraints
     let position = { x: 0, z: 0 };
 
     switch (nearestWall) {
       case 'north':
-        // Front wall - standard left/right movement with mouse X
+        // Use halfWidth for X constraint (mirror is 60cm wide)
         position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
         position.z = -roomHalfHeight + (wallBuffer + WALL_SETTINGS.THICKNESS);
-
-        // 🔍 DEBUG: Log the calculation
-        console.log('🚽 NORTH WALL TOILET POSITION:', {
-          roomHalfHeight,
-          halfDepth,
-          wallBuffer,
-          calculatedZ: position.z,
-          wallFaceZ: -roomHalfHeight,
-          toiletBackEdgeZ: position.z - halfDepth,
-          gap: Math.abs((-roomHalfHeight) - (position.z - halfDepth))
-        });
-
         break;
 
       case 'south':
-        // Back wall - standard left/right movement with mouse X
+        // Use halfWidth for X constraint (mirror is 60cm wide)
         position.x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, mouseWorldPos.x));
         position.z = roomHalfHeight - wallBuffer - WALL_SETTINGS.THICKNESS;
-
-        // 🔍 DEBUG: Log the calculation
-        console.log('🚽 SOUTH WALL TOILET POSITION:', {
-          roomHalfHeight,
-          halfDepth,
-          wallBuffer,
-          calculatedZ: position.z,
-          wallFaceZ: roomHalfHeight,
-          toiletBackEdgeZ: position.z + halfDepth,
-          gap: Math.abs(roomHalfHeight - (position.z + halfDepth))
-        });
-
         break;
 
       case 'east':
-        // Right wall
         position.x = roomHalfWidth - wallBuffer - WALL_SETTINGS.THICKNESS;
-
-        if (viewingFromFrontBack) {
-          // When viewing from front/back: use Y (vertical) mouse movement for Z position
-          const screenY = this.mouse.y; // Range: -1 to 1 (bottom to top)
-
-          // Map screen Y to world Z
-          const zRange = (roomHalfHeight * 2) - (halfWidth * 2);
-          const zOffset = -roomHalfHeight + halfWidth;
-          position.z = zOffset + ((-screenY + 1) / 2) * zRange;
-
-          console.log(`📐 East wall: Using vertical mouse for Z`);
-        } else {
-          // Viewing from sides: use mouse Z normally
-          position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
-        }
+        // Use halfWidth for Z constraint when on side walls (mirror rotates)
+        position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
         break;
 
       case 'west':
-        // Left wall
         position.x = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
-
-        if (viewingFromFrontBack) {
-          // When viewing from front/back: use Y (vertical) mouse movement for Z position
-          const screenY = this.mouse.y;
-
-          const zRange = (roomHalfHeight * 2) - (halfWidth * 2);
-          const zOffset = -roomHalfHeight + halfWidth;
-          position.z = zOffset + ((-screenY + 1) / 2) * zRange;
-
-          console.log(`📐 West wall: Using vertical mouse for Z`);
-        } else {
-          // Viewing from sides: use mouse Z normally
-          position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
-        }
+        // Use halfWidth for Z constraint when on side walls (mirror rotates)
+        position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
         break;
     }
 
@@ -1873,9 +1991,10 @@ export class EventHandlers {
 
     if (lookingVertically) {
       // Top-down view: use horizontal plane for intuitive movement
+      const planeHeight = object.position.y;
       this.dragPlane.setFromNormalAndCoplanarPoint(
         new THREE.Vector3(0, 1, 0),
-        object.position
+        new THREE.Vector3(object.position.x, planeHeight, object.position.z)
       );
       console.log('✅ Top view - horizontal plane');
     } else {
@@ -1887,6 +2006,9 @@ export class EventHandlers {
       );
       console.log('✅ Front/side view - camera-perpendicular plane');
     }
+
+    // ✅ ADD: Update the visual representation
+    this.updateDragPlaneVisualization();
   }
 
   /**

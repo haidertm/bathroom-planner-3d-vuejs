@@ -8,13 +8,15 @@ export interface RoomDefaults {
   readonly STEP: number;
 }
 
+export type WallType = 'north' | 'south' | 'east' | 'west';
+
 export const ROOM_DEFAULTS: RoomDefaults = {
   WIDTH: 300, // default
   HEIGHT: 250, // default Length/Depth
   MIN_SIZE: 100,
   MAX_SIZE: 600,
   STEP: 10
-}  as const;
+} as const;
 
 export interface WallSettings {
   readonly HEIGHT: number;
