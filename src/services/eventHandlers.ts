@@ -910,7 +910,6 @@ export class EventHandlers {
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
         const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-        const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
         const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
         // ✅ NEW: Get floorOffset to adjust visual positioning
