@@ -993,7 +993,7 @@ export class EventHandlers {
           }
 
             const { interior, wallFaces } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
-            const objectWidth = (dimensions?.width || 50) * objectScale;
+            const objectWidth = dimensions?.width * objectScale;
             const halfObjectWidth = objectWidth / 2;
           // Adjust position based on which wall and apply constraints
            switch (closestWall) {
