@@ -189,7 +189,7 @@ const productData: ProductData = {
           },
           movement: {
             snapToWall: true,
-            allowVerticalMovement: true, // Fixed height
+            allowVerticalMovement: true, // Vertical placement allowed (0..ceiling)
             allowFreeRotation: false,
             minHeight: 0, // Minimum height from floor
             maxHeight: -1
