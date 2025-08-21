@@ -362,6 +362,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x560mm-31022',
           path: '../../models/radiator/31022.glb',
           dimensions: { width: 65.8, height: 163.2, depth: 11.3 },
+          floorOffset:61,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
