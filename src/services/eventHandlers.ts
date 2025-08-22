@@ -2081,7 +2081,7 @@ export class EventHandlers {
     const floorOffset = dimensions?.floorOffset || 0;
 
     // Use actual room height from the ref
-    const ROOM_CEILING_HEIGHT = this.roomHeightRef.value;
+    const ROOM_CEILING_HEIGHT = WALL_SETTINGS.HEIGHT;
 
     // Calculate minimum position.y
     // Account for floorOffset - object can go negative to reach floor level
