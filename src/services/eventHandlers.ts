@@ -1239,6 +1239,11 @@ export class EventHandlers {
 
         // Set outline to normal color since we're back to non-colliding position
         setOutlineColor(false);
+          // 🆕 CRITICAL FIX: Update measurement system to reflect the snap-back position
+          if (this.measurementSystem && this.selectedObject) {
+              // Force refresh the measurement system with the updated position
+              this.measurementSystem.forceUpdateMeasurements();
+          }
 
         console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
       } else {
