@@ -1242,6 +1242,8 @@ export class EventHandlers {
           // 🆕 CRITICAL FIX: Update measurement system to reflect the snap-back position
           if (this.measurementSystem && this.selectedObject) {
               // Force refresh the measurement system with the updated position
+              const currentItemsAfterSnap = this.getCurrentItems();
+              this.measurementSystem.updateExistingItems(currentItemsAfterSnap);
               this.measurementSystem.forceUpdateMeasurements();
           }
 
