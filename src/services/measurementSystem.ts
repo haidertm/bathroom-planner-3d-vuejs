@@ -886,32 +886,6 @@ export class MeasurementSystem {
       objectCenterY: objectCenterY.toFixed(1) + 'cm',
       labelType: label.isObjectDimension ? 'OBJECT DIMENSION' : 'SPACE'
     });
-
-    if (label.isObjectDimension) {
-      // Lines showing object dimensions - these go along the object edges AT CENTER HEIGHT
-      const halfWidth = measurements.objectWidth / 2;
-      const halfDepth = measurements.objectDepth / 2;
-
-      if (label.id === 'object-width') {
-        // Horizontal line across object width AT CENTER HEIGHT
-        points.push(new THREE.Vector3(position.x - halfWidth, objectCenterY, position.z));
-        points.push(new THREE.Vector3(position.x + halfWidth, objectCenterY, position.z));
-
-        // Add end markers (small vertical lines)
-        this.createEndMarker(new THREE.Vector3(position.x - halfWidth, objectCenterY, position.z), 'vertical');
-        this.createEndMarker(new THREE.Vector3(position.x + halfWidth, objectCenterY, position.z), 'vertical');
-
-      } else if (label.id === 'object-depth') {
-        // Line across object depth (Z-axis) AT CENTER HEIGHT
-        points.push(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth));
-        points.push(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth));
-
-        // Add end markers (small vertical lines)
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z - halfDepth), 'vertical');
-        this.createEndMarker(new THREE.Vector3(position.x, objectCenterY, position.z + halfDepth), 'vertical');
-      }
-    }
-    else {
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
       if (label.id === 'space-left') {
         const startX = position.x - measurements.objectWidth / 2;
@@ -1118,7 +1092,6 @@ export class MeasurementSystem {
       line.userData = { lineId: label.id };
       this.measurementLines.add(line);
     }
-  }
   };
   // NEW: Create end markers (small perpendicular lines at measurement ends)
   private createEndMarker(

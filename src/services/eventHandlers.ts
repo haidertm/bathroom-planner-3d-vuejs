@@ -1239,6 +1239,13 @@ export class EventHandlers {
 
         // Set outline to normal color since we're back to non-colliding position
         setOutlineColor(false);
+          // 🆕 CRITICAL FIX: Update measurement system to reflect the snap-back position
+          if (this.measurementSystem && this.selectedObject) {
+              // Force refresh the measurement system with the updated position
+              const currentItemsAfterSnap = this.getCurrentItems();
+              this.measurementSystem.updateExistingItems(currentItemsAfterSnap);
+              this.measurementSystem.forceUpdateMeasurements();
+          }
 
         console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
       } else {
@@ -2081,7 +2088,7 @@ export class EventHandlers {
     const floorOffset = dimensions?.floorOffset || 0;
 
     // Use actual room height from the ref
-    const ROOM_CEILING_HEIGHT = this.roomHeightRef.value;
+    const ROOM_CEILING_HEIGHT = WALL_SETTINGS.HEIGHT;
 
     // Calculate minimum position.y
     // Account for floorOffset - object can go negative to reach floor level
