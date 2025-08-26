@@ -197,15 +197,15 @@
       </div>
 
       <!-- Textures Button -->
-      <div :style="accordionSectionStyle">
-        <button
-            @click="toggleTextureDrawer"
-            :style="textureButtonStyle"
-        >
-          <h4 :style="accordionTitleStyle">Textures</h4>
-          <span :style="textureArrowStyle">▶</span>
-        </button>
-      </div>
+<!--      <div :style="accordionSectionStyle">-->
+<!--        <button-->
+<!--            @click="toggleTextureDrawer"-->
+<!--            :style="textureButtonStyle"-->
+<!--        >-->
+<!--          <h4 :style="accordionTitleStyle">Textures</h4>-->
+<!--          <span :style="textureArrowStyle">▶</span>-->
+<!--        </button>-->
+<!--      </div>-->
     </div>
 
     <!-- Texture Drawer Overlay -->
