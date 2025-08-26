@@ -1102,30 +1102,20 @@ export class MeasurementSystem {
     const markerSize = 8; // Small marker size
     const points: THREE.Vector3[] = [];
 
-      // ✅ CRITICAL FIX: Ensure endmarkers never go below floor level
-      const floorLevel = 0; // Floor is at Y = 0
-      const minMarkerY = floorLevel + 1; // Keep markers at least 2cm above floor
-
-      // Calculate safe Y position for marker
-      const safeMarkerY = Math.max(position.y, minMarkerY);
-
     if (direction === 'vertical') {
-
-        const markerBottom = Math.max(safeMarkerY - markerSize / 2, floorLevel + 1);
-        const markerTop = markerBottom + markerSize;
       // Vertical end marker (extends vertically)
-        points.push(new THREE.Vector3(position.x, markerBottom, position.z));
-        points.push(new THREE.Vector3(position.x, markerTop, position.z));
+      points.push(new THREE.Vector3(position.x, position.y - markerSize / 2, position.z));
+      points.push(new THREE.Vector3(position.x, position.y + markerSize / 2, position.z));
     } else {
       // Horizontal end marker - orientation depends on wall direction
       if (wallDirection === 'north' || wallDirection === 'south') {
         // For north/south walls, extend in X-axis (left/right) for front visibility
-          points.push(new THREE.Vector3(position.x - markerSize / 2, safeMarkerY, position.z));
-          points.push(new THREE.Vector3(position.x + markerSize / 2, safeMarkerY, position.z));
+        points.push(new THREE.Vector3(position.x - markerSize / 2, position.y, position.z));
+        points.push(new THREE.Vector3(position.x + markerSize / 2, position.y, position.z));
       } else {
         // For east/west walls (or no wall), extend in Z-axis (front/back) for side visibility
-          points.push(new THREE.Vector3(position.x, safeMarkerY, position.z - markerSize / 2));
-          points.push(new THREE.Vector3(position.x, safeMarkerY, position.z + markerSize / 2));
+        points.push(new THREE.Vector3(position.x, position.y, position.z - markerSize / 2));
+        points.push(new THREE.Vector3(position.x, position.y, position.z + markerSize / 2));
       }
     }
 
@@ -1137,16 +1127,8 @@ export class MeasurementSystem {
       opacity: 1.0
     });
 
-      const marker = new THREE.Line(geometry, material);
-      marker.userData = {
-          type: 'endMarker',
-          direction,
-          wallDirection,
-          originalY: position.y,
-          adjustedY: safeMarkerY
-      };
-
-      this.measurementLines.add(marker);
+    const marker = new THREE.Line(geometry, material);
+    this.measurementLines.add(marker);
   }
 
   private clearMeasurements (): void {
