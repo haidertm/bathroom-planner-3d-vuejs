@@ -447,36 +447,52 @@ export class SceneManager {
     }
   }
 
-  private setupEnhancedLighting (): void {
-    if (!this.scene) return;
+    private setupEnhancedLighting (): void {
+        if (!this.scene) return;
 
-    // Clear existing lights
-    this.lights.forEach(light => this.scene!.remove(light));
-    this.lights = [];
+        // Clear existing lights
+        this.lights.forEach(light => this.scene!.remove(light));
+        this.lights = [];
 
-// 1. MINIMAL AMBIENT (just enough to prevent pure black)
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-      this.scene.add(ambientLight);
-      this.lights.push(ambientLight);
+        // 1. AMBIENT LIGHT - provides base illumination
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        this.scene.add(ambientLight);
+        this.lights.push(ambientLight);
 
-// 3. OPTIONAL: Add a few more ceiling lights for even coverage - YOUR WORKING CODE
-      const ceilingLight1 = new THREE.PointLight(0xffffff, 800, 600, 1.5);
-      ceilingLight1.position.set(50, 0, 0);
-      this.scene.add(ceilingLight1);
-      this.lights.push(ceilingLight1);
+        // 2. CEILING LIGHTS - main room illumination
+        const ceilingLight1 = new THREE.PointLight(0xffffff, 1200, 800, 1.5);
+        ceilingLight1.position.set(50, 300, 0); // Higher position
+        this.scene.add(ceilingLight1);
+        this.lights.push(ceilingLight1);
 
-      const ceilingLight2 = new THREE.PointLight(0xffffff, 800, 600, 1.5);
-      ceilingLight2.position.set(0, 120, 0);
-      this.scene.add(ceilingLight2);
-      this.lights.push(ceilingLight2);
+        const ceilingLight2 = new THREE.PointLight(0xffffff, 1200, 800, 1.5);
+        ceilingLight2.position.set(-50, 300, 50); // Different position for even coverage
+        this.scene.add(ceilingLight2);
+        this.lights.push(ceilingLight2);
 
-// 4. ONLY ADDITION: Bottom brightness boost
-      const bottomLight = new THREE.PointLight(0xffffff, 100, 100, 3); // Short range, only affects bottom
-      bottomLight.position.set(0, 240, 0); // Very low, center of room
-      this.scene.add(bottomLight);
-      this.lights.push(bottomLight);
+        // 3. HIDDEN FLOOR ILLUMINATION - lights below floor level (invisible but effective)
+        const floorLight1 = new THREE.PointLight(0xffffff, 600, 400, 2);
+        floorLight1.position.set(0, -5, 0); // BELOW floor level - invisible but still lights up floor
+        this.scene.add(floorLight1);
+        this.lights.push(floorLight1);
 
-  }
+        // 4. ADDITIONAL HIDDEN FLOOR LIGHTS for even coverage
+        const floorLight2 = new THREE.PointLight(0xffffff, 400, 300, 2);
+        floorLight2.position.set(80, -3, 80); // Below floor
+        this.scene.add(floorLight2);
+        this.lights.push(floorLight2);
+
+        const floorLight3 = new THREE.PointLight(0xffffff, 400, 300, 2);
+        floorLight3.position.set(-80, -3, -80); // Below floor
+        this.scene.add(floorLight3);
+        this.lights.push(floorLight3);
+
+
+        // 6. OPTIONAL: Increase renderer exposure for brighter overall scene
+        if (this.renderer) {
+            this.renderer.toneMappingExposure = 1.2;
+        }
+    }
 
   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
     if (!this.scene) return;
@@ -913,7 +929,7 @@ export class SceneManager {
         }
 
         // Ensure shadows are properly configured
-        child.castShadow = true;
+        child.castShadow = false;
         child.receiveShadow = true;
       }
     });

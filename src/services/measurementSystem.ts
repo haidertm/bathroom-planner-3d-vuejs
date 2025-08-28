@@ -1102,15 +1102,15 @@ export class MeasurementSystem {
     const markerSize = 8; // Small marker size
     const points: THREE.Vector3[] = [];
 
-      // ✅ CRITICAL FIX: Ensure endMarkers never go below floor level
-      const floorLevel = 0.5; // Floor is at Y = 0
+      const FLOOR_Y = 0;      // Floor is at Y = 0
+      const EPS = 0.5;        // Small cushion to avoid z-fighting
 
       // Calculate safe Y position for marker
-      const safeMarkerY = Math.max(position.y, floorLevel);
+      const safeMarkerY = Math.max(position.y, FLOOR_Y + EPS);
 
     if (direction === 'vertical') {
 
-        const markerBottom = Math.max(safeMarkerY - markerSize / 2, floorLevel + 1);
+        const markerBottom = Math.max(safeMarkerY - markerSize / 2, FLOOR_Y + EPS);
         const markerTop = markerBottom + markerSize;
       // Vertical end marker (extends vertically)
         points.push(new THREE.Vector3(position.x, markerBottom, position.z));
