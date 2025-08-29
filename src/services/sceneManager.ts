@@ -24,6 +24,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { getOrientationForItem } from '../utils/models';
+import { WALL_SETTINGS } from "../constants/dimensions.ts";
 
 interface SceneComponents {
   scene: THREE.Scene;
@@ -470,14 +471,15 @@ export class SceneManager {
 
         // Inner lights - these stay closer to center
         const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
+        const ceilingY = WALL_SETTINGS.HEIGHT;
 
         const ceilingLight1 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight1.position.set(innerX, 260, 0);
+        ceilingLight1.position.set(innerX, ceilingY, 0);
         this.scene.add(ceilingLight1);
         this.lights.push(ceilingLight1);
 
         const ceilingLight2 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight2.position.set(-innerX, 260, 0);
+        ceilingLight2.position.set(-innerX, ceilingY, 0);
         this.scene.add(ceilingLight2);
         this.lights.push(ceilingLight2);
 
@@ -485,12 +487,12 @@ export class SceneManager {
         const outerX = Math.min(100, maxX * 0.7); // 70% from center or 100cm max
 
         const ceilingLight3 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight3.position.set(outerX, 260, 0);
+        ceilingLight3.position.set(outerX, ceilingY, 0);
         this.scene.add(ceilingLight3);
         this.lights.push(ceilingLight3);
 
         const ceilingLight4 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight4.position.set(-outerX, 260, 0);
+        ceilingLight4.position.set(-outerX, ceilingY, 0);
         this.scene.add(ceilingLight4);
         this.lights.push(ceilingLight4);
 
