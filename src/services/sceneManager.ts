@@ -465,11 +465,13 @@ export class SceneManager {
 
         // Calculate safe positions based on room size
         const safeMargin = 30; // 30cm margin from walls
-        const maxX = (width / 2) - safeMargin; // Maximum X position
+
+        // FIXED: Clamp maxX to non-negative to prevent negative positions
+        const maxX = Math.max(0, (width / 2) - safeMargin); // Maximum X position, clamped to 0
 
         // 2. CEILING LIGHTS - positioned relative to room size
 
-        // Inner lights - these stay closer to center
+        // Inner lights - these stay closer to center, using clamped maxX
         const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
         const ceilingY = WALL_SETTINGS.HEIGHT;
 
@@ -483,8 +485,8 @@ export class SceneManager {
         this.scene.add(ceilingLight2);
         this.lights.push(ceilingLight2);
 
-        // Outer lights - these adapt to room size but stay within bounds
-        const outerX = Math.min(100, maxX * 0.7); // 70% from center or 100cm max
+        // FIXED: Outer lights - ensure outerX is at least innerX to prevent inversion
+        const outerX = Math.max(innerX, Math.min(100, maxX * 0.7)); // 70% from center or 100cm max, but at least innerX
 
         const ceilingLight3 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
         ceilingLight3.position.set(outerX, ceilingY, 0);
