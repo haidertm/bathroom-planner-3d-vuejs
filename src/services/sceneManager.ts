@@ -475,28 +475,13 @@ export class SceneManager {
         const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
         const ceilingY = WALL_SETTINGS.HEIGHT;
 
-        const ceilingLight1 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight1.position.set(innerX, ceilingY, 0);
-        this.scene.add(ceilingLight1);
-        this.lights.push(ceilingLight1);
-
-        const ceilingLight2 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight2.position.set(-innerX, ceilingY, 0);
-        this.scene.add(ceilingLight2);
-        this.lights.push(ceilingLight2);
-
-        // FIXED: Outer lights - ensure outerX is at least innerX to prevent inversion
-        const outerX = Math.max(innerX, Math.min(100, maxX * 0.7)); // 70% from center or 100cm max, but at least innerX
-
-        const ceilingLight3 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight3.position.set(outerX, ceilingY, 0);
-        this.scene.add(ceilingLight3);
-        this.lights.push(ceilingLight3);
-
-        const ceilingLight4 = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-        ceilingLight4.position.set(-outerX, ceilingY, 0);
-        this.scene.add(ceilingLight4);
-        this.lights.push(ceilingLight4);
+        const outerX = Math.max(innerX, Math.min(100, maxX * 0.7));
+        for (const x of [innerX, -innerX, outerX, -outerX]) {
+            const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
+            light.position.set(x, ceilingY, 0);
+            this.scene.add(light);
+            this.lights.push(light);
+        }
 
         // 3. OPTIONAL: Increase renderer exposure for brighter overall scene
         if (this.renderer) {
