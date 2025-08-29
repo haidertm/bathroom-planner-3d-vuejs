@@ -452,7 +452,7 @@ export class SceneManager {
         if (!this.scene) return;
 
         // Use current room dimensions or defaults
-        const width = roomWidth || 300; // Default fallback
+        const width = roomWidth ?? 300; // Default fallback
 
         // Clear existing lights
         this.lights.forEach(light => this.scene!.remove(light));
