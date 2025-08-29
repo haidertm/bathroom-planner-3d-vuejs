@@ -24,6 +24,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { getOrientationForItem } from '../utils/models';
+import { WALL_SETTINGS } from "../constants/dimensions.ts";
 
 interface SceneComponents {
   scene: THREE.Scene;
@@ -447,48 +448,42 @@ export class SceneManager {
     }
   }
 
-    private setupEnhancedLighting (): void {
+    private setupEnhancedLighting(roomWidth?: number): void {
         if (!this.scene) return;
+
+        // Use current room dimensions or defaults
+        const width = roomWidth ?? 300; // Default fallback
 
         // Clear existing lights
         this.lights.forEach(light => this.scene!.remove(light));
         this.lights = [];
 
         // 1. AMBIENT LIGHT - provides base illumination
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
         this.scene.add(ambientLight);
         this.lights.push(ambientLight);
 
-        // 2. CEILING LIGHTS - main room illumination
-        const ceilingLight1 = new THREE.PointLight(0xffffff, 1200, 800, 1.5);
-        ceilingLight1.position.set(50, 300, 0); // Higher position
-        this.scene.add(ceilingLight1);
-        this.lights.push(ceilingLight1);
+        // Calculate safe positions based on room size
+        const safeMargin = 30; // 30cm margin from walls
 
-        const ceilingLight2 = new THREE.PointLight(0xffffff, 1200, 800, 1.5);
-        ceilingLight2.position.set(-50, 300, 50); // Different position for even coverage
-        this.scene.add(ceilingLight2);
-        this.lights.push(ceilingLight2);
+        // FIXED: Clamp maxX to non-negative to prevent negative positions
+        const maxX = Math.max(0, (width / 2) - safeMargin); // Maximum X position, clamped to 0
 
-        // 3. HIDDEN FLOOR ILLUMINATION - lights below floor level (invisible but effective)
-        const floorLight1 = new THREE.PointLight(0xffffff, 600, 400, 2);
-        floorLight1.position.set(0, -5, 0); // BELOW floor level - invisible but still lights up floor
-        this.scene.add(floorLight1);
-        this.lights.push(floorLight1);
+        // 2. CEILING LIGHTS - positioned relative to room size
 
-        // 4. ADDITIONAL HIDDEN FLOOR LIGHTS for even coverage
-        const floorLight2 = new THREE.PointLight(0xffffff, 400, 300, 2);
-        floorLight2.position.set(80, -3, 80); // Below floor
-        this.scene.add(floorLight2);
-        this.lights.push(floorLight2);
+        // Inner lights - these stay closer to center, using clamped maxX
+        const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
+        const ceilingY = WALL_SETTINGS.HEIGHT;
 
-        const floorLight3 = new THREE.PointLight(0xffffff, 400, 300, 2);
-        floorLight3.position.set(-80, -3, -80); // Below floor
-        this.scene.add(floorLight3);
-        this.lights.push(floorLight3);
+        const outerX = Math.max(innerX, Math.min(100, maxX * 0.7));
+        for (const x of [innerX, -innerX, outerX, -outerX]) {
+            const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
+            light.position.set(x, ceilingY, 0);
+            this.scene.add(light);
+            this.lights.push(light);
+        }
 
-
-        // 6. OPTIONAL: Increase renderer exposure for brighter overall scene
+        // 3. OPTIONAL: Increase renderer exposure for brighter overall scene
         if (this.renderer) {
             this.renderer.toneMappingExposure = 1.2;
         }
@@ -505,6 +500,8 @@ export class SceneManager {
     this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     this.scene.add(this.floorRef);
 
+        // 🔥 UPDATE: Reposition lights when room dimensions change
+        this.setupEnhancedLighting(roomWidth);
     // Update measurement system with new room dimensions
     if (this.measurementSystem) {
       this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
@@ -551,6 +548,8 @@ export class SceneManager {
       this.debugLabelsEnabled
     );
 
+      // 🔥 UPDATE: Reposition lights when room dimensions change
+      this.setupEnhancedLighting(roomWidth);
     // Update wall culling manager with new walls and room size
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
