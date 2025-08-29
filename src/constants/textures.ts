@@ -28,8 +28,8 @@ export const WALL_TEXTURES: readonly TextureConfig[] = [
   { name: 'Subway Tile', file: '', color: 0xf0f0f0, scale: [8, 6] }
 ];
 
-export const DEFAULT_FLOOR_TEXTURE: number = 6; // Wood
-export const DEFAULT_WALL_TEXTURE: number = 0; // Brick
+export const DEFAULT_FLOOR_TEXTURE: number = 0; // white
+export const DEFAULT_WALL_TEXTURE: number = 6; // green
 
 
 // Enhanced lighting constants
