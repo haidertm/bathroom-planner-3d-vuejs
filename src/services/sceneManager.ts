@@ -74,8 +74,8 @@ export class SceneManager {
   initializeScene (): SceneComponents {
     // Create scene with better background and atmosphere
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xf5f5f5);
-    this.scene.fog = new THREE.Fog(0xf5f5f5, 1000, 5000);
+    this.scene.background = new THREE.Color(0xE6E1DA);
+    this.scene.fog = new THREE.Fog(0xE6E1DA, 1000, 5000);
 
     // Create camera with better positioning and settings
     this.camera = new THREE.PerspectiveCamera(CAMERA_SETTINGS.FOV, window.innerWidth / window.innerHeight, CAMERA_SETTINGS.NEAR, CAMERA_SETTINGS.FAR);
@@ -447,52 +447,52 @@ export class SceneManager {
     }
   }
 
-  private setupEnhancedLighting (): void {
-    if (!this.scene) return;
+    private setupEnhancedLighting (): void {
+        if (!this.scene) return;
 
-    // Clear existing lights
-    this.lights.forEach(light => this.scene!.remove(light));
-    this.lights = [];
+        // Clear existing lights
+        this.lights.forEach(light => this.scene!.remove(light));
+        this.lights = [];
 
-    // 1. Ambient light (keep this)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Reduced from 1.2
-    this.scene.add(ambientLight);
-    this.lights.push(ambientLight);
+        // 1. AMBIENT LIGHT - provides base illumination
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        this.scene.add(ambientLight);
+        this.lights.push(ambientLight);
 
-    // 2. ONLY ONE shadow-casting light (main performance improvement)
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    mainLight.position.set(0, 1000, 200);
-    mainLight.castShadow = true;
+        // 2. CEILING LIGHTS - main room illumination
+        const ceilingLight1 = new THREE.PointLight(0xffffff, 1200, 800, 1.5);
+        ceilingLight1.position.set(50, 300, 0); // Higher position
+        this.scene.add(ceilingLight1);
+        this.lights.push(ceilingLight1);
 
-    // CRITICAL: Reduce shadow map size
-    mainLight.shadow.mapSize.width = 1024;  // Reduced from 2048
-    mainLight.shadow.mapSize.height = 1024; // Reduced from 2048
+        const ceilingLight2 = new THREE.PointLight(0xffffff, 1200, 800, 1.5);
+        ceilingLight2.position.set(-50, 300, 50); // Different position for even coverage
+        this.scene.add(ceilingLight2);
+        this.lights.push(ceilingLight2);
 
-    mainLight.shadow.camera.near = 10;
-    mainLight.shadow.camera.far = 2000;
-    mainLight.shadow.camera.left = -800;   // Smaller shadow area
-    mainLight.shadow.camera.right = 800;
-    mainLight.shadow.camera.top = 800;
-    mainLight.shadow.camera.bottom = -800;
+        // 3. HIDDEN FLOOR ILLUMINATION - lights below floor level (invisible but effective)
+        const floorLight1 = new THREE.PointLight(0xffffff, 600, 400, 2);
+        floorLight1.position.set(0, -5, 0); // BELOW floor level - invisible but still lights up floor
+        this.scene.add(floorLight1);
+        this.lights.push(floorLight1);
 
-    this.scene.add(mainLight);
-    this.lights.push(mainLight);
+        // 4. ADDITIONAL HIDDEN FLOOR LIGHTS for even coverage
+        const floorLight2 = new THREE.PointLight(0xffffff, 400, 300, 2);
+        floorLight2.position.set(80, -3, 80); // Below floor
+        this.scene.add(floorLight2);
+        this.lights.push(floorLight2);
 
-    // 3. Non-shadow fill lights (much cheaper)
-    const fillLight1 = new THREE.DirectionalLight(0xffffff, 0.4);
-    fillLight1.position.set(-500, 800, -500);
-    // NO castShadow = true  (this is key!)
-    this.scene.add(fillLight1);
-    this.lights.push(fillLight1);
+        const floorLight3 = new THREE.PointLight(0xffffff, 400, 300, 2);
+        floorLight3.position.set(-80, -3, -80); // Below floor
+        this.scene.add(floorLight3);
+        this.lights.push(floorLight3);
 
-    const fillLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-    fillLight2.position.set(500, 800, 500);
-    // NO castShadow = true
-    this.scene.add(fillLight2);
-    this.lights.push(fillLight2);
 
-    console.log(`✅ Optimized lighting: ${this.lights.length} lights (only 1 with shadows)`);
-  }
+        // 6. OPTIONAL: Increase renderer exposure for brighter overall scene
+        if (this.renderer) {
+            this.renderer.toneMappingExposure = 1.2;
+        }
+    }
 
   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
     if (!this.scene) return;
@@ -568,9 +568,9 @@ export class SceneManager {
     const material = textureManager.createTexturedMaterial(wallTexture);
 
     // Enhanced wall material properties
-    material.roughness = 0.9;
-    material.metalness = 0.0;
-    material.envMapIntensity = 0.3;
+      material.roughness = 0.6;      // Semi-matte for good light distribution
+      material.metalness = 0.0;      // Non-metallic
+      material.envMapIntensity = 0.1; // Minimal reflections
 
     return material;
   }
@@ -929,7 +929,7 @@ export class SceneManager {
         }
 
         // Ensure shadows are properly configured
-        child.castShadow = true;
+        child.castShadow = false;
         child.receiveShadow = true;
       }
     });
