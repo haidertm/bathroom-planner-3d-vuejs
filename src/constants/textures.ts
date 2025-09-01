@@ -29,7 +29,7 @@ export const WALL_TEXTURES: readonly TextureConfig[] = [
 ];
 
 export const DEFAULT_FLOOR_TEXTURE: number = 6; // stone
-export const DEFAULT_WALL_TEXTURE: number = 6; // green
+export const DEFAULT_WALL_TEXTURE: number = 4; // green
 
 
 // Enhanced lighting constants
