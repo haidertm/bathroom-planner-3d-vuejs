@@ -1,4 +1,4 @@
-<!-- UnifiedProductDrawer.vue -->
+<!-- UnifiedProductDrawer.vue - Original design with progressive loading -->
 <template>
   <div>
     <!-- Product Drawer Overlay -->
@@ -50,38 +50,12 @@
         </button>
       </div>
 
-      <!-- SKELETON LOADER - Show when loading models -->
-      <div v-if="isLoading && currentView === 'products'" :style="contentStyle">
-        <!-- Skeleton Loading State -->
-        <div :style="skeletonContainerStyle">
-          <!-- Skeleton Product Cards -->
-          <div
-              v-for="n in 3"
-              :key="`skeleton-${n}`"
-              :style="skeletonCardStyle"
-              class="skeleton-card"
-          >
-            <!-- Skeleton Image -->
-            <div :style="skeletonImageStyle">
-              <div :style="skeletonShimmerStyle"></div>
-            </div>
+      <!-- PROGRESSIVE LOADING: Show ready products + skeletons for loading ones -->
+      <div v-if="currentView === 'products'" :style="contentStyle">
 
-            <!-- Skeleton Content -->
-            <div :style="skeletonContentStyle">
-              <div :style="skeletonLineStyle"></div>
-              <div :style="skeletonLineStyle"></div>
-              <div :style="skeletonLineStyle"></div>
-              <div :style="skeletonLineStyle"></div>
-              <div :style="skeletonButtonStyle"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PRODUCT LIST VIEW - Show when not loading -->
-      <div v-else-if="currentView === 'products'" :style="contentStyle">
+        <!-- Show products that are ready (models loaded) -->
         <div
-            v-for="product in getProductsForCategory(selectedCategory)"
+            v-for="product in getReadyProducts()"
             :key="product.id"
             :style="productCardStyle"
             class="product-card"
@@ -102,19 +76,48 @@
               More info ↗
             </a>
 
-            <!-- Add to Room Button -->
+            <!-- SELECT Button (original functionality) -->
             <button
                 @click="selectProduct(product)"
                 :style="addToRoomButtonStyle"
-                class="add-to-room-button"
+                class="select-button"
             >
               Add to Room
             </button>
           </div>
         </div>
+
+        <!-- Show skeleton loaders for products still loading -->
+        <div
+            v-for="n in getLoadingProductCount()"
+            :key="`skeleton-${n}`"
+            :style="skeletonCardStyle"
+            class="skeleton-card"
+        >
+          <!-- Skeleton Image -->
+          <div :style="skeletonImageStyle">
+            <div :style="skeletonShimmerStyle"></div>
+          </div>
+
+          <!-- Skeleton Content -->
+          <div :style="skeletonContentStyle">
+            <div :style="skeletonLineStyle"></div>
+            <div :style="skeletonLineStyle"></div>
+            <div :style="skeletonLineStyle"></div>
+            <div :style="skeletonLineStyle"></div>
+            <div :style="skeletonButtonStyle"></div>
+          </div>
+        </div>
+
+        <!-- Loading progress indicator (optional) -->
+        <div v-if="isAnythingLoading()" :style="loadingProgressStyle">
+          <div :style="loadingSpinnerStyle"></div>
+          <span>Loading {{ getLoadingProductCount() }} more products...</span>
+        </div>
+
       </div>
 
-      <!-- VARIANTS VIEW -->
+      <!-- VARIANTS VIEW - Original Design -->
       <div v-else-if="currentView === 'variants'" :style="variantsContentStyle">
         <!-- Product Summary -->
         <div :style="productSummaryStyle">
@@ -240,6 +243,15 @@ const props = defineProps({
   loadingError: {
     type: String,
     default: ''
+  },
+  // NEW: Progressive loading props
+  loadedProducts: {
+    type: Set,
+    default: () => new Set()
+  },
+  productLoadingStates: {
+    type: Map,
+    default: () => new Map()
   }
 })
 
@@ -277,6 +289,36 @@ const getProductsForCategory = (category) => {
   return productData[category] || []
 }
 
+const getReadyProducts = () => {
+  const allProducts = getProductsForCategory(props.selectedCategory)
+
+  // If not loading, show all products
+  if (!props.isLoading) {
+    return allProducts
+  }
+
+  // If loading, show only products whose models have loaded
+  return allProducts.filter(product => {
+    return props.loadedProducts.has(product.id)
+  })
+}
+
+const getLoadingProductCount = () => {
+  if (!props.isLoading) return 0
+
+  const allProducts = getProductsForCategory(props.selectedCategory)
+  const readyCount = getReadyProducts().length
+
+  // Show skeletons for products that haven't loaded yet (max 3 for UI)
+  const pendingCount = Math.max(0, allProducts.length - readyCount)
+  return Math.min(3, pendingCount)
+}
+
+const isAnythingLoading = () => {
+  return props.isLoading && getLoadingProductCount() > 0
+}
+
+// Methods - Original functionality
 const selectProduct = (product) => {
   console.log('select product>>>', product);
   selectedProduct.value = product
@@ -400,112 +442,44 @@ const closeDrawer = () => {
   emit('close')
 }
 
-// SKELETON LOADER STYLES
-const skeletonContainerStyle = computed(() => ({
-  padding: '20px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '20px'
-}))
-
-const loadingHeaderStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-  padding: '16px',
-  backgroundColor: '#f8f9fa',
-  borderRadius: '8px',
-  fontSize: '16px',
-  fontWeight: '500',
-  color: '#666'
-}))
-
-const loadingSpinnerStyle = computed(() => ({
-  width: '20px',
-  height: '20px',
-  border: '2px solid #e0e0e0',
-  borderTop: '2px solid #007bff',
-  borderRadius: '50%',
-  animation: 'spin 1s linear infinite'
-}))
-
-const skeletonCardStyle = computed(() => ({
-  backgroundColor: '#ffffff',
-  borderRadius: '8px',
-  padding: '20px',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-  display: 'flex',
-  flexDirection: isMobileDevice.value ? 'column' : '',
-  gap: '15px',
-  position: 'relative',
-  overflow: 'hidden'
-}))
-
-const skeletonImageStyle = computed(() => ({
-  width: isMobileDevice.value ? '100%' : '200px',
-  height: '150px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '8px',
-  position: 'relative',
-  overflow: 'hidden'
-}))
-
-const skeletonShimmerStyle = computed(() => ({
-  position: 'absolute',
-  top: '0',
-  left: '-100%',
-  width: '100%',
-  height: '100%',
-  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-  animation: 'shimmer 1.5s infinite'
-}))
-
-const skeletonContentStyle = computed(() => ({
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '12px'
-}))
-
-const skeletonLineStyle = computed(() => ({
-  height: '20px',
-  backgroundColor: '#f0f0f0',
+// Dynamic styles methods for variants
+const getVariantButtonStyle = (variantId) => ({
+  padding: '12px 16px',
+  border: selectedVariant.value === variantId ? '2px solid #29275B' : '2px solid #e0e0e0',
   borderRadius: '6px',
-  width: isMobileDevice.value ? '70%' : '90%',
-  marginTop: '8px'
-}))
-
-const skeletonButtonStyle = computed(() => ({
-  height: '36px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '4px',
-  width: '135px',
-  marginTop: '8px'
-}))
-
-// ERROR STYLES
-const errorBannerStyle = computed(() => ({
-  backgroundColor: '#fee',
-  border: '1px solid #fcc',
-  color: '#c33',
-  padding: '12px 20px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  fontSize: '14px'
-}))
-
-const retryButtonStyle = computed(() => ({
-  backgroundColor: '#c33',
-  color: 'white',
-  border: 'none',
-  padding: '6px 12px',
-  borderRadius: '4px',
+  backgroundColor: selectedVariant.value === variantId ? '#f0f8f0' : '#ffffff',
+  color: selectedVariant.value === variantId ? '#29275B' : '#333',
   cursor: 'pointer',
-  fontSize: '12px'
-}))
+  fontSize: '14px',
+  fontWeight: '500',
+  transition: 'all 0.2s ease',
+  textAlign: 'left',
+  fontFamily: 'Arial, sans-serif'
+})
 
-// EXISTING STYLES (keeping original styles)
+const getColorSwatchStyle = (color) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '12px',
+  border: selectedColor.value === color.id ? '2px solid #29275B' : '2px solid #e0e0e0',
+  borderRadius: '8px',
+  backgroundColor: selectedColor.value === color.id ? '#f0f8f0' : '#ffffff',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease'
+})
+
+const colorInnerStyle = (color) => ({
+  width: '40px',
+  height: '40px',
+  borderRadius: '50%',
+  backgroundColor: color.color,
+  border: '2px solid #e0e0e0',
+  boxShadow: selectedColor.value === color.id ? '0 0 0 2px rgba(76, 175, 80, 0.2)' : 'none'
+})
+
+// ORIGINAL STYLES - Keeping your exact design
 const overlayStyle = computed(() => ({
   position: 'fixed',
   top: '0',
@@ -685,7 +659,105 @@ const addToRoomButtonStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-// Variants View Styles
+const skeletonCardStyle = computed(() => ({
+  backgroundColor: '#ffffff',
+  borderRadius: '8px',
+  padding: '20px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+  display: 'flex',
+  flexDirection: isMobileDevice.value ? 'column' : 'row',
+  gap: '15px',
+  position: 'relative',
+  overflow: 'hidden'
+}))
+
+const skeletonImageStyle = computed(() => ({
+  width: isMobileDevice.value ? '100%' : '200px',
+  height: '150px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '8px',
+  position: 'relative',
+  overflow: 'hidden'
+}))
+
+const skeletonShimmerStyle = computed(() => ({
+  position: 'absolute',
+  top: '0',
+  left: '-100%',
+  width: '100%',
+  height: '100%',
+  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+  animation: 'shimmer 1.5s infinite'
+}))
+
+const skeletonContentStyle = computed(() => ({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px'
+}))
+
+const skeletonLineStyle = computed(() => ({
+  height: '20px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '6px',
+  width: isMobileDevice.value ? '70%' : '90%',
+  marginTop: '8px'
+}))
+
+const skeletonButtonStyle = computed(() => ({
+  height: '36px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '4px',
+  width: '135px',
+  marginTop: '8px'
+}))
+
+const loadingSpinnerStyle = computed(() => ({
+  width: '20px',
+  height: '20px',
+  border: '2px solid #e0e0e0',
+  borderTop: '2px solid #007bff',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
+}))
+
+const loadingProgressStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  padding: '16px',
+  backgroundColor: '#f8f9fa',
+  borderRadius: '8px',
+  fontSize: '14px',
+  color: '#666',
+  justifyContent: 'center',
+  marginTop: '10px'
+}))
+
+// Error Styles
+const errorBannerStyle = computed(() => ({
+  backgroundColor: '#fee',
+  border: '1px solid #fcc',
+  color: '#c33',
+  padding: '12px 20px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  fontSize: '14px'
+}))
+
+const retryButtonStyle = computed(() => ({
+  backgroundColor: '#c33',
+  color: 'white',
+  border: 'none',
+  padding: '6px 12px',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '12px'
+}))
+
+// Variants View Styles (Original)
 const variantsContentStyle = computed(() => ({
   flex: 1,
   overflowY: 'auto',
@@ -727,6 +799,14 @@ const colorOptionsStyle = computed(() => ({
   display: 'grid',
   gridTemplateColumns: isMobileDevice.value ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
   gap: '12px'
+}))
+
+const colorNameStyle = computed(() => ({
+  fontSize: '12px',
+  color: '#333',
+  fontWeight: '500',
+  textAlign: 'center',
+  fontFamily: 'Arial, sans-serif'
 }))
 
 const hardwareItemStyle = computed(() => ({
@@ -847,51 +927,6 @@ const confirmAddButtonStyle = computed(() => ({
   flex: '1',
   fontFamily: 'Arial, sans-serif'
 }))
-
-// Dynamic styles methods
-const getVariantButtonStyle = (variantId) => ({
-  padding: '12px 16px',
-  border: selectedVariant.value === variantId ? '2px solid #29275B' : '2px solid #e0e0e0',
-  borderRadius: '6px',
-  backgroundColor: selectedVariant.value === variantId ? '#f0f8f0' : '#ffffff',
-  color: selectedVariant.value === variantId ? '#29275B' : '#333',
-  cursor: 'pointer',
-  fontSize: '14px',
-  fontWeight: '500',
-  transition: 'all 0.2s ease',
-  textAlign: 'left',
-  fontFamily: 'Arial, sans-serif'
-})
-
-const getColorSwatchStyle = (color) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '8px',
-  padding: '12px',
-  border: selectedColor.value === color.id ? '2px solid #29275B' : '2px solid #e0e0e0',
-  borderRadius: '8px',
-  backgroundColor: selectedColor.value === color.id ? '#f0f8f0' : '#ffffff',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease'
-})
-
-const colorInnerStyle = (color) => ({
-  width: '40px',
-  height: '40px',
-  borderRadius: '50%',
-  backgroundColor: color.color,
-  border: '2px solid #e0e0e0',
-  boxShadow: selectedColor.value === color.id ? '0 0 0 2px rgba(76, 175, 80, 0.2)' : 'none'
-})
-
-const colorNameStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#333',
-  fontWeight: '500',
-  textAlign: 'center',
-  fontFamily: 'Arial, sans-serif'
-}))
 </script>
 
 <style scoped>
@@ -908,8 +943,8 @@ const colorNameStyle = computed(() => ({
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.add-to-room-button:hover {
-  background-color: #29275B !important;
+.select-button:hover {
+  background-color: #1e1a4a !important;
 }
 
 .variant-button:hover {
@@ -940,6 +975,17 @@ const colorNameStyle = computed(() => ({
   text-decoration: underline !important;
 }
 
+/* Loading animations */
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
@@ -959,4 +1005,3 @@ const colorNameStyle = computed(() => ({
   background: #555;
 }
 </style>
-

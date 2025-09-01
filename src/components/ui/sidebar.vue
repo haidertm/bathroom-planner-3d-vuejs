@@ -282,6 +282,7 @@
 
     <ProductDrawer
         :is-open="isProductDrawerOpen"
+        v-bind="productDrawerProps"
         :selected-category="selectedCategory"
         :is-loading="isCategoryLoading(selectedCategory)"
         :loading-error="errorMessage"
@@ -301,8 +302,10 @@ import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
 
 // NEW: Import selective preloading functions
+import productData from '../../mocks/productData.js'
 import { preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
 import { CONFIG } from '../../constants/models.js'
+import { ModelManager } from '../../models/bathroomFixtures.js'
 
 // Define props
 const props = defineProps({
@@ -339,6 +342,12 @@ const props = defineProps({
     default: false
   }
 })
+// FIXED: Add missing reactive states
+const isTextureDrawerOpen = ref(false)
+const isFloorExpanded = ref(true)
+const isWallExpanded = ref(false)
+const isSidebarVisible = ref(false)
+const isButtonPressed = ref(false)
 
 // Define emits
 const emit = defineEmits([
@@ -487,87 +496,139 @@ const bathroomCategories = [
   }
 ]
 
+const loadingCategories = ref(new Set())
+const isLoading = ref(false)
+const errorMessage = ref('')
+const loadedProducts = ref(new Set())
+const loadedProductsCount = ref(0) // Force reactivity trigger
+const productLoadingStates = ref(new Map()) // Track loading state per product
+
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
 const isRoomSettingsExpanded = ref(false)
-const isTextureDrawerOpen = ref(false)
-const isFloorExpanded = ref(true)
-const isWallExpanded = ref(false)
-const isSidebarVisible = ref(false)
-const isButtonPressed = ref(false)
+
+const addLoadedProduct = (productId) => {
+  loadedProducts.value.add(productId)
+  loadedProductsCount.value = loadedProducts.value.size // Trigger reactivity
+  console.log(`✅ UI REACTIVE UPDATE - Product ${productId} added, total: ${loadedProductsCount.value}`)
+}
+
+// FIXED: Add missing helper functions
+const getProductsForCategory = (category) => {
+  return productData[category] || []
+}
 
 // Product drawer state
 const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
 // NEW: Selective preloading state
-const loadingCategories = ref(new Set())
-const isLoading = ref(false)
-const errorMessage = ref('')
 
 // Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
 const isInternalUpdate = ref(false)
 
+// FIXED: Get model paths for category
+const getCategoryModelPaths = (category) => {
+  const categoryModels = []
+
+  if (productData[category]) {
+    productData[category].forEach(product => {
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach(variant => {
+          if (variant.path && variant.sku) {
+            categoryModels.push({
+              name: variant.sku || variant.name,
+              path: variant.path,
+              scale: variant.scale || 1.0
+            })
+          }
+        })
+      }
+    })
+  }
+
+  return categoryModels
+}
+
 // NEW: Enhanced category click handler with selective preloading
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
 
-  // ALWAYS open the ProductDrawer immediately, regardless of loading state
   openProductDrawer(category)
 
-  // Skip if selective preload is disabled - proceed normally
-  if (!CONFIG?.selectivePreload) {
-    console.log('Selective preload disabled, proceeding normally...')
+  // Reset loading states
+  loadedProducts.value.clear()
+  productLoadingStates.value.clear()
+
+  if (!CONFIG?.selectivePreload || isCategoryPreloaded(category)) {
+    const categoryProducts = getProductsForCategory(category)
+    categoryProducts.forEach(product => {
+      loadedProducts.value.add(product.id)
+    })
     return
   }
 
-  // Skip if already preloaded - proceed normally
-  if (isCategoryPreloaded(category)) {
-    console.log(`${category} models already preloaded ✅`)
-    return
-  }
-
-  // Skip if currently loading
-  if (loadingCategories.value.has(category)) {
-    console.log(`${category} models are currently loading...`)
-    return
-  }
+  if (loadingCategories.value.has(category)) return
 
   try {
-    // Add to loading set
     loadingCategories.value.add(category)
     isLoading.value = true
-    errorMessage.value = ''
 
-    console.log(`🚀 Starting to preload ${category} models...`)
+    const categoryProducts = getProductsForCategory(category)
+    const categoryModels = getCategoryModelPaths(category)
 
-    // Emit loading started event
-    emit('loading-started', { category })
+    // Create a mapping of model names to product IDs
+    const modelToProductMap = new Map()
+    categoryProducts.forEach(product => {
+      if (product.variants) {
+        product.variants.forEach(variant => {
+          if (variant.sku || variant.name) {
+            modelToProductMap.set(variant.sku || variant.name, product.id)
+          }
+        })
+      }
+    })
 
-    // Preload models for this category
+    // Set up model loading listeners BEFORE starting preload
+    categoryModels.forEach(({ name }) => {
+      const productId = modelToProductMap.get(name)
+      if (productId) {
+        const checkModelLoaded = setInterval(() => {
+          if (ModelManager.getInstance().isModelLoaded(name)) {
+            clearInterval(checkModelLoaded)
+            // Use reactive helper instead of direct Set manipulation
+            addLoadedProduct(productId)
+            productLoadingStates.value.set(productId, 'loaded')
+            console.log(`✅ REACTIVE UPDATE - Product ${productId} now visible`)
+          }
+        }, 100)
+
+        setTimeout(() => clearInterval(checkModelLoaded), 30000)
+      }
+    })
+
+    // Start preloading
     await preloadCategoryModels(category)
 
-    console.log(`✅ ${category} models preloaded successfully!`)
-
-    // Emit loading finished event
-    emit('loading-finished', { category })
-
   } catch (error) {
-    const errorMsg = `Failed to load ${category} models`
-    console.error(`❌ ${errorMsg}:`, error)
-    errorMessage.value = errorMsg
-
-    // Emit error event
-    emit('loading-error', { category, error: errorMsg })
-
+    errorMessage.value = `Failed to load ${category} models`
   } finally {
-    // Remove from loading set
     loadingCategories.value.delete(category)
     isLoading.value = loadingCategories.value.size > 0
   }
 }
+
+// Pass the loading states to ProductDrawer
+const productDrawerProps = computed(() => ({
+  isOpen: isProductDrawerOpen.value,
+  selectedCategory: selectedCategory.value,
+  isLoading: isLoading.value,
+  loadingError: errorMessage.value,
+  loadedProducts: loadedProducts.value,
+  productLoadingStates: productLoadingStates.value
+}))
 
 // 2. ADD these new helper functions (don't replace existing ones):
 const retryLoadingCategory = () => {
