@@ -579,44 +579,52 @@ const handleCategoryClick = async (category) => {
     const categoryProducts = getProductsForCategory(category)
     const categoryModels = getCategoryModelPaths(category)
 
-    // Create a mapping of model names to product IDs
-    const modelToProductMap = new Map()
-    categoryProducts.forEach(product => {
-      if (product.variants) {
-        product.variants.forEach(variant => {
-          if (variant.sku || variant.name) {
-            modelToProductMap.set(variant.sku || variant.name, product.id)
-          }
+    const totalModels = categoryModels.length
+
+    // SIMPLIFIED: Add products progressively based on model loading progress
+    const checkProgress = setInterval(() => {
+      const cacheStatus = ModelManager.getInstance().getCacheStatus()
+      const currentCachedModels = cacheStatus.cachedModels
+
+      // Calculate how many products to show based on cache progress
+      const productsToShow = Math.floor((currentCachedModels / totalModels) * categoryProducts.length)
+
+      // Add products progressively
+      for (let i = loadedProducts.value.size; i < Math.min(productsToShow, categoryProducts.length); i++) {
+        const product = categoryProducts[i]
+        console.log(`Progressive: Adding product ${product.id} (${i + 1}/${categoryProducts.length})`)
+        addLoadedProduct(product.id)
+      }
+
+      // Check if all products are loaded
+      if (loadedProducts.value.size >= categoryProducts.length) {
+        console.log('Progressive loading complete!')
+        clearInterval(checkProgress)
+        isLoading.value = false
+        loadingCategories.value.delete(category)
+      }
+    }, 300)
+
+    // Safety timeout
+    setTimeout(() => {
+      clearInterval(checkProgress)
+      if (isLoading.value) {
+        console.log('Safety timeout - showing remaining products')
+        categoryProducts.forEach(product => {
+          addLoadedProduct(product.id)
         })
+        isLoading.value = false
+        loadingCategories.value.delete(category)
       }
-    })
-
-    // Set up model loading listeners BEFORE starting preload
-    categoryModels.forEach(({ name }) => {
-      const productId = modelToProductMap.get(name)
-      if (productId) {
-        const checkModelLoaded = setInterval(() => {
-          if (ModelManager.getInstance().isModelLoaded(name)) {
-            clearInterval(checkModelLoaded)
-            // Use reactive helper instead of direct Set manipulation
-            addLoadedProduct(productId)
-            productLoadingStates.value.set(productId, 'loaded')
-            console.log(`✅ REACTIVE UPDATE - Product ${productId} now visible`)
-          }
-        }, 100)
-
-        setTimeout(() => clearInterval(checkModelLoaded), 30000)
-      }
-    })
+    }, 5000)
 
     // Start preloading
     await preloadCategoryModels(category)
 
   } catch (error) {
     errorMessage.value = `Failed to load ${category} models`
-  } finally {
+    isLoading.value = false
     loadingCategories.value.delete(category)
-    isLoading.value = loadingCategories.value.size > 0
   }
 }
 
