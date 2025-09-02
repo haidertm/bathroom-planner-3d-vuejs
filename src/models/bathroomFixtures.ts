@@ -50,7 +50,11 @@ class ModelManager {
     // NEW: Register callback for when a specific model loads
     onModelLoaded(modelName: string, callback: Function): void {
         if (this.isModelLoaded(modelName)) {
-            callback();
+            try {
+                callback();
+            } catch (error) {
+                console.error(`Error in immediate model loaded callback for ${modelName}:`, error);
+            }
             return;
         }
 
@@ -165,11 +169,6 @@ class ModelManager {
             this.loadedModels.add(name);
             this.triggerModelLoadedCallbacks(name);
 
-            // Trigger any waiting callbacks
-            const callbacks = this.loadingCallbacks.get(name) || [];
-            callbacks.forEach(callback => callback());
-            this.loadingCallbacks.delete(name);
-
             return result;
         } catch (error) {
             console.error(`Failed to load model ${name}:`, error);
@@ -232,7 +231,7 @@ class ModelManager {
                 (error) => {
                     console.error(`❌ Error loading model ${modelName}:`, error);
                     delete this.loadingPromises[modelName];
-                   reject(new Error(`Failed to load model ${modelName}: ${error instanceof Error ? error.message : 'Unknown error'}`));
+                    reject(new Error(`Failed to load model ${modelName}: ${error instanceof Error ? error.message : String(error)}`));
                 }
             );
         });

@@ -1,4 +1,3 @@
-<!-- UnifiedProductDrawer.vue - Original design with progressive loading -->
 <template>
   <div>
     <!-- Product Drawer Overlay -->
@@ -224,7 +223,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { isMobile } from '../../utils/helpers.js'
-import productData from '../../mocks/productData.js'
+import productData from '../../mocks/productData'
 
 // Props
 const props = defineProps({
@@ -247,11 +246,13 @@ const props = defineProps({
   // NEW: Progressive loading props
   loadedProducts: {
     type: Set,
-    default: () => new Set()
+    default: () => new Set(),
+    validator: (value) => value instanceof Set
   },
   productLoadingStates: {
     type: Map,
-    default: () => new Map()
+    default: () => new Map(),
+    validator: (value) => value instanceof Map
   }
 })
 

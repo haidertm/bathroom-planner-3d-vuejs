@@ -281,11 +281,7 @@
     </div>
 
     <ProductDrawer
-        :is-open="isProductDrawerOpen"
         v-bind="productDrawerProps"
-        :selected-category="selectedCategory"
-        :is-loading="isCategoryLoading(selectedCategory)"
-        :loading-error="errorMessage"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
         @retry-loading="retryLoadingCategory"
@@ -303,9 +299,8 @@ import ProductDrawer from './ProductDrawer.vue'
 
 // NEW: Import selective preloading functions
 import productData from '../../mocks/productData.js'
-import { preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
-import { CONFIG } from '../../constants/models.js'
-import { ModelManager } from '../../models/bathroomFixtures.js'
+import { CONFIG } from '../../constants/models'
+import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
 
 // Define props
 const props = defineProps({
@@ -500,7 +495,7 @@ const loadingCategories = ref(new Set())
 const isLoading = ref(false)
 const errorMessage = ref('')
 const loadedProducts = ref(new Set())
-const loadedProductsCount = ref(0) // Force reactivity trigger
+const loadedProductsCount = computed(() => loadedProducts.value.size)
 const productLoadingStates = ref(new Map()) // Track loading state per product
 
 // Reactive state
@@ -509,7 +504,6 @@ const isRoomSettingsExpanded = ref(false)
 
 const addLoadedProduct = (productId) => {
   loadedProducts.value.add(productId)
-  loadedProductsCount.value = loadedProducts.value.size // Trigger reactivity
   console.log(`✅ UI REACTIVE UPDATE - Product ${productId} added, total: ${loadedProductsCount.value}`)
 }
 
