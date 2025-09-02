@@ -635,8 +635,10 @@ const handleCategoryClick = async (category) => {
       }
     }, 5000)
 
-    // Start preloading
-    await preloadCategoryModels(category)
+    await ModelManager.getInstance().preloadCategoryModels(category, (modelName) => {
+      const idx = categoryModels.findIndex(m => m.name === modelName)
+      if (idx !== -1 && idx < categoryProducts.length) addLoadedProduct(categoryProducts[idx].id)
+    })
 
   } catch (error) {
     errorMessage.value = `Failed to load ${category} models`
