@@ -364,16 +364,6 @@ class ModelBasedFixture {
   }
 }
 
-// NEW: Helper function to get model name for a product
-export function getModelNameForProduct(product: any): string {
-    // Try different possible model identifier fields
-    return product.modelName ||
-        product.model ||
-        product.name ||
-        product.id ||
-        `${product.name}-model`;
-}
-
 // Main export function with dynamic configuration
 export const createModel = async (
   type: ComponentType,
@@ -438,11 +428,6 @@ export const preloadCategoryModels = async (category: ComponentType): Promise<vo
 export const isCategoryPreloaded = (category: ComponentType): boolean => {
   const modelManager = ModelManager.getInstance();
   return modelManager.isCategoryPreloaded(category);
-};
-
-// Utility function to clear model cache
-export const clearModelCache = (): void => {
-  ModelManager.getInstance().clearCache();
 };
 
 // Get model cache status
