@@ -181,14 +181,18 @@ class ModelManager {
         // Return cached model if available
         if (this.cache[modelName]) {
             console.log(`🎯 Using cached model: ${modelName}`);
-            return this.cache[modelName].clone();
+            const cloned = this.cache[modelName].clone(true);
+            cloned.traverse(n => { if ((n as any).isMesh && (n as any).material) (n as any).material = Array.isArray((n as any).material) ? (n as any).material.map((m:any)=>m.clone()) : (n as any).material.clone(); });
+            return cloned;
         }
 
         // Return existing loading promise if already loading
         if (modelName in this.loadingPromises) {
             console.log(`⏳ Waiting for existing load: ${modelName}`);
             const loaded = await this.loadingPromises[modelName];
-            return loaded.clone();
+            const cloned = loaded.clone(true);
+            cloned.traverse(n => { if ((n as any).isMesh && (n as any).material) (n as any).material = Array.isArray((n as any).material) ? (n as any).material.map((m:any)=>m.clone()) : (n as any).material.clone(); });
+            return cloned;
         }
 
         // Create new loading promise
@@ -231,6 +235,8 @@ class ModelManager {
                 (error) => {
                     console.error(`❌ Error loading model ${modelName}:`, error);
                     delete this.loadingPromises[modelName];
+                    // Prevent memory leaks from hanging callbacks on failure
+                    this.loadingCallbacks.delete(modelName);
                     reject(new Error(`Failed to load model ${modelName}: ${error instanceof Error ? error.message : String(error)}`));
                 }
             );
@@ -238,7 +244,9 @@ class ModelManager {
 
         // Wait for loading to complete and return clone
         const loaded = await this.loadingPromises[modelName];
-        return loaded.clone();
+        const cloned = loaded.clone(true);
+        cloned.traverse(n => { if ((n as any).isMesh && (n as any).material) (n as any).material = Array.isArray((n as any).material) ? (n as any).material.map((m:any)=>m.clone()) : (n as any).material.clone(); });
+        return cloned;
     }
 
   // Optimize model for smooth rendering

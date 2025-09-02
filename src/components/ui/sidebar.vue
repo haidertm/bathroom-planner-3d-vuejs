@@ -290,7 +290,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
@@ -503,7 +503,11 @@ const isBathroomItemsExpanded = ref(true)
 const isRoomSettingsExpanded = ref(false)
 
 const addLoadedProduct = (productId) => {
-  loadedProducts.value.add(productId)
+  if (!loadedProducts.value.has(productId)) {
+    const next = new Set(loadedProducts.value)
+    next.add(productId)
+    loadedProducts.value = next
+  }
   console.log(`✅ UI REACTIVE UPDATE - Product ${productId} added, total: ${loadedProductsCount.value}`)
 }
 
@@ -517,6 +521,13 @@ const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
 // NEW: Selective preloading state
+let progressCheckIntervalId = null
+let safetyTimeoutId = null
+
+onBeforeUnmount(() => {
+  if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
+  if (safetyTimeoutId) { clearTimeout(safetyTimeoutId); safetyTimeoutId = null }
+})
 
 // Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
@@ -553,14 +564,15 @@ const handleCategoryClick = async (category) => {
   openProductDrawer(category)
 
   // Reset loading states
-  loadedProducts.value.clear()
-  productLoadingStates.value.clear()
+  loadedProducts.value = new Set()
+  productLoadingStates.value = new Map()
+
+  if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
+  if (safetyTimeoutId) { clearTimeout(safetyTimeoutId); safetyTimeoutId = null }
 
   if (!CONFIG?.selectivePreload || isCategoryPreloaded(category)) {
     const categoryProducts = getProductsForCategory(category)
-    categoryProducts.forEach(product => {
-      loadedProducts.value.add(product.id)
-    })
+    loadedProducts.value = new Set(categoryProducts.map(p => p.id))
     return
   }
 
@@ -569,14 +581,24 @@ const handleCategoryClick = async (category) => {
   try {
     loadingCategories.value.add(category)
     isLoading.value = true
+    emit('loading-started', category)
 
     const categoryProducts = getProductsForCategory(category)
     const categoryModels = getCategoryModelPaths(category)
 
     const totalModels = categoryModels.length
 
+        // If no models, show everything immediately
+    if (totalModels === 0) {
+      loadedProducts.value = new Set(categoryProducts.map(p => p.id))
+      isLoading.value = false
+      loadingCategories.value.delete(category)
+      emit('loading-finished', category)
+      return
+    }
+
     // SIMPLIFIED: Add products progressively based on model loading progress
-    const checkProgress = setInterval(() => {
+    progressCheckIntervalId = setInterval(() => {
       const cacheStatus = ModelManager.getInstance().getCacheStatus()
       const currentCachedModels = cacheStatus.cachedModels
 
@@ -593,22 +615,23 @@ const handleCategoryClick = async (category) => {
       // Check if all products are loaded
       if (loadedProducts.value.size >= categoryProducts.length) {
         console.log('Progressive loading complete!')
-        clearInterval(checkProgress)
+        clearInterval(progressCheckIntervalId)
+        progressCheckIntervalId = null
         isLoading.value = false
         loadingCategories.value.delete(category)
+        emit('loading-finished', category)
       }
     }, 300)
 
     // Safety timeout
-    setTimeout(() => {
-      clearInterval(checkProgress)
+      safetyTimeoutId = setTimeout(() => {
+        if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
       if (isLoading.value) {
         console.log('Safety timeout - showing remaining products')
-        categoryProducts.forEach(product => {
-          addLoadedProduct(product.id)
-        })
+        loadedProducts.value = new Set(categoryProducts.map(p => p.id))
         isLoading.value = false
         loadingCategories.value.delete(category)
+        emit('loading-finished', category)
       }
     }, 5000)
 
@@ -619,6 +642,7 @@ const handleCategoryClick = async (category) => {
     errorMessage.value = `Failed to load ${category} models`
     isLoading.value = false
     loadingCategories.value.delete(category)
+    emit('loading-error', category, error)
   }
 }
 
