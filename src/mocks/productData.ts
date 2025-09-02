@@ -379,6 +379,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1800x560mm-31063',
           path: '../../models/radiator/31063.glb',
           dimensions: { width: 65.8, height: 183.2, depth: 11.3 },
+          floorOffset: 61,
           sku: '31063',
           price: '255',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1800x560mm'
@@ -390,6 +391,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x350mm-31019',
           path: '../../models/radiator/31019.glb',
           dimensions: { width: 44.8, height: 163, depth: 11.3 },
+          floorOffset: 61,
           sku: '31019',
           price: '151',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x350mm'

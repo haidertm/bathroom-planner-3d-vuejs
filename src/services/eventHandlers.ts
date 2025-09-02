@@ -2121,7 +2121,6 @@ export class EventHandlers {
       maxY = Math.min(ceilingConstraint, configMaxY);
     }
     // If maxHeight is undefined or -1, use ceiling constraint only
-
     // Ensure min doesn't exceed max
     minY = Math.min(minY, maxY);
 
