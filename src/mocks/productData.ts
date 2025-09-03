@@ -343,7 +343,7 @@ const productData: ProductData = {
         { id: 'c1', name: 'Clear', color: '#f0f0f0' }
       ],
       features: ['LED Lighting', 'Touch Controls', 'Energy Efficient']
-    },
+    }
   ],
 
   Radiator: [

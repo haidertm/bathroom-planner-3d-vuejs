@@ -246,12 +246,13 @@ const props = defineProps({
   // NEW: Progressive loading props
   loadedProducts: {
     type: Set,
-    default: () => new Set(),
+    default: null,
     validator: (value) => value instanceof Set
   },
   failedProducts: {
     type: Set,
-    default: () => new Set()
+    default: null,
+    validator: (value) => value instanceof Set
   },
   productLoadingStates: {
     type: Map,
@@ -304,7 +305,7 @@ const getReadyProducts = () => {
 
   // If loading, show only products whose models have loaded
   return allProducts.filter(product => {
-    return props.loadedProducts.has(product.id)
+    return props.loadedProducts?.has(product.id) ?? false
   })
 }
 

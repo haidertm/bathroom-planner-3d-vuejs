@@ -18,6 +18,7 @@ interface LoadingPromise {
 }
 
 export type Position = [number, number, number];
+type ModelLoadedCallback = () => void;
 
 // Singleton model manager with dynamic loading
 class ModelManager {
@@ -29,7 +30,7 @@ class ModelManager {
   // NEW: Track which categories have been preloaded
   private preloadedCategories: Set<string> = new Set();
   private loadedModels: Set<string> = new Set(); // Track individual models
-  private loadingCallbacks: Map<string, Function[]> = new Map(); // Callbacks for when models load
+  private loadingCallbacks: Map<string, ModelLoadedCallback[]> = new Map(); // Callbacks for when models load
 
   private constructor () {
     this.loader = new GLTFLoader();
@@ -48,7 +49,7 @@ class ModelManager {
     }
 
     // NEW: Register callback for when a specific model loads
-    onModelLoaded(modelName: string, callback: Function): void {
+    onModelLoaded(modelName: string, callback: ModelLoadedCallback): void {
         if (this.isModelLoaded(modelName)) {
             try {
                 callback();
@@ -176,14 +177,25 @@ class ModelManager {
         }
     }
 
+     private cloneModelWithMaterials(model: THREE.Group): THREE.Group {
+      const cloned = model.clone(true);
+      cloned.traverse(node => {
+          const mesh = node as THREE.Mesh;
+          if (mesh.isMesh && mesh.material) {
+              mesh.material = Array.isArray(mesh.material)
+                  ? mesh.material.map(m => m.clone())
+                  : mesh.material.clone();
+          }
+      });
+      return cloned;
+  }
+
     // NEW: The actual model loading implementation
     private async performModelLoad(modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
         // Return cached model if available
         if (this.cache[modelName]) {
             console.log(`🎯 Using cached model: ${modelName}`);
-            const cloned = this.cache[modelName].clone(true);
-            cloned.traverse(n => { if ((n as any).isMesh && (n as any).material) (n as any).material = Array.isArray((n as any).material) ? (n as any).material.map((m:any)=>m.clone()) : (n as any).material.clone(); });
-            return cloned;
+            return this.cloneModelWithMaterials(this.cache[modelName]);
         }
 
         // Return existing loading promise if already loading

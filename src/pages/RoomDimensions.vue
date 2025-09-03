@@ -869,11 +869,13 @@ const setShapeBasedDefaults = () => {
 
       roomDimensions.width = shapeDefaults.width
       roomDimensions.height = shapeDefaults.height
-
-      console.log(`${selectedShape} shape detected - using default dimensions:`, {
-        width: shapeDefaults.width + 'cm',
-        height: shapeDefaults.height + 'cm'
-      })
+      try {
+        localStorage.removeItem('selected-room-shape')
+        console.log('✅ Shape selection consumed and removed from localStorage')
+      } catch (storageError) {
+        console.warn('Failed to remove selected-room-shape from localStorage:', storageError)
+        // Continue execution even if cleanup fails
+      }
 
       return true
     }
@@ -887,11 +889,6 @@ const setShapeBasedDefaults = () => {
 // Lifecycle hooks
 onMounted(() => {
 
-  const existingLoaded = loadExistingDimensions()
-
-  if (!existingLoaded) {
-    console.log('Using existing room dimensions from previous session')
-  } else {
     const shapeDefaultsApplied = setShapeBasedDefaults()
 
     if (shapeDefaultsApplied) {
@@ -905,7 +902,6 @@ onMounted(() => {
         height: ROOM_DEFAULTS.HEIGHT + 'cm'
       })
     }
-  }
 
   initCanvas()
   updateHandles()
