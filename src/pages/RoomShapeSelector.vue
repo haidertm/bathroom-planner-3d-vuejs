@@ -26,18 +26,18 @@
             <h3>Square</h3>
           </div>
 
-<!--          <div-->
-<!--              class="shape-card"-->
-<!--              @click="selectShape('rectangular')"-->
-<!--              :class="{ active: selectedShape === 'rectangular' }"-->
-<!--          >-->
-<!--            <div class="shape-icon">-->
-<!--              <svg width="80" height="80" viewBox="0 0 80 80">-->
-<!--                <rect x="10" y="20" width="60" height="40" fill="none" stroke="#29275B" stroke-width="3"/>-->
-<!--              </svg>-->
-<!--            </div>-->
-<!--            <h3>Rectangular</h3>-->
-<!--          </div>-->
+          <div
+              class="shape-card"
+              @click="selectShape('rectangular')"
+              :class="{ active: selectedShape === 'rectangular' }"
+          >
+            <div class="shape-icon">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <rect x="10" y="20" width="60" height="40" fill="none" stroke="#29275B" stroke-width="3"/>
+              </svg>
+            </div>
+            <h3>Rectangular</h3>
+          </div>
 
 <!--          <div-->
 <!--              class="shape-card"-->
