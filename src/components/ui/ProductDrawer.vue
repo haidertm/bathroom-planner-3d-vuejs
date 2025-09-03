@@ -256,9 +256,9 @@ const props = defineProps({
   },
   productLoadingStates: {
     type: Map,
-    default: () => new Map(),
+    default: null,
     validator: (value) => value instanceof Map
-  }
+  },
 })
 
 // Emits - ADD 'back' event for better control
@@ -306,7 +306,7 @@ const getLoadingProductCount = () => {
 
   const allProducts = getProductsForCategory(props.selectedCategory)
   const readyCount = readyProducts.value.length
-  const failedCount = props.failedProducts.size
+  const failedCount = props.failedProducts?.size ?? 0
 
   // NEW: Show skeletons for products that are still pending (not loaded AND not failed)
   const pendingCount = Math.max(0, allProducts.length - readyCount - failedCount)
