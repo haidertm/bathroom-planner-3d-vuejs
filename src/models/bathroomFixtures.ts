@@ -18,6 +18,7 @@ interface LoadingPromise {
 }
 
 export type Position = [number, number, number];
+type ModelLoadedCallback = () => void;
 
 // Singleton model manager with dynamic loading
 class ModelManager {
@@ -28,6 +29,8 @@ class ModelManager {
   private preloadComplete = false;
   // NEW: Track which categories have been preloaded
   private preloadedCategories: Set<string> = new Set();
+  private loadedModels: Set<string> = new Set(); // Track individual models
+  private loadingCallbacks: Map<string, ModelLoadedCallback[]> = new Map(); // Callbacks for when models load
 
   private constructor () {
     this.loader = new GLTFLoader();
@@ -40,60 +43,68 @@ class ModelManager {
     return ModelManager.instance;
   }
 
+    // NEW: Method to check if specific model is loaded
+    isModelLoaded(modelName: string): boolean {
+        return this.loadedModels.has(modelName);
+    }
+
+    // NEW: Register callback for when a specific model loads
+    onModelLoaded(modelName: string, callback: ModelLoadedCallback): void {
+        if (this.isModelLoaded(modelName)) {
+            try {
+                callback();
+            } catch (error) {
+                console.error(`Error in immediate model loaded callback for ${modelName}:`, error);
+            }
+            return;
+        }
+
+        if (!this.loadingCallbacks.has(modelName)) {
+            this.loadingCallbacks.set(modelName, []);
+        }
+        this.loadingCallbacks.get(modelName)!.push(callback);
+    }
+
   // NEW: Preload models for specific category only
-  async preloadCategoryModels (category: ComponentType): Promise<void> {
-    // Check if this category is already preloaded
-    if (this.preloadedCategories.has(category)) {
-      console.log(`✅ ${category} models already preloaded, skipping...`);
-      return;
+    async preloadCategoryModels(category: ComponentType, onModelLoaded?: (modelName: string) => void): Promise<void> {
+        if (this.preloadedCategories.has(category)) {
+            console.log(`✅ ${category} models already preloaded, skipping...`);
+            return;
+        }
+
+        console.log(`🚀 Starting selective preload for ${category} models...`);
+        const categoryModels = getCategoryModelPaths(category);
+
+        if (categoryModels.length === 0) {
+            console.warn(`⚠️ No models found for ${category} category`);
+            this.preloadedCategories.add(category);
+            return;
+        }
+
+        // Load models individually, don't wait for all to complete
+        const preloadPromises = categoryModels.map(async ({ name, path, scale }) => {
+            try {
+                const tempObjectModel: ObjectModel = { name, path, scale, dimensions: { width: 50, height: 50, depth: 50 } };
+
+                await this.loadModel(name, tempObjectModel);
+                console.log(`✅ Individual model loaded: ${name}`);
+
+                // Notify parent component that this specific model is ready
+                if (onModelLoaded) {
+                    onModelLoaded(name);
+                }
+
+            } catch (error) {
+                console.warn(`❌ Failed to load ${category} model: ${name}`, error);
+            }
+        });
+
+        // Wait for all attempts to complete (both success and failure)
+        await Promise.allSettled(preloadPromises);
+
+        this.preloadedCategories.add(category);
+        console.log(`🎉 ${category} preloading complete!`);
     }
-
-    console.log(`🚀 Starting selective preload for ${category} models...`);
-
-    // Get models only for the specific category
-    const categoryModels = getCategoryModelPaths(category);
-
-    if (categoryModels.length === 0) {
-      console.warn(`⚠️ No models found for ${category} category`);
-      this.preloadedCategories.add(category);
-      return;
-    }
-
-    console.log(`📦 Preloading ${categoryModels.length} ${category} models...`);
-
-    let loadedCount = 0;
-    let failedCount = 0;
-
-    const preloadPromises = categoryModels.map(async ({ name, path, scale }) => {
-      try {
-        const tempObjectModel: ObjectModel = {
-          name,
-          path,
-          scale,
-          dimensions: {
-            width: 50,
-            height: 50,
-            depth: 50
-          }
-        };
-
-        await this.loadModel(name, tempObjectModel);
-        loadedCount++;
-        console.log(`✅ Preloaded ${category}: ${name}`);
-      } catch (error) {
-        failedCount++;
-        console.warn(`❌ Failed to preload ${category}: ${name}`, error);
-      }
-    });
-
-    await Promise.all(preloadPromises);
-    if (failedCount === 0) {
-      this.preloadedCategories.add(category);
-      console.log(`🎉 ${category} preloading complete! All ${loadedCount} models loaded successfully`);
-    } else {
-      console.warn(`⚠️ ${category} preloading incomplete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
-    }
-  }
 
   // Existing preloadModels method (keep for backward compatibility)
   async preloadModels (): Promise<void> {
@@ -151,52 +162,104 @@ class ModelManager {
   }
 
   // Existing loadModel method
-  async loadModel (modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
-    // Return cached model if available
-    if (this.cache[modelName]) {
-      return this.cache[modelName].clone();
-    }
+    async loadModel(name: string, model: ObjectModel): Promise<THREE.Group> {
+        try {
+            const result = await this.performModelLoad(name, model);
 
-    // Return existing loading promise if already loading
-    if (modelName in this.loadingPromises) {
-      const loaded = await this.loadingPromises[modelName];
-      return loaded.clone();
-    }
+            // Mark as loaded and trigger callbacks
+            this.loadedModels.add(name);
+            this.triggerModelLoadedCallbacks(name);
 
-    this.loadingPromises[modelName] = new Promise((resolve, reject) => {
-      this.loader.load(
-        modelConfig.path,
-        (gltf) => {
-          const model = gltf.scene;
-          model.name = modelName;
-
-          // Apply scale
-          if (modelConfig.scale) {
-            model.scale.setScalar(modelConfig.scale);
-          }
-
-          // Optimize model for smooth rendering
-          this.optimizeModelForSmoothing(model);
-
-          this.cache[modelName] = model;
-          delete this.loadingPromises[modelName];
-          resolve(model);
-        },
-        (progress) => {
-          // Optional: Handle loading progress
-          console.log(`Loading ${modelName}: ${(progress.loaded / progress.total * 100)}%`);
-        },
-        (error) => {
-          console.error(`Error loading model ${modelName}:`, error);
-          delete this.loadingPromises[modelName];
-          reject(error);
+            return result;
+        } catch (error) {
+            console.error(`Failed to load model ${name}:`, error);
+            throw error;
         }
-      );
-    });
+    }
 
-    const loaded = await this.loadingPromises[modelName];
-    return loaded.clone();
+     private cloneModelWithMaterials(model: THREE.Group): THREE.Group {
+      const cloned = model.clone(true);
+      cloned.traverse(node => {
+          const mesh = node as THREE.Mesh;
+          if (mesh.isMesh && mesh.material) {
+              mesh.material = Array.isArray(mesh.material)
+                  ? mesh.material.map(m => m.clone())
+                  : mesh.material.clone();
+          }
+      });
+      return cloned;
   }
+
+    // NEW: The actual model loading implementation
+    private async performModelLoad(modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
+        // Return cached model if available
+        if (this.cache[modelName]) {
+            console.log(`🎯 Using cached model: ${modelName}`);
+            return this.cloneModelWithMaterials(this.cache[modelName]);
+        }
+
+        // Return existing loading promise if already loading
+        if (modelName in this.loadingPromises) {
+            console.log(`⏳ Waiting for existing load: ${modelName}`);
+            const loaded = await this.loadingPromises[modelName];
+            const cloned = loaded.clone(true);
+            cloned.traverse(n => { if ((n as any).isMesh && (n as any).material) (n as any).material = Array.isArray((n as any).material) ? (n as any).material.map((m:any)=>m.clone()) : (n as any).material.clone(); });
+            return cloned;
+        }
+
+        // Create new loading promise
+        this.loadingPromises[modelName] = new Promise((resolve, reject) => {
+            console.log(`📦 Starting to load model: ${modelName} from ${modelConfig.path}`);
+
+            this.loader.load(
+                modelConfig.path,
+                (gltf) => {
+                    console.log(`✅ GLTF loaded successfully: ${modelName}`);
+
+                    const model = gltf.scene;
+                    model.name = modelName;
+
+                    // Apply scale if provided
+                    if (modelConfig.scale) {
+                        model.scale.setScalar(modelConfig.scale);
+                        console.log(`🔧 Applied scale ${modelConfig.scale} to ${modelName}`);
+                    }
+
+                    // Optimize model for smooth rendering
+                    this.optimizeModelForSmoothing(model);
+
+                    // Cache the model
+                    this.cache[modelName] = model;
+
+                    // Clean up loading promise
+                    delete this.loadingPromises[modelName];
+
+                    console.log(`🎉 Model ${modelName} loaded and cached successfully`);
+                    resolve(model);
+                },
+                (progress) => {
+                    // Optional: Handle loading progress
+                    if (progress.lengthComputable) {
+                        const percentComplete = (progress.loaded / progress.total) * 100;
+                        console.log(`📈 Loading ${modelName}: ${percentComplete.toFixed(1)}%`);
+                    }
+                },
+                (error) => {
+                    console.error(`❌ Error loading model ${modelName}:`, error);
+                    delete this.loadingPromises[modelName];
+                    // Prevent memory leaks from hanging callbacks on failure
+                    this.loadingCallbacks.delete(modelName);
+                    reject(new Error(`Failed to load model ${modelName}: ${error instanceof Error ? error.message : String(error)}`));
+                }
+            );
+        });
+
+        // Wait for loading to complete and return clone
+        const loaded = await this.loadingPromises[modelName];
+        const cloned = loaded.clone(true);
+        cloned.traverse(n => { if ((n as any).isMesh && (n as any).material) (n as any).material = Array.isArray((n as any).material) ? (n as any).material.map((m:any)=>m.clone()) : (n as any).material.clone(); });
+        return cloned;
+    }
 
   // Optimize model for smooth rendering
   private optimizeModelForSmoothing (model: THREE.Group): void {
@@ -224,6 +287,19 @@ class ModelManager {
 
     console.log(`✅ Model processed for smooth rendering: ${model.name || 'unnamed'}`);
   }
+
+    // Add this to ModelManager class after the loadModel method:
+    private triggerModelLoadedCallbacks(modelName: string): void {
+        const callbacks = this.loadingCallbacks.get(modelName) || [];
+        callbacks.forEach(callback => {
+            try {
+                callback();
+            } catch (error) {
+                console.error(`Error in model loaded callback for ${modelName}:`, error);
+            }
+        });
+        this.loadingCallbacks.delete(modelName);
+    }
 
   // Optimize material properties
   private optimizeMaterial (material: THREE.Material): void {
@@ -373,11 +449,6 @@ export const isCategoryPreloaded = (category: ComponentType): boolean => {
   return modelManager.isCategoryPreloaded(category);
 };
 
-// Utility function to clear model cache
-export const clearModelCache = (): void => {
-  ModelManager.getInstance().clearCache();
-};
-
 // Get model cache status
 export const getModelCacheStatus = () => {
   return ModelManager.getInstance().getCacheStatus();
@@ -426,3 +497,4 @@ const getAllModelPathsFromProductData = (): ObjectModelWithCategory[] => {
 
 // Export configuration for external use
 export { isModelBased };
+export { ModelManager };

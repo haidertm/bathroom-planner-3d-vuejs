@@ -281,10 +281,7 @@
     </div>
 
     <ProductDrawer
-        :is-open="isProductDrawerOpen"
-        :selected-category="selectedCategory"
-        :is-loading="isCategoryLoading(selectedCategory)"
-        :loading-error="errorMessage"
+        v-bind="productDrawerProps"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
         @retry-loading="retryLoadingCategory"
@@ -293,7 +290,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
@@ -301,8 +298,9 @@ import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
 
 // NEW: Import selective preloading functions
-import { preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
-import { CONFIG } from '../../constants/models.js'
+import productData from '../../mocks/productData.js'
+import { CONFIG } from '../../constants/models'
+import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
 
 // Define props
 const props = defineProps({
@@ -339,6 +337,12 @@ const props = defineProps({
     default: false
   }
 })
+// FIXED: Add missing reactive states
+const isTextureDrawerOpen = ref(false)
+const isFloorExpanded = ref(true)
+const isWallExpanded = ref(false)
+const isSidebarVisible = ref(false)
+const isButtonPressed = ref(false)
 
 // Define emits
 const emit = defineEmits([
@@ -487,87 +491,191 @@ const bathroomCategories = [
   }
 ]
 
+const loadingCategories = ref(new Set())
+const isLoading = ref(false)
+const errorMessage = ref('')
+const loadedProducts = ref(new Set())
+const loadedProductsCount = computed(() => loadedProducts.value.size)
+const productLoadingStates = ref(new Map()) // Track loading state per product
+
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
 const isRoomSettingsExpanded = ref(false)
-const isTextureDrawerOpen = ref(false)
-const isFloorExpanded = ref(true)
-const isWallExpanded = ref(false)
-const isSidebarVisible = ref(false)
-const isButtonPressed = ref(false)
+
+const addLoadedProduct = (productId) => {
+  if (!loadedProducts.value.has(productId)) {
+    const next = new Set(loadedProducts.value)
+    next.add(productId)
+    loadedProducts.value = next
+  }
+  console.log(`✅ UI REACTIVE UPDATE - Product ${productId} added, total: ${loadedProductsCount.value}`)
+}
+
+// FIXED: Add missing helper functions
+const getProductsForCategory = (category) => {
+  return productData[category] || []
+}
 
 // Product drawer state
 const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
 // NEW: Selective preloading state
-const loadingCategories = ref(new Set())
-const isLoading = ref(false)
-const errorMessage = ref('')
+let progressCheckIntervalId = null
+let safetyTimeoutId = null
+
+onBeforeUnmount(() => {
+  if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
+  if (safetyTimeoutId) { clearTimeout(safetyTimeoutId); safetyTimeoutId = null }
+})
 
 // Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
 const isInternalUpdate = ref(false)
 
+// FIXED: Get model paths for category
+const getCategoryModelPaths = (category) => {
+  const categoryModels = []
+
+  if (productData[category]) {
+    productData[category].forEach(product => {
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach(variant => {
+          if (variant.path && variant.sku) {
+            categoryModels.push({
+              name: variant.sku || variant.name,
+              path: variant.path,
+              scale: variant.scale || 1.0
+            })
+          }
+        })
+      }
+    })
+  }
+
+  return categoryModels
+}
+
+const failedProducts = ref(new Set())
+
 // NEW: Enhanced category click handler with selective preloading
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
 
-  // ALWAYS open the ProductDrawer immediately, regardless of loading state
   openProductDrawer(category)
 
-  // Skip if selective preload is disabled - proceed normally
-  if (!CONFIG?.selectivePreload) {
-    console.log('Selective preload disabled, proceeding normally...')
+  // Reset loading states
+  loadedProducts.value = new Set()
+  productLoadingStates.value = new Map()
+  failedProducts.value = new Set() // NEW: Track failed products
+
+  if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
+
+  if (!CONFIG?.selectivePreload || isCategoryPreloaded(category)) {
+    const categoryProducts = getProductsForCategory(category)
+    loadedProducts.value = new Set(categoryProducts.map(p => p.id))
     return
   }
 
-  // Skip if already preloaded - proceed normally
-  if (isCategoryPreloaded(category)) {
-    console.log(`${category} models already preloaded ✅`)
-    return
-  }
-
-  // Skip if currently loading
-  if (loadingCategories.value.has(category)) {
-    console.log(`${category} models are currently loading...`)
-    return
-  }
+  if (loadingCategories.value.has(category)) return
 
   try {
-    // Add to loading set
     loadingCategories.value.add(category)
     isLoading.value = true
-    errorMessage.value = ''
+    emit('loading-started', category)
 
-    console.log(`🚀 Starting to preload ${category} models...`)
+    const categoryProducts = getProductsForCategory(category)
+    const categoryModels = getCategoryModelPaths(category)
 
-    // Emit loading started event
-    emit('loading-started', { category })
+    const totalModels = categoryModels.length
 
-    // Preload models for this category
-    await preloadCategoryModels(category)
+        // If no models, show everything immediately
+    if (totalModels === 0) {
+      loadedProducts.value = new Set(categoryProducts.map(p => p.id))
+      isLoading.value = false
+      loadingCategories.value.delete(category)
+      emit('loading-finished', category)
+      return
+    }
 
-    console.log(`✅ ${category} models preloaded successfully!`)
+    // NEW: Track completion state
+    let modelsProcessed = 0
+    let modelsSucceeded = 0
+    let modelsFailed = 0
 
-    // Emit loading finished event
-    emit('loading-finished', { category })
+    // MODIFIED: Progress check with completion tracking
+    progressCheckIntervalId = setInterval(() => {
+      const cacheStatus = ModelManager.getInstance().getCacheStatus()
+      const currentCachedModels = cacheStatus.cachedModels
+
+      // Calculate how many products to show based on SUCCESS progress only
+      const productsToShow = Math.floor((modelsSucceeded / totalModels) * categoryProducts.length)
+
+      // Add products progressively (only for successfully loaded models)
+      for (let i = loadedProducts.value.size; i < Math.min(productsToShow, categoryProducts.length); i++) {
+        const product = categoryProducts[i]
+        console.log(`Progressive: Adding product ${product.id} (${i + 1}/${categoryProducts.length})`)
+        addLoadedProduct(product.id)
+      }
+
+      // NEW: Check if all models have been processed (success + failure)
+      if (modelsProcessed >= totalModels) {
+        console.log(`Loading complete! Succeeded: ${modelsSucceeded}, Failed: ${modelsFailed}`)
+        clearInterval(progressCheckIntervalId)
+        progressCheckIntervalId = null
+        isLoading.value = false
+        loadingCategories.value.delete(category)
+        emit('loading-finished', category)
+      }
+    }, 300)
+
+    // MODIFIED: Enhanced model preloading with failure tracking
+    await ModelManager.getInstance().preloadCategoryModels(
+        category,
+        // Success callback
+        (modelName) => {
+          modelsSucceeded++
+          modelsProcessed++
+          const idx = categoryModels.findIndex(m => m.name === modelName)
+          if (idx !== -1 && idx < categoryProducts.length) {
+            addLoadedProduct(categoryProducts[idx].id)
+          }
+        },
+        // NEW: Failure callback
+        (modelName, error) => {
+          modelsFailed++
+          modelsProcessed++
+          console.warn(`Model ${modelName} failed to load:`, error)
+
+          // Find and mark product as failed (removes skeleton)
+          const idx = categoryModels.findIndex(m => m.name === modelName)
+          if (idx !== -1 && idx < categoryProducts.length) {
+            const productId = categoryProducts[idx].id
+            failedProducts.value.add(productId)
+            console.log(`❌ Marked product ${productId} as failed - skeleton removed`)
+          }
+        }
+    )
 
   } catch (error) {
-    const errorMsg = `Failed to load ${category} models`
-    console.error(`❌ ${errorMsg}:`, error)
-    errorMessage.value = errorMsg
-
-    // Emit error event
-    emit('loading-error', { category, error: errorMsg })
-
-  } finally {
-    // Remove from loading set
+    errorMessage.value = `Failed to load ${category} models`
+    isLoading.value = false
     loadingCategories.value.delete(category)
-    isLoading.value = loadingCategories.value.size > 0
+    emit('loading-error', category, error)
   }
 }
+
+// Pass the loading states to ProductDrawer
+const productDrawerProps = computed(() => ({
+  isOpen: isProductDrawerOpen.value,
+  selectedCategory: selectedCategory.value,
+  isLoading: isLoading.value,
+  loadingError: errorMessage.value,
+  loadedProducts: loadedProducts.value,
+  failedProducts: failedProducts.value,
+  productLoadingStates: productLoadingStates.value
+}))
 
 // 2. ADD these new helper functions (don't replace existing ones):
 const retryLoadingCategory = () => {

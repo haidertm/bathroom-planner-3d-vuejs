@@ -18,6 +18,25 @@ export const ROOM_DEFAULTS: RoomDefaults = {
   STEP: 10
 } as const;
 
+// Shape-specific default dimensions
+export type RoomShape = 'square' | 'rectangular';
+
+export interface ShapeDimensions {
+    readonly width: number;
+    readonly height: number;
+}
+
+export const SHAPE_DEFAULTS: Record<RoomShape, ShapeDimensions> = {
+    square: {
+        width: 300,   // 3m x 3m square room
+        height: 300
+    },
+    rectangular: {
+        width: 400,   // 5m x 2.5m rectangular room
+        height: 250
+    }
+} as const;
+
 export interface WallSettings {
   readonly HEIGHT: number;
   readonly THICKNESS: number;
@@ -71,6 +90,20 @@ export const MEASUREMENT_SETTINGS = {
   UPDATE_INTERVAL: 500       // Measurement update interval in ms
 } as const;
 
+// Helper function to get default dimensions for a shape
+export const getShapeDefaultDimensions = (shape: RoomShape | string): ShapeDimensions => {
+    if (shape === 'square' || shape === 'rectangular') {
+        console.log('>>> room shape default', SHAPE_DEFAULTS[shape]);
+        return SHAPE_DEFAULTS[shape];
+    }
+
+    // Fallback to general defaults
+    return {
+        width: ROOM_DEFAULTS.WIDTH,
+        height: ROOM_DEFAULTS.HEIGHT
+    };
+};
+
 // Storage utilities - localStorage stores in meters for consistency with existing data
 export const saveRoomDimensionsToStorage = (widthCm: number, heightCm: number): void => {
   try {
@@ -88,22 +121,22 @@ export const saveRoomDimensionsToStorage = (widthCm: number, heightCm: number): 
 };
 
 export const loadRoomDimensionsFromStorage = (): { width: number; height: number } | null => {
-  try {
-    const savedDimensions = localStorage.getItem('room-dimensions');
-    if (savedDimensions) {
-      const dimensions = JSON.parse(savedDimensions);
-      if (dimensions.width && dimensions.height) {
-        // Convert from meters (storage format) back to centimeters (app format)
-        const result = {
-          width: Math.round(dimensions.width * 100), // Convert meters to cm inline
-          height: Math.round(dimensions.height * 100) // Convert meters to cm inline
+    try {
+        const saved = localStorage.getItem('room-dimensions');
+        if (!saved) return null;
+
+        const parsed = JSON.parse(saved);
+
+        // Convert from meters back to centimeters for internal use
+        const dimensions = {
+            width: Math.round(parsed.width * 100), // Convert meters to cm
+            height: Math.round(parsed.height * 100) // Convert meters to cm
         };
-        console.log('Room dimensions loaded from localStorage and converted to CM:', result);
-        return result;
-      }
+
+        console.log('📂 Room dimensions loaded from localStorage (converted to cm):', dimensions);
+        return dimensions;
+    } catch (error) {
+        console.error('❌ Failed to load room dimensions:', error);
+        return null;
     }
-  } catch (error) {
-    console.warn('Failed to load room dimensions:', error);
-  }
-  return null;
 };
