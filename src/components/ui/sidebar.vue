@@ -557,6 +557,8 @@ const getCategoryModelPaths = (category) => {
   return categoryModels
 }
 
+const failedProducts = ref(new Set())
+
 // NEW: Enhanced category click handler with selective preloading
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
@@ -566,9 +568,9 @@ const handleCategoryClick = async (category) => {
   // Reset loading states
   loadedProducts.value = new Set()
   productLoadingStates.value = new Map()
+  failedProducts.value = new Set() // NEW: Track failed products
 
   if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
-  if (safetyTimeoutId) { clearTimeout(safetyTimeoutId); safetyTimeoutId = null }
 
   if (!CONFIG?.selectivePreload || isCategoryPreloaded(category)) {
     const categoryProducts = getProductsForCategory(category)
@@ -597,24 +599,29 @@ const handleCategoryClick = async (category) => {
       return
     }
 
-    // SIMPLIFIED: Add products progressively based on model loading progress
+    // NEW: Track completion state
+    let modelsProcessed = 0
+    let modelsSucceeded = 0
+    let modelsFailed = 0
+
+    // MODIFIED: Progress check with completion tracking
     progressCheckIntervalId = setInterval(() => {
       const cacheStatus = ModelManager.getInstance().getCacheStatus()
       const currentCachedModels = cacheStatus.cachedModels
 
-      // Calculate how many products to show based on cache progress
-      const productsToShow = Math.floor((currentCachedModels / totalModels) * categoryProducts.length)
+      // Calculate how many products to show based on SUCCESS progress only
+      const productsToShow = Math.floor((modelsSucceeded / totalModels) * categoryProducts.length)
 
-      // Add products progressively
+      // Add products progressively (only for successfully loaded models)
       for (let i = loadedProducts.value.size; i < Math.min(productsToShow, categoryProducts.length); i++) {
         const product = categoryProducts[i]
         console.log(`Progressive: Adding product ${product.id} (${i + 1}/${categoryProducts.length})`)
         addLoadedProduct(product.id)
       }
 
-      // Check if all products are loaded
-      if (loadedProducts.value.size >= categoryProducts.length) {
-        console.log('Progressive loading complete!')
+      // NEW: Check if all models have been processed (success + failure)
+      if (modelsProcessed >= totalModels) {
+        console.log(`Loading complete! Succeeded: ${modelsSucceeded}, Failed: ${modelsFailed}`)
         clearInterval(progressCheckIntervalId)
         progressCheckIntervalId = null
         isLoading.value = false
@@ -623,22 +630,33 @@ const handleCategoryClick = async (category) => {
       }
     }, 300)
 
-    // Safety timeout
-      safetyTimeoutId = setTimeout(() => {
-        if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
-      if (isLoading.value) {
-        console.log('Safety timeout - showing remaining products')
-        loadedProducts.value = new Set(categoryProducts.map(p => p.id))
-        isLoading.value = false
-        loadingCategories.value.delete(category)
-        emit('loading-finished', category)
-      }
-    }, 5000)
+    // MODIFIED: Enhanced model preloading with failure tracking
+    await ModelManager.getInstance().preloadCategoryModels(
+        category,
+        // Success callback
+        (modelName) => {
+          modelsSucceeded++
+          modelsProcessed++
+          const idx = categoryModels.findIndex(m => m.name === modelName)
+          if (idx !== -1 && idx < categoryProducts.length) {
+            addLoadedProduct(categoryProducts[idx].id)
+          }
+        },
+        // NEW: Failure callback
+        (modelName, error) => {
+          modelsFailed++
+          modelsProcessed++
+          console.warn(`Model ${modelName} failed to load:`, error)
 
-    await ModelManager.getInstance().preloadCategoryModels(category, (modelName) => {
-      const idx = categoryModels.findIndex(m => m.name === modelName)
-      if (idx !== -1 && idx < categoryProducts.length) addLoadedProduct(categoryProducts[idx].id)
-    })
+          // Find and mark product as failed (removes skeleton)
+          const idx = categoryModels.findIndex(m => m.name === modelName)
+          if (idx !== -1 && idx < categoryProducts.length) {
+            const productId = categoryProducts[idx].id
+            failedProducts.value.add(productId)
+            console.log(`❌ Marked product ${productId} as failed - skeleton removed`)
+          }
+        }
+    )
 
   } catch (error) {
     errorMessage.value = `Failed to load ${category} models`
@@ -655,6 +673,7 @@ const productDrawerProps = computed(() => ({
   isLoading: isLoading.value,
   loadingError: errorMessage.value,
   loadedProducts: loadedProducts.value,
+  failedProducts: failedProducts.value,
   productLoadingStates: productLoadingStates.value
 }))
 

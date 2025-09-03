@@ -98,11 +98,11 @@ class ModelManager {
             }
         });
 
-        // Don't wait for all - let them load individually
-        Promise.all(preloadPromises).then(() => {
-            this.preloadedCategories.add(category);
-            console.log(`🎉 ${category} preloading complete!`);
-        });
+        // Wait for all attempts to complete (both success and failure)
+        await Promise.allSettled(preloadPromises);
+
+        this.preloadedCategories.add(category);
+        console.log(`🎉 ${category} preloading complete!`);
     }
 
   // Existing preloadModels method (keep for backward compatibility)

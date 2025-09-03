@@ -72,7 +72,7 @@
 import {ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick} from 'vue'
 
 // Import the utility functions
-import { loadRoomDimensionsFromStorage, saveRoomDimensionsToStorage } from '../constants/dimensions'
+import { loadRoomDimensionsFromStorage, saveRoomDimensionsToStorage, getShapeDefaultDimensions } from '../constants/dimensions'
 import {useRouter} from 'vue-router'
 import {isMobile} from "../utils/helpers.js"
 import {ROOM_DEFAULTS} from '../constants/dimensions.js';
@@ -860,15 +860,51 @@ const loadExistingDimensions = () => {
   return false
 }
 
+const setShapeBasedDefaults = () => {
+  try {
+    const selectedShape = localStorage.getItem('selected-room-shape')
+
+    if (selectedShape && (selectedShape === 'square' || selectedShape === 'rectangular')) {
+      const shapeDefaults = getShapeDefaultDimensions(selectedShape)
+
+      roomDimensions.width = shapeDefaults.width
+      roomDimensions.height = shapeDefaults.height
+
+      console.log(`${selectedShape} shape detected - using default dimensions:`, {
+        width: shapeDefaults.width + 'cm',
+        height: shapeDefaults.height + 'cm'
+      })
+
+      return true
+    }
+  } catch (error) {
+    console.warn('Failed to load selected shape:', error)
+  }
+
+  return false
+}
+
 // Lifecycle hooks
 onMounted(() => {
 
   const existingLoaded = loadExistingDimensions()
 
-  if (existingLoaded) {
+  if (!existingLoaded) {
     console.log('Using existing room dimensions from previous session')
   } else {
-    console.log('Using default room dimensions')
+    const shapeDefaultsApplied = setShapeBasedDefaults()
+
+    if (shapeDefaultsApplied) {
+      console.log('Applied shape-specific default dimensions')
+    } else {
+      // Fall back to standard defaults
+      roomDimensions.width = ROOM_DEFAULTS.WIDTH  // 300cm
+      roomDimensions.height = ROOM_DEFAULTS.HEIGHT // 250cm
+      console.log('Using standard default room dimensions:', {
+        width: ROOM_DEFAULTS.WIDTH + 'cm',
+        height: ROOM_DEFAULTS.HEIGHT + 'cm'
+      })
+    }
   }
 
   initCanvas()

@@ -249,6 +249,10 @@ const props = defineProps({
     default: () => new Set(),
     validator: (value) => value instanceof Set
   },
+  failedProducts: {
+    type: Set,
+    default: () => new Set()
+  },
   productLoadingStates: {
     type: Map,
     default: () => new Map(),
@@ -309,10 +313,11 @@ const getLoadingProductCount = () => {
 
   const allProducts = getProductsForCategory(props.selectedCategory)
   const readyCount = getReadyProducts().length
+  const failedCount = props.failedProducts.size
 
-  // Show skeletons for products that haven't loaded yet (max 3 for UI)
-  const pendingCount = Math.max(0, allProducts.length - readyCount)
-  return Math.min(3, pendingCount)
+  // NEW: Show skeletons for products that are still pending (not loaded AND not failed)
+  const pendingCount = Math.max(0, allProducts.length - readyCount - failedCount)
+  return Math.min(3, pendingCount) // Still cap at 3 skeletons for UI
 }
 
 const isAnythingLoading = () => {
