@@ -54,7 +54,7 @@
 
         <!-- Show products that are ready (models loaded) -->
         <div
-            v-for="product in getReadyProducts()"
+            v-for="product in readyProducts"
             :key="product.id"
             :style="productCardStyle"
             class="product-card"
@@ -282,7 +282,7 @@ watch(() => props.isOpen, (isOpen) => {
 watch(() => selectedProduct.value, (newProduct) => {
   if (newProduct) {
     selectedVariant.value = newProduct.variants?.[0] || null
-    selectedColor.value = newProduct.colors?.[0] || null
+    selectedColor.value = newProduct.colors?.[0]?.id || null  // CORRECT: stores ID
   }
 })
 
@@ -295,25 +295,17 @@ const getProductsForCategory = (category) => {
   return productData[category] || []
 }
 
-const getReadyProducts = () => {
-  const allProducts = getProductsForCategory(props.selectedCategory)
-
-  // If not loading, show all products
-  if (!props.isLoading) {
-    return allProducts
-  }
-
-  // If loading, show only products whose models have loaded
-  return allProducts.filter(product => {
-    return props.loadedProducts?.has(product.id) ?? false
-  })
-}
+ const readyProducts = computed(() => {
+   const all = getProductsForCategory(props.selectedCategory)
+   if (!props.isLoading) return all
+   return all.filter(p => props.loadedProducts?.has(p.id) ?? false)
+ })
 
 const getLoadingProductCount = () => {
   if (!props.isLoading) return 0
 
   const allProducts = getProductsForCategory(props.selectedCategory)
-  const readyCount = getReadyProducts().length
+  const readyCount = readyProducts.value.length
   const failedCount = props.failedProducts.size
 
   // NEW: Show skeletons for products that are still pending (not loaded AND not failed)
@@ -450,12 +442,12 @@ const closeDrawer = () => {
 }
 
 // Dynamic styles methods for variants
-const getVariantButtonStyle = (variantId) => ({
+const getVariantButtonStyle = (variant) => ({
   padding: '12px 16px',
-  border: selectedVariant.value === variantId ? '2px solid #29275B' : '2px solid #e0e0e0',
+  border: selectedVariant.value === variant ? '2px solid #29275B' : '2px solid #e0e0e0',
   borderRadius: '6px',
-  backgroundColor: selectedVariant.value === variantId ? '#f0f8f0' : '#ffffff',
-  color: selectedVariant.value === variantId ? '#29275B' : '#333',
+  backgroundColor: selectedVariant.value === variant ? '#f0f8f0' : '#ffffff',
+  color: selectedVariant.value === variant ? '#29275B' : '#333',
   cursor: 'pointer',
   fontSize: '14px',
   fontWeight: '500',
