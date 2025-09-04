@@ -79,7 +79,15 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
     allowFreeRotation: false,
     minHeight: 0,
     maxHeight: 0
-  }
+  },
+
+  Plumbing: {
+    snapToWall: false,
+    allowVerticalMovement: false, // Floor-mounted only
+    allowFreeRotation: true,      // Can rotate
+    minHeight: 0,                 // Floor level
+    maxHeight: 0                  // No vertical movement
+  },
 };
 
 // ✅ NEW: Enhanced function to get movement config with proper hierarchy

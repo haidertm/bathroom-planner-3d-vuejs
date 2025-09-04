@@ -488,6 +488,37 @@ const bathroomCategories = [
       <!-- Drawer handle -->
       <circle cx="12" cy="14" r="0.3"/>
     </svg>`
+  },
+  {
+    id: 'plumbing',
+    label: 'Soil Pipe',
+    component: 'Plumbing',
+    icon: `<svg id="soil-pipe-icon" width="24" height="30" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Main pipe body -->
+                        <rect x="25" y="15" width="30" height="65" fill="#f0f0f0" stroke="#d0d0d0" stroke-width="2" rx="3"></rect>
+
+                        <!-- Inner hollow (darker) -->
+                        <rect x="30" y="15" width="20" height="65" fill="#e8e8e8" stroke="#c0c0c0" stroke-width="1" rx="2"></rect>
+
+                        <!-- Bottom connection -->
+                        <ellipse cx="40" cy="80" rx="15" ry="4" fill="#d0d0d0" stroke="#b0b0b0" stroke-width="1"></ellipse>
+
+                        <!-- Top cap -->
+                        <rect x="20" y="10" width="40" height="8" fill="#e0e0e0" stroke="#c0c0c0" stroke-width="2" rx="4"></rect>
+
+                        <!-- Screw holes in cap -->
+                        <circle cx="30" cy="14" r="2" fill="#999" stroke="#777" stroke-width="1"></circle>
+                        <circle cx="50" cy="14" r="2" fill="#999" stroke="#777" stroke-width="1"></circle>
+                        <circle cx="35" cy="14" r="1" fill="#666"></circle>
+                        <circle cx="45" cy="14" r="1" fill="#666"></circle>
+
+                        <!-- Side detail lines -->
+                        <line x1="25" y1="25" x2="55" y2="25" stroke="#c0c0c0" stroke-width="1" opacity="0.6"></line>
+                        <line x1="25" y1="70" x2="55" y2="70" stroke="#c0c0c0" stroke-width="1" opacity="0.6"></line>
+
+                        <!-- Label text -->
+                        <text x="40" y="92" text-anchor="middle" font-family="Arial" font-size="10" fill="#666">110mm</text>
+                    </svg>`
   }
 ]
 
