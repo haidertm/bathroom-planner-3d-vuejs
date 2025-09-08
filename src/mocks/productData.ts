@@ -812,7 +812,8 @@ const productData: ProductData = {
       features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
     }
   ],
-    Plumbing: [
+
+  Plumbing: [
         {
             id: 'soil_pipe_1',
             link: 'https://www.bathroommountain.co.uk/soil-pipe-connector',
@@ -844,6 +845,33 @@ const productData: ProductData = {
                     price: '89.99',
                     title: '110mm Soil Pipe Connector with Inspection Cap'
                 },
+                {
+                    id: 'corner_column_150',
+                    name: '150×150×2400mm',
+                    image: 'assets/productImages/plumbing/rectangularColumn.webp',
+                    path: '../../models/plumbing/rectangular_columnlatest.glb',
+                    link: 'https://www.bathroommountain.co.uk/150mm-corner-column-boxing-tile-ready',
+                    dimensions: {
+                       width: 25,    // 150mm = 25cm
+                       height: 50,  // 2400mm = 240cm
+                       depth: 25     // 150mm = 15cm
+                    },
+                    floorOffset: 0,
+                    spawnHeight: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 10, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'CC150X150',
+                    price: '45.99',
+                    title: '150mm Corner Column Boxing - Tile Ready'
+                }
             ],
             variantType: 'Size Options',
             colors: [
