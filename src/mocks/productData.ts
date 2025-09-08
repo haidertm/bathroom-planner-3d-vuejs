@@ -858,7 +858,7 @@ const productData: ProductData = {
                     spawnHeight: 0,
                     orientation: {
                         type: 'face_into_room',
-                        wallBuffer: 10, // Flush with wall - no gap
+                        wallBuffer: 10,
                         description: 'Item is part of wall opening'
                     },
                     movement: { // NEW: Sink movement configuration
