@@ -847,7 +847,7 @@ const productData: ProductData = {
                     id: 'corner_column_150',
                     name: '150×150×2400mm',
                     image: 'assets/productImages/plumbing/rectangularColumn.webp',
-                    path: '../../models/plumbing/rectangular_columnlatest.glb',
+                    path: '../../models/plumbing/rectangular_column.glb',
                     link: 'https://www.bathroommountain.co.uk/150mm-corner-column-boxing-tile-ready',
                     dimensions: {
                         width: 15,    // 150mm = 15cm
