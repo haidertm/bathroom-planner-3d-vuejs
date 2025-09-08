@@ -811,7 +811,73 @@ const productData: ProductData = {
       ],
       features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
     }
-  ]
+  ],
+
+  Plumbing: [
+        {
+            id: 'soil_pipe_1',
+            link: 'https://www.bathroommountain.co.uk/soil-pipe-connector',
+            name: 'Soil Pipe Connector',
+            price: '89.99',
+            image: 'assets/productImages/plumbing/soil-pipe-110mm.webp',
+            variants: [
+                {
+                    id: 'soil_pipe_110mm',
+                    name: '110mm Diameter',
+                    image: 'assets/productImages/plumbing/soil-pipe-110mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/soil-pipe-110mm-connector',
+                    path: '../../models/plumbing/soil-pipe-corrected.glb',
+                    dimensions: {
+                        width: 11, // 110mm diameter = ~11cm width
+                        height: 27.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11 // Same as width for circular pipe
+                    },
+                    floorOffset: 0, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    spawnHeight: 0, // ✅ CRITICAL: Set to 0 since GLB bottom is at Y=0
+                    movement: {
+                        snapToWall: false,
+                        allowVerticalMovement: false, // Keep on floor
+                        allowFreeRotation: true,
+                    },
+                    sku: 'SP110MM',
+                    price: '89.99',
+                    title: '110mm Soil Pipe Connector with Inspection Cap'
+                },
+                {
+                    id: 'corner_column_150',
+                    name: '150×150×2400mm',
+                    image: 'assets/productImages/plumbing/rectangularColumn.webp',
+                    path: '../../models/plumbing/rectangular_columnlatest.glb',
+                    link: 'https://www.bathroommountain.co.uk/150mm-corner-column-boxing-tile-ready',
+                    dimensions: {
+                        width: 15,    // 150mm = 15cm
+                        height: 240,  // 2400mm = 240cm
+                        depth: 15     // 150mm = 15cm
+                    },
+                    floorOffset: 0,
+                    spawnHeight: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 10,
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'CC150X150',
+                    price: '45.99',
+                    title: '150mm Corner Column Boxing - Tile Ready'
+                }
+            ],
+            variantType: 'Size Options',
+            colors: [
+                { id: 'c1', name: 'PVC White', color: '#f8f8f8' }
+            ],
+            features: ['110mm Standard Size', '4 Screw Mounting Holes', 'Inspection Cap', 'PVC Construction']
+        },
+    ]
 };
 
 export default productData;
