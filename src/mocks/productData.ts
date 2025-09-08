@@ -838,8 +838,6 @@ const productData: ProductData = {
                         snapToWall: false,
                         allowVerticalMovement: false, // Keep on floor
                         allowFreeRotation: true,
-                        minHeight: 0, // Floor level
-                        maxHeight: 0  // Don't allow vertical movement
                     },
                     sku: 'SP110MM',
                     price: '89.99',
@@ -852,9 +850,9 @@ const productData: ProductData = {
                     path: '../../models/plumbing/rectangular_columnlatest.glb',
                     link: 'https://www.bathroommountain.co.uk/150mm-corner-column-boxing-tile-ready',
                     dimensions: {
-                       width: 25,    // 150mm = 25cm
-                       height: 50,  // 2400mm = 240cm
-                       depth: 25     // 150mm = 15cm
+                        width: 15,    // 150mm = 15cm
+                        height: 240,  // 2400mm = 240cm
+                        depth: 15     // 150mm = 15cm
                     },
                     floorOffset: 0,
                     spawnHeight: 0,
@@ -875,7 +873,7 @@ const productData: ProductData = {
             ],
             variantType: 'Size Options',
             colors: [
-                { id: 'white', name: 'PVC White', color: '#f8f8f8' }
+                { id: 'c1', name: 'PVC White', color: '#f8f8f8' }
             ],
             features: ['110mm Standard Size', '4 Screw Mounting Holes', 'Inspection Cap', 'PVC Construction']
         },

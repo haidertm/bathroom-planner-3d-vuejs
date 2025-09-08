@@ -493,7 +493,7 @@ const bathroomCategories = [
     id: 'plumbing',
     label: 'Soil Pipe',
     component: 'Plumbing',
-    icon: `<svg id="soil-pipe-icon" width="24" height="30" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+    icon: `<svg id="soil-pipe-icon" width="24" height="24" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
                         <!-- Main pipe body -->
                         <rect x="25" y="15" width="30" height="65" fill="#f0f0f0" stroke="#d0d0d0" stroke-width="2" rx="3"></rect>
 
