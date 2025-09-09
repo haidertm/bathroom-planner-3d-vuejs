@@ -814,16 +814,16 @@ const productData: ProductData = {
 
     {
       id: 'toilet_variant_3',
-      link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
-      name: 'Portland Close Coupled Toilet With Soft Close Seat',
-      price: '209.99',
+      link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66228',
+      name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
+      price: '144.99',
       image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
       variants: [
         {
           id: 'C66228',
           name: 'Soft Close Seat',
           image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
-          link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-slim-seat-c66183',
+          link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66228',
           path: '../../models/toilet/C66228.glb',
           dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
           orientation: {
@@ -844,7 +844,7 @@ const productData: ProductData = {
           id: 'C66229',
               name: 'Soft Close Slim Seat',
               image: 'assets/productImages/toilet/c66229-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
-              link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-slim-seat-c66183',
+              link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66229',
               path: '../../models/toilet/C66229.glb',
               dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
               orientation: {
