@@ -242,6 +242,7 @@
 import { ref, computed, watch } from 'vue'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
+import { ModelManager } from '../../models/bathroomFixtures.ts'
 
 // Props
 const props = defineProps({
@@ -354,29 +355,73 @@ const selectVariant = async (variant) => {
   // Prevent multiple clicks while loading
   if (isVariantLoading.value) return
 
+  const variantKey = variant.id || variant.sku || variant.name
+
   // Start loading
   isVariantLoading.value = true
-  const variantKey = variant.id || variant.sku || variant.name
   variantLoadingStates.value.set(variantKey, true)
 
-  console.log('Loading variant...', variant)
+  console.log('🔄 Loading variant model...', variant)
+  console.log('📦 Model path:', variant.path)
 
   try {
-    // Simulate loading time (replace with your actual loading logic)
-    // This could be loading 3D models, fetching data, etc.
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // Get ModelManager instance
+    const modelManager = ModelManager.getInstance()
 
-    // Set the selected variant after loading
-    selectedVariant.value = variant
-    console.log('selectedVariant>>>', selectedVariant.value)
+    // Create model configuration object
+    const modelConfig = {
+      name: variant.sku || variant.name,
+      path: variant.path,
+      scale: variant.scale || 1.0,
+      dimensions: variant.dimensions
+    }
+
+    console.log('📦 Loading model with config:', modelConfig)
+
+    // Load the 3D model - this will trigger network request
+    const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
+
+    if (loadedModel) {
+      console.log('✅ Model loaded successfully:', variantKey)
+      console.log('📊 Model details:', {
+        name: loadedModel.name,
+        children: loadedModel.children.length,
+        position: loadedModel.position,
+        scale: loadedModel.scale
+      })
+
+      // Set the selected variant after successful loading
+      selectedVariant.value = variant
+
+      // Optional: You can also preview the model here if needed
+      // previewModel(loadedModel)
+
+    } else {
+      console.warn('⚠️ Model loading returned null for:', variantKey)
+      // Still set the variant even if model loading failed
+      selectedVariant.value = variant
+    }
 
   } catch (error) {
-    console.error('Failed to load variant:', error)
-    // Handle error state here if needed
+    console.error('❌ Failed to load variant model:', error)
+    console.error('📍 Error details:', {
+      variant: variantKey,
+      path: variant.path,
+      errorMessage: error.message
+    })
+
+    // Still set the variant even if model loading failed
+    selectedVariant.value = variant
+
+    // You could show an error message to user here
+    // showErrorMessage(`Failed to load ${variant.name}`)
+
   } finally {
     // Stop loading
     isVariantLoading.value = false
     variantLoadingStates.value.set(variantKey, false)
+
+    console.log('🏁 Variant selection complete for:', variantKey)
   }
 }
 
