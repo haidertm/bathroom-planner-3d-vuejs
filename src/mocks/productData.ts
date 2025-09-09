@@ -810,7 +810,64 @@ const productData: ProductData = {
         { id: 'c1', name: 'Gloss White', color: '#ffffff' }
       ],
       features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-    }
+    },
+
+    {
+      id: 'toilet_variant_3',
+      link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
+      name: 'Portland Close Coupled Toilet With Soft Close Seat',
+      price: '209.99',
+      image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+      variants: [
+        {
+          id: 'C66228',
+          name: 'Soft Close Seat',
+          image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+          link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-slim-seat-c66183',
+          path: '../../models/toilet/C66228.glb',
+          dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C66228',
+          price: '144.99',
+          title: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat'
+        },
+        {
+          id: 'C66229',
+              name: 'Soft Close Slim Seat',
+              image: 'assets/productImages/toilet/c66229-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+              link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-slim-seat-c66183',
+              path: '../../models/toilet/C66229.glb',
+              dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              movement: { // NEW: Sink movement configuration
+                  snapToWall: true,
+                  allowVerticalMovement: false,
+                  allowFreeRotation: false
+              },
+              sku: 'C66229',
+              price: '115.00',
+              title: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
+          },
+      ],
+      variantType: 'Style Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#000000' }
+      ],
+      features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+    },
   ],
 
   Plumbing: [
