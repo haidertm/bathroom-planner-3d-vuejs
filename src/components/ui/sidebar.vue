@@ -594,107 +594,28 @@ const failedProducts = ref(new Set())
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
 
+  // Simply open the product drawer without any progressive loading
   openProductDrawer(category)
 
-  // Reset loading states
+  // Clear any existing loading states
   loadedProducts.value = new Set()
   productLoadingStates.value = new Map()
-  failedProducts.value = new Set() // NEW: Track failed products
+  failedProducts.value = new Set()
 
-  if (progressCheckIntervalId) { clearInterval(progressCheckIntervalId); progressCheckIntervalId = null }
-
-  if (!CONFIG?.selectivePreload || isCategoryPreloaded(category)) {
-    const categoryProducts = getProductsForCategory(category)
-    loadedProducts.value = new Set(categoryProducts.map(p => p.id))
-    return
+  // Clear any running intervals
+  if (progressCheckIntervalId) {
+    clearInterval(progressCheckIntervalId)
+    progressCheckIntervalId = null
   }
 
-  if (loadingCategories.value.has(category)) return
+  // Set all products as loaded immediately (no progressive loading)
+  const categoryProducts = getProductsForCategory(category)
+  loadedProducts.value = new Set(categoryProducts.map(p => p.id))
 
-  try {
-    loadingCategories.value.add(category)
-    isLoading.value = true
-    emit('loading-started', category)
+  // No longer loading
+  isLoading.value = false
 
-    const categoryProducts = getProductsForCategory(category)
-    const categoryModels = getCategoryModelPaths(category)
-
-    const totalModels = categoryModels.length
-
-        // If no models, show everything immediately
-    if (totalModels === 0) {
-      loadedProducts.value = new Set(categoryProducts.map(p => p.id))
-      isLoading.value = false
-      loadingCategories.value.delete(category)
-      emit('loading-finished', category)
-      return
-    }
-
-    // NEW: Track completion state
-    let modelsProcessed = 0
-    let modelsSucceeded = 0
-    let modelsFailed = 0
-
-    // MODIFIED: Progress check with completion tracking
-    progressCheckIntervalId = setInterval(() => {
-      const cacheStatus = ModelManager.getInstance().getCacheStatus()
-      const currentCachedModels = cacheStatus.cachedModels
-
-      // Calculate how many products to show based on SUCCESS progress only
-      const productsToShow = Math.floor((modelsSucceeded / totalModels) * categoryProducts.length)
-
-      // Add products progressively (only for successfully loaded models)
-      for (let i = loadedProducts.value.size; i < Math.min(productsToShow, categoryProducts.length); i++) {
-        const product = categoryProducts[i]
-        console.log(`Progressive: Adding product ${product.id} (${i + 1}/${categoryProducts.length})`)
-        addLoadedProduct(product.id)
-      }
-
-      // NEW: Check if all models have been processed (success + failure)
-      if (modelsProcessed >= totalModels) {
-        console.log(`Loading complete! Succeeded: ${modelsSucceeded}, Failed: ${modelsFailed}`)
-        clearInterval(progressCheckIntervalId)
-        progressCheckIntervalId = null
-        isLoading.value = false
-        loadingCategories.value.delete(category)
-        emit('loading-finished', category)
-      }
-    }, 300)
-
-    // MODIFIED: Enhanced model preloading with failure tracking
-    await ModelManager.getInstance().preloadCategoryModels(
-        category,
-        // Success callback
-        (modelName) => {
-          modelsSucceeded++
-          modelsProcessed++
-          const idx = categoryModels.findIndex(m => m.name === modelName)
-          if (idx !== -1 && idx < categoryProducts.length) {
-            addLoadedProduct(categoryProducts[idx].id)
-          }
-        },
-        // NEW: Failure callback
-        (modelName, error) => {
-          modelsFailed++
-          modelsProcessed++
-          console.warn(`Model ${modelName} failed to load:`, error)
-
-          // Find and mark product as failed (removes skeleton)
-          const idx = categoryModels.findIndex(m => m.name === modelName)
-          if (idx !== -1 && idx < categoryProducts.length) {
-            const productId = categoryProducts[idx].id
-            failedProducts.value.add(productId)
-            console.log(`❌ Marked product ${productId} as failed - skeleton removed`)
-          }
-        }
-    )
-
-  } catch (error) {
-    errorMessage.value = `Failed to load ${category} models`
-    isLoading.value = false
-    loadingCategories.value.delete(category)
-    emit('loading-error', category, error)
-  }
+  console.log(`✅ All ${categoryProducts.length} products in ${category} ready immediately`)
 }
 
 // Pass the loading states to ProductDrawer
@@ -703,9 +624,6 @@ const productDrawerProps = computed(() => ({
   selectedCategory: selectedCategory.value,
   isLoading: isLoading.value,
   loadingError: errorMessage.value,
-  loadedProducts: loadedProducts.value,
-  failedProducts: failedProducts.value,
-  productLoadingStates: productLoadingStates.value
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):
