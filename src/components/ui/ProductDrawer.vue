@@ -139,13 +139,31 @@
           <div :style="variantOptionsStyle">
             <button
                 v-for="(variant, index) in selectedProduct.variants"
-                :key="`variant-`+index"
+                :key="`variant-${index}`"
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
+                :disabled="isVariantLoadingState(variant) || isVariantLoading"
                 class="variant-button"
             >
-              {{ variant.name }}
+              <div
+                  v-if="isVariantLoadingState(variant)"
+                  :style="variantSpinnerStyle"
+                  class="variant-spinner"
+              ></div>
+
+              <span :style="{ opacity: isVariantLoadingState(variant) ? 0 : 1 }">
+        {{ variant.name }}
+      </span>
             </button>
+          </div>
+
+          <div
+              v-if="isVariantLoading"
+              :style="variantLoadingIndicatorStyle"
+              class="variant-loading-indicator"
+          >
+            <div :style="loadingSpinnerStyle"></div>
+            <span>Loading variant options...</span>
           </div>
         </div>
 
@@ -270,6 +288,9 @@ const selectedProduct = ref(null)
 const selectedVariant = ref('')
 const selectedColor = ref('')
 
+const variantLoadingStates = ref(new Map()) // Track loading state per variant
+const isVariantLoading = ref(false) // General variant loading state
+
 // Reset view when drawer opens/closes
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
@@ -329,9 +350,39 @@ const goBackToProductList = () => {
   selectedProduct.value = null
 }
 
-const selectVariant = (variantId) => {
-  selectedVariant.value = variantId
-  console.log('selectedVariant>>>', selectedVariant.value);
+const selectVariant = async (variant) => {
+  // Prevent multiple clicks while loading
+  if (isVariantLoading.value) return
+
+  // Start loading
+  isVariantLoading.value = true
+  const variantKey = variant.id || variant.sku || variant.name
+  variantLoadingStates.value.set(variantKey, true)
+
+  console.log('Loading variant...', variant)
+
+  try {
+    // Simulate loading time (replace with your actual loading logic)
+    // This could be loading 3D models, fetching data, etc.
+    await new Promise(resolve => setTimeout(resolve, 1500))
+
+    // Set the selected variant after loading
+    selectedVariant.value = variant
+    console.log('selectedVariant>>>', selectedVariant.value)
+
+  } catch (error) {
+    console.error('Failed to load variant:', error)
+    // Handle error state here if needed
+  } finally {
+    // Stop loading
+    isVariantLoading.value = false
+    variantLoadingStates.value.set(variantKey, false)
+  }
+}
+
+const isVariantLoadingState = (variant) => {
+  const variantKey = variant.id || variant.sku || variant.name
+  return variantLoadingStates.value.get(variantKey) || false
 }
 
 // New display functions for variants
@@ -442,19 +493,59 @@ const closeDrawer = () => {
 }
 
 // Dynamic styles methods for variants
-const getVariantButtonStyle = (variant) => ({
-  padding: '12px 16px',
-  border: selectedVariant.value === variant ? '2px solid #29275B' : '2px solid #e0e0e0',
+const getVariantButtonStyle = (variant) => {
+  const isSelected = selectedVariant.value === variant
+  const isLoading = isVariantLoadingState(variant)
+
+  return {
+    padding: '12px 16px',
+    border: isSelected ? '2px solid #29275B' : '2px solid #e0e0e0',
+    borderRadius: '6px',
+    backgroundColor: isSelected ? '#f0f8f0' : '#ffffff',
+    color: isSelected ? '#29275B' : '#333',
+    cursor: isLoading || isVariantLoading.value ? 'not-allowed' : 'pointer',
+    fontSize: '14px',
+    fontWeight: '500',
+    transition: 'all 0.2s ease',
+    opacity: isLoading ? 0.7 : 1,
+    position: 'relative',
+    overflow: 'hidden',
+    fontFamily: 'Arial, sans-serif',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '44px',
+    minWidth: '60px'
+  }
+}
+
+const variantSpinnerStyle = computed(() => ({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '16px',
+  height: '16px',
+  border: '2px solid #f3f3f3',
+  borderTop: '2px solid #29275B',
+  borderRadius: '50%',
+  animation: 'variant-spin 1s linear infinite',
+  zIndex: 1
+}))
+
+const variantLoadingIndicatorStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  padding: '12px',
+  backgroundColor: '#f8f9fa',
   borderRadius: '6px',
-  backgroundColor: selectedVariant.value === variant ? '#f0f8f0' : '#ffffff',
-  color: selectedVariant.value === variant ? '#29275B' : '#333',
-  cursor: 'pointer',
+  border: '1px solid #e9ecef',
+  color: '#666',
   fontSize: '14px',
-  fontWeight: '500',
-  transition: 'all 0.2s ease',
-  textAlign: 'left',
-  fontFamily: 'Arial, sans-serif'
-})
+  marginTop: '12px'
+}))
 
 const getColorSwatchStyle = (color) => ({
   display: 'flex',
