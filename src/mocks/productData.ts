@@ -185,7 +185,7 @@ const productData: ProductData = {
           },
             movement: {
                 snapToWall: true,
-                allowVerticalMovement: false, // Vertical placement allowed (0..ceiling)
+                allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
                 allowFreeRotation: false,
                 minHeight: 10, // Minimum height from floor
                 maxHeight: 10
@@ -245,7 +245,7 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          sku: 'C76304',
+          sku: 'C76305',
           price: '287.00',
           title: 'Bermuda Chalk White Basin Vanity 800mm'
         },
@@ -295,7 +295,7 @@ const productData: ProductData = {
           },
           sku: 'C76472',
           price: '159.00',
-          title: 'Avon Gloss White Basin Vanity 500mm\n'
+          title: 'Avon Gloss White Basin Vanity 500mm'
         },
         {
           id: 'C76476',
@@ -343,7 +343,7 @@ const productData: ProductData = {
           },
           sku: 'C76349',
           price: '359.00',
-          title: 'Lucia Chalk White Basin Vanity 630mm\n'
+          title: 'Lucia Chalk White Basin Vanity 630mm'
         },
       ],
       variantType: 'Width Options',
@@ -653,6 +653,13 @@ const productData: ProductData = {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: true,
+            allowFreeRotation: false,
+            minHeight: 0,
+            maxHeight: 100
           },
           sku: '31022',
           price: '289.99',
@@ -1248,7 +1255,7 @@ const productData: ProductData = {
                   name: 'Soft Close Slim Seat',
                   image: 'assets/productImages/toilet/C66241-1000-Dallas-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
                   link: 'https://www.bathroommountain.co.uk/manhattan-slimline-560-depth-close-coupled-toilet-with-soft-close-seat-c66241',
-                  path: '../../models/toilet/C66031.glb',
+                  path: '../../models/toilet/C66241.glb',
                   dimensions: { width: 36, height: 79.6, depth: 55.8 },
                   orientation: {
                       type: 'face_into_room',
@@ -1330,62 +1337,6 @@ const productData: ProductData = {
       },
     {
           id: 'toilet_variant_7',
-          link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
-          name: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat',
-          price: '199.99',
-          image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
-          variants: [
-              {
-                  id: 'C66042V2',
-                  name: 'Fully Back To Wall',
-                  image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
-                  path: '../../models/toilet/C66042V2.glb',
-                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66042V2',
-                  price: '119.00',
-                  title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat'
-              },
-              {
-                  id: 'C66226',
-                  name: 'Comfort Height With Soft Close Seat',
-                  image: 'assets/productImages/toilet/C66226-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-seat-c66226',
-                  path: '../../models/toilet/C66226.glb',
-                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66226',
-                  price: '183.00',
-                  title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_8',
           link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66230',
           name: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
           price: '115.00',
@@ -1441,7 +1392,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_9',
+          id: 'toilet_variant_8',
           link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
           name: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat',
           price: '149.99',
@@ -1476,7 +1427,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_10',
+          id: 'toilet_variant_9',
           link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
           name: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat',
           price: '169.99',
@@ -1511,7 +1462,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_11',
+          id: 'toilet_variant_10',
           link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66247',
           name: 'Dallas Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
           price: '143.00',
@@ -1567,7 +1518,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_12',
+          id: 'toilet_variant_11',
           link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66181',
           name: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat',
           price: '143.00',
@@ -1602,7 +1553,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_13',
+          id: 'toilet_variant_12',
           link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-seat-c66131',
           name: 'Orlando Close Coupled Toilet With Soft Close Seat',
           price: '127.00',

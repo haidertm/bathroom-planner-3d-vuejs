@@ -139,7 +139,7 @@
           <div :style="variantOptionsStyle">
             <button
                 v-for="(variant, index) in selectedProduct.variants"
-                :key="`variant-${index}`"
+                :key="variant.id || variant.sku || variant.name || index"
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
                 :disabled="isVariantLoadingState(variant) || isVariantLoading"
@@ -248,7 +248,7 @@
 import { ref, computed, watch } from 'vue'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
-import { ModelManager } from '../../models/bathroomFixtures.ts'
+import { ModelManager } from '../../models/bathroomFixtures'
 
 // Props
 const props = defineProps({
@@ -583,16 +583,6 @@ const getProgressBarStyle = (variant) => {
     transition: 'width 0.3s ease',
     position: 'relative',
     overflow: 'hidden',
-    '::after': {
-      content: '""',
-      position: 'absolute',
-      top: '0',
-      left: '0',
-      right: '0',
-      bottom: '0',
-      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
-      animation: 'shimmer 1.5s infinite'
-    }
   }
 }
 
@@ -1208,21 +1198,5 @@ const confirmAddButtonStyle = computed(() => ({
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.progress-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: shimmer 1.5s infinite;
 }
 </style>
