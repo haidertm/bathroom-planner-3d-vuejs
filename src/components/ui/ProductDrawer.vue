@@ -145,15 +145,21 @@
                 :disabled="isVariantLoadingState(variant) || isVariantLoading"
                 class="variant-button"
             >
+    <span :style="{ opacity: isVariantLoadingState(variant) ? 0.7 : 1 }">
+        {{ variant.name }}
+    </span>
+
+              <!-- Progress Bar Container -->
               <div
                   v-if="isVariantLoadingState(variant)"
-                  :style="variantSpinnerStyle"
-                  class="variant-spinner"
-              ></div>
-
-              <span :style="{ opacity: isVariantLoadingState(variant) ? 0 : 1 }">
-        {{ variant.name }}
-      </span>
+                  :style="progressContainerStyle"
+                  class="progress-container"
+              >
+                <div
+                    :style="getProgressBarStyle(variant)"
+                    class="progress-bar"
+                ></div>
+              </div>
             </button>
           </div>
 
@@ -292,6 +298,8 @@ const selectedColor = ref('')
 const variantLoadingStates = ref(new Map()) // Track loading state per variant
 const isVariantLoading = ref(false) // General variant loading state
 
+const variantProgress = ref(new Map()) // Track progress for each variant
+
 // Reset view when drawer opens/closes
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
@@ -361,8 +369,21 @@ const selectVariant = async (variant) => {
   isVariantLoading.value = true
   variantLoadingStates.value.set(variantKey, true)
 
+  // Initialize progress
+  variantProgress.value.set(variantKey, 0)
+
   console.log('🔄 Loading variant model...', variant)
   console.log('📦 Model path:', variant.path)
+
+  // Simulate progress updates
+  const progressInterval = setInterval(() => {
+    const currentProgress = variantProgress.value.get(variantKey) || 0
+    if (currentProgress < 90) { // Don't go to 100% until actually loaded
+      const increment = Math.random() * 15 + 5 // Random increment between 5-20%
+      const newProgress = Math.min(90, currentProgress + increment)
+      variantProgress.value.set(variantKey, newProgress)
+    }
+  }, 200)
 
   try {
     // Get ModelManager instance
@@ -389,6 +410,9 @@ const selectVariant = async (variant) => {
         position: loadedModel.position,
         scale: loadedModel.scale
       })
+
+      // Complete progress
+      variantProgress.value.set(variantKey, 100)
 
       // Set the selected variant after successful loading
       selectedVariant.value = variant
@@ -417,9 +441,19 @@ const selectVariant = async (variant) => {
     // showErrorMessage(`Failed to load ${variant.name}`)
 
   } finally {
-    // Stop loading
-    isVariantLoading.value = false
-    variantLoadingStates.value.set(variantKey, false)
+    // Clear progress interval
+    clearInterval(progressInterval)
+
+    // Complete progress and clean up after a short delay
+    setTimeout(() => {
+      variantProgress.value.set(variantKey, 100)
+      setTimeout(() => {
+        // Stop loading
+        isVariantLoading.value = false
+        variantLoadingStates.value.set(variantKey, false)
+        variantProgress.value.delete(variantKey)
+      }, 300) // Small delay to show 100% completion
+    }, 100)
 
     console.log('🏁 Variant selection complete for:', variantKey)
   }
@@ -537,6 +571,42 @@ const closeDrawer = () => {
   emit('close')
 }
 
+const getProgressBarStyle = (variant) => {
+  const variantKey = variant.id || variant.sku || variant.name
+  const progress = variantProgress.value.get(variantKey) || 0
+
+  return {
+    height: '100%',
+    background: 'linear-gradient(90deg, #4CAF50, #45a049)',
+    borderRadius: '0 0 4px 4px',
+    width: `${progress}%`,
+    transition: 'width 0.3s ease',
+    position: 'relative',
+    overflow: 'hidden',
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent)',
+      animation: 'shimmer 1.5s infinite'
+    }
+  }
+}
+
+const progressContainerStyle = computed(() => ({
+  position: 'absolute',
+  bottom: '0',
+  left: '0',
+  right: '0',
+  height: '3px',
+  backgroundColor: 'rgba(41, 39, 91, 0.1)',
+  borderRadius: '0 0 4px 4px',
+  overflow: 'hidden'
+}))
+
 // Dynamic styles methods for variants
 const getVariantButtonStyle = (variant) => {
   const isSelected = selectedVariant.value === variant
@@ -552,7 +622,7 @@ const getVariantButtonStyle = (variant) => {
     fontSize: '14px',
     fontWeight: '500',
     transition: 'all 0.2s ease',
-    opacity: isLoading ? 0.7 : 1,
+    opacity: isLoading ? 0.8 : 1, // Slightly less opacity when loading
     position: 'relative',
     overflow: 'hidden',
     fontFamily: 'Arial, sans-serif',
@@ -1138,5 +1208,21 @@ const confirmAddButtonStyle = computed(() => ({
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 1.5s infinite;
 }
 </style>
