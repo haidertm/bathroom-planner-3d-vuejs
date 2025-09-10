@@ -648,6 +648,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x560mm-31022',
           path: '../../models/radiator/31022.glb',
           dimensions: { width: 65.8, height: 163.2, depth: 11.3 },
+          spawnHeight: -46,
           floorOffset:61,
           orientation: {
             type: 'face_into_room',
@@ -672,6 +673,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1800x560mm-31063',
           path: '../../models/radiator/31063.glb',
           dimensions: { width: 65.8, height: 183.2, depth: 11.3 },
+          spawnHeight: -46,
           floorOffset: 61,
           sku: '31063',
           price: '255',
@@ -684,6 +686,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x350mm-31019',
           path: '../../models/radiator/31019.glb',
           dimensions: { width: 44.8, height: 163, depth: 11.3 },
+          spawnHeight: -46,
           floorOffset: 61,
           sku: '31019',
           price: '151',
@@ -713,6 +716,8 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x1190mm',
           path: '../../models/radiator/32128.glb',
           dimensions: { width: 128.5, height: 63, depth: 11.3 },
+          spawnHeight: -16,
+          floorOffset: 30.5,
           sku: '32128',
           price: '289.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x1190mm'
@@ -724,6 +729,8 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x420mm',
           path: '../../models/radiator/32124.glb',
           dimensions: { width: 51.5, height: 63, depth: 11.3 },
+          spawnHeight: -16,
+          floorOffset: 30.5,
           sku: '32124',
           price: '109.99',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x420mm'
