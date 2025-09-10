@@ -1217,7 +1217,7 @@ const findFreeStandingPosition = (
       z: minZ + Math.random() * (maxZ - minZ)
     };
 
-    const rotation = movementConfig.allowFreeRotation ? Math.random() * Math.PI * 2 : 0;
+    const rotation = 0;
 
     // Create temporary item for collision detection
     const tempItem: BathroomItem = {
