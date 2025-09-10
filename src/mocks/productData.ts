@@ -162,7 +162,293 @@ const productData: ProductData = {
         { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
       ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    }
+    },
+
+    {
+      id: 'furniture_variant_3',
+      link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
+      name: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm',
+      price: '229.99',
+      image: 'assets/productImages/furniture/c76234-1000-white-wall-hung-basin-drawer-vanity-500mm.webp',
+      variants: [
+        {
+          id: 'C76234',
+          name: '500mm Wall Hung',
+          image: 'assets/productImages/furniture/c76234-1000-white-wall-hung-basin-drawer-vanity-500mm.webp',
+          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
+          path: '../../models/furniture/basin/C76234.glb',
+          dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+            movement: {
+                snapToWall: true,
+                allowVerticalMovement: false, // Vertical placement allowed (0..ceiling)
+                allowFreeRotation: false,
+                minHeight: 10, // Minimum height from floor
+                maxHeight: 10
+            },
+          sku: 'C76234',
+          price: '229.99',
+          title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm'
+        },
+      ],
+      variantType: 'Width Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
+        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
+      ],
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+      id: 'furniture_variant_4',
+      link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
+      name: 'Bermuda Chalk White Basin Vanity 600mm',
+      price: '289.99',
+      image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
+      variants: [
+        {
+          id: 'C76304',
+          name: '600mm Width',
+          image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
+          path: '../../models/furniture/basin/C76304.glb',
+          dimensions: { width: 61.4, height: 84, depth: 41.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+            movement: {
+                snapToWall: true,
+                allowVerticalMovement: false, // Vertical placement allowed (0..ceiling)
+                allowFreeRotation: false,
+                minHeight: 10, // Minimum height from floor
+                maxHeight: 10
+            },
+          sku: 'C76304',
+          price: '289.99',
+          title: 'Bermuda Chalk White Basin Vanity 600mm'
+        },
+        {
+          id: 'C76305',
+          name: '800mm Width',
+          image: 'assets/productImages/furniture/C76305-1000-Bermuda-Chalk-White-Basin-Vanity-800mm_1.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-800mm',
+          path: '../../models/furniture/basin/C76305.glb',
+          dimensions: { width: 81.3, height: 84, depth: 41.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76304',
+          price: '287.00',
+          title: 'Bermuda Chalk White Basin Vanity 800mm'
+        },
+      ],
+      variantType: 'Width Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
+        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
+      ],
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+      id: 'furniture_variant_5',
+      link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-600mm-c76473',
+      name: 'Avon Gloss White Basin Vanity 600mm',
+      price: '209.99',
+      image: 'assets/productImages/furniture/c76473-1000-avon-gloss-white-basin-vanity-600mm.webp',
+      variants: [
+        {
+          id: 'C76473',
+          name: '600mm Cabinet',
+          image: 'assets/productImages/furniture/c76473-1000-avon-gloss-white-basin-vanity-600mm.webp',
+          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-600mm-c76473',
+          path: '../../models/furniture/basin/C76473.glb',
+          dimensions: { width: 61.4, height: 85, depth: 42.1 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76473',
+          price: '209.99',
+          title: 'Avon Gloss White Basin Vanity 600mm'
+        },
+        {
+          id: 'C76472',
+          name: '500mm Cabinet',
+          image: 'assets/productImages/furniture/c76472-1000-avon-gloss-white-basin-vanity-500mm.webp',
+          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-500mm-c76472',
+          path: '../../models/furniture/basin/C76472.glb',
+          dimensions: { width: 51.6, height: 85, depth: 42.9 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76472',
+          price: '159.00',
+          title: 'Avon Gloss White Basin Vanity 500mm\n'
+        },
+        {
+          id: 'C76476',
+          name: '800mm Cabinet',
+          image: 'assets/productImages/furniture/c76476-1000-avon-gloss-white-basin-vanity-800mm.webp',
+          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-800mm-c76476',
+          path: '../../models/furniture/basin/C76476.glb',
+          dimensions: { width: 81.6, height: 85, depth: 42.9 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76476',
+          price: '249.99',
+          title: 'Avon Gloss White Basin Vanity 800mm'
+        },
+      ],
+      variantType: 'Width Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
+        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
+      ],
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+      id: 'furniture_variant_6',
+      link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-630mm-c76349',
+      name: 'Lucia Chalk White Basin Vanity 630mm',
+      price: '359.00',
+      image: 'assets/productImages/furniture/c76349-1000-lucia-chalk-white-basin-vanity-630mm_1.webp',
+      variants: [
+        {
+          id: 'C76349',
+          name: 'Traditional Basin',
+          image: 'assets/productImages/furniture/c76349-1000-lucia-chalk-white-basin-vanity-630mm_1.webp',
+          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-630mm-c76349',
+          path: '../../models/furniture/basin/C76349.glb',
+          dimensions: { width: 63, height: 86.2, depth: 47.6 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76349',
+          price: '359.00',
+          title: 'Lucia Chalk White Basin Vanity 630mm\n'
+        },
+      ],
+      variantType: 'Width Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
+        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
+      ],
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+      id: 'furniture_variant_7',
+      link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-600mm-c77096',
+      name: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 600mm',
+      price: '285.00',
+      image: 'assets/productImages/furniture/C77096-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
+      variants: [
+        {
+          id: 'C77096',
+          name: 'Curved Basin',
+          image: 'assets/productImages/furniture/C77096-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-600mm-c77096',
+          path: '../../models/furniture/basin/C77096.glb',
+          dimensions: { width: 61, height: 95.3, depth: 41.2 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C77096',
+          price: '285.00',
+          title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 600mm'
+        },
+      ],
+      variantType: 'Width Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
+        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
+      ],
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+      id: 'furniture_variant_8',
+      link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-brushed-brass-accents-c78594',
+      name: 'Bermuda Chalk White Basin Vanity 600mm - Brushed Brass Accents',
+      price: '247.00',
+      image: 'assets/productImages/furniture/C78594-1000-Bermuda-Chalk-White-Basin-Vanity-600mm.webp',
+      variants: [
+        {
+          id: 'C78594',
+          name: '600mm',
+          image: 'assets/productImages/furniture/C78594-1000-Bermuda-Chalk-White-Basin-Vanity-600mm.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-brushed-brass-accents-c78594',
+          path: '../../models/furniture/basin/C78594.glb',
+          dimensions: { width: 61.4, height: 84, depth: 41.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C78594',
+          price: '247.00',
+          title: 'Bermuda Chalk White Basin Vanity 600mm - Brushed Brass Accents'
+        },
+      ],
+      variantType: 'Width Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
+        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
+      ],
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+      id: 'furniture_variant_9',
+      link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-830mm',
+      name: 'Lucia Chalk White Basin Vanity 830mm',
+      price: '247.00',
+      image: 'assets/productImages/furniture/C76354-1000-Lucia-Chalk-White-Basin-Vanity-830mm_2.webp',
+      variants: [
+        {
+          id: 'C76354',
+          name: 'Traditional Basin',
+          image: 'assets/productImages/furniture/C76354-1000-Lucia-Chalk-White-Basin-Vanity-830mm_2.webp',
+          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-830mm',
+          path: '../../models/furniture/basin/C76354.glb',
+          dimensions: { width: 82.9, height: 86.1, depth: 47.3 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76354',
+          price: '539.99',
+          title: 'Lucia Chalk White Basin Vanity 830mm'
+        },
+      ],
+      variantType: 'Width Options',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
+        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
+      ],
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
   ],
 
   Mirror: [
@@ -670,7 +956,52 @@ const productData: ProductData = {
         { id: 'c1', name: 'Gloss White', color: '#ffffff' }
       ],
       features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
-    }
+    },
+
+    {
+      id: 'bath_3',
+      link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
+      name: 'Kensington 1700mm Freestanding Slipper Bath\n',
+      price: '599.99',
+      image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
+      variants: [
+        {
+          id: 'C51089',
+          name: '1700mm',
+          image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
+          link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
+          path: '../../models/bath/C51089.glb',
+          dimensions: { width: 170, height: 67, depth: 73 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C51089',
+          price: '599.99',
+          title: 'Kensington 1700mm Freestanding Slipper Bath'
+        }
+      ],
+      variantType: 'Orientation',
+      colors: [
+        { id: 'c1', name: 'Gloss White', color: '#ffffff' }
+      ],
+      features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+    },
   ],
 
   Toilet: [
@@ -868,6 +1199,443 @@ const productData: ProductData = {
       ],
       features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
     },
+
+    {
+          id: 'toilet_variant_4',
+          link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-seat-c66031',
+          name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
+          price: '144.99',
+          image: 'assets/productImages/toilet/C66031-1000-Denver-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+          variants: [
+              {
+                  id: 'C66031',
+                  name: 'Denver Close Coupled Toilet With Soft Close Seat',
+                  image: 'assets/productImages/toilet/C66031-1000-Denver-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-seat-c66031',
+                  path: '../../models/toilet/C66031.glb',
+                  dimensions: { width: 37.5, height: 18.6, depth: 63.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66031',
+                  price: '119.00',
+                  title: 'Denver Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+
+    {
+          id: 'toilet_variant_5',
+          link: 'https://www.bathroommountain.co.uk/manhattan-slimline-560-depth-close-coupled-toilet-with-soft-close-seat-c66241',
+          name: 'Manhattan Slimline 560 Depth Close Coupled Toilet With Soft Close Seat',
+          price: '119.00',
+          image: 'assets/productImages/toilet/C66241-1000-Dallas-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66241',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66241-1000-Dallas-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/manhattan-slimline-560-depth-close-coupled-toilet-with-soft-close-seat-c66241',
+                  path: '../../models/toilet/C66031.glb',
+                  dimensions: { width: 36, height: 79.6, depth: 55.8 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66241',
+                  price: '119.00',
+                  title: 'Manhattan Slimline 560 Depth Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+
+    {
+          id: 'toilet_variant_6',
+          link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
+          name: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat',
+          price: '199.99',
+          image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
+          variants: [
+              {
+                  id: 'C66042V2',
+                  name: 'Fully Back To Wall',
+                  image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
+                  path: '../../models/toilet/C66042V2.glb',
+                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66042V2',
+                  price: '119.00',
+                  title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66226',
+                  name: 'Comfort Height With Soft Close Seat',
+                  image: 'assets/productImages/toilet/C66226-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-seat-c66226',
+                  path: '../../models/toilet/C66226.glb',
+                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66226',
+                  price: '183.00',
+                  title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_7',
+          link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
+          name: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat',
+          price: '199.99',
+          image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
+          variants: [
+              {
+                  id: 'C66042V2',
+                  name: 'Fully Back To Wall',
+                  image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
+                  path: '../../models/toilet/C66042V2.glb',
+                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66042V2',
+                  price: '119.00',
+                  title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66226',
+                  name: 'Comfort Height With Soft Close Seat',
+                  image: 'assets/productImages/toilet/C66226-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-seat-c66226',
+                  path: '../../models/toilet/C66226.glb',
+                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66226',
+                  price: '183.00',
+                  title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_8',
+          link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66230',
+          name: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+          price: '115.00',
+          image: 'assets/productImages/toilet/c66230-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+          variants: [
+              {
+                  id: 'C66230',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/c66230-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66230',
+                  path: '../../models/toilet/C66230.glb',
+                  dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66230',
+                  price: '115.00',
+                  title: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
+              },
+              {
+                  id: 'C66257',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/c66257-1000-rimless-close-coupled-toilet-soft-close-slim-seat-.webp',
+                  link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66257',
+                  path: '../../models/toilet/C66257.glb',
+                  dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66257',
+                  price: '144.99',
+                  title: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_9',
+          link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
+          name: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat',
+          price: '149.99',
+          image: 'assets/productImages/toilet/c66245-1000-rimless-close-coupled-toilet-with-soft-close-seat.webp',
+          variants: [
+              {
+                  id: 'C66245',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/c66245-1000-rimless-close-coupled-toilet-with-soft-close-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
+                  path: '../../models/toilet/C66245.glb',
+                  dimensions: { width: 37, height: 81, depth: 60.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66245',
+                  price: '149.99',
+                  title: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_10',
+          link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
+          name: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat',
+          price: '169.99',
+          image: 'assets/productImages/toilet/c66201-1000-traditional-close-coupled-toilet-soft-close-seat_1.webp',
+          variants: [
+              {
+                  id: 'C66201',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/c66201-1000-traditional-close-coupled-toilet-soft-close-seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
+                  path: '../../models/toilet/C66201.glb',
+                  dimensions: { width: 37, height: 81, depth: 60.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66201',
+                  price: '169.99',
+                  title: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_11',
+          link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66247',
+          name: 'Dallas Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+          price: '143.00',
+          image: 'assets/productImages/toilet/c66247-1000-rimless-comfort-height-close-coupled-toilet.webp',
+          variants: [
+              {
+                  id: 'C66247',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/c66247-1000-rimless-comfort-height-close-coupled-toilet.webp',
+                  link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66247',
+                  path: '../../models/toilet/C66247.glb',
+                  dimensions: { width: 37, height: 86.5, depth: 60.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66247',
+                  price: '143.00',
+                  title: 'Dallas Rimless Comfort Height Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66246',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/c66246-1000-rimless-comfort-height-close-coupled-toilet.webp',
+                  link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-slim-soft-close-seat-c66246',
+                  path: '../../models/toilet/C66246.glb',
+                  dimensions: { width: 37, height: 86.5, depth: 60.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66246',
+                  price: '179.99',
+                  title: 'Dallas Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_12',
+          link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66181',
+          name: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat',
+          price: '143.00',
+          image: 'assets/productImages/toilet/C66181-1000-Back-to-Wall-Close-Coupled-Toilet-Soft-Close-Seat.webp',
+          variants: [
+              {
+                  id: 'C66181',
+                  name: 'Fully Back To Wall',
+                  image: 'assets/productImages/toilet/C66181-1000-Back-to-Wall-Close-Coupled-Toilet-Soft-Close-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66181',
+                  path: '../../models/toilet/C66181.glb',
+                  dimensions: { width: 37.1, height: 77.7, depth: 60.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66181',
+                  price: '143.00',
+                  title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_13',
+          link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-seat-c66131',
+          name: 'Orlando Close Coupled Toilet With Soft Close Seat',
+          price: '127.00',
+          image: 'assets/productImages/toilet/C66131-1000-Orlando-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66131',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/C66131-1000-Orlando-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-seat-c66131',
+                  path: '../../models/toilet/C66131.glb',
+                  dimensions: { width: 37, height: 77.9, depth: 60.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66131',
+                  price: '127.00',
+                  title: 'Orlando Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          colors: [
+              { id: 'c1', name: 'Gloss White', color: '#000000' }
+          ],
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
   ],
 
   Plumbing: [
