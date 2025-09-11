@@ -7,6 +7,46 @@
         @click="closeDrawer"
     ></div>
 
+    <!-- Loading Modal Overlay (appears above product drawer) -->
+    <div
+        v-if="showLoadingModal"
+        :style="modalOverlayStyle"
+        @click.stop
+    ></div>
+
+    <!-- Loading Modal -->
+    <div v-if="showLoadingModal" :style="loadingModalStyle">
+      <div :style="modalContentStyle">
+        <!-- Loading Spinner -->
+        <div :style="modalSpinnerStyle"></div>
+
+        <!-- Loading Text -->
+        <h3 :style="modalTitleStyle">Loading Model</h3>
+        <p :style="modalMessageStyle">
+          Please wait while the 3D model loads...
+        </p>
+
+        <!-- Progress Bar -->
+        <div :style="modalProgressContainerStyle">
+          <div :style="modalProgressBarStyle"></div>
+        </div>
+
+        <!-- Progress Text -->
+        <p :style="modalProgressTextStyle">
+          {{ Math.round(modalProgress) }}%
+        </p>
+
+        <!-- Cancel Button -->
+        <button
+            @click="cancelLoading"
+            :style="modalCancelButtonStyle"
+            class="modal-cancel-button"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
     <!-- Product Drawer -->
     <div :style="drawerStyle">
       <!-- Header -->
@@ -257,7 +297,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
 import { ModelManager } from '../../models/bathroomFixtures'
@@ -307,6 +347,11 @@ const selectedProduct = ref(null)
 const selectedVariant = ref('')
 const selectedColor = ref('')
 
+const showLoadingModal = ref(false)
+const modalProgress = ref(0)
+let modalProgressInterval = null
+let loadingCancelCallback = null
+
 const variantLoadingStates = ref(new Map()) // Track loading state per variant
 const isVariantLoading = ref(false) // General variant loading state
 
@@ -320,6 +365,49 @@ watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     currentView.value = 'products'
     selectedProduct.value = null
+  }
+})
+
+// NEW: Loading Modal Methods
+const showLoadingModalFn = () => {
+  showLoadingModal.value = true
+  modalProgress.value = 0
+
+  // Start progress animation
+  modalProgressInterval = setInterval(() => {
+    if (modalProgress.value < 90) {
+      const increment = Math.random() * 10 + 5
+      modalProgress.value = Math.min(90, modalProgress.value + increment)
+    }
+  }, 200)
+}
+
+const hideLoadingModal = () => {
+  showLoadingModal.value = false
+  modalProgress.value = 0
+
+  if (modalProgressInterval) {
+    clearInterval(modalProgressInterval)
+    modalProgressInterval = null
+  }
+
+  loadingCancelCallback = null
+}
+
+const cancelLoading = () => {
+  if (loadingCancelCallback) {
+    loadingCancelCallback()
+  }
+  hideLoadingModal()
+}
+
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen) {
+    currentView.value = 'products'
+    selectedProduct.value = null
+  } else {
+    productPreloading.value.clear()
+    hideLoadingModal() // ADD THIS LINE
   }
 })
 
@@ -674,24 +762,86 @@ const calculateTotalPrice = () => {
   return total.toFixed(2)
 }
 
-const confirmAddToRoom = () => {
+const confirmAddToRoom = async () => {
+  if (!selectedProduct.value || !selectedVariant.value) {
+    console.log('No product or variant selected')
+    return
+  }
+
+  const variant = selectedVariant.value
+  const variantKey = variant.id || variant.sku || variant.name
+
+  // Check if the first variant model is loaded
+  const isFirstVariant = selectedProduct.value.variants && selectedProduct.value.variants[0] === variant
+  const isModelLoaded = isVariantModelLoaded(variant)
+  const isCurrentlyLoading = isVariantLoadingState(variant)
+
+  console.log('Add to Room clicked:', {
+    isFirstVariant,
+    isModelLoaded,
+    isCurrentlyLoading,
+    variantKey
+  })
+
+  // If model is already loaded, proceed directly
+  if (isModelLoaded && !isCurrentlyLoading) {
+    console.log('✅ Model already loaded, adding to room immediately')
+    // CALL THE ACTUAL ADD TO ROOM LOGIC DIRECTLY - DON'T CALL confirmAddToRoom
+    addProductToRoom()
+    return
+  }
+
+  // If model is not loaded or currently loading, show modal and load
+  console.log('🔄 Model not loaded, showing loading modal')
+  showLoadingModalFn()
+
+  try {
+    // Set up cancel callback
+    let cancelled = false
+    loadingCancelCallback = () => {
+      cancelled = true
+    }
+
+    // Load the model
+    await loadVariantModel(variant, (progress) => {
+      if (!cancelled) {
+        modalProgress.value = progress
+      }
+    })
+
+    // If not cancelled and loading completed, add to room
+    if (!cancelled) {
+      modalProgress.value = 100
+      setTimeout(() => {
+        hideLoadingModal()
+        addProductToRoom() // CALL THE ACTUAL ADD TO ROOM LOGIC - NOT confirmAddToRoom
+      }, 500)
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to load model:', error)
+    hideLoadingModal()
+  }
+}
+
+const addProductToRoom = () => {
   if (!selectedProduct.value) {
-    console.log('No Product has been selected');
+    console.log('No Product has been selected')
     return
   }
 
   if (!selectedVariant.value) {
-    console.log('No Variant for the product has been selected');
+    console.log('No Variant for the product has been selected')
     return
   }
 
   if (typeof selectedVariant.value === 'string') {
-    console.log('select variant type is string');
-    return;
+    console.log('select variant type is string')
+    return
   }
 
-  //SelectedCategory
-  const componentType = props.selectedCategory;
+  // SelectedCategory
+  const componentType = props.selectedCategory
 
   const productData = {
     type: componentType,
@@ -701,13 +851,77 @@ const confirmAddToRoom = () => {
     totalPrice: calculateTotalPrice()
   }
 
-  console.log('productData toBe added>>>>', productData);
-
+  console.log('productData toBe added>>>>', productData)
   console.log('UnifiedProductDrawer: Adding to room:', productData)
+
+  // Emit the add-to-room event
   emit('add-to-room', productData)
 }
 
+const loadVariantModel = async (variant, progressCallback = null) => {
+  const variantKey = variant.id || variant.sku || variant.name
+
+  console.log('🔄 Loading variant model:', variantKey)
+
+  isVariantLoading.value = true
+  variantLoadingStates.value.set(variantKey, true)
+
+  // Progress simulation
+  const progressInterval = setInterval(() => {
+    const currentProgress = variantProgress.value.get(variantKey) || 0
+    if (currentProgress < 90) {
+      const increment = Math.random() * 15 + 5
+      const newProgress = Math.min(90, currentProgress + increment)
+      variantProgress.value.set(variantKey, newProgress)
+
+      if (progressCallback) {
+        progressCallback(newProgress)
+      }
+    }
+  }, 200)
+
+  try {
+    const modelManager = ModelManager.getInstance()
+    const modelConfig = {
+      name: variant.sku || variant.name,
+      path: variant.path,
+      scale: variant.scale || 1.0,
+      dimensions: variant.dimensions
+    }
+
+    const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
+
+    if (loadedModel) {
+      console.log('✅ Model loaded successfully:', variantKey)
+      variantProgress.value.set(variantKey, 100)
+
+      if (progressCallback) {
+        progressCallback(100)
+      }
+
+      // Store in preload cache if it's the first variant
+      if (selectedProduct.value && selectedProduct.value.variants?.[0] === variant) {
+        firstVariantPreloaded.value.set(selectedProduct.value.id, {
+          variantKey,
+          model: loadedModel,
+          timestamp: Date.now()
+        })
+      }
+    }
+
+  } finally {
+    clearInterval(progressInterval)
+    setTimeout(() => {
+      isVariantLoading.value = false
+      variantLoadingStates.value.set(variantKey, false)
+      variantProgress.value.delete(variantKey)
+    }, 300)
+  }
+}
+
+
 const closeDrawer = () => {
+  hideLoadingModal() // ADD THIS LINE
   emit('close')
 }
 
@@ -1282,6 +1496,101 @@ const greenTickStyle = computed(() => ({
   // Add glow effect for selected state
   filter: selectedVariant.value ? 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.8))' : 'none'
 }))
+
+const modalOverlayStyle = computed(() => ({
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  right: '0',
+  bottom: '0',
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  zIndex: '9999',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+}))
+
+// NEW: Loading Modal Styles
+const loadingModalStyle = computed(() => ({
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  zIndex: '10000',
+  pointerEvents: 'auto'
+}))
+
+const modalContentStyle = computed(() => ({
+  backgroundColor: 'white',
+  borderRadius: '16px',
+  padding: '32px',
+  textAlign: 'center',
+  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+  maxWidth: '400px',
+  width: '90vw',
+  fontFamily: 'Arial, sans-serif'
+}))
+
+const modalSpinnerStyle = computed(() => ({
+  width: '48px',
+  height: '48px',
+  border: '4px solid #f0f0f0',
+  borderTop: '4px solid #29275B',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite',
+  margin: '0 auto 16px auto'
+}))
+
+const modalTitleStyle = computed(() => ({
+  fontSize: '20px',
+  fontWeight: '600',
+  margin: '0 0 8px 0',
+  color: '#333'
+}))
+
+const modalMessageStyle = computed(() => ({
+  fontSize: '14px',
+  color: '#666',
+  margin: '0 0 24px 0',
+  lineHeight: '1.4'
+}))
+
+const modalProgressContainerStyle = computed(() => ({
+  width: '100%',
+  height: '8px',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '4px',
+  overflow: 'hidden',
+  margin: '0 0 16px 0'
+}))
+
+const modalProgressBarStyle = computed(() => ({
+  height: '100%',
+  background: 'linear-gradient(90deg, #29275B, #4a47a3)',
+  borderRadius: '4px',
+  width: `${modalProgress.value}%`,
+  transition: 'width 0.3s ease'
+}))
+
+const modalProgressTextStyle = computed(() => ({
+  fontSize: '12px',
+  color: '#888',
+  margin: '0 0 24px 0'
+}))
+
+const modalCancelButtonStyle = computed(() => ({
+  backgroundColor: 'transparent',
+  border: '2px solid #ddd',
+  color: '#666',
+  padding: '12px 24px',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  fontFamily: 'Arial, sans-serif'
+}))
+
 </script>
 
 <style scoped>
@@ -1359,5 +1668,10 @@ const greenTickStyle = computed(() => ({
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+.modal-cancel-button:hover {
+  background-color: #f8f9fa !important;
+  border-color: #999 !important;
 }
 </style>
