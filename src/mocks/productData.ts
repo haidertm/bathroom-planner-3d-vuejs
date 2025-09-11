@@ -46,7 +46,8 @@ const productData: ProductData = {
           movement: { // NEW: Sink movement configuration
             snapToWall: true,
             allowVerticalMovement: false,
-            allowFreeRotation: false
+            allowFreeRotation: false,
+            minHeight: 15,
           },
           sku: 'C76236',
           price: '249.99',
