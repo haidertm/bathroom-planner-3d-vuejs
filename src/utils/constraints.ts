@@ -984,13 +984,8 @@ export const findFreeWallPosition = (
   console.log('>>>111 SKU', sku);
   // GET OBJECT DIMENSIONS - THIS IS WHAT'S MISSING!
     const dimensions = getDimensions(objectType, sku);
-    if (!dimensions) {
-        // Handle the case where no dimensions are found
-        console.warn(`No dimensions found for ${objectType} with SKU ${sku}`);
-        return {  position: { x: 0, y: 0, z: 0 }, rotation: 0 }; // or some fallback behavior
-    }
 
-    const halfWidth = dimensions?.width / 2;
+    const halfWidth = dimensions && dimensions.width ? dimensions.width / 2 : 0;
 
   const buffer = getObjectWallBuffer({ orientation, scale });
   const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
