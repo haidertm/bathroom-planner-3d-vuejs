@@ -990,7 +990,7 @@ export const findFreeWallPosition = (
         return {  position: { x: 0, y: 0, z: 0 }, rotation: 0 }; // or some fallback behavior
     }
 
-    const halfWidth = dimensions.width / 2;
+    const halfWidth = dimensions?.width / 2;
 
   const buffer = getObjectWallBuffer({ orientation, scale });
   const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
