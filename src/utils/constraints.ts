@@ -314,7 +314,7 @@ export const getDimensions = (
   type: ComponentType,
   sku?: string,
   model?: ObjectModel
-): { width: number; depth: number; height: number, floorOffset: number, spawnHeight: number } => {
+): { width: number; depth: number; height: number, floorOffset: number, spawnHeight: number } | null => {
 
   // Priority 1: Try to get dimensions from model object if available
   if (model?.dimensions) {
@@ -336,7 +336,7 @@ export const getDimensions = (
     }
   }
 
-  return { width: 0, depth: 0, height: 0, floorOffset: 0, spawnHeight: 0 }; // Fallback if no dimensions found
+  return null; // Fallback if no dimensions found
 };
 
 export interface WallInfo {
@@ -983,8 +983,14 @@ export const findFreeWallPosition = (
 
   console.log('>>>111 SKU', sku);
   // GET OBJECT DIMENSIONS - THIS IS WHAT'S MISSING!
-  const dimensions = getDimensions(objectType, sku);
-  const halfWidth = (dimensions.width) / 2;
+    const dimensions = getDimensions(objectType, sku);
+    if (!dimensions) {
+        // Handle the case where no dimensions are found
+        console.warn(`No dimensions found for ${objectType} with SKU ${sku}`);
+        return {  position: { x: 0, y: 0, z: 0 }, rotation: 0 }; // or some fallback behavior
+    }
+
+    const halfWidth = dimensions.width / 2;
 
   const buffer = getObjectWallBuffer({ orientation, scale });
   const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
@@ -1057,17 +1063,25 @@ export const findFreeWallPosition = (
 
     // Check collision with existing items
     let hasCollision = false;
+      const tempItem: BathroomItem = {
+          id: -1,
+          type: objectType,
+          position: [position.x, position.y, position.z] as [number, number, number],
+          scale: scale,
+          sku: sku
+      };
     for (const item of existingItems) {
-      if (checkCollision(
-        position,
-        objectType,
-        scale,
-        { x: item.position[0], y: item.position[1], z: item.position[2] },
-        item.type,
-        item.scale || 1.0,
-        undefined,
-        item
-      )) {
+        const findCollision = checkCollision(
+            position,
+            objectType,
+            scale,
+            { x: item.position[0], y: item.position[1], z: item.position[2] },
+            item.type,
+            item.scale || 1.0,
+            tempItem,
+            item
+        );
+      if (findCollision) {
         hasCollision = true;
         break;
       }
