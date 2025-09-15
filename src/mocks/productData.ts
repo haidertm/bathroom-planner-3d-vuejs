@@ -1610,11 +1610,11 @@ const productData: ProductData = {
                     name: '110mm Diameter',
                     image: 'assets/productImages/plumbing/soil-pipe-110mm.webp',
                     link: 'https://www.bathroommountain.co.uk/soil-pipe-110mm-connector',
-                    path: '../../models/plumbing/soil-pipe-corrected.glb',
+                    path: '../../models/plumbing/soil-pipe-new.glb',
                     dimensions: {
-                        width: 11, // 110mm diameter = ~11cm width
-                        height: 27.5, // 260mm + 15mm cap = 27.5cm total height
-                        depth: 11 // Same as width for circular pipe
+                        width: 17, // 110mm diameter = ~11cm width
+                        height: 33, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 17 // Same as width for circular pipe
                     },
                     floorOffset: 0, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
                     spawnHeight: 0, // ✅ CRITICAL: Set to 0 since GLB bottom is at Y=0
@@ -1634,9 +1634,9 @@ const productData: ProductData = {
                     path: '../../models/plumbing/rectangular_column.glb',
                     link: 'https://www.bathroommountain.co.uk/150mm-corner-column-boxing-tile-ready',
                     dimensions: {
-                        width: 15,    // 150mm = 15cm
-                        height: 240,  // 2400mm = 240cm
-                        depth: 15     // 150mm = 15cm
+                        width: 25,    // 25cm
+                        height: 26,   // 26cm
+                        depth: 25     // 25cm
                     },
                     floorOffset: 0,
                     spawnHeight: 0,
