@@ -455,7 +455,7 @@ const addItem = async (type, productData = null) => {
   hasUnsavedChanges.value = true
   const defaults = {
     height: 0,
-    scale: getScaleForUnits(1.0, 'meters'),
+    scale: getScaleForUnits(1.0, 'centimeters'),
     orientation: DEFAULT_ORIENTATION
   }
 

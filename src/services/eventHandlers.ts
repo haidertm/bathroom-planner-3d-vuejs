@@ -993,7 +993,7 @@ export class EventHandlers {
           }
 
             const { interior, wallFaces } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
-            const objectWidth = dimensions?.width * objectScale;
+            const objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
             const halfObjectWidth = objectWidth / 2;
           // Adjust position based on which wall and apply constraints
            switch (closestWall) {
@@ -1866,7 +1866,7 @@ export class EventHandlers {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    const halfWidth = ((dimensions.width) * objectScale) / 2;
+    const halfWidth = dimensions && dimensions.width ? ((dimensions.width) * objectScale) / 2 : 0;
     const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
     // ✅ ADD: Wall switching threshold - makes it easier to switch walls
