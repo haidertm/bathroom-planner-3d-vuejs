@@ -6,6 +6,9 @@
         @click="toggleRotationArrows"
         :style="buttonStyle"
         :title="rotationArrowsEnabled ? 'Disable rotation arrows' : 'Enable rotation arrows'"
+        role="switch"
+        :aria-checked="String(rotationArrowsEnabled)"
+        :aria-label="rotationArrowsEnabled ? 'Disable rotation arrows' : 'Enable rotation arrows'"
     >
       <svg
           width="20"
@@ -27,7 +30,7 @@
     </button>
 
     <!-- Instructions tooltip -->
-    <div v-if="showInstructions" :style="tooltipStyle">
+    <div v-if="showInstructions" :style="tooltipStyle" role="status" aria-live="polite">
       <div :style="tooltipContentStyle">
         <strong>Rotation Arrows:</strong><br/>
         • Select an object to see rotation arrows<br/>
@@ -48,7 +51,8 @@ const props = defineProps({
   },
   size: {
     type: String,
-    default: 'medium' // 'small', 'medium', 'large'
+    default: 'medium', // 'small', 'medium', 'large'
+    validator: (v) => ['small','medium','large'].includes(v)
   }
 })
 
@@ -97,7 +101,7 @@ const buttonStyle = computed(() => {
     gap: currentSize.gap,
     padding: currentSize.padding,
     backgroundColor: rotationArrowsEnabled.value ? '#00ffff' : '#f0f0f0',
-    color: rotationArrowsEnabled.value ? '#000' : '#666',
+    color: rotationArrowsEnabled.value ? '#000' : '#4d4d4d',
     border: rotationArrowsEnabled.value ? '2px solid #00aaaa' : '2px solid #ddd',
     borderRadius: '8px',
     cursor: 'pointer',

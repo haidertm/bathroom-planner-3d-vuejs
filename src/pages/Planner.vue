@@ -165,7 +165,7 @@ const showInstructions = ref(false)
 
 // ID counter to ensure unique IDs
 const nextIdRef = ref(2000)
-const rotationArrowsEnabled = ref(false) // Default to enabled
+const rotationArrowsEnabled = ref(false) // Default: disabled
 const selectedObjectCanRotate = ref(false)
 
 const showRotationToggle = computed(() => {
@@ -1074,6 +1074,9 @@ onUnmounted(() => {
   }
 
   window.removeEventListener('toggle-measurements', handleMeasurementToggle)
+  window.removeEventListener('object-selected', handleObjectSelectionChange)
+  window.removeEventListener('object-selected', handleMeasurementUpdate)
+  window.removeEventListener('object-moved', handleMeasurementUpdate)
 
   // Remove resize listener
   window.removeEventListener('resize', () => {

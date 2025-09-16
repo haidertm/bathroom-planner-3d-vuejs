@@ -981,8 +981,12 @@ export class SceneManager {
       // ADDED: Adjust outline for distance every frame
       this.adjustOutlineForDistance();
 
-        if (this.eventHandlers) {
-            this.eventHandlers.update();
+        if (this.eventHandlers && typeof this.eventHandlers.update === 'function') {
+            try {
+                this.eventHandlers.update();
+            } catch (err) {
+                console.warn('eventHandlers.update() failed:', err);
+            }
         }
 
       // Render

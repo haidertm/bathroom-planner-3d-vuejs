@@ -31,6 +31,10 @@ export class RotationArrows {
 
     // NEW: Toggle state
     private enabled: boolean = false;
+    // Stable listener references
+    private handleMouseDown!: (e: MouseEvent) => void;
+    private handleMouseMove!: (e: MouseEvent) => void;
+    private handleMouseUp!: (e: MouseEvent) => void;
 
     constructor(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
         this.scene = scene;
@@ -205,12 +209,16 @@ export class RotationArrows {
     }
 
     private setupEventListeners(): void {
-        this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this));
-        this.renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this));
-        this.renderer.domElement.addEventListener('mouseup', this.onMouseUp.bind(this));
+        this.handleMouseDown = this.onMouseDown.bind(this);
+        this.handleMouseMove = this.onMouseMove.bind(this);
+        this.handleMouseUp = this.onMouseUp.bind(this);
+        this.renderer.domElement.addEventListener('mousedown', this.handleMouseDown);
+        this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
+        this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
 
         // Prevent context menu on arrows
         this.renderer.domElement.addEventListener('contextmenu', (event) => {
+            this.updateMousePosition(event as MouseEvent);
             if (this.isMouseOverArrow()) {
                 event.preventDefault();
             }
@@ -366,9 +374,9 @@ export class RotationArrows {
 
     public dispose(): void {
         // Remove event listeners
-        this.renderer.domElement.removeEventListener('mousedown', this.onMouseDown.bind(this));
-        this.renderer.domElement.removeEventListener('mousemove', this.onMouseMove.bind(this));
-        this.renderer.domElement.removeEventListener('mouseup', this.onMouseUp.bind(this));
+        this.renderer.domElement.removeEventListener('mousedown', this.handleMouseDown);
+        this.renderer.domElement.removeEventListener('mousemove', this.handleMouseMove);
+        this.renderer.domElement.removeEventListener('mouseup', this.handleMouseUp);
 
         // Clean up Three.js objects
         this.arrowGroup.clear();
