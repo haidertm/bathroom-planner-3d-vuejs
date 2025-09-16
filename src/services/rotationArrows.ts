@@ -380,6 +380,11 @@ export class RotationArrows {
         this.renderer.domElement.removeEventListener('contextmenu', this.handleContextMenu);
 
         // Clean up Three.js objects
+        this.arrowGroup.traverse(obj => {
+            if ((obj as any).geometry) {
+                ((obj as any).geometry as THREE.BufferGeometry).dispose();
+            }
+        });
         this.arrowGroup.clear();
         this.scene.remove(this.arrowGroup);
 
