@@ -217,7 +217,7 @@ export class RotationArrows {
         this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
         this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
 
-        // Prevent context menu on arrows=
+        // Prevent context menu on arrows
         this.handleContextMenu = (event: MouseEvent) => {
             this.updateMousePosition(event);
             if (this.isMouseOverArrow()) event.preventDefault();
@@ -270,16 +270,17 @@ export class RotationArrows {
 
             // Calculate initial rotation angle
             const rect = this.renderer.domElement.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+            const wp = new THREE.Vector3();
+            this.selectedObject.getWorldPosition(wp);
+            const sp = wp.clone().project(this.camera); // NDC
+            const centerX = rect.left + ((sp.x + 1) / 2) * rect.width;
+            const centerY = rect.top + ((-sp.y + 1) / 2) * rect.height;
             this.rotationStartAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
             this.objectStartRotation = this.selectedObject.rotation.y;
 
             // Change cursor and arrow color
             this.renderer.domElement.style.cursor = 'grab';
             this.setArrowMaterial(intersectedArrow, this.hoverArrowMaterial);
-
-            console.log('🎯 Started rotating with arrow');
         }
     }
 
@@ -289,8 +290,11 @@ export class RotationArrows {
         if (this.isDragging && this.draggedArrow && this.selectedObject) {
             // Perform rotation
             const rect = this.renderer.domElement.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+            const wp = new THREE.Vector3();
+            this.selectedObject.getWorldPosition(wp);
+            const sp = wp.clone().project(this.camera);
+            const centerX = rect.left + ((sp.x + 1) / 2) * rect.width;
+            const centerY = rect.top + ((-sp.y + 1) / 2) * rect.height;
             const currentAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
 
             // FIX: Invert the rotation direction by flipping the delta calculation
@@ -335,8 +339,6 @@ export class RotationArrows {
             if (this.onRotationComplete) {
                 this.onRotationComplete(finalRotation);
             }
-
-            console.log('🎯 Completed rotation with arrow, final rotation:', finalRotation);
         }
 
         // Reset state
