@@ -1,0 +1,377 @@
+// File: src/services/rotationArrows.ts
+
+import * as THREE from 'three';
+
+export class RotationArrows {
+    private scene: THREE.Scene;
+    private camera: THREE.Camera;
+    private renderer: THREE.WebGLRenderer;
+    private selectedObject: THREE.Object3D | null = null;
+
+    // Arrow components
+    private arrowGroup: THREE.Group;
+    private arrows: THREE.Object3D[] = [];
+    private arrowMaterial: THREE.MeshBasicMaterial;
+    private hoverArrowMaterial: THREE.MeshBasicMaterial;
+
+    // Interaction state
+    private isDragging: boolean = false;
+    private draggedArrow: THREE.Object3D | null = null;
+    private mouse: THREE.Vector2;
+    private raycaster: THREE.Raycaster;
+    private rotationStartAngle: number = 0;
+    private objectStartRotation: number = 0;
+
+    // Mouse position tracking
+    private mouseDownPosition: THREE.Vector2;
+
+    // Callbacks
+    private onRotationChange: ((rotation: number) => void) | null = null;
+    private onRotationComplete: ((rotation: number) => void) | null = null;
+
+    // NEW: Toggle state
+    private enabled: boolean = false;
+
+    constructor(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
+        this.scene = scene;
+        this.camera = camera;
+        this.renderer = renderer;
+
+        this.mouse = new THREE.Vector2();
+        this.raycaster = new THREE.Raycaster();
+        this.mouseDownPosition = new THREE.Vector2();
+
+        // Create arrow materials
+        this.arrowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x4CAF50, // Nice green color instead of cyan
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.DoubleSide
+        });
+
+        this.hoverArrowMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFEB3B, // Yellow when hovered/dragged
+            transparent: true,
+            opacity: 1.0,
+            side: THREE.DoubleSide
+        });
+
+        this.arrowGroup = new THREE.Group();
+        this.arrowGroup.name = 'RotationArrows';
+        this.arrowGroup.visible = false; // Start hidden
+        this.scene.add(this.arrowGroup);
+
+        this.createArrows();
+        this.setupEventListeners();
+    }
+
+    private createArrows(): void {
+        // Clear existing arrows
+        this.arrowGroup.clear();
+        this.arrows = [];
+
+        // Create 4 curved arrows around the object
+        const arrowCount = 4;
+
+        for (let i = 0; i < arrowCount; i++) {
+            const angle = (i / arrowCount) * Math.PI * 2;
+            const arrow = this.createArrow();
+
+            // Position arrow around the object (closer to the object)
+            arrow.position.x = 0;
+            arrow.position.z = 0;
+            arrow.position.y = 5; // Slightly above the object
+
+            // Rotate arrow to correct orientation for each position
+            arrow.rotation.y = angle;
+
+            // Store angle for interaction
+            arrow.userData.angle = angle;
+            arrow.userData.isRotationArrow = true;
+            arrow.userData.arrowIndex = i;
+
+            this.arrows.push(arrow);
+            this.arrowGroup.add(arrow);
+        }
+    }
+
+    private createArrow(): THREE.Object3D {
+        const arrowGroup = new THREE.Group();
+
+        // Create just a simple curved arrow without the inner guides
+        // Main curved arrow (torus segment)
+        const curveGeometry = new THREE.TorusGeometry(80, 4, 6, 12, Math.PI / 3); // Larger radius, thicker
+        const curve = new THREE.Mesh(curveGeometry, this.arrowMaterial);
+        curve.rotation.x = Math.PI / 2;
+        arrowGroup.add(curve);
+
+        // Create arrow head (cone) at the end of the curve
+        const headGeometry = new THREE.ConeGeometry(8, 16, 8);
+        const head = new THREE.Mesh(headGeometry, this.arrowMaterial);
+
+        // Position the arrow head at the end of the curve
+        const curveRadius = 80;
+        const curveAngle = Math.PI / 3;
+        head.position.x = Math.cos(curveAngle) * curveRadius;
+        head.position.z = Math.sin(curveAngle) * curveRadius;
+        head.position.y = 0;
+
+        // Point the arrow head in the direction of rotation
+        head.rotation.y = curveAngle + Math.PI / 2;
+        head.rotation.z = 0;
+
+        arrowGroup.add(head);
+
+        return arrowGroup;
+    }
+
+    // NEW: Method to check if an object can use rotation arrows
+    private canObjectUseRotationArrows(object: THREE.Object3D): boolean {
+        // This would need to be implemented based on your object's movement config
+        // For now, return true, but you can add logic to check the object's movement config
+        if (!object || !object.userData) return false;
+
+        // You would need to access the movement config here
+        // This is a placeholder - you'd implement the actual check
+        return true;
+    }
+
+    public setSelectedObject(object: THREE.Object3D | null): void {
+        this.selectedObject = object;
+
+        // Only show arrows if enabled AND object allows free rotation
+        if (object && this.enabled && this.canObjectUseRotationArrows(object)) {
+            this.showArrows();
+            this.updateArrowPositions();
+        } else {
+            this.hideArrows();
+        }
+    }
+
+    // NEW: Method to enable/disable the rotation arrows
+    public setEnabled(enabled: boolean): void {
+        this.enabled = enabled;
+
+        // If we have a selected object, update arrow visibility based on new enabled state
+        if (this.selectedObject) {
+            if (enabled) {
+                this.showArrows();
+                this.updateArrowPositions();
+            } else {
+                this.hideArrows();
+            }
+        }
+    }
+
+    // NEW: Method to check if arrows are enabled
+    public isEnabled(): boolean {
+        return this.enabled;
+    }
+
+    private showArrows(): void {
+        this.arrowGroup.visible = true;
+    }
+
+    private hideArrows(): void {
+        this.arrowGroup.visible = false;
+    }
+
+    private updateArrowPositions(): void {
+        if (!this.selectedObject) return;
+
+        // Position arrow group at selected object's position
+        this.arrowGroup.position.copy(this.selectedObject.position);
+
+        // IMPORTANT: Rotate the arrows to match the object's rotation
+        this.arrowGroup.rotation.y = this.selectedObject.rotation.y;
+
+        // Scale arrows based on camera distance for consistent size
+        const distance = this.camera.position.distanceTo(this.selectedObject.position);
+        const scale = Math.max(0.3, Math.min(1.0, distance / 500));
+        this.arrowGroup.scale.setScalar(scale);
+    }
+
+    private setupEventListeners(): void {
+        this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this));
+        this.renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this));
+        this.renderer.domElement.addEventListener('mouseup', this.onMouseUp.bind(this));
+
+        // Prevent context menu on arrows
+        this.renderer.domElement.addEventListener('contextmenu', (event) => {
+            if (this.isMouseOverArrow()) {
+                event.preventDefault();
+            }
+        });
+    }
+
+    private updateMousePosition(event: MouseEvent): void {
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    private getIntersectedArrow(): THREE.Object3D | null {
+        if (!this.arrowGroup.visible) return null;
+
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const intersects = this.raycaster.intersectObjects(this.arrowGroup.children, true);
+
+        if (intersects.length > 0) {
+            // Find the root arrow object
+            let object = intersects[0].object;
+            while (object.parent && !object.userData.isRotationArrow) {
+                object = object.parent;
+            }
+            return object.userData.isRotationArrow ? object : null;
+        }
+
+        return null;
+    }
+
+    private isMouseOverArrow(): boolean {
+        return this.getIntersectedArrow() !== null;
+    }
+
+    private onMouseDown(event: MouseEvent): void {
+        if (event.button !== 0) return; // Only left click
+
+        this.updateMousePosition(event);
+        this.mouseDownPosition.set(event.clientX, event.clientY);
+
+        const intersectedArrow = this.getIntersectedArrow();
+
+        if (intersectedArrow && this.selectedObject) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            this.isDragging = true;
+            this.draggedArrow = intersectedArrow;
+
+            // Calculate initial rotation angle
+            const rect = this.renderer.domElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            this.rotationStartAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
+            this.objectStartRotation = this.selectedObject.rotation.y;
+
+            // Change cursor and arrow color
+            this.renderer.domElement.style.cursor = 'grab';
+            this.setArrowMaterial(intersectedArrow, this.hoverArrowMaterial);
+
+            console.log('🎯 Started rotating with arrow');
+        }
+    }
+
+    private onMouseMove(event: MouseEvent): void {
+        this.updateMousePosition(event);
+
+        if (this.isDragging && this.draggedArrow && this.selectedObject) {
+            // Perform rotation
+            const rect = this.renderer.domElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const currentAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
+
+            // FIX: Invert the rotation direction by flipping the delta calculation
+            const deltaAngle = this.rotationStartAngle - currentAngle; // Changed from currentAngle - this.rotationStartAngle
+
+            const newRotation = this.objectStartRotation + deltaAngle;
+            this.selectedObject.rotation.y = newRotation;
+
+            // Update arrow positions to follow the object
+            this.updateArrowPositions();
+
+            // Callback for real-time updates
+            if (this.onRotationChange) {
+                this.onRotationChange(newRotation);
+            }
+
+        } else {
+            // Handle hover effects
+            const intersectedArrow = this.getIntersectedArrow();
+
+            // Reset all arrows to normal color
+            this.arrows.forEach(arrow => {
+                this.setArrowMaterial(arrow, this.arrowMaterial);
+            });
+
+            // Highlight hovered arrow
+            if (intersectedArrow && !this.isDragging) {
+                this.setArrowMaterial(intersectedArrow, this.hoverArrowMaterial);
+                this.renderer.domElement.style.cursor = 'pointer';
+            } else if (!this.isDragging) {
+                this.renderer.domElement.style.cursor = 'default';
+            }
+        }
+    }
+
+    private onMouseUp(): void {
+        if (this.isDragging && this.selectedObject) {
+            // Finalize rotation
+            const finalRotation = this.selectedObject.rotation.y;
+
+            // Callback for completion
+            if (this.onRotationComplete) {
+                this.onRotationComplete(finalRotation);
+            }
+
+            console.log('🎯 Completed rotation with arrow, final rotation:', finalRotation);
+        }
+
+        // Reset state
+        this.isDragging = false;
+        this.draggedArrow = null;
+        this.renderer.domElement.style.cursor = 'default';
+
+        // Reset arrow colors
+        this.arrows.forEach(arrow => {
+            this.setArrowMaterial(arrow, this.arrowMaterial);
+        });
+    }
+
+    private setArrowMaterial(arrow: THREE.Object3D, material: THREE.Material): void {
+        arrow.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                child.material = material;
+            }
+        });
+    }
+
+    public update(): void {
+        if (this.selectedObject && this.arrowGroup.visible) {
+            this.updateArrowPositions();
+        }
+    }
+
+    public setRotationChangeCallback(callback: (rotation: number) => void): void {
+        this.onRotationChange = callback;
+    }
+
+    public setRotationCompleteCallback(callback: (rotation: number) => void): void {
+        this.onRotationComplete = callback;
+    }
+
+    public dispose(): void {
+        // Remove event listeners
+        this.renderer.domElement.removeEventListener('mousedown', this.onMouseDown.bind(this));
+        this.renderer.domElement.removeEventListener('mousemove', this.onMouseMove.bind(this));
+        this.renderer.domElement.removeEventListener('mouseup', this.onMouseUp.bind(this));
+
+        // Clean up Three.js objects
+        this.arrowGroup.clear();
+        this.scene.remove(this.arrowGroup);
+
+        this.arrowMaterial.dispose();
+        this.hoverArrowMaterial.dispose();
+    }
+
+    // Public method to check if currently dragging an arrow
+    public isDraggingArrow(): boolean {
+        return this.isDragging;
+    }
+
+    // Public method to get if mouse is over an arrow (for event handling priority)
+    public isMouseOverArrows(): boolean {
+        return this.isMouseOverArrow();
+    }
+}

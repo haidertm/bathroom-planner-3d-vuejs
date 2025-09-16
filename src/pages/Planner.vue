@@ -24,6 +24,13 @@
         @constrain-objects="constrainObjects"
         @toggle-wall-culling="handleWallCullingToggle"
     />
+    <RotationArrowsToggle
+        v-if="showRotationToggle"
+        v-model="rotationArrowsEnabled"
+        :style="rotationToggleStyle"
+        size="large"
+        @toggle="handleRotationArrowsToggle"
+    />
 
     <!-- Toggle button for texture panel -->
     <button
@@ -110,6 +117,7 @@ import { loadRoomDimensionsFromStorage, saveRoomDimensionsToStorage } from '../c
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
 import * as THREE from 'three';
 import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
+import RotationArrowsToggle from '../components/ui/RotationArrowsToggle.vue'
 
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
@@ -139,6 +147,7 @@ import { useUndoRedo } from '../composables/useUndoRedo.js'
 import Sidebar from '../components/ui/sidebar.vue';
 import Header from '../components/ui/Header.vue';
 import { getScaleForUnits } from '../utils/units.js';
+import {getMovementConfig} from "../utils/models.js";
 
 // Router
 const router = useRouter()
@@ -156,6 +165,94 @@ const showInstructions = ref(false)
 
 // ID counter to ensure unique IDs
 const nextIdRef = ref(2000)
+const rotationArrowsEnabled = ref(false) // Default to enabled
+const selectedObjectCanRotate = ref(false)
+
+const showRotationToggle = computed(() => {
+  return selectedObjectCanRotate.value
+})
+
+// Listen for object selection changes
+const handleObjectSelectionChange = () => {
+  console.log('🔍 handleObjectSelectionChange called');
+
+  if (eventHandlersRef.value && eventHandlersRef.value.selectedObject) {
+    const selectedObject = eventHandlersRef.value.selectedObject
+    console.log('📦 Selected object:', selectedObject);
+    console.log('📦 Object userData:', selectedObject.userData);
+
+    const objectType = selectedObject.userData.type
+    const itemId = selectedObject.userData.itemId
+
+    console.log('🏷️ Object type:', objectType, 'Item ID:', itemId);
+
+    // Get current items and find the selected one
+    const currentItems = getItems()
+    const currentItem = currentItems.find(item => item.id === itemId)
+
+    console.log('🔍 Current item found:', currentItem);
+
+    // Check if this object allows free rotation
+    const movementConfig = getMovementConfig(objectType, currentItem)
+    console.log('⚙️ Movement config:', movementConfig);
+
+    const canRotate = movementConfig?.allowFreeRotation === true
+    console.log('🔄 Can rotate:', canRotate);
+
+    selectedObjectCanRotate.value = canRotate
+  } else {
+    console.log('❌ No selected object found');
+    selectedObjectCanRotate.value = false
+  }
+
+  console.log('📊 Final selectedObjectCanRotate:', selectedObjectCanRotate.value);
+}
+
+const handleRotationArrowsToggle = (enabled) => {
+  console.log('Rotation arrows toggle:', enabled);
+  if (eventHandlersRef.value && eventHandlersRef.value.setRotationArrowsEnabled) {
+    eventHandlersRef.value.setRotationArrowsEnabled(enabled);
+
+    // If disabling and we have a selected object, make sure arrows are hidden
+    if (!enabled && eventHandlersRef.value.selectedObject) {
+      // Force hide arrows when toggle is turned off
+      eventHandlersRef.value.rotationArrows?.setSelectedObject(null);
+    }
+    // If enabling and we have a selected object that can rotate, show arrows
+    else if (enabled && eventHandlersRef.value.selectedObject && selectedObjectCanRotate.value) {
+      eventHandlersRef.value.rotationArrows?.setSelectedObject(eventHandlersRef.value.selectedObject);
+    }
+  }
+}
+
+watch(() => eventHandlersRef.value?.selectedObject, (newSelectedObject) => {
+  console.log('Selection changed:', newSelectedObject);
+
+  if (newSelectedObject) {
+    // Object is selected - check if it can rotate
+    const objectType = newSelectedObject.userData.type
+    const itemId = newSelectedObject.userData.itemId
+
+    const currentItems = getItems()
+    const currentItem = currentItems.find(item => item.id === itemId)
+    const movementConfig = getMovementConfig(objectType, currentItem)
+
+    selectedObjectCanRotate.value = movementConfig?.allowFreeRotation === true
+    console.log('Object can rotate:', selectedObjectCanRotate.value);
+  } else {
+    // No object selected - hide toggle and arrows
+    selectedObjectCanRotate.value = false
+    console.log('No object selected - hiding toggle');
+  }
+}, { immediate: true })
+
+// Add computed style for positioning
+const rotationToggleStyle = computed(() => ({
+  position: 'fixed',
+  top: '120px', // Position below other controls
+  right: '20px',
+  zIndex: 1000
+}))
 
 // Add these reactive variables
 const previousItems = ref([])
@@ -776,6 +873,7 @@ const loadDesignData = (designData) => {
 
 // Initialize scene
 onMounted(async () => {
+  window.addEventListener('object-selected', handleObjectSelectionChange)
   // Override F5 and Ctrl+R
   document.addEventListener('keydown', (e) => {
     if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
@@ -832,6 +930,8 @@ onMounted(async () => {
       currentFloorTexture,         // ADD THIS LINE
       currentWallTexture          // ADD THIS LINE
   ))
+
+  sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
 
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
