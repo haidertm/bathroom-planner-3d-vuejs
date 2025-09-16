@@ -3,12 +3,14 @@
 <template>
   <div :style="containerStyle">
     <button
+        type="button"
         @click="toggleRotationArrows"
         :style="buttonStyle"
         :title="rotationArrowsEnabled ? 'Disable rotation arrows' : 'Enable rotation arrows'"
         role="switch"
         :aria-checked="String(rotationArrowsEnabled)"
         :aria-label="rotationArrowsEnabled ? 'Disable rotation arrows' : 'Enable rotation arrows'"
+        :data-enabled="String(rotationArrowsEnabled)"
     >
       <svg
           width="20"

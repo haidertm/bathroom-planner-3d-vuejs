@@ -35,6 +35,7 @@ export class RotationArrows {
     private handleMouseDown!: (e: MouseEvent) => void;
     private handleMouseMove!: (e: MouseEvent) => void;
     private handleMouseUp!: (e: MouseEvent) => void;
+    private handleContextMenu!: (e: MouseEvent) => void;
 
     constructor(scene: THREE.Scene, camera: THREE.Camera, renderer: THREE.WebGLRenderer) {
         this.scene = scene;
@@ -216,13 +217,12 @@ export class RotationArrows {
         this.renderer.domElement.addEventListener('mousemove', this.handleMouseMove);
         this.renderer.domElement.addEventListener('mouseup', this.handleMouseUp);
 
-        // Prevent context menu on arrows
-        this.renderer.domElement.addEventListener('contextmenu', (event) => {
-            this.updateMousePosition(event as MouseEvent);
-            if (this.isMouseOverArrow()) {
-                event.preventDefault();
-            }
-        });
+        // Prevent context menu on arrows=
+        this.handleContextMenu = (event: MouseEvent) => {
+            this.updateMousePosition(event);
+            if (this.isMouseOverArrow()) event.preventDefault();
+        };
+        this.renderer.domElement.addEventListener('contextmenu', this.handleContextMenu);
     }
 
     private updateMousePosition(event: MouseEvent): void {
@@ -377,6 +377,7 @@ export class RotationArrows {
         this.renderer.domElement.removeEventListener('mousedown', this.handleMouseDown);
         this.renderer.domElement.removeEventListener('mousemove', this.handleMouseMove);
         this.renderer.domElement.removeEventListener('mouseup', this.handleMouseUp);
+        this.renderer.domElement.removeEventListener('contextmenu', this.handleContextMenu);
 
         // Clean up Three.js objects
         this.arrowGroup.clear();
