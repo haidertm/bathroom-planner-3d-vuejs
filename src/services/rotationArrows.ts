@@ -98,29 +98,42 @@ export class RotationArrows {
     private createArrow(): THREE.Object3D {
         const arrowGroup = new THREE.Group();
 
-        // Create just a simple curved arrow without the inner guides
-        // Main curved arrow (torus segment)
-        const curveGeometry = new THREE.TorusGeometry(80, 4, 6, 12, Math.PI / 3); // Larger radius, thicker
+        // Create curved arrow path (torus segment)
+        const curveRadius = 90;
+        const curveThickness = 4;
+        const curveAngle = Math.PI / 2.3; // Slightly longer arc
+
+        const curveGeometry = new THREE.TorusGeometry(curveRadius, curveThickness, 6, 16, curveAngle);
         const curve = new THREE.Mesh(curveGeometry, this.arrowMaterial);
         curve.rotation.x = Math.PI / 2;
         arrowGroup.add(curve);
 
-        // Create arrow head (cone) at the end of the curve
-        const headGeometry = new THREE.ConeGeometry(8, 16, 8);
+        // Create arrow head (triangle pointing in rotation direction)
+        const headGeometry = new THREE.ConeGeometry(12, 20, 3); // Triangular cone for sharp arrow
         const head = new THREE.Mesh(headGeometry, this.arrowMaterial);
 
         // Position the arrow head at the end of the curve
-        const curveRadius = 80;
-        const curveAngle = Math.PI / 3;
-        head.position.x = Math.cos(curveAngle) * curveRadius;
-        head.position.z = Math.sin(curveAngle) * curveRadius;
+        const endX = Math.cos(curveAngle) * curveRadius;
+        const endZ = Math.sin(curveAngle) * curveRadius;
+
+        head.position.x = endX;
+        head.position.z = endZ;
         head.position.y = 0;
 
-        // Point the arrow head in the direction of rotation
-        head.rotation.y = curveAngle + Math.PI / 2;
-        head.rotation.z = 0;
+        // Calculate the tangent direction at the end of the curve for proper arrow pointing
+        const tangentAngle = curveAngle + Math.PI / 2; // Tangent to the curve
+        head.rotation.y = tangentAngle;
+        head.rotation.x = Math.PI / 2; // Point the cone tip forward
 
         arrowGroup.add(head);
+
+        // Add a small tail at the start of the curve for better visual clarity
+        const tailGeometry = new THREE.SphereGeometry(6, 8, 8);
+        const tail = new THREE.Mesh(tailGeometry, this.arrowMaterial);
+        tail.position.x = curveRadius; // Start of the curve
+        tail.position.z = 0;
+        tail.position.y = 0;
+        arrowGroup.add(tail);
 
         return arrowGroup;
     }
