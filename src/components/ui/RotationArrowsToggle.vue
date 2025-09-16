@@ -32,7 +32,6 @@
         <strong>Rotation Arrows:</strong><br/>
         • Select an object to see rotation arrows<br/>
         • Drag any arrow to rotate the object<br/>
-        • Works alongside right-click rotation
       </div>
     </div>
   </div>
@@ -123,6 +122,7 @@ const tooltipStyle = computed(() => ({
   position: 'absolute',
   top: '100%',
   left: '0',
+  right: '10px',
   marginTop: '8px',
   zIndex: 1000,
   opacity: showInstructions.value ? '1' : '0',
@@ -137,9 +137,9 @@ const tooltipContentStyle = computed(() => ({
   borderRadius: '6px',
   fontSize: '13px',
   lineHeight: '1.4',
-  whiteSpace: 'nowrap',
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-  maxWidth: '280px',
+  maxWidth: '300px',
+  width: '100%',
   fontFamily: 'Arial, sans-serif'
 }))
 
