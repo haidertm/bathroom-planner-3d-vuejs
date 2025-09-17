@@ -224,28 +224,6 @@ const handleRotationArrowsToggle = (enabled) => {
     }
   }
 }
-
-watch(() => eventHandlersRef.value?.selectedObject, (newSelectedObject) => {
-  console.log('Selection changed:', newSelectedObject);
-
-  if (newSelectedObject) {
-    // Object is selected - check if it can rotate
-    const objectType = newSelectedObject.userData.type
-    const itemId = newSelectedObject.userData.itemId
-
-    const currentItems = getItems()
-    const currentItem = currentItems.find(item => item.id === itemId)
-    const movementConfig = getMovementConfig(objectType, currentItem)
-
-    selectedObjectCanRotate.value = movementConfig?.allowFreeRotation === true
-    console.log('Object can rotate:', selectedObjectCanRotate.value);
-  } else {
-    // No object selected - hide toggle and arrows
-    selectedObjectCanRotate.value = false
-    console.log('No object selected - hiding toggle');
-  }
-}, { immediate: true })
-
 // Add computed style for positioning
 const rotationToggleStyle = computed(() => ({
   position: 'fixed',
