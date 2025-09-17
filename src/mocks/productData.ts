@@ -993,19 +993,10 @@ const productData: ProductData = {
             description: 'Item is part of wall opening'
           },
           movement: { // NEW: Sink movement configuration
-            snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
+                snapToWall: false,
+                allowVerticalMovement: false,
+                allowFreeRotation: true
             },
-            allowVerticalMovement: false,
-            allowFreeRotation: true
-          },
           sku: 'C51089',
           price: '599.99',
           title: 'Kensington 1700mm Freestanding Slipper Bath'

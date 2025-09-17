@@ -109,7 +109,7 @@ const buttonStyle = computed(() => {
     cursor: 'pointer',
     fontSize: currentSize.fontSize,
     fontWeight: '500',
-    transition: 'all 0.2s ease',
+    transition: 'background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease',
     fontFamily: 'Arial, sans-serif',
     boxShadow: rotationArrowsEnabled.value
         ? '0 2px 8px rgba(0, 255, 255, 0.3)'

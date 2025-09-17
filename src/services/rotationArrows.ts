@@ -22,9 +22,6 @@ export class RotationArrows {
     private rotationStartAngle: number = 0;
     private objectStartRotation: number = 0;
 
-    // Mouse position tracking
-    private mouseDownPosition: THREE.Vector2;
-
     // Callbacks
     private onRotationChange: ((rotation: number) => void) | null = null;
     private onRotationComplete: ((rotation: number) => void) | null = null;
@@ -44,7 +41,6 @@ export class RotationArrows {
 
         this.mouse = new THREE.Vector2();
         this.raycaster = new THREE.Raycaster();
-        this.mouseDownPosition = new THREE.Vector2();
 
         // Create arrow materials
         this.arrowMaterial = new THREE.MeshBasicMaterial({
@@ -176,6 +172,7 @@ export class RotationArrows {
                 this.showArrows();
                 this.updateArrowPositions();
             } else {
+                if (this.isDragging) this.onMouseUp();
                 this.hideArrows();
             }
         }
@@ -254,10 +251,10 @@ export class RotationArrows {
     }
 
     private onMouseDown(event: MouseEvent): void {
+        if (!this.enabled || !this.arrowGroup.visible) return;
         if (event.button !== 0) return; // Only left click
 
         this.updateMousePosition(event);
-        this.mouseDownPosition.set(event.clientX, event.clientY);
 
         const intersectedArrow = this.getIntersectedArrow();
 
@@ -285,6 +282,7 @@ export class RotationArrows {
     }
 
     private onMouseMove(event: MouseEvent): void {
+        if (!this.enabled || !this.arrowGroup.visible) return;
         this.updateMousePosition(event);
 
         if (this.isDragging && this.draggedArrow && this.selectedObject) {
@@ -331,6 +329,7 @@ export class RotationArrows {
     }
 
     private onMouseUp(): void {
+        if (!this.enabled) return;
         if (this.isDragging && this.selectedObject) {
             // Finalize rotation
             const finalRotation = this.selectedObject.rotation.y;
