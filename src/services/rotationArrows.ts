@@ -1,6 +1,9 @@
 // File: src/services/rotationArrows.ts
 
 import * as THREE from 'three';
+import {canRotateFreely} from "../utils/models.ts";
+import { BathroomItem } from '../utils/constraints';
+import {ComponentType} from "../constants/components.ts";
 
 export class RotationArrows {
     private scene: THREE.Scene;
@@ -25,6 +28,8 @@ export class RotationArrows {
     // Callbacks
     private onRotationChange: ((rotation: number) => void) | null = null;
     private onRotationComplete: ((rotation: number) => void) | null = null;
+
+    private getCurrentItems: () => BathroomItem[] = () => [];
 
     // NEW: Toggle state
     private enabled: boolean = false;
@@ -64,6 +69,11 @@ export class RotationArrows {
 
         this.createArrows();
         this.setupEventListeners();
+    }
+
+    private getCurrentItemData(objectId: number): BathroomItem | undefined {
+        const currentItems = this.getCurrentItems();
+        return currentItems.find(item => item.id === objectId);
     }
 
     private createArrows(): void {
@@ -141,13 +151,33 @@ export class RotationArrows {
 
     // NEW: Method to check if an object can use rotation arrows
     private canObjectUseRotationArrows(object: THREE.Object3D): boolean {
-        // This would need to be implemented based on your object's movement config
-        // For now, return true, but you can add logic to check the object's movement config
+        // Guard for missing object or userData
         if (!object || !object.userData) return false;
 
-        // You would need to access the movement config here
-        // This is a placeholder - you'd implement the actual check
-        return true;
+        // Guard for missing movement-related data
+        if (!object.userData.type) {
+            console.warn('Object missing type in userData:', object.userData);
+            return false;
+        }
+
+        const objectType = object.userData.type as ComponentType;
+        const itemId = object.userData.itemId as number;
+
+        // Get the current item data to check movement configuration
+        const currentItem = this.getCurrentItemData(itemId);
+
+        // Use the canRotateFreely utility function to check movement.allowFreeRotation
+        const canRotate = canRotateFreely(objectType, currentItem);
+
+        console.log('🔄 Rotation check:', {
+            objectType,
+            itemId,
+            sku: currentItem?.sku,
+            canRotate,
+            hasMovement: !!currentItem?.model?.movement
+        });
+
+        return canRotate;
     }
 
     public setSelectedObject(object: THREE.Object3D | null): void {

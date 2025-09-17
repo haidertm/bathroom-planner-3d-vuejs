@@ -174,38 +174,25 @@ const showRotationToggle = computed(() => {
 
 // Listen for object selection changes
 const handleObjectSelectionChange = () => {
-  console.log('🔍 handleObjectSelectionChange called');
 
   if (eventHandlersRef.value && eventHandlersRef.value.selectedObject) {
     const selectedObject = eventHandlersRef.value.selectedObject
-    console.log('📦 Selected object:', selectedObject);
-    console.log('📦 Object userData:', selectedObject.userData);
 
     const objectType = selectedObject.userData.type
     const itemId = selectedObject.userData.itemId
-
-    console.log('🏷️ Object type:', objectType, 'Item ID:', itemId);
 
     // Get current items and find the selected one
     const currentItems = getItems()
     const currentItem = currentItems.find(item => item.id === itemId)
 
-    console.log('🔍 Current item found:', currentItem);
-
     // Check if this object allows free rotation
     const movementConfig = getMovementConfig(objectType, currentItem)
-    console.log('⚙️ Movement config:', movementConfig);
-
     const canRotate = movementConfig?.allowFreeRotation === true
-    console.log('🔄 Can rotate:', canRotate);
 
     selectedObjectCanRotate.value = canRotate
   } else {
-    console.log('❌ No selected object found');
     selectedObjectCanRotate.value = false
   }
-
-  console.log('📊 Final selectedObjectCanRotate:', selectedObjectCanRotate.value);
 }
 
 const handleRotationArrowsToggle = (enabled) => {
