@@ -207,6 +207,11 @@ export class EventHandlers {
     this.startSimpleZoomAnimation();
       this.rotationArrows.setRotationChangeCallback((rotation: number) => {
           if (this.selectedObject) {
+              // Batch arrow-driven rotations like a drag op
+              if (!this.isDragOperation) {
+                  this.isDragOperation = true;
+                  this.pendingUpdates.clear();
+              }
               const itemId = this.selectedObject.userData.itemId as number;
               const objectType = this.selectedObject.userData.type as ComponentType;
 
@@ -222,8 +227,9 @@ export class EventHandlers {
 
                   const currentPos = this.selectedObject.position.clone();
                   const correctedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
+                  const EPS = 0.1; // cm
 
-                  if (correctedPos.x !== currentPos.x || correctedPos.z !== currentPos.z) {
+                  if (Math.abs(correctedPos.x - currentPos.x) > EPS || Math.abs(correctedPos.z - currentPos.z) > EPS) {
                       this.selectedObject.position.copy(correctedPos);
 
                       // Update data model with both rotation and corrected position
@@ -250,6 +256,7 @@ export class EventHandlers {
               const itemId = this.selectedObject.userData.itemId as number;
               console.log('🎯 Arrow rotation completed for item:', itemId, 'rotation:', rotation);
               this.applyPendingUpdates();
+              this.isDragOperation = false;
           }
       });
   }
@@ -1023,6 +1030,16 @@ export class EventHandlers {
                     position: [constrainedX, this.selectedObject.position.y, constrainedZ],
                     rotation: objectRotation
                 });
+
+                // Real-time collision feedback (parity with other drag paths)
+                const isColliding = this.checkCollisionState(
+                    { x: constrainedX, y: this.selectedObject.position.y, z: constrainedZ },
+                    objectType,
+                    objectScale,
+                    itemId,
+                    currentItem
+                );
+                setOutlineColor(isColliding);
             }
 
             return; // Exit early
