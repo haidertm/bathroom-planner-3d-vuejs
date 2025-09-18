@@ -970,11 +970,11 @@ export class EventHandlers {
         // ✅ ROTATION-AWARE FIX for freestanding bathtubs
         if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
 
-            // Get cursor position
+            // Get cursor position on the existing drag plane and include initial offset
             this.raycaster.setFromCamera(this.mouse, this.camera);
             const intersectPoint = new THREE.Vector3();
-            const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -this.selectedObject.position.y);
-            this.raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+            this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
+            const followPoint = intersectPoint.add(this.dragOffset);
 
             const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
 
@@ -1013,8 +1013,8 @@ export class EventHandlers {
                 const safeMaxZ = wallFaces.south - halfRotatedHeight - minWallBuffer;
 
                 // Apply constraints with rotated dimensions
-                const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, intersectPoint.x));
-                const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, intersectPoint.z));
+                const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
+                const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
 
                 // Set position
                 this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
@@ -1360,9 +1360,6 @@ export class EventHandlers {
         const roomHalfHeight = this.roomHeightRef.value / 2;
         const wallThickness = 12;
 
-        // ✅ DYNAMIC BUFFER: Different buffer based on object type
-        const minWallBuffer = 0;
-
         const wallFaces = {
             west: -roomHalfWidth + wallThickness,
             east: roomHalfWidth - wallThickness,
@@ -1373,10 +1370,10 @@ export class EventHandlers {
         const halfRotatedWidth = rotatedBounds.width / 2;
         const halfRotatedHeight = rotatedBounds.height / 2;
 
-        const safeMinX = wallFaces.west + halfRotatedWidth + minWallBuffer;
-        const safeMaxX = wallFaces.east - halfRotatedWidth - minWallBuffer;
-        const safeMinZ = wallFaces.north + halfRotatedHeight + minWallBuffer;
-        const safeMaxZ = wallFaces.south - halfRotatedHeight - minWallBuffer;
+        const safeMinX = wallFaces.west + halfRotatedWidth;
+        const safeMaxX = wallFaces.east - halfRotatedWidth;
+        const safeMinZ = wallFaces.north + halfRotatedHeight;
+        const safeMaxZ = wallFaces.south - halfRotatedHeight;
 
         const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
         const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
