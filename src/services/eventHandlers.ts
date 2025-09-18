@@ -992,8 +992,7 @@ export class EventHandlers {
                 // Room boundaries
                 const roomHalfWidth = this.roomWidthRef.value / 2;
                 const roomHalfHeight = this.roomHeightRef.value / 2;
-                const wallThickness = 12;
-                const minWallBuffer = 8;
+                const wallThickness = WALL_SETTINGS.THICKNESS;
 
                 const wallFaces = {
                     west: -roomHalfWidth + wallThickness,
@@ -1007,10 +1006,10 @@ export class EventHandlers {
                 const halfRotatedHeight = rotatedBounds.height / 2;
 
                 // Calculate safe boundaries using rotated dimensions
-                const safeMinX = wallFaces.west + halfRotatedWidth + minWallBuffer;
-                const safeMaxX = wallFaces.east - halfRotatedWidth - minWallBuffer;
-                const safeMinZ = wallFaces.north + halfRotatedHeight + minWallBuffer;
-                const safeMaxZ = wallFaces.south - halfRotatedHeight - minWallBuffer;
+                const safeMinX = wallFaces.west + halfRotatedWidth;
+                const safeMaxX = wallFaces.east - halfRotatedWidth;
+                const safeMinZ = wallFaces.north + halfRotatedHeight;
+                const safeMaxZ = wallFaces.south - halfRotatedHeight;
 
                 // Apply constraints with rotated dimensions
                 const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
