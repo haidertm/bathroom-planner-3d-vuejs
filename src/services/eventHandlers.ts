@@ -207,11 +207,47 @@ export class EventHandlers {
     this.startSimpleZoomAnimation();
       this.rotationArrows.setRotationChangeCallback((rotation: number) => {
           if (this.selectedObject) {
+              // Batch arrow-driven rotations like a drag op
+              if (!this.isDragOperation) {
+                  this.isDragOperation = true;
+                  this.pendingUpdates.clear();
+              }
               const itemId = this.selectedObject.userData.itemId as number;
-              this.queueUpdate(itemId, { rotation });
+              const objectType = this.selectedObject.userData.type as ComponentType;
 
-              // Update arrow positions to follow the rotation in real-time
-              this.rotationArrows?.update();
+              // Update the object's rotation
+              this.selectedObject.rotation.y = rotation;
+
+              // ✅ GENERIC: Check for ANY object that has free rotation and doesn't snap to walls
+              const currentItem = this.getCurrentItemData(itemId);
+              const movementConfig = getMovementConfig(objectType, currentItem);
+
+              // Apply rotation-aware positioning for all freestanding objects
+              if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+
+                  const currentPos = this.selectedObject.position.clone();
+                  const correctedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
+                  const EPS = 0.1; // cm
+
+                  if (Math.abs(correctedPos.x - currentPos.x) > EPS || Math.abs(correctedPos.z - currentPos.z) > EPS) {
+                      this.selectedObject.position.copy(correctedPos);
+
+                      // Update data model with both rotation and corrected position
+                      this.queueUpdate(itemId, {
+                          rotation: rotation,
+                          position: [correctedPos.x, correctedPos.y, correctedPos.z]
+                      });
+                  } else {
+                      // Position didn't need adjustment, just update rotation
+                      this.queueUpdate(itemId, { rotation });
+                  }
+              } else {
+                  // Wall-mounted or non-free-rotation objects - just update rotation
+                  this.queueUpdate(itemId, { rotation });
+              }
+
+              // Update arrow positions to follow the object
+              this.rotationArrows?.updateArrowPositions();
           }
       });
 
@@ -220,6 +256,7 @@ export class EventHandlers {
               const itemId = this.selectedObject.userData.itemId as number;
               console.log('🎯 Arrow rotation completed for item:', itemId, 'rotation:', rotation);
               this.applyPendingUpdates();
+              this.isDragOperation = false;
           }
       });
   }
@@ -937,6 +974,77 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
+        // ✅ ROTATION-AWARE FIX for freestanding bathtubs
+        if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+
+            // Get cursor position on the existing drag plane and include initial offset
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
+            const followPoint = intersectPoint.add(this.dragOffset);
+
+            const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+
+            if (objectDimensions) {
+                const objectScale = this.selectedObject.scale.x;
+                const objectRotation = this.selectedObject.rotation.y;
+
+                // ✅ CRITICAL: Calculate rotated bounding box
+                const rotatedBounds = this.calculateRotatedBounds(
+                    objectDimensions.width * objectScale,
+                    objectDimensions.depth * objectScale,
+                    objectRotation
+                );
+
+                // Room boundaries
+                const roomHalfWidth = this.roomWidthRef.value / 2;
+                const roomHalfHeight = this.roomHeightRef.value / 2;
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+
+                const wallFaces = {
+                    west: -roomHalfWidth + wallThickness,
+                    east: roomHalfWidth - wallThickness,
+                    north: -roomHalfHeight + wallThickness,
+                    south: roomHalfHeight - wallThickness
+                };
+
+                // ✅ USE ROTATED BOUNDS for constraint calculation
+                const halfRotatedWidth = rotatedBounds.width / 2;
+                const halfRotatedHeight = rotatedBounds.height / 2;
+
+                // Calculate safe boundaries using rotated dimensions
+                const safeMinX = wallFaces.west + halfRotatedWidth;
+                const safeMaxX = wallFaces.east - halfRotatedWidth;
+                const safeMinZ = wallFaces.north + halfRotatedHeight;
+                const safeMaxZ = wallFaces.south - halfRotatedHeight;
+
+                // Apply constraints with rotated dimensions
+                const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
+                const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
+
+                // Set position
+                this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
+
+                // Update data model
+                this.queueUpdate(this.selectedObject.userData.itemId as number, {
+                    position: [constrainedX, this.selectedObject.position.y, constrainedZ],
+                    rotation: objectRotation
+                });
+
+                // Real-time collision feedback (parity with other drag paths)
+                const isColliding = this.checkCollisionState(
+                    { x: constrainedX, y: this.selectedObject.position.y, z: constrainedZ },
+                    objectType,
+                    objectScale,
+                    itemId,
+                    currentItem
+                );
+                setOutlineColor(isColliding);
+            }
+
+            return; // Exit early
+        }
+
       let constrainedPosition = { x: 0, y: 0, z: 0 };
       let constrainedRotation = this.selectedObject.rotation.y;
       let rotationChanged = false;
@@ -1232,6 +1340,62 @@ export class EventHandlers {
       }
     }
   }
+
+    private calculateRotatedBounds(width: number, depth: number, rotation: number): { width: number; height: number } {
+
+        const cosAngle = Math.abs(Math.cos(rotation));
+        const sinAngle = Math.abs(Math.sin(rotation));
+
+        const rotatedWidth = width * cosAngle + depth * sinAngle;
+        const rotatedHeight = width * sinAngle + depth * cosAngle;
+
+        return {
+            width: rotatedWidth,
+            height: rotatedHeight
+        };
+    }
+
+    private constrainFreeRotationObjectPosition(position: THREE.Vector3, objectType: ComponentType, currentItem?: BathroomItem): THREE.Vector3 {
+        const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+        if (!objectDimensions) {
+            return position;
+        }
+
+        const objectScale = this.selectedObject?.scale.x || 1;
+        const objectRotation = this.selectedObject?.rotation.y || 0;
+
+        // ✅ Calculate rotated bounding box for any object
+        const rotatedBounds = this.calculateRotatedBounds(
+            objectDimensions.width * objectScale,
+            objectDimensions.depth * objectScale,
+            objectRotation
+        );
+
+        // Room boundaries (same for all objects)
+        const roomHalfWidth = this.roomWidthRef.value / 2;
+        const roomHalfHeight = this.roomHeightRef.value / 2;
+        const wallThickness = 12;
+
+        const wallFaces = {
+            west: -roomHalfWidth + wallThickness,
+            east: roomHalfWidth - wallThickness,
+            north: -roomHalfHeight + wallThickness,
+            south: roomHalfHeight - wallThickness
+        };
+
+        const halfRotatedWidth = rotatedBounds.width / 2;
+        const halfRotatedHeight = rotatedBounds.height / 2;
+
+        const safeMinX = wallFaces.west + halfRotatedWidth;
+        const safeMaxX = wallFaces.east - halfRotatedWidth;
+        const safeMinZ = wallFaces.north + halfRotatedHeight;
+        const safeMaxZ = wallFaces.south - halfRotatedHeight;
+
+        const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
+        const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
+
+        return new THREE.Vector3(constrainedX, position.y, constrainedZ);
+    }
 
   private handleMouseUp (): void {
     if (this.isDragOperation) {

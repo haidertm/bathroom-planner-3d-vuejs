@@ -1612,7 +1612,7 @@ const productData: ProductData = {
                     movement: {
                         snapToWall: false,
                         allowVerticalMovement: false, // Keep on floor
-                        allowFreeRotation: true,
+                        allowFreeRotation: false,
                     },
                     sku: 'SP110MM',
                     price: '89.99',
