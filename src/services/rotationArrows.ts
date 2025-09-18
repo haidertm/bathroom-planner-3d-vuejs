@@ -221,7 +221,7 @@ export class RotationArrows {
         this.arrowGroup.visible = false;
     }
 
-    private updateArrowPositions(): void {
+    public updateArrowPositions(): void {
         if (!this.selectedObject) return;
 
         // Position arrow group at selected object's position

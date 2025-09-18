@@ -208,10 +208,40 @@ export class EventHandlers {
       this.rotationArrows.setRotationChangeCallback((rotation: number) => {
           if (this.selectedObject) {
               const itemId = this.selectedObject.userData.itemId as number;
-              this.queueUpdate(itemId, { rotation });
+              const objectType = this.selectedObject.userData.type as ComponentType;
 
-              // Update arrow positions to follow the rotation in real-time
-              this.rotationArrows?.update();
+              // Update the object's rotation
+              this.selectedObject.rotation.y = rotation;
+
+              // ✅ GENERIC: Check for ANY object that has free rotation and doesn't snap to walls
+              const currentItem = this.getCurrentItemData(itemId);
+              const movementConfig = getMovementConfig(objectType, currentItem);
+
+              // Apply rotation-aware positioning for all freestanding objects
+              if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+
+                  const currentPos = this.selectedObject.position.clone();
+                  const correctedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
+
+                  if (correctedPos.x !== currentPos.x || correctedPos.z !== currentPos.z) {
+                      this.selectedObject.position.copy(correctedPos);
+
+                      // Update data model with both rotation and corrected position
+                      this.queueUpdate(itemId, {
+                          rotation: rotation,
+                          position: [correctedPos.x, correctedPos.y, correctedPos.z]
+                      });
+                  } else {
+                      // Position didn't need adjustment, just update rotation
+                      this.queueUpdate(itemId, { rotation });
+                  }
+              } else {
+                  // Wall-mounted or non-free-rotation objects - just update rotation
+                  this.queueUpdate(itemId, { rotation });
+              }
+
+              // Update arrow positions to follow the object
+              this.rotationArrows?.updateArrowPositions();
           }
       });
 
@@ -937,6 +967,68 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
+        // ✅ ROTATION-AWARE FIX for freestanding bathtubs
+        if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+
+            // Get cursor position
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            const intersectPoint = new THREE.Vector3();
+            const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -this.selectedObject.position.y);
+            this.raycaster.ray.intersectPlane(dragPlane, intersectPoint);
+
+            const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+
+            if (objectDimensions) {
+                const objectScale = this.selectedObject.scale.x;
+                const objectRotation = this.selectedObject.rotation.y;
+
+                // ✅ CRITICAL: Calculate rotated bounding box
+                const rotatedBounds = this.calculateRotatedBounds(
+                    objectDimensions.width * objectScale,
+                    objectDimensions.depth * objectScale,
+                    objectRotation
+                );
+
+                // Room boundaries
+                const roomHalfWidth = this.roomWidthRef.value / 2;
+                const roomHalfHeight = this.roomHeightRef.value / 2;
+                const wallThickness = 12;
+                const minWallBuffer = 8;
+
+                const wallFaces = {
+                    west: -roomHalfWidth + wallThickness,
+                    east: roomHalfWidth - wallThickness,
+                    north: -roomHalfHeight + wallThickness,
+                    south: roomHalfHeight - wallThickness
+                };
+
+                // ✅ USE ROTATED BOUNDS for constraint calculation
+                const halfRotatedWidth = rotatedBounds.width / 2;
+                const halfRotatedHeight = rotatedBounds.height / 2;
+
+                // Calculate safe boundaries using rotated dimensions
+                const safeMinX = wallFaces.west + halfRotatedWidth + minWallBuffer;
+                const safeMaxX = wallFaces.east - halfRotatedWidth - minWallBuffer;
+                const safeMinZ = wallFaces.north + halfRotatedHeight + minWallBuffer;
+                const safeMaxZ = wallFaces.south - halfRotatedHeight - minWallBuffer;
+
+                // Apply constraints with rotated dimensions
+                const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, intersectPoint.x));
+                const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, intersectPoint.z));
+
+                // Set position
+                this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
+
+                // Update data model
+                this.queueUpdate(this.selectedObject.userData.itemId as number, {
+                    position: [constrainedX, this.selectedObject.position.y, constrainedZ],
+                    rotation: objectRotation
+                });
+            }
+
+            return; // Exit early
+        }
+
       let constrainedPosition = { x: 0, y: 0, z: 0 };
       let constrainedRotation = this.selectedObject.rotation.y;
       let rotationChanged = false;
@@ -1232,6 +1324,65 @@ export class EventHandlers {
       }
     }
   }
+
+    private calculateRotatedBounds(width: number, depth: number, rotation: number): { width: number; height: number } {
+
+        const cosAngle = Math.abs(Math.cos(rotation));
+        const sinAngle = Math.abs(Math.sin(rotation));
+
+        const rotatedWidth = width * cosAngle + depth * sinAngle;
+        const rotatedHeight = width * sinAngle + depth * cosAngle;
+
+        return {
+            width: rotatedWidth,
+            height: rotatedHeight
+        };
+    }
+
+    private constrainFreeRotationObjectPosition(position: THREE.Vector3, objectType: ComponentType, currentItem?: BathroomItem): THREE.Vector3 {
+        const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+        if (!objectDimensions) {
+            return position;
+        }
+
+        const objectScale = this.selectedObject?.scale.x || 1;
+        const objectRotation = this.selectedObject?.rotation.y || 0;
+
+        // ✅ Calculate rotated bounding box for any object
+        const rotatedBounds = this.calculateRotatedBounds(
+            objectDimensions.width * objectScale,
+            objectDimensions.depth * objectScale,
+            objectRotation
+        );
+
+        // Room boundaries (same for all objects)
+        const roomHalfWidth = this.roomWidthRef.value / 2;
+        const roomHalfHeight = this.roomHeightRef.value / 2;
+        const wallThickness = 12;
+
+        // ✅ DYNAMIC BUFFER: Different buffer based on object type
+        const minWallBuffer = 0;
+
+        const wallFaces = {
+            west: -roomHalfWidth + wallThickness,
+            east: roomHalfWidth - wallThickness,
+            north: -roomHalfHeight + wallThickness,
+            south: roomHalfHeight - wallThickness
+        };
+
+        const halfRotatedWidth = rotatedBounds.width / 2;
+        const halfRotatedHeight = rotatedBounds.height / 2;
+
+        const safeMinX = wallFaces.west + halfRotatedWidth + minWallBuffer;
+        const safeMaxX = wallFaces.east - halfRotatedWidth - minWallBuffer;
+        const safeMinZ = wallFaces.north + halfRotatedHeight + minWallBuffer;
+        const safeMaxZ = wallFaces.south - halfRotatedHeight - minWallBuffer;
+
+        const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
+        const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
+
+        return new THREE.Vector3(constrainedX, position.y, constrainedZ);
+    }
 
   private handleMouseUp (): void {
     if (this.isDragOperation) {
