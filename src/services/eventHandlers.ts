@@ -26,6 +26,7 @@ import { MeasurementSystem } from './measurementSystem';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
 import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
+import { RotationArrows } from './rotationArrows';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -116,6 +117,7 @@ export class EventHandlers {
   private showDragPlaneDebug: boolean = false; // Toggle this for debug visualization
   // Also add intersection point visualization in handleMouseMove:
   private debugIntersectionPoint: THREE.Mesh | null = null;
+    private rotationArrows: RotationArrows | null = null;
 
   constructor (
     scene: THREE.Scene,
@@ -199,9 +201,27 @@ export class EventHandlers {
     this.handleKeyDown = this.handleKeyDown.bind(this);
     // 🔧 FIX: Bind the new visibility change handler
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+      this.rotationArrows = new RotationArrows(this.scene, this.camera, this.renderer);
 
     // Simple animation loop ONLY for zoom
     this.startSimpleZoomAnimation();
+      this.rotationArrows.setRotationChangeCallback((rotation: number) => {
+          if (this.selectedObject) {
+              const itemId = this.selectedObject.userData.itemId as number;
+              this.queueUpdate(itemId, { rotation });
+
+              // Update arrow positions to follow the rotation in real-time
+              this.rotationArrows?.update();
+          }
+      });
+
+      this.rotationArrows.setRotationCompleteCallback((rotation: number) => {
+          if (this.selectedObject) {
+              const itemId = this.selectedObject.userData.itemId as number;
+              console.log('🎯 Arrow rotation completed for item:', itemId, 'rotation:', rotation);
+              this.applyPendingUpdates();
+          }
+      });
   }
 
 // Add this method to create/update the drag plane visualization:
@@ -298,6 +318,13 @@ export class EventHandlers {
   public setWallCulling (wallCulling: SimpleWallCulling): void {
     this.wallCulling = wallCulling;
   }
+
+    public update(): void {
+        // Update rotation arrows
+        if (this.rotationArrows) {
+            this.rotationArrows.update();
+        }
+    }
 
   private startSimpleZoomAnimation (): void {
     const animate = () => {
@@ -514,9 +541,16 @@ export class EventHandlers {
     if (this.selectedObject && !intersected) {
       this.wasEmptySpaceClicked = true;
     }
+      if (this.rotationArrows && this.rotationArrows.isEnabled() && this.rotationArrows.isMouseOverArrows()) {
+          // Let rotation arrows handle this event
+          return;
+      }
 
     if (intersected) {
       this.selectedObject = intersected.object;
+
+        // Update rotation arrows when object is selected
+
 
       console.log('selectedObject >>>', this.selectedObject);
 
@@ -538,6 +572,15 @@ export class EventHandlers {
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = currentItems.find(item => item.id === itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
+
+        if (this.rotationArrows) {
+            const canRotateFreely = movementConfig?.allowFreeRotation === true;
+            if (canRotateFreely) {
+                this.rotationArrows.setSelectedObject(this.selectedObject);
+            } else {
+                this.rotationArrows.setSelectedObject(null); // Hide arrows for non-rotatable objects
+            }
+        }
 
       // Only do this for wall-bound objects
       if (movementConfig?.snapToWall) {
@@ -613,16 +656,7 @@ export class EventHandlers {
       // Then set appropriate outline color based on current collision state
       setOutlineColor(isColliding);
 
-      if (event.button === 2) { // Right click for rotation
-        this.isObjectRotating = true;
-        this.isDragOperation = true; // Mark as drag operation
-        const rect = this.renderer.domElement.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        this.rotationStartAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
-        this.objectStartRotation = this.selectedObject.rotation.y;
-        this.renderer.domElement.style.cursor = 'crosshair';
-      } else if (event.ctrlKey || event.metaKey) { // Ctrl/Cmd + click for height adjustment
+       if (event.ctrlKey || event.metaKey) { // Ctrl/Cmd + click for height adjustment
         this.isHeightAdjusting = true;
         this.isDragOperation = true; // Mark as drag operation
         this.heightStartY = this.selectedObject.position.y;
@@ -793,6 +827,9 @@ export class EventHandlers {
     if (mouseDistance > this.MOUSE_MOVE_THRESHOLD) {
       this.hasMouseMoved = true;
     }
+    if (this.rotationArrows && this.rotationArrows.isDraggingArrow()) {
+        return;
+    }
 
     const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
     this.mouse.set(mousePos.x, mousePos.y);
@@ -881,7 +918,7 @@ export class EventHandlers {
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const currentAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
-      const deltaAngle = currentAngle - this.rotationStartAngle;
+        const deltaAngle = this.rotationStartAngle - currentAngle;
 
       this.selectedObject.rotation.y = this.objectStartRotation + deltaAngle;
 
@@ -1265,6 +1302,7 @@ export class EventHandlers {
       console.log('🎯 Deselecting object - was click on empty space, not drag');
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
+        this.clearSelection();
 
       // Clear measurement system selection
       if (this.measurementSystem) {
@@ -1709,6 +1747,7 @@ export class EventHandlers {
       console.log('🎯 Deselecting object - was tap on empty space, not drag');
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
+        this.clearSelection();
 
       if (this.measurementSystem) {
         this.measurementSystem.setSelectedObject(null);
@@ -1828,17 +1867,39 @@ export class EventHandlers {
     window.removeEventListener('resize', this.handleResize);
   }
 
-  public clearSelection (): void {
-    if (this.selectedObject) {
-      highlightObject(this.selectedObject, false);
-      setOutlineColor(false);
-      this.selectedObject = null;
+    public clearSelection(): void {
+        console.log('🧹 clearSelection called, current selectedObject:', this.selectedObject);
+
+        if (this.selectedObject) {
+            highlightObject(this.selectedObject, false);
+            setOutlineColor(false);
+            this.selectedObject = null;
+        }
+
+        // ALWAYS clear arrows when clearSelection is called, regardless of selectedObject state
+        if (this.rotationArrows) {
+            console.log('🏹 Clearing rotation arrows');
+            this.rotationArrows.setSelectedObject(null);
+        }
+
+        // Clear measurement system selection
+        if (this.measurementSystem) {
+            this.measurementSystem.setSelectedObject(null);
+        }
+
+        console.log('🧹 clearSelection completed');
     }
-    // Clear measurement system selection
-    if (this.measurementSystem) {
-      this.measurementSystem.setSelectedObject(null);
+
+
+    public setRotationArrowsEnabled(enabled: boolean): void {
+        console.log('setRotationArrowsEnabled called:', enabled);
+        if (this.rotationArrows) {
+            this.rotationArrows.setEnabled(enabled);
+            console.log('✅ Rotation arrows enabled state set to:', enabled);
+        } else {
+            console.log('⚠️ Rotation arrows not initialized');
+        }
     }
-  }
 
   public isDragOperationActive (): boolean {
     return this.isDragOperation;

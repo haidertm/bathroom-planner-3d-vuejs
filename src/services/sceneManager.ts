@@ -36,6 +36,7 @@ export class SceneManager {
   public scene: THREE.Scene | null = null;
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
+    private eventHandlers: any = null;
 
   // Post-processing components
   private composer: EffectComposer | null = null;
@@ -159,6 +160,10 @@ export class SceneManager {
       this.measurementSystem.setSelectedObject(object);
     }
   }
+
+    public setEventHandlers(eventHandlers: any): void {
+        this.eventHandlers = eventHandlers;
+    }
 
   public getCurrentMeasurements (): MeasurementData | null {
     return this.measurementSystem?.getCurrentMeasurements() || null;
@@ -976,6 +981,14 @@ export class SceneManager {
       // ADDED: Adjust outline for distance every frame
       this.adjustOutlineForDistance();
 
+        if (this.eventHandlers && typeof this.eventHandlers.update === 'function') {
+            try {
+                this.eventHandlers.update();
+            } catch (err) {
+                console.warn('eventHandlers.update() failed:', err);
+            }
+        }
+
       // Render
       if (this.composer) {
         this.composer.render();
@@ -985,6 +998,8 @@ export class SceneManager {
     };
     animate();
   }
+
+
 
   // Method to stop animation loop
   stopAnimationLoop (): void {
