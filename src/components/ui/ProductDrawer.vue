@@ -68,9 +68,7 @@
           ← Go back
         </button>
 
-        <h2 :style="titleStyle">
-          {{ currentView === 'variants' ? 'Select Options' : selectedCategory }}
-        </h2>
+        <h2 :style="titleStyle">{{ drawerTitle }}</h2>
 
         <button
             @click="closeDrawer"
@@ -107,7 +105,16 @@
           <!-- Product Info -->
           <div :style="productInfoStyle">
             <div :style="brandStyle">{{ product.brand }}</div>
-            <h3 :style="productNameStyle">{{ product.name }}</h3>
+            <h3 :style="productNameStyle" v-html="getHighlightedName(product)">
+            </h3>
+            <div v-if="product.searchContext" :style="searchContextStyle">
+              <div :style="searchCategoryBadgeStyle">
+                {{ product.searchContext.category }}
+              </div>
+              <div v-if="product.searchContext.matchingVariant" :style="searchVariantStyle">
+                SKU: {{ product.searchContext.matchingVariant.sku }}
+              </div>
+            </div>
             <div :style="priceStyle">£{{ product.price }}</div>
 
             <!-- More Info Link -->
@@ -336,6 +343,21 @@ const props = defineProps({
     default: null,
     validator: (value) => value instanceof Map
   },
+  searchResults: {
+    type: [Array, Object], // Allow both Array and Object (for reactive refs)
+    default: () => [],
+    validator: (value) => {
+      // Allow arrays, reactive refs, or null/undefined
+      return Array.isArray(value) ||
+          value === null ||
+          value === undefined ||
+          (typeof value === 'object' && value !== null)
+    }
+  },
+  searchQuery: {
+    type: String,
+    default: ''
+  }
 })
 
 // Emits - ADD 'back' event for better control
@@ -367,6 +389,64 @@ watch(() => props.isOpen, (isOpen) => {
     selectedProduct.value = null
   }
 })
+
+const displayedProducts = computed(() => {
+  // If we're showing search results, use them instead of category products
+  if (props.selectedCategory === 'search' && props.searchResults.length > 0) {
+    // Transform search results to match the expected product format
+    return props.searchResults.map(result => ({
+      ...result.product,
+      // Add search context information
+      searchContext: {
+        category: result.category,
+        matchType: result.matchType,
+        matchingVariant: result.matchingVariant
+      }
+    }))
+  }
+
+  // Otherwise, use the normal category-based products
+  return getProductsForCategory(props.selectedCategory)
+})
+
+const drawerTitle = computed(() => {
+  if (props.selectedCategory === 'search') {
+    return `Search Results (${props.searchResults.length})`
+  }
+
+  // Return your existing category title logic
+  return props.selectedCategory || 'Products'
+})
+
+// 4. FIXED search result highlighting that properly handles Vue refs
+const getHighlightedName = (product) => {
+  if (props.selectedCategory === 'search') {
+    // Properly access the searchQuery value
+    let searchQuery = props.searchQuery
+
+    // If it's a Vue ref, unwrap it
+    if (searchQuery && typeof searchQuery === 'object' && 'value' in searchQuery) {
+      searchQuery = searchQuery.value
+    }
+
+    // Ensure we have a valid string
+    if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      const name = product.name || ''
+      const index = name.toLowerCase().indexOf(query)
+
+      if (index !== -1) {
+        const before = name.substring(0, index)
+        const match = name.substring(index, index + query.length)
+        const after = name.substring(index + query.length)
+
+        return `${before}<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 2px;">${match}</mark>${after}`
+      }
+    }
+  }
+
+  return product.name || ''
+}
 
 // NEW: Loading Modal Methods
 const showLoadingModalFn = () => {
@@ -428,11 +508,84 @@ const getProductsForCategory = (category) => {
   return productData[category] || []
 }
 
- const readyProducts = computed(() => {
-   const all = getProductsForCategory(props.selectedCategory)
-   if (!props.isLoading) return all
-   return all.filter(p => props.loadedProducts?.has(p.id) ?? false)
- })
+const readyProducts = computed(() => {
+  console.log('🔍 ProductDrawer readyProducts computed called')
+  console.log('🔍 selectedCategory:', props.selectedCategory)
+  console.log('🔍 searchResults raw:', props.searchResults)
+  console.log('🔍 searchResults type:', typeof props.searchResults)
+  console.log('🔍 searchResults is null/undefined:', props.searchResults == null)
+
+  // Properly unwrap Vue reactive references and convert to array
+  let searchResultsArray = []
+  try {
+    let unwrapped = props.searchResults
+
+    // If it's a Vue ref, unwrap it
+    if (unwrapped && typeof unwrapped === 'object' && 'value' in unwrapped) {
+      console.log('🔍 Unwrapping Vue ref, value:', unwrapped.value)
+      unwrapped = unwrapped.value
+    }
+
+    // If it's a reactive proxy or array, convert to regular array
+    if (unwrapped && (Array.isArray(unwrapped) || (typeof unwrapped === 'object' && unwrapped.length !== undefined))) {
+      console.log('🔍 Converting to array, length:', unwrapped.length)
+      searchResultsArray = [...unwrapped]
+    } else if (Array.isArray(unwrapped)) {
+      searchResultsArray = unwrapped
+    }
+  } catch (error) {
+    console.warn('🔍 Error processing searchResults:', error)
+    searchResultsArray = []
+  }
+
+  console.log('🔍 searchResults final array:', searchResultsArray)
+  console.log('🔍 searchResults final length:', searchResultsArray.length)
+  console.log('🔍 searchResults final is array:', Array.isArray(searchResultsArray))
+
+  // If we're showing search results, use them instead of category products
+  if (props.selectedCategory === 'search') {
+    console.log('🔍 Processing search results...')
+
+    if (searchResultsArray.length === 0) {
+      console.log('❌ Empty or invalid search results array')
+      return []
+    }
+
+    console.log('🔍 Transforming search results:', searchResultsArray.length, 'items')
+
+    // Transform search results to match the expected product format
+    const transformedResults = searchResultsArray.map((result, index) => {
+      console.log(`🔍 Transforming result ${index}:`, result)
+
+      if (!result || !result.product) {
+        console.error(`❌ Invalid result at index ${index}:`, result)
+        return null
+      }
+
+      const transformedProduct = {
+        ...result.product,
+        // Add search context information
+        searchContext: {
+          category: result.category,
+          matchType: result.matchType,
+          matchingVariant: result.matchingVariant
+        }
+      }
+
+      console.log(`✅ Transformed product ${index}:`, transformedProduct.name)
+      return transformedProduct
+    }).filter(Boolean) // Remove any null results
+
+    console.log('🔍 Final transformed results:', transformedResults.length, 'products')
+    return transformedResults
+  }
+
+  console.log('🔍 Using normal category products for:', props.selectedCategory)
+  // Otherwise, use the normal category-based products
+  const all = getProductsForCategory(props.selectedCategory)
+  if (!props.isLoading) return all
+  return all.filter(p => props.loadedProducts?.has(p.id) ?? false)
+})
 
 const getLoadingProductCount = () => {
   if (!props.isLoading) return 0
@@ -1589,6 +1742,34 @@ const modalCancelButtonStyle = computed(() => ({
   cursor: 'pointer',
   transition: 'all 0.2s ease',
   fontFamily: 'Arial, sans-serif'
+}))
+
+// 6. Add these styles for search results
+const searchContextStyle = computed(() => ({
+  display: 'flex',
+  gap: '8px',
+  alignItems: 'center',
+  marginTop: '8px',
+  flexWrap: 'wrap'
+}))
+
+const searchCategoryBadgeStyle = computed(() => ({
+  backgroundColor: '#29275B',
+  color: 'white',
+  padding: '4px 8px',
+  borderRadius: '12px',
+  fontSize: '11px',
+  fontWeight: '500',
+  textTransform: 'capitalize'
+}))
+
+const searchVariantStyle = computed(() => ({
+  backgroundColor: '#f0f0f0',
+  color: '#666',
+  padding: '4px 8px',
+  borderRadius: '12px',
+  fontSize: '11px',
+  fontWeight: '500'
 }))
 
 </script>

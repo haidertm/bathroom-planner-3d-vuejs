@@ -29,6 +29,56 @@
         ✕
       </button>
 
+      <!-- Search Input Section -->
+      <div v-if="isSidebarVisible || !isMobileDevice" :style="searchSectionStyle">
+        <div :style="searchContainerStyle">
+          <!-- Search Icon -->
+          <div :style="searchIconStyle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="M21 21l-4.35-4.35"></path>
+            </svg>
+          </div>
+
+          <!-- Search Input -->
+          <input
+              v-model="searchQuery"
+              :style="searchInputStyle"
+              type="text"
+              placeholder="Search by name or SKU..."
+              @input="handleSearchInput"
+              @keydown.enter="handleSearchEnter"
+              @focus="handleSearchFocus"
+              @blur="handleSearchBlur"
+              class="search-input"
+          />
+
+          <!-- Clear Button (show when there's text) -->
+          <button
+              v-if="searchQuery"
+              @click="clearSearch"
+              :style="clearButtonStyle"
+              class="clear-search-button"
+              type="button"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search Results Count (show when searching) -->
+        <div v-if="searchQuery && searchResults.length > 0" :style="searchResultsCountStyle">
+          Found {{ searchResults.length }} product{{ searchResults.length !== 1 ? 's' : '' }}
+        </div>
+
+        <!-- No Results Message -->
+        <div v-if="searchQuery && searchResults.length === 0" :style="noResultsStyle">
+          No products found for "{{ searchQuery }}"
+        </div>
+      </div>
+
       <!-- Bathroom Items Accordion -->
       <div :style="accordionSectionStyle">
         <div
@@ -301,6 +351,8 @@ import ProductDrawer from './ProductDrawer.vue'
 import productData from '../../mocks/productData.js'
 import { CONFIG } from '../../constants/models'
 import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
+
+
 
 // Define props
 const props = defineProps({
@@ -624,6 +676,8 @@ const productDrawerProps = computed(() => ({
   selectedCategory: selectedCategory.value,
   isLoading: isLoading.value,
   loadingError: errorMessage.value,
+  searchResults: searchResults,
+  searchQuery: searchQuery
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):
@@ -1382,6 +1436,248 @@ const categoryLabelStyle = computed(() => ({
   color: '#374151',
   fontFamily: 'Arial, sans-serif'
 }))
+// Add these to your existing reactive data
+const searchQuery = ref('')
+const searchFocused = ref(false)
+const searchResults = ref([])
+
+// Search functionality methods
+const handleSearchInput = () => {
+  if (searchQuery.value.trim()) {
+    performSearch(searchQuery.value.trim())
+  } else {
+    searchResults.value = []
+  }
+}
+
+const handleSearchEnter = () => {
+  if (searchResults.value.length > 0) {
+    // Open ProductDrawer with filtered search results
+    openProductDrawerWithFilteredResults()
+  }
+}
+
+const handleSearchFocus = () => {
+  searchFocused.value = true
+}
+
+const handleSearchBlur = () => {
+  searchFocused.value = false
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchResults.value = []
+
+  // If the drawer is open with search results, close it
+  if (selectedCategory.value === 'search') {
+    isProductDrawerOpen.value = false
+    selectedCategory.value = ''
+  }
+}
+
+// Search logic - searches through productData by name and SKU
+const performSearch = (query) => {
+  const results = []
+  const lowerQuery = query.toLowerCase()
+
+  console.log('🔍 Starting search for:', query)
+  console.log('🔍 Available productData categories:', Object.keys(productData))
+
+  // Search through all categories in productData
+  Object.entries(productData).forEach(([category, products]) => {
+    console.log(`🔍 Searching in ${category} category with ${products.length} products`)
+
+    products.forEach((product, productIndex) => {
+      console.log(`🔍 Checking product ${productIndex}:`, product.name)
+
+      // Search in product name
+      const matchesName = product.name.toLowerCase().includes(lowerQuery)
+      if (matchesName) {
+        console.log('✅ Name match found:', product.name)
+      }
+
+      // Search in product variants (SKU and names)
+      let matchesVariant = false
+      let matchingVariant = null
+
+      if (product.variants && Array.isArray(product.variants)) {
+        console.log(`🔍 Checking ${product.variants.length} variants for product:`, product.name)
+
+        product.variants.forEach((variant, variantIndex) => {
+          console.log(`🔍 Variant ${variantIndex}:`, {
+            sku: variant.sku,
+            name: variant.name,
+            title: variant.title
+          })
+
+          const matchesSku = variant.sku && variant.sku.toLowerCase().includes(lowerQuery)
+          const matchesVariantName = variant.name && variant.name.toLowerCase().includes(lowerQuery)
+          const matchesTitle = variant.title && variant.title.toLowerCase().includes(lowerQuery)
+
+          if (matchesSku) {
+            console.log('✅ SKU match found:', variant.sku)
+            matchesVariant = true
+            matchingVariant = variant
+          }
+          if (matchesVariantName) {
+            console.log('✅ Variant name match found:', variant.name)
+            matchesVariant = true
+            matchingVariant = variant
+          }
+          if (matchesTitle) {
+            console.log('✅ Variant title match found:', variant.title)
+            matchesVariant = true
+            matchingVariant = variant
+          }
+        })
+      }
+
+      // If we found a match, add to results
+      if (matchesName || matchesVariant) {
+        const result = {
+          category,
+          product: { ...product }, // Ensure we're copying the product object
+          matchingVariant: matchingVariant ? { ...matchingVariant } : null,
+          matchType: matchesName ? 'name' : 'variant'
+        }
+        results.push(result)
+        console.log('✅ Added result:', {
+          category,
+          productName: product.name,
+          productId: product.id,
+          matchType: result.matchType,
+          matchingVariantSku: matchingVariant?.sku,
+          fullResult: result
+        })
+      }
+    })
+  })
+
+  console.log(`🔍 Search completed. Found ${results.length} results:`, results)
+
+  // Double-check results are properly structured
+  results.forEach((result, index) => {
+    console.log(`🔍 Result ${index} structure check:`, {
+      hasCategory: !!result.category,
+      hasProduct: !!result.product,
+      productHasId: !!result.product?.id,
+      productHasName: !!result.product?.name,
+      hasMatchingVariant: !!result.matchingVariant
+    })
+  })
+
+  searchResults.value = results
+}
+
+// Open product drawer with filtered search results
+const openProductDrawerWithFilteredResults = () => {
+  if (searchResults.value.length === 0) return
+
+  console.log(`🔍 Opening search results:`, searchResults.value)
+
+  // Set special category for search results
+  selectedCategory.value = 'search'
+  isProductDrawerOpen.value = true
+
+  // Set loading to false since search results are ready
+  isLoading.value = false
+
+  console.log(`🎯 ProductDrawer opened with ${searchResults.value.length} search results`)
+}
+
+// Clear search and close filtered view
+const clearSearchAndCloseDrawer = () => {
+  searchQuery.value = ''
+  searchResults.value = []
+
+  // If the drawer is open with search results, close it
+  if (selectedCategory.value === 'search') {
+    isProductDrawerOpen.value = false
+    selectedCategory.value = ''
+  }
+}
+
+// Computed styles - matching your existing design patterns
+const searchSectionStyle = computed(() => ({
+  padding: '15px 20px',
+  borderBottom: '1px solid #e0e0e0',
+  backgroundColor: '#ffffff',
+  // Removed sticky positioning to prevent z-index conflicts
+  marginBottom: '5px'
+}))
+
+const searchContainerStyle = computed(() => ({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  backgroundColor: '#f8fafc',
+  border: `2px solid ${searchFocused.value ? '#29275B' : '#e5e7eb'}`,
+  borderRadius: '10px',
+  padding: '0',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  boxShadow: searchFocused.value
+      ? '0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15)'
+      : '0 2px 6px rgba(0, 0, 0, 0.08)',
+  transform: searchFocused.value ? 'translateY(-1px)' : 'translateY(0)'
+}))
+
+const searchIconStyle = computed(() => ({
+  padding: '12px 16px',
+  color: searchFocused.value ? '#29275B' : '#9ca3af',
+  transition: 'color 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  flexShrink: 0
+}))
+
+const searchInputStyle = computed(() => ({
+  flex: 1,
+  border: 'none',
+  outline: 'none',
+  backgroundColor: 'transparent',
+  padding: '12px 8px',
+  fontSize: '14px',
+  fontWeight: '500',
+  color: '#333',
+  fontFamily: 'Arial, sans-serif',
+  '::placeholder': {
+    color: '#9ca3af'
+  }
+}))
+
+const clearButtonStyle = computed(() => ({
+  padding: '8px 12px',
+  backgroundColor: 'transparent',
+  border: 'none',
+  color: '#9ca3af',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  borderRadius: '4px',
+  transition: 'all 0.2s ease',
+  flexShrink: 0,
+  ':hover': {
+    backgroundColor: '#f3f4f6',
+    color: '#6b7280'
+  }
+}))
+
+const searchResultsCountStyle = computed(() => ({
+  marginTop: '8px',
+  fontSize: '12px',
+  color: '#29275B',
+  fontWeight: '500',
+  fontFamily: 'Arial, sans-serif'
+}))
+
+const noResultsStyle = computed(() => ({
+  marginTop: '8px',
+  fontSize: '12px',
+  color: '#9ca3af',
+  fontStyle: 'italic',
+  fontFamily: 'Arial, sans-serif'
+}))
 </script>
 
 <style scoped>
@@ -1516,6 +1812,27 @@ const categoryLabelStyle = computed(() => ({
   .modern-number-input {
     font-size: 14px !important;
     padding: 10px 14px !important;
+  }
+}
+/* Search input specific styles */
+.search-input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.search-input:focus::placeholder {
+  color: #d1d5db;
+}
+
+.clear-search-button:hover {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .search-input {
+    font-size: 16px !important; /* Prevents zoom on iOS */
   }
 }
 </style>
