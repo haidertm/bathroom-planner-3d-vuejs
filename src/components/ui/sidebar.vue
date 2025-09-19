@@ -1,5 +1,53 @@
 <template>
   <div>
+    <div v-if="isSidebarVisible || !isMobileDevice" :style="searchSectionStyle">
+      <div :style="searchContainerStyle">
+        <!-- Search Icon -->
+        <div :style="searchIconStyle">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="M21 21l-4.35-4.35"></path>
+          </svg>
+        </div>
+
+        <!-- Search Input -->
+        <input
+            v-model="searchQuery"
+            :style="searchInputStyle"
+            type="text"
+            placeholder="Search by name or SKU..."
+            @input="handleSearchInput"
+            @keydown.enter="handleSearchEnter"
+            @focus="handleSearchFocus"
+            @blur="handleSearchBlur"
+            class="search-input"
+        />
+
+        <!-- Clear Button (show when there's text) -->
+        <button
+            v-if="searchQuery"
+            @click="clearSearch"
+            :style="clearButtonStyle"
+            class="clear-search-button"
+            type="button"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search Results Count (show when searching) -->
+      <div v-if="searchQuery && searchResults.length > 0" :style="searchResultsCountStyle">
+        Found {{ searchResults.length }} product{{ searchResults.length !== 1 ? 's' : '' }}
+      </div>
+
+      <!-- No Results Message -->
+      <div v-if="searchQuery && searchResults.length === 0" :style="noResultsStyle">
+        No products found for "{{ searchQuery }}"
+      </div>
+    </div>
     <!-- Mobile Floating + Button -->
     <button
         v-if="isMobileDevice && !isSidebarVisible"
@@ -30,54 +78,7 @@
       </button>
 
       <!-- Search Input Section -->
-      <div v-if="isSidebarVisible || !isMobileDevice" :style="searchSectionStyle">
-        <div :style="searchContainerStyle">
-          <!-- Search Icon -->
-          <div :style="searchIconStyle">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="M21 21l-4.35-4.35"></path>
-            </svg>
-          </div>
 
-          <!-- Search Input -->
-          <input
-              v-model="searchQuery"
-              :style="searchInputStyle"
-              type="text"
-              placeholder="Search by name or SKU..."
-              @input="handleSearchInput"
-              @keydown.enter="handleSearchEnter"
-              @focus="handleSearchFocus"
-              @blur="handleSearchBlur"
-              class="search-input"
-          />
-
-          <!-- Clear Button (show when there's text) -->
-          <button
-              v-if="searchQuery"
-              @click="clearSearch"
-              :style="clearButtonStyle"
-              class="clear-search-button"
-              type="button"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Search Results Count (show when searching) -->
-        <div v-if="searchQuery && searchResults.length > 0" :style="searchResultsCountStyle">
-          Found {{ searchResults.length }} product{{ searchResults.length !== 1 ? 's' : '' }}
-        </div>
-
-        <!-- No Results Message -->
-        <div v-if="searchQuery && searchResults.length === 0" :style="noResultsStyle">
-          No products found for "{{ searchQuery }}"
-        </div>
-      </div>
 
       <!-- Bathroom Items Accordion -->
       <div :style="accordionSectionStyle">
@@ -1123,7 +1124,7 @@ const mobileCloseButtonStyle = computed(() => ({
 // Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '60px',
+  top: isMobileDevice.value ? '0' : '130px',
   left: '0',
   backgroundColor: 'rgba(255, 255, 255, 0.98)',
   padding: isMobileDevice.value ? '50px 20px 20px 20px' : '20px',
@@ -1132,8 +1133,8 @@ const panelStyle = computed(() => ({
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
+  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 130px)',
+  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 130px)',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
@@ -1299,7 +1300,7 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '60px',
+  top: isMobileDevice.value ? '0' : '130px',
   left: isMobileDevice.value ? '0' : '0',
   height: isMobileDevice.value ? '100vh' : '100vh',
   width: isMobileDevice.value ? '100vw' : '480px',
@@ -1622,7 +1623,12 @@ const searchSectionStyle = computed(() => ({
   borderBottom: '1px solid #e0e0e0',
   backgroundColor: '#ffffff',
   // Removed sticky positioning to prevent z-index conflicts
-  marginBottom: '5px'
+  marginBottom: '5px',
+  zIndex: '9999999',
+  position: 'absolute',
+  top: '60px',
+  width: isMobileDevice.value ? '100vw' : '480px',
+  maxWidth: isMobileDevice.value ? '100vw' : '500px',
 }))
 
 const searchContainerStyle = computed(() => ({
