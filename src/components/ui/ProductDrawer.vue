@@ -480,7 +480,7 @@ const handleDirectAddToRoom = async (product) => {
           console.log('📦 Loading model for direct add:', variant.sku)
 
           const modelConfig = {
-            name: variant.sku,
+            name: variant.sku || variant.name,
             path: variant.path,
             scale: variant.scale || 1.0,
             dimensions: variant.dimensions,
