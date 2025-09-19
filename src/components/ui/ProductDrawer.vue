@@ -1,5 +1,67 @@
 <template>
   <div>
+    <div v-if="isSingleProductSearchMode" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0;">
+        <h3 style="font-size: 24px; font-weight: 600; color: #29275B; margin: 0; font-family: Arial, sans-serif;">Product Found</h3>
+        <div style="background-color: #10b981; color: #ffffff; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Exact Match</div>
+      </div>
+
+      <div
+          v-for="product in readyProducts"
+          :key="product.id"
+          style="background-color: #ffffff; border: 2px solid #f0f0f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);"
+      >
+        <!-- Product Image -->
+        <div style="width: 100%; height: 300px; overflow: hidden; background-color: #f8fafc; display: flex; align-items: center; justify-content: center;">
+          <img
+              :src="product.image"
+              :alt="product.name"
+              style="width: 100%; height: 100%; object-fit: cover;"
+              @error="handleImageError"
+              loading="lazy"
+          />
+        </div>
+
+        <!-- Product Details -->
+        <div style="padding: 24px;">
+          <h4 style="font-size: 20px; font-weight: 600; color: #1a1a1a; margin-bottom: 12px; line-height: 1.4; font-family: Arial, sans-serif;">{{ product.name }}</h4>
+
+          <div v-if="product.searchContext.matchingVariant?.sku" style="font-size: 14px; color: #6b7280; margin-bottom: 8px; padding: 8px 12px; background-color: #f3f4f6; border-radius: 8px; font-family: monospace;">
+            <strong>SKU:</strong> {{ product.searchContext.matchingVariant.sku }}
+          </div>
+
+          <div
+              v-if="product.searchContext.matchingVariant?.dimensions"
+              style="font-size: 14px; color: #6b7280; margin-bottom: 12px; padding: 8px 12px; background-color: #f9fafb; border-radius: 8px;"
+          >
+            <strong>Dimensions:</strong>
+            {{ product.searchContext.matchingVariant.dimensions.width }}cm ×
+            {{ product.searchContext.matchingVariant.dimensions.depth || product.searchContext.matchingVariant.dimensions.height }}cm ×
+            {{ product.searchContext.matchingVariant.dimensions.height }}cm
+          </div>
+
+          <div style="font-size: 28px; font-weight: 700; color: #29275B; margin-bottom: 16px; font-family: Arial, sans-serif;">£{{ product.price }}</div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="padding: 20px 24px; border-top: 1px solid #f0f0f0; background-color: #f9fafb; display: flex; gap: 12px; align-items: center;">
+          <a
+              :href="product.link"
+              style="display: flex; align-items: center; gap: 6px; color: #6b7280; text-decoration: none; font-size: 14px; font-weight: 500; padding: 10px 16px; border-radius: 8px; border: 1px solid #d1d5db; background-color: #ffffff; transition: all 0.2s ease; font-family: Arial, sans-serif;"
+              target="_blank"
+          >
+            View Details
+          </a>
+
+          <button
+              @click="handleDirectAddToRoom(product)"
+              style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: #29275B; color: #ffffff; border: none; border-radius: 10px; padding: 14px 24px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(41, 39, 91, 0.3); flex: 1; min-height: 50px; font-family: Arial, sans-serif;"
+          >
+            Add to Room
+          </button>
+        </div>
+      </div>
+    </div>
     <!-- Product Drawer Overlay -->
     <div
         v-if="isOpen"
@@ -124,11 +186,11 @@
 
             <!-- SELECT Button (original functionality) -->
             <button
-                @click="selectProduct(product)"
+                @click="product.searchContext?.showDirectAdd ? handleDirectAddToRoom(product) : selectProduct(product)"
                 :style="addToRoomButtonStyle"
                 class="select-button"
             >
-              Add to Room
+              {{ product.searchContext?.showDirectAdd ? 'Add to Room' : 'SELECT' }}
             </button>
           </div>
         </div>
@@ -390,6 +452,72 @@ watch(() => props.isOpen, (isOpen) => {
   }
 })
 
+const isSingleProductSearchMode = computed(() => {
+  return props.selectedCategory === 'search' &&
+      readyProducts.value.length === 1 &&
+      readyProducts.value[0]?.searchContext?.isExactMatch
+})
+
+const handleDirectAddToRoom = async (product) => {
+  console.log('🎯 Direct add to room triggered:', product)
+
+  if (!product.productData) {
+    console.error('❌ No product data available for direct add')
+    return
+  }
+
+  showLoadingModal.value = true
+  modalProgress.value = 0
+
+  try {
+    const variant = product.searchContext.matchingVariant
+
+    // Load model if needed
+    if (variant.path) {
+      try {
+        const modelManager = ModelManager.getInstance()
+        if (!modelManager.isModelLoaded(variant.sku)) {
+          console.log('📦 Loading model for direct add:', variant.sku)
+
+          const modelConfig = {
+            name: variant.sku,
+            path: variant.path,
+            scale: variant.scale || 1.0,
+            dimensions: variant.dimensions,
+            movement: variant.movement,
+            orientation: variant.orientation
+          }
+
+          await modelManager.loadModel(variant.sku, modelConfig)
+        }
+      } catch (modelError) {
+        console.warn('⚠️ Model loading failed, but continuing:', modelError)
+      }
+    }
+
+    modalProgress.value = 100
+
+    emit('add-to-room', {
+      ...product.productData,
+      fromDirectSearch: true,
+      searchQuery: props.searchQuery
+    })
+
+    console.log('✅ Product added directly from search:', variant.sku)
+
+    setTimeout(() => {
+      hideLoadingModal()
+      emit('close')
+    }, 500)
+
+  } catch (error) {
+    console.error('❌ Error adding to room:', error)
+    hideLoadingModal()
+  }
+}
+
+
+
 const displayedProducts = computed(() => {
   // If we're showing search results, use them instead of category products
   if (props.selectedCategory === 'search' && props.searchResults.length > 0) {
@@ -553,30 +681,70 @@ const readyProducts = computed(() => {
 
     console.log('🔍 Transforming search results:', searchResultsArray.length, 'items')
 
-    // Transform search results to match the expected product format
+    // NEW: Transform search results to match the expected product format
     const transformedResults = searchResultsArray.map((result, index) => {
       console.log(`🔍 Transforming result ${index}:`, result)
 
-      if (!result || !result.product) {
-        console.error(`❌ Invalid result at index ${index}:`, result)
-        return null
-      }
+      const { category, product, matchingVariant, matchType, isExactMatch } = result
 
-      const transformedProduct = {
-        ...result.product,
-        // Add search context information
-        searchContext: {
-          category: result.category,
-          matchType: result.matchType,
-          matchingVariant: result.matchingVariant
+      // For exact SKU matches, create enhanced product structure
+      if (isExactMatch && matchingVariant) {
+        return {
+          id: matchingVariant.id || matchingVariant.sku,
+          name: matchingVariant.title || matchingVariant.name || product.name,
+          price: matchingVariant.price || product.price,
+          image: matchingVariant.image || product.image,
+          link: matchingVariant.link || product.link,
+          category: category,
+
+          // NEW: Enhanced search context for exact matches
+          searchContext: {
+            isExactMatch: true,
+            matchType: 'exact_sku',
+            matchingVariant: matchingVariant,
+            originalProduct: product,
+            showDirectAdd: true // NEW: Flag to show direct add button
+          },
+
+          // NEW: Product data ready for adding to room
+          productData: {
+            type: category,
+            product: product,
+            selectedVariant: matchingVariant,
+            selectedColor: product.colors?.[0]?.id || null
+          }
         }
       }
 
-      console.log(`✅ Transformed product ${index}:`, transformedProduct.name)
-      return transformedProduct
-    }).filter(Boolean) // Remove any null results
+      // For partial matches, keep your existing transformation
+      return {
+        id: product.id,
+        name: product.name,
+        price: matchingVariant?.price || product.price,
+        image: matchingVariant?.image || product.image,
+        link: matchingVariant?.link || product.link,
+        category: category,
 
-    console.log('🔍 Final transformed results:', transformedResults.length, 'products')
+        // Enhanced search context
+        searchContext: {
+          isExactMatch: false,
+          matchType: matchType,
+          matchingVariant: matchingVariant,
+          originalProduct: product,
+          showDirectAdd: !!matchingVariant
+        },
+
+        // Product data for adding to room (if variant available)
+        productData: matchingVariant ? {
+          type: category,
+          product: product,
+          selectedVariant: matchingVariant,
+          selectedColor: product.colors?.[0]?.id || null
+        } : null
+      }
+    })
+
+    console.log('✅ Final transformed results:', transformedResults)
     return transformedResults
   }
 

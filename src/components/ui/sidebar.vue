@@ -677,7 +677,7 @@ const productDrawerProps = computed(() => ({
   isLoading: isLoading.value,
   loadingError: errorMessage.value,
   searchResults: searchResults,
-  searchQuery: searchQuery
+  searchQuery: String(searchQuery)
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):
@@ -1484,7 +1484,37 @@ const performSearch = (query) => {
   console.log('🔍 Starting search for:', query)
   console.log('🔍 Available productData categories:', Object.keys(productData))
 
-  // Search through all categories in productData
+  // NEW: First pass - Check for exact SKU match
+  let exactSkuMatch = null
+
+  Object.entries(productData).forEach(([category, products]) => {
+    products.forEach((product) => {
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach((variant) => {
+          // Check for exact SKU match (case-insensitive)
+          if (variant.sku && variant.sku.toLowerCase() === lowerQuery) {
+            console.log('✅ EXACT SKU MATCH FOUND:', variant.sku)
+            exactSkuMatch = {
+              category,
+              product: { ...product },
+              matchingVariant: { ...variant },
+              matchType: 'exact_sku',
+              isExactMatch: true
+            }
+          }
+        })
+      }
+    })
+  })
+
+  // NEW: If we found an exact SKU match, return only that result
+  if (exactSkuMatch) {
+    console.log('🎯 Returning single exact SKU match:', exactSkuMatch)
+    searchResults.value = [exactSkuMatch]
+    return
+  }
+
+  // EXISTING: Regular search logic (keep your existing code below)
   Object.entries(productData).forEach(([category, products]) => {
     console.log(`🔍 Searching in ${category} category with ${products.length} products`)
 
@@ -1516,7 +1546,7 @@ const performSearch = (query) => {
           const matchesTitle = variant.title && variant.title.toLowerCase().includes(lowerQuery)
 
           if (matchesSku) {
-            console.log('✅ SKU match found:', variant.sku)
+            console.log('✅ SKU partial match found:', variant.sku)
             matchesVariant = true
             matchingVariant = variant
           }
@@ -1537,9 +1567,10 @@ const performSearch = (query) => {
       if (matchesName || matchesVariant) {
         const result = {
           category,
-          product: { ...product }, // Ensure we're copying the product object
+          product: { ...product },
           matchingVariant: matchingVariant ? { ...matchingVariant } : null,
-          matchType: matchesName ? 'name' : 'variant'
+          matchType: matchesName ? 'name' : 'variant',
+          isExactMatch: false  // NEW: Add this flag
         }
         results.push(result)
         console.log('✅ Added result:', {
@@ -1555,21 +1586,8 @@ const performSearch = (query) => {
   })
 
   console.log(`🔍 Search completed. Found ${results.length} results:`, results)
-
-  // Double-check results are properly structured
-  results.forEach((result, index) => {
-    console.log(`🔍 Result ${index} structure check:`, {
-      hasCategory: !!result.category,
-      hasProduct: !!result.product,
-      productHasId: !!result.product?.id,
-      productHasName: !!result.product?.name,
-      hasMatchingVariant: !!result.matchingVariant
-    })
-  })
-
   searchResults.value = results
 }
-
 // Open product drawer with filtered search results
 const openProductDrawerWithFilteredResults = () => {
   if (searchResults.value.length === 0) return
