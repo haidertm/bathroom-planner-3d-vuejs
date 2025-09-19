@@ -1106,7 +1106,22 @@ const addProductToRoom = () => {
   }
 
   // SelectedCategory
-  const componentType = props.selectedCategory
+  let componentType = props.selectedCategory
+  // If we're in search mode, get the actual category from the selected product
+  if (props.selectedCategory === 'search') {
+    // Try to get category from multiple possible locations
+    componentType = selectedProduct.value.category ||
+        selectedProduct.value.searchContext?.category ||
+        selectedProduct.value.searchContext?.originalProduct?.category ||
+        props.selectedCategory
+
+    console.log('🔍 Search mode - using category:', componentType, {
+      fromProduct: selectedProduct.value.category,
+      fromSearchContext: selectedProduct.value.searchContext?.category,
+      fromOriginalProduct: selectedProduct.value.searchContext?.originalProduct?.category,
+      fallback: props.selectedCategory
+    })
+  }
 
   const productData = {
     type: componentType,
