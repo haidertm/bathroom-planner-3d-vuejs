@@ -186,11 +186,11 @@
 
             <!-- SELECT Button (original functionality) -->
             <button
-                @click="product.searchContext?.showDirectAdd ? handleDirectAddToRoom(product) : selectProduct(product)"
-                :style="addToRoomButtonStyle"
+                @click="selectProduct(product)"
+                :style="getSearchAwareButtonStyle(product)"
                 class="select-button"
             >
-              {{ product.searchContext?.showDirectAdd ? 'Add to Room' : 'SELECT' }}
+              {{ getButtonText(product) }}
             </button>
           </div>
         </div>
@@ -453,9 +453,19 @@ watch(() => props.isOpen, (isOpen) => {
 })
 
 const isSingleProductSearchMode = computed(() => {
-  return props.selectedCategory === 'search' &&
+  const result = props.selectedCategory === 'search' &&
       readyProducts.value.length === 1 &&
-      readyProducts.value[0]?.searchContext?.isExactMatch
+      readyProducts.value[0]?.searchContext?.isExactMatch &&
+      readyProducts.value[0]?.searchContext?.matchType === 'exact_sku'
+
+  console.log('🔍 isSingleProductSearchMode:', result, {
+    isSearch: props.selectedCategory === 'search',
+    hasOneResult: readyProducts.value.length === 1,
+    isExactMatch: readyProducts.value[0]?.searchContext?.isExactMatch,
+    matchType: readyProducts.value[0]?.searchContext?.matchType
+  })
+
+  return result
 })
 
 const handleDirectAddToRoom = async (product) => {
@@ -639,56 +649,44 @@ const getProductsForCategory = (category) => {
 const readyProducts = computed(() => {
   console.log('🔍 ProductDrawer readyProducts computed called')
   console.log('🔍 selectedCategory:', props.selectedCategory)
-  console.log('🔍 searchResults raw:', props.searchResults)
-  console.log('🔍 searchResults type:', typeof props.searchResults)
-  console.log('🔍 searchResults is null/undefined:', props.searchResults == null)
+  console.log('🔍 searchResults:', props.searchResults)
 
-  // Properly unwrap Vue reactive references and convert to array
-  let searchResultsArray = []
-  try {
-    let unwrapped = props.searchResults
-
-    // If it's a Vue ref, unwrap it
-    if (unwrapped && typeof unwrapped === 'object' && 'value' in unwrapped) {
-      console.log('🔍 Unwrapping Vue ref, value:', unwrapped.value)
-      unwrapped = unwrapped.value
-    }
-
-    // If it's a reactive proxy or array, convert to regular array
-    if (unwrapped && (Array.isArray(unwrapped) || (typeof unwrapped === 'object' && unwrapped.length !== undefined))) {
-      console.log('🔍 Converting to array, length:', unwrapped.length)
-      searchResultsArray = [...unwrapped]
-    } else if (Array.isArray(unwrapped)) {
-      searchResultsArray = unwrapped
-    }
-  } catch (error) {
-    console.warn('🔍 Error processing searchResults:', error)
-    searchResultsArray = []
-  }
-
-  console.log('🔍 searchResults final array:', searchResultsArray)
-  console.log('🔍 searchResults final length:', searchResultsArray.length)
-  console.log('🔍 searchResults final is array:', Array.isArray(searchResultsArray))
-
-  // If we're showing search results, use them instead of category products
+  // Handle search results
   if (props.selectedCategory === 'search') {
     console.log('🔍 Processing search results...')
 
+    // Get search results array safely
+    let searchResultsArray = []
+    try {
+      let unwrapped = props.searchResults
+      if (unwrapped && typeof unwrapped === 'object' && 'value' in unwrapped) {
+        unwrapped = unwrapped.value
+      }
+      if (Array.isArray(unwrapped)) {
+        searchResultsArray = unwrapped
+      } else if (unwrapped && typeof unwrapped === 'object' && unwrapped.length !== undefined) {
+        searchResultsArray = Array.from(unwrapped)
+      }
+    } catch (error) {
+      console.warn('🔍 Error processing searchResults:', error)
+      searchResultsArray = []
+    }
+
     if (searchResultsArray.length === 0) {
-      console.log('❌ Empty or invalid search results array')
+      console.log('❌ Empty search results array')
       return []
     }
 
     console.log('🔍 Transforming search results:', searchResultsArray.length, 'items')
 
-    // NEW: Transform search results to match the expected product format
+    // Transform search results based on match type
     const transformedResults = searchResultsArray.map((result, index) => {
       console.log(`🔍 Transforming result ${index}:`, result)
 
       const { category, product, matchingVariant, matchType, isExactMatch } = result
 
-      // For exact SKU matches, create enhanced product structure
-      if (isExactMatch && matchingVariant) {
+      // For EXACT SKU matches - show direct add functionality
+      if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
         return {
           id: matchingVariant.id || matchingVariant.sku,
           name: matchingVariant.title || matchingVariant.name || product.name,
@@ -697,16 +695,16 @@ const readyProducts = computed(() => {
           link: matchingVariant.link || product.link,
           category: category,
 
-          // NEW: Enhanced search context for exact matches
+          // Enhanced search context for exact SKU matches
           searchContext: {
             isExactMatch: true,
             matchType: 'exact_sku',
             matchingVariant: matchingVariant,
             originalProduct: product,
-            showDirectAdd: true // NEW: Flag to show direct add button
+            showDirectAdd: true // Direct add for exact SKU matches
           },
 
-          // NEW: Product data ready for adding to room
+          // Product data ready for direct adding
           productData: {
             type: category,
             product: product,
@@ -716,31 +714,31 @@ const readyProducts = computed(() => {
         }
       }
 
-      // For partial matches, keep your existing transformation
+      // For NAME matches or partial SKU matches - show regular SELECT button
       return {
         id: product.id,
         name: product.name,
-        price: matchingVariant?.price || product.price,
-        image: matchingVariant?.image || product.image,
-        link: matchingVariant?.link || product.link,
+        price: product.price, // Use product base price, not variant price
+        image: product.image, // Use product main image
+        link: product.link,
         category: category,
+        variants: product.variants, // Include variants for selection
+        colors: product.colors, // Include colors
+        variantType: product.variantType,
+        features: product.features,
 
-        // Enhanced search context
+        // Search context for name/partial matches
         searchContext: {
           isExactMatch: false,
           matchType: matchType,
-          matchingVariant: matchingVariant,
+          matchingVariant: matchingVariant, // Keep for reference
           originalProduct: product,
-          showDirectAdd: !!matchingVariant
+          showDirectAdd: false, // Show SELECT button instead
+          highlightedVariant: matchingVariant // Highlight the matching variant
         },
 
-        // Product data for adding to room (if variant available)
-        productData: matchingVariant ? {
-          type: category,
-          product: product,
-          selectedVariant: matchingVariant,
-          selectedColor: product.colors?.[0]?.id || null
-        } : null
+        // No direct productData - user must select variant first
+        productData: null
       }
     })
 
@@ -748,11 +746,10 @@ const readyProducts = computed(() => {
     return transformedResults
   }
 
-  console.log('🔍 Using normal category products for:', props.selectedCategory)
-  // Otherwise, use the normal category-based products
-  const all = getProductsForCategory(props.selectedCategory)
-  if (!props.isLoading) return all
-  return all.filter(p => props.loadedProducts?.has(p.id) ?? false)
+  // Handle regular category products (unchanged)
+  const categoryProducts = getProductsForCategory(props.selectedCategory)
+  console.log('🔍 Category products:', categoryProducts?.length || 0, 'items')
+  return categoryProducts || []
 })
 
 const getLoadingProductCount = () => {
@@ -772,88 +769,35 @@ const isAnythingLoading = () => {
 }
 
 // Methods - Original functionality
-const selectProduct = async (product) => {
-  console.log('select product>>>', product);
+const selectProduct = (product) => {
+  console.log('🔍 Product selected:', product)
 
-  // Check if product has variants and needs preloading
-  if (product.variants && product.variants.length > 0) {
-    const firstVariant = product.variants[0]
-    const variantKey = firstVariant.id || firstVariant.sku || firstVariant.name
-
-    // Check if first variant is already preloaded
-    if (firstVariantPreloaded.value.has(product.id)) {
-      console.log('✅ First variant already preloaded, showing variants immediately')
-      selectedProduct.value = product
-      currentView.value = 'variants'
-      return
-    }
-
-    // Start preloading first variant (non-blocking)
-    console.log('🔄 Preloading first variant:', firstVariant.name || firstVariant.sku)
-    productPreloading.value.set(product.id, true)
-
-    // Show variants view immediately (don't wait for preloading)
-    selectedProduct.value = product
-    currentView.value = 'variants'
-
-    // Preload first variant in background
-    try {
-      const modelManager = ModelManager.getInstance()
-
-      const modelConfig = {
-        name: firstVariant.sku || firstVariant.name,
-        path: firstVariant.path,
-        scale: firstVariant.scale || 1.0,
-        dimensions: firstVariant.dimensions
-      }
-
-      console.log('📦 Background preloading first variant model:', modelConfig)
-
-      // Load the 3D model (this runs in background)
-      const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
-
-      if (loadedModel) {
-        console.log('✅ First variant preloaded successfully:', variantKey)
-
-        // Store in our preload cache
-        firstVariantPreloaded.value.set(product.id, {
-          variantKey,
-          model: loadedModel,
-          timestamp: Date.now()
-        })
-
-        // IMPORTANT: Ensure ModelManager knows this model is loaded
-        if (modelManager.loadedModels) {
-          modelManager.loadedModels.add(variantKey)
-        }
-
-        // IMPORTANT: Add to ModelManager cache if not already there
-        if (modelManager.cache) {
-          modelManager.cache[variantKey] = loadedModel
-        }
-
-        // Trigger UI update to show green tick
-        console.log('🎨 Triggering UI update for green tick display')
-        // Force reactivity update
-        nextTick(() => {
-          // This will cause the green tick to appear
-          console.log('✅ Green tick should now be visible for:', variantKey)
-        })
-
-      } else {
-        console.warn('⚠️ First variant preloading returned null')
-      }
-
-    } catch (error) {
-      console.error('❌ Failed to preload first variant:', error)
-    } finally {
-      productPreloading.value.set(product.id, false)
-    }
-  } else {
-    // Product has no variants, proceed normally
-    selectedProduct.value = product
-    currentView.value = 'variants'
+  // If it's a direct add product (exact SKU match), add directly
+  if (product.searchContext?.showDirectAdd) {
+    handleDirectAddToRoom(product)
+    return
   }
+
+  // Regular product selection flow
+  selectedProduct.value = product
+
+  // If there's a highlighted variant from search, pre-select it
+  if (product.searchContext?.highlightedVariant) {
+    selectedVariant.value = product.searchContext.highlightedVariant
+    console.log('🔍 Pre-selected highlighted variant:', product.searchContext.highlightedVariant.sku)
+  } else {
+    // Default to first variant
+    selectedVariant.value = product.variants?.[0] || ''
+  }
+
+  selectedColor.value = product.colors?.[0]?.id || ''
+  currentView.value = 'variants'
+
+  console.log('🔍 Switched to variants view with:', {
+    product: selectedProduct.value.name,
+    selectedVariant: selectedVariant.value?.sku || selectedVariant.value?.name,
+    selectedColor: selectedColor.value
+  })
 }
 
 
@@ -1238,6 +1182,27 @@ const loadVariantModel = async (variant, progressCallback = null) => {
       variantProgress.value.delete(variantKey)
     }, 300)
   }
+}
+
+const getButtonText = (product) => {
+  if (product.searchContext?.showDirectAdd) {
+    return 'Add to Room'
+  }
+  return 'SELECT'
+}
+
+const getSearchAwareButtonStyle = (product) => {
+  const baseStyle = addToRoomButtonStyle.value
+
+  if (product.searchContext?.showDirectAdd) {
+    return {
+      ...baseStyle,
+      backgroundColor: '#10b981', // Green for direct add
+      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+    }
+  }
+
+  return baseStyle // Regular purple for SELECT
 }
 
 
