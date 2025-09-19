@@ -21,6 +21,7 @@
             @focus="handleSearchFocus"
             @blur="handleSearchBlur"
             class="search-input"
+            autocomplete="off"
         />
 
         <!-- Clear Button (show when there's text) -->
@@ -36,16 +37,35 @@
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
+
+        <!-- Optional: Small loading indicator while typing -->
+        <div v-if="isSearching" :style="searchLoadingStyle">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32">
+              <animate attributeName="stroke-dashoffset" dur="1s" values="32;0" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </div>
       </div>
 
-      <!-- Search Results Count (show when searching) -->
-      <div v-if="searchQuery && searchResults.length > 0" :style="searchResultsCountStyle">
-        Found {{ searchResults.length }} product{{ searchResults.length !== 1 ? 's' : '' }}
+      <!-- Enhanced Search Results Count -->
+      <div v-if="searchQuery" :style="searchResultsCountStyle">
+        <span v-if="searchResults.length > 0">
+          Found {{ searchResults.length }} product{{ searchResults.length !== 1 ? 's' : '' }}
+        </span>
+        <span v-else-if="!isSearching" :style="noResultsStyle">
+          No products found for "{{ searchQuery }}"
+        </span>
+        <span v-else :style="searchingTextStyle">
+          Searching...
+        </span>
       </div>
 
-      <!-- No Results Message -->
-      <div v-if="searchQuery && searchResults.length === 0" :style="noResultsStyle">
-        No products found for "{{ searchQuery }}"
+      <!-- Optional: Quick search tips -->
+      <div v-if="!searchQuery && searchFocused" :style="searchTipsStyle">
+        <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+          💡 Try product names or SKU codes
+        </div>
       </div>
     </div>
     <!-- Mobile Floating + Button -->
@@ -396,6 +416,8 @@ const isFloorExpanded = ref(true)
 const isWallExpanded = ref(false)
 const isSidebarVisible = ref(false)
 const isButtonPressed = ref(false)
+
+let searchTimeout = null;
 
 // Define emits
 const emit = defineEmits([
@@ -1441,22 +1463,57 @@ const categoryLabelStyle = computed(() => ({
 const searchQuery = ref('')
 const searchFocused = ref(false)
 const searchResults = ref([])
+const isSearching = ref(false);
+const hasSearched = ref(false);
 
 // Search functionality methods
 const handleSearchInput = () => {
-  if (searchQuery.value.trim()) {
-    performSearch(searchQuery.value.trim())
-  } else {
-    searchResults.value = []
+  // Clear previous timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
   }
-}
+
+  // Show loading state for better UX
+  isSearching.value = true;
+
+  // Debounce the search
+  searchTimeout = setTimeout(() => {
+    const query = searchQuery.value.trim();
+
+    if (query) {
+      hasSearched.value = true;
+      performSearch(query);
+
+      // Automatically open results (this is the key change!)
+      if (searchResults.value.length > 0) {
+        openProductDrawerWithFilteredResults();
+      }
+    } else {
+      searchResults.value = [];
+      hasSearched.value = false;
+      if (selectedCategory.value === 'search') {
+        isProductDrawerOpen.value = false;
+        selectedCategory.value = '';
+      }
+    }
+
+    isSearching.value = false;
+  }, 300); // 300ms debounce
+};
 
 const handleSearchEnter = () => {
-  if (searchResults.value.length > 0) {
-    // Open ProductDrawer with filtered search results
-    openProductDrawerWithFilteredResults()
+  // Clear any pending timeout since user pressed enter
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
   }
-}
+
+  if (searchQuery.value.trim()) {
+    performSearch(searchQuery.value.trim());
+    if (searchResults.value.length > 0) {
+      openProductDrawerWithFilteredResults();
+    }
+  }
+};
 
 const handleSearchFocus = () => {
   searchFocused.value = true
@@ -1479,131 +1536,90 @@ const clearSearch = () => {
 
 // Search logic - searches through productData by name and SKU
 const performSearch = (query) => {
-  const results = []
-  const lowerQuery = query.toLowerCase()
+  const results = [];
+  const lowerQuery = query.toLowerCase();
 
-  console.log('🔍 Starting search for:', query)
-  console.log('🔍 Available productData categories:', Object.keys(productData))
+  console.log('🔍 Starting live search for:', query);
 
-  // NEW: First pass - Check for exact SKU match
-  let exactSkuMatch = null
+  // Your existing search logic (exact SKU match first)
+  let exactSkuMatch = null;
 
   Object.entries(productData).forEach(([category, products]) => {
     products.forEach((product) => {
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach((variant) => {
-          // Check for exact SKU match (case-insensitive)
           if (variant.sku && variant.sku.toLowerCase() === lowerQuery) {
-            console.log('✅ EXACT SKU MATCH FOUND:', variant.sku)
+            console.log('✅ EXACT SKU MATCH FOUND:', variant.sku);
             exactSkuMatch = {
               category,
               product: { ...product },
               matchingVariant: { ...variant },
               matchType: 'exact_sku',
               isExactMatch: true
-            }
+            };
           }
-        })
+        });
       }
-    })
-  })
+    });
+  });
 
-  // NEW: If we found an exact SKU match, return only that result
   if (exactSkuMatch) {
-    console.log('🎯 Returning single exact SKU match:', exactSkuMatch)
-    searchResults.value = [exactSkuMatch]
-    return
+    console.log('🎯 Returning single exact SKU match:', exactSkuMatch);
+    searchResults.value = [exactSkuMatch];
+    return;
   }
 
-  // EXISTING: Regular search logic (keep your existing code below)
+  // Regular search logic for partial matches
   Object.entries(productData).forEach(([category, products]) => {
-    console.log(`🔍 Searching in ${category} category with ${products.length} products`)
-
-    products.forEach((product, productIndex) => {
-      console.log(`🔍 Checking product ${productIndex}:`, product.name)
-
+    products.forEach((product) => {
       // Search in product name
-      const matchesName = product.name.toLowerCase().includes(lowerQuery)
-      if (matchesName) {
-        console.log('✅ Name match found:', product.name)
-      }
+      const matchesName = product.name.toLowerCase().includes(lowerQuery);
 
-      // Search in product variants (SKU and names)
-      let matchesVariant = false
-      let matchingVariant = null
-
+      // Search in variants/SKUs
+      let matchingVariant = null;
       if (product.variants && Array.isArray(product.variants)) {
-        console.log(`🔍 Checking ${product.variants.length} variants for product:`, product.name)
-
-        product.variants.forEach((variant, variantIndex) => {
-          console.log(`🔍 Variant ${variantIndex}:`, {
-            sku: variant.sku,
-            name: variant.name,
-            title: variant.title
-          })
-
-          const matchesSku = variant.sku && variant.sku.toLowerCase().includes(lowerQuery)
-          const matchesVariantName = variant.name && variant.name.toLowerCase().includes(lowerQuery)
-          const matchesTitle = variant.title && variant.title.toLowerCase().includes(lowerQuery)
-
-          if (matchesSku) {
-            console.log('✅ SKU partial match found:', variant.sku)
-            matchesVariant = true
-            matchingVariant = variant
-          }
-          if (matchesVariantName) {
-            console.log('✅ Variant name match found:', variant.name)
-            matchesVariant = true
-            matchingVariant = variant
-          }
-          if (matchesTitle) {
-            console.log('✅ Variant title match found:', variant.title)
-            matchesVariant = true
-            matchingVariant = variant
-          }
-        })
+        matchingVariant = product.variants.find(variant =>
+            variant.sku && variant.sku.toLowerCase().includes(lowerQuery)
+        );
       }
 
-      // If we found a match, add to results
-      if (matchesName || matchesVariant) {
+      if (matchesName || matchingVariant) {
         const result = {
           category,
           product: { ...product },
           matchingVariant: matchingVariant ? { ...matchingVariant } : null,
           matchType: matchesName ? 'name' : 'variant',
-          isExactMatch: false  // NEW: Add this flag
-        }
-        results.push(result)
-        console.log('✅ Added result:', {
-          category,
-          productName: product.name,
-          productId: product.id,
-          matchType: result.matchType,
-          matchingVariantSku: matchingVariant?.sku,
-          fullResult: result
-        })
+          isExactMatch: false
+        };
+        results.push(result);
       }
-    })
-  })
+    });
+  });
 
-  console.log(`🔍 Search completed. Found ${results.length} results:`, results)
-  searchResults.value = results
-}
+  console.log(`🔍 Live search completed. Found ${results.length} results:`, results);
+  searchResults.value = results;
+};
+
 // Open product drawer with filtered search results
 const openProductDrawerWithFilteredResults = () => {
-  if (searchResults.value.length === 0) return
+  if (searchResults.value.length === 0) {
+    // If no results, close the drawer
+    if (selectedCategory.value === 'search') {
+      isProductDrawerOpen.value = false;
+      selectedCategory.value = '';
+    }
+    return;
+  }
 
-  console.log(`🔍 Opening search results:`, searchResults.value)
+  console.log(`🔍 Opening live search results:`, searchResults.value);
 
   // Set special category for search results
-  selectedCategory.value = 'search'
-  isProductDrawerOpen.value = true
+  selectedCategory.value = 'search';
+  isProductDrawerOpen.value = true;
+  isLoading.value = false;
 
-  // Set loading to false since search results are ready
-  isLoading.value = false
-
-  console.log(`🎯 ProductDrawer opened with ${searchResults.value.length} search results`)
-}
+  console.log(`🎯 ProductDrawer opened with ${searchResults.value.length} live search results`);
+};
 
 // Clear search and close filtered view
 const clearSearchAndCloseDrawer = () => {

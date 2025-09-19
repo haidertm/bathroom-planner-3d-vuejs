@@ -549,7 +549,7 @@ const displayedProducts = computed(() => {
 
 const drawerTitle = computed(() => {
   if (props.selectedCategory === 'search') {
-    return `Search Results (${props.searchResults.length})`
+    return `Search Results`
   }
 
   // Return your existing category title logic
