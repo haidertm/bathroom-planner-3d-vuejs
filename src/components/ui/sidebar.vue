@@ -994,6 +994,26 @@ const getEnhancedCategoryItemStyle = (category) => {
   return baseStyle
 }
 
+const searchingTextStyle = computed(() => ({
+  color: '#29275B',
+  fontStyle: 'italic'
+}));
+
+const searchLoadingStyle = computed(() => ({
+  padding: '8px 12px',
+  color: '#29275B',
+  display: 'flex',
+  alignItems: 'center'
+}));
+
+const searchTipsStyle = computed(() => ({
+  marginTop: '8px',
+  padding: '8px 12px',
+  backgroundColor: '#f8fafc',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb'
+}));
+
 // NEW: Tiny loading spinner style (barely visible)
 const tinyLoadingSpinnerStyle = {
   position: 'absolute',
