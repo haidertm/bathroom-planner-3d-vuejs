@@ -1,5 +1,62 @@
 <template>
   <div>
+    <div v-if="isSingleProductSearchMode" style="padding: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0;">
+        <h3 style="font-size: 24px; font-weight: 600; color: #29275B; margin: 0; font-family: Arial, sans-serif;">Product Found</h3>
+        <div style="background-color: #10b981; color: #ffffff; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;" aria-label="Exact SKU match">Exact Match</div>
+      </div>
+
+      <div
+          v-for="product in readyProducts"
+          :key="product.id"
+          style="background-color: #ffffff; border: 2px solid #f0f0f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);"
+      >
+        <!-- Product Image -->
+        <div style="width: 100%; height: 300px; overflow: hidden; background-color: #f8fafc; display: flex; align-items: center; justify-content: center;">
+          <img
+              :src="product.image"
+              :alt="product.name"
+              style="width: 100%; height: 100%; object-fit: cover;"
+              loading="lazy"
+          />
+        </div>
+
+        <!-- Product Details -->
+        <div style="padding: 24px;">
+          <h4 style="font-size: 20px; font-weight: 600; color: #1a1a1a; margin-bottom: 12px; line-height: 1.4; font-family: Arial, sans-serif;">{{ product.name }}</h4>
+
+          <div v-if="product.searchContext.matchingVariant?.sku" style="font-size: 14px; color: #6b7280; margin-bottom: 8px; padding: 8px 12px; background-color: #f3f4f6; border-radius: 8px; font-family: monospace;">
+            <strong>SKU:</strong> {{ product.searchContext.matchingVariant.sku }}
+          </div>
+
+          <div v-if="product.searchContext.matchingVariant?.dimensions" style="font-size: 14px; color: #6b7280; margin-bottom: 12px; padding: 8px 12px; background-color: #f9fafb; border-radius: 8px;">
+            <strong>Dimensions:</strong>
+            {{ formatDimensions(product.searchContext.matchingVariant.dimensions) }}
+          </div>
+
+          <div style="font-size: 28px; font-weight: 700; color: #29275B; margin-bottom: 16px; font-family: Arial, sans-serif;">£{{ product.price }}</div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="padding: 20px 24px; border-top: 1px solid #f0f0f0; background-color: #f9fafb; display: flex; gap: 12px; align-items: center;">
+          <a
+              :href="product.link"
+              style="display: flex; align-items: center; gap: 6px; color: #6b7280; text-decoration: none; font-size: 14px; font-weight: 500; padding: 10px 16px; border-radius: 8px; border: 1px solid #d1d5db; background-color: #ffffff; transition: all 0.2s ease; font-family: Arial, sans-serif;"
+              target="_blank"
+              rel="noopener noreferrer"
+          >
+            View Details
+          </a>
+
+          <button
+              @click="handleDirectAddToRoom(product)"
+              style="display: flex; align-items: center; justify-content: center; gap: 8px; background-color: #29275B; color: #ffffff; border: none; border-radius: 10px; padding: 14px 24px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(41, 39, 91, 0.3); flex: 1; min-height: 50px; font-family: Arial, sans-serif;"
+          >
+            Add to Room
+          </button>
+        </div>
+      </div>
+    </div>
     <!-- Product Drawer Overlay -->
     <div
         v-if="isOpen"
@@ -68,9 +125,7 @@
           ← Go back
         </button>
 
-        <h2 :style="titleStyle">
-          {{ currentView === 'variants' ? 'Select Options' : selectedCategory }}
-        </h2>
+        <h2 :style="titleStyle" v-html="drawerTitle" />
 
         <button
             @click="closeDrawer"
@@ -107,21 +162,27 @@
           <!-- Product Info -->
           <div :style="productInfoStyle">
             <div :style="brandStyle">{{ product.brand }}</div>
-            <h3 :style="productNameStyle">{{ product.name }}</h3>
+            <h3 :style="productNameStyle" v-html="getHighlightedName(product)">
+            </h3>
+            <div v-if="product.searchContext" :style="searchContextStyle">
+              <div v-if="product.searchContext.matchingVariant" :style="searchVariantStyle">
+                SKU: {{ product.searchContext.matchingVariant.sku }}
+              </div>
+            </div>
             <div :style="priceStyle">£{{ product.price }}</div>
 
             <!-- More Info Link -->
-            <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank">
+            <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
               More info ↗
             </a>
 
             <!-- SELECT Button (original functionality) -->
             <button
                 @click="selectProduct(product)"
-                :style="addToRoomButtonStyle"
+                :style="getSearchAwareButtonStyle(product)"
                 class="select-button"
             >
-              Add to Room
+              {{ getButtonText(product) }}
             </button>
           </div>
         </div>
@@ -167,7 +228,7 @@
             <h3 :style="productNameStyle">{{ getDisplayName() }}</h3>
             <div :style="brandStyle"><span style="font-weight: bold;">sku:</span> {{ getDisplaySku() }}</div>
             <div :style="priceStyle">£{{ getDisplayPrice() }}</div>
-            <a :href="getLink()" :style="moreInfoStyle" class="more-info-link" target="_blank">
+            <a :href="getLink()" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
               More info ↗
             </a>
           </div>
@@ -336,6 +397,25 @@ const props = defineProps({
     default: null,
     validator: (value) => value instanceof Map
   },
+  searchResults: {
+    type: [Array, Object], // Allow both Array and Object (for reactive refs)
+    default: () => [],
+    validator: (value) => {
+      // Allow arrays, reactive refs, or null/undefined
+      return Array.isArray(value) ||
+          value === null ||
+          value === undefined ||
+          (typeof value === 'object' && value !== null)
+    }
+  },
+  searchQuery: {
+    type: String,
+    default: ''
+  },
+  searchTriggered: {
+    type: Number,
+    default: 0
+  }
 })
 
 // Emits - ADD 'back' event for better control
@@ -360,13 +440,154 @@ const variantProgress = ref(new Map()) // Track progress for each variant
 const firstVariantPreloaded = ref(new Map()) // Track which products have preloaded first variants
 const productPreloading = ref(new Map()) // Track which products are currently preloading
 
+
+watch(() => props.searchTriggered, (newValue, oldValue) => {
+  if (newValue > oldValue && newValue > 0) {
+    // Force reset to products view when search is triggered
+    currentView.value = 'products';
+    selectedProduct.value = null;
+    selectedVariant.value = '';
+    selectedColor.value = '';
+  }
+});
+
 // Reset view when drawer opens/closes
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    currentView.value = 'products'
-    selectedProduct.value = null
+    // Only reset if not search mode to avoid conflicts
+    if (props.selectedCategory !== 'search') {
+      currentView.value = 'products';
+      selectedProduct.value = null;
+      selectedVariant.value = '';
+      selectedColor.value = '';
+    }
+  } else {
+    productPreloading.value.clear();
   }
+});
+
+const formatDimensions = (d = {}) => {
+  const parts = []
+  if (d.width != null) parts.push(`${d.width}cm`)
+  const useHeightAsDepth = d.depth == null && d.height != null
+  if (d.depth != null) parts.push(`${d.depth}cm`)
+  else if (useHeightAsDepth) parts.push(`${d.height}cm`)
+  if (d.height != null && !useHeightAsDepth) parts.push(`${d.height}cm`)
+  return parts.join(' × ')
+}
+
+const handleDirectAddToRoom = async (product) => {
+  let deferHide = false
+  if (!product?.productData) return
+
+  try {
+    const variant = product?.searchContext?.matchingVariant
+    if (!variant) {
+      console.warn('No matching variant to add')
+      return
+    }
+    const variantKey = variant.id || variant.sku || variant.name
+        // If model is already loaded, avoid flashing the modal
+    const mm = ModelManager.getInstance()
+    const alreadyLoaded = typeof mm.isModelLoaded === 'function'
+        ? mm.isModelLoaded(variantKey)
+        : !!(mm.loadedModels?.has?.(variantKey) || mm.cache?.[variantKey])
+    if (!alreadyLoaded) {
+      showLoadingModal.value = true
+      modalProgress.value = 0
+    }
+
+    // Load model if needed
+    if (!alreadyLoaded && variant.path) {
+      try {
+        const modelManager = ModelManager.getInstance()
+        if (!modelManager.isModelLoaded?.(variantKey)) {
+          const modelConfig = {
+            name: variantKey,
+            path: variant.path,
+            scale: variant.scale || 1.0,
+            dimensions: variant.dimensions,
+            movement: variant.movement,
+            orientation: variant.orientation
+          }
+
+          await modelManager.loadModel(variantKey, modelConfig)
+        }
+      } catch (modelError) {
+        console.warn('⚠️ Model loading failed, but continuing:', modelError)
+      }
+    }
+
+    if (showLoadingModal.value) modalProgress.value = 100
+
+    emit('add-to-room', {
+      ...product.productData,
+      fromDirectSearch: true,
+      searchQuery: props.searchQuery
+    })
+
+    console.log('✅ Product added directly from search:', variantKey)
+
+    if (showLoadingModal.value) {
+      deferHide = true
+      setTimeout(() => {
+        hideLoadingModal()
+        emit('close')
+      }, 500)
+    } else {
+      emit('close')
+    }
+
+  } finally {
+    // If we showed the modal but exited early elsewhere, ensure it gets hidden
+    // (defensive; no-op if already hidden)
+    if (showLoadingModal.value && !deferHide) hideLoadingModal()
+  }
+}
+
+const drawerTitle = computed(() => {
+  if (props.selectedCategory === 'search') {
+    const raw = (props && props.searchResults && 'value' in props.searchResults)
+        ? props.searchResults.value
+        : props.searchResults
+    const count = Array.isArray(raw) ? raw.length : 0
+    return `<span style="color:#EC048C">${count} </span> Results Found`
+  }
+
+  // Return your existing category title logic
+  return props.selectedCategory || 'Products'
 })
+
+// 4. FIXED search result highlighting that properly handles Vue refs
+const getHighlightedName = (product) => {
+  const escapeHtml = (s = '') =>
+      String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  if (props.selectedCategory === 'search') {
+    // Properly access the searchQuery value
+    let searchQuery = props.searchQuery
+
+    // If it's a Vue ref, unwrap it
+    if (searchQuery && typeof searchQuery === 'object' && 'value' in searchQuery) {
+      searchQuery = searchQuery.value
+    }
+
+    // Ensure we have a valid string
+    if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      const rawName = product.name || ''
+      const index = rawName.toLowerCase().indexOf(query)
+
+      if (index !== -1) {
+        const before = escapeHtml(rawName.substring(0, index))
+        const match = escapeHtml(rawName.substring(index, index + query.length))
+        const after  = escapeHtml(rawName.substring(index + query.length))
+        return `${before}<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 2px;">${match}</mark>${after}`
+      }
+    }
+  }
+
+  return escapeHtml(product.name || '')
+}
 
 // NEW: Loading Modal Methods
 const showLoadingModalFn = () => {
@@ -401,16 +622,6 @@ const cancelLoading = () => {
   hideLoadingModal()
 }
 
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen) {
-    currentView.value = 'products'
-    selectedProduct.value = null
-  } else {
-    productPreloading.value.clear()
-    hideLoadingModal() // ADD THIS LINE
-  }
-})
-
 // Initialize selections when product changes
 watch(() => selectedProduct.value, (newProduct) => {
   if (newProduct) {
@@ -428,11 +639,106 @@ const getProductsForCategory = (category) => {
   return productData[category] || []
 }
 
- const readyProducts = computed(() => {
-   const all = getProductsForCategory(props.selectedCategory)
-   if (!props.isLoading) return all
-   return all.filter(p => props.loadedProducts?.has(p.id) ?? false)
- })
+const readyProducts = computed(() => {
+  // Handle search results
+  if (props.selectedCategory === 'search') {
+
+    // Get search results array safely
+    let searchResultsArray = []
+    try {
+      let unwrapped = props.searchResults
+      if (unwrapped && typeof unwrapped === 'object' && 'value' in unwrapped) {
+        unwrapped = unwrapped.value
+      }
+      if (Array.isArray(unwrapped)) {
+        searchResultsArray = unwrapped
+      } else if (unwrapped && typeof unwrapped === 'object' && unwrapped.length !== undefined) {
+        searchResultsArray = Array.from(unwrapped)
+      }
+    } catch (error) {
+      console.warn('🔍 Error processing searchResults:', error)
+      searchResultsArray = []
+    }
+
+    if (searchResultsArray.length === 0) {
+      return []
+    }
+
+    // Transform search results based on match type
+    const transformedResults = searchResultsArray.map((result, index) => {
+
+      const { category, product, matchingVariant, matchType, isExactMatch } = result
+
+      // For EXACT SKU matches - show direct add functionality
+      if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
+        return {
+          id: matchingVariant.id || matchingVariant.sku,
+          name: matchingVariant.title || matchingVariant.name || product.name,
+          price: matchingVariant.price || product.price,
+          image: matchingVariant.image || product.image,
+          link: matchingVariant.link || product.link,
+          category: category,
+
+          // Enhanced search context for exact SKU matches
+          searchContext: {
+            isExactMatch: true,
+            matchType: 'exact_sku',
+            matchingVariant: matchingVariant,
+            originalProduct: product,
+            showDirectAdd: true // Direct add for exact SKU matches
+          },
+
+          // Product data ready for direct adding
+          productData: {
+            type: category,
+            product: product,
+            selectedVariant: matchingVariant,
+            selectedColor: product.colors?.[0]?.id || null
+          }
+        }
+      }
+
+      // For NAME matches or partial SKU matches - show regular SELECT button
+      return {
+        id: product.id,
+        name: product.name,
+        price: product.price, // Use product base price, not variant price
+        image: product.image, // Use product main image
+        link: product.link,
+        category: category,
+        variants: product.variants, // Include variants for selection
+        colors: product.colors, // Include colors
+        variantType: product.variantType,
+        features: product.features,
+
+        // Search context for name/partial matches
+        searchContext: {
+          isExactMatch: false,
+          matchType: matchType,
+          matchingVariant: matchingVariant, // Keep for reference
+          originalProduct: product,
+          showDirectAdd: false, // Show SELECT button instead
+          highlightedVariant: matchingVariant // Highlight the matching variant
+        },
+
+        // No direct productData - user must select variant first
+        productData: null
+      }
+    })
+    return transformedResults
+  }
+
+  // Handle regular category products (unchanged)
+  const categoryProducts = getProductsForCategory(props.selectedCategory)
+  return categoryProducts || []
+})
+
+const isSingleProductSearchMode = computed(() => {
+   return props.selectedCategory === 'search' &&
+       readyProducts.value.length === 1 &&
+       readyProducts.value[0]?.searchContext?.isExactMatch === true &&
+       readyProducts.value[0]?.searchContext?.matchType === 'exact_sku'
+})
 
 const getLoadingProductCount = () => {
   if (!props.isLoading) return 0
@@ -452,86 +758,76 @@ const isAnythingLoading = () => {
 
 // Methods - Original functionality
 const selectProduct = async (product) => {
-  console.log('select product>>>', product);
 
-  // Check if product has variants and needs preloading
-  if (product.variants && product.variants.length > 0) {
-    const firstVariant = product.variants[0]
+  // If it's a direct add product (exact SKU match), add directly
+  if (product.searchContext?.showDirectAdd) {
+    handleDirectAddToRoom(product)
+    return
+  }
+
+  // Regular product selection flow
+  selectedProduct.value = product
+
+  // If there's a highlighted variant from search, pre-select it
+  if (product.searchContext?.highlightedVariant) {
+    selectedVariant.value = product.searchContext.highlightedVariant
+  } else {
+    // Default to first variant
+    selectedVariant.value = product.variants?.[0] || ''
+  }
+
+  selectedColor.value = product.colors?.[0]?.id || ''
+  currentView.value = 'variants'
+
+  // NEW: Auto-load the first variant when product is selected
+  // This restores the functionality where the first variant modal would be initially loaded
+  if (product.variants && product.variants.length > 0 && selectedVariant.value) {
+    const firstVariant = selectedVariant.value
     const variantKey = firstVariant.id || firstVariant.sku || firstVariant.name
 
-    // Check if first variant is already preloaded
-    if (firstVariantPreloaded.value.has(product.id)) {
-      console.log('✅ First variant already preloaded, showing variants immediately')
-      selectedProduct.value = product
-      currentView.value = 'variants'
-      return
-    }
+    // Check if already loaded
+    const isAlreadyLoaded = isVariantModelLoaded(firstVariant)
 
-    // Start preloading first variant (non-blocking)
-    console.log('🔄 Preloading first variant:', firstVariant.name || firstVariant.sku)
-    productPreloading.value.set(product.id, true)
+    if (!isAlreadyLoaded) {
 
-    // Show variants view immediately (don't wait for preloading)
-    selectedProduct.value = product
-    currentView.value = 'variants'
+      // Mark as preloading
+      productPreloading.value.set(product.id, {
+        variantKey: variantKey,
+        status: 'loading'
+      })
 
-    // Preload first variant in background
-    try {
-      const modelManager = ModelManager.getInstance()
+      try {
+        // Load the first variant model
+        await loadVariantModel(firstVariant)
 
-      const modelConfig = {
-        name: firstVariant.sku || firstVariant.name,
-        path: firstVariant.path,
-        scale: firstVariant.scale || 1.0,
-        dimensions: firstVariant.dimensions
-      }
-
-      console.log('📦 Background preloading first variant model:', modelConfig)
-
-      // Load the 3D model (this runs in background)
-      const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
-
-      if (loadedModel) {
-        console.log('✅ First variant preloaded successfully:', variantKey)
-
-        // Store in our preload cache
+        // Store in firstVariantPreloaded cache
         firstVariantPreloaded.value.set(product.id, {
-          variantKey,
-          model: loadedModel,
-          timestamp: Date.now()
+          variantKey: variantKey,
+          loadedAt: Date.now()
         })
 
-        // IMPORTANT: Ensure ModelManager knows this model is loaded
-        if (modelManager.loadedModels) {
-          modelManager.loadedModels.add(variantKey)
-        }
-
-        // IMPORTANT: Add to ModelManager cache if not already there
-        if (modelManager.cache) {
-          modelManager.cache[variantKey] = loadedModel
-        }
-
-        // Trigger UI update to show green tick
-        console.log('🎨 Triggering UI update for green tick display')
-        // Force reactivity update
-        nextTick(() => {
-          // This will cause the green tick to appear
-          console.log('✅ Green tick should now be visible for:', variantKey)
+        productPreloading.value.set(product.id, {
+          variantKey: variantKey,
+          status: 'loaded'
         })
 
-      } else {
-        console.warn('⚠️ First variant preloading returned null')
+      } catch (error) {
+        console.error('❌ Failed to preload first variant:', error)
+        productPreloading.value.set(product.id, {
+          variantKey: variantKey,
+          status: 'failed'
+        })
       }
+    } else {
 
-    } catch (error) {
-      console.error('❌ Failed to preload first variant:', error)
-    } finally {
-      productPreloading.value.set(product.id, false)
+      // Still mark it as preloaded if not already marked
+      if (!firstVariantPreloaded.value.has(product.id)) {
+        firstVariantPreloaded.value.set(product.id, {
+          variantKey: variantKey,
+          loadedAt: Date.now()
+        })
+      }
     }
-  } else {
-    // Product has no variants, proceed normally
-    selectedProduct.value = product
-    currentView.value = 'variants'
   }
 }
 
@@ -682,15 +978,16 @@ const isVariantLoadingState = (variant) => {
   return variantLoadingStates.value.get(variantKey) || false
 }
 
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen) {
-    currentView.value = 'products'
-    selectedProduct.value = null
-  } else {
-    // Clear preloading states when drawer closes
-    productPreloading.value.clear()
+watch(() => props.selectedCategory, (newCategory, oldCategory) => {
+
+  // If switching to search while drawer is open, reset to products view
+  if (newCategory === 'search' && props.isOpen) {
+    currentView.value = 'products';
+    selectedProduct.value = null;
+    selectedVariant.value = '';
+    selectedColor.value = '';
   }
-})
+});
 
 // New display functions for variants
 const getDisplayImage = () => {
@@ -841,7 +1138,19 @@ const addProductToRoom = () => {
   }
 
   // SelectedCategory
-  const componentType = props.selectedCategory
+  let componentType = props.selectedCategory
+  // If we're in search mode, get the actual category from the selected product
+  if (props.selectedCategory === 'search') {
+    // Try to get category from multiple possible locations
+    componentType = selectedProduct.value.category ||
+        selectedProduct.value.searchContext?.category ||
+        selectedProduct.value.searchContext?.originalProduct?.category ||
+        ''
+    if (!componentType) {
+      console.warn('No valid component type resolved for add-to-room; aborting emit')
+      return
+    }
+  }
 
   const productData = {
     type: componentType,
@@ -917,6 +1226,26 @@ const loadVariantModel = async (variant, progressCallback = null) => {
       variantProgress.value.delete(variantKey)
     }, 300)
   }
+}
+
+const getButtonText = (product) => {
+  if (product.searchContext?.showDirectAdd) {
+    return 'Add to Room'
+  }
+  return 'SELECT'
+}
+
+const getSearchAwareButtonStyle = (product) => {
+  const baseStyle = addToRoomButtonStyle.value
+
+  if (product.searchContext?.showDirectAdd) {
+    return {
+      ...baseStyle,
+      backgroundColor: '#29275B',
+    }
+  }
+
+  return baseStyle // Regular purple for SELECT
 }
 
 
@@ -1053,11 +1382,11 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: 'fixed',
-  top: isMobileDevice.value ? '0' : '60px',
+  top: isMobileDevice.value ? '70px' : '130px',
   left: '0',
-  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
-  width: isMobileDevice.value ? '100vw' : '500px',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
+  height: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
+  width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: '100vw',
   backgroundColor: currentView.value === 'variants' ? '#ffffff' : '#f5f5f5',
   zIndex: 1900,
@@ -1589,6 +1918,24 @@ const modalCancelButtonStyle = computed(() => ({
   cursor: 'pointer',
   transition: 'all 0.2s ease',
   fontFamily: 'Arial, sans-serif'
+}))
+
+// 6. Add these styles for search results
+const searchContextStyle = computed(() => ({
+  display: 'flex',
+  gap: '8px',
+  alignItems: 'center',
+  marginTop: '8px',
+  flexWrap: 'wrap'
+}))
+
+const searchVariantStyle = computed(() => ({
+  backgroundColor: '#f0f0f0',
+  color: '#666',
+  padding: '4px 8px',
+  borderRadius: '12px',
+  fontSize: '11px',
+  fontWeight: '500'
 }))
 
 </script>

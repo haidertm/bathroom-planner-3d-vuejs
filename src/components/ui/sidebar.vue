@@ -1,5 +1,64 @@
 <template>
   <div>
+    <div v-if="isSidebarVisible || !isMobileDevice" :style="searchSectionStyle">
+      <div :style="searchContainerStyle">
+        <!-- Search Icon -->
+        <div :style="searchIconStyle" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" role="img">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="M21 21l-4.35-4.35"></path>
+          </svg>
+        </div>
+
+        <!-- Search Input -->
+        <input
+            ref="searchInput"
+            v-model="searchQuery"
+            :style="searchInputStyle"
+            type="text"
+            placeholder="Search by name or SKU..."
+            aria-label="Search products by name or SKU"
+            @input="handleSearchInput"
+            @keydown.enter="handleSearchEnter"
+            @focus="handleSearchFocus"
+            @blur="handleSearchBlur"
+            class="search-input"
+            autocomplete="off"
+        />
+
+        <!-- Clear Button (show when there's text) -->
+        <button
+            v-if="searchQuery"
+            @click="clearSearch"
+            :style="clearButtonStyle"
+            class="clear-search-button"
+            type="button"
+            aria-label="Clear search"
+            title="Clear search"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Optional: Small loading indicator while typing -->
+        <div v-if="isSearching" :style="searchLoadingStyle">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32">
+              <animate attributeName="stroke-dashoffset" dur="1s" values="32;0" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Optional: Quick search tips -->
+      <div v-if="!searchQuery && searchFocused" :style="searchTipsStyle">
+        <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
+          💡 Try product names or SKU codes
+        </div>
+      </div>
+    </div>
     <!-- Mobile Floating + Button -->
     <button
         v-if="isMobileDevice && !isSidebarVisible"
@@ -28,6 +87,9 @@
       >
         ✕
       </button>
+
+      <!-- Search Input Section -->
+
 
       <!-- Bathroom Items Accordion -->
       <div :style="accordionSectionStyle">
@@ -282,6 +344,7 @@
 
     <ProductDrawer
         v-bind="productDrawerProps"
+        :search-triggered="searchTriggered"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
         @retry-loading="retryLoadingCategory"
@@ -290,7 +353,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import {computed, ref, watch, onBeforeUnmount, nextTick} from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
@@ -301,6 +364,8 @@ import ProductDrawer from './ProductDrawer.vue'
 import productData from '../../mocks/productData.js'
 import { CONFIG } from '../../constants/models'
 import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
+
+
 
 // Define props
 const props = defineProps({
@@ -343,6 +408,9 @@ const isFloorExpanded = ref(true)
 const isWallExpanded = ref(false)
 const isSidebarVisible = ref(false)
 const isButtonPressed = ref(false)
+const searchTriggered = ref(0)
+
+let searchTimeout = null;
 
 // Define emits
 const emit = defineEmits([
@@ -624,6 +692,8 @@ const productDrawerProps = computed(() => ({
   selectedCategory: selectedCategory.value,
   isLoading: isLoading.value,
   loadingError: errorMessage.value,
+  searchResults: searchResults,
+  searchQuery: String(searchQuery)
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):
@@ -917,6 +987,26 @@ const getEnhancedCategoryItemStyle = (category) => {
   return baseStyle
 }
 
+const searchingTextStyle = computed(() => ({
+  color: '#29275B',
+  fontStyle: 'italic'
+}));
+
+const searchLoadingStyle = computed(() => ({
+  padding: '8px 12px',
+  color: '#29275B',
+  display: 'flex',
+  alignItems: 'center'
+}));
+
+const searchTipsStyle = computed(() => ({
+  marginTop: '8px',
+  padding: '8px 12px',
+  backgroundColor: '#f8fafc',
+  borderRadius: '6px',
+  border: '1px solid #e5e7eb'
+}));
+
 // NEW: Tiny loading spinner style (barely visible)
 const tinyLoadingSpinnerStyle = {
   position: 'absolute',
@@ -1069,7 +1159,7 @@ const mobileCloseButtonStyle = computed(() => ({
 // Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '60px',
+  top: isMobileDevice.value ? '70px' : '130px',
   left: '0',
   backgroundColor: 'rgba(255, 255, 255, 0.98)',
   padding: isMobileDevice.value ? '50px 20px 20px 20px' : '20px',
@@ -1078,8 +1168,8 @@ const panelStyle = computed(() => ({
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 60px)',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 60px)' : 'calc(100vh - 130px)',
+  height: isMobileDevice.value ? 'calc(100vh - 60px)' : 'calc(100vh - 130px)',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
@@ -1245,7 +1335,7 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '60px',
+  top: isMobileDevice.value ? '0' : '130px',
   left: isMobileDevice.value ? '0' : '0',
   height: isMobileDevice.value ? '100vh' : '100vh',
   width: isMobileDevice.value ? '100vw' : '480px',
@@ -1382,6 +1472,246 @@ const categoryLabelStyle = computed(() => ({
   color: '#374151',
   fontFamily: 'Arial, sans-serif'
 }))
+// Add these to your existing reactive data
+const searchQuery = ref('')
+const searchFocused = ref(false)
+const searchResults = ref([])
+const isSearching = ref(false);
+const hasSearched = ref(false);
+
+// Search functionality methods
+const handleSearchInput = () => {
+  // Clear previous timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+
+  // Show loading state for better UX
+  isSearching.value = true;
+
+  // Debounce the search
+  searchTimeout = setTimeout(async () => {
+    const query = searchQuery.value.trim();
+
+    if (query) {
+      hasSearched.value = true;
+      performSearch(query);
+
+      await Promise.resolve(); // or nextTick()
+      if (searchResults.value.length > 0) {
+        searchTriggered.value++;
+        openProductDrawerWithFilteredResults();
+      }
+    } else {
+      searchResults.value = [];
+      hasSearched.value = false;
+      if (selectedCategory.value === 'search') {
+        isProductDrawerOpen.value = false;
+        selectedCategory.value = '';
+      }
+    }
+
+    isSearching.value = false;
+  }, 300); // 300ms debounce
+};
+
+const handleSearchEnter = async () => {
+  // Clear any pending timeout since user pressed enter
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+
+  if (searchQuery.value.trim()) {
+    performSearch(searchQuery.value.trim());
+    await nextTick();
+    if (searchResults.value.length > 0) {
+      searchTriggered.value++;
+      openProductDrawerWithFilteredResults();
+    }
+  }
+  isSearching.value = false;
+};
+
+const handleSearchFocus = () => {
+  searchFocused.value = true
+}
+
+const handleSearchBlur = () => {
+  searchFocused.value = false
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchResults.value = []
+  hasSearched.value = false
+
+  // If the drawer is open with search results, close it
+  if (selectedCategory.value === 'search') {
+    isProductDrawerOpen.value = false
+    selectedCategory.value = ''
+  }
+}
+
+// Search logic - searches through productData by name and SKU
+const performSearch = (query) => {
+  const results = [];
+  const lowerQuery = query.toLowerCase();
+
+  console.log('🔍 Starting live search for:', query);
+
+  // Your existing search logic (exact SKU match first)
+  let exactSkuMatch = null;
+
+  Object.entries(productData).forEach(([category, products]) => {
+    products.forEach((product) => {
+      if (product.variants && Array.isArray(product.variants)) {
+        product.variants.forEach((variant) => {
+          if (variant.sku && variant.sku.toLowerCase() === lowerQuery) {
+            console.log('✅ EXACT SKU MATCH FOUND:', variant.sku);
+            exactSkuMatch = {
+              category,
+              product: { ...product },
+              matchingVariant: { ...variant },
+              matchType: 'exact_sku',
+              isExactMatch: true
+            };
+          }
+        });
+      }
+    });
+  });
+
+  if (exactSkuMatch) {
+    console.log('🎯 Returning single exact SKU match:', exactSkuMatch);
+    searchResults.value = [exactSkuMatch];
+    return;
+  }
+
+  // Regular search logic for partial matches
+  Object.entries(productData).forEach(([category, products]) => {
+    products.forEach((product) => {
+      // Search in product name
+      const name = (product.name || '').toLowerCase()
+      const matchesName = name.includes(lowerQuery);
+
+      // Search in variants/SKUs
+      let matchingVariant = null;
+      if (product.variants && Array.isArray(product.variants)) {
+        matchingVariant = product.variants.find(variant =>
+            variant.sku && variant.sku.toLowerCase().includes(lowerQuery)
+        );
+      }
+
+      if (matchesName || matchingVariant) {
+        const result = {
+          category,
+          product: { ...product },
+          matchingVariant: matchingVariant ? { ...matchingVariant } : null,
+          matchType: matchesName ? 'name' : 'variant',
+          isExactMatch: false
+        };
+        results.push(result);
+      }
+    });
+  });
+
+  console.log(`🔍 Live search completed. Found ${results.length} results:`, results);
+  searchResults.value = results;
+};
+
+// Open product drawer with filtered search results
+const openProductDrawerWithFilteredResults = () => {
+  if (searchResults.value.length === 0) {
+    // If no results, close the drawer
+    if (selectedCategory.value === 'search') {
+      isProductDrawerOpen.value = false;
+      selectedCategory.value = '';
+    }
+    return;
+  }
+
+  console.log(`🔍 Opening live search results:`, searchResults.value);
+
+  // FIXED: Force drawer to close and reopen to reset internal state
+  if (isProductDrawerOpen.value && selectedCategory.value !== 'search') {
+    isProductDrawerOpen.value = false;
+
+    // Use nextTick to ensure drawer closes before reopening
+    nextTick(() => {
+      selectedCategory.value = 'search';
+      isProductDrawerOpen.value = true;
+      isLoading.value = false;
+    }); // Very short delay
+  } else {
+    // Normal flow - just open with search results
+    selectedCategory.value = 'search';
+    isProductDrawerOpen.value = true;
+    isLoading.value = false;
+  }
+};
+
+// Computed styles - matching your existing design patterns
+const searchSectionStyle = computed(() => ({
+  padding: '15px 20px',
+  borderBottom: '1px solid #e0e0e0',
+  backgroundColor: '#ffffff',
+  // Removed sticky positioning to prevent z-index conflicts
+  marginBottom: '5px',
+  zIndex: '9999999',
+  position: 'absolute',
+  top: isMobileDevice.value ? '0' : '60px',
+  width: isMobileDevice.value ? '100vw' : '480px',
+  maxWidth: isMobileDevice.value ? '100vw' : '500px',
+}))
+
+const searchContainerStyle = computed(() => ({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  backgroundColor: '#f8fafc',
+  border: `2px solid ${searchFocused.value ? '#29275B' : '#e5e7eb'}`,
+  borderRadius: '10px',
+  padding: '0',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  boxShadow: searchFocused.value
+      ? '0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15)'
+      : '0 2px 6px rgba(0, 0, 0, 0.08)',
+  transform: searchFocused.value ? 'translateY(-1px)' : 'translateY(0)'
+}))
+
+const searchIconStyle = computed(() => ({
+  padding: '12px 16px',
+  color: searchFocused.value ? '#29275B' : '#9ca3af',
+  transition: 'color 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  flexShrink: 0
+}))
+
+const searchInputStyle = computed(() => ({
+  flex: 1,
+  border: 'none',
+  outline: 'none',
+  backgroundColor: 'transparent',
+  padding: '12px 8px',
+  fontSize: '14px',
+  fontWeight: '500',
+  color: '#333',
+  fontFamily: 'Arial, sans-serif'
+}))
+
+const clearButtonStyle = computed(() => ({
+  padding: '8px 12px',
+  backgroundColor: 'transparent',
+  border: 'none',
+  color: '#9ca3af',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  borderRadius: '4px',
+  transition: 'all 0.2s ease',
+  flexShrink: 0
+}))
 </script>
 
 <style scoped>
@@ -1516,6 +1846,27 @@ const categoryLabelStyle = computed(() => ({
   .modern-number-input {
     font-size: 14px !important;
     padding: 10px 14px !important;
+  }
+}
+/* Search input specific styles */
+.search-input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.search-input:focus::placeholder {
+  color: #d1d5db;
+}
+
+.clear-search-button:hover {
+  background-color: #f3f4f6 !important;
+  color: #6b7280 !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .search-input {
+    font-size: 16px !important; /* Prevents zoom on iOS */
   }
 }
 </style>
