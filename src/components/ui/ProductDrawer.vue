@@ -130,7 +130,7 @@
           ← Go back
         </button>
 
-        <h2 :style="titleStyle">{{ drawerTitle }}</h2>
+        <h2 :style="titleStyle" v-html="drawerTitle" />
 
         <button
             @click="closeDrawer"
@@ -536,7 +536,7 @@ const handleDirectAddToRoom = async (product) => {
 
 const drawerTitle = computed(() => {
   if (props.selectedCategory === 'search') {
-    return `${ props?.searchResults?.value?.length } Results Found`
+    return `<span style="color:#EC048C">${ props?.searchResults?.value?.length } </span> Results Found`
   }
 
   // Return your existing category title logic
