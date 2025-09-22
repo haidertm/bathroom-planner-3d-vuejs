@@ -523,27 +523,6 @@ const handleDirectAddToRoom = async (product) => {
   }
 }
 
-
-
-const displayedProducts = computed(() => {
-  // If we're showing search results, use them instead of category products
-  if (props.selectedCategory === 'search' && props.searchResults.length > 0) {
-    // Transform search results to match the expected product format
-    return props.searchResults.map(result => ({
-      ...result.product,
-      // Add search context information
-      searchContext: {
-        category: result.category,
-        matchType: result.matchType,
-        matchingVariant: result.matchingVariant
-      }
-    }))
-  }
-
-  // Otherwise, use the normal category-based products
-  return getProductsForCategory(props.selectedCategory)
-})
-
 const drawerTitle = computed(() => {
   if (props.selectedCategory === 'search') {
     return `Search Results`
@@ -805,7 +784,6 @@ const selectProduct = async (product) => {
     console.log('🔄 Auto-loading first variant on product selection:', variantKey)
 
     // Check if already loaded
-    const modelManager = ModelManager.getInstance()
     const isAlreadyLoaded = isVariantModelLoaded(firstVariant)
 
     if (!isAlreadyLoaded) {
@@ -1953,16 +1931,6 @@ const searchContextStyle = computed(() => ({
   alignItems: 'center',
   marginTop: '8px',
   flexWrap: 'wrap'
-}))
-
-const searchCategoryBadgeStyle = computed(() => ({
-  backgroundColor: '#29275B',
-  color: 'white',
-  padding: '4px 8px',
-  borderRadius: '12px',
-  fontSize: '11px',
-  fontWeight: '500',
-  textTransform: 'capitalize'
 }))
 
 const searchVariantStyle = computed(() => ({
