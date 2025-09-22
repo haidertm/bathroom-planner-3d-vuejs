@@ -12,6 +12,7 @@
 
         <!-- Search Input -->
         <input
+            ref="searchInput"
             v-model="searchQuery"
             :style="searchInputStyle"
             type="text"
@@ -49,7 +50,7 @@
       </div>
 
       <!-- Enhanced Search Results Count -->
-      <div v-if="searchQuery" :style="searchResultsCountStyle">
+      <div v-if="searchQuery && searchFocused" :style="searchResultsCountStyle">
         <span v-if="searchResults.length > 0">
           Found {{ searchResults.length }} product{{ searchResults.length !== 1 ? 's' : '' }}
         </span>

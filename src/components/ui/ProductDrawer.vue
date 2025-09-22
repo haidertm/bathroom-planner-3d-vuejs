@@ -170,9 +170,6 @@
             <h3 :style="productNameStyle" v-html="getHighlightedName(product)">
             </h3>
             <div v-if="product.searchContext" :style="searchContextStyle">
-              <div :style="searchCategoryBadgeStyle">
-                {{ product.searchContext.category }}
-              </div>
               <div v-if="product.searchContext.matchingVariant" :style="searchVariantStyle">
                 SKU: {{ product.searchContext.matchingVariant.sku }}
               </div>
@@ -1270,8 +1267,7 @@ const getSearchAwareButtonStyle = (product) => {
   if (product.searchContext?.showDirectAdd) {
     return {
       ...baseStyle,
-      backgroundColor: '#10b981', // Green for direct add
-      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+      backgroundColor: '#29275B', // Green for direct add
     }
   }
 
