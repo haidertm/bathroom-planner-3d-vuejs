@@ -1167,7 +1167,7 @@ const mobileCloseButtonStyle = computed(() => ({
 // Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '0' : '130px',
+  top: isMobileDevice.value ? '70px' : '130px',
   left: '0',
   backgroundColor: 'rgba(255, 255, 255, 0.98)',
   padding: isMobileDevice.value ? '50px 20px 20px 20px' : '20px',
@@ -1176,8 +1176,8 @@ const panelStyle = computed(() => ({
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 130px)',
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 130px)',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 60px)' : 'calc(100vh - 130px)',
+  height: isMobileDevice.value ? 'calc(100vh - 60px)' : 'calc(100vh - 130px)',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
@@ -1663,7 +1663,7 @@ const searchSectionStyle = computed(() => ({
   marginBottom: '5px',
   zIndex: '9999999',
   position: 'absolute',
-  top: '60px',
+  top: isMobileDevice.value ? '0' : '60px',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
 }))

@@ -1408,10 +1408,10 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: 'fixed',
-  top: isMobileDevice.value ? '0' : '130px',
+  top: isMobileDevice.value ? '70px' : '130px',
   left: '0',
-  maxHeight: isMobileDevice.value ? '100vh' : 'calc(100vh - 130px)',
-  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 130px)',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
+  height: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: '100vw',
   backgroundColor: currentView.value === 'variants' ? '#ffffff' : '#f5f5f5',
