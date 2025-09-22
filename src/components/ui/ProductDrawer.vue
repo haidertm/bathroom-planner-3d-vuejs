@@ -3,7 +3,7 @@
     <div v-if="isSingleProductSearchMode" style="padding: 20px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0;">
         <h3 style="font-size: 24px; font-weight: 600; color: #29275B; margin: 0; font-family: Arial, sans-serif;">Product Found</h3>
-        <div style="background-color: #10b981; color: #ffffff; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Exact Match</div>
+        <div style="background-color: #10b981; color: #ffffff; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;" aria-label="Exact SKU match">Exact Match</div>
       </div>
 
       <div
@@ -17,7 +17,6 @@
               :src="product.image"
               :alt="product.name"
               style="width: 100%; height: 100%; object-fit: cover;"
-              @error="handleImageError"
               loading="lazy"
           />
         </div>
@@ -30,14 +29,9 @@
             <strong>SKU:</strong> {{ product.searchContext.matchingVariant.sku }}
           </div>
 
-          <div
-              v-if="product.searchContext.matchingVariant?.dimensions"
-              style="font-size: 14px; color: #6b7280; margin-bottom: 12px; padding: 8px 12px; background-color: #f9fafb; border-radius: 8px;"
-          >
+          <div v-if="product.searchContext.matchingVariant?.dimensions" style="font-size: 14px; color: #6b7280; margin-bottom: 12px; padding: 8px 12px; background-color: #f9fafb; border-radius: 8px;">
             <strong>Dimensions:</strong>
-            {{ product.searchContext.matchingVariant.dimensions.width }}cm ×
-            {{ product.searchContext.matchingVariant.dimensions.depth || product.searchContext.matchingVariant.dimensions.height }}cm ×
-            {{ product.searchContext.matchingVariant.dimensions.height }}cm
+            {{ formatDimensions(product.searchContext.matchingVariant.dimensions) }}
           </div>
 
           <div style="font-size: 28px; font-weight: 700; color: #29275B; margin-bottom: 16px; font-family: Arial, sans-serif;">£{{ product.price }}</div>
@@ -49,6 +43,7 @@
               :href="product.link"
               style="display: flex; align-items: center; gap: 6px; color: #6b7280; text-decoration: none; font-size: 14px; font-weight: 500; padding: 10px 16px; border-radius: 8px; border: 1px solid #d1d5db; background-color: #ffffff; transition: all 0.2s ease; font-family: Arial, sans-serif;"
               target="_blank"
+              rel="noopener noreferrer"
           >
             View Details
           </a>
@@ -177,7 +172,7 @@
             <div :style="priceStyle">£{{ product.price }}</div>
 
             <!-- More Info Link -->
-            <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank">
+            <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
               More info ↗
             </a>
 
@@ -233,7 +228,7 @@
             <h3 :style="productNameStyle">{{ getDisplayName() }}</h3>
             <div :style="brandStyle"><span style="font-weight: bold;">sku:</span> {{ getDisplaySku() }}</div>
             <div :style="priceStyle">£{{ getDisplayPrice() }}</div>
-            <a :href="getLink()" :style="moreInfoStyle" class="more-info-link" target="_blank">
+            <a :href="getLink()" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
               More info ↗
             </a>
           </div>
@@ -480,6 +475,16 @@ const isSingleProductSearchMode = computed(() => {
   return result
 })
 
+const formatDimensions = (d = {}) => {
+  const parts = []
+  if (d.width != null) parts.push(`${d.width}cm`)
+  const useHeightAsDepth = d.depth == null && d.height != null
+  if (d.depth != null) parts.push(`${d.depth}cm`)
+  else if (useHeightAsDepth) parts.push(`${d.height}cm`)
+  if (d.height != null && !useHeightAsDepth) parts.push(`${d.height}cm`)
+  return parts.join(' × ')
+}
+
 const handleDirectAddToRoom = async (product) => {
 
   if (!product.productData) {
@@ -490,7 +495,11 @@ const handleDirectAddToRoom = async (product) => {
   modalProgress.value = 0
 
   try {
-    const variant = product.searchContext.matchingVariant
+    const variant = product?.searchContext?.matchingVariant
+     if (!variant) {
+       console.warn('No matching variant to add')
+       return
+     }
 
     // Load model if needed
     if (variant.path) {
@@ -536,7 +545,11 @@ const handleDirectAddToRoom = async (product) => {
 
 const drawerTitle = computed(() => {
   if (props.selectedCategory === 'search') {
-    return `<span style="color:#EC048C">${ props?.searchResults?.value?.length } </span> Results Found`
+    const raw = (props && props.searchResults && 'value' in props.searchResults)
+        ? props.searchResults.value
+        : props.searchResults
+    const count = Array.isArray(raw) ? raw.length : 0
+    return `<span style="color:#EC048C">${count} </span> Results Found`
   }
 
   // Return your existing category title logic
@@ -545,6 +558,8 @@ const drawerTitle = computed(() => {
 
 // 4. FIXED search result highlighting that properly handles Vue refs
 const getHighlightedName = (product) => {
+  const escapeHtml = (s = '') =>
+      String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   if (props.selectedCategory === 'search') {
     // Properly access the searchQuery value
     let searchQuery = props.searchQuery
@@ -557,20 +572,19 @@ const getHighlightedName = (product) => {
     // Ensure we have a valid string
     if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
-      const name = product.name || ''
-      const index = name.toLowerCase().indexOf(query)
+      const rawName = product.name || ''
+      const index = rawName.toLowerCase().indexOf(query)
 
       if (index !== -1) {
-        const before = name.substring(0, index)
-        const match = name.substring(index, index + query.length)
-        const after = name.substring(index + query.length)
-
+        const before = escapeHtml(rawName.substring(0, index))
+        const match = escapeHtml(rawName.substring(index, index + query.length))
+        const after  = escapeHtml(rawName.substring(index + query.length))
         return `${before}<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 2px;">${match}</mark>${after}`
       }
     }
   }
 
-  return product.name || ''
+  return escapeHtml(product.name || '')
 }
 
 // NEW: Loading Modal Methods
@@ -606,16 +620,6 @@ const cancelLoading = () => {
   hideLoadingModal()
 }
 
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen) {
-    currentView.value = 'products'
-    selectedProduct.value = null
-  } else {
-    productPreloading.value.clear()
-    hideLoadingModal() // ADD THIS LINE
-  }
-})
-
 // Initialize selections when product changes
 watch(() => selectedProduct.value, (newProduct) => {
   if (newProduct) {
@@ -634,13 +638,8 @@ const getProductsForCategory = (category) => {
 }
 
 const readyProducts = computed(() => {
-  console.log('🔍 ProductDrawer readyProducts computed called')
-  console.log('🔍 selectedCategory:', props.selectedCategory)
-  console.log('🔍 searchResults:', props.searchResults)
-
   // Handle search results
   if (props.selectedCategory === 'search') {
-    console.log('🔍 Processing search results...')
 
     // Get search results array safely
     let searchResultsArray = []
@@ -660,15 +659,11 @@ const readyProducts = computed(() => {
     }
 
     if (searchResultsArray.length === 0) {
-      console.log('❌ Empty search results array')
       return []
     }
 
-    console.log('🔍 Transforming search results:', searchResultsArray.length, 'items')
-
     // Transform search results based on match type
     const transformedResults = searchResultsArray.map((result, index) => {
-      console.log(`🔍 Transforming result ${index}:`, result)
 
       const { category, product, matchingVariant, matchType, isExactMatch } = result
 
@@ -728,14 +723,11 @@ const readyProducts = computed(() => {
         productData: null
       }
     })
-
-    console.log('✅ Final transformed results:', transformedResults)
     return transformedResults
   }
 
   // Handle regular category products (unchanged)
   const categoryProducts = getProductsForCategory(props.selectedCategory)
-  console.log('🔍 Category products:', categoryProducts?.length || 0, 'items')
   return categoryProducts || []
 })
 
@@ -990,19 +982,6 @@ const isVariantLoadingState = (variant) => {
   const variantKey = variant.id || variant.sku || variant.name
   return variantLoadingStates.value.get(variantKey) || false
 }
-
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen) {
-    // Always reset to products view when drawer opens
-    currentView.value = 'products';
-    selectedProduct.value = null;
-    selectedVariant.value = '';
-    selectedColor.value = '';
-  } else {
-    // Clear preloading states when drawer closes
-    productPreloading.value.clear();
-  }
-});
 
 watch(() => props.selectedCategory, (newCategory, oldCategory) => {
 
@@ -1270,7 +1249,7 @@ const getSearchAwareButtonStyle = (product) => {
   if (product.searchContext?.showDirectAdd) {
     return {
       ...baseStyle,
-      backgroundColor: '#29275B', // Green for direct add
+      backgroundColor: '#29275B',
     }
   }
 
