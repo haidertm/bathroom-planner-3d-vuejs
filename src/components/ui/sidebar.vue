@@ -49,19 +49,6 @@
         </div>
       </div>
 
-      <!-- Enhanced Search Results Count -->
-      <div v-if="searchQuery && searchFocused" :style="searchResultsCountStyle">
-        <span v-if="searchResults.length > 0">
-          Found {{ searchResults.length }} product{{ searchResults.length !== 1 ? 's' : '' }}
-        </span>
-        <span v-else-if="!isSearching" :style="noResultsStyle">
-          No products found for "{{ searchQuery }}"
-        </span>
-        <span v-else :style="searchingTextStyle">
-          Searching...
-        </span>
-      </div>
-
       <!-- Optional: Quick search tips -->
       <div v-if="!searchQuery && searchFocused" :style="searchTipsStyle">
         <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
@@ -354,6 +341,7 @@
 
     <ProductDrawer
         v-bind="productDrawerProps"
+        :search-triggered="searchTriggered"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
         @retry-loading="retryLoadingCategory"
@@ -417,6 +405,7 @@ const isFloorExpanded = ref(true)
 const isWallExpanded = ref(false)
 const isSidebarVisible = ref(false)
 const isButtonPressed = ref(false)
+const searchTriggered = ref(0)
 
 let searchTimeout = null;
 
@@ -1505,8 +1494,8 @@ const handleSearchInput = () => {
       hasSearched.value = true;
       performSearch(query);
 
-      // Automatically open results (this is the key change!)
       if (searchResults.value.length > 0) {
+        searchTriggered.value++;
         openProductDrawerWithFilteredResults();
       }
     } else {
@@ -1531,6 +1520,7 @@ const handleSearchEnter = () => {
   if (searchQuery.value.trim()) {
     performSearch(searchQuery.value.trim());
     if (searchResults.value.length > 0) {
+      searchTriggered.value++;
       openProductDrawerWithFilteredResults();
     }
   }
@@ -1634,12 +1624,22 @@ const openProductDrawerWithFilteredResults = () => {
 
   console.log(`🔍 Opening live search results:`, searchResults.value);
 
-  // Set special category for search results
-  selectedCategory.value = 'search';
-  isProductDrawerOpen.value = true;
-  isLoading.value = false;
+  // FIXED: Force drawer to close and reopen to reset internal state
+  if (isProductDrawerOpen.value && selectedCategory.value !== 'search') {
+    isProductDrawerOpen.value = false;
 
-  console.log(`🎯 ProductDrawer opened with ${searchResults.value.length} live search results`);
+    // Use setTimeout to ensure drawer closes before reopening
+    setTimeout(() => {
+      selectedCategory.value = 'search';
+      isProductDrawerOpen.value = true;
+      isLoading.value = false;
+    }, 10); // Very short delay
+  } else {
+    // Normal flow - just open with search results
+    selectedCategory.value = 'search';
+    isProductDrawerOpen.value = true;
+    isLoading.value = false;
+  }
 };
 
 // Clear search and close filtered view

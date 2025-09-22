@@ -416,6 +416,10 @@ const props = defineProps({
   searchQuery: {
     type: String,
     default: ''
+  },
+  searchTriggered: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -441,13 +445,31 @@ const variantProgress = ref(new Map()) // Track progress for each variant
 const firstVariantPreloaded = ref(new Map()) // Track which products have preloaded first variants
 const productPreloading = ref(new Map()) // Track which products are currently preloading
 
+
+watch(() => props.searchTriggered, (newValue, oldValue) => {
+  if (newValue > oldValue && newValue > 0) {
+    // Force reset to products view when search is triggered
+    currentView.value = 'products';
+    selectedProduct.value = null;
+    selectedVariant.value = '';
+    selectedColor.value = '';
+  }
+});
+
 // Reset view when drawer opens/closes
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    currentView.value = 'products'
-    selectedProduct.value = null
+    // Only reset if not search mode to avoid conflicts
+    if (props.selectedCategory !== 'search') {
+      currentView.value = 'products';
+      selectedProduct.value = null;
+      selectedVariant.value = '';
+      selectedColor.value = '';
+    }
+  } else {
+    productPreloading.value.clear();
   }
-})
+});
 
 const isSingleProductSearchMode = computed(() => {
   const result = props.selectedCategory === 'search' &&
@@ -455,21 +477,12 @@ const isSingleProductSearchMode = computed(() => {
       readyProducts.value[0]?.searchContext?.isExactMatch &&
       readyProducts.value[0]?.searchContext?.matchType === 'exact_sku'
 
-  console.log('🔍 isSingleProductSearchMode:', result, {
-    isSearch: props.selectedCategory === 'search',
-    hasOneResult: readyProducts.value.length === 1,
-    isExactMatch: readyProducts.value[0]?.searchContext?.isExactMatch,
-    matchType: readyProducts.value[0]?.searchContext?.matchType
-  })
-
   return result
 })
 
 const handleDirectAddToRoom = async (product) => {
-  console.log('🎯 Direct add to room triggered:', product)
 
   if (!product.productData) {
-    console.error('❌ No product data available for direct add')
     return
   }
 
@@ -484,8 +497,6 @@ const handleDirectAddToRoom = async (product) => {
       try {
         const modelManager = ModelManager.getInstance()
         if (!modelManager.isModelLoaded(variant.sku)) {
-          console.log('📦 Loading model for direct add:', variant.sku)
-
           const modelConfig = {
             name: variant.sku || variant.name,
             path: variant.path,
@@ -525,7 +536,7 @@ const handleDirectAddToRoom = async (product) => {
 
 const drawerTitle = computed(() => {
   if (props.selectedCategory === 'search') {
-    return `Search Results`
+    return `${ props?.searchResults?.value?.length } Results Found`
   }
 
   // Return your existing category title logic
@@ -982,13 +993,27 @@ const isVariantLoadingState = (variant) => {
 
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    currentView.value = 'products'
-    selectedProduct.value = null
+    // Always reset to products view when drawer opens
+    currentView.value = 'products';
+    selectedProduct.value = null;
+    selectedVariant.value = '';
+    selectedColor.value = '';
   } else {
     // Clear preloading states when drawer closes
-    productPreloading.value.clear()
+    productPreloading.value.clear();
   }
-})
+});
+
+watch(() => props.selectedCategory, (newCategory, oldCategory) => {
+
+  // If switching to search while drawer is open, reset to products view
+  if (newCategory === 'search' && props.isOpen) {
+    currentView.value = 'products';
+    selectedProduct.value = null;
+    selectedVariant.value = '';
+    selectedColor.value = '';
+  }
+});
 
 // New display functions for variants
 const getDisplayImage = () => {
