@@ -4,7 +4,7 @@
       <div :style="searchContainerStyle">
         <!-- Search Icon -->
         <div :style="searchIconStyle" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="M21 21l-4.35-4.35"></path>
           </svg>
@@ -36,7 +36,7 @@
             aria-label="Clear search"
             title="Clear search"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -353,7 +353,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import {computed, ref, watch, onBeforeUnmount, nextTick} from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
@@ -1515,7 +1515,7 @@ const handleSearchInput = () => {
   }, 300); // 300ms debounce
 };
 
-const handleSearchEnter = () => {
+const handleSearchEnter = async () => {
   // Clear any pending timeout since user pressed enter
   if (searchTimeout) {
     clearTimeout(searchTimeout);
@@ -1523,11 +1523,13 @@ const handleSearchEnter = () => {
 
   if (searchQuery.value.trim()) {
     performSearch(searchQuery.value.trim());
+    await nextTick();
     if (searchResults.value.length > 0) {
       searchTriggered.value++;
       openProductDrawerWithFilteredResults();
     }
   }
+  isSearching.value = false;
 };
 
 const handleSearchFocus = () => {
@@ -1716,22 +1718,6 @@ const clearButtonStyle = computed(() => ({
     backgroundColor: '#f3f4f6',
     color: '#6b7280'
   }
-}))
-
-const searchResultsCountStyle = computed(() => ({
-  marginTop: '8px',
-  fontSize: '12px',
-  color: '#29275B',
-  fontWeight: '500',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const noResultsStyle = computed(() => ({
-  marginTop: '8px',
-  fontSize: '12px',
-  color: '#9ca3af',
-  fontStyle: 'italic',
-  fontFamily: 'Arial, sans-serif'
 }))
 </script>
 

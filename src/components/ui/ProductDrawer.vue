@@ -466,15 +466,6 @@ watch(() => props.isOpen, (isOpen) => {
   }
 });
 
-const isSingleProductSearchMode = computed(() => {
-  const result = props.selectedCategory === 'search' &&
-      readyProducts.value.length === 1 &&
-      readyProducts.value[0]?.searchContext?.isExactMatch &&
-      readyProducts.value[0]?.searchContext?.matchType === 'exact_sku'
-
-  return result
-})
-
 const formatDimensions = (d = {}) => {
   const parts = []
   if (d.width != null) parts.push(`${d.width}cm`)
@@ -486,7 +477,7 @@ const formatDimensions = (d = {}) => {
 }
 
 const handleDirectAddToRoom = async (product) => {
-
+  let deferHide = false
   if (!product?.productData) return
 
   try {
@@ -538,6 +529,7 @@ const handleDirectAddToRoom = async (product) => {
     console.log('✅ Product added directly from search:', variantKey)
 
     if (showLoadingModal.value) {
+      deferHide = true
       setTimeout(() => {
         hideLoadingModal()
         emit('close')
@@ -549,7 +541,7 @@ const handleDirectAddToRoom = async (product) => {
   } finally {
     // If we showed the modal but exited early elsewhere, ensure it gets hidden
     // (defensive; no-op if already hidden)
-    if (showLoadingModal.value) hideLoadingModal()
+    if (showLoadingModal.value && !deferHide) hideLoadingModal()
   }
 }
 
@@ -739,6 +731,13 @@ const readyProducts = computed(() => {
   // Handle regular category products (unchanged)
   const categoryProducts = getProductsForCategory(props.selectedCategory)
   return categoryProducts || []
+})
+
+const isSingleProductSearchMode = computed(() => {
+   return props.selectedCategory === 'search' &&
+       readyProducts.value.length === 1 &&
+       readyProducts.value[0]?.searchContext?.isExactMatch === true &&
+       readyProducts.value[0]?.searchContext?.matchType === 'exact_sku'
 })
 
 const getLoadingProductCount = () => {
