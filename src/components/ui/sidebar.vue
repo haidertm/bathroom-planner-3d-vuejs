@@ -4,7 +4,7 @@
       <div :style="searchContainerStyle">
         <!-- Search Icon -->
         <div :style="searchIconStyle" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" role="img">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="M21 21l-4.35-4.35"></path>
           </svg>
@@ -1636,12 +1636,12 @@ const openProductDrawerWithFilteredResults = () => {
   if (isProductDrawerOpen.value && selectedCategory.value !== 'search') {
     isProductDrawerOpen.value = false;
 
-    // Use setTimeout to ensure drawer closes before reopening
-    setTimeout(() => {
+    // Use nextTick to ensure drawer closes before reopening
+    nextTick(() => {
       selectedCategory.value = 'search';
       isProductDrawerOpen.value = true;
       isLoading.value = false;
-    }, 10); // Very short delay
+    }); // Very short delay
   } else {
     // Normal flow - just open with search results
     selectedCategory.value = 'search';
@@ -1697,10 +1697,7 @@ const searchInputStyle = computed(() => ({
   fontSize: '14px',
   fontWeight: '500',
   color: '#333',
-  fontFamily: 'Arial, sans-serif',
-  '::placeholder': {
-    color: '#9ca3af'
-  }
+  fontFamily: 'Arial, sans-serif'
 }))
 
 const clearButtonStyle = computed(() => ({
@@ -1713,11 +1710,7 @@ const clearButtonStyle = computed(() => ({
   alignItems: 'center',
   borderRadius: '4px',
   transition: 'all 0.2s ease',
-  flexShrink: 0,
-  ':hover': {
-    backgroundColor: '#f3f4f6',
-    color: '#6b7280'
-  }
+  flexShrink: 0
 }))
 </script>
 

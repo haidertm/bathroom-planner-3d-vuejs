@@ -758,7 +758,6 @@ const isAnythingLoading = () => {
 
 // Methods - Original functionality
 const selectProduct = async (product) => {
-  console.log('🔍 Product selected:', product)
 
   // If it's a direct add product (exact SKU match), add directly
   if (product.searchContext?.showDirectAdd) {
@@ -772,7 +771,6 @@ const selectProduct = async (product) => {
   // If there's a highlighted variant from search, pre-select it
   if (product.searchContext?.highlightedVariant) {
     selectedVariant.value = product.searchContext.highlightedVariant
-    console.log('🔍 Pre-selected highlighted variant:', product.searchContext.highlightedVariant.sku)
   } else {
     // Default to first variant
     selectedVariant.value = product.variants?.[0] || ''
@@ -781,25 +779,16 @@ const selectProduct = async (product) => {
   selectedColor.value = product.colors?.[0]?.id || ''
   currentView.value = 'variants'
 
-  console.log('🔍 Switched to variants view with:', {
-    product: selectedProduct.value.name,
-    selectedVariant: selectedVariant.value?.sku || selectedVariant.value?.name,
-    selectedColor: selectedColor.value
-  })
-
   // NEW: Auto-load the first variant when product is selected
   // This restores the functionality where the first variant modal would be initially loaded
   if (product.variants && product.variants.length > 0 && selectedVariant.value) {
     const firstVariant = selectedVariant.value
     const variantKey = firstVariant.id || firstVariant.sku || firstVariant.name
 
-    console.log('🔄 Auto-loading first variant on product selection:', variantKey)
-
     // Check if already loaded
     const isAlreadyLoaded = isVariantModelLoaded(firstVariant)
 
     if (!isAlreadyLoaded) {
-      console.log('🔄 First variant not loaded, starting preload...')
 
       // Mark as preloading
       productPreloading.value.set(product.id, {
@@ -822,8 +811,6 @@ const selectProduct = async (product) => {
           status: 'loaded'
         })
 
-        console.log('✅ First variant preloaded successfully:', variantKey)
-
       } catch (error) {
         console.error('❌ Failed to preload first variant:', error)
         productPreloading.value.set(product.id, {
@@ -832,7 +819,6 @@ const selectProduct = async (product) => {
         })
       }
     } else {
-      console.log('✅ First variant already loaded:', variantKey)
 
       // Still mark it as preloaded if not already marked
       if (!firstVariantPreloaded.value.has(product.id)) {
