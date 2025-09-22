@@ -487,27 +487,32 @@ const formatDimensions = (d = {}) => {
 
 const handleDirectAddToRoom = async (product) => {
 
-  if (!product.productData) {
-    return
-  }
-
-  showLoadingModal.value = true
-  modalProgress.value = 0
+  if (!product?.productData) return
 
   try {
     const variant = product?.searchContext?.matchingVariant
-     if (!variant) {
-       console.warn('No matching variant to add')
-       return
-     }
+    if (!variant) {
+      console.warn('No matching variant to add')
+      return
+    }
+    const variantKey = variant.id || variant.sku || variant.name
+        // If model is already loaded, avoid flashing the modal
+    const mm = ModelManager.getInstance()
+    const alreadyLoaded = typeof mm.isModelLoaded === 'function'
+        ? mm.isModelLoaded(variantKey)
+        : !!(mm.loadedModels?.has?.(variantKey) || mm.cache?.[variantKey])
+    if (!alreadyLoaded) {
+      showLoadingModal.value = true
+      modalProgress.value = 0
+    }
 
     // Load model if needed
-    if (variant.path) {
+    if (!alreadyLoaded && variant.path) {
       try {
         const modelManager = ModelManager.getInstance()
-        if (!modelManager.isModelLoaded(variant.sku)) {
+        if (!modelManager.isModelLoaded?.(variantKey)) {
           const modelConfig = {
-            name: variant.sku || variant.name,
+            name: variantKey,
             path: variant.path,
             scale: variant.scale || 1.0,
             dimensions: variant.dimensions,
@@ -515,14 +520,14 @@ const handleDirectAddToRoom = async (product) => {
             orientation: variant.orientation
           }
 
-          await modelManager.loadModel(variant.sku, modelConfig)
+          await modelManager.loadModel(variantKey, modelConfig)
         }
       } catch (modelError) {
         console.warn('⚠️ Model loading failed, but continuing:', modelError)
       }
     }
 
-    modalProgress.value = 100
+    if (showLoadingModal.value) modalProgress.value = 100
 
     emit('add-to-room', {
       ...product.productData,
@@ -530,16 +535,21 @@ const handleDirectAddToRoom = async (product) => {
       searchQuery: props.searchQuery
     })
 
-    console.log('✅ Product added directly from search:', variant.sku)
+    console.log('✅ Product added directly from search:', variantKey)
 
-    setTimeout(() => {
-      hideLoadingModal()
+    if (showLoadingModal.value) {
+      setTimeout(() => {
+        hideLoadingModal()
+        emit('close')
+      }, 500)
+    } else {
       emit('close')
-    }, 500)
+    }
 
-  } catch (error) {
-    console.error('❌ Error adding to room:', error)
-    hideLoadingModal()
+  } finally {
+    // If we showed the modal but exited early elsewhere, ensure it gets hidden
+    // (defensive; no-op if already hidden)
+    if (showLoadingModal.value) hideLoadingModal()
   }
 }
 
@@ -1150,14 +1160,11 @@ const addProductToRoom = () => {
     componentType = selectedProduct.value.category ||
         selectedProduct.value.searchContext?.category ||
         selectedProduct.value.searchContext?.originalProduct?.category ||
-        props.selectedCategory
-
-    console.log('🔍 Search mode - using category:', componentType, {
-      fromProduct: selectedProduct.value.category,
-      fromSearchContext: selectedProduct.value.searchContext?.category,
-      fromOriginalProduct: selectedProduct.value.searchContext?.originalProduct?.category,
-      fallback: props.selectedCategory
-    })
+        ''
+    if (!componentType) {
+      console.warn('No valid component type resolved for add-to-room; aborting emit')
+      return
+    }
   }
 
   const productData = {

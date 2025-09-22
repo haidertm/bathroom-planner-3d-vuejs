@@ -3,7 +3,7 @@
     <div v-if="isSidebarVisible || !isMobileDevice" :style="searchSectionStyle">
       <div :style="searchContainerStyle">
         <!-- Search Icon -->
-        <div :style="searchIconStyle">
+        <div :style="searchIconStyle" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <path d="M21 21l-4.35-4.35"></path>
@@ -17,6 +17,7 @@
             :style="searchInputStyle"
             type="text"
             placeholder="Search by name or SKU..."
+            aria-label="Search products by name or SKU"
             @input="handleSearchInput"
             @keydown.enter="handleSearchEnter"
             @focus="handleSearchFocus"
@@ -1489,13 +1490,14 @@ const handleSearchInput = () => {
   isSearching.value = true;
 
   // Debounce the search
-  searchTimeout = setTimeout(() => {
+  searchTimeout = setTimeout(async () => {
     const query = searchQuery.value.trim();
 
     if (query) {
       hasSearched.value = true;
       performSearch(query);
 
+      await Promise.resolve(); // or nextTick()
       if (searchResults.value.length > 0) {
         searchTriggered.value++;
         openProductDrawerWithFilteredResults();
@@ -1539,6 +1541,7 @@ const handleSearchBlur = () => {
 const clearSearch = () => {
   searchQuery.value = ''
   searchResults.value = []
+  hasSearched.value = false
 
   // If the drawer is open with search results, close it
   if (selectedCategory.value === 'search') {
@@ -1586,7 +1589,8 @@ const performSearch = (query) => {
   Object.entries(productData).forEach(([category, products]) => {
     products.forEach((product) => {
       // Search in product name
-      const matchesName = product.name.toLowerCase().includes(lowerQuery);
+      const name = (product.name || '').toLowerCase()
+      const matchesName = name.includes(lowerQuery);
 
       // Search in variants/SKUs
       let matchingVariant = null;
@@ -1643,18 +1647,6 @@ const openProductDrawerWithFilteredResults = () => {
     isLoading.value = false;
   }
 };
-
-// Clear search and close filtered view
-const clearSearchAndCloseDrawer = () => {
-  searchQuery.value = ''
-  searchResults.value = []
-
-  // If the drawer is open with search results, close it
-  if (selectedCategory.value === 'search') {
-    isProductDrawerOpen.value = false
-    selectedCategory.value = ''
-  }
-}
 
 // Computed styles - matching your existing design patterns
 const searchSectionStyle = computed(() => ({
