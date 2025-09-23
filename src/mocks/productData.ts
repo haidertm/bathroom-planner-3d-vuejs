@@ -227,8 +227,6 @@ const productData: ProductData = {
                 snapToWall: true,
                 allowVerticalMovement: false, // Vertical placement allowed (0..ceiling)
                 allowFreeRotation: false,
-                minHeight: 10, // Minimum height from floor
-                maxHeight: 10
             },
           sku: 'C76304',
           price: '289.99',
