@@ -161,7 +161,6 @@
 
           <!-- Product Info -->
           <div :style="productInfoStyle">
-            <div :style="brandStyle">{{ product.brand }}</div>
             <h3 :style="productNameStyle" v-html="getHighlightedName(product)">
             </h3>
             <div v-if="product.searchContext" :style="searchContextStyle">
@@ -562,27 +561,61 @@ const drawerTitle = computed(() => {
 const getHighlightedName = (product) => {
   const escapeHtml = (s = '') =>
       String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
   if (props.selectedCategory === 'search') {
-    // Properly access the searchQuery value
     let searchQuery = props.searchQuery
 
-    // If it's a Vue ref, unwrap it
     if (searchQuery && typeof searchQuery === 'object' && 'value' in searchQuery) {
       searchQuery = searchQuery.value
     }
 
-    // Ensure we have a valid string
     if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase().trim()
       const rawName = product.name || ''
-      const index = rawName.toLowerCase().indexOf(query)
+      let result = escapeHtml(rawName)
 
-      if (index !== -1) {
-        const before = escapeHtml(rawName.substring(0, index))
-        const match = escapeHtml(rawName.substring(index, index + query.length))
-        const after  = escapeHtml(rawName.substring(index + query.length))
-        return `${before}<mark style="background-color: #ffeb3b; padding: 2px 4px; border-radius: 2px;">${match}</mark>${after}`
+      const searchTerms = query.split(/\s+/).filter(term => term.length > 0)
+
+      if (searchTerms.length === 1) {
+        // Single word - highlight normally
+        const term = searchTerms[0]
+        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`(${escapedTerm})`, 'gi')
+
+        result = result.replace(regex, (match) => {
+          return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
+        })
+      } else {
+        // Multiple words - look for phrase patterns
+
+        // Try exact phrase first
+        const exactPhrase = query
+        const exactRegex = new RegExp(`(${exactPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+
+        if (rawName.toLowerCase().includes(exactPhrase.toLowerCase())) {
+          result = result.replace(exactRegex, (match) => {
+            return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
+          })
+        } else {
+          // Try phrase with up to 2 words between search terms
+          const firstWord = searchTerms[0]
+          const lastWord = searchTerms[searchTerms.length - 1]
+
+          // Pattern: word1 (0-2 words) word2
+          const flexiblePattern = `(${firstWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+\\w+){0,2}\\s+${lastWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
+          const flexibleRegex = new RegExp(flexiblePattern, 'gi')
+
+          const flexibleMatch = rawName.match(flexibleRegex)
+          if (flexibleMatch) {
+            result = result.replace(flexibleRegex, (match) => {
+              return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
+            })
+          }
+          // If no flexible match found, don't highlight individual scattered words
+        }
       }
+
+      return result
     }
   }
 

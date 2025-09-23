@@ -693,7 +693,7 @@ const productDrawerProps = computed(() => ({
   isLoading: isLoading.value,
   loadingError: errorMessage.value,
   searchResults: searchResults,
-  searchQuery: String(searchQuery)
+  searchQuery: searchQuery.value
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):
