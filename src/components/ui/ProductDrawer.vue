@@ -248,14 +248,8 @@
     <span :style="{ opacity: isVariantLoadingState(variant) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
         <span>{{ variant.name }}</span>
 
-      <!-- Green tick for loaded models -->
-        <span v-if="isVariantModelLoaded(variant) && !isVariantLoadingState(variant)"
-              :style="greenTickStyle">
-            ✅
-        </span>
-
       <!-- Loading spinner for currently loading variants -->
-        <div v-else-if="isVariantLoadingState(variant)" :style="variantSpinnerStyle"></div>
+        <div v-if="isVariantLoadingState(variant)" :style="variantSpinnerStyle"></div>
     </span>
 
               <!-- Progress bar container for loading variants -->
@@ -1846,17 +1840,6 @@ const confirmAddButtonStyle = computed(() => ({
   transition: 'background-color 0.2s ease',
   flex: '1',
   fontFamily: 'Arial, sans-serif'
-}))
-
-const greenTickStyle = computed(() => ({
-  fontSize: '16px',
-  color: '#ffffff',  // White tick on selected buttons
-  fontWeight: 'bold',
-  marginLeft: '8px',
-  display: 'flex',
-  alignItems: 'center',
-  // Add glow effect for selected state
-  filter: selectedVariant.value ? 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.8))' : 'none'
 }))
 
 const modalOverlayStyle = computed(() => ({
