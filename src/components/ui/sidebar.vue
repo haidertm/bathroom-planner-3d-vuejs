@@ -235,18 +235,6 @@
             </div>
 
             <div :style="controlGroupStyle">
-              <label :style="checkboxLabelStyle">
-                <input
-                    type="checkbox"
-                    :checked="wallCullingEnabled"
-                    @change="$emit('toggle-wall-culling', $event.target.checked)"
-                    :style="checkboxStyle"
-                />
-                Smart Wall Hiding
-              </label>
-            </div>
-
-            <div :style="controlGroupStyle">
               <button
                   @click="$emit('constrain-objects')"
                   :style="buttonStyle"
