@@ -1481,7 +1481,8 @@ const handleSearchInput = () => {
   searchTimeout = setTimeout(async () => {
     const query = searchQuery.value.trim();
 
-    if (query) {
+    // ✅ NEW: Only search if query has at least 2 characters
+    if (query && query.length >= 2) {
       hasSearched.value = true;
       performSearch(query);
 
