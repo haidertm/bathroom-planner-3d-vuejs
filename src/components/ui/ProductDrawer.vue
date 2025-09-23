@@ -327,22 +327,8 @@
           </div>
         </div>
 
-        <!-- Total Price Summary -->
-        <div :style="priceSummaryStyle">
-          <div :style="totalPriceLabelStyle">Total Price:</div>
-          <div :style="totalPriceStyle">£{{ getTotalPrice() }}</div>
-        </div>
-
-        <!-- Action Buttons -->
+        <!-- Action Button -->
         <div :style="actionButtonsStyle">
-          <button
-              @click="goBackToProductList"
-              :style="backToCatalogueButtonStyle"
-              class="back-to-catalogue-button"
-          >
-            BACK TO CATALOGUE
-          </button>
-
           <button
               @click="confirmAddToRoom"
               :style="confirmAddButtonStyle"
@@ -1790,48 +1776,11 @@ const hardwareChangeButtonStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-const priceSummaryStyle = computed(() => ({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '20px',
-  backgroundColor: '#29275B',
-  color: 'white',
-  borderRadius: '8px',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const totalPriceLabelStyle = computed(() => ({
-  fontSize: '16px',
-  fontWeight: '500',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const totalPriceStyle = computed(() => ({
-  fontSize: '24px',
-  fontWeight: 'bold',
-  fontFamily: 'Arial, sans-serif'
-}))
-
 const actionButtonsStyle = computed(() => ({
   display: 'flex',
   gap: '10px',
   marginTop: '10px',
   flexDirection: isMobileDevice.value ? 'column' : 'row'
-}))
-
-const backToCatalogueButtonStyle = computed(() => ({
-  backgroundColor: 'transparent',
-  border: '1px solid #666',
-  color: '#666',
-  padding: '12px 24px',
-  borderRadius: '6px',
-  fontSize: '14px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  flex: isMobileDevice.value ? '1' : '0 0 auto',
-  fontFamily: 'Arial, sans-serif'
 }))
 
 const confirmAddButtonStyle = computed(() => ({
