@@ -31,15 +31,18 @@
         size="large"
         @toggle="handleRotationArrowsToggle"
     />
-    <div
+    <button
         v-if="selectedObjectId"
         :style="removeButtonStyle"
         @click="handleRemoveObject"
         class="remove-object-button"
+        type="button"
+        aria-label="Remove selected object"
+        title="Remove selected object"
     >
       <span :style="removeIconStyle">🗑️</span>
       <span :style="removeTextStyle">Remove</span>
-    </div>
+    </button>
 
     <!-- Toggle button for texture panel -->
     <button
@@ -210,10 +213,6 @@ const handleObjectSelectionChange = () => {
     selectedObjectCanRotate.value = false
   }
 }
-
-watch(() => eventHandlersRef.value?.selectedObject, () => {
-  handleObjectSelectionChange()
-}, { immediate: true, deep: true })
 
 const handleRotationArrowsToggle = (enabled) => {
   console.log('Rotation arrows toggle:', enabled);
@@ -414,7 +413,7 @@ const removeIconStyle = computed(() => ({
 const removeTextStyle = computed(() => ({
   fontSize: isMobileDevice.value ? '16px' : '14px',
   fontWeight: '500',
-  display: isMobileDevice.value ? 'none': ''
+  display: isMobileDevice.value ? 'none': 'inline'
 }))
 
 const toggleMeasurementStyle = computed(() => ({
