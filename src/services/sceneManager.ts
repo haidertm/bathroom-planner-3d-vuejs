@@ -329,7 +329,7 @@ export class SceneManager {
 
         this.bathroomItemsGroup.add(model);
         this.existingItems.set(item.id, model);
-        console.log(`✅ Successfully added item ${item.id}`, this.existingItems);
+        console.log(`✅ Successfully added item ${item.id}`);
       }
     } catch (error) {
       console.error(`❌ Failed to add single item ${item.id}:`, error);
@@ -875,7 +875,7 @@ export class SceneManager {
               this.bathroomItemsGroup.add(model);
               this.existingItems.set(item.id, model);
 
-              console.log(`Created model with userData:`, model.userData,  this.bathroomItemsGroup);
+              console.log(`Created model with userData:`, model.userData);
             }
           } catch (error) {
             console.error(`Failed to create model for item ${item.id}:`, error);
