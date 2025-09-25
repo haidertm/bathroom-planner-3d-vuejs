@@ -24,7 +24,6 @@
         @constrain-objects="constrainObjects"
         @toggle-wall-culling="handleWallCullingToggle"
     />
-    {{selectedBathroomItem}} selectedBathroomItem
     <ItemConfigurationOverlay
         :selected-item="selectedBathroomItem"
         :room-width="roomWidth"
@@ -49,19 +48,6 @@
         size="large"
         @toggle="handleRotationArrowsToggle"
     />
-    <button
-        v-if="selectedObjectId"
-        :style="removeButtonStyle"
-        @click="handleRemoveObject"
-        class="remove-object-button"
-        type="button"
-        aria-label="Remove selected object"
-        title="Remove selected object"
-    >
-      <span :style="removeIconStyle">🗑️</span>
-      <span :style="removeTextStyle">Remove</span>
-    </button>
-
     <!-- Toggle button for texture panel -->
     <button
         v-if="!showTexturePanel"
@@ -481,6 +467,7 @@ const handleToggleMeasurements = () => {
 }
 
 const handleRemoveObject = () => {
+  console.log('>>> selected object id', selectedObjectId.value)
   if (selectedObjectId.value) {
 
       // Call the existing delete function
@@ -552,40 +539,6 @@ const toggleButtonStyle = computed(() => ({
   alignItems: 'center',
   gap: '8px',
   whiteSpace: 'nowrap'
-}))
-
-const removeButtonStyle = computed(() => ({
-  position: 'fixed',
-  top: '180px', // Adjust based on other controls
-  right: '20px',
-  zIndex: 1000,
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  backgroundColor: '#29275B',
-  color: 'white',
-  border: 'none',
-  borderRadius: '8px',
-  padding: isMobileDevice.value ? '12px 18px' : '10px 16px',
-  fontSize: isMobileDevice.value ? '16px' : '14px',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-  fontFamily: 'Arial, sans-serif',
-  userSelect: 'none',
-}))
-
-const removeIconStyle = computed(() => ({
-  fontSize: isMobileDevice.value ? '18px' : '16px',
-  display: 'flex',
-  alignItems: 'center'
-}))
-
-const removeTextStyle = computed(() => ({
-  fontSize: isMobileDevice.value ? '16px' : '14px',
-  fontWeight: '500',
-  display: isMobileDevice.value ? 'none': 'inline'
 }))
 
 const toggleMeasurementStyle = computed(() => ({
@@ -849,6 +802,16 @@ const deleteItem = (itemId) => {
   console.log('🗑️ Deleting item:', itemId)
   hasUnsavedChanges.value = true
 
+  // CRITICAL: Remove from 3D scene first
+  if (sceneManagerRef.value) {
+    try {
+      sceneManagerRef.value.removeSingleItem(itemId)
+      console.log('✅ Item removed from 3D scene')
+    } catch (error) {
+      console.error('❌ Failed to remove item from scene:', error)
+    }
+  }
+
   const newItems = items.value.filter(item => item.id !== itemId)
   items.value = newItems
   lastUpdateSource.value = 'delete'
@@ -858,6 +821,11 @@ const deleteItem = (itemId) => {
     selectedItemId.value = null
   }
 
+  // Clear the selectedObjectId for the remove button
+  if (selectedObjectId.value === itemId) {
+    selectedObjectId.value = null
+  }
+
   saveToHistory({
     items: newItems,
     roomWidth: roomWidth.value,
@@ -865,6 +833,8 @@ const deleteItem = (itemId) => {
     currentFloorTexture: currentFloorTexture.value,
     currentWallTexture: currentWallTexture.value
   })
+
+  console.log('✅ Item deleted successfully')
 }
 
 const handleUndo = () => {
