@@ -1629,6 +1629,9 @@ export class EventHandlers {
 
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+          window.dispatchEvent(new CustomEvent('object-selected', {
+              detail: { itemId: this.selectedObject?.userData?.itemId ?? null }
+          }));
 
         // NEW: Store original position for potential snap-back
         this.originalDragPosition.copy(this.selectedObject.position);

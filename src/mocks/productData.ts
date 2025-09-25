@@ -1,11 +1,5 @@
 import { ObjectModel } from '../utils/constraints';
 
-type ProductColor = {
-  id: string;
-  name: string;
-  color: string;
-};
-
 type ProductData = {
   [key: string]: {
     id: string;
@@ -15,7 +9,6 @@ type ProductData = {
     image: string;
     variants: ObjectModel[];
     variantType: string;
-    colors: ProductColor[];
     features: string[];
   }[];
 }
@@ -78,9 +71,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Style Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' }
-      ],
       features: ['Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -158,10 +148,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -197,10 +183,6 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -250,10 +232,6 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -314,10 +292,6 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -346,10 +320,6 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -378,10 +348,6 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -410,10 +376,6 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
 
@@ -442,10 +404,6 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Width Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' },
-        { id: 'c2', name: 'Matt Grey', color: '#6b7280' }
-      ],
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
   ],
@@ -534,9 +492,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Size Options',
-      colors: [
-        { id: 'c1', name: 'Silver Frame', color: '#c0c0c0' }
-      ],
       features: ['LED Lighting', 'Bluetooth Speaker', 'Touch Controls', 'Mirror Cabinet']
     },
 
@@ -622,9 +577,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Size Options',
-      colors: [
-        { id: 'c1', name: 'Clear', color: '#f0f0f0' }
-      ],
       features: ['LED Lighting', 'Touch Controls', 'Energy Efficient']
     }
   ],
@@ -691,10 +643,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Size Options',
-      colors: [
-        { id: 'c1', name: 'Anthracite', color: '#404040' },
-        { id: 'c2', name: 'White', color: '#ffffff' }
-      ],
       features: ['Double Panel', 'Vertical Design', 'High Heat Output']
     },
 
@@ -734,10 +682,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Size Options',
-      colors: [
-        { id: 'c1', name: 'Matt Black', color: '#000000' },
-        { id: 'c2', name: 'White', color: '#ffffff' }
-      ],
       features: ['Double Panel', 'Horizontal Design', 'Modern Styling']
     }
   ],
@@ -850,10 +794,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Size Options',
-      colors: [
-        { id: 'c1', name: 'Matt Black', color: '#000000' },
-        { id: 'c2', name: 'Chrome', color: '#c0c0c0' }
-      ],
       features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
     }
   ],
@@ -917,9 +857,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Length Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' }
-      ],
       features: ['Freestanding Design', 'Acrylic Construction', 'Modern Shape']
     },
 
@@ -963,9 +900,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Orientation',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' }
-      ],
       features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
     },
 
@@ -999,9 +933,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Orientation',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' }
-      ],
       features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
     },
   ],
@@ -1060,9 +991,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Seat Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' }
-      ],
       features: ['Rimless Design', 'Soft Close Seat', 'Wall Hung', 'Premium Quality']
     },
 
@@ -1139,9 +1067,6 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Style Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#ffffff' }
-      ],
       features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
     },
 
@@ -1196,9 +1121,6 @@ const productData: ProductData = {
           },
       ],
       variantType: 'Style Options',
-      colors: [
-        { id: 'c1', name: 'Gloss White', color: '#000000' }
-      ],
       features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
     },
 
@@ -1232,9 +1154,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
 
@@ -1268,9 +1187,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
 
@@ -1325,9 +1241,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
@@ -1381,9 +1294,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
@@ -1416,9 +1326,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
@@ -1451,9 +1358,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
@@ -1507,9 +1411,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
@@ -1542,9 +1443,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
@@ -1577,9 +1475,6 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          colors: [
-              { id: 'c1', name: 'Gloss White', color: '#000000' }
-          ],
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
   ],
@@ -1643,9 +1538,6 @@ const productData: ProductData = {
                 }
             ],
             variantType: 'Size Options',
-            colors: [
-                { id: 'c1', name: 'PVC White', color: '#f8f8f8' }
-            ],
             features: ['110mm Standard Size', '4 Screw Mounting Holes', 'Inspection Cap', 'PVC Construction']
         },
     ]

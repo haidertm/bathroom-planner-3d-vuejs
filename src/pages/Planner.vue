@@ -49,6 +49,18 @@
         size="large"
         @toggle="handleRotationArrowsToggle"
     />
+    <button
+        v-if="selectedObjectId"
+        :style="removeButtonStyle"
+        @click="handleRemoveObject"
+        class="remove-object-button"
+        type="button"
+        aria-label="Remove selected object"
+        title="Remove selected object"
+    >
+      <span :style="removeIconStyle">🗑️</span>
+      <span :style="removeTextStyle">Remove</span>
+    </button>
 
     <!-- Toggle button for texture panel -->
     <button
@@ -184,6 +196,8 @@ const hasUnsavedChanges = ref(false)
 
 // ADD THIS: Missing reactive reference for instructions popup
 const showInstructions = ref(false)
+
+const selectedObjectId = ref(null)
 
 // ID counter to ensure unique IDs
 const nextIdRef = ref(2000)
@@ -353,6 +367,9 @@ const handleObjectSelectionChange = () => {
     const itemId = selectedObject.userData.itemId
     selectedItemId.value = itemId
 
+    // Set the selected object ID for the remove button
+    selectedObjectId.value = itemId
+
     // Get current items and find the selected one
     const currentItems = getItems()
     const currentItem = currentItems.find(item => item.id === itemId)
@@ -363,6 +380,8 @@ const handleObjectSelectionChange = () => {
 
     selectedObjectCanRotate.value = canRotate
   } else {
+    // Clear selection
+    selectedObjectId.value = null
     selectedObjectCanRotate.value = false
   }
 }
@@ -461,6 +480,22 @@ const handleToggleMeasurements = () => {
   }
 }
 
+const handleRemoveObject = () => {
+  if (selectedObjectId.value) {
+
+      // Call the existing delete function
+      deleteItem(selectedObjectId.value)
+
+      // Clear selection
+      selectedObjectId.value = null
+
+      // Clear selection in event handlers
+      if (eventHandlersRef.value) {
+        eventHandlersRef.value.clearSelection()
+      }
+    }
+}
+
 // Update your App.vue canvasContainerStyle computed property:
 const canvasContainerStyle = computed(() => {
   // On mobile, always use full width since sidebar is overlay
@@ -517,6 +552,40 @@ const toggleButtonStyle = computed(() => ({
   alignItems: 'center',
   gap: '8px',
   whiteSpace: 'nowrap'
+}))
+
+const removeButtonStyle = computed(() => ({
+  position: 'fixed',
+  top: '180px', // Adjust based on other controls
+  right: '20px',
+  zIndex: 1000,
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  backgroundColor: '#29275B',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  padding: isMobileDevice.value ? '12px 18px' : '10px 16px',
+  fontSize: isMobileDevice.value ? '16px' : '14px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+  fontFamily: 'Arial, sans-serif',
+  userSelect: 'none',
+}))
+
+const removeIconStyle = computed(() => ({
+  fontSize: isMobileDevice.value ? '18px' : '16px',
+  display: 'flex',
+  alignItems: 'center'
+}))
+
+const removeTextStyle = computed(() => ({
+  fontSize: isMobileDevice.value ? '16px' : '14px',
+  fontWeight: '500',
+  display: isMobileDevice.value ? 'none': 'inline'
 }))
 
 const toggleMeasurementStyle = computed(() => ({
