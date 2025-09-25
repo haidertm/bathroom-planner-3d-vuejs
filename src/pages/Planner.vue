@@ -151,7 +151,7 @@ import { createModel } from '../models/bathroomFixtures.ts'
 
 // Utils - Updated imports to include collision detection
 import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls } from '../utils/constraints.js'
-import { isMobile } from '../utils/helpers.ts'
+import {highlightObject, isMobile} from '../utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from '../composables/useUndoRedo.js'
@@ -301,41 +301,76 @@ const handleVariantSwap = async (swapConfig) => {
     if (sceneManagerRef.value) {
       console.log('🔄 Handling variant swap scene update directly')
       try {
-        // Remove old, add new
+        // Remove old item first
         await sceneManagerRef.value.removeSingleItem(itemId)
         console.log('✅ Old item removed')
 
+        // Add new variant
         await sceneManagerRef.value.addSingleItem(swappedItem)
         console.log('✅ New variant added')
-        setTimeout(() => {
+
+        // IMPORTANT: Wait for the scene to update, then reselect the new object
+        setTimeout(async () => {
           if (sceneManagerRef.value && sceneManagerRef.value.existingItems) {
             const addedModel = sceneManagerRef.value.existingItems.get(swappedItem.id)
             if (addedModel) {
-              console.log('🔍 Checking added model position:', addedModel.position)
-              console.log('🔍 Expected position:', swappedItem.position)
+              console.log('🔍 New model found in scene:', addedModel)
+              console.log('🔍 Model userData:', addedModel.userData)
 
-              // Force the correct position if it's wrong
-              if (addedModel.position.x === 0 && addedModel.position.y === 0 && addedModel.position.z === 0) {
-                console.log('⚠️ Model is at origin, correcting position')
-                addedModel.position.set(swappedItem.position[0], swappedItem.position[1], swappedItem.position[2])
-                console.log('✅ Position corrected to:', addedModel.position)
+              // CRITICAL: Reselect the new object in the event handler
+              if (eventHandlersRef.value) {
+                console.log('🎯 Reselecting swapped object...')
+
+                // Clear current selection first
+                if (eventHandlersRef.value.selectedObject) {
+                  eventHandlersRef.value.clearSelection()
+                }
+
+                // Set the new object as selected
+                eventHandlersRef.value.selectedObject = addedModel
+
+                // Highlight the new object
+                highlightObject(addedModel, true)
+
+                // Update selectedItemId to maintain UI state
+                selectedItemId.value = swappedItem.id
+                selectedObjectId.value = swappedItem.id
+
+                // Update measurements if enabled
+                if (eventHandlersRef.value.measurementSystem) {
+                  eventHandlersRef.value.measurementSystem.setSelectedObject(addedModel)
+                }
+
+                // Update rotation arrows if enabled and object can rotate
+                if (eventHandlersRef.value.rotationArrows) {
+                  const canRotate = selectedObjectCanRotate.value
+                  if (rotationArrowsEnabled.value && canRotate) {
+                    eventHandlersRef.value.rotationArrows.setSelectedObject(addedModel)
+                  } else {
+                    eventHandlersRef.value.rotationArrows.setSelectedObject(null)
+                  }
+                }
+
+                // Trigger selection change handler to update UI
+                handleObjectSelectionChange()
+
+                console.log('✅ Object reselected after variant swap')
               }
-
-              // Also ensure rotation and scale are correct
-              addedModel.rotation.y = swappedItem.rotation || 0
-              addedModel.scale.set(swappedItem.scale || 1, swappedItem.scale || 1, swappedItem.scale || 1)
+            } else {
+              console.warn('⚠️ Could not find newly added model in scene')
             }
           }
-        }, 200) // Small delay to ensure the model is fully processed
+        }, 100) // Small delay to ensure scene update is complete
 
       } catch (error) {
-        console.error('❌ Direct scene update failed:', error)
+        console.error('❌ Error during scene update in variant swap:', error)
+        // Fallback: let the watcher handle the update
+        lastUpdateSource.value = 'variantSwap-fallback'
       }
     }
 
-    // Now set the final update source after scene operations are complete
+    // Mark as saved after successful swap
     hasUnsavedChanges.value = true
-    lastUpdateSource.value = 'variantSwap-complete'
 
     // Save to history
     saveToHistory({
@@ -346,18 +381,16 @@ const handleVariantSwap = async (swapConfig) => {
       currentWallTexture: currentWallTexture.value
     })
 
-    handleVariantDrawerClose()
-    selectedItemId.value = itemId
-
     console.log('✅ Variant swap completed successfully')
 
+    // Close the variant drawer
+    handleVariantDrawerClose()
   } catch (error) {
-    console.error('❌ Error during variant swap:', error)
+    console.error('❌ Variant swap failed:', error)
     alert('Failed to swap variant. Please try again.')
     handleVariantDrawerClose()
   }
 }
-
 // Listen for object selection changes
 const handleObjectSelectionChange = () => {
 
