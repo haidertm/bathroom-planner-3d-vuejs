@@ -24,6 +24,24 @@
         @constrain-objects="constrainObjects"
         @toggle-wall-culling="handleWallCullingToggle"
     />
+    {{selectedBathroomItem}} selectedBathroomItem
+    <ItemConfigurationOverlay
+        :selected-item="selectedBathroomItem"
+        :room-width="roomWidth"
+        :room-height="roomHeight"
+        @configure-variants="handleConfigureVariants"
+        @delete-item="deleteItem"
+    />
+
+    <!-- Variant Configuration Drawer -->
+    <VariantConfigurationDrawer
+        :is-open="isVariantDrawerOpen"
+        :product="variantConfigProduct"
+        :current-variant="variantConfigCurrentVariant"
+        :item-id="variantConfigItemId"
+        @close="handleVariantDrawerClose"
+        @swap-variant="handleVariantSwap"
+    />
     <RotationArrowsToggle
         v-if="showRotationToggle"
         v-model="rotationArrowsEnabled"
@@ -133,7 +151,7 @@ import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
 
 // Services
 import { SceneManager } from '../services/sceneManager.js'
-import { EventHandlers } from '../services/eventHandlers.js'
+import { EventHandlers } from '../services/eventHandlers.ts'
 
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
@@ -144,10 +162,14 @@ import { isMobile } from '../utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from '../composables/useUndoRedo.js'
-import Sidebar from '../components/ui/sidebar.vue';
+import Sidebar from '../components/ui/sidebar.vue'
+import ItemConfigurationOverlay from '../components/ui/ItemConfigurationOverlay.vue'
+import VariantConfigurationDrawer from '../components/ui/VariantConfigurationDrawer.vue'
+import { swapItemVariant, findProductByVariantSku } from '../utils/variantSwapUtils'
 import Header from '../components/ui/Header.vue';
 import { getScaleForUnits } from '../utils/units.js';
 import {getMovementConfig} from "../utils/models.js";
+import productData from '../mocks/productData'
 
 // Router
 const router = useRouter()
@@ -172,6 +194,155 @@ const showRotationToggle = computed(() => {
   return selectedObjectCanRotate.value
 })
 
+
+const selectedItemId = ref(null)
+const selectedBathroomItem = computed(() => {
+  console.log('>>> who is here', selectedItemId.value)
+  if (!selectedItemId.value) return null
+  return items.value.find(item => item.id === selectedItemId.value)
+})
+
+// Variant configuration state
+const isVariantDrawerOpen = ref(false)
+const variantConfigProduct = ref(null)
+const variantConfigCurrentVariant = ref(null)
+const variantConfigItemId = ref(null)
+
+// 3. Add these event handlers to your existing methods
+const handleItemSelection = (itemId) => {
+  console.log('🎯 Item selected:', itemId)
+  selectedItemId.value = itemId
+}
+
+const handleItemDeselection = () => {
+  console.log('🎯 Item deselected')
+  selectedItemId.value = null
+}
+
+const handleConfigureVariants = (config) => {
+  console.log('⚙️ Configure variants:', config)
+
+  // If called from overlay, find the product data
+  if (!config.product && config.itemId) {
+    const item = items.value.find(item => item.id === config.itemId)
+    if (item && item.sku && item.type) {
+      const result = findProductByVariantSku(item.sku, item.type, productData)
+      if (result) {
+        config.product = result.product
+        config.currentVariant = result.variant
+      }
+    }
+  }
+
+  if (config.product && config.currentVariant) {
+    variantConfigProduct.value = config.product
+    variantConfigCurrentVariant.value = config.currentVariant
+    variantConfigItemId.value = config.itemId
+    isVariantDrawerOpen.value = true
+  } else {
+    console.warn('⚠️ Cannot configure variants: missing product or variant data')
+  }
+}
+
+const handleVariantDrawerClose = () => {
+  isVariantDrawerOpen.value = false
+  variantConfigProduct.value = null
+  variantConfigCurrentVariant.value = null
+  variantConfigItemId.value = null
+}
+
+const handleVariantSwap = async (swapConfig) => {
+  console.log('🔄 Starting variant swap:', swapConfig)
+
+  try {
+    const { itemId, newVariant, product } = swapConfig
+
+    const currentItemIndex = items.value.findIndex(item => item.id === itemId)
+    if (currentItemIndex === -1) {
+      console.error('❌ Item not found for variant swap:', itemId)
+      return
+    }
+
+    const currentItem = items.value[currentItemIndex]
+    console.log('Current item found:', currentItem)
+
+    // Create the swapped item
+    const swappedItem = swapItemVariant(currentItem, newVariant, {
+      product: product,
+      selectedColor: null
+    })
+
+    console.log('Swapped item created:', swappedItem)
+
+    // Update items array
+    const newItems = [...items.value]
+    newItems[currentItemIndex] = swappedItem
+
+    // CRITICAL: Set a special update source to prevent watcher interference
+    lastUpdateSource.value = 'variantSwap-processing'
+    items.value = newItems
+
+    // Handle scene update directly - DON'T let the watcher do it
+    if (sceneManagerRef.value) {
+      console.log('🔄 Handling variant swap scene update directly')
+      try {
+        // Remove old, add new
+        await sceneManagerRef.value.removeSingleItem(itemId)
+        console.log('✅ Old item removed')
+
+        await sceneManagerRef.value.addSingleItem(swappedItem)
+        console.log('✅ New variant added')
+        setTimeout(() => {
+          if (sceneManagerRef.value && sceneManagerRef.value.existingItems) {
+            const addedModel = sceneManagerRef.value.existingItems.get(swappedItem.id)
+            if (addedModel) {
+              console.log('🔍 Checking added model position:', addedModel.position)
+              console.log('🔍 Expected position:', swappedItem.position)
+
+              // Force the correct position if it's wrong
+              if (addedModel.position.x === 0 && addedModel.position.y === 0 && addedModel.position.z === 0) {
+                console.log('⚠️ Model is at origin, correcting position')
+                addedModel.position.set(swappedItem.position[0], swappedItem.position[1], swappedItem.position[2])
+                console.log('✅ Position corrected to:', addedModel.position)
+              }
+
+              // Also ensure rotation and scale are correct
+              addedModel.rotation.y = swappedItem.rotation || 0
+              addedModel.scale.set(swappedItem.scale || 1, swappedItem.scale || 1, swappedItem.scale || 1)
+            }
+          }
+        }, 200) // Small delay to ensure the model is fully processed
+
+      } catch (error) {
+        console.error('❌ Direct scene update failed:', error)
+      }
+    }
+
+    // Now set the final update source after scene operations are complete
+    hasUnsavedChanges.value = true
+    lastUpdateSource.value = 'variantSwap-complete'
+
+    // Save to history
+    saveToHistory({
+      items: newItems,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value
+    })
+
+    handleVariantDrawerClose()
+    selectedItemId.value = itemId
+
+    console.log('✅ Variant swap completed successfully')
+
+  } catch (error) {
+    console.error('❌ Error during variant swap:', error)
+    alert('Failed to swap variant. Please try again.')
+    handleVariantDrawerClose()
+  }
+}
+
 // Listen for object selection changes
 const handleObjectSelectionChange = () => {
 
@@ -180,6 +351,7 @@ const handleObjectSelectionChange = () => {
 
     const objectType = selectedObject.userData.type
     const itemId = selectedObject.userData.itemId
+    selectedItemId.value = itemId
 
     // Get current items and find the selected one
     const currentItems = getItems()
@@ -603,26 +775,19 @@ const addItem = async (type, productData = null) => {
   })
 }
 
+// 4. Modify your existing deleteItem function to clear selection
 const deleteItem = (itemId) => {
-  console.log('Deleting item with ID:', itemId)
-  console.log('Current items:', items.value.map(item => ({ id: item.id, type: item.type })))
-
-  // FOR IMMEDIATE PERFORMANCE BOOST: Remove single item from scene directly
-  if (sceneManagerRef.value && !isInitialLoad.value) {
-    try {
-      sceneManagerRef.value.removeSingleItem(itemId)
-      console.log(`✅ Removed item ${ itemId } directly from scene`)
-    } catch (error) {
-      console.error('❌ Failed to remove item directly, falling back to full update:', error)
-    }
-  }
+  console.log('🗑️ Deleting item:', itemId)
+  hasUnsavedChanges.value = true
 
   const newItems = items.value.filter(item => item.id !== itemId)
-
-  console.log('Items after deletion:', newItems.map(item => ({ id: item.id, type: item.type })))
-
   items.value = newItems
   lastUpdateSource.value = 'delete'
+
+  // Clear selection if deleted item was selected
+  if (selectedItemId.value === itemId) {
+    selectedItemId.value = null
+  }
 
   saveToHistory({
     items: newItems,
@@ -896,6 +1061,13 @@ onMounted(async () => {
       currentWallTexture          // ADD THIS LINE
   ))
 
+// ADD THESE LINES RIGHT AFTER THE ABOVE CODE:
+  if (eventHandlersRef.value) {
+    console.log('🔗 Connecting variant configuration to EventHandlers')
+    eventHandlersRef.value.onItemSelected = handleItemSelection
+    eventHandlersRef.value.onItemDeselected = handleItemDeselection
+  }
+
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
 
   // Set up initial scene
@@ -1155,6 +1327,19 @@ const handleSmartUpdate = async (newItems, updateSource) => {
         // Use incremental update for these operations
         console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
+        break
+      case 'variantSwap':
+        // Already handled directly in handleVariantSwap
+        console.log('🔄 Variant swap - scene already updated directly')
+        break
+      case 'variantSwap-processing':
+        // Skip scene update while variant swap is processing
+        console.log('⏭️ Skipping scene update during variant swap processing')
+        break
+
+      case 'variantSwap-complete':
+        // Scene already updated directly
+        console.log('✅ Variant swap scene already updated directly')
         break
 
       default:

@@ -393,6 +393,7 @@ export const createModel = async (
   productSKU?: string
 ): Promise<THREE.Group | null> => {
   try {
+      console.log('🏗️ createModel called with:', { type, position, rotation, scale, productSKU });
 
     if (!productModel || !productModel.path) {
       console.error(`No Model found for product: ${productSKU}`);
