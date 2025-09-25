@@ -593,7 +593,7 @@ export class EventHandlers {
         // Update rotation arrows when object is selected
 
         if (!this.selectedObject || this.selectedObject.userData.itemId !== itemId) {
-            this.selectObject(intersected);
+            this.selectObject(intersected.object);
 
             // EMIT selection event for variant configuration
             if (this.onItemSelected && itemId) {

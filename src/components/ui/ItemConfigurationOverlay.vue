@@ -1,10 +1,6 @@
 <template>
   <div v-if="selectedItem && hasMultipleVariants" :style="overlayStyle">
     <div :style="controlsContainerStyle">
-      <div :style="itemInfoStyle">
-        <div :style="itemNameStyle">{{ selectedItem.productName || selectedItem.type }}</div>
-        <div v-if="selectedItem.sku" :style="skuStyle">SKU: {{ selectedItem.sku }}</div>
-      </div>
 
       <div :style="buttonsContainerStyle">
         <button
@@ -104,8 +100,8 @@ const deleteItem = () => {
 // Styles
 const overlayStyle = computed(() => ({
   position: 'fixed',
-  bottom: '20px',
-  left: '50%',
+  top: '130px',
+  right: '0px',
   transform: 'translateX(-50%)',
   zIndex: '1000',
   pointerEvents: 'all'
@@ -120,30 +116,6 @@ const controlsContainerStyle = computed(() => ({
   display: 'flex',
   alignItems: 'center',
   gap: '16px',
-  minWidth: '300px'
-}))
-
-const itemInfoStyle = computed(() => ({
-  flex: '1',
-  minWidth: '0'
-}))
-
-const itemNameStyle = computed(() => ({
-  fontSize: '14px',
-  fontWeight: '600',
-  color: '#2c3e50',
-  marginBottom: '2px',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis'
-}))
-
-const skuStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#6c757d',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis'
 }))
 
 const buttonsContainerStyle = computed(() => ({

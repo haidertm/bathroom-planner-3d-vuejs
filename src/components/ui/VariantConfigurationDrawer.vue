@@ -1,101 +1,83 @@
-<!-- VariantConfigurationDrawer.vue - Special mode of ProductDrawer for variant configuration -->
+<!-- VariantConfigurationDrawer.vue - Product Drawer Style -->
 <template>
-  <div v-if="isOpen" :style="drawerOverlayStyle" @click="handleOverlayClick">
-    <div :style="drawerStyle" @click.stop>
-      <!-- Header -->
-      <div :style="headerStyle">
-        <div :style="headerContentStyle">
-          <h3 :style="titleStyle">Configure Variants</h3>
-          <div :style="subtitleStyle">{{ product?.name }}</div>
+  <!-- Overlay -->
+  <div v-if="isOpen" :style="overlayStyle" @click="closeDrawer"></div>
+
+  <!-- Drawer -->
+  <div v-if="isOpen" :style="drawerStyle" @click.stop>
+    <!-- Header -->
+    <div :style="headerStyle">
+      <h1 :style="headerTitleStyle">Swap Variants</h1>
+    </div>
+
+    <!-- Content -->
+    <div :style="contentStyle">
+      <!-- Product Info Section -->
+      <div :style="productSectionStyle">
+        <!-- Product Image -->
+        <div :style="productImageContainerStyle">
+          <img
+              v-if="currentVariant?.image || product?.image"
+              :src="currentVariant?.image || product?.image"
+              :alt="product?.name"
+              :style="productImageStyle"
+              @error="handleImageError"
+          />
+          <div v-else :style="imagePlaceholderStyle">
+            📦
+          </div>
+          <!-- NEW badge if available -->
+          <div v-if="product?.isNew" :style="newBadgeStyle">NEW</div>
         </div>
-        <button @click="closeDrawer" :style="closeButtonStyle">✕</button>
+
+        <!-- Product Details -->
+        <div :style="productDetailsStyle">
+          <h2 :style="productTitleStyle">{{ product?.name }}</h2>
+          <div :style="productSkuStyle">SKU: {{ currentVariant?.sku }}</div>
+          <div :style="productPriceStyle">£{{ currentVariant?.price || product?.price }}</div>
+          <button v-if="product?.link" :style="moreInfoButtonStyle">
+            More info ↗
+          </button>
+        </div>
       </div>
 
-      <!-- Current Selection Info -->
-      <div v-if="currentVariant" :style="currentSelectionStyle">
-        <div :style="currentLabelStyle">Current:</div>
-        <div :style="currentInfoStyle">
-          <div :style="currentNameStyle">{{ currentVariant.title || currentVariant.name }}</div>
-          <div :style="currentSkuStyle">{{ currentVariant.sku }}</div>
-        </div>
-      </div>
+      <!-- Size Options Section -->
+      <div :style="optionsSectionStyle">
+        <h3 :style="optionsTitleStyle">Variant Options</h3>
 
-      <!-- Variant Grid -->
-      <div :style="variantsContainerStyle">
-        <div :style="variantsGridStyle">
+        <div :style="optionsListStyle">
           <div
               v-for="variant in variants"
               :key="variant.sku"
-              :style="getVariantCardStyle(variant)"
+              :style="getOptionItemStyle(variant)"
               @click="selectVariant(variant)"
-              class="variant-card"
+              class="size-option"
           >
-            <!-- Current Badge -->
-            <div v-if="isCurrentVariant(variant)" :style="currentBadgeStyle">
-              Current
-            </div>
-
-            <!-- Variant Image -->
-            <div :style="variantImageContainerStyle">
-              <img
-                  v-if="variant.image"
-                  :src="variant.image"
-                  :alt="variant.name"
-                  :style="variantImageStyle"
-                  @error="handleImageError"
-              />
-              <div v-else :style="variantPlaceholderStyle">
-                📦
-              </div>
-            </div>
-
-            <!-- Variant Info -->
-            <div :style="variantInfoStyle">
-              <div :style="variantNameStyle">{{ variant.title || variant.name }}</div>
-              <div :style="variantSkuStyle">{{ variant.sku }}</div>
-              <div v-if="variant.price" :style="variantPriceStyle">£{{ variant.price }}</div>
-            </div>
-
-            <!-- Dimensions (if available) -->
-            <div v-if="variant.dimensions" :style="variantDimensionsStyle">
-              {{ variant.dimensions.width }}×{{ variant.dimensions.depth }}×{{ variant.dimensions.height }}cm
-            </div>
-
-            <!-- Selection Indicator -->
-            <div v-if="selectedVariant?.sku === variant.sku" :style="selectionIndicatorStyle">
-              ✓
-            </div>
+            <span :style="optionTextStyle">
+              {{ formatVariantSize(variant) }}
+            </span>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Action Buttons -->
-      <div :style="actionsStyle">
-        <button
-            @click="closeDrawer"
-            :style="cancelButtonStyle"
-            @mouseenter="e => e.target.style.backgroundColor = '#f8f9fa'"
-            @mouseleave="e => e.target.style.backgroundColor = 'white'"
-        >
-          Cancel
-        </button>
-
-        <button
-            @click="confirmSwap"
-            :style="getConfirmButtonStyle()"
-            :disabled="!selectedVariant || isCurrentVariant(selectedVariant)"
-            @mouseenter="e => !e.target.disabled && (e.target.style.backgroundColor = '#0066cc')"
-            @mouseleave="e => !e.target.disabled && (e.target.style.backgroundColor = '#0078d4')"
-        >
-          {{ isCurrentVariant(selectedVariant) ? 'Current Variant' : 'Swap Variant' }}
-        </button>
-      </div>
+    <!-- Fixed Footer -->
+    <div :style="footerStyle">
+      <button
+          @click="confirmSwap"
+          :style="getAddToRoomButtonStyle()"
+          :disabled="!selectedVariant || isCurrentVariant(selectedVariant)"
+      >
+        {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : 'SWAP VARIANT' }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import {isMobile} from "../../utils/helpers.js";
+const isMobileDevice = computed(() => isMobile())
 
 const props = defineProps({
   isOpen: {
@@ -111,7 +93,7 @@ const props = defineProps({
     default: null
   },
   itemId: {
-    type: [String, Number], // Allow both String and Number, handle null gracefully
+    type: [String, Number],
     default: null
   }
 })
@@ -141,42 +123,6 @@ const isCurrentVariant = (variant) => {
   return variant?.sku === props.currentVariant?.sku
 }
 
-const getVariantCardStyle = (variant) => {
-  const isSelected = selectedVariant.value?.sku === variant.sku
-  const isCurrent = isCurrentVariant(variant)
-
-  return {
-    position: 'relative',
-    backgroundColor: isCurrent ? '#f0f8ff' : (isSelected ? '#e3f2fd' : 'white'),
-    border: isCurrent ? '2px solid #4caf50' : (isSelected ? '2px solid #2196f3' : '1px solid #e1e5e9'),
-    borderRadius: '12px',
-    padding: '16px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    minHeight: '200px',
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: isSelected ? '0 4px 12px rgba(33,150,243,0.2)' : '0 2px 8px rgba(0,0,0,0.1)'
-  }
-}
-
-const getConfirmButtonStyle = () => {
-  const isDisabled = !selectedVariant.value || isCurrentVariant(selectedVariant.value)
-
-  return {
-    backgroundColor: isDisabled ? '#e9ecef' : '#0078d4',
-    color: isDisabled ? '#6c757d' : 'white',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '12px 24px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: isDisabled ? 'not-allowed' : 'pointer',
-    transition: 'background-color 0.2s ease',
-    opacity: isDisabled ? '0.6' : '1'
-  }
-}
-
 // Methods
 const selectVariant = (variant) => {
   selectedVariant.value = variant
@@ -196,238 +142,260 @@ const closeDrawer = () => {
   emit('close')
 }
 
-const handleOverlayClick = () => {
-  closeDrawer()
-}
-
 const handleImageError = (event) => {
   console.warn('Failed to load variant image:', event.target.src)
 }
 
+const formatVariantSize = (variant) => {
+
+  return variant.name
+}
+
 // Styles
-const drawerOverlayStyle = computed(() => ({
+const overlayStyle = computed(() => ({
   position: 'fixed',
   top: '0',
   left: '0',
   right: '0',
   bottom: '0',
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  zIndex: '10000',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '20px'
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  zIndex: '9998'
 }))
 
 const drawerStyle = computed(() => ({
-  backgroundColor: 'white',
-  borderRadius: '16px',
-  width: '90vw',
-  maxWidth: '800px',
-  maxHeight: '90vh',
+  position: 'fixed',
+  top: isMobileDevice.value ? '70px' : '130px',
+  left: '0',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
+  height: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
+  width: isMobileDevice.value ? '100vw' : '480px',
+  maxWidth: '100vw',
+  backgroundColor: '#f5f5f5',
+  zIndex: '9999',
   display: 'flex',
   flexDirection: 'column',
-  boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-  overflow: 'hidden'
+  transform: props.isOpen ? 'translateX(0)' : 'translateX(-100%)',
+  transition: 'transform 0.3s ease-out',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif'
 }))
 
 const headerStyle = computed(() => ({
+  backgroundColor: '#4A4A6B',
+  color: 'white',
   display: 'flex',
-  justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '20px 24px',
-  borderBottom: '1px solid #e1e5e9',
-  backgroundColor: '#f8f9fa'
+  justifyContent: 'space-between',
 }))
 
-const headerContentStyle = computed(() => ({
-  flex: '1'
-}))
-
-const titleStyle = computed(() => ({
-  margin: '0',
-  fontSize: '20px',
-  fontWeight: '600',
-  color: '#2c3e50',
-  marginBottom: '4px'
-}))
-
-const subtitleStyle = computed(() => ({
+const backButtonStyle = computed(() => ({
+  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  color: 'white',
+  border: 'none',
+  padding: '8px 16px',
+  borderRadius: '6px',
   fontSize: '14px',
-  color: '#6c757d',
-  margin: '0'
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease'
+}))
+
+const headerTitleStyle = computed(() => ({
+  fontSize: '18px',
+  fontWeight: '600',
+  margin: '0',
+  textAlign: 'center',
+  flex: '1',
+  padding: '16px 16px'
 }))
 
 const closeButtonStyle = computed(() => ({
   backgroundColor: 'transparent',
-  border: 'none',
-  fontSize: '20px',
-  cursor: 'pointer',
-  padding: '8px',
-  borderRadius: '50%',
-  color: '#6c757d',
-  transition: 'background-color 0.2s ease'
-}))
-
-const currentSelectionStyle = computed(() => ({
-  padding: '16px 24px',
-  backgroundColor: '#f8f9fa',
-  borderBottom: '1px solid #e1e5e9',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px'
-}))
-
-const currentLabelStyle = computed(() => ({
-  fontSize: '14px',
-  fontWeight: '600',
-  color: '#495057',
-  minWidth: '60px'
-}))
-
-const currentInfoStyle = computed(() => ({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '2px'
-}))
-
-const currentNameStyle = computed(() => ({
-  fontSize: '14px',
-  fontWeight: '500',
-  color: '#2c3e50'
-}))
-
-const currentSkuStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#6c757d'
-}))
-
-const variantsContainerStyle = computed(() => ({
-  flex: '1',
-  overflow: 'auto',
-  padding: '24px'
-}))
-
-const variantsGridStyle = computed(() => ({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-  gap: '16px'
-}))
-
-const currentBadgeStyle = computed(() => ({
-  position: 'absolute',
-  top: '8px',
-  right: '8px',
-  backgroundColor: '#4caf50',
   color: 'white',
-  fontSize: '10px',
-  fontWeight: '600',
-  padding: '4px 8px',
+  border: 'none',
+  fontSize: '18px',
+  padding: '8px',
+  cursor: 'pointer',
+  borderRadius: '4px',
+  transition: 'background-color 0.2s ease',
+  minWidth: '36px',
+  height: '36px'
+}))
+
+const contentStyle = computed(() => ({
+  flex: '1',
+  overflowY: 'auto',
+  backgroundColor: '#f5f5f5'
+}))
+
+const productSectionStyle = computed(() => ({
+  backgroundColor: 'white',
+  margin: '16px',
   borderRadius: '12px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px'
-}))
-
-const variantImageContainerStyle = computed(() => ({
-  width: '100%',
-  height: '120px',
-  marginBottom: '12px',
+  padding: '16px',
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#f8f9fa',
-  borderRadius: '8px',
-  overflow: 'hidden'
+  gap: '16px',
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
 }))
 
-const variantImageStyle = computed(() => ({
+const productImageContainerStyle = computed(() => ({
+  position: 'relative',
+  width: '100px',
+  height: '100px',
+  borderRadius: '8px',
+  overflow: 'hidden',
+  backgroundColor: '#f8f9fa',
+  flexShrink: '0'
+}))
+
+const productImageStyle = computed(() => ({
   width: '100%',
   height: '100%',
   objectFit: 'cover'
 }))
 
-const variantPlaceholderStyle = computed(() => ({
-  fontSize: '48px',
-  color: '#dee2e6'
-}))
-
-const variantInfoStyle = computed(() => ({
-  flex: '1',
-  marginBottom: '8px'
-}))
-
-const variantNameStyle = computed(() => ({
-  fontSize: '14px',
-  fontWeight: '600',
-  color: '#2c3e50',
-  marginBottom: '4px',
-  lineHeight: '1.4'
-}))
-
-const variantSkuStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#6c757d',
-  marginBottom: '4px'
-}))
-
-const variantPriceStyle = computed(() => ({
-  fontSize: '14px',
-  fontWeight: '600',
-  color: '#28a745'
-}))
-
-const variantDimensionsStyle = computed(() => ({
-  fontSize: '11px',
-  color: '#6c757d',
-  backgroundColor: '#f8f9fa',
-  padding: '4px 8px',
-  borderRadius: '4px',
-  marginBottom: '8px',
-  textAlign: 'center'
-}))
-
-const selectionIndicatorStyle = computed(() => ({
-  position: 'absolute',
-  top: '8px',
-  left: '8px',
-  backgroundColor: '#2196f3',
-  color: 'white',
-  fontSize: '14px',
-  fontWeight: '600',
-  padding: '4px 8px',
-  borderRadius: '50%',
-  width: '24px',
-  height: '24px',
+const imagePlaceholderStyle = computed(() => ({
+  width: '100%',
+  height: '100%',
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center'
+  justifyContent: 'center',
+  fontSize: '32px',
+  color: '#9ca3af'
 }))
 
-const actionsStyle = computed(() => ({
-  padding: '20px 24px',
-  borderTop: '1px solid #e1e5e9',
+const newBadgeStyle = computed(() => ({
+  position: 'absolute',
+  top: '4px',
+  right: '4px',
+  backgroundColor: '#10b981',
+  color: 'white',
+  fontSize: '10px',
+  fontWeight: '700',
+  padding: '2px 6px',
+  borderRadius: '4px',
+  textTransform: 'uppercase'
+}))
+
+const productDetailsStyle = computed(() => ({
+  flex: '1',
   display: 'flex',
-  gap: '12px',
-  justifyContent: 'flex-end',
-  backgroundColor: '#f8f9fa'
+  flexDirection: 'column',
+  gap: '8px'
 }))
 
-const cancelButtonStyle = computed(() => ({
-  backgroundColor: 'white',
-  color: '#6c757d',
-  border: '1px solid #dee2e6',
-  borderRadius: '8px',
-  padding: '12px 24px',
+const productTitleStyle = computed(() => ({
+  fontSize: '16px',
+  fontWeight: '600',
+  color: '#1f2937',
+  margin: '0',
+  lineHeight: '1.3'
+}))
+
+const productSkuStyle = computed(() => ({
+  fontSize: '14px',
+  color: '#6b7280',
+  margin: '0'
+}))
+
+const productPriceStyle = computed(() => ({
+  fontSize: '24px',
+  fontWeight: '700',
+  color: '#ef4444',
+  margin: '0'
+}))
+
+const moreInfoButtonStyle = computed(() => ({
+  color: '#3b82f6',
+  backgroundColor: 'transparent',
+  border: 'none',
   fontSize: '14px',
   fontWeight: '500',
   cursor: 'pointer',
-  transition: 'background-color 0.2s ease'
+  textAlign: 'left',
+  padding: '0',
+  textDecoration: 'underline',
+  alignSelf: 'flex-start'
 }))
+
+const optionsSectionStyle = computed(() => ({
+  margin: '0 16px 16px 16px'
+}))
+
+const optionsTitleStyle = computed(() => ({
+  fontSize: '18px',
+  fontWeight: '600',
+  color: '#1f2937',
+  margin: '0 0 16px 0'
+}))
+
+const optionsListStyle = computed(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px'
+}))
+
+const getOptionItemStyle = (variant) => {
+  const isSelected = selectedVariant.value?.sku === variant.sku
+  const isCurrent = isCurrentVariant(variant)
+
+  return {
+    backgroundColor: isCurrent ? '#4A4A6B' : (isSelected ? '#e0e7ff' : 'white'),
+    color: isCurrent ? 'white' : '#1f2937',
+    padding: '16px',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    border: isSelected && !isCurrent ? '2px solid #3b82f6' : 'none',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    fontWeight: isCurrent ? '600' : '500'
+  }
+}
+
+const optionTextStyle = computed(() => ({
+  fontSize: '16px'
+}))
+
+const footerStyle = computed(() => ({
+  padding: '16px',
+  backgroundColor: '#f5f5f5',
+  borderTop: '1px solid #e5e7eb'
+}))
+
+const getAddToRoomButtonStyle = () => {
+  const isDisabled = !selectedVariant.value || isCurrentVariant(selectedVariant.value)
+
+  return {
+    width: '100%',
+    backgroundColor: isDisabled ? '#9ca3af' : '#4A4A6B',
+    color: 'white',
+    border: 'none',
+    padding: '16px',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+    transition: 'background-color 0.2s ease',
+    letterSpacing: '0.5px'
+  }
+}
 </script>
 
 <style scoped>
-.variant-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+.size-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+button[style*="rgba(255, 255, 255, 0.2)"]:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+button[style*="background-color: transparent"]:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+button[style*="background-color: #4A4A6B"]:hover:not(:disabled) {
+  background-color: #3d3d5c !important;
 }
 </style>
