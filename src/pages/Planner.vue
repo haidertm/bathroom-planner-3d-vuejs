@@ -30,6 +30,8 @@
         :room-height="roomHeight"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
+        @toggle-rotation="handleRotationToggleFromOverlay"
+        :show-rotation-toggle="showRotationToggle"
     />
 
     <!-- Variant Configuration Drawer -->
@@ -40,13 +42,6 @@
         :item-id="variantConfigItemId"
         @close="handleVariantDrawerClose"
         @swap-variant="handleVariantSwap"
-    />
-    <RotationArrowsToggle
-        v-if="showRotationToggle"
-        v-model="rotationArrowsEnabled"
-        :style="rotationToggleStyle"
-        size="large"
-        @toggle="handleRotationArrowsToggle"
     />
     <!-- Toggle button for texture panel -->
     <button
@@ -201,6 +196,26 @@ const selectedBathroomItem = computed(() => {
   if (!selectedItemId.value) return null
   return items.value.find(item => item.id === selectedItemId.value)
 })
+
+const handleRotationToggleFromOverlay = (enabled) => {
+  console.log('Rotation toggle from overlay:', enabled);
+  rotationArrowsEnabled.value = enabled;
+
+  if (eventHandlersRef.value && eventHandlersRef.value.setRotationArrowsEnabled) {
+    eventHandlersRef.value.setRotationArrowsEnabled(enabled);
+
+    // If disabling and we have a selected object, make sure arrows are hidden
+    if (!enabled && eventHandlersRef.value.selectedObject) {
+      // Force hide arrows when toggle is turned off
+      eventHandlersRef.value.rotationArrows?.setSelectedObject(null);
+    }
+    // If enabling and we have a selected object that can rotate, show arrows
+    else if (enabled && eventHandlersRef.value.selectedObject && selectedObjectCanRotate.value) {
+      eventHandlersRef.value.rotationArrows?.setSelectedObject(eventHandlersRef.value.selectedObject);
+    }
+  }
+}
+
 
 // Variant configuration state
 const isVariantDrawerOpen = ref(false)
@@ -371,30 +386,6 @@ const handleObjectSelectionChange = () => {
     selectedObjectCanRotate.value = false
   }
 }
-
-const handleRotationArrowsToggle = (enabled) => {
-  console.log('Rotation arrows toggle:', enabled);
-  if (eventHandlersRef.value && eventHandlersRef.value.setRotationArrowsEnabled) {
-    eventHandlersRef.value.setRotationArrowsEnabled(enabled);
-
-    // If disabling and we have a selected object, make sure arrows are hidden
-    if (!enabled && eventHandlersRef.value.selectedObject) {
-      // Force hide arrows when toggle is turned off
-      eventHandlersRef.value.rotationArrows?.setSelectedObject(null);
-    }
-    // If enabling and we have a selected object that can rotate, show arrows
-    else if (enabled && eventHandlersRef.value.selectedObject && selectedObjectCanRotate.value) {
-      eventHandlersRef.value.rotationArrows?.setSelectedObject(eventHandlersRef.value.selectedObject);
-    }
-  }
-}
-// Add computed style for positioning
-const rotationToggleStyle = computed(() => ({
-  position: 'fixed',
-  top: '120px', // Position below other controls
-  right: '20px',
-  zIndex: 1000
-}))
 
 // Add these reactive variables
 const previousItems = ref([])

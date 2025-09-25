@@ -1,8 +1,19 @@
 <template>
   <div v-if="selectedItem && hasMultipleVariants" :style="overlayStyle">
     <div :style="controlsContainerStyle">
-
       <div :style="buttonsContainerStyle">
+        <!-- Rotation Toggle Button -->
+        <button
+            v-if="showRotationToggle"
+            @click="toggleRotation"
+            :style="rotationButtonStyle"
+            :title="rotationEnabled ? 'Disable rotation arrows' : 'Enable rotation arrows'"
+            @mouseenter="e => e.target.style.backgroundColor = rotationEnabled ? '#28a745' : '#6c757d'"
+            @mouseleave="e => e.target.style.backgroundColor = rotationEnabled ? '#218838' : '#5a6268'"
+        >
+          🔄 {{ rotationEnabled ? 'Rotation On' : 'Rotation Off' }}
+        </button>
+
         <button
             @click="openVariantConfiguration"
             :style="configureButtonStyle"
@@ -26,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import productData from '../../mocks/productData'
 
 const props = defineProps({
@@ -41,10 +52,22 @@ const props = defineProps({
   roomHeight: {
     type: Number,
     required: true
+  },
+  rotationEnabled: {
+    type: Boolean,
+    default: false
+  },
+  showRotationToggle: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['configure-variants', 'delete-item'])
+const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'])
+
+// Local state for rotation toggle
+const rotationEnabled = ref(props.rotationEnabled)
+
 console.log('>>> props', props.selectedItem)
 
 // Check if the selected item has multiple variants available
@@ -65,6 +88,12 @@ const hasMultipleVariants = computed(() => {
 
   return currentProduct?.variants?.length > 1
 })
+
+const toggleRotation = () => {
+  rotationEnabled.value = !rotationEnabled.value
+  console.log('>>> rotation toggle', rotationEnabled.value)
+  emit('toggle-rotation', rotationEnabled.value)
+}
 
 const openVariantConfiguration = () => {
   if (!props.selectedItem?.type) return
@@ -122,6 +151,19 @@ const buttonsContainerStyle = computed(() => ({
   display: 'flex',
   gap: '8px',
   flexShrink: '0'
+}))
+
+const rotationButtonStyle = computed(() => ({
+  backgroundColor: rotationEnabled.value ? '#218838' : '#5a6268',
+  color: 'white',
+  border: 'none',
+  borderRadius: '6px',
+  padding: '8px 12px',
+  fontSize: '12px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease',
+  whiteSpace: 'nowrap'
 }))
 
 const configureButtonStyle = computed(() => ({
