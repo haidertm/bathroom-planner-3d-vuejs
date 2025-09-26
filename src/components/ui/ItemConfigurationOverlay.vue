@@ -120,6 +120,7 @@ const openVariantConfiguration = () => {
 const deleteItem = () => {
   const id = props.selectedItem?.id
   if (id != null) emit('delete-item', id)
+  window.dispatchEvent(new CustomEvent('object-selected', { detail: { itemId: null } }))
 }
 
 // Styles
