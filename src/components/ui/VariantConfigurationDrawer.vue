@@ -36,12 +36,12 @@
         <div :style="productDetailsStyle">
           <h2 :style="productTitleStyle">{{ product?.name }}</h2>
           <div :style="productSkuStyle">SKU: {{ selectedVariant?.sku }}</div>
-          <div :style="productPriceStyle">£{{ selectedVariant?.price || product?.price }}</div>
+          <div :style="productPriceStyle">£{{ selectedVariant?.price ?? product?.price }}</div>
           <a
               v-if="selectedVariant?.link || product?.link"
               :href="selectedVariant?.link || product?.link"
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               :style="moreInfoButtonStyle"
           >
             More info ↗

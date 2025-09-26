@@ -144,8 +144,8 @@ import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXT
 import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
 
 // Services
-import { SceneManager } from '../services/sceneManager.js'
-import { EventHandlers } from '../services/eventHandlers.ts'
+import { SceneManager } from '../services/sceneManager'
+import { EventHandlers } from '../services/eventHandlers'
 
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'

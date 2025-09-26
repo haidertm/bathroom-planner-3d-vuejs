@@ -4,17 +4,19 @@
       <div :style="buttonsContainerStyle">
         <!-- Rotation Toggle Button -->
         <button
+            type="button"
             v-if="showRotationToggle"
             @click="toggleRotation"
             :style="rotationButtonStyle"
-            :title="rotationEnabled ? 'Disable rotation arrows' : 'Enable rotation arrows'"
-            @mouseenter="e => e.target.style.backgroundColor = rotationEnabled ? '#28a745' : '#6c757d'"
-            @mouseleave="e => e.target.style.backgroundColor = rotationEnabled ? '#218838' : '#5a6268'"
+            :title="rotationLocal ? 'Disable rotation arrows' : 'Enable rotation arrows'"
+            @mouseenter="e => e.target.style.backgroundColor = rotationLocal ? '#28a745' : '#6c757d'"
+            @mouseleave="e => e.target.style.backgroundColor = rotationLocal ? '#218838' : '#5a6268'"
         >
-          🔄 {{ rotationEnabled ? 'Rotation On' : 'Rotation Off' }}
+          🔄 {{ rotationLocal ? 'Rotation On' : 'Rotation Off' }}
         </button>
 
         <button
+            type="button"
             v-if="hasMultipleVariants"
             @click="openVariantConfiguration"
             :style="configureButtonStyle"
@@ -25,6 +27,7 @@
         </button>
 
         <button
+            type="button"
             @click="deleteItem"
             :style="deleteButtonStyle"
             @mouseenter="e => e.target.style.backgroundColor = '#d13438'"
@@ -67,10 +70,10 @@ const props = defineProps({
 const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'])
 
 // Local state for rotation toggle
-const rotationEnabled = ref(props.rotationEnabled)
+const rotationLocal = ref(props.rotationEnabled)
     // Keep local state in sync with parent prop
 watch(() => props.rotationEnabled, (v) => {
-  rotationEnabled.value = v
+  rotationLocal.value = v
 })
 
 
@@ -94,8 +97,8 @@ const hasMultipleVariants = computed(() => {
 })
 
 const toggleRotation = () => {
-  rotationEnabled.value = !rotationEnabled.value
-  emit('toggle-rotation', rotationEnabled.value)
+  rotationLocal.value = !rotationLocal.value
+  emit('toggle-rotation', rotationLocal.value)
 }
 
 const openVariantConfiguration = () => {
@@ -129,7 +132,8 @@ const openVariantConfiguration = () => {
 }
 
 const deleteItem = () => {
-  emit('delete-item', props.selectedItem.id)
+  const id = props.selectedItem?.id
+  if (id != null) emit('delete-item', id)
 }
 
 // Styles
@@ -159,7 +163,7 @@ const buttonsContainerStyle = computed(() => ({
 }))
 
 const rotationButtonStyle = computed(() => ({
-  backgroundColor: rotationEnabled.value ? '#218838' : '#5a6268',
+  backgroundColor: rotationLocal.value ? '#218838' : '#5a6268',
   color: 'white',
   border: 'none',
   borderRadius: '6px',
