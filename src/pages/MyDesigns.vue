@@ -77,7 +77,7 @@
           </div>
 
           <div class="card-actions">
-            <button @click="loadDesign(design)" class="action-button-span primary">OPEN DESIGN</button>
+            <button type="button" @click="loadDesign(design)" class="action-button-span primary">OPEN DESIGN</button>
           </div>
         </div>
       </div>
