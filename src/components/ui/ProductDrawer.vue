@@ -1303,11 +1303,11 @@ const getVariantButtonStyle = (variant) => {
     padding: '12px 16px',
     border: isSelected
         ? '2px solid #29275B'
-        : (isModelLoaded && !isLoading ? '2px solid #28a745' : '2px solid #e0e0e0'),
+        : '2px solid #e0e0e0',
     borderRadius: '6px',
     backgroundColor: isSelected
         ? '#29275B'  // Strong purple background for selected
-        : (isModelLoaded && !isLoading ? '#f8fff8' : '#ffffff'),
+        : '#ffffff',
     color: isSelected
         ? '#ffffff'  // White text for selected
         : '#333',
@@ -1327,7 +1327,7 @@ const getVariantButtonStyle = (variant) => {
     // Add subtle shadow for selected state
     boxShadow: isSelected
         ? '0 2px 8px rgba(41, 39, 91, 0.3)'
-        : (isModelLoaded && !isLoading ? '0 1px 3px rgba(40, 167, 69, 0.2)' : 'none'),
+        : 'none',
     // Transform slightly for selected state
     transform: isSelected ? 'translateY(-1px)' : 'translateY(0px)'
   }
