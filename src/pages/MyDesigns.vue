@@ -35,7 +35,7 @@
             <h3>Create a New Design</h3>
           </div>
           <div class="card-actions">
-            <span class="action-button-span primary">START DESIGNING</span>
+            <span class="action-button primary">START DESIGNING</span>
           </div>
         </div>
         </router-link>
@@ -77,7 +77,7 @@
           </div>
 
           <div class="card-actions">
-            <button type="button" @click="loadDesign(design)" class="action-button-span primary">OPEN DESIGN</button>
+            <button type="button" @click="loadDesign(design)" class="action-button primary">OPEN DESIGN</button>
           </div>
         </div>
       </div>
@@ -492,12 +492,12 @@ const deleteDesign = (designId) => {
    border-radius: 16px;
  }
 
-.action-button-span.primary {
+.action-button.primary {
   background: #29275B;
   color: white;
 }
 
-.action-button-span {
+.action-button {
   width: 100%;
   padding: 12px 24px;
   border: none;
