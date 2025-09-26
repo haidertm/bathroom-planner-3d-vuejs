@@ -22,7 +22,7 @@ import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
-import { MeasurementSystem } from './measurementSystem';
+import { MeasurementSystem } from './measurementSystem.ts';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
 import { SimpleWallCulling } from '../services/simpleWallCulling.ts';

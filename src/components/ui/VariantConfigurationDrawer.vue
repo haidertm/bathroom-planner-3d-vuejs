@@ -4,10 +4,19 @@
   <div v-if="isOpen" :style="overlayStyle" @click="closeDrawer"></div>
 
   <!-- Drawer -->
-  <div v-if="isOpen" :style="drawerStyle" @click.stop>
+  <div
+      ref="drawerRef"
+      :style="drawerStyle"
+      @click.stop
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="variant-drawer-title"
+      :tabindex="isOpen ? 0 : -1"
+      @keydown.esc.prevent="closeDrawer"
+  >
     <!-- Header -->
     <div :style="headerStyle">
-      <h1 :style="headerTitleStyle">Swap Variants</h1>
+      <h1 id="variant-drawer-title" :style="headerTitleStyle">Swap Variants</h1>
     </div>
 
     <!-- Content -->
@@ -35,7 +44,7 @@
         <!-- Product Details - Shows selected variant data -->
         <div :style="productDetailsStyle">
           <h2 :style="productTitleStyle">{{ product?.name }}</h2>
-          <div :style="productSkuStyle">SKU: {{ selectedVariant?.sku }}</div>
+          <div :style="productSkuStyle">SKU: {{ selectedVariant?.sku ?? '—' }}</div>
           <div :style="productPriceStyle">£{{ selectedVariant?.price ?? product?.price }}</div>
           <a
               v-if="selectedVariant?.link || product?.link"
@@ -43,6 +52,7 @@
               target="_blank"
               rel="noopener noreferrer"
               :style="moreInfoButtonStyle"
+              class="more-info-link"
           >
             More info ↗
           </a>
@@ -77,7 +87,7 @@
     <div :style="footerStyle">
       <button
           @click="confirmSwap"
-          :style="getAddToRoomButtonStyle()"
+          :style="addToRoomButtonStyle"
           :disabled="!selectedVariant || isCurrentVariant(selectedVariant)"
       >
         {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : 'SWAP VARIANT' }}
@@ -87,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { isMobile } from "../../utils/helpers";
 const isMobileDevice = computed(() => isMobile())
 
@@ -112,6 +122,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'swap-variant'])
 
+const drawerRef = ref(null)
+
 // Reactive state
 const selectedVariant = ref(null)
 
@@ -122,9 +134,11 @@ watch(() => props.currentVariant, (newCurrentVariant) => {
   }
 }, { immediate: true })
 
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen && props.currentVariant) {
-    selectedVariant.value = props.currentVariant
+watch(() => props.isOpen, async (isOpen) => {
+  if (isOpen) {
+    if (props.currentVariant) selectedVariant.value = props.currentVariant
+    await nextTick()
+    drawerRef.value?.focus()
   }
 })
 
@@ -154,8 +168,14 @@ const closeDrawer = () => {
   emit('close')
 }
 
+const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="12">No Image</text></svg>';
+
 const handleImageError = (event) => {
-  console.warn('Failed to load variant image:', event.target.src)
+  const img = event?.target
+  if (!img) return
+  img.onerror = null
+  img.src = FALLBACK_IMG
+  console.warn('Failed to load variant image:', img.currentSrc || img.src)
 }
 
 const formatVariantSize = (variant) => {
@@ -370,24 +390,23 @@ const footerStyle = computed(() => ({
   borderTop: '1px solid #e5e7eb'
 }))
 
-const getAddToRoomButtonStyle = () => {
+const addToRoomButtonStyle = computed(() => {
   const isDisabled = !selectedVariant.value || isCurrentVariant(selectedVariant.value)
-
   return {
-    width: '100%',
-    backgroundColor: isDisabled ? '#9ca3af' : '#4A4A6B',
-    color: 'white',
-    border: 'none',
-    padding: '16px',
-    borderRadius: '8px',
-    fontSize: '16px',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    cursor: isDisabled ? 'not-allowed' : 'pointer',
-    transition: 'background-color 0.2s ease',
-    letterSpacing: '0.5px'
-  }
-}
+        width: '100%',
+        backgroundColor: isDisabled ? '#9ca3af' : '#4A4A6B',
+        color: 'white',
+        border: 'none',
+        padding: '16px',
+        borderRadius: '8px',
+        fontSize: '16px',
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        cursor: isDisabled ? 'not-allowed' : 'pointer',
+        transition: 'background-color 0.2s ease',
+        letterSpacing: '0.5px'
+      }
+    })
 </script>
 
 <style scoped>
@@ -400,7 +419,7 @@ button[style*="rgba(255, 255, 255, 0.2)"]:hover {
   background-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-button[style*="background-color: transparent"]:hover {
+.more-info-link:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 

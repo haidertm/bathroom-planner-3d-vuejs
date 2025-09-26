@@ -9,8 +9,6 @@
             @click="toggleRotation"
             :style="rotationButtonStyle"
             :title="rotationLocal ? 'Disable rotation arrows' : 'Enable rotation arrows'"
-            @mouseenter="e => e.target.style.backgroundColor = rotationLocal ? '#28a745' : '#6c757d'"
-            @mouseleave="e => e.target.style.backgroundColor = rotationLocal ? '#218838' : '#5a6268'"
         >
           🔄 {{ rotationLocal ? 'Rotation On' : 'Rotation Off' }}
         </button>
@@ -20,8 +18,6 @@
             v-if="hasMultipleVariants"
             @click="openVariantConfiguration"
             :style="configureButtonStyle"
-            @mouseenter="e => e.target.style.backgroundColor = '#0066cc'"
-            @mouseleave="e => e.target.style.backgroundColor = '#0078d4'"
         >
           ⚙️ Configure
         </button>
@@ -30,8 +26,6 @@
             type="button"
             @click="deleteItem"
             :style="deleteButtonStyle"
-            @mouseenter="e => e.target.style.backgroundColor = '#d13438'"
-            @mouseleave="e => e.target.style.backgroundColor = '#dc3545'"
         >
           🗑️ Delete
         </button>
@@ -48,14 +42,6 @@ const props = defineProps({
   selectedItem: {
     type: Object,
     default: null
-  },
-  roomWidth: {
-    type: Number,
-    required: true
-  },
-  roomHeight: {
-    type: Number,
-    required: true
   },
   rotationEnabled: {
     type: Boolean,

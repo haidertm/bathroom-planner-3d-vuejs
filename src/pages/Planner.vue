@@ -26,8 +26,6 @@
     />
     <ItemConfigurationOverlay
         :selected-item="selectedBathroomItem"
-        :room-width="roomWidth"
-        :room-height="roomHeight"
         :rotation-enabled="rotationArrowsEnabled"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
@@ -490,23 +488,6 @@ const handleToggleMeasurements = () => {
   }
 }
 
-const handleRemoveObject = () => {
-  console.log('>>> selected object id', selectedObjectId.value)
-  if (selectedObjectId.value) {
-
-      // Call the existing delete function
-      deleteItem(selectedObjectId.value)
-
-      // Clear selection
-      selectedObjectId.value = null
-
-      // Clear selection in event handlers
-      if (eventHandlersRef.value) {
-        eventHandlersRef.value.clearSelection()
-      }
-    }
-}
-
 // Update your App.vue canvasContainerStyle computed property:
 const canvasContainerStyle = computed(() => {
   // On mobile, always use full width since sidebar is overlay
@@ -822,14 +803,14 @@ const addItem = async (type, productData = null) => {
 }
 
 // 4. Modify your existing deleteItem function to clear selection
-const deleteItem = (itemId) => {
+const deleteItem = async (itemId) => {
   console.log('🗑️ Deleting item:', itemId)
   hasUnsavedChanges.value = true
 
   // CRITICAL: Remove from 3D scene first
   if (sceneManagerRef.value) {
     try {
-      sceneManagerRef.value.removeSingleItem(itemId)
+      await sceneManagerRef.value.removeSingleItem(itemId)
       console.log('✅ Item removed from 3D scene')
     } catch (error) {
       console.error('❌ Failed to remove item from scene:', error)
@@ -1395,10 +1376,6 @@ const handleSmartUpdate = async (newItems, updateSource) => {
         // Use incremental update for these operations
         console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
-        break
-      case 'variantSwap':
-        // Already handled directly in handleVariantSwap
-        console.log('🔄 Variant swap - scene already updated directly')
         break
       case 'variantSwap-processing':
         // Skip scene update while variant swap is processing
