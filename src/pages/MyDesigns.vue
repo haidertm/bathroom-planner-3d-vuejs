@@ -28,7 +28,7 @@
 
       <div class="designs-grid">
         <!-- New Design Card -->
-        <router-link to="/" class="card-link">
+        <router-link to="/" class="card-link" aria-label="Create a new design">
         <div class="design-card new-design-card">
           <div class="new-design-content">
             <div class="plus-icon">+</div>
