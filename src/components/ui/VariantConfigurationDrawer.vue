@@ -196,10 +196,10 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: 'fixed',
-  top: isMobileDevice.value ? '70px' : '130px',
+  top: isMobileDevice.value ? '70px' : '136px',
   left: '0',
-  maxHeight: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
-  height: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 130px)',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 136px)',
+  height: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 136px)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: '100vw',
   backgroundColor: '#f5f5f5',
@@ -212,7 +212,7 @@ const drawerStyle = computed(() => ({
 }))
 
 const headerStyle = computed(() => ({
-  backgroundColor: '#4A4A6B',
+  backgroundColor: '#29275B',
   color: 'white',
   display: 'flex',
   alignItems: 'center',
@@ -359,7 +359,7 @@ const getOptionItemStyle = (variant) => {
   const isCurrent = isCurrentVariant(variant)
 
   return {
-    backgroundColor: isCurrent ? '#4A4A6B' : (isSelected ? '#e0e7ff' : 'white'),
+    backgroundColor: isCurrent ? '#29275B' : (isSelected ? '#e0e7ff' : 'white'),
     color: isCurrent ? 'white' : '#1f2937',
     padding: '16px',
     borderRadius: '8px',
@@ -394,7 +394,7 @@ const addToRoomButtonStyle = computed(() => {
   const isDisabled = !selectedVariant.value || isCurrentVariant(selectedVariant.value)
   return {
         width: '100%',
-        backgroundColor: isDisabled ? '#9ca3af' : '#4A4A6B',
+        backgroundColor: isDisabled ? '#9ca3af' : '#29275B',
         color: 'white',
         border: 'none',
         padding: '16px',
