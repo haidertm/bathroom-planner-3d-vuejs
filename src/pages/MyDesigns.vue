@@ -28,7 +28,7 @@
 
       <div class="designs-grid">
         <!-- New Design Card -->
-        <router-link to="/" class="action-button primary">
+        <router-link to="/" class="card-link">
         <div class="design-card new-design-card">
           <div class="new-design-content">
             <div class="plus-icon">+</div>
@@ -481,30 +481,22 @@ const deleteDesign = (designId) => {
   padding: 0 20px 20px;
 }
 
-.action-button {
-  width: 100%;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
+.card-link {
   display: block;
-  text-align: center;
+  color: inherit;
+  text-decoration: none;
 }
+ .card-link:focus-visible .design-card {
+   outline: 2px solid #29275B;
+   outline-offset: 4px;
+   border-radius: 16px;
+ }
+
 .action-button-span.primary {
   background: #29275B;
   color: white;
 }
 
-.action-button.primary {
-  color: white;
-}
-
-.action-button.primary:hover {
-  transform: translateY(-1px);
-}
 .action-button-span {
   width: 100%;
   padding: 12px 24px;
