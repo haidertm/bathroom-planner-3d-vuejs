@@ -118,7 +118,7 @@ export class EventHandlers {
   // Also add intersection point visualization in handleMouseMove:
   private debugIntersectionPoint: THREE.Mesh | null = null;
   private rotationArrows: RotationArrows | null = null;
-  public onItemSelected?: (itemId: string) => void;
+  public onItemSelected?: (itemId: number) => void;
   public onItemDeselected?: () => void;
 
   constructor (
@@ -738,11 +738,6 @@ export class EventHandlers {
     } else {
         if (this.selectedObject) {
             this.clearSelection();
-
-            // EMIT deselection event
-            if (this.onItemDeselected) {
-                this.onItemDeselected();
-            }
         }
 
       if (event.button === 0) { // Left click for camera rotation
@@ -2105,46 +2100,6 @@ export class EventHandlers {
 
         console.log('🧹 clearSelection completed');
     }
-
-    // ADD this new method to get currently selected item ID
-    public getSelectedItemId(): string | null {
-        if (this.selectedObject && this.selectedObject.userData.itemId) {
-            return this.selectedObject.userData.itemId.toString();
-        }
-        return null;
-    }
-
-    // ADD this method to programmatically select an item (useful after variant swap)
-    public selectItemById(itemId: string): void {
-        console.log('🎯 Selecting item by ID:', itemId);
-
-        // Find the object in the scene
-        const targetObject = this.findObjectByItemId(itemId);
-        if (targetObject) {
-            this.selectObject(targetObject);
-
-            if (this.onItemSelected) {
-                this.onItemSelected(itemId);
-            }
-        } else {
-            console.warn('⚠️ Could not find object with ID:', itemId);
-        }
-    }
-
-    // ADD helper method to find object by item ID
-    private findObjectByItemId(itemId: string): THREE.Object3D | null {
-        // Search through scene for object with matching itemId
-        let foundObject: THREE.Object3D | null = null;
-
-        this.scene.traverse((child) => {
-            if (child.userData.itemId && child.userData.itemId.toString() === itemId) {
-                foundObject = child;
-            }
-        });
-
-        return foundObject;
-    }
-
 
     public setRotationArrowsEnabled(enabled: boolean): void {
         console.log('setRotationArrowsEnabled called:', enabled);

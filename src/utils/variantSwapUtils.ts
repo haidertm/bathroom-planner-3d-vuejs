@@ -10,19 +10,10 @@ export const swapItemVariant = (
     currentItem: BathroomItem,
     newVariant: any,
 ): BathroomItem => {
-    console.log('🔄 Swapping variant for item:', currentItem.id, 'to variant:', newVariant.sku)
-    console.log('Current item structure:', currentItem)
-
     // Preserve current transform - KEEP ORIGINAL FORMATS
     const currentPosition: [number, number, number] = [...currentItem.position]
     const currentRotation = currentItem.rotation // Keep as-is (number)
     const currentScale = currentItem.scale || 1.0
-
-    console.log('Preserved transforms:', {
-        position: currentPosition,
-        rotation: currentRotation,
-        scale: currentScale
-    })
 
     // Get the correct orientation from the new variant
     const productOrientation = newVariant?.orientation || DEFAULT_ORIENTATION
@@ -57,7 +48,6 @@ export const swapItemVariant = (
         },
     }
 
-    console.log('✅ Created swapped item:', newItem)
     return newItem
 }
 

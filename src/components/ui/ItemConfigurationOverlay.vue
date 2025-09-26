@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import {computed, ref, watch} from 'vue'
 import productData from '../../mocks/productData'
 
 const props = defineProps({
@@ -67,8 +67,11 @@ const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'
 
 // Local state for rotation toggle
 const rotationEnabled = ref(props.rotationEnabled)
+    // Keep local state in sync with parent prop
+watch(() => props.rotationEnabled, (v) => {
+  rotationEnabled.value = v
+})
 
-console.log('>>> props', props.selectedItem)
 
 // Check if the selected item has multiple variants available
 const hasMultipleVariants = computed(() => {
@@ -91,7 +94,6 @@ const hasMultipleVariants = computed(() => {
 
 const toggleRotation = () => {
   rotationEnabled.value = !rotationEnabled.value
-  console.log('>>> rotation toggle', rotationEnabled.value)
   emit('toggle-rotation', rotationEnabled.value)
 }
 
@@ -111,7 +113,10 @@ const openVariantConfiguration = () => {
 
   if (currentProduct) {
     // Find the current variant
-    const currentVariant = currentProduct.variants?.find(variant => variant.sku === props.selectedItem.sku)
+    let currentVariant = currentProduct.variants?.find(variant => variant.sku === props.selectedItem.sku)
+    if (!currentVariant) {
+      currentVariant = currentProduct.variants?.[0]
+    }
 
     emit('configure-variants', {
       product: currentProduct,
@@ -130,8 +135,7 @@ const deleteItem = () => {
 const overlayStyle = computed(() => ({
   position: 'fixed',
   top: '130px',
-  right: '0px',
-  transform: 'translateX(-50%)',
+  right: '16px',
   zIndex: '1000',
   pointerEvents: 'all'
 }))

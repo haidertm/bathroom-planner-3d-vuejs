@@ -28,6 +28,7 @@
         :selected-item="selectedBathroomItem"
         :room-width="roomWidth"
         :room-height="roomHeight"
+        :rotation-enabled="rotationArrowsEnabled"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
@@ -226,7 +227,7 @@ const variantConfigItemId = ref(null)
 // 3. Add these event handlers to your existing methods
 const handleItemSelection = (itemId) => {
   console.log('🎯 Item selected:', itemId)
-  selectedItemId.value = itemId
+  selectedItemId.value = Number(itemId)
 }
 
 const handleItemDeselection = () => {
@@ -282,10 +283,7 @@ const handleVariantSwap = async (swapConfig) => {
     console.log('Current item found:', currentItem)
 
     // Create the swapped item
-    const swappedItem = swapItemVariant(currentItem, newVariant, {
-      product: product,
-      selectedColor: null
-    })
+    const swappedItem = swapItemVariant(currentItem, newVariant)
 
     console.log('Swapped item created:', swappedItem)
 
@@ -293,7 +291,7 @@ const handleVariantSwap = async (swapConfig) => {
     const newItems = [...items.value]
     newItems[currentItemIndex] = swappedItem
 
-    // CRITICAL: Set a special update source to prevent watcher interference
+    // Prevent watcher interference during swap
     lastUpdateSource.value = 'variantSwap-processing'
     items.value = newItems
 
@@ -360,6 +358,8 @@ const handleVariantSwap = async (swapConfig) => {
               console.warn('⚠️ Could not find newly added model in scene')
             }
           }
+          // Mark completion for watchers
+          lastUpdateSource.value = 'variantSwap-complete'
         }, 100) // Small delay to ensure scene update is complete
 
       } catch (error) {
@@ -834,6 +834,11 @@ const deleteItem = (itemId) => {
     } catch (error) {
       console.error('❌ Failed to remove item from scene:', error)
     }
+  }
+
+  // Ensure 3D selection state is cleared
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
   }
 
   const newItems = items.value.filter(item => item.id !== itemId)

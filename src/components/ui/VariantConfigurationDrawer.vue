@@ -35,9 +35,15 @@
           <h2 :style="productTitleStyle">{{ product?.name }}</h2>
           <div :style="productSkuStyle">SKU: {{ currentVariant?.sku }}</div>
           <div :style="productPriceStyle">£{{ currentVariant?.price || product?.price }}</div>
-          <button v-if="product?.link" :style="moreInfoButtonStyle">
+          <a
+              v-if="product?.link"
+              :href="product.link"
+              target="_blank"
+              rel="noopener"
+              :style="moreInfoButtonStyle"
+          >
             More info ↗
-          </button>
+          </a>
         </div>
       </div>
 
@@ -76,7 +82,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import {isMobile} from "../../utils/helpers.js";
+import { isMobile } from "../../utils/helpers";
 const isMobileDevice = computed(() => isMobile())
 
 const props = defineProps({
