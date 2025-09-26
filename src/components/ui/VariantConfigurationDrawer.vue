@@ -1,4 +1,4 @@
-<!-- VariantConfigurationDrawer.vue - Product Drawer Style -->
+<!-- VariantConfigurationDrawer.vue - Product Drawer Style with Live Preview -->
 <template>
   <!-- Overlay -->
   <div v-if="isOpen" :style="overlayStyle" @click="closeDrawer"></div>
@@ -12,13 +12,13 @@
 
     <!-- Content -->
     <div :style="contentStyle">
-      <!-- Product Info Section -->
+      <!-- Product Info Section - NOW SHOWS SELECTED VARIANT DATA -->
       <div :style="productSectionStyle">
-        <!-- Product Image -->
+        <!-- Product Image - Shows selected variant image -->
         <div :style="productImageContainerStyle">
           <img
-              v-if="currentVariant?.image || product?.image"
-              :src="currentVariant?.image || product?.image"
+              v-if="selectedVariant?.image || product?.image"
+              :src="selectedVariant?.image || product?.image"
               :alt="product?.name"
               :style="productImageStyle"
               @error="handleImageError"
@@ -28,16 +28,18 @@
           </div>
           <!-- NEW badge if available -->
           <div v-if="product?.isNew" :style="newBadgeStyle">NEW</div>
+          <!-- Current variant indicator -->
+          <div v-if="isCurrentVariant(selectedVariant)" :style="currentIndicatorStyle">CURRENT</div>
         </div>
 
-        <!-- Product Details -->
+        <!-- Product Details - Shows selected variant data -->
         <div :style="productDetailsStyle">
           <h2 :style="productTitleStyle">{{ product?.name }}</h2>
-          <div :style="productSkuStyle">SKU: {{ currentVariant?.sku }}</div>
-          <div :style="productPriceStyle">£{{ currentVariant?.price || product?.price }}</div>
+          <div :style="productSkuStyle">SKU: {{ selectedVariant?.sku }}</div>
+          <div :style="productPriceStyle">£{{ selectedVariant?.price || product?.price }}</div>
           <a
-              v-if="product?.link"
-              :href="product.link"
+              v-if="selectedVariant?.link || product?.link"
+              :href="selectedVariant?.link || product?.link"
               target="_blank"
               rel="noopener"
               :style="moreInfoButtonStyle"
@@ -61,6 +63,10 @@
           >
             <span :style="optionTextStyle">
               {{ formatVariantSize(variant) }}
+            </span>
+            <!-- Show current badge on the variant list -->
+            <span v-if="isCurrentVariant(variant)" :style="currentVariantBadgeStyle">
+              ✓ Current
             </span>
           </div>
         </div>
@@ -193,18 +199,6 @@ const headerStyle = computed(() => ({
   justifyContent: 'space-between',
 }))
 
-const backButtonStyle = computed(() => ({
-  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  color: 'white',
-  border: 'none',
-  padding: '8px 16px',
-  borderRadius: '6px',
-  fontSize: '14px',
-  fontWeight: '500',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s ease'
-}))
-
 const headerTitleStyle = computed(() => ({
   fontSize: '18px',
   fontWeight: '600',
@@ -212,19 +206,6 @@ const headerTitleStyle = computed(() => ({
   textAlign: 'center',
   flex: '1',
   padding: '16px 16px'
-}))
-
-const closeButtonStyle = computed(() => ({
-  backgroundColor: 'transparent',
-  color: 'white',
-  border: 'none',
-  fontSize: '18px',
-  padding: '8px',
-  cursor: 'pointer',
-  borderRadius: '4px',
-  transition: 'background-color 0.2s ease',
-  minWidth: '36px',
-  height: '36px'
 }))
 
 const contentStyle = computed(() => ({
@@ -274,6 +255,19 @@ const newBadgeStyle = computed(() => ({
   top: '4px',
   right: '4px',
   backgroundColor: '#10b981',
+  color: 'white',
+  fontSize: '10px',
+  fontWeight: '700',
+  padding: '2px 6px',
+  borderRadius: '4px',
+  textTransform: 'uppercase'
+}))
+
+const currentIndicatorStyle = computed(() => ({
+  position: 'absolute',
+  bottom: '4px',
+  left: '4px',
+  backgroundColor: '#ef4444',
   color: 'white',
   fontSize: '10px',
   fontWeight: '700',
@@ -353,12 +347,21 @@ const getOptionItemStyle = (variant) => {
     transition: 'all 0.2s ease',
     border: isSelected && !isCurrent ? '2px solid #3b82f6' : 'none',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    fontWeight: isCurrent ? '600' : '500'
+    fontWeight: isCurrent ? '600' : '500',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   }
 }
 
 const optionTextStyle = computed(() => ({
   fontSize: '16px'
+}))
+
+const currentVariantBadgeStyle = computed(() => ({
+  fontSize: '12px',
+  fontWeight: '600',
+  color: '#10b981'
 }))
 
 const footerStyle = computed(() => ({
