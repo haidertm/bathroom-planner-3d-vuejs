@@ -1,5 +1,5 @@
 <template>
-  <div v-if="selectedItem && hasMultipleVariants" :style="overlayStyle">
+  <div v-if="selectedItem" :style="overlayStyle">
     <div :style="controlsContainerStyle">
       <div :style="buttonsContainerStyle">
         <!-- Rotation Toggle Button -->
@@ -15,6 +15,7 @@
         </button>
 
         <button
+            v-if="hasMultipleVariants"
             @click="openVariantConfiguration"
             :style="configureButtonStyle"
             @mouseenter="e => e.target.style.backgroundColor = '#0066cc'"
