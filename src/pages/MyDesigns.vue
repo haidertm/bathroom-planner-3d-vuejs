@@ -28,15 +28,17 @@
 
       <div class="designs-grid">
         <!-- New Design Card -->
+        <router-link to="/" class="action-button primary">
         <div class="design-card new-design-card">
           <div class="new-design-content">
             <div class="plus-icon">+</div>
             <h3>Create a New Design</h3>
           </div>
           <div class="card-actions">
-            <router-link to="/" class="action-button primary">START DESIGNING</router-link>
+            <span class="action-button-span primary">START DESIGNING</span>
           </div>
         </div>
+        </router-link>
 
         <!-- Existing Design Cards -->
         <div class="design-card" v-for="design in designs" :key="design.id">
@@ -75,7 +77,7 @@
           </div>
 
           <div class="card-actions">
-            <button @click="loadDesign(design)" class="action-button primary">OPEN DESIGN</button>
+            <button @click="loadDesign(design)" class="action-button-span primary">OPEN DESIGN</button>
           </div>
         </div>
       </div>
@@ -315,7 +317,7 @@ const deleteDesign = (designId) => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 300px;
+  min-height: 364px;
 }
 
 .new-design-content {
@@ -481,7 +483,6 @@ const deleteDesign = (designId) => {
 
 .action-button {
   width: 100%;
-  padding: 12px 24px;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -492,15 +493,30 @@ const deleteDesign = (designId) => {
   display: block;
   text-align: center;
 }
-
-.action-button.primary {
+.action-button-span.primary {
   background: #29275B;
   color: white;
 }
 
+.action-button.primary {
+  color: white;
+}
+
 .action-button.primary:hover {
-  background: #1e1b47;
   transform: translateY(-1px);
+}
+.action-button-span {
+  width: 100%;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: block;
+  text-align: center;
 }
 
 .empty-state {
