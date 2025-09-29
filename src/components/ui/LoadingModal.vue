@@ -8,14 +8,23 @@
       @click.stop
   >
     <!-- Loading Modal -->
-    <div :style="loadingModalStyle">
+    <div
+        :style="loadingModalStyle"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="'loading-modal-title'"
+        :aria-describedby="'loading-modal-desc'"
+        tabindex="0"
+        @keydown.esc.prevent="handleCancel"
+        ref="modalContentRef"
+    >
       <div :style="modalContentStyle">
         <!-- Loading Spinner -->
         <div :style="modalSpinnerStyle"></div>
 
         <!-- Loading Text -->
-        <h3 :style="modalTitleStyle">{{ title }}</h3>
-        <p :style="modalMessageStyle">
+        <h3 :id="'loading-modal-title'" :style="modalTitleStyle">{{ title }}</h3>
+        <p :id="'loading-modal-desc'" :style="modalMessageStyle">
           {{ message }}
         </p>
 
@@ -26,11 +35,12 @@
 
         <!-- Progress Text -->
         <p :style="modalProgressTextStyle">
-          {{ Math.round(progress) }}%
+          {{ Math.round(safeProgress) }}%
         </p>
 
         <!-- Cancel Button -->
         <button
+            type="button"
             v-if="showCancel"
             @click="handleCancel"
             :style="modalCancelButtonStyle"
@@ -44,7 +54,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 
 // Props
 const props = defineProps({
@@ -74,6 +84,11 @@ const props = defineProps({
   }
 })
 
+const safeProgress = computed(() => {
+  const n = Number(props.progress)
+  return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0
+})
+
 // Emits
 const emit = defineEmits(['cancel'])
 
@@ -81,6 +96,15 @@ const emit = defineEmits(['cancel'])
 const handleCancel = () => {
   emit('cancel')
 }
+
+// Focus management
+const modalContentRef = ref(null)
+watch(() => props.isVisible, async (v) => {
+  if (v) {
+    await nextTick()
+    modalContentRef.value?.focus?.()
+  }
+})
 
 // Styles (extracted from ProductDrawer)
 const modalOverlayStyle = computed(() => ({
@@ -150,7 +174,7 @@ const modalProgressBarStyle = computed(() => ({
   height: '100%',
   background: 'linear-gradient(90deg, #29275B, #4a47a3)',
   borderRadius: '4px',
-  width: `${props.progress}%`,
+  width: `${safeProgress.value}%`,
   transition: 'width 0.3s ease'
 }))
 

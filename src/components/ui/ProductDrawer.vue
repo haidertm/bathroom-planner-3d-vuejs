@@ -211,7 +211,7 @@
                 :key="variant.id || variant.sku || variant.name || index"
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
-                :disabled="isVariantLoadingState(variant) || isVariantLoading"
+                :disabled="isVariantLoadingState(variant) || isAnyVariantLoading"
                 class="variant-button"
             >
     <span :style="{ opacity: isVariantLoadingState(variant) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
@@ -230,8 +230,7 @@
               </div>
 
               <!-- Alternative progress bar (if using the progress value approach) -->
-              <div v-if="variantProgress.get(variant.id || variant.sku || variant.name) > 0 &&
-               variantProgress.get(variant.id || variant.sku || variant.name) < 100"
+              <div v-if="getVariantProgress(variant) > 0 && getVariantProgress(variant) < 100"
                    :style="progressContainerStyle">
                 <div :style="getProgressBarStyle(variant)"></div>
               </div>
@@ -239,7 +238,7 @@
           </div>
 
           <div
-              v-if="isVariantLoading"
+              v-if="isAnyVariantLoading"
               :style="variantLoadingIndicatorStyle"
               class="variant-loading-indicator"
           >
@@ -317,7 +316,7 @@ import {
   isVariantLoadingState,
   useLoadingModal,
   clearAllLoadingStates,
-  isVariantModelLoadedWithCache
+  isVariantModelLoadedWithCache, getVariantProgress
 } from '../../utils/modelLoader'
 
 // Props
@@ -387,7 +386,6 @@ const selectedColor = ref('')
 const modalState = useLoadingModal()
 
 const variantLoadingStates = ref(new Map()) // Track loading state per variant
-const isVariantLoading = ref(false) // General variant loading state
 
 const variantProgress = ref(new Map()) // Track progress for each variant
 
@@ -447,8 +445,8 @@ const handleDirectAddToRoom = async (product) => {
         ? mm.isModelLoaded(variantKey)
         : !!(mm.loadedModels?.has?.(variantKey) || mm.cache?.[variantKey])
     if (!alreadyLoaded) {
-      showLoadingModal.value = true
-      modalProgress.value = 0
+      modalState.showLoadingModal.value = true
+      modalState.modalProgress.value = 0
     }
 
     // Load model if needed
@@ -472,7 +470,7 @@ const handleDirectAddToRoom = async (product) => {
       }
     }
 
-    if (showLoadingModal.value) modalProgress.value = 100
+    if (modalState.showLoadingModal.value) modalState.modalProgress.value = 100
 
     emit('add-to-room', {
       ...product.productData,
@@ -482,7 +480,7 @@ const handleDirectAddToRoom = async (product) => {
 
     console.log('✅ Product added directly from search:', variantKey)
 
-    if (showLoadingModal.value) {
+    if (modalState.showLoadingModal.value) {
       deferHide = true
       setTimeout(() => {
         hideLoadingModal()
@@ -495,7 +493,7 @@ const handleDirectAddToRoom = async (product) => {
   } finally {
     // If we showed the modal but exited early elsewhere, ensure it gets hidden
     // (defensive; no-op if already hidden)
-    if (showLoadingModal.value && !deferHide) hideLoadingModal()
+    if (modalState.showLoadingModal.value && !deferHide) hideLoadingModal()
   }
 }
 
@@ -813,8 +811,8 @@ const selectVariant = async (variant) => {
     return
   }
 
-  // Check if model is already loaded
-  const isModelLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded)
+  // FIXED: Pass firstVariantPreloaded.value (not just firstVariantPreloaded)
+  const isModelLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded.value)
 
   if (isModelLoaded) {
     console.log('✅ Model already loaded, selecting immediately')
@@ -921,9 +919,11 @@ const confirmAddToRoom = async () => {
   const variant = selectedVariant.value
   const variantKey = variant.id || variant.sku || variant.name
 
-  // Check if the first variant model is loaded
   const isFirstVariant = selectedProduct.value.variants && selectedProduct.value.variants[0] === variant
-  const isModelLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded)
+
+  // FIXED: Pass firstVariantPreloaded.value (not just firstVariantPreloaded)
+  const isModelLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded.value)
+
   const isCurrentlyLoading = isVariantLoadingState(variant)
 
   console.log('Add to Room clicked:', {
@@ -1046,8 +1046,8 @@ const closeDrawer = () => {
 }
 
 const getProgressBarStyle = (variant) => {
-  const variantKey = variant.id || variant.sku || variant.name
-  const progress = variantProgress.value.get(variantKey) || 0
+  // ✅ Use imported getVariantProgress function
+  const progress = getVariantProgress(variant) // Instead of variantProgress.value.get(variantKey)
 
   return {
     height: '100%',
@@ -1071,6 +1071,14 @@ const progressContainerStyle = computed(() => ({
   overflow: 'hidden'
 }))
 
+const isAnyVariantLoading = computed(() => {
+  if (!selectedProduct.value?.variants) return false
+
+  return selectedProduct.value.variants.some(variant =>
+      isVariantLoadingState(variant)
+  )
+})
+
 // Dynamic styles methods for variants
 const getVariantButtonStyle = (variant) => {
   const isSelected = selectedVariant.value === variant
@@ -1088,7 +1096,6 @@ const getVariantButtonStyle = (variant) => {
     color: isSelected
         ? '#ffffff'  // White text for selected
         : '#333',
-    cursor: isLoading || isVariantLoading.value ? 'not-allowed' : 'pointer',
     fontSize: '14px',
     fontWeight: isSelected ? '600' : '500',  // Bolder text for selected
     transition: 'all 0.2s ease',

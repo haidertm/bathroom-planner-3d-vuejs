@@ -70,11 +70,17 @@ export const getVariantProgress = (variant) => {
 export const loadVariantModel = async (variant, progressCallback = null) => {
     const variantKey = variant.id || variant.sku || variant.name
 
-    console.log('🔄 Loading variant model:', variantKey)
+    console.log('🔄 loadVariantModel called:', variantKey)
 
-    // Set loading state
+    // CRITICAL: Set loading state IMMEDIATELY
     variantLoadingStates.value.set(variantKey, true)
     variantProgress.value.set(variantKey, 0)
+
+    console.log('✅ Loading states set:', {
+        variantKey,
+        isLoading: variantLoadingStates.value.get(variantKey),
+        mapSize: variantLoadingStates.value.size
+    })
 
     // Progress simulation interval
     const progressInterval = setInterval(() => {
@@ -124,12 +130,15 @@ export const loadVariantModel = async (variant, progressCallback = null) => {
         // Clean up progress interval
         clearInterval(progressInterval)
 
-        // Complete progress and clean up states
+        // CRITICAL: Clean up states after a delay
         setTimeout(() => {
             variantProgress.value.set(variantKey, 100)
             setTimeout(() => {
-                variantLoadingStates.value.set(variantKey, false)
-                variantProgress.value.delete(variantKey)
+                variantLoadingStates.value.set(variantKey, false) // Set to false first
+                setTimeout(() => {
+                    variantLoadingStates.value.delete(variantKey)   // Then delete
+                    variantProgress.value.delete(variantKey)
+                }, 300)
             }, 300)
         }, 100)
     }
