@@ -95,7 +95,7 @@ const productData: ProductData = {
             description: 'Item is part of wall opening'
           },
           sku: 'C77605',
-          price: '399.99',
+          price: '319.00',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 600mm'
         },
         {
@@ -190,7 +190,7 @@ const productData: ProductData = {
       id: 'furniture_variant_4',
       link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
       name: 'Bermuda Chalk White Basin Vanity 600mm',
-      price: '289.99',
+      price: '231.99',
       image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
       variants: [
         {
