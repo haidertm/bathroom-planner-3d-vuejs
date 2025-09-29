@@ -20,7 +20,7 @@ const productData: ProductData = {
       id: 'furniture_variant_1',
       link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-short-projection-basin-drawer-vanity-600mm-c76236',
       name: 'Corsica Gloss White Basin Drawer Vanity 600mm',
-      price: '249.99',
+      price: '179.00',
       image: 'assets/productImages/furniture/C76237-1000-White-Basin-Drawer-Vanity-600mm_1.webp',
       variants: [
         {
@@ -43,7 +43,7 @@ const productData: ProductData = {
             minHeight: 15,
           },
           sku: 'C76236',
-          price: '249.99',
+          price: '179.00',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm'
         },
         {
@@ -66,7 +66,7 @@ const productData: ProductData = {
             maxHeight: 120
           },
           sku: 'C76237',
-          price: '249.99',
+          price: '219.00',
           title: 'Corsica Gloss White Slimline Basin Drawer Vanity 600mm'
         }
       ],
@@ -79,7 +79,7 @@ const productData: ProductData = {
       id: 'furniture_variant_2',
       link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
       name: 'Bali Gloss White Wall Hung Basin Drawer Vanity',
-      price: '399.99',
+      price: '319.00',
       image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
       variants: [
         {
@@ -95,7 +95,7 @@ const productData: ProductData = {
             description: 'Item is part of wall opening'
           },
           sku: 'C77605',
-          price: '399.99',
+          price: '319.00',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 600mm'
         },
         {
@@ -111,7 +111,7 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '429.99',
+          price: '343.00',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm'
         },
         {
@@ -127,7 +127,7 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '415',
+          price: '415.99',
           title: 'Bali Gloss White Basin Drawer Vanity 900mm'
         },
         {
@@ -143,7 +143,7 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '431',
+          price: '431.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm'
         }
       ],
@@ -155,7 +155,7 @@ const productData: ProductData = {
       id: 'furniture_variant_3',
       link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
       name: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm',
-      price: '229.99',
+      price: '183.99',
       image: 'assets/productImages/furniture/c76234-1000-white-wall-hung-basin-drawer-vanity-500mm.webp',
       variants: [
         {
@@ -178,7 +178,7 @@ const productData: ProductData = {
                 maxHeight: 10
             },
           sku: 'C76234',
-          price: '229.99',
+          price: '183.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm'
         },
       ],
@@ -190,7 +190,7 @@ const productData: ProductData = {
       id: 'furniture_variant_4',
       link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
       name: 'Bermuda Chalk White Basin Vanity 600mm',
-      price: '289.99',
+      price: '231.99',
       image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
       variants: [
         {
@@ -211,7 +211,7 @@ const productData: ProductData = {
                 allowFreeRotation: false,
             },
           sku: 'C76304',
-          price: '289.99',
+          price: '231.99',
           title: 'Bermuda Chalk White Basin Vanity 600mm'
         },
         {
@@ -239,7 +239,7 @@ const productData: ProductData = {
       id: 'furniture_variant_5',
       link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-600mm-c76473',
       name: 'Avon Gloss White Basin Vanity 600mm',
-      price: '209.99',
+      price: '167.99',
       image: 'assets/productImages/furniture/c76473-1000-avon-gloss-white-basin-vanity-600mm.webp',
       variants: [
         {
@@ -255,7 +255,7 @@ const productData: ProductData = {
             description: 'Item is part of wall opening'
           },
           sku: 'C76473',
-          price: '209.99',
+          price: '167.99',
           title: 'Avon Gloss White Basin Vanity 600mm'
         },
         {
@@ -287,7 +287,7 @@ const productData: ProductData = {
             description: 'Item is part of wall opening'
           },
           sku: 'C76476',
-          price: '249.99',
+          price: '199.99',
           title: 'Avon Gloss White Basin Vanity 800mm'
         },
       ],
@@ -383,7 +383,7 @@ const productData: ProductData = {
       id: 'furniture_variant_9',
       link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-830mm',
       name: 'Lucia Chalk White Basin Vanity 830mm',
-      price: '247.00',
+      price: '431.99',
       image: 'assets/productImages/furniture/C76354-1000-Lucia-Chalk-White-Basin-Vanity-830mm_2.webp',
       variants: [
         {
@@ -399,7 +399,7 @@ const productData: ProductData = {
             description: 'Item is part of wall opening'
           },
           sku: 'C76354',
-          price: '539.99',
+          price: '431.99',
           title: 'Lucia Chalk White Basin Vanity 830mm'
         },
       ],
@@ -439,7 +439,7 @@ const productData: ProductData = {
             maxHeight: -1
           },
           sku: '73189V2',
-          price: '399',
+          price: '499.99',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm'
         },
         {
@@ -464,7 +464,7 @@ const productData: ProductData = {
             maxHeight: -1
           },
           sku: '73104V2',
-          price: '319.99',
+          price: '239.00',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm'
         },
         {
@@ -489,7 +489,7 @@ const productData: ProductData = {
           floorOffset: 0,
           spawnHeight: 152,
           sku: '73103V2',
-          price: '259.99',
+          price: '207.00',
           title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x450mm'
         }
       ],
@@ -614,7 +614,7 @@ const productData: ProductData = {
             maxHeight: 100
           },
           sku: '31022',
-          price: '289.99',
+          price: '231.00',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x560mm'
         },
         {
@@ -627,7 +627,7 @@ const productData: ProductData = {
           spawnHeight: -46,
           floorOffset: 61,
           sku: '31063',
-          price: '255',
+          price: '339.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1800x560mm'
         },
         {
@@ -640,7 +640,7 @@ const productData: ProductData = {
           spawnHeight: -46,
           floorOffset: 61,
           sku: '31019',
-          price: '151',
+          price: '209.99',
           title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x350mm'
         }
       ],
@@ -653,7 +653,7 @@ const productData: ProductData = {
       id: 'radiator_variant_2',
       link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x1190mm',
       name: 'Faro Matt Black Double Flat Panel Horizontal Radiator',
-      price: '289.99',
+      price: '223.00',
       image: 'assets/productImages/radiator/32124-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x420mm_1.webp',
       variants: [
         {
@@ -666,7 +666,7 @@ const productData: ProductData = {
           spawnHeight: -16,
           floorOffset: 30.5,
           sku: '32128',
-          price: '289.99',
+          price: '223.00',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x1190mm'
         },
         {
@@ -679,7 +679,7 @@ const productData: ProductData = {
           spawnHeight: -16,
           floorOffset: 30.5,
           sku: '32124',
-          price: '109.99',
+          price: '87.00',
           title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x420mm'
         }
       ],
@@ -743,7 +743,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C46006',
-          price: '229.99',
+          price: '183.00',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x760mm'
         },
         {
@@ -767,7 +767,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C46009',
-          price: '254.99',
+          price: '203.00',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x800mm'
         },
         {
@@ -791,7 +791,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C46175',
-          price: '231',
+          price: '289.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x900mm'
         }
       ],
@@ -822,7 +822,7 @@ const productData: ProductData = {
             allowFreeRotation: true
           },
           sku: 'C51096',
-          price: '383',
+          price: '479.99',
           title: 'Newham 1370mm Freestanding Bath'
         },
         {
@@ -838,7 +838,7 @@ const productData: ProductData = {
             allowFreeRotation: true
           },
           sku: 'C51092',
-          price: '489.99',
+          price: '399.00',
           title: 'Newham 1500mm Freestanding Bath'
         },
         {
@@ -854,7 +854,7 @@ const productData: ProductData = {
             allowFreeRotation: true
           },
           sku: 'C51093',
-          price: '399',
+          price: '499.99',
           title: 'Newham 1700mm Freestanding Bath'
         }
       ],
@@ -897,7 +897,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C57499',
-          price: '391.99',
+          price: '489.99',
           title: 'L Shaped 1700 Shower Bath with Front Panel & 6mm Easy Clean Brushed Brass Bath Screen - Right Handed'
         }
       ],
@@ -945,7 +945,7 @@ const productData: ProductData = {
       id: 'toilet_variant_1',
       link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
       name: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat',
-      price: '179.99',
+      price: '143.00',
       image: 'assets/productImages/toilet/c66174-1000-rimless-wall-hung-toilet-with-soft-close-seat.webp',
       variants: [
         {
@@ -967,7 +967,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C66175',
-          price: '143',
+          price: '143.00',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
         },
         {
@@ -988,7 +988,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C66174',
-          price: '179.99',
+          price: '143.00',
           title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat'
         }
       ],
@@ -1001,7 +1001,7 @@ const productData: ProductData = {
       id: 'toilet_variant_2',
       link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
       name: 'Portland Close Coupled Toilet With Soft Close Seat',
-      price: '209.99',
+      price: '135.00',
       image: 'assets/productImages/toilet/C66183-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
       variants: [
         {
@@ -1022,7 +1022,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C66183',
-          price: '169.99',
+          price: '135.00',
           title: 'Portland Close Coupled Toilet With Soft Close Slim Seat'
         },
         {
@@ -1043,7 +1043,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C66185',
-          price: '209.99',
+          price: '167.00',
           title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Slim Seat'
         },
         {
@@ -1064,7 +1064,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C66184',
-          price: '151',
+          price: '151.99',
           title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Slim Seat'
         }
       ],
@@ -1076,7 +1076,7 @@ const productData: ProductData = {
       id: 'toilet_variant_3',
       link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66228',
       name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
-      price: '144.99',
+      price: '115.99',
       image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
       variants: [
         {
@@ -1097,7 +1097,7 @@ const productData: ProductData = {
             allowFreeRotation: false
           },
           sku: 'C66228',
-          price: '144.99',
+          price: '115.99',
           title: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat'
         },
         {
@@ -1130,7 +1130,7 @@ const productData: ProductData = {
           id: 'toilet_variant_4',
           link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-seat-c66031',
           name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
-          price: '144.99',
+          price: '119.00',
           image: 'assets/productImages/toilet/C66031-1000-Denver-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
           variants: [
               {
@@ -1196,7 +1196,7 @@ const productData: ProductData = {
           id: 'toilet_variant_6',
           link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
           name: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat',
-          price: '199.99',
+          price: '159.99',
           image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
           variants: [
               {
@@ -1217,7 +1217,7 @@ const productData: ProductData = {
                       allowFreeRotation: false
                   },
                   sku: 'C66042V2',
-                  price: '119.00',
+                  price: '159.99',
                   title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat'
               },
               {
@@ -1291,7 +1291,7 @@ const productData: ProductData = {
                       allowFreeRotation: false
                   },
                   sku: 'C66257',
-                  price: '144.99',
+                  price: '115.99',
                   title: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Seat'
               },
           ],
@@ -1302,7 +1302,7 @@ const productData: ProductData = {
           id: 'toilet_variant_8',
           link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
           name: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat',
-          price: '149.99',
+          price: '119.99',
           image: 'assets/productImages/toilet/c66245-1000-rimless-close-coupled-toilet-with-soft-close-seat.webp',
           variants: [
               {
@@ -1323,7 +1323,7 @@ const productData: ProductData = {
                       allowFreeRotation: false
                   },
                   sku: 'C66245',
-                  price: '149.99',
+                  price: '119.99',
                   title: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat'
               },
           ],
@@ -1334,7 +1334,7 @@ const productData: ProductData = {
           id: 'toilet_variant_9',
           link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
           name: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat',
-          price: '169.99',
+          price: '135.99',
           image: 'assets/productImages/toilet/c66201-1000-traditional-close-coupled-toilet-soft-close-seat_1.webp',
           variants: [
               {
@@ -1355,7 +1355,7 @@ const productData: ProductData = {
                       allowFreeRotation: false
                   },
                   sku: 'C66201',
-                  price: '169.99',
+                  price: '135.99',
                   title: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat'
               },
           ],
@@ -1408,7 +1408,7 @@ const productData: ProductData = {
                       allowFreeRotation: false
                   },
                   sku: 'C66246',
-                  price: '179.99',
+                  price: '143.99',
                   title: 'Dallas Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat'
               },
           ],
