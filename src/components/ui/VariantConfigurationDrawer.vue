@@ -69,8 +69,6 @@
               :key="variant.sku"
               :style="getOptionItemStyle(variant)"
               @click="selectVariant(variant)"
-              :aria-disabled="isVariantLoadingState(variant)"
-              :aria-busy="isVariantLoadingState(variant)"
               class="size-option"
           >
             <span :style="optionTextStyle">
@@ -109,31 +107,29 @@
       </button>
     </div>
 
-    <!-- Loading Modal (same as ProductDrawer) -->
-    <div v-if="showLoadingModal" :style="modalOverlayStyle" @click.stop>
-      <div :style="modalContentStyle" role="dialog" aria-modal="true" aria-labelledby="loading-modal-title">
-        <div :style="modalHeaderStyle">
-          <h3 id="loading-modal-title">Loading 3D Model</h3>
-          <h3>Loading 3D Model</h3>
-        </div>
-        <div :style="modalBodyStyle">
-          <div :style="modalProgressContainerStyle">
-            <div :style="modalProgressBarStyle"></div>
-          </div>
-          <p :style="modalProgressTextStyle">{{ Math.round(modalProgress) }}%</p>
-          <button v-if="loadingCancelCallback" @click="cancelLoading" :style="cancelButtonStyle">
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Loading Modal Component -->
+    <LoadingModal
+        :is-visible="modalState.showLoadingModal.value"
+        :progress="modalState.modalProgress.value"
+        title="Loading 3D Model"
+        message="Please wait while the variant model loads..."
+        @cancel="modalState.cancelLoading"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
-import { isMobile } from "../../utils/helpers";
-import { ModelManager } from '../../models/bathroomFixtures'
+import { isMobile } from "../../utils/helpers"
+import LoadingModal from './LoadingModal.vue'
+import {
+  loadVariantModel,
+  isVariantModelLoaded,
+  isVariantLoadingState,
+  getVariantProgress,
+  useLoadingModal,
+  clearAllLoadingStates
+} from '../../utils/modelLoader'
 
 const isMobileDevice = computed(() => isMobile())
 
@@ -163,13 +159,8 @@ const drawerRef = ref(null)
 // Reactive state
 const selectedVariant = ref(null)
 
-// Loading States (added from ProductDrawer)
-const isVariantLoading = ref(false)
-const variantLoadingStates = ref(new Map())
-const variantProgress = ref(new Map())
-const showLoadingModal = ref(false)
-const modalProgress = ref(0)
-const loadingCancelCallback = ref(null)
+// Use loading modal state manager
+const modalState = useLoadingModal()
 
 // Watch for prop changes
 watch(() => props.currentVariant, (newCurrentVariant) => {
@@ -191,106 +182,6 @@ const variants = computed(() => props.product?.variants || [])
 
 const isCurrentVariant = (variant) => {
   return variant?.sku === props.currentVariant?.sku
-}
-
-// Loading Functions (adapted from ProductDrawer)
-const isVariantModelLoaded = (variant) => {
-  const variantKey = variant.id || variant.sku || variant.name
-
-  try {
-    const modelManager = ModelManager.getInstance()
-
-    if (typeof modelManager.isModelLoaded === 'function') {
-      return modelManager.isModelLoaded(variantKey)
-    }
-
-    if (modelManager.cache && modelManager.cache[variantKey]) {
-      return true
-    }
-
-    if (modelManager.loadedModels && modelManager.loadedModels.has(variantKey)) {
-      return true
-    }
-
-    return false
-  } catch (error) {
-    console.warn('Error checking if variant model is loaded:', error)
-    return false
-  }
-}
-
-const isVariantLoadingState = (variant) => {
-  const variantKey = variant.id || variant.sku || variant.name
-  return variantLoadingStates.value.get(variantKey) || false
-}
-
-const getVariantProgress = (variant) => {
-  const variantKey = variant.id || variant.sku || variant.name
-  return variantProgress.value.get(variantKey) || 0
-}
-
-const loadVariantModel = async (variant, progressCallback = null) => {
-  const variantKey = variant.id || variant.sku || variant.name
-
-  console.log('🔄 Loading variant model:', variantKey)
-
-  isVariantLoading.value = true
-  variantLoadingStates.value.set(variantKey, true)
-  variantProgress.value.set(variantKey, 0)
-
-  // Progress simulation
-  const progressInterval = setInterval(() => {
-    const currentProgress = variantProgress.value.get(variantKey) || 0
-    if (currentProgress < 90) {
-      const increment = Math.random() * 15 + 5
-      const newProgress = Math.min(90, currentProgress + increment)
-      variantProgress.value.set(variantKey, newProgress)
-
-      if (progressCallback) {
-        progressCallback(newProgress)
-      }
-    }
-  }, 200)
-
-  try {
-    const modelManager = ModelManager.getInstance()
-    const modelConfig = {
-      name: variant.sku || variant.name,
-      path: variant.path,
-      scale: variant.scale || 1.0,
-      dimensions: variant.dimensions
-    }
-
-    const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
-
-    if (loadedModel) {
-      console.log('✅ Model loaded successfully:', variantKey)
-      variantProgress.value.set(variantKey, 100)
-
-      if (progressCallback) {
-        progressCallback(100)
-      }
-
-      return loadedModel
-    } else {
-      console.warn('⚠️ Model loading returned null for:', variantKey)
-      return null
-    }
-
-  } catch (error) {
-    console.error('❌ Failed to load variant model:', error)
-    throw error
-  } finally {
-    clearInterval(progressInterval)
-    setTimeout(() => {
-      variantProgress.value.set(variantKey, 100)
-      setTimeout(() => {
-        isVariantLoading.value = false
-        variantLoadingStates.value.set(variantKey, false)
-        variantProgress.value.delete(variantKey)
-      }, 300)
-    }, 100)
-  }
 }
 
 // Methods
@@ -345,28 +236,27 @@ const confirmSwap = async () => {
 
   // If model is not loaded or currently loading, show modal and load
   console.log('🔄 Model not loaded, showing loading modal')
-  showLoadingModal.value = true
-  modalProgress.value = 0
+  modalState.showModal()
 
   try {
     // Set up cancel callback
     let cancelled = false
-    loadingCancelCallback.value = () => {
+    modalState.setCancelCallback(() => {
       cancelled = true
-    }
+    })
 
     // Load the model
     await loadVariantModel(variant, (progress) => {
       if (!cancelled) {
-        modalProgress.value = progress
+        modalState.updateProgress(progress)
       }
     })
 
     // If not cancelled and loading completed, swap variant
     if (!cancelled) {
-      modalProgress.value = 100
+      modalState.updateProgress(100)
       setTimeout(() => {
-        hideLoadingModal()
+        modalState.hideModal()
         emit('swap-variant', {
           itemId: props.itemId,
           newVariant: selectedVariant.value,
@@ -377,28 +267,12 @@ const confirmSwap = async () => {
 
   } catch (error) {
     console.error('❌ Failed to load model:', error)
-    hideLoadingModal()
-  } finally {
-    isSwapping.value = false
+    modalState.hideModal()
   }
 }
 
 const closeDrawer = () => {
   emit('close')
-}
-
-// Modal functions
-const hideLoadingModal = () => {
-  showLoadingModal.value = false
-  modalProgress.value = 0
-  loadingCancelCallback.value = null
-}
-
-const cancelLoading = () => {
-  if (loadingCancelCallback.value) {
-    loadingCancelCallback.value()
-  }
-  hideLoadingModal()
 }
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="12">No Image</text></svg>';
@@ -417,9 +291,8 @@ const formatVariantSize = (variant) => {
 
 // Cleanup
 onUnmounted(() => {
-  variantLoadingStates.value.clear()
-  variantProgress.value.clear()
-  hideLoadingModal()
+  clearAllLoadingStates()
+  modalState.hideModal()
 })
 
 // Styles (keeping all your original styles)
@@ -604,7 +477,6 @@ const getOptionItemStyle = (variant) => {
     padding: '16px',
     borderRadius: '8px',
     cursor: isLoading ? 'not-allowed' : 'pointer',
-    pointerEvents: isLoading ? 'none' : 'auto',
     transition: 'all 0.2s ease',
     border: isSelected && !isCurrent ? '2px solid #3b82f6' : 'none',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -685,77 +557,12 @@ const progressBarContainerStyle = computed(() => ({
   overflow: 'hidden'
 }))
 
-const getProgressBarStyle = (variant) => ({
-      height: '100%',
-      backgroundColor: '#3b82f6',
-      width: `${getVariantProgress(variant)}%`,
-      transition: 'width 0.3s ease',
-      borderRadius: '0 0 8px 8px'
-})
-
-// Modal Styles (same as ProductDrawer)
-const modalOverlayStyle = computed(() => ({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 10000
-}))
-
-const modalContentStyle = computed(() => ({
-  backgroundColor: '#ffffff',
-  borderRadius: '12px',
-  padding: '24px',
-  minWidth: '320px',
-  maxWidth: '400px',
-  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-}))
-
-const modalHeaderStyle = computed(() => ({
-  marginBottom: '20px',
-  textAlign: 'center'
-}))
-
-const modalBodyStyle = computed(() => ({
-  textAlign: 'center'
-}))
-
-const modalProgressContainerStyle = computed(() => ({
-  width: '100%',
-  height: '8px',
-  backgroundColor: '#e5e7eb',
-  borderRadius: '4px',
-  marginBottom: '16px',
-  overflow: 'hidden'
-}))
-
-const modalProgressBarStyle = computed(() => ({
+const getProgressBarStyle = (variant) => computed(() => ({
   height: '100%',
   backgroundColor: '#3b82f6',
-  width: `${modalProgress.value}%`,
+  width: `${getVariantProgress(variant)}%`,
   transition: 'width 0.3s ease',
-  borderRadius: '4px'
-}))
-
-const modalProgressTextStyle = computed(() => ({
-  fontSize: '14px',
-  color: '#6b7280',
-  marginBottom: '16px'
-}))
-
-const cancelButtonStyle = computed(() => ({
-  padding: '8px 16px',
-  backgroundColor: '#f3f4f6',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontSize: '14px',
-  color: '#374151'
+  borderRadius: '0 0 8px 8px'
 }))
 </script>
 
