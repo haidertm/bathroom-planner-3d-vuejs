@@ -69,6 +69,8 @@
               :key="variant.sku"
               :style="getOptionItemStyle(variant)"
               @click="selectVariant(variant)"
+              :aria-disabled="isVariantLoadingState(variant)"
+              :aria-busy="isVariantLoadingState(variant)"
               class="size-option"
           >
             <span :style="optionTextStyle">
@@ -109,8 +111,9 @@
 
     <!-- Loading Modal (same as ProductDrawer) -->
     <div v-if="showLoadingModal" :style="modalOverlayStyle" @click.stop>
-      <div :style="modalContentStyle">
+      <div :style="modalContentStyle" role="dialog" aria-modal="true" aria-labelledby="loading-modal-title">
         <div :style="modalHeaderStyle">
+          <h3 id="loading-modal-title">Loading 3D Model</h3>
           <h3>Loading 3D Model</h3>
         </div>
         <div :style="modalBodyStyle">
@@ -329,12 +332,6 @@ const confirmSwap = async () => {
   const isModelLoaded = isVariantModelLoaded(variant)
   const isCurrentlyLoading = isVariantLoadingState(variant)
 
-  console.log('Swap Variant clicked:', {
-    isModelLoaded,
-    isCurrentlyLoading,
-    variantKey
-  })
-
   // If model is already loaded, proceed directly
   if (isModelLoaded && !isCurrentlyLoading) {
     console.log('✅ Model already loaded, swapping immediately')
@@ -381,6 +378,8 @@ const confirmSwap = async () => {
   } catch (error) {
     console.error('❌ Failed to load model:', error)
     hideLoadingModal()
+  } finally {
+    isSwapping.value = false
   }
 }
 
@@ -605,6 +604,7 @@ const getOptionItemStyle = (variant) => {
     padding: '16px',
     borderRadius: '8px',
     cursor: isLoading ? 'not-allowed' : 'pointer',
+    pointerEvents: isLoading ? 'none' : 'auto',
     transition: 'all 0.2s ease',
     border: isSelected && !isCurrent ? '2px solid #3b82f6' : 'none',
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
@@ -685,13 +685,13 @@ const progressBarContainerStyle = computed(() => ({
   overflow: 'hidden'
 }))
 
-const getProgressBarStyle = (variant) => computed(() => ({
-  height: '100%',
-  backgroundColor: '#3b82f6',
-  width: `${getVariantProgress(variant)}%`,
-  transition: 'width 0.3s ease',
-  borderRadius: '0 0 8px 8px'
-}))
+const getProgressBarStyle = (variant) => ({
+      height: '100%',
+      backgroundColor: '#3b82f6',
+      width: `${getVariantProgress(variant)}%`,
+      transition: 'width 0.3s ease',
+      borderRadius: '0 0 8px 8px'
+})
 
 // Modal Styles (same as ProductDrawer)
 const modalOverlayStyle = computed(() => ({
