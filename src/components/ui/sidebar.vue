@@ -209,39 +209,6 @@
                 </div>
               </label>
             </div>
-
-            <div :style="controlGroupStyle">
-              <label :style="checkboxLabelStyle">
-                <input
-                    type="checkbox"
-                    :checked="showGrid"
-                    @change="$emit('toggle-grid', $event.target.checked)"
-                    :style="checkboxStyle"
-                />
-                Show Grid
-              </label>
-            </div>
-
-            <div :style="controlGroupStyle">
-              <label :style="checkboxLabelStyle">
-                <input
-                    type="checkbox"
-                    :checked="showWallGrid"
-                    @change="$emit('toggle-wall-grid', $event.target.checked)"
-                    :style="checkboxStyle"
-                />
-                Show Wall Grid
-              </label>
-            </div>
-
-            <div :style="controlGroupStyle">
-              <button
-                  @click="$emit('constrain-objects')"
-                  :style="buttonStyle"
-              >
-                Snap Objects to Walls
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -587,7 +554,7 @@ const productLoadingStates = ref(new Map()) // Track loading state per product
 
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
-const isRoomSettingsExpanded = ref(false)
+const isRoomSettingsExpanded = ref(true)
 
 const addLoadedProduct = (productId) => {
   if (!loadedProducts.value.has(productId)) {
