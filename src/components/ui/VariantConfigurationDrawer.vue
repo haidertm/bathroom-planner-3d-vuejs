@@ -16,7 +16,7 @@
   >
     <!-- Header -->
     <div :style="headerStyle">
-      <h1 id="variant-drawer-title" :style="headerTitleStyle">Swap Variants</h1>
+      <h1 id="variant-drawer-title" :style="headerTitleStyle" class="swap-button">Swap Variants</h1>
     </div>
 
     <!-- Content -->
@@ -28,7 +28,7 @@
           <img
               v-if="selectedVariant?.image || product?.image"
               :src="selectedVariant?.image || product?.image"
-              :alt="product?.name"
+              :alt="selectedVariant?.name || product?.name || 'Product image'"
               :style="productImageStyle"
               @error="handleImageError"
           />
@@ -86,6 +86,7 @@
     <!-- Fixed Footer -->
     <div :style="footerStyle">
       <button
+          class="swap-button"
           @click="confirmSwap"
           :style="addToRoomButtonStyle"
           :disabled="!selectedVariant || isCurrentVariant(selectedVariant)"
@@ -423,7 +424,7 @@ button[style*="rgba(255, 255, 255, 0.2)"]:hover {
   background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-button[style*="background-color: #4A4A6B"]:hover:not(:disabled) {
-  background-color: #3d3d5c !important;
+.swap-button:hover:not(:disabled) {
+  background-color: #1f1e49 !important;
 }
 </style>
