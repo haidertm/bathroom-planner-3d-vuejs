@@ -64,13 +64,6 @@
         @click="closeDrawer"
     ></div>
 
-    <!-- Loading Modal Overlay (appears above product drawer) -->
-    <div
-        v-if="showLoadingModal"
-        :style="modalOverlayStyle"
-        @click.stop
-    ></div>
-
     <!-- Loading Modal -->
     <LoadingModal
         :is-visible="modalState.showLoadingModal.value"
