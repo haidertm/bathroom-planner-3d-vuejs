@@ -101,9 +101,9 @@
           class="swap-button"
           @click="confirmSwap"
           :style="addToRoomButtonStyle"
-          :disabled="!selectedVariant || isCurrentVariant(selectedVariant) || isVariantLoading"
+          :disabled="!selectedVariant || isCurrentVariant(selectedVariant)"
       >
-        {{ isVariantLoading ? 'LOADING...' : (isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : 'SWAP VARIANT') }}
+        {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : 'SWAP VARIANT' }}
       </button>
     </div>
 
@@ -634,7 +634,7 @@ const footerStyle = computed(() => ({
 }))
 
 const addToRoomButtonStyle = computed(() => {
-  const isDisabled = !selectedVariant.value || isCurrentVariant(selectedVariant.value) || isVariantLoading.value
+  const isDisabled = !selectedVariant.value || isCurrentVariant(selectedVariant.value)
   return {
     width: '100%',
     backgroundColor: isDisabled ? '#9ca3af' : '#29275B',
