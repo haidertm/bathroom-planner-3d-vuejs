@@ -22,7 +22,7 @@ import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
-import { MeasurementSystem } from './measurementSystem';
+import { MeasurementSystem } from './measurementSystem.ts';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
 import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
@@ -117,7 +117,9 @@ export class EventHandlers {
   private showDragPlaneDebug: boolean = false; // Toggle this for debug visualization
   // Also add intersection point visualization in handleMouseMove:
   private debugIntersectionPoint: THREE.Mesh | null = null;
-    private rotationArrows: RotationArrows | null = null;
+  private rotationArrows: RotationArrows | null = null;
+  public onItemSelected?: (itemId: number) => void;
+  public onItemDeselected?: () => void;
 
   constructor (
     scene: THREE.Scene,
@@ -584,9 +586,20 @@ export class EventHandlers {
       }
 
     if (intersected) {
+        console.log('>>> item id', intersected)
+      const itemId = intersected.object.userData.itemId;
       this.selectedObject = intersected.object;
 
         // Update rotation arrows when object is selected
+
+        if (!this.selectedObject || this.selectedObject.userData.itemId !== itemId) {
+            this.selectObject(intersected.object);
+
+            // EMIT selection event for variant configuration
+            if (this.onItemSelected && itemId) {
+                this.onItemSelected(itemId.toString());
+            }
+        }
 
 
       console.log('selectedObject >>>', this.selectedObject);
@@ -606,7 +619,6 @@ export class EventHandlers {
       // ✅ NEW: Auto-move objects from hidden walls to visible walls
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
-      const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = currentItems.find(item => item.id === itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
@@ -724,6 +736,10 @@ export class EventHandlers {
       }
 
     } else {
+        if (this.selectedObject) {
+            this.clearSelection();
+        }
+
       if (event.button === 0) { // Left click for camera rotation
         this.isRotating = true;
         this.renderer.domElement.style.cursor = 'grabbing';
@@ -733,6 +749,31 @@ export class EventHandlers {
       window.dispatchEvent(new CustomEvent('object-selected'));
     }
   }
+
+    private selectObject(object: THREE.Object3D): void {
+        console.log('🎯 Selecting object:', object.userData.itemId);
+
+        // Clear previous selection first
+        if (this.selectedObject && this.selectedObject !== object) {
+            highlightObject(this.selectedObject, false);
+            setOutlineColor(false);
+        }
+
+        this.selectedObject = object;
+        highlightObject(object, true);
+
+        // Set up rotation arrows if enabled
+        if (this.rotationArrows) {
+            this.rotationArrows.setSelectedObject(object);
+        }
+
+        // Set up measurement system
+        if (this.measurementSystem) {
+            this.measurementSystem.setSelectedObject(object);
+        }
+
+        console.log('✅ Object selected successfully');
+    }
 
   /**
    * Calculate position on a specific wall
@@ -2035,28 +2076,30 @@ export class EventHandlers {
   }
 
     public clearSelection(): void {
-        console.log('🧹 clearSelection called, current selectedObject:', this.selectedObject);
+        console.log('🧹 Clearing selection, selectedObject:', this.selectedObject);
 
         if (this.selectedObject) {
             highlightObject(this.selectedObject, false);
             setOutlineColor(false);
             this.selectedObject = null;
+
+            // EMIT deselection event
+            if (this.onItemDeselected) {
+                this.onItemDeselected();
+            }
         }
 
-        // ALWAYS clear arrows when clearSelection is called, regardless of selectedObject state
+        // Clear arrows and measurements
         if (this.rotationArrows) {
-            console.log('🏹 Clearing rotation arrows');
             this.rotationArrows.setSelectedObject(null);
         }
 
-        // Clear measurement system selection
         if (this.measurementSystem) {
             this.measurementSystem.setSelectedObject(null);
         }
 
         console.log('🧹 clearSelection completed');
     }
-
 
     public setRotationArrowsEnabled(enabled: boolean): void {
         console.log('setRotationArrowsEnabled called:', enabled);
