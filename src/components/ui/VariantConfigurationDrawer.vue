@@ -297,53 +297,90 @@ const selectVariant = async (variant) => {
   const variantKey = variant.id || variant.sku || variant.name
   console.log('🔄 Variant clicked:', variant.name || variant.sku)
 
+  // Always select the variant first
+  selectedVariant.value = variant
+
   // Check if model is already loaded
   const isModelLoaded = isVariantModelLoaded(variant)
 
   if (isModelLoaded) {
-    console.log('✅ Model already loaded, selecting immediately')
-    selectedVariant.value = variant
+    console.log('✅ Model already loaded')
     return
   }
 
-  // Show loading modal for model loading
+  // Start loading the model in background (no modal, just progress bar)
+  console.log('🔄 Starting background model loading')
+
+  try {
+    await loadVariantModel(variant)
+    console.log('✅ Background loading completed')
+  } catch (error) {
+    console.error('❌ Failed to load variant model in background:', error)
+  }
+}
+
+const confirmSwap = async () => {
+  if (!selectedVariant.value || isCurrentVariant(selectedVariant.value)) return
+
+  const variant = selectedVariant.value
+  const variantKey = variant.id || variant.sku || variant.name
+
+  // Check if the model is loaded
+  const isModelLoaded = isVariantModelLoaded(variant)
+  const isCurrentlyLoading = isVariantLoadingState(variant)
+
+  console.log('Swap Variant clicked:', {
+    isModelLoaded,
+    isCurrentlyLoading,
+    variantKey
+  })
+
+  // If model is already loaded, proceed directly
+  if (isModelLoaded && !isCurrentlyLoading) {
+    console.log('✅ Model already loaded, swapping immediately')
+    emit('swap-variant', {
+      itemId: props.itemId,
+      newVariant: selectedVariant.value,
+      product: props.product
+    })
+    return
+  }
+
+  // If model is not loaded or currently loading, show modal and load
   console.log('🔄 Model not loaded, showing loading modal')
   showLoadingModal.value = true
   modalProgress.value = 0
 
   try {
+    // Set up cancel callback
     let cancelled = false
     loadingCancelCallback.value = () => {
       cancelled = true
     }
 
+    // Load the model
     await loadVariantModel(variant, (progress) => {
       if (!cancelled) {
         modalProgress.value = progress
       }
     })
 
+    // If not cancelled and loading completed, swap variant
     if (!cancelled) {
       modalProgress.value = 100
       setTimeout(() => {
         hideLoadingModal()
-        selectedVariant.value = variant
+        emit('swap-variant', {
+          itemId: props.itemId,
+          newVariant: selectedVariant.value,
+          product: props.product
+        })
       }, 500)
     }
 
   } catch (error) {
-    console.error('❌ Failed to load variant model:', error)
+    console.error('❌ Failed to load model:', error)
     hideLoadingModal()
-  }
-}
-
-const confirmSwap = () => {
-  if (selectedVariant.value && !isCurrentVariant(selectedVariant.value) && !isVariantLoading.value) {
-    emit('swap-variant', {
-      itemId: props.itemId,
-      newVariant: selectedVariant.value,
-      product: props.product
-    })
   }
 }
 
