@@ -406,6 +406,49 @@ const productData: ProductData = {
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
+    {
+      id: 'furniture_variant_10',
+      link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
+      name: 'Bermuda Dove Grey Basin Vanity 600mm',
+      price: '225.00',
+      image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
+      variants: [
+        {
+          id: 'C76285',
+          name: '600mm Width',
+          image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
+          path: '../../models/furniture/basin/C76285.glb',
+          dimensions: { width: 61.4, height: 84, depth: 41.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76285',
+          price: '225.00',
+          title: 'Bermuda Dove Grey Basin Vanity 600mm'
+        },
+          {
+              id: 'C76286',
+              name: '800mm Width',
+              image: 'assets/productImages/furniture/C76286-1000-Bermuda-Dove-Grey-Basin-Vanity-800mm_3.webp',
+              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-800mm',
+              path: '../../models/furniture/basin/C76286.glb',
+              dimensions: { width: 81.3, height: 84, depth: 41.5 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C76286',
+              price: '285.00',
+              title: 'Bermuda Dove Grey Basin Vanity 800mm'
+          },
+      ],
+      variantType: 'Width Options',
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
   ],
 
   Mirror: [
@@ -1219,6 +1262,27 @@ const productData: ProductData = {
                   title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat'
               },
               {
+                  id: 'C66139V2',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/c66139v2-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66139v2',
+                  path: '../../models/toilet/C66139V2.glb',
+                  dimensions: { width: 38, height: 83.5, depth: 61.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66139V2',
+                  price: '169.00',
+                  title: 'Boston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
+              },
+              {
                   id: 'C66226',
                   name: 'Comfort Height With Soft Close Seat',
                   image: 'assets/productImages/toilet/C66226-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Seat_1.webp',
@@ -1238,6 +1302,27 @@ const productData: ProductData = {
                   sku: 'C66226',
                   price: '183.00',
                   title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66227',
+                  name: 'Comfort Height With Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66227-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Slim-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-slim-seat-c66227',
+                  path: '../../models/toilet/C66227.glb',
+                  dimensions: { width: 89.2, height: 85.5, depth: 89.6 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66227',
+                  price: '183.99',
+                  title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Slim Seat'
               },
           ],
           variantType: 'Style Options',
