@@ -19,22 +19,8 @@ export const isVariantModelLoaded = (variant) => {
     try {
         const modelManager = ModelManager.getInstance()
 
-        // Method 1: Check if ModelManager has isModelLoaded method
-        if (typeof modelManager.isModelLoaded === 'function') {
-            return modelManager.isModelLoaded(variantKey)
-        }
-
-        // Method 2: Check cache directly (if cache is accessible)
-        if (modelManager.cache && modelManager.cache[variantKey]) {
-            return true
-        }
-
-        // Method 3: Check loadedModels set (if available)
-        if (modelManager.loadedModels && modelManager.loadedModels.has(variantKey)) {
-            return true
-        }
-
-        return false
+        // Use only the public isModelLoaded method
+        return modelManager.isModelLoaded(variantKey)
     } catch (error) {
         console.warn('Error checking if variant model is loaded:', error)
         return false

@@ -228,12 +228,6 @@
                 <div :style="getProgressBarStyle(variant)"
                      class="progress-bar"></div>
               </div>
-
-              <!-- Alternative progress bar (if using the progress value approach) -->
-              <div v-if="getVariantProgress(variant) > 0 && getVariantProgress(variant) < 100"
-                   :style="progressContainerStyle">
-                <div :style="getProgressBarStyle(variant)"></div>
-              </div>
             </button>
           </div>
 
@@ -439,11 +433,10 @@ const handleDirectAddToRoom = async (product) => {
       return
     }
     const variantKey = variant.id || variant.sku || variant.name
-        // If model is already loaded, avoid flashing the modal
-    const mm = ModelManager.getInstance()
-    const alreadyLoaded = typeof mm.isModelLoaded === 'function'
-        ? mm.isModelLoaded(variantKey)
-        : !!(mm.loadedModels?.has?.(variantKey) || mm.cache?.[variantKey])
+    // ✅ Use only the public API
+    const modelManager = ModelManager.getInstance()
+    const alreadyLoaded = modelManager.isModelLoaded(variantKey)
+
     if (!alreadyLoaded) {
       modalState.showLoadingModal.value = true
       modalState.modalProgress.value = 0
@@ -457,7 +450,7 @@ const handleDirectAddToRoom = async (product) => {
           const modelConfig = {
             name: variantKey,
             path: variant.path,
-            scale: variant.scale || 1.0,
+            scale: variant.scale ?? 1.0,
             dimensions: variant.dimensions,
             movement: variant.movement,
             orientation: variant.orientation
