@@ -211,7 +211,7 @@
                 :key="variant.id || variant.sku || variant.name || index"
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
-                :disabled="isVariantLoadingState(variant) || isAnyVariantLoading"
+                :disabled="isVariantLoadingState(variant)"
                 class="variant-button"
             >
     <span :style="{ opacity: isVariantLoadingState(variant) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
