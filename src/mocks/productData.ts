@@ -1562,6 +1562,61 @@ const productData: ProductData = {
           variantType: 'Style Options',
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
+    {
+          id: 'toilet_variant_13',
+          link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat',
+          name: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat',
+          price: '143.99',
+          image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
+          variants: [
+              {
+                  id: 'C66176',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat1',
+                  path: '../../models/toilet/C66176.glb',
+                  dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
+                  floorOffset: 5.7,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66176',
+                  price: '143.99',
+                  title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66177',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/c66177-1000-rimless-back-to-wall-toilet-soft-close-slim-seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-back-to-wall-toilet-with-premium-soft-close-slim-seat',
+                  path: '../../models/toilet/C66177.glb',
+                  dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
+                  floorOffset: 3.8,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66177',
+                  price: '143.99',
+                  title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Slim Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
   ],
 
   TowelRails: [
