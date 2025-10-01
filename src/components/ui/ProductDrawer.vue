@@ -434,8 +434,8 @@ const handleDirectAddToRoom = async (product) => {
     const alreadyLoaded = modelManager.isModelLoaded(variantKey)
 
     if (!alreadyLoaded) {
-      modalState.showLoadingModal.value = true
-      modalState.modalProgress.value = 0
+      modalState.showModal()
+      modalState.updateProgress(0)
     }
 
     // Load model if needed
@@ -459,7 +459,7 @@ const handleDirectAddToRoom = async (product) => {
       }
     }
 
-    if (modalState.showLoadingModal.value) modalState.modalProgress.value = 100
+    if (modalState.showLoadingModal.value) modalState.updateProgress(100)
 
     emit('add-to-room', {
       ...product.productData,

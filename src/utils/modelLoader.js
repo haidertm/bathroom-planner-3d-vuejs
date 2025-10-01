@@ -62,12 +62,6 @@ export const loadVariantModel = async (variant, progressCallback = null) => {
     variantLoadingStates.value.set(variantKey, true)
     variantProgress.value.set(variantKey, 0)
 
-    console.log('✅ Loading states set:', {
-        variantKey,
-        isLoading: variantLoadingStates.value.get(variantKey),
-        mapSize: variantLoadingStates.value.size
-    })
-
     // Progress simulation interval
     const progressInterval = setInterval(() => {
         const currentProgress = variantProgress.value.get(variantKey) || 0
