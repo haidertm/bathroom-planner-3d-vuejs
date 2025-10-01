@@ -379,10 +379,6 @@ const selectedColor = ref('')
 
 const modalState = useLoadingModal()
 
-const variantLoadingStates = ref(new Map()) // Track loading state per variant
-
-const variantProgress = ref(new Map()) // Track progress for each variant
-
 const firstVariantPreloaded = ref(new Map()) // Track which products have preloaded first variants
 const productPreloading = ref(new Map()) // Track which products are currently preloading
 
