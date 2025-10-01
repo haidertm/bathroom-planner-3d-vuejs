@@ -168,7 +168,9 @@
                 SKU: {{ product.searchContext.matchingVariant.sku }}
               </div>
             </div>
-            <div :style="priceStyle">£{{ product.price }}</div>
+            <div :style="priceStyle">
+              <span v-if="hasMultiplePrices(product)" style="font-size: 18px; font-weight: normal; color: #666; margin-right: 4px;">From</span>£{{ getLowestVariantPrice(product) }}
+            </div>
 
             <!-- More Info Link -->
             <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
@@ -633,6 +635,37 @@ const cancelLoading = () => {
     loadingCancelCallback()
   }
   hideLoadingModal()
+}
+
+// Get the lowest price from all variants
+const getLowestVariantPrice = (product) => {
+  if (!product.variants || product.variants.length === 0) {
+    return product.price
+  }
+
+  const prices = product.variants
+      .map(variant => parseFloat(variant.price))
+      .filter(price => !isNaN(price))
+
+  if (prices.length === 0) {
+    return product.price
+  }
+
+  return Math.min(...prices).toFixed(2)
+}
+
+// Check if product has multiple different prices across variants
+const hasMultiplePrices = (product) => {
+  if (!product.variants || product.variants.length <= 1) {
+    return false
+  }
+
+  const prices = product.variants
+      .map(variant => parseFloat(variant.price))
+      .filter(price => !isNaN(price))
+
+  const uniquePrices = [...new Set(prices)]
+  return uniquePrices.length > 1
 }
 
 // Initialize selections when product changes
@@ -1529,7 +1562,7 @@ const productNameStyle = computed(() => ({
 }))
 
 const priceStyle = computed(() => ({
-  fontSize: currentView.value === 'variants' ? '18px' : '20px',
+  fontSize: currentView.value === 'variants' ? '18px' : '16px',
   fontWeight: 'bold',
   color: '#e74c3c',
   fontFamily: 'Arial, sans-serif'
