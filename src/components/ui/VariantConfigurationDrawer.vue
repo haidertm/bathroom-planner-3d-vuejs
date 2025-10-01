@@ -128,7 +128,7 @@ import {
   isVariantLoadingState,
   getVariantProgress,
   useLoadingModal,
-  clearAllLoadingStates
+  clearVariantLoadingState,
 } from '../../utils/modelLoader'
 
 const isMobileDevice = computed(() => isMobile())
@@ -291,7 +291,11 @@ const formatVariantSize = (variant) => {
 
 // Cleanup
 onUnmounted(() => {
-  clearAllLoadingStates()
+  if (props.product && selectedVariant.value) {
+    const productId = props.product.id
+    const variantId = selectedVariant.value.id || selectedVariant.value.sku || selectedVariant.value.name
+    clearVariantLoadingState(productId, variantId)
+  }
   modalState.hideModal()
 })
 

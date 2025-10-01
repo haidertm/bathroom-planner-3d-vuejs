@@ -96,12 +96,13 @@ export const loadVariantModel = async (variant, progressCallback = null) => {
         }
     }, 200)
 
+    let succeeded = false
     try {
         const modelManager = ModelManager.getInstance()
         const modelConfig = {
             name: variant.sku || variant.name,
             path: variant.path,
-            scale: variant.scale || 1.0,
+            scale: variant.scale ?? 1.0,
             dimensions: variant.dimensions,
             movement: variant.movement,
             orientation: variant.orientation
@@ -117,6 +118,7 @@ export const loadVariantModel = async (variant, progressCallback = null) => {
                 progressCallback(100)
             }
 
+            succeeded = true
             return loadedModel
         } else {
             console.warn('⚠️ Model loading returned null for:', variantKey)
@@ -130,17 +132,17 @@ export const loadVariantModel = async (variant, progressCallback = null) => {
         // Clean up progress interval
         clearInterval(progressInterval)
 
-        // CRITICAL: Clean up states after a delay
-        setTimeout(() => {
-            variantProgress.value.set(variantKey, 100)
+        if (succeeded) {
+            // Allow UI to briefly show 100%, then clear
             setTimeout(() => {
-                variantLoadingStates.value.set(variantKey, false) // Set to false first
-                setTimeout(() => {
-                    variantLoadingStates.value.delete(variantKey)   // Then delete
-                    variantProgress.value.delete(variantKey)
-                }, 300)
+                variantLoadingStates.value?.set?.(variantKey, false)
+                variantProgress.value?.delete?.(variantKey)
             }, 300)
-        }, 100)
+        } else {
+            // Error path: stop loading without faking 100%
+            variantLoadingStates.value?.set?.(variantKey, false)
+            variantProgress.value?.delete?.(variantKey)
+        }
     }
 }
 
@@ -169,6 +171,24 @@ export const isVariantModelLoadedWithCache = (variant, product = null, firstVari
     } catch (error) {
         console.warn('Error checking if variant model is loaded with cache:', error)
         return false
+    }
+}
+
+/**
+ * Clear loading state for a specific variant
+ * @param {string|number} productId - The product ID
+ * @param {string|number} variantId - The variant ID or SKU
+ */
+export const clearVariantLoadingState = (productId, variantId) => {
+    const variantKey = variantId // variantId is already the sku/id/name
+    console.log('🧹 Clearing loading state for variant:', variantKey)
+
+    if (variantLoadingStates.value.has(variantKey)) {
+        variantLoadingStates.value.delete(variantKey)
+    }
+
+    if (variantProgress.value.has(variantKey)) {
+        variantProgress.value.delete(variantKey)
     }
 }
 

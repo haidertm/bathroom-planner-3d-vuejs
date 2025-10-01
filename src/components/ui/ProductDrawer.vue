@@ -315,7 +315,7 @@ import {
   isVariantModelLoaded,
   isVariantLoadingState,
   useLoadingModal,
-  clearAllLoadingStates,
+  clearVariantLoadingState,
   isVariantModelLoadedWithCache, getVariantProgress
 } from '../../utils/modelLoader'
 
@@ -1607,7 +1607,11 @@ const searchVariantStyle = computed(() => ({
 }))
 
 onUnmounted(() => {
-  clearAllLoadingStates()
+  if (selectedProduct.value && selectedVariant.value) {
+    const productId = selectedProduct.value.id
+    const variantId = selectedVariant.value.id || selectedVariant.value.sku || selectedVariant.value.name
+    clearVariantLoadingState(productId, variantId)
+  }
   modalState.hideModal()
 })
 
