@@ -1479,6 +1479,293 @@ const productData: ProductData = {
       },
   ],
 
+  TowelRails: [
+        {
+            id: 'heated_towel_rail_1',
+            link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-650x400mm-c36213',
+            name: 'Barcelona Electric Chrome Straight Heated Towel Rail 650x400mm',
+            price: '91.00',
+            image: 'assets/productImages/heatedTowelRails/c36213-1000-electric-chrome-heated-towel-rail-650x400mm_1.webp',
+            variants: [
+                {
+                    id: 'heated_towel_rails_1',
+                    name: '400X650mm',
+                    image: 'assets/productImages/heatedTowelRails/c36213-1000-electric-chrome-heated-towel-rail-650x400mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-650x400mm-c36213',
+                    path: '../../models/heatedTowelRails/C36213.glb',
+                    dimensions: {
+                        width: 45.9, // 110mm diameter = ~11cm width
+                        height: 85.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 24.5 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.8, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36213',
+                    price: '91.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 650x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_2',
+                    name: '800X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36214-1000-electric-chrome-heated-towel-rail-800x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-800x400mm-c36214',
+                    path: '../../models/heatedTowelRails/C36214.glb',
+                    dimensions: {
+                        width: 46, // 110mm diameter = ~11cm width
+                        height: 100.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 24.4 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.7, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36214',
+                    price: '119.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_3',
+                    name: '800X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36215-1000-electric-chrome-heated-towel-rail-800x500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-800x500mm-c36215',
+                    path: '../../models/heatedTowelRails/C36215.glb',
+                    dimensions: {
+                        width: 55.9, // 110mm diameter = ~11cm width
+                        height: 100.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 24.4 // Same as width for circular pipe
+                    },
+                    floorOffset: 5.7, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36215',
+                    price: '103.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_4',
+                    name: '800X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36216-1000-electric-chrome-heated-towel-rail-800x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-800x600mm-c36216',
+                    path: '../../models/heatedTowelRails/C36216.glb',
+                    dimensions: {
+                        width: 64.2, // 110mm diameter = ~11cm width
+                        height: 100.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 11.5, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36216',
+                    price: '139.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x600mm'
+                },
+                {
+                    id: 'heated_towel_rails_5',
+                    name: '1000X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36217-1000-electric-chrome-heated-towel-rail-1000x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1000x400mm-c36217',
+                    path: '../../models/heatedTowelRails/C36217.glb',
+                    dimensions: {
+                        width: 44.2, // 110mm diameter = ~11cm width
+                        height: 120.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 7, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36217',
+                    price: '134.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_6',
+                    name: '1000X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36218-1000-electric-chrome-heated-towel-rail-1000x500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1000x500mm-c36218',
+                    path: '../../models/heatedTowelRails/C36218.glb',
+                    dimensions: {
+                        width: 54.2, // 110mm diameter = ~11cm width
+                        height: 120.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.9, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36218',
+                    price: '115.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_7',
+                    name: '1000X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36219-1000-electric-chrome-heated-towel-rail-1000x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1000x600mm-c36219',
+                    path: '../../models/heatedTowelRails/C36219.glb',
+                    dimensions: {
+                        width: 64.2, // 110mm diameter = ~11cm width
+                        height: 120.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 7.2, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36219',
+                    price: '154.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x600mm'
+                },
+                {
+                    id: 'heated_towel_rails_8',
+                    name: '1200X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36220-1000-electric-chrome-heated-towel-rail-1200x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1200x400mm-c36220',
+                    path: '../../models/heatedTowelRails/C36220.glb',
+                    dimensions: {
+                        width: 44.2, // 110mm diameter = ~11cm width
+                        height: 140.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 11.4, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36220',
+                    price: '119.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_9',
+                    name: '1200X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36221-1000-electric-chrome-heated-towel-rail-1200x500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1200x500mm-c36221',
+                    path: '../../models/heatedTowelRails/C36221.glb',
+                    dimensions: {
+                        width: 54.3, // 110mm diameter = ~11cm width
+                        height: 140.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 9.9, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36221',
+                    price: '159.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_10',
+                    name: '1200X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36222-1000-electric-chrome-heated-towel-rail-1200x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1200x600mm-c36222',
+                    path: '../../models/heatedTowelRails/C36222.glb',
+                    dimensions: {
+                        width: 64.2, // 110mm diameter = ~11cm width
+                        height: 140.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.5, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36222',
+                    price: '135.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x600mm'
+                },
+                {
+                    id: 'heated_towel_rails_11',
+                    name: '1600X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36223-1000-electric-chrome-heated-towel-rail-1600x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1600x400mm-c36223',
+                    path: '../../models/heatedTowelRails/C36223.glb',
+                    dimensions: {
+                        width: 44, // 110mm diameter = ~11cm width
+                        height: 161.3, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 10.1 // Same as width for circular pipe
+                    },
+                    floorOffset: 10.3, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36223',
+                    price: '135.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_12',
+                    name: '1600X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36224-1000-electric-chrome-heated-towel-rail-1600x500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1600x500mm-c36224',
+                    path: '../../models/heatedTowelRails/C36224.glb',
+                    dimensions: {
+                        width: 54.2, // 110mm diameter = ~11cm width
+                        height: 161.3, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 6, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36224',
+                    price: '184.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_13',
+                    name: '1600X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36225-1000-electric-chrome-heated-towel-rail-1600x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1600-600mm-c36225',
+                    path: '../../models/heatedTowelRails/C36225.glb',
+                    dimensions: {
+                        width: 64.3, // 110mm diameter = ~11cm width
+                        height: 180.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 12.0 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.1, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36225',
+                    price: '91.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x600mm'
+                },
+            ],
+            variantType: 'Size Options',
+            features: []
+        },
+    ],
+
   Plumbing: [
         {
             id: 'soil_pipe_1',
