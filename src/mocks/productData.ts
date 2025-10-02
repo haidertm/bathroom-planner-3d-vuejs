@@ -406,6 +406,7 @@ const productData: ProductData = {
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
+
     {
       id: 'furniture_variant_10',
       link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
@@ -449,6 +450,222 @@ const productData: ProductData = {
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
+
+    {
+      id: 'furniture_variant_11',
+      link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
+      name: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles',
+      price: '207.00',
+      image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
+      variants: [
+        {
+          id: 'C81232',
+          name: 'Built-in Basin',
+          image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
+          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
+          path: '../../models/furniture/basin/C81232.glb',
+          dimensions: { width: 61.5, height: 81.8, depth: 49.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C81232',
+          price: '207.00',
+          title: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles'
+        },
+          {
+              id: 'C81234',
+              name: 'Oval Basin',
+              image: 'assets/productImages/furniture/C81234-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
+              link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-600mm-chrome-handles-c81234',
+              path: '../../models/furniture/basin/C81234.glb',
+              dimensions: { width: 60.9, height: 96.5, depth: 47.7 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C81234',
+              price: '279.99',
+              title: 'Milos Cotton White Vanity with Oval Basin 600mm - Chrome Handles'
+          },
+          {
+              id: 'C81235',
+              name: 'Troy Basin',
+              image: 'assets/productImages/furniture/C81235-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
+              link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-600mm-chrome-handles-c81235',
+              path: '../../models/furniture/basin/C81235.glb',
+              dimensions: { width: 60.9, height: 95.1, depth: 47.7 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C81235',
+              price: '279.99',
+              title: 'Milos Cotton White Vanity with Troy Basin 600mm - Chrome Handles'
+          },
+      ],
+      variantType: 'Width Options',
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+          id: 'furniture_variant_12',
+          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
+          name: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles',
+          price: '191.00',
+          image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+          variants: [
+              {
+                  id: 'C81206',
+                  name: 'Oval Basin',
+                  image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
+                  path: '../../models/furniture/basin/C81206.glb',
+                  dimensions: { width: 51, height: 96.5, depth: 42.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81206',
+                  price: '191.00',
+                  title: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles'
+              },
+              {
+                  id: 'C81207',
+                  name: 'Mesa Basin',
+                  image: 'assets/productImages/furniture/C81207-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-brushed-handles-c81207',
+                  path: '../../models/furniture/basin/C81207.glb',
+                  dimensions: { width: 51, height: 97, depth: 46.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81207',
+                  price: '239.99',
+                  title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Brushed Handles'
+              },
+              {
+                  id: 'C81204',
+                  name: 'Built-in Basin',
+                  image: 'assets/productImages/furniture/C81204-1000-Cotton-White-Basin-Vanity-500mm-Brushed-Handles_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-500mm-brushed-handles-c81204',
+                  path: '../../models/furniture/basin/C81204.glb',
+                  dimensions: { width: 51.8, height: 81.8, depth: 42.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81204',
+                  price: '219.99',
+                  title: 'Milos Cotton White Basin Vanity 500mm - Brushed Handles'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+
+      {
+          id: 'furniture_variant_13',
+          link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
+          name: 'Bermuda Inky Blue Basin Vanity 600mm',
+          price: '225.00',
+          image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
+          variants: [
+              {
+                  id: 'C78439',
+                  name: '600mm',
+                  image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
+                  path: '../../models/furniture/basin/C78439.glb',
+                  dimensions: { width: 61.4, height: 84.1, depth: 51.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C78439',
+                  price: '225',
+                  title: 'Bermuda Inky Blue Basin Vanity 600mm'
+              },
+              {
+                  id: 'C79848',
+                  name: '400mm',
+                  image: 'assets/productImages/furniture/c79848-1000-bermuda-inky-blue-cloakroom-basin-vanity-400mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-cloakroom-basin-vanity-400mm-c79848',
+                  path: '../../models/furniture/basin/C79848.glb',
+                  dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C79848',
+                  price: '189.99',
+                  title: 'Bermuda Inky Blue Cloakroom Basin Vanity 400mm'
+              },
+              {
+                  id: 'C78620',
+                  name: '800mm',
+                  image: 'assets/productImages/furniture/c78620-1000-bermuda-inky-blue-basin-vanity-800mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-800mm-c78620',
+                  path: '../../models/furniture/basin/C78620.glb',
+                  dimensions: { width: 80.5, height: 84.1, depth: 41 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C78620',
+                  price: '287.00',
+                  title: 'Bermuda Inky Blue Basin Vanity 800mm'
+              },
+              {
+                  id: 'C78440',
+                  name: '1200mm',
+                  image: 'assets/productImages/furniture/C78440-1000-Bermuda-Inky-Blue-Double-Basin-Vanity-1200mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-double-basin-vanity-1200mm-c78440',
+                  path: '../../models/furniture/basin/C78440.glb',
+                  dimensions: { width: 121, height: 90.6, depth: 57.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C78440',
+                  price: '499.00',
+                  title: 'Bermuda Inky Blue Double Basin Vanity 1200mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
   ],
 
   Mirror: [

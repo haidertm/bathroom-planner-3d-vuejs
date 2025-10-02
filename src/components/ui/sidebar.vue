@@ -548,27 +548,27 @@ const bathroomCategories = [
     label: 'Heated Towel Rails',
     component: 'TowelRails',
     icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Left vertical bar -->
-  <rect x="4" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
+                <!-- Left vertical bar -->
+                <rect x="4" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
 
-  <!-- Right vertical bar -->
-  <rect x="18" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
+                <!-- Right vertical bar -->
+                <rect x="18" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
 
-  <!-- Top horizontal bar -->
-  <rect x="4" y="5" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+                <!-- Top horizontal bar -->
+                <rect x="4" y="5" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-  <!-- Second horizontal bar -->
-  <rect x="4" y="9" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+                <!-- Second horizontal bar -->
+                <rect x="4" y="9" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-  <!-- Third horizontal bar -->
-  <rect x="4" y="13" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+                <!-- Third horizontal bar -->
+                <rect x="4" y="13" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-  <!-- Bottom horizontal bar -->
-  <rect x="4" y="17" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+                <!-- Bottom horizontal bar -->
+                <rect x="4" y="17" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-  <!-- Heat indicator (small flame/heat symbol) -->
-  <path d="M8 2.5 C8 2.5 9 1.5 9 3 C9 4 8.5 4.5 8.5 4.5 C8.5 4.5 9.5 4 9.5 5.5 C9.5 6.5 8.5 7 8 7 C7.5 7 6.5 6.5 6.5 5.5 C6.5 4 7.5 4.5 7.5 4.5 C7.5 4.5 7 4 7 3 C7 1.5 8 2.5 8 2.5Z" fill="currentColor" opacity="0.6"/>
-</svg>`
+                <!-- Heat indicator (small flame/heat symbol) -->
+                <path d="M8 2.5 C8 2.5 9 1.5 9 3 C9 4 8.5 4.5 8.5 4.5 C8.5 4.5 9.5 4 9.5 5.5 C9.5 6.5 8.5 7 8 7 C7.5 7 6.5 6.5 6.5 5.5 C6.5 4 7.5 4.5 7.5 4.5 C7.5 4.5 7 4 7 3 C7 1.5 8 2.5 8 2.5Z" fill="currentColor" opacity="0.6"/>
+          </svg>`
   }
 ]
 
