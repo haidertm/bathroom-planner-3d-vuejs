@@ -1209,7 +1209,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
                   link: 'https://www.bathroommountain.co.uk/l-shaped-1700-shower-bath-with-front-panel-6mm-easy-clean-brushed-brass-bath-screen-right-handed-c57499',
                   path: '../../models/bath/C53017.glb',
-                  dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
+                  dimensions: { width: 170, height: 41.1, depth: 70 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -1239,7 +1239,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/bath/C53014-1000-1400x700-Round-Single-Ended-Bath_1.webp',
                   link: 'https://www.bathroommountain.co.uk/stafford-v2-1400x700-round-single-ended-bath-c53014',
                   path: '../../models/bath/C53014.glb',
-                  dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
+                  dimensions: { width: 140.3, height: 41.4, depth: 70 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -1269,7 +1269,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/bath/C53015-1000-1500x700-Round-Single-Ended-Bath.webp',
                   link: 'https://www.bathroommountain.co.uk/stafford-1500x700-round-single-ended-bath-c53015',
                   path: '../../models/bath/C53015.glb',
-                  dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
+                  dimensions: { width: 150, height: 41.1, depth: 70 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -1299,7 +1299,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/bath/C53016-1000-1600x700-Round-Single-Ended-Bath.webp',
                   link: 'https://www.bathroommountain.co.uk/stafford-1600x700-round-single-ended-bath-c53016',
                   path: '../../models/bath/C53016.glb',
-                  dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
+                  dimensions: { width: 160, height: 41.1, depth: 70 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -1319,7 +1319,7 @@ const productData: ProductData = {
                       allowVerticalMovement: false,
                       allowFreeRotation: false
                   },
-                  sku: 'C53017',
+                  sku: 'C53016',
                   price: '139.99',
                   title: 'Stafford 1600x700 Round Single Ended Bath'
               },
