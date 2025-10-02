@@ -165,6 +165,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
           path: '../../models/furniture/basin/C76234.glb',
           dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+          floorOffset: 10,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -180,6 +181,27 @@ const productData: ProductData = {
           sku: 'C76234',
           price: '183.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm'
+        },
+        {
+          id: 'C76235',
+          name: '500mm Floor Standing',
+          image: 'assets/productImages/furniture/c76235-1000-white-basin-drawer-vanity-500mm.webp',
+          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-short-projection-basin-drawer-vanity-500mm-c76235',
+          path: '../../models/furniture/basin/C76235.glb',
+          dimensions: { width: 50.4, height: 85, depth: 34.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+            movement: {
+                snapToWall: true,
+                allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
+                allowFreeRotation: false,
+            },
+          sku: 'C76235',
+          price: '269.99',
+          title: 'Corsica Gloss White Slimline Basin Drawer Vanity 500mm'
         },
       ],
       variantType: 'Width Options',
@@ -661,6 +683,40 @@ const productData: ProductData = {
                   sku: 'C78440',
                   price: '499.00',
                   title: 'Bermuda Inky Blue Double Basin Vanity 1200mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+
+      {
+          id: 'furniture_variant_14',
+          link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
+          name: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm',
+          price: '179.00',
+          image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
+          variants: [
+              {
+                  id: 'C76246',
+                  name: '600mm Wall Hung',
+                  image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
+                  path: '../../models/furniture/basin/C76246.glb',
+                  dimensions: { width: 60.4, height: 55, depth: 34.7 },
+                  floorOffset: 30.1,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C76246',
+                  price: '179',
+                  title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm'
               },
           ],
           variantType: 'Width Options',
@@ -1544,6 +1600,27 @@ const productData: ProductData = {
                   price: '119.00',
                   title: 'Denver Close Coupled Toilet With Soft Close Seat'
               },
+              {
+                  id: 'C66137',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66137-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-slim-seat-c66137',
+                  path: '../../models/toilet/C66137.glb',
+                  dimensions: { width: 37.5, height: 81.6, depth: 63.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66137',
+                  price: '135.00',
+                  title: 'Denver Close Coupled Toilet With Soft Close Seat'
+              },
           ],
           variantType: 'Style Options',
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
@@ -1790,6 +1867,27 @@ const productData: ProductData = {
                   price: '135.99',
                   title: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat'
               },
+              {
+                  id: 'C66036',
+                  name: 'Low-Level Cistern',
+                  image: 'assets/productImages/toilet/C66036-1000-Traditional-Toilet-Low-Level-Cistern-Soft-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-soft-close-seat-c66036',
+                  path: '../../models/toilet/C66036.glb',
+                  dimensions: { width: 49, height: 119.8, depth: 67.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66201',
+                  price: '229.99',
+                  title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat'
+              },
           ],
           variantType: 'Style Options',
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
@@ -1961,6 +2059,304 @@ const productData: ProductData = {
                   sku: 'C66177',
                   price: '143.99',
                   title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Slim Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_14',
+          link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
+          name: 'Austin Close Coupled Toilet With Soft Close Seat',
+          price: '79.00',
+          image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
+          variants: [
+              {
+                  id: 'C66027',
+                  name: 'Austin Close Coupled',
+                  image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
+                  path: '../../models/toilet/C66027.glb',
+                  dimensions: { width: 42.9, height: 76.6, depth: 70.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66027',
+                  price: '79.00',
+                  title: 'Austin Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_15',
+          link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+          name: 'Austin Back To Wall Toilet With Soft Close Seat',
+          price: '89.99',
+          image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66028',
+                  name: 'Austin Close Coupled',
+                  image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+                  path: '../../models/toilet/C66028.glb',
+                  dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66028',
+                  price: '89.99',
+                  title: 'Austin Back To Wall Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_15',
+          link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
+          name: 'Atlanta Close Coupled Toilet With Soft Close Seat',
+          price: '89.99',
+          image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66127',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
+                  path: '../../models/toilet/C66127.glb',
+                  dimensions: { width: 37, height: 78.2, depth: 59.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66127',
+                  price: '127.00',
+                  title: 'Atlanta Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66128',
+                  name: 'Comfort Height',
+                  image: 'assets/productImages/toilet/c66128-1000-comfort-close-coupled-toilet-with-soft-close-seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/atlanta-comfort-close-coupled-toilet-with-soft-close-seat-c66128',
+                  path: '../../models/toilet/C66128.glb',
+                  dimensions: { width: 37, height: 84.3, depth: 59.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66128',
+                  price: '199.99',
+                  title: 'Atlanta Comfort Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66129',
+                  name: 'Fully Back To Wall',
+                  image: 'assets/productImages/toilet/C66129-1000-Fully-Back-to-Wall-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+                  path: '../../models/toilet/C66129.glb',
+                  dimensions: { width: 37, height: 78.2, depth: 60 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66129',
+                  price: '151.00',
+                  title: 'Atlanta Fully Back to Wall Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_16',
+          link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
+          name: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat',
+          price: '159.00',
+          image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
+          variants: [
+              {
+                  id: 'C66203',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
+                  path: '../../models/toilet/C66203.glb',
+                  dimensions: { width: 49, height: 82.1, depth: 72.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66203',
+                  price: '159.00',
+                  title: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat'
+              },
+              {
+                  id: 'C66192',
+                  name: 'High-Level Cistern',
+                  image: 'assets/productImages/toilet/C66192-1000-Traditional-Toilet-High-Level-Cistern-Wooden-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-high-level-cistern-and-chalk-white-wooden-seat-c66192',
+                  path: '../../models/toilet/C66192.glb',
+                  dimensions: { width: 61, height: 207.8, depth: 62.8 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66192',
+                  price: '399.99',
+                  title: 'Hudson Traditional Toilet With High-Level Cistern and Chalk White Wooden Seat'
+              },
+              {
+                  id: 'C66189',
+                  name: 'Low-Level Cistern',
+                  image: 'assets/productImages/toilet/C66189-1000-Traditional-Toilet-Low-Level-Cistern-Wooden-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-chalk-white-wooden-seat-c66189',
+                  path: '../../models/toilet/C66189.glb',
+                  dimensions: { width: 49, height: 119.8, depth: 66.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66129',
+                  price: '151.99',
+                  title: 'Hudson Traditional Toilet With Low-Level Cistern and Chalk White Wooden Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_17',
+          link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
+          name: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat',
+          price: '127.00',
+          image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66273',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
+                  path: '../../models/toilet/C66273.glb',
+                  dimensions: { width: 36.6, height: 40.8, depth: 48.8 },
+                  floorOffset: 7.4,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66273',
+                  price: '127.00',
+                  title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66274',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66274-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Slim-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
+                  path: '../../models/toilet/C66274.glb',
+                  dimensions: { width: 36.4, height: 41.5, depth: 49 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66274',
+                  price: '159.99',
+                  title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_17',
+          link: 'https://www.bathroommountain.co.uk/casper-rimless-close-coupled-toilet-with-soft-close-seat-c66286',
+          name: 'Casper Rimless Close Coupled Toilet With Soft Close Seat',
+          price: '95.00',
+          image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+          variants: [
+              {
+                  id: 'C66286',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
+                  path: '../../models/toilet/C66286.glb',
+                  dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66286',
+                  price: '95',
+                  title: 'Casper Rimless Close Coupled Toilet With Soft Close Seat'
               },
           ],
           variantType: 'Style Options',
