@@ -547,32 +547,28 @@ const bathroomCategories = [
     id: 'heated_towel_rail',
     label: 'Heated Towel Rails',
     component: 'TowelRails',
-    icon: `<svg id="soil-pipe-icon" width="24" height="24" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Main pipe body -->
-                        <rect x="25" y="15" width="30" height="65" fill="#f0f0f0" stroke="#d0d0d0" stroke-width="2" rx="3"></rect>
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Left vertical bar -->
+  <rect x="4" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
 
-                        <!-- Inner hollow (darker) -->
-                        <rect x="30" y="15" width="20" height="65" fill="#e8e8e8" stroke="#c0c0c0" stroke-width="1" rx="2"></rect>
+  <!-- Right vertical bar -->
+  <rect x="18" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
 
-                        <!-- Bottom connection -->
-                        <ellipse cx="40" cy="80" rx="15" ry="4" fill="#d0d0d0" stroke="#b0b0b0" stroke-width="1"></ellipse>
+  <!-- Top horizontal bar -->
+  <rect x="4" y="5" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-                        <!-- Top cap -->
-                        <rect x="20" y="10" width="40" height="8" fill="#e0e0e0" stroke="#c0c0c0" stroke-width="2" rx="4"></rect>
+  <!-- Second horizontal bar -->
+  <rect x="4" y="9" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-                        <!-- Screw holes in cap -->
-                        <circle cx="30" cy="14" r="2" fill="#999" stroke="#777" stroke-width="1"></circle>
-                        <circle cx="50" cy="14" r="2" fill="#999" stroke="#777" stroke-width="1"></circle>
-                        <circle cx="35" cy="14" r="1" fill="#666"></circle>
-                        <circle cx="45" cy="14" r="1" fill="#666"></circle>
+  <!-- Third horizontal bar -->
+  <rect x="4" y="13" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-                        <!-- Side detail lines -->
-                        <line x1="25" y1="25" x2="55" y2="25" stroke="#c0c0c0" stroke-width="1" opacity="0.6"></line>
-                        <line x1="25" y1="70" x2="55" y2="70" stroke="#c0c0c0" stroke-width="1" opacity="0.6"></line>
+  <!-- Bottom horizontal bar -->
+  <rect x="4" y="17" width="16" height="1.5" fill="currentColor" rx="0.5"/>
 
-                        <!-- Label text -->
-                        <text x="40" y="92" text-anchor="middle" font-family="Arial" font-size="10" fill="#666">110mm</text>
-                    </svg>`
+  <!-- Heat indicator (small flame/heat symbol) -->
+  <path d="M8 2.5 C8 2.5 9 1.5 9 3 C9 4 8.5 4.5 8.5 4.5 C8.5 4.5 9.5 4 9.5 5.5 C9.5 6.5 8.5 7 8 7 C7.5 7 6.5 6.5 6.5 5.5 C6.5 4 7.5 4.5 7.5 4.5 C7.5 4.5 7 4 7 3 C7 1.5 8 2.5 8 2.5Z" fill="currentColor" opacity="0.6"/>
+</svg>`
   }
 ]
 
