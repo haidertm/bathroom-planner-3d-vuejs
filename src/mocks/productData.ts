@@ -1855,7 +1855,7 @@ const productData: ProductData = {
                         height: 85.5, // 260mm + 15mm cap = 27.5cm total height
                         depth: 24.5 // Same as width for circular pipe
                     },
-                    floorOffset: 6.8, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 6.8,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
