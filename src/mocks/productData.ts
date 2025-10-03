@@ -2105,7 +2105,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_15',
+          id: 'toilet_variant_16',
           link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
           name: 'Atlanta Close Coupled Toilet With Soft Close Seat',
           price: '89.99',
@@ -2179,7 +2179,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_16',
+          id: 'toilet_variant_17',
           link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
           name: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat',
           price: '159.00',
@@ -2253,7 +2253,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_17',
+          id: 'toilet_variant_18',
           link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
           name: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat',
           price: '127.00',
@@ -2307,7 +2307,7 @@ const productData: ProductData = {
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
     {
-          id: 'toilet_variant_17',
+          id: 'toilet_variant_19',
           link: 'https://www.bathroommountain.co.uk/casper-rimless-close-coupled-toilet-with-soft-close-seat-c66286',
           name: 'Casper Rimless Close Coupled Toilet With Soft Close Seat',
           price: '95.00',
