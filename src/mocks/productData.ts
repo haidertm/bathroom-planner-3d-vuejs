@@ -2380,7 +2380,7 @@ const productData: ProductData = {
                         height: 100.4, // 260mm + 15mm cap = 27.5cm total height
                         depth: 24.4 // Same as width for circular pipe
                     },
-                    floorOffset: 6.7, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 6.7,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2401,7 +2401,7 @@ const productData: ProductData = {
                         height: 100.4, // 260mm + 15mm cap = 27.5cm total height
                         depth: 24.4 // Same as width for circular pipe
                     },
-                    floorOffset: 5.7, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 5.7,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2422,7 +2422,7 @@ const productData: ProductData = {
                         height: 100.5, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 11.5, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 11.5,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2443,7 +2443,7 @@ const productData: ProductData = {
                         height: 120.4, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 7, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 7,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2464,7 +2464,7 @@ const productData: ProductData = {
                         height: 120.4, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 6.9, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 6.9,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2485,7 +2485,7 @@ const productData: ProductData = {
                         height: 120.4, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 7.2, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 7.2,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2506,7 +2506,7 @@ const productData: ProductData = {
                         height: 140.5, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 11.4, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 11.4,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2527,7 +2527,7 @@ const productData: ProductData = {
                         height: 140.5, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 9.9, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 9.9,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2548,7 +2548,7 @@ const productData: ProductData = {
                         height: 140.5, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 6.5, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 6.5,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2569,7 +2569,7 @@ const productData: ProductData = {
                         height: 161.3, // 260mm + 15mm cap = 27.5cm total height
                         depth: 10.1 // Same as width for circular pipe
                     },
-                    floorOffset: 10.3, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 10.3,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2590,7 +2590,7 @@ const productData: ProductData = {
                         height: 161.3, // 260mm + 15mm cap = 27.5cm total height
                         depth: 11.9 // Same as width for circular pipe
                     },
-                    floorOffset: 6, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 6,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
@@ -2611,7 +2611,7 @@ const productData: ProductData = {
                         height: 180.4, // 260mm + 15mm cap = 27.5cm total height
                         depth: 12.0 // Same as width for circular pipe
                     },
-                    floorOffset: 6.1, // ✅ CRITICAL: Set to 0 since GLB is already floor-positioned
+                    floorOffset: 6.1,
                     movement: {
                         snapToWall: true,
                         allowVerticalMovement: true, // Keep on floor
