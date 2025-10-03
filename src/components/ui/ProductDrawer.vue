@@ -64,45 +64,14 @@
         @click="closeDrawer"
     ></div>
 
-    <!-- Loading Modal Overlay (appears above product drawer) -->
-    <div
-        v-if="showLoadingModal"
-        :style="modalOverlayStyle"
-        @click.stop
-    ></div>
-
     <!-- Loading Modal -->
-    <div v-if="showLoadingModal" :style="loadingModalStyle">
-      <div :style="modalContentStyle">
-        <!-- Loading Spinner -->
-        <div :style="modalSpinnerStyle"></div>
-
-        <!-- Loading Text -->
-        <h3 :style="modalTitleStyle">Loading Model</h3>
-        <p :style="modalMessageStyle">
-          Please wait while the 3D model loads...
-        </p>
-
-        <!-- Progress Bar -->
-        <div :style="modalProgressContainerStyle">
-          <div :style="modalProgressBarStyle"></div>
-        </div>
-
-        <!-- Progress Text -->
-        <p :style="modalProgressTextStyle">
-          {{ Math.round(modalProgress) }}%
-        </p>
-
-        <!-- Cancel Button -->
-        <button
-            @click="cancelLoading"
-            :style="modalCancelButtonStyle"
-            class="modal-cancel-button"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
+    <LoadingModal
+        :is-visible="modalState.showLoadingModal.value"
+        :progress="modalState.modalProgress.value"
+        title="Loading 3D Model"
+        message="Please wait while the 3D model loads..."
+        @cancel="modalState.cancelLoading"
+    />
 
     <!-- Product Drawer -->
     <div :style="drawerStyle">
@@ -244,7 +213,7 @@
                 :key="variant.id || variant.sku || variant.name || index"
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
-                :disabled="isVariantLoadingState(variant) || isVariantLoading"
+                :disabled="isVariantLoadingState(variant)"
                 class="variant-button"
             >
     <span :style="{ opacity: isVariantLoadingState(variant) ? 0.6 : 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
@@ -260,13 +229,6 @@
                    class="progress-container">
                 <div :style="getProgressBarStyle(variant)"
                      class="progress-bar"></div>
-              </div>
-
-              <!-- Alternative progress bar (if using the progress value approach) -->
-              <div v-if="variantProgress.get(variant.id || variant.sku || variant.name) > 0 &&
-               variantProgress.get(variant.id || variant.sku || variant.name) < 100"
-                   :style="progressContainerStyle">
-                <div :style="getProgressBarStyle(variant)"></div>
               </div>
             </button>
           </div>
@@ -289,7 +251,7 @@
           </div>
 
           <div
-              v-if="isVariantLoading"
+              v-if="isAnyVariantLoading"
               :style="variantLoadingIndicatorStyle"
               class="variant-loading-indicator"
           >
@@ -356,10 +318,19 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import {ref, computed, watch, onUnmounted} from 'vue'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
 import { ModelManager } from '../../models/bathroomFixtures'
+import LoadingModal from './LoadingModal.vue'
+import {
+  loadVariantModel,
+  isVariantModelLoaded,
+  isVariantLoadingState,
+  useLoadingModal,
+  clearVariantLoadingState,
+  isVariantModelLoadedWithCache, getVariantProgress
+} from '../../utils/modelLoader'
 
 // Props
 const props = defineProps({
@@ -425,15 +396,7 @@ const selectedProduct = ref(null)
 const selectedVariant = ref('')
 const selectedColor = ref('')
 
-const showLoadingModal = ref(false)
-const modalProgress = ref(0)
-let modalProgressInterval = null
-let loadingCancelCallback = null
-
-const variantLoadingStates = ref(new Map()) // Track loading state per variant
-const isVariantLoading = ref(false) // General variant loading state
-
-const variantProgress = ref(new Map()) // Track progress for each variant
+const modalState = useLoadingModal()
 
 const firstVariantPreloaded = ref(new Map()) // Track which products have preloaded first variants
 const productPreloading = ref(new Map()) // Track which products are currently preloading
@@ -521,14 +484,13 @@ const handleDirectAddToRoom = async (product) => {
       return
     }
     const variantKey = variant.id || variant.sku || variant.name
-        // If model is already loaded, avoid flashing the modal
-    const mm = ModelManager.getInstance()
-    const alreadyLoaded = typeof mm.isModelLoaded === 'function'
-        ? mm.isModelLoaded(variantKey)
-        : !!(mm.loadedModels?.has?.(variantKey) || mm.cache?.[variantKey])
+    // ✅ Use only the public API
+    const modelManager = ModelManager.getInstance()
+    const alreadyLoaded = modelManager.isModelLoaded(variantKey)
+
     if (!alreadyLoaded) {
-      showLoadingModal.value = true
-      modalProgress.value = 0
+      modalState.showModal()
+      modalState.updateProgress(0)
     }
 
     // Load model if needed
@@ -539,7 +501,7 @@ const handleDirectAddToRoom = async (product) => {
           const modelConfig = {
             name: variantKey,
             path: variant.path,
-            scale: variant.scale || 1.0,
+            scale: variant.scale ?? 1.0,
             dimensions: variant.dimensions,
             movement: variant.movement,
             orientation: variant.orientation
@@ -552,7 +514,7 @@ const handleDirectAddToRoom = async (product) => {
       }
     }
 
-    if (showLoadingModal.value) modalProgress.value = 100
+    if (modalState.showLoadingModal.value) modalState.updateProgress(100)
 
     emit('add-to-room', {
       ...product.productData,
@@ -562,7 +524,7 @@ const handleDirectAddToRoom = async (product) => {
 
     console.log('✅ Product added directly from search:', variantKey)
 
-    if (showLoadingModal.value) {
+    if (modalState.showLoadingModal.value) {
       deferHide = true
       setTimeout(() => {
         hideLoadingModal()
@@ -575,7 +537,7 @@ const handleDirectAddToRoom = async (product) => {
   } finally {
     // If we showed the modal but exited early elsewhere, ensure it gets hidden
     // (defensive; no-op if already hidden)
-    if (showLoadingModal.value && !deferHide) hideLoadingModal()
+    if (modalState.showLoadingModal.value && !deferHide) hideLoadingModal()
   }
 }
 
@@ -657,37 +619,8 @@ const getHighlightedName = (product) => {
   return escapeHtml(product.name || '')
 }
 
-// NEW: Loading Modal Methods
-const showLoadingModalFn = () => {
-  showLoadingModal.value = true
-  modalProgress.value = 0
-
-  // Start progress animation
-  modalProgressInterval = setInterval(() => {
-    if (modalProgress.value < 90) {
-      const increment = Math.random() * 10 + 5
-      modalProgress.value = Math.min(90, modalProgress.value + increment)
-    }
-  }, 200)
-}
-
 const hideLoadingModal = () => {
-  showLoadingModal.value = false
-  modalProgress.value = 0
-
-  if (modalProgressInterval) {
-    clearInterval(modalProgressInterval)
-    modalProgressInterval = null
-  }
-
-  loadingCancelCallback = null
-}
-
-const cancelLoading = () => {
-  if (loadingCancelCallback) {
-    loadingCancelCallback()
-  }
-  hideLoadingModal()
+  modalState.hideModal()
 }
 
 // Get the lowest price from all variants
@@ -937,144 +870,41 @@ const goBackToProductList = () => {
 }
 
 const selectVariant = async (variant) => {
-  if (isVariantLoading.value) return
+  if (isVariantLoadingState(variant)) return
 
   const variantKey = variant.id || variant.sku || variant.name
-
   console.log('🔄 Selecting variant...', variant.name || variant.sku)
 
-  // NEW: Check if this is a preloaded first variant
+  // Check if this is a preloaded first variant
   if (selectedProduct.value &&
       selectedProduct.value.variants &&
       selectedProduct.value.variants[0] === variant &&
       firstVariantPreloaded.value.has(selectedProduct.value.id)) {
 
-    const preloadInfo = firstVariantPreloaded.value.get(selectedProduct.value.id)
-    if (preloadInfo && preloadInfo.variantKey === variantKey) {
-      console.log('✅ Using preloaded first variant:', variantKey)
-      selectedVariant.value = variant
-      return
-    }
-  }
-
-  // Check if model is already loaded/cached (for other variants)
-  const modelManager = ModelManager.getInstance()
-
-  if (modelManager.isModelLoaded && modelManager.isModelLoaded(variantKey)) {
-    console.log('✅ Model already loaded, selecting immediately:', variantKey)
+    console.log('✅ First variant already preloaded, selecting immediately')
     selectedVariant.value = variant
     return
   }
 
-  // Also check the ModelManager cache directly (fallback check)
-  try {
-    const cachedModel = modelManager.cache && modelManager.cache[variantKey]
-    if (cachedModel) {
-      console.log('✅ Found cached model, selecting immediately:', variantKey)
-      selectedVariant.value = variant
-      return
-    }
-  } catch (error) {
-    console.log('⚠️ Cache check failed, proceeding with loading')
-  }
+  // FIXED: Pass firstVariantPreloaded.value (not just firstVariantPreloaded)
+  const isModelLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded.value)
 
-  console.log('🔄 Model not cached, starting load process for:', variantKey)
-
-  // Continue with existing loading logic...
-  isVariantLoading.value = true
-  variantLoadingStates.value.set(variantKey, true)
-  variantProgress.value.set(variantKey, 0)
-
-  const progressInterval = setInterval(() => {
-    const currentProgress = variantProgress.value.get(variantKey) || 0
-    if (currentProgress < 90) {
-      const increment = Math.random() * 15 + 5
-      const newProgress = Math.min(90, currentProgress + increment)
-      variantProgress.value.set(variantKey, newProgress)
-    }
-  }, 200)
-
-  try {
-    const modelConfig = {
-      name: variant.sku || variant.name,
-      path: variant.path,
-      scale: variant.scale || 1.0,
-      dimensions: variant.dimensions
-    }
-
-    const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
-
-    if (loadedModel) {
-      console.log('✅ Model loaded successfully:', variantKey)
-      variantProgress.value.set(variantKey, 100)
-      selectedVariant.value = variant
-
-      // Force UI update for green tick
-      nextTick(() => {
-        console.log('✅ Green tick should now be visible for loaded variant:', variantKey)
-      })
-
-    } else {
-      console.warn('⚠️ Model loading returned null for:', variantKey)
-      selectedVariant.value = variant
-    }
-
-  } catch (error) {
-    console.error('❌ Failed to load variant model:', error)
+  if (isModelLoaded) {
+    console.log('✅ Model already loaded, selecting immediately')
     selectedVariant.value = variant
-  } finally {
-    clearInterval(progressInterval)
-    setTimeout(() => {
-      variantProgress.value.set(variantKey, 100)
-      setTimeout(() => {
-        isVariantLoading.value = false
-        variantLoadingStates.value.set(variantKey, false)
-        variantProgress.value.delete(variantKey)
-      }, 300)
-    }, 100)
+    return
   }
-}
 
-const isVariantModelLoaded = (variant) => {
-  const variantKey = variant.id || variant.sku || variant.name
+  // Start loading the model in background (no modal, just progress bar)
+  console.log('🔄 Starting background model loading')
+  selectedVariant.value = variant
 
   try {
-    // First check if this is a preloaded first variant
-    if (selectedProduct.value && firstVariantPreloaded.value.has(selectedProduct.value.id)) {
-      const preloadInfo = firstVariantPreloaded.value.get(selectedProduct.value.id)
-      if (preloadInfo && preloadInfo.variantKey === variantKey) {
-        console.log('✅ Found preloaded first variant:', variantKey)
-        return true
-      }
-    }
-
-    const modelManager = ModelManager.getInstance()
-
-    // Method 1: Check if ModelManager has isModelLoaded method
-    if (typeof modelManager.isModelLoaded === 'function') {
-      return modelManager.isModelLoaded(variantKey)
-    }
-
-    // Method 2: Check cache directly (if cache is accessible)
-    if (modelManager.cache && modelManager.cache[variantKey]) {
-      return true
-    }
-
-    // Method 3: Check loadedModels set (if available)
-    if (modelManager.loadedModels && modelManager.loadedModels.has(variantKey)) {
-      return true
-    }
-
-    return false
+    await loadVariantModel(variant)
+    console.log('✅ Background loading completed')
   } catch (error) {
-    console.warn('Error checking if variant model is loaded:', error)
-    return false
+    console.error('❌ Failed to load variant model in background:', error)
   }
-}
-
-const isVariantLoadingState = (variant) => {
-  const variantKey = variant.id || variant.sku || variant.name
-  return variantLoadingStates.value.get(variantKey) || false
 }
 
 watch(() => props.selectedCategory, (newCategory, oldCategory) => {
@@ -1094,9 +924,6 @@ const getDisplayImage = () => {
     return selectedVariant.value.image
   }
   return selectedProduct.value?.image || ''
-}
-const getTotalPrice = () => {
-  return getDisplayPrice();
 }
 
 const getDisplayName = () => {
@@ -1167,9 +994,11 @@ const confirmAddToRoom = async () => {
   const variant = selectedVariant.value
   const variantKey = variant.id || variant.sku || variant.name
 
-  // Check if the first variant model is loaded
   const isFirstVariant = selectedProduct.value.variants && selectedProduct.value.variants[0] === variant
-  const isModelLoaded = isVariantModelLoaded(variant)
+
+  // FIXED: Pass firstVariantPreloaded.value (not just firstVariantPreloaded)
+  const isModelLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded.value)
+
   const isCurrentlyLoading = isVariantLoadingState(variant)
 
   console.log('Add to Room clicked:', {
@@ -1182,41 +1011,40 @@ const confirmAddToRoom = async () => {
   // If model is already loaded, proceed directly
   if (isModelLoaded && !isCurrentlyLoading) {
     console.log('✅ Model already loaded, adding to room immediately')
-    // CALL THE ACTUAL ADD TO ROOM LOGIC DIRECTLY - DON'T CALL confirmAddToRoom
     addProductToRoom()
     return
   }
 
   // If model is not loaded or currently loading, show modal and load
   console.log('🔄 Model not loaded, showing loading modal')
-  showLoadingModalFn()
+  modalState.showModal()
 
   try {
     // Set up cancel callback
     let cancelled = false
-    loadingCancelCallback = () => {
+    modalState.setCancelCallback(() => {
       cancelled = true
-    }
+    })
 
     // Load the model
     await loadVariantModel(variant, (progress) => {
       if (!cancelled) {
-        modalProgress.value = progress
+        modalState.updateProgress(progress)
       }
     })
 
     // If not cancelled and loading completed, add to room
     if (!cancelled) {
-      modalProgress.value = 100
+      modalState.updateProgress(100)
       setTimeout(() => {
-        hideLoadingModal()
-        addProductToRoom() // CALL THE ACTUAL ADD TO ROOM LOGIC - NOT confirmAddToRoom
+        modalState.hideModal()
+        addProductToRoom()
       }, 500)
     }
 
   } catch (error) {
     console.error('❌ Failed to load model:', error)
-    hideLoadingModal()
+    modalState.hideModal()
   }
 }
 
@@ -1264,67 +1092,6 @@ const addProductToRoom = () => {
 
   // Emit the add-to-room event
   emit('add-to-room', productData)
-}
-
-const loadVariantModel = async (variant, progressCallback = null) => {
-  const variantKey = variant.id || variant.sku || variant.name
-
-  console.log('🔄 Loading variant model:', variantKey)
-
-  isVariantLoading.value = true
-  variantLoadingStates.value.set(variantKey, true)
-
-  // Progress simulation
-  const progressInterval = setInterval(() => {
-    const currentProgress = variantProgress.value.get(variantKey) || 0
-    if (currentProgress < 90) {
-      const increment = Math.random() * 15 + 5
-      const newProgress = Math.min(90, currentProgress + increment)
-      variantProgress.value.set(variantKey, newProgress)
-
-      if (progressCallback) {
-        progressCallback(newProgress)
-      }
-    }
-  }, 200)
-
-  try {
-    const modelManager = ModelManager.getInstance()
-    const modelConfig = {
-      name: variant.sku || variant.name,
-      path: variant.path,
-      scale: variant.scale || 1.0,
-      dimensions: variant.dimensions
-    }
-
-    const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
-
-    if (loadedModel) {
-      console.log('✅ Model loaded successfully:', variantKey)
-      variantProgress.value.set(variantKey, 100)
-
-      if (progressCallback) {
-        progressCallback(100)
-      }
-
-      // Store in preload cache if it's the first variant
-      if (selectedProduct.value && selectedProduct.value.variants?.[0] === variant) {
-        firstVariantPreloaded.value.set(selectedProduct.value.id, {
-          variantKey,
-          model: loadedModel,
-          timestamp: Date.now()
-        })
-      }
-    }
-
-  } finally {
-    clearInterval(progressInterval)
-    setTimeout(() => {
-      isVariantLoading.value = false
-      variantLoadingStates.value.set(variantKey, false)
-      variantProgress.value.delete(variantKey)
-    }, 300)
-  }
 }
 
 const getButtonText = (product) => {
@@ -1377,8 +1144,8 @@ const seeMoreButtonStyle = {
 }
 
 const getProgressBarStyle = (variant) => {
-  const variantKey = variant.id || variant.sku || variant.name
-  const progress = variantProgress.value.get(variantKey) || 0
+  // ✅ Use imported getVariantProgress function
+  const progress = getVariantProgress(variant) // Instead of variantProgress.value.get(variantKey)
 
   return {
     height: '100%',
@@ -1402,11 +1169,18 @@ const progressContainerStyle = computed(() => ({
   overflow: 'hidden'
 }))
 
+const isAnyVariantLoading = computed(() => {
+  if (!selectedProduct.value?.variants) return false
+
+  return selectedProduct.value.variants.some(variant =>
+      isVariantLoadingState(variant)
+  )
+})
+
 // Dynamic styles methods for variants
 const getVariantButtonStyle = (variant) => {
   const isSelected = selectedVariant.value === variant
   const isLoading = isVariantLoadingState(variant)
-  const isModelLoaded = isVariantModelLoaded(variant)
 
   return {
     padding: '12px 16px',
@@ -1420,7 +1194,6 @@ const getVariantButtonStyle = (variant) => {
     color: isSelected
         ? '#ffffff'  // White text for selected
         : '#333',
-    cursor: isLoading || isVariantLoading.value ? 'not-allowed' : 'pointer',
     fontSize: '14px',
     fontWeight: isSelected ? '600' : '500',  // Bolder text for selected
     transition: 'all 0.2s ease',
@@ -1913,87 +1686,6 @@ const modalOverlayStyle = computed(() => ({
   justifyContent: 'center'
 }))
 
-// NEW: Loading Modal Styles
-const loadingModalStyle = computed(() => ({
-  position: 'fixed',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  zIndex: '10000',
-  pointerEvents: 'auto'
-}))
-
-const modalContentStyle = computed(() => ({
-  backgroundColor: 'white',
-  borderRadius: '16px',
-  padding: '32px',
-  textAlign: 'center',
-  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-  maxWidth: '400px',
-  width: '90vw',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const modalSpinnerStyle = computed(() => ({
-  width: '48px',
-  height: '48px',
-  border: '4px solid #f0f0f0',
-  borderTop: '4px solid #29275B',
-  borderRadius: '50%',
-  animation: 'spin 1s linear infinite',
-  margin: '0 auto 16px auto'
-}))
-
-const modalTitleStyle = computed(() => ({
-  fontSize: '20px',
-  fontWeight: '600',
-  margin: '0 0 8px 0',
-  color: '#333'
-}))
-
-const modalMessageStyle = computed(() => ({
-  fontSize: '14px',
-  color: '#666',
-  margin: '0 0 24px 0',
-  lineHeight: '1.4'
-}))
-
-const modalProgressContainerStyle = computed(() => ({
-  width: '100%',
-  height: '8px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '4px',
-  overflow: 'hidden',
-  margin: '0 0 16px 0'
-}))
-
-const modalProgressBarStyle = computed(() => ({
-  height: '100%',
-  background: 'linear-gradient(90deg, #29275B, #4a47a3)',
-  borderRadius: '4px',
-  width: `${modalProgress.value}%`,
-  transition: 'width 0.3s ease'
-}))
-
-const modalProgressTextStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#888',
-  margin: '0 0 24px 0'
-}))
-
-const modalCancelButtonStyle = computed(() => ({
-  backgroundColor: 'transparent',
-  border: '2px solid #ddd',
-  color: '#666',
-  padding: '12px 24px',
-  borderRadius: '8px',
-  fontSize: '14px',
-  fontWeight: '500',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  fontFamily: 'Arial, sans-serif'
-}))
-
 // 6. Add these styles for search results
 const searchContextStyle = computed(() => ({
   display: 'flex',
@@ -2011,6 +1703,15 @@ const searchVariantStyle = computed(() => ({
   fontSize: '11px',
   fontWeight: '500'
 }))
+
+onUnmounted(() => {
+  if (selectedProduct.value && selectedVariant.value) {
+    const productId = selectedProduct.value.id
+    const variantId = selectedVariant.value.id || selectedVariant.value.sku || selectedVariant.value.name
+    clearVariantLoadingState(productId, variantId)
+  }
+  modalState.hideModal()
+})
 
 </script>
 
@@ -2052,10 +1753,6 @@ const searchVariantStyle = computed(() => ({
   background-color: #29275B !important;
 }
 
-.back-to-catalogue-button:hover {
-  background-color: #f8f9fa !important;
-  border-color: #333 !important;
-}
 
 .more-info-link:hover {
   text-decoration: underline !important;
@@ -2091,8 +1788,4 @@ const searchVariantStyle = computed(() => ({
   background: #555;
 }
 
-.modal-cancel-button:hover {
-  background-color: #f8f9fa !important;
-  border-color: #999 !important;
-}
 </style>
