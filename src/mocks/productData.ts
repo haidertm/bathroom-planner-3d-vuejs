@@ -165,6 +165,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
           path: '../../models/furniture/basin/C76234.glb',
           dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+          floorOffset: 10,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -180,6 +181,27 @@ const productData: ProductData = {
           sku: 'C76234',
           price: '183.99',
           title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm'
+        },
+        {
+          id: 'C76235',
+          name: '500mm Floor Standing',
+          image: 'assets/productImages/furniture/c76235-1000-white-basin-drawer-vanity-500mm.webp',
+          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-short-projection-basin-drawer-vanity-500mm-c76235',
+          path: '../../models/furniture/basin/C76235.glb',
+          dimensions: { width: 50.4, height: 85, depth: 34.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+            movement: {
+                snapToWall: true,
+                allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
+                allowFreeRotation: false,
+            },
+          sku: 'C76235',
+          price: '269.99',
+          title: 'Corsica Gloss White Slimline Basin Drawer Vanity 500mm'
         },
       ],
       variantType: 'Width Options',
@@ -406,6 +428,300 @@ const productData: ProductData = {
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
     },
+
+    {
+      id: 'furniture_variant_10',
+      link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
+      name: 'Bermuda Dove Grey Basin Vanity 600mm',
+      price: '225.00',
+      image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
+      variants: [
+        {
+          id: 'C76285',
+          name: '600mm Width',
+          image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
+          path: '../../models/furniture/basin/C76285.glb',
+          dimensions: { width: 61.4, height: 84, depth: 41.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76285',
+          price: '225.00',
+          title: 'Bermuda Dove Grey Basin Vanity 600mm'
+        },
+          {
+              id: 'C76286',
+              name: '800mm Width',
+              image: 'assets/productImages/furniture/C76286-1000-Bermuda-Dove-Grey-Basin-Vanity-800mm_3.webp',
+              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-800mm',
+              path: '../../models/furniture/basin/C76286.glb',
+              dimensions: { width: 81.3, height: 84, depth: 41.5 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C76286',
+              price: '285.00',
+              title: 'Bermuda Dove Grey Basin Vanity 800mm'
+          },
+      ],
+      variantType: 'Width Options',
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+      id: 'furniture_variant_11',
+      link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
+      name: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles',
+      price: '207.00',
+      image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
+      variants: [
+        {
+          id: 'C81232',
+          name: 'Built-in Basin',
+          image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
+          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
+          path: '../../models/furniture/basin/C81232.glb',
+          dimensions: { width: 61.5, height: 81.8, depth: 49.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C81232',
+          price: '207.00',
+          title: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles'
+        },
+          {
+              id: 'C81234',
+              name: 'Oval Basin',
+              image: 'assets/productImages/furniture/C81234-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
+              link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-600mm-chrome-handles-c81234',
+              path: '../../models/furniture/basin/C81234.glb',
+              dimensions: { width: 60.9, height: 96.5, depth: 47.7 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C81234',
+              price: '279.99',
+              title: 'Milos Cotton White Vanity with Oval Basin 600mm - Chrome Handles'
+          },
+          {
+              id: 'C81235',
+              name: 'Troy Basin',
+              image: 'assets/productImages/furniture/C81235-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
+              link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-600mm-chrome-handles-c81235',
+              path: '../../models/furniture/basin/C81235.glb',
+              dimensions: { width: 60.9, height: 95.1, depth: 47.7 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C81235',
+              price: '279.99',
+              title: 'Milos Cotton White Vanity with Troy Basin 600mm - Chrome Handles'
+          },
+      ],
+      variantType: 'Width Options',
+      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+    },
+
+    {
+          id: 'furniture_variant_12',
+          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
+          name: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles',
+          price: '191.00',
+          image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+          variants: [
+              {
+                  id: 'C81206',
+                  name: 'Oval Basin',
+                  image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
+                  path: '../../models/furniture/basin/C81206.glb',
+                  dimensions: { width: 51, height: 96.5, depth: 42.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81206',
+                  price: '191.00',
+                  title: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles'
+              },
+              {
+                  id: 'C81207',
+                  name: 'Mesa Basin',
+                  image: 'assets/productImages/furniture/C81207-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-brushed-handles-c81207',
+                  path: '../../models/furniture/basin/C81207.glb',
+                  dimensions: { width: 51, height: 97, depth: 46.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81207',
+                  price: '239.99',
+                  title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Brushed Handles'
+              },
+              {
+                  id: 'C81204',
+                  name: 'Built-in Basin',
+                  image: 'assets/productImages/furniture/C81204-1000-Cotton-White-Basin-Vanity-500mm-Brushed-Handles_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-500mm-brushed-handles-c81204',
+                  path: '../../models/furniture/basin/C81204.glb',
+                  dimensions: { width: 51.8, height: 81.8, depth: 42.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81204',
+                  price: '219.99',
+                  title: 'Milos Cotton White Basin Vanity 500mm - Brushed Handles'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+
+      {
+          id: 'furniture_variant_13',
+          link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
+          name: 'Bermuda Inky Blue Basin Vanity 600mm',
+          price: '225.00',
+          image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
+          variants: [
+              {
+                  id: 'C78439',
+                  name: '600mm',
+                  image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
+                  path: '../../models/furniture/basin/C78439.glb',
+                  dimensions: { width: 61.4, height: 84.1, depth: 51.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C78439',
+                  price: '225',
+                  title: 'Bermuda Inky Blue Basin Vanity 600mm'
+              },
+              {
+                  id: 'C79848',
+                  name: '400mm',
+                  image: 'assets/productImages/furniture/c79848-1000-bermuda-inky-blue-cloakroom-basin-vanity-400mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-cloakroom-basin-vanity-400mm-c79848',
+                  path: '../../models/furniture/basin/C79848.glb',
+                  dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C79848',
+                  price: '189.99',
+                  title: 'Bermuda Inky Blue Cloakroom Basin Vanity 400mm'
+              },
+              {
+                  id: 'C78620',
+                  name: '800mm',
+                  image: 'assets/productImages/furniture/c78620-1000-bermuda-inky-blue-basin-vanity-800mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-800mm-c78620',
+                  path: '../../models/furniture/basin/C78620.glb',
+                  dimensions: { width: 80.5, height: 84.1, depth: 41 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C78620',
+                  price: '287.00',
+                  title: 'Bermuda Inky Blue Basin Vanity 800mm'
+              },
+              {
+                  id: 'C78440',
+                  name: '1200mm',
+                  image: 'assets/productImages/furniture/C78440-1000-Bermuda-Inky-Blue-Double-Basin-Vanity-1200mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-double-basin-vanity-1200mm-c78440',
+                  path: '../../models/furniture/basin/C78440.glb',
+                  dimensions: { width: 121, height: 90.6, depth: 57.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C78440',
+                  price: '499.00',
+                  title: 'Bermuda Inky Blue Double Basin Vanity 1200mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+
+      {
+          id: 'furniture_variant_14',
+          link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
+          name: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm',
+          price: '179.00',
+          image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
+          variants: [
+              {
+                  id: 'C76246',
+                  name: '600mm Wall Hung',
+                  image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
+                  path: '../../models/furniture/basin/C76246.glb',
+                  dimensions: { width: 60.4, height: 55, depth: 34.7 },
+                  floorOffset: 30.1,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C76246',
+                  price: '179',
+                  title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
   ],
 
   Mirror: [
@@ -935,6 +1251,114 @@ const productData: ProductData = {
       variantType: 'Orientation',
       features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
     },
+
+    {
+          id: 'bath_4',
+          link: 'https://www.bathroommountain.co.uk/stafford-1700x700-round-single-ended-bath-c53017',
+          name: 'Stafford 1700x700 Round Single Ended bath',
+          price: '125.00',
+          image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
+          variants: [
+              {
+                  id: 'C53017',
+                  name: '1700 X 700mm',
+                  image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-1700x700-round-single-ended-bath-c53017',
+                  path: '../../models/bath/C53017.glb',
+                  dimensions: { width: 170, height: 41.1, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53017',
+                  price: '125.00',
+                  title: 'Stafford 1700x700 Round Single Ended bath'
+              },
+              {
+                  id: 'C53014',
+                  name: '1400 X 700mm',
+                  image: 'assets/productImages/bath/C53014-1000-1400x700-Round-Single-Ended-Bath_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-v2-1400x700-round-single-ended-bath-c53014',
+                  path: '../../models/bath/C53014.glb',
+                  dimensions: { width: 140.3, height: 41.4, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53014',
+                  price: '139.99',
+                  title: 'Stafford 1400x700 Round Single Ended Bath'
+              },
+              {
+                  id: 'C53015',
+                  name: '1500 X 700mm',
+                  image: 'assets/productImages/bath/C53015-1000-1500x700-Round-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-1500x700-round-single-ended-bath-c53015',
+                  path: '../../models/bath/C53015.glb',
+                  dimensions: { width: 150, height: 41.1, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53015',
+                  price: '139.99',
+                  title: 'Stafford 1500x700 Round Single Ended Bath'
+              },
+              {
+                  id: 'C53016',
+                  name: '1700 X 700mm',
+                  image: 'assets/productImages/bath/C53016-1000-1600x700-Round-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-1600x700-round-single-ended-bath-c53016',
+                  path: '../../models/bath/C53016.glb',
+                  dimensions: { width: 160, height: 41.1, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53016',
+                  price: '139.99',
+                  title: 'Stafford 1600x700 Round Single Ended Bath'
+              },
+          ],
+          variantType: 'Orientation',
+          features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+      },
   ],
 
   Toilet: [
@@ -1152,6 +1576,27 @@ const productData: ProductData = {
                   price: '119.00',
                   title: 'Denver Close Coupled Toilet With Soft Close Seat'
               },
+              {
+                  id: 'C66137',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66137-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-slim-seat-c66137',
+                  path: '../../models/toilet/C66137.glb',
+                  dimensions: { width: 37.5, height: 81.6, depth: 63.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66137',
+                  price: '135.00',
+                  title: 'Denver Close Coupled Toilet With Soft Close Seat'
+              },
           ],
           variantType: 'Style Options',
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
@@ -1219,6 +1664,27 @@ const productData: ProductData = {
                   title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat'
               },
               {
+                  id: 'C66139V2',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/c66139v2-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66139v2',
+                  path: '../../models/toilet/C66139V2.glb',
+                  dimensions: { width: 38, height: 83.5, depth: 61.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66139V2',
+                  price: '169.00',
+                  title: 'Boston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
+              },
+              {
                   id: 'C66226',
                   name: 'Comfort Height With Soft Close Seat',
                   image: 'assets/productImages/toilet/C66226-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Seat_1.webp',
@@ -1238,6 +1704,27 @@ const productData: ProductData = {
                   sku: 'C66226',
                   price: '183.00',
                   title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66227',
+                  name: 'Comfort Height With Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66227-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Slim-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-slim-seat-c66227',
+                  path: '../../models/toilet/C66227.glb',
+                  dimensions: { width: 89.2, height: 85.5, depth: 89.6 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66227',
+                  price: '183.99',
+                  title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Slim Seat'
               },
           ],
           variantType: 'Style Options',
@@ -1355,6 +1842,27 @@ const productData: ProductData = {
                   sku: 'C66201',
                   price: '135.99',
                   title: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66036',
+                  name: 'Low-Level Cistern',
+                  image: 'assets/productImages/toilet/C66036-1000-Traditional-Toilet-Low-Level-Cistern-Soft-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-soft-close-seat-c66036',
+                  path: '../../models/toilet/C66036.glb',
+                  dimensions: { width: 49, height: 119.8, depth: 67.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66201',
+                  price: '229.99',
+                  title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat'
               },
           ],
           variantType: 'Style Options',
@@ -1477,7 +1985,647 @@ const productData: ProductData = {
           variantType: 'Style Options',
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
       },
+    {
+          id: 'toilet_variant_13',
+          link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat',
+          name: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat',
+          price: '143.99',
+          image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
+          variants: [
+              {
+                  id: 'C66176',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat1',
+                  path: '../../models/toilet/C66176.glb',
+                  dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
+                  floorOffset: 5.7,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66176',
+                  price: '143.99',
+                  title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66177',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/c66177-1000-rimless-back-to-wall-toilet-soft-close-slim-seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/boston-rimless-back-to-wall-toilet-with-premium-soft-close-slim-seat',
+                  path: '../../models/toilet/C66177.glb',
+                  dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
+                  floorOffset: 3.8,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66177',
+                  price: '143.99',
+                  title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Slim Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_14',
+          link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
+          name: 'Austin Close Coupled Toilet With Soft Close Seat',
+          price: '79.00',
+          image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
+          variants: [
+              {
+                  id: 'C66027',
+                  name: 'Austin Close Coupled',
+                  image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
+                  path: '../../models/toilet/C66027.glb',
+                  dimensions: { width: 42.9, height: 76.6, depth: 70.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66027',
+                  price: '79.00',
+                  title: 'Austin Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_15',
+          link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+          name: 'Austin Back To Wall Toilet With Soft Close Seat',
+          price: '89.99',
+          image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66028',
+                  name: 'Austin Close Coupled',
+                  image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+                  path: '../../models/toilet/C66028.glb',
+                  dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66028',
+                  price: '89.99',
+                  title: 'Austin Back To Wall Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_16',
+          link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
+          name: 'Atlanta Close Coupled Toilet With Soft Close Seat',
+          price: '89.99',
+          image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66127',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
+                  path: '../../models/toilet/C66127.glb',
+                  dimensions: { width: 37, height: 78.2, depth: 59.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66127',
+                  price: '127.00',
+                  title: 'Atlanta Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66128',
+                  name: 'Comfort Height',
+                  image: 'assets/productImages/toilet/c66128-1000-comfort-close-coupled-toilet-with-soft-close-seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/atlanta-comfort-close-coupled-toilet-with-soft-close-seat-c66128',
+                  path: '../../models/toilet/C66128.glb',
+                  dimensions: { width: 37, height: 84.3, depth: 59.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66128',
+                  price: '199.99',
+                  title: 'Atlanta Comfort Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66129',
+                  name: 'Fully Back To Wall',
+                  image: 'assets/productImages/toilet/C66129-1000-Fully-Back-to-Wall-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+                  path: '../../models/toilet/C66129.glb',
+                  dimensions: { width: 37, height: 78.2, depth: 60 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66129',
+                  price: '151.00',
+                  title: 'Atlanta Fully Back to Wall Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_17',
+          link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
+          name: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat',
+          price: '159.00',
+          image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
+          variants: [
+              {
+                  id: 'C66203',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
+                  path: '../../models/toilet/C66203.glb',
+                  dimensions: { width: 49, height: 82.1, depth: 72.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66203',
+                  price: '159.00',
+                  title: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat'
+              },
+              {
+                  id: 'C66192',
+                  name: 'High-Level Cistern',
+                  image: 'assets/productImages/toilet/C66192-1000-Traditional-Toilet-High-Level-Cistern-Wooden-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-high-level-cistern-and-chalk-white-wooden-seat-c66192',
+                  path: '../../models/toilet/C66192.glb',
+                  dimensions: { width: 61, height: 207.8, depth: 62.8 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66192',
+                  price: '399.99',
+                  title: 'Hudson Traditional Toilet With High-Level Cistern and Chalk White Wooden Seat'
+              },
+              {
+                  id: 'C66189',
+                  name: 'Low-Level Cistern',
+                  image: 'assets/productImages/toilet/C66189-1000-Traditional-Toilet-Low-Level-Cistern-Wooden-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-chalk-white-wooden-seat-c66189',
+                  path: '../../models/toilet/C66189.glb',
+                  dimensions: { width: 49, height: 119.8, depth: 66.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66129',
+                  price: '151.99',
+                  title: 'Hudson Traditional Toilet With Low-Level Cistern and Chalk White Wooden Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_18',
+          link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
+          name: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat',
+          price: '127.00',
+          image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
+          variants: [
+              {
+                  id: 'C66273',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
+                  path: '../../models/toilet/C66273.glb',
+                  dimensions: { width: 36.6, height: 40.8, depth: 48.8 },
+                  floorOffset: 7.4,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66273',
+                  price: '127.00',
+                  title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat'
+              },
+              {
+                  id: 'C66274',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66274-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Slim-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
+                  path: '../../models/toilet/C66274.glb',
+                  dimensions: { width: 36.4, height: 41.5, depth: 49 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66274',
+                  price: '159.99',
+                  title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_19',
+          link: 'https://www.bathroommountain.co.uk/casper-rimless-close-coupled-toilet-with-soft-close-seat-c66286',
+          name: 'Casper Rimless Close Coupled Toilet With Soft Close Seat',
+          price: '95.00',
+          image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+          variants: [
+              {
+                  id: 'C66286',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
+                  path: '../../models/toilet/C66286.glb',
+                  dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66286',
+                  price: '95',
+                  title: 'Casper Rimless Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
   ],
+
+  TowelRails: [
+        {
+            id: 'heated_towel_rail_1',
+            link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-650x400mm-c36213',
+            name: 'Barcelona Electric Chrome Straight Heated Towel Rail 650x400mm',
+            price: '91.00',
+            image: 'assets/productImages/heatedTowelRails/c36213-1000-electric-chrome-heated-towel-rail-650x400mm_1.webp',
+            variants: [
+                {
+                    id: 'heated_towel_rails_1',
+                    name: '400X650mm',
+                    image: 'assets/productImages/heatedTowelRails/c36213-1000-electric-chrome-heated-towel-rail-650x400mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-650x400mm-c36213',
+                    path: '../../models/heatedTowelRails/C36213.glb',
+                    dimensions: {
+                        width: 45.9, // 110mm diameter = ~11cm width
+                        height: 85.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 24.5 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.8,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36213',
+                    price: '91.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 650x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_2',
+                    name: '800X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36214-1000-electric-chrome-heated-towel-rail-800x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-800x400mm-c36214',
+                    path: '../../models/heatedTowelRails/C36214.glb',
+                    dimensions: {
+                        width: 46, // 110mm diameter = ~11cm width
+                        height: 100.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 24.4 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.7,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36214',
+                    price: '119.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_3',
+                    name: '800X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36215-1000-electric-chrome-heated-towel-rail-800x500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-800x500mm-c36215',
+                    path: '../../models/heatedTowelRails/C36215.glb',
+                    dimensions: {
+                        width: 55.9, // 110mm diameter = ~11cm width
+                        height: 100.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 24.4 // Same as width for circular pipe
+                    },
+                    floorOffset: 5.7,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36215',
+                    price: '103.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_4',
+                    name: '800X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36216-1000-electric-chrome-heated-towel-rail-800x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-800x600mm-c36216',
+                    path: '../../models/heatedTowelRails/C36216.glb',
+                    dimensions: {
+                        width: 64.2, // 110mm diameter = ~11cm width
+                        height: 100.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 11.5,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36216',
+                    price: '139.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x600mm'
+                },
+                {
+                    id: 'heated_towel_rails_5',
+                    name: '1000X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36217-1000-electric-chrome-heated-towel-rail-1000x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1000x400mm-c36217',
+                    path: '../../models/heatedTowelRails/C36217.glb',
+                    dimensions: {
+                        width: 44.2, // 110mm diameter = ~11cm width
+                        height: 120.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 7,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36217',
+                    price: '134.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_6',
+                    name: '1000X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36218-1000-electric-chrome-heated-towel-rail-1000x500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1000x500mm-c36218',
+                    path: '../../models/heatedTowelRails/C36218.glb',
+                    dimensions: {
+                        width: 54.2, // 110mm diameter = ~11cm width
+                        height: 120.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.9,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36218',
+                    price: '115.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_7',
+                    name: '1000X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36219-1000-electric-chrome-heated-towel-rail-1000x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1000x600mm-c36219',
+                    path: '../../models/heatedTowelRails/C36219.glb',
+                    dimensions: {
+                        width: 64.2, // 110mm diameter = ~11cm width
+                        height: 120.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 7.2,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36219',
+                    price: '154.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x600mm'
+                },
+                {
+                    id: 'heated_towel_rails_8',
+                    name: '1200X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36220-1000-electric-chrome-heated-towel-rail-1200x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1200x400mm-c36220',
+                    path: '../../models/heatedTowelRails/C36220.glb',
+                    dimensions: {
+                        width: 44.2, // 110mm diameter = ~11cm width
+                        height: 140.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 11.4,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36220',
+                    price: '119.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_9',
+                    name: '1200X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36221-1000-electric-chrome-heated-towel-rail-1200x500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1200x500mm-c36221',
+                    path: '../../models/heatedTowelRails/C36221.glb',
+                    dimensions: {
+                        width: 54.3, // 110mm diameter = ~11cm width
+                        height: 140.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 9.9,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36221',
+                    price: '159.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_10',
+                    name: '1200X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36222-1000-electric-chrome-heated-towel-rail-1200x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1200x600mm-c36222',
+                    path: '../../models/heatedTowelRails/C36222.glb',
+                    dimensions: {
+                        width: 64.2, // 110mm diameter = ~11cm width
+                        height: 140.5, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.5,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36222',
+                    price: '135.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x600mm'
+                },
+                {
+                    id: 'heated_towel_rails_11',
+                    name: '1600X400mm',
+                    image: 'assets/productImages/heatedTowelRails/c36223-1000-electric-chrome-heated-towel-rail-1600x400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1600x400mm-c36223',
+                    path: '../../models/heatedTowelRails/C36223.glb',
+                    dimensions: {
+                        width: 44, // 110mm diameter = ~11cm width
+                        height: 161.3, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 10.1 // Same as width for circular pipe
+                    },
+                    floorOffset: 10.3,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36223',
+                    price: '135.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x400mm'
+                },
+                {
+                    id: 'heated_towel_rails_12',
+                    name: '1600X500mm',
+                    image: 'assets/productImages/heatedTowelRails/c36224-1000-electric-chrome-heated-towel-rail-1600x500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1600x500mm-c36224',
+                    path: '../../models/heatedTowelRails/C36224.glb',
+                    dimensions: {
+                        width: 54.2, // 110mm diameter = ~11cm width
+                        height: 161.3, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 11.9 // Same as width for circular pipe
+                    },
+                    floorOffset: 6,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36224',
+                    price: '184.99',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x500mm'
+                },
+                {
+                    id: 'heated_towel_rails_13',
+                    name: '1600X600mm',
+                    image: 'assets/productImages/heatedTowelRails/c36225-1000-electric-chrome-heated-towel-rail-1600x600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-1600-600mm-c36225',
+                    path: '../../models/heatedTowelRails/C36225.glb',
+                    dimensions: {
+                        width: 64.3, // 110mm diameter = ~11cm width
+                        height: 180.4, // 260mm + 15mm cap = 27.5cm total height
+                        depth: 12.0 // Same as width for circular pipe
+                    },
+                    floorOffset: 6.1,
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Keep on floor
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C36225',
+                    price: '91.00',
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x600mm'
+                },
+            ],
+            variantType: 'Size Options',
+            features: []
+        },
+    ],
 
   Plumbing: [
         {

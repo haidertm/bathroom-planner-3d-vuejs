@@ -238,7 +238,7 @@
           <h4 :style="sectionTitleStyle">{{ selectedProduct.variantType || 'Size' }}</h4>
           <div :style="variantOptionsStyle">
             <button
-                v-for="(variant, index) in selectedProduct.variants"
+                v-for="(variant, index) in displayedVariants"
                 :key="variant.id || variant.sku || variant.name || index"
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
@@ -266,6 +266,23 @@
                    :style="progressContainerStyle">
                 <div :style="getProgressBarStyle(variant)"></div>
               </div>
+            </button>
+          </div>
+
+          <!-- See More / See Less Button -->
+          <div
+              v-if="shouldShowSeeMoreButton"
+              :style="seeMoreContainerStyle"
+          >
+            <button
+                @click="toggleShowAllVariants"
+                :style="seeMoreButtonStyle"
+                class="see-more-button"
+            >
+              {{ showAllVariants ? 'See Less' : `See More (${selectedProduct.variants.length - 5} more)` }}
+              <span :style="{ marginLeft: '8px' }">
+            {{ showAllVariants ? '↑' : '↓' }}
+          </span>
             </button>
           </div>
 
@@ -419,6 +436,42 @@ const variantProgress = ref(new Map()) // Track progress for each variant
 const firstVariantPreloaded = ref(new Map()) // Track which products have preloaded first variants
 const productPreloading = ref(new Map()) // Track which products are currently preloading
 
+const showAllVariants = ref(false)
+
+// Add this computed property for filtered variants
+const displayedVariants = computed(() => {
+  if (!selectedProduct.value?.variants) return []
+
+  const variants = selectedProduct.value.variants
+
+  // If we have 5 or fewer variants, show all
+  if (variants.length <= 5) {
+    return variants
+  }
+
+  // If "See More" hasn't been clicked, show only first 5
+  if (!showAllVariants.value) {
+    return variants.slice(0, 5)
+  }
+
+  // Otherwise show all variants
+  return variants
+})
+
+// Check if we should show the "See More" button
+const shouldShowSeeMoreButton = computed(() => {
+  return selectedProduct.value?.variants?.length > 5
+})
+
+// Function to toggle showing all variants
+const toggleShowAllVariants = () => {
+  showAllVariants.value = !showAllVariants.value
+}
+
+// Reset showAllVariants when product changes
+watch(() => selectedProduct.value, () => {
+  showAllVariants.value = false
+})
 
 watch(() => props.searchTriggered, (newValue, oldValue) => {
   if (newValue > oldValue && newValue > 0) {
@@ -1265,6 +1318,29 @@ const getSearchAwareButtonStyle = (product) => {
 const closeDrawer = () => {
   hideLoadingModal() // ADD THIS LINE
   emit('close')
+}
+
+// Add these styles to your existing styles object
+const seeMoreContainerStyle = {
+  marginTop: '16px',
+  display: 'flex',
+  justifyContent: 'center',
+  width: '100%'
+}
+
+const seeMoreButtonStyle = {
+  padding: '12px 24px',
+  backgroundColor: '#f5f5f5',
+  border: '1px solid #e0e0e0',
+  borderRadius: '8px',
+  fontSize: '14px',
+  fontWeight: '500',
+  color: '#333',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
 }
 
 const getProgressBarStyle = (variant) => {
