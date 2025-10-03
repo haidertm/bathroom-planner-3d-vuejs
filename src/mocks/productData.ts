@@ -1275,12 +1275,6 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
-                          rotation: {
-                              'north-west': 0,
-                              'north-east': -Math.PI / 2,
-                              'south-east': Math.PI,
-                              'south-west': Math.PI / 2
-                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -1305,12 +1299,6 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
-                          rotation: {
-                              'north-west': 0,
-                              'north-east': -Math.PI / 2,
-                              'south-east': Math.PI,
-                              'south-west': Math.PI / 2
-                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -1335,12 +1323,6 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
-                          rotation: {
-                              'north-west': 0,
-                              'north-east': -Math.PI / 2,
-                              'south-east': Math.PI,
-                              'south-west': Math.PI / 2
-                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -1365,12 +1347,6 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
-                          rotation: {
-                              'north-west': 0,
-                              'north-east': -Math.PI / 2,
-                              'south-east': Math.PI,
-                              'south-west': Math.PI / 2
-                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
