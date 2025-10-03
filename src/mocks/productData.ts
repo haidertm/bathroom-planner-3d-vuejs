@@ -1263,7 +1263,7 @@ const productData: ProductData = {
                   id: 'C53017',
                   name: '1700 X 700mm',
                   image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
-                  link: 'https://www.bathroommountain.co.uk/l-shaped-1700-shower-bath-with-front-panel-6mm-easy-clean-brushed-brass-bath-screen-right-handed-c57499',
+                  link: 'https://www.bathroommountain.co.uk/stafford-1700x700-round-single-ended-bath-c53017',
                   path: '../../models/bath/C53017.glb',
                   dimensions: { width: 170, height: 41.1, depth: 70 },
                   orientation: {
