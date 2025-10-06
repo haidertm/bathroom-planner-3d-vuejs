@@ -312,6 +312,39 @@ const productData: ProductData = {
           price: '199.99',
           title: 'Avon Gloss White Basin Vanity 800mm'
         },
+        {
+          id: 'C76475',
+          name: '600mm Wall Hung',
+          image: 'assets/productImages/furniture/C76475-1000-Avon-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
+          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-wall-hung-basin-drawer-vanity-600mm',
+          path: '../../models/furniture/basin/C76475.glb',
+          dimensions: { width: 61.4, height: 45.3, depth: 42.3 },
+          floorOffset: 39.7,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76475',
+          price: '189.99',
+          title: 'Avon Gloss White Wall Hung Basin Drawer Vanity 600mm'
+        },
+        {
+          id: 'C76474',
+          name: '600mm Drawer',
+          image: 'assets/productImages/furniture/c76474-1000-avon-gloss-white-basin-drawer-vanity-600mm.webp',
+          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-drawer-vanity-600mm-c76474',
+          path: '../../models/furniture/basin/C76474.glb',
+          dimensions: { width: 61.4, height: 85, depth: 42.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76474',
+          price: '259.99',
+          title: 'Avon Gloss White Basin Drawer Vanity 600mm'
+        },
       ],
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
@@ -367,6 +400,38 @@ const productData: ProductData = {
           sku: 'C77096',
           price: '285.00',
           title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 600mm'
+        },
+        {
+          id: 'C77095',
+          name: 'Curved Basin',
+          image: 'assets/productImages/furniture/C77095-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-oval-counter-top-basin-600mm-c77095',
+          path: '../../models/furniture/basin/C77095.glb',
+          dimensions: { width: 61, height: 95.3, depth: 41.2 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C77095',
+          price: '275.00',
+          title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 600mm'
+        },
+        {
+          id: 'C77634',
+          name: 'No Basin',
+          image: 'assets/productImages/furniture/c77634-1000-chalk-white-cabinet-with-marble-top-exclude-counter-top-basin.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cabinet-with-marble-top-600mm-exclude-counter-top-basin-c77634',
+          path: '../../models/furniture/basin/C77634.glb',
+          dimensions: { width: 61, height: 95.3, depth: 41.2 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C77634',
+          price: '349.99',
+          title: 'Bermuda Chalk White Cabinet with Marble Top 600mm - Excludes Counter Top Basin'
         },
       ],
       variantType: 'Width Options',
@@ -467,6 +532,54 @@ const productData: ProductData = {
               sku: 'C76286',
               price: '285.00',
               title: 'Bermuda Dove Grey Basin Vanity 800mm'
+          },
+          {
+              id: 'C76283',
+              name: '400mm Width',
+              image: 'assets/productImages/furniture/c76283-1000-bermuda-dove-grey-cloakroom-basin-vanity-400mm.webp',
+              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-cloakroom-basin-vanity-400mm-c76283',
+              path: '../../models/furniture/basin/C76283.glb',
+              dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C76283',
+              price: '189.99',
+              title: 'Bermuda Dove Grey Cloakroom Basin Vanity 400mm'
+          },
+          {
+              id: 'C76284',
+              name: '500mm Width',
+              image: 'assets/productImages/furniture/c76284-1000-bermuda-dove-grey-basin-vanity-500mm_1.webp',
+              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-500mm-c76284',
+              path: '../../models/furniture/basin/C76284.glb',
+              dimensions: { width: 51.3, height: 84, depth: 41.4 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C76284',
+              price: '269.99',
+              title: 'Bermuda Dove Grey Basin Vanity 500mm'
+          },
+          {
+              id: 'C76287',
+              name: '1200mm Width',
+              image: 'assets/productImages/furniture/c76287-1000-bermuda-dove-grey-double-basin-vanity-1200mm.webp',
+              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-800mm',
+              path: '../../models/furniture/basin/C76287.glb',
+              dimensions: { width: 120.1, height: 83.7, depth: 41.6 },
+              orientation: {
+                  type: 'face_into_room',
+                  wallBuffer: 0, // Flush with wall - no gap
+                  description: 'Item is part of wall opening'
+              },
+              sku: 'C76287',
+              price: '649.99',
+              title: 'Bermuda Dove Grey Double Basin Vanity 1200mm'
           },
       ],
       variantType: 'Width Options',
@@ -717,6 +830,331 @@ const productData: ProductData = {
                   sku: 'C76246',
                   price: '179',
                   title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm'
+              },
+              {
+                  id: 'C76247',
+                  name: '600mm Floorstanding',
+                  image: 'assets/productImages/furniture/c76247-1000-corsica-storm-grey-basin-drawer-vanity-600mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-basin-drawer-vanity-600mm-c76247',
+                  path: '../../models/furniture/basin/C76247.glb',
+                  dimensions: { width: 60.4, height: 85, depth: 34.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C76247',
+                  price: '219',
+                  title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 600mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+
+      {
+          id: 'furniture_variant_11',
+          link: 'https://www.bathroommountain.co.uk/monaco-chalk-white-basin-vanity-600mm-c76328',
+          name: 'Monaco Chalk White Basin Vanity 600mm',
+          price: '299.99',
+          image: 'assets/productImages/furniture/c76328-1000-chalk-white-basin-vanity-600mm.webp',
+          variants: [
+              {
+                  id: 'C76328',
+                  name: 'Chalk White',
+                  image: 'assets/productImages/furniture/c76328-1000-chalk-white-basin-vanity-600mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-chalk-white-basin-vanity-600mm-c76328',
+                  path: '../../models/furniture/basin/C76328.glb',
+                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C76328',
+                  price: '299.99',
+                  title: 'Monaco Chalk White Basin Vanity 600mm'
+              },
+              {
+                  id: 'C77683',
+                  name: 'Dove Grey',
+                  image: 'assets/productImages/furniture/C76286-1000-Bermuda-Dove-Grey-Basin-Vanity-800mm_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-dove-grey-basin-vanity-600mm-c77683',
+                  path: '../../models/furniture/basin/C76286.glb',
+                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77683',
+                  price: '299.99',
+                  title: 'Monaco Dove Grey Basin Vanity 600mm'
+              },
+              {
+                  id: 'C77732',
+                  name: 'Graphite Grey',
+                  image: 'assets/productImages/furniture/c77732-1000-graphite-grey-basin-vanity-600mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-graphite-grey-basin-vanity-600mm-c77732',
+                  path: '../../models/furniture/basin/C77732.glb',
+                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77732',
+                  price: '239.00',
+                  title: 'Monaco Graphite Grey Basin Vanity 600mm'
+              },
+              {
+                  id: 'C78377',
+                  name: 'Inky Blue',
+                  image: 'assets/productImages/furniture/c78377-1000-inky-blue-basin-vanity-600mm-accents.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-basin-vanity-600mm-c78377',
+                  path: '../../models/furniture/basin/C78377.glb',
+                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78377',
+                  price: '299.99',
+                  title: 'Monaco Inky Blue Basin Vanity 600mm'
+              },
+              {
+                  id: 'C78704',
+                  name: 'Midnight Green',
+                  image: 'assets/productImages/furniture//home/hamza/Desktop/c78704-1000-monaco-topaz-green-basin-vanity-600mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-midnight-green-basin-vanity-600mm-c78704',
+                  path: '../../models/furniture/basin/C78704.glb',
+                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78704',
+                  price: '299.99',
+                  title: 'Bermuda Dove Grey Double Basin Vanity 1200mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+
+      {
+          id: 'furniture_variant_12',
+          link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-miami-toilet-1050mm-c79932',
+          name: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm',
+          price: '319.99',
+          image: 'assets/productImages/furniture/C79932-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
+          variants: [
+              {
+                  id: 'C79932',
+                  name: 'Denver Toilet',
+                  image: 'assets/productImages/furniture/C79932-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-miami-toilet-1050mm-c79932',
+                  path: '../../models/furniture/basin/C79932.glb',
+                  dimensions: { width: 103.3, height: 86.5, depth: 80.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79932',
+                  price: '319.99',
+                  title: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+
+      {
+          id: 'furniture_variant_13',
+          link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-floor-standing-basin-vanity-400mm-c79921',
+          name: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm',
+          price: '319.99',
+          image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
+          variants: [
+              {
+                  id: 'C79921',
+                  name: 'Floor Standing',
+                  image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-floor-standing-basin-vanity-400mm-c79921',
+                  path: '../../models/furniture/basin/C79921.glb',
+                  dimensions: { width: 40, height: 88, depth: 24.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79921',
+                  price: '99.99',
+                  title: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm'
+              },
+              {
+                  id: 'C79920',
+                  name: 'Wall Hung',
+                  image: 'assets/productImages/furniture/C79920-1000-Gloss-White-Cloakroom-Wall-Hung-Basin-Vanity-400mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-wall-hung-basin-vanity-400mm-c79920',
+                  path: '../../models/furniture/basin/C79920.glb',
+                  dimensions: { width: 40, height: 57.8, depth: 24.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79920',
+                  price: '89.99',
+                  title: 'Quartz Gloss White Cloakroom Wall Hung Basin Vanity 400mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_14',
+          link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
+          name: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
+          price: '269.99',
+          image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
+          variants: [
+              {
+                  id: 'C79920',
+                  name: 'Floor Standing',
+                  image: 'assets/productImages/furniture/c79777-1000-inky-blue-basin-drawer-vanity-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
+                  path: '../../models/furniture/basin/C79920.glb',
+                  dimensions: { width: 40, height: 57.8, depth: 24.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79920',
+                  price: '269.99',
+                  title: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_15',
+          link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
+          name: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
+          price: '269.99',
+          image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
+          variants: [
+              {
+                  id: 'C77185',
+                  name: 'Floor Standing',
+                  image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
+                  path: '../../models/furniture/basin/C77185.glb',
+                  dimensions: { width: 45.8, height: 85.1, depth: 34 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77185',
+                  price: '539.99',
+                  title: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_16',
+          link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-600mm-c77065',
+          name: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm',
+          price: '269.99',
+          image: 'assets/productImages/furniture/C77065-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+          variants: [
+              {
+                  id: 'C77065',
+                  name: '600mm Width',
+                  image: 'assets/productImages/furniture/C77065-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-600mm-c77065',
+                  path: '../../models/furniture/basin/C77065.glb',
+                  dimensions: { width: 61.4, height: 60.4, depth: 39.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77065',
+                  price: '269.99',
+                  title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm'
+              },
+              {
+                  id: 'C77064',
+                  name: '500mm Width',
+                  image: 'assets/productImages/furniture/C77064-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-500mm-c77064',
+                  path: '../../models/furniture/basin/C77064.glb',
+                  dimensions: { width: 50.7, height: 60.4, depth: 39.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77064',
+                  price: '185.00',
+                  title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_17',
+          link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-600mm',
+          name: 'Avon Stone Grey Basin Vanity 600mm',
+          price: '209.99',
+          image: 'assets/productImages/furniture/C76504-1000-Avon-Pebble-Grey-Basin-Vanity-600mm_1.webp',
+          variants: [
+              {
+                  id: 'C76504',
+                  name: '600mm Cabinet',
+                  image: 'assets/productImages/furniture/C76504-1000-Avon-Pebble-Grey-Basin-Vanity-600mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-600mm',
+                  path: '../../models/furniture/basin/C76504.glb',
+                  dimensions: { width: 61.4, height: 85, depth: 42.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C76504',
+                  price: '209.99',
+                  title: 'Avon Stone Grey Basin Vanity 600mm'
+              },
+              {
+                  id: 'C76503',
+                  name: '500mm Cabinet',
+                  image: 'assets/productImages/furniture/C76503-1000-Avon-Pebble-Grey-Basin-Vanity-500mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-500mm',
+                  path: '../../models/furniture/basin/C76503.glb',
+                  dimensions: { width: 51.6, height: 85, depth: 42.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C76503',
+                  price: '159.00',
+                  title: 'Avon Stone Grey Basin Vanity 500mm'
               },
           ],
           variantType: 'Width Options',
