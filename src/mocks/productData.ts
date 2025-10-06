@@ -403,7 +403,7 @@ const productData: ProductData = {
         },
         {
           id: 'C77095',
-          name: 'Curved Basin',
+          name: 'Oval Basin',
           image: 'assets/productImages/furniture/C77095-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
           link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-oval-counter-top-basin-600mm-c77095',
           path: '../../models/furniture/basin/C77095.glb',
@@ -849,7 +849,7 @@ const productData: ProductData = {
                       allowFreeRotation: false
                   },
                   sku: 'C76247',
-                  price: '219',
+                  price: '219.00',
                   title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 600mm'
               },
           ],
@@ -858,7 +858,7 @@ const productData: ProductData = {
       },
 
       {
-          id: 'furniture_variant_11',
+          id: 'furniture_variant_15',
           link: 'https://www.bathroommountain.co.uk/monaco-chalk-white-basin-vanity-600mm-c76328',
           name: 'Monaco Chalk White Basin Vanity 600mm',
           price: '299.99',
@@ -931,7 +931,7 @@ const productData: ProductData = {
               {
                   id: 'C78704',
                   name: 'Midnight Green',
-                  image: 'assets/productImages/furniture//home/hamza/Desktop/c78704-1000-monaco-topaz-green-basin-vanity-600mm.webp',
+                  image: 'assets/productImages/furniture/c78704-1000-monaco-topaz-green-basin-vanity-600mm.webp',
                   link: 'https://www.bathroommountain.co.uk/monaco-midnight-green-basin-vanity-600mm-c78704',
                   path: '../../models/furniture/basin/C78704.glb',
                   dimensions: { width: 60, height: 83.9, depth: 41.3 },
@@ -942,7 +942,7 @@ const productData: ProductData = {
                   },
                   sku: 'C78704',
                   price: '299.99',
-                  title: 'Bermuda Dove Grey Double Basin Vanity 1200mm'
+                  title: 'Monaco Midnight Green Basin Vanity 600mm'
               },
           ],
           variantType: 'Width Options',
@@ -950,7 +950,7 @@ const productData: ProductData = {
       },
 
       {
-          id: 'furniture_variant_12',
+          id: 'furniture_variant_16',
           link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-miami-toilet-1050mm-c79932',
           name: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm',
           price: '319.99',
@@ -978,10 +978,10 @@ const productData: ProductData = {
       },
 
       {
-          id: 'furniture_variant_13',
+          id: 'furniture_variant_17',
           link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-floor-standing-basin-vanity-400mm-c79921',
           name: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm',
-          price: '319.99',
+          price: '99.99',
           image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
           variants: [
               {
@@ -1007,6 +1007,7 @@ const productData: ProductData = {
                   link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-wall-hung-basin-vanity-400mm-c79920',
                   path: '../../models/furniture/basin/C79920.glb',
                   dimensions: { width: 40, height: 57.8, depth: 24.2 },
+                  floorOffset: 20,
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -1021,25 +1022,25 @@ const productData: ProductData = {
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
       },
       {
-          id: 'furniture_variant_14',
+          id: 'furniture_variant_18',
           link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
           name: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
           price: '269.99',
           image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
           variants: [
               {
-                  id: 'C79920',
+                  id: 'C79777',
                   name: 'Floor Standing',
                   image: 'assets/productImages/furniture/c79777-1000-inky-blue-basin-drawer-vanity-500mm.webp',
                   link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
-                  path: '../../models/furniture/basin/C79920.glb',
+                  path: '../../models/furniture/basin/C79777.glb',
                   dimensions: { width: 40, height: 57.8, depth: 24.2 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
                       description: 'Item is part of wall opening'
                   },
-                  sku: 'C79920',
+                  sku: 'C79777',
                   price: '269.99',
                   title: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm'
               },
@@ -1048,15 +1049,15 @@ const productData: ProductData = {
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
       },
       {
-          id: 'furniture_variant_15',
+          id: 'furniture_variant_19',
           link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
-          name: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
+          name: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm',
           price: '269.99',
           image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
           variants: [
               {
                   id: 'C77185',
-                  name: 'Floor Standing',
+                  name: 'Miami Toilet',
                   image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
                   link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
                   path: '../../models/furniture/basin/C77185.glb',
@@ -1067,7 +1068,7 @@ const productData: ProductData = {
                       description: 'Item is part of wall opening'
                   },
                   sku: 'C77185',
-                  price: '539.99',
+                  price: '529.99',
                   title: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm'
               },
           ],
@@ -1075,7 +1076,7 @@ const productData: ProductData = {
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
       },
       {
-          id: 'furniture_variant_16',
+          id: 'furniture_variant_20',
           link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-600mm-c77065',
           name: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm',
           price: '269.99',
@@ -1118,7 +1119,7 @@ const productData: ProductData = {
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
       },
       {
-          id: 'furniture_variant_17',
+          id: 'furniture_variant_21',
           link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-600mm',
           name: 'Avon Stone Grey Basin Vanity 600mm',
           price: '209.99',
