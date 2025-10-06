@@ -883,9 +883,9 @@ const productData: ProductData = {
               {
                   id: 'C77683',
                   name: 'Dove Grey',
-                  image: 'assets/productImages/furniture/C76286-1000-Bermuda-Dove-Grey-Basin-Vanity-800mm_3.webp',
+                  image: 'assets/productImages/furniture/c77683-1000-dove-grey-basin-vanity-600mm-gold-accents_1.webp',
                   link: 'https://www.bathroommountain.co.uk/monaco-dove-grey-basin-vanity-600mm-c77683',
-                  path: '../../models/furniture/basin/C76286.glb',
+                  path: '../../models/furniture/basin/C76283.glb',
                   dimensions: { width: 60, height: 83.9, depth: 41.3 },
                   orientation: {
                       type: 'face_into_room',
@@ -1052,7 +1052,7 @@ const productData: ProductData = {
           id: 'furniture_variant_19',
           link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
           name: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm',
-          price: '269.99',
+          price: '529.99',
           image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
           variants: [
               {
