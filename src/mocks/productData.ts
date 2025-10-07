@@ -1006,7 +1006,7 @@ const productData: ProductData = {
               },
               {
                   id: 'C79931',
-                  name: 'Denver Toilet',
+                  name: 'Austin Toilet',
                   image: 'assets/productImages/furniture/C79931-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-austin-toilet-1050mm-c79931',
                   path: '../../models/furniture/basin/C79931.glb',
@@ -1110,7 +1110,7 @@ const productData: ProductData = {
               },
               {
                   id: 'C78548',
-                  name: 'Floor Standing',
+                  name: 'Wall Hung',
                   image: 'assets/productImages/furniture/c78548-1000-inky-blue-wall-hung-basin-drawer-vanity-500mm.webp',
                   link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-wall-hung-short-projection-basin-drawer-vanity-500mm-c78548',
                   path: '../../models/furniture/basin/C78548.glb',
