@@ -345,6 +345,22 @@ const productData: ProductData = {
           price: '259.99',
           title: 'Avon Gloss White Basin Drawer Vanity 600mm'
         },
+        {
+          id: 'C77113',
+          name: '450mm Cabinet',
+          image: 'assets/productImages/furniture/c77113-1000-avon-gloss-white-basin-vanity-450mm_1.webp',
+          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-450mm',
+          path: '../../models/furniture/basin/C77113.glb',
+          dimensions: { width: 45.8, height: 85.1, depth: 34 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C77113',
+          price: '179.99',
+          title: 'Avon Gloss White Basin Vanity 450mm'
+        },
       ],
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
@@ -1092,6 +1108,22 @@ const productData: ProductData = {
                   price: '269.99',
                   title: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm'
               },
+              {
+                  id: 'C78548',
+                  name: 'Floor Standing',
+                  image: 'assets/productImages/furniture/c78548-1000-inky-blue-wall-hung-basin-drawer-vanity-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-wall-hung-short-projection-basin-drawer-vanity-500mm-c78548',
+                  path: '../../models/furniture/basin/C78548.glb',
+                  dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78548',
+                  price: '229.99',
+                  title: 'Corsica Inky Blue Wall Hung Slimline Basin Drawer Vanity 500mm'
+              },
           ],
           variantType: 'Width Options',
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
@@ -1162,6 +1194,22 @@ const productData: ProductData = {
                   price: '185.00',
                   title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm'
               },
+              {
+                  id: 'C77066',
+                  name: '800mm Width',
+                  image: 'assets/productImages/furniture/C77066-1000-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-800mm-c77066',
+                  path: '../../models/furniture/basin/C77066.glb',
+                  dimensions: { width: 80.9, height: 60.5, depth: 39.6 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77066',
+                  price: '263.00',
+                  title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 800mm'
+              },
           ],
           variantType: 'Width Options',
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
@@ -1204,6 +1252,81 @@ const productData: ProductData = {
                   sku: 'C76503',
                   price: '159.00',
                   title: 'Avon Stone Grey Basin Vanity 500mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_22',
+          link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-austin-toilet-1050mm-c76749',
+          name: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm',
+          price: '339.99',
+          image: 'assets/productImages/furniture/C76749-1000-Grey-Vanity-Basin-and-Austin-Toilet-1050mm_1.webp',
+          variants: [
+              {
+                  id: 'C76749',
+                  name: 'Austin Toilet',
+                  image: 'assets/productImages/furniture/C76749-1000-Grey-Vanity-Basin-and-Austin-Toilet-1050mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-austin-toilet-1050mm-c76749',
+                  path: '../../models/furniture/basin/C76749.glb',
+                  dimensions: { width: 104, height: 81.7, depth: 81.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C76749',
+                  price: '339.99',
+                  title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm'
+              },
+              {
+                  id: 'C76751',
+                  name: 'Denver Toilet',
+                  image: 'assets/productImages/furniture/C76751-1000-Grey-Vanity-Basin-and-Denver-Toilet-1050mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-denver-toilet-1050mm-c76751',
+                  path: '../../models/furniture/basin/C76751.glb',
+                  dimensions: { width: 104, height: 81.6, depth: 80.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C76751',
+                  price: '389.99',
+                  title: 'AQuartz Stone Grey Combination Vanity Basin and Denver Toilet 1050mm'
+              },
+              {
+                  id: 'C77020',
+                  name: 'No Toilet & Cistern',
+                  image: 'assets/productImages/furniture/c77020-1000-pebble-grey-basin-vanity-and-back-to-wall-toilet-unit.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-basin-vanity-and-back-to-wall-toilet-unit-1050mm-c77020',
+                  path: '../../models/furniture/basin/C77020.glb',
+                  dimensions: { width: 104, height: 81.6, depth: 42.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77020',
+                  price: '259.99',
+                  title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1050mm'
+              },
+              {
+                  id: 'C76750',
+                  name: 'Seattle Toilet',
+                  image: 'assets/productImages/furniture/C76750-1000-Grey-Vanity-Basin-and-Seattle-Toilet-1050mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-seattle-toilet-1050mm-c76750',
+                  path: '../../models/furniture/basin/C76750.glb',
+                  dimensions: { width: 104, height: 81.6, depth: 80.4 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C76750',
+                  price: '369.99',
+                  title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1050mm'
               },
           ],
           variantType: 'Width Options',
@@ -2084,6 +2207,27 @@ const productData: ProductData = {
                   price: '135.00',
                   title: 'Denver Close Coupled Toilet With Soft Close Seat'
               },
+              {
+                  id: 'C66220',
+                  name: 'Smart Seat',
+                  image: 'assets/productImages/toilet/C66220-1000-Denver-Close-Coupled-Toilet-With-Smart-Bidet-Seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-smart-bidet-seat-c66220',
+                  path: '../../models/toilet/C66220.glb',
+                  dimensions: { width: 45.5, height: 81.6, depth: 65.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66220',
+                  price: '529.99',
+                  title: 'Denver Close Coupled Toilet With Smart Bidet Seat'
+              },
           ],
           variantType: 'Style Options',
           features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
@@ -2350,6 +2494,27 @@ const productData: ProductData = {
                   sku: 'C66201',
                   price: '229.99',
                   title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat'
+              },
+              {
+                  id: 'C66037',
+                  name: 'High-Level Cistern',
+                  image: 'assets/productImages/toilet/c66037-1000-traditional-toilet-high-level-cistern-soft-seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-high-level-cistern-and-soft-close-seat-c66037',
+                  path: '../../models/toilet/C66037.glb',
+                  dimensions: { width: 61, height: 207.8, depth: 62.8 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66037',
+                  price: '369.99',
+                  title: 'Hudson Traditional Toilet With High-level Cistern And Soft Close Seat'
               },
           ],
           variantType: 'Style Options',
