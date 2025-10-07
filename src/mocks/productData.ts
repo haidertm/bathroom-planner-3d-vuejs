@@ -2004,6 +2004,113 @@ const productData: ProductData = {
           variantType: 'Orientation',
           features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
       },
+    {
+          id: 'bath_5',
+          link: 'https://www.bathroommountain.co.uk/hereford-v2-1500x700-square-single-ended-bath-c53018',
+          name: 'Hereford 1500x700 Square Single Ended Bath',
+          price: '129.00',
+          image: 'assets/productImages/bath/C53018-1000-1500x700-Square-Single-Ended-Bath_1.webp',
+          variants: [
+              {
+                  id: 'C53018',
+                  name: '1500 X 700mm',
+                  image: 'assets/productImages/bath/C53018-1000-1500x700-Square-Single-Ended-Bath_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1500x700-square-single-ended-bath-c53018',
+                  path: '../../models/bath/C53018.glb',
+                  dimensions: { width: 150.8, height: 44.6, depth: 70.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53018',
+                  price: '129.00',
+                  title: 'Hereford 1500x700 Square Single Ended Bath'
+              },
+              {
+                  id: 'C53019',
+                  name: '1600 X 700mm',
+                  image: 'assets/productImages/bath/C53019-1000-1600x700-Square-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1600x700-square-single-ended-bath-c53019',
+                  path: '../../models/bath/C53019.glb',
+                  dimensions: { width: 160.2, height: 44.6, depth: 70.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53019',
+                  price: '159.99',
+                  title: 'Hereford 1600x700 Square Single Ended Bath'
+              },
+              {
+                  id: 'C53021',
+                  name: '1700 X 750mm',
+                  image: 'assets/productImages/bath/C53021-1000-1700x750-Square-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1700x750-square-single-ended-bath-c53021',
+                  path: '../../models/bath/C53021.glb',
+                  dimensions: { width: 169.5, height: 44.6, depth: 70.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53021',
+                  price: '184.99',
+                  title: 'Hereford 1700x750 Square Single Ended Bath'
+              },
+              {
+                  id: 'C53022',
+                  name: '1800 X 800mm',
+                  image: 'assets/productImages/bath/C53022-1000-1800x800-Square-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1800x800-square-single-ended-bath-c53022',
+                  path: '../../models/bath/C53022.glb',
+                  dimensions: { width: 179.4, height: 54.6, depth: 79.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53022',
+                  price: '209.99',
+                  title: 'Hereford 1800x800 Square Single Ended Bath'
+              },
+          ],
+          variantType: 'Orientation',
+          features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+      },
   ],
 
   Toilet: [
