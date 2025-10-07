@@ -972,6 +972,54 @@ const productData: ProductData = {
                   price: '319.99',
                   title: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm'
               },
+              {
+                  id: 'C79930',
+                  name: 'No Toilet & Cistern',
+                  image: 'assets/productImages/furniture/C79930-1000-White-Basin-Vanity-Back-To-Wall-Toilet-Unit-1050mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-basin-vanity-and-back-to-wall-toilet-unit-1050mm-excludes-toilet-c79930',
+                  path: '../../models/furniture/basin/C79930.glb',
+                  dimensions: { width: 103.3, height: 86.2, depth: 42.6 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79930',
+                  price: '219.99',
+                  title: 'Quartz Gloss White Basin Vanity and Back To Wall Toilet Unit 1050mm - Excludes Toilet'
+              },
+              {
+                  id: 'C79931',
+                  name: 'Denver Toilet',
+                  image: 'assets/productImages/furniture/C79931-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-austin-toilet-1050mm-c79931',
+                  path: '../../models/furniture/basin/C79931.glb',
+                  dimensions: { width: 103.3, height: 86.4, depth: 82 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79931',
+                  price: '289.99',
+                  title: 'Quartz Gloss White Combination Vanity Basin and Austin Toilet 1050mm'
+              },
+              {
+                  id: 'C79933',
+                  name: 'Houston Toilet',
+                  image: 'assets/productImages/furniture/c79933-1000-gloss-white-combination-vanity-basin-toilet-1050mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-houston-toilet-1050mm-c79933',
+                  path: '../../models/furniture/basin/C79933.glb',
+                  dimensions: { width: 103.3, height: 86.5, depth: 84.4 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79933',
+                  price: '263.00',
+                  title: 'Quartz Gloss White Combination Vanity Basin and Houston Toilet 1050mm'
+              },
           ],
           variantType: 'Width Options',
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
