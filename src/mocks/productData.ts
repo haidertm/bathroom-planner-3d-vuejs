@@ -1721,7 +1721,42 @@ const productData: ProductData = {
       ],
       variantType: 'Size Options',
       features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
-    }
+    },
+    {
+      id: 'shower_variant_2',
+      link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
+      name: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower',
+      price: '199.00',
+      image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+      variants: [
+        {
+          id: 'C27067',
+          name: '300mm + Hand Shower',
+          image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+          link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
+          path: '../../models/shower/C27067.glb',
+          dimensions: { width: 44.2, height: 122.2, depth: 56.3 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C27067',
+          price: '199.00',
+          title: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower'
+        },
+      ],
+      variantType: 'Size Options',
+      features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
+    },
   ],
 
   Bath: [
@@ -1832,7 +1867,7 @@ const productData: ProductData = {
     {
       id: 'bath_3',
       link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
-      name: 'Kensington 1700mm Freestanding Slipper Bath\n',
+      name: 'Kensington 1700mm Freestanding Slipper Bath',
       price: '599.99',
       image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
       variants: [
@@ -2985,6 +3020,38 @@ const productData: ProductData = {
                   sku: 'C66286',
                   price: '95',
                   title: 'Casper Rimless Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_20',
+          link: 'https://www.bathroommountain.co.uk/seattle-close-coupled-toilet-with-soft-close-seat-c66029',
+          name: 'Seattle Rimless Close Coupled Toilet With Soft Close Seat',
+          price: '124.99',
+          image: 'assets/productImages/toilet/c66029-1000-seattle-close-coupled-toilet-with-soft-close-seat_1.webp',
+          variants: [
+              {
+                  id: 'C66029',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/c66029-1000-seattle-close-coupled-toilet-with-soft-close-seat_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/seattle-close-coupled-toilet-with-soft-close-seat-c66029',
+                  path: '../../models/toilet/C66029.glb',
+                  dimensions: { width: 35.8, height: 80.2, depth: 60 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66029',
+                  price: '124.99',
+                  title: 'Seattle Rimless Close Coupled Toilet With Soft Close Seat'
               },
           ],
           variantType: 'Style Options',
