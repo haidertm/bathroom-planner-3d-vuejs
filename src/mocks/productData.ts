@@ -1294,7 +1294,7 @@ const productData: ProductData = {
                   },
                   sku: 'C76751',
                   price: '389.99',
-                  title: 'AQuartz Stone Grey Combination Vanity Basin and Denver Toilet 1050mm'
+                  title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1050mm'
               },
               {
                   id: 'C77020',
