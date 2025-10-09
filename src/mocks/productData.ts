@@ -361,6 +361,22 @@ const productData: ProductData = {
           price: '179.99',
           title: 'Avon Gloss White Basin Vanity 450mm'
         },
+        {
+          id: 'C76471',
+          name: '400mm Cabinet',
+          image: 'assets/productImages/furniture/c76471-1000-gloss-white-cloakroom-floor-standing-basin-vanity-400mm.webp',
+          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-cloakroom-floor-standing-basin-vanity-400mm',
+          path: '../../models/furniture/basin/C76471.glb',
+          dimensions: { width: 40.4, height: 85.1, depth: 26.4 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76471',
+          price: '105.00',
+          title: 'Avon Gloss White Cloakroom Floor Standing Basin Vanity 400mm'
+        },
       ],
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
@@ -1868,6 +1884,392 @@ const productData: ProductData = {
                   sku: 'C81245',
                   price: '499.99',
                   title: 'Milos Cotton White Combination Vanity Basin and Austin Toilet 1100mm - Chrome Handles'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_30',
+          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-chrome-handles-c81231',
+          name: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles',
+          price: '519.99',
+          image: 'assets/productImages/furniture/C81231-1000-Cotton-White-Vanity-Basin-500mm-Chrome-Handles_1.webp',
+          variants: [
+              {
+                  id: 'C81231',
+                  name: 'Mesa Basin',
+                  image: 'assets/productImages/furniture/C81231-1000-Cotton-White-Vanity-Basin-500mm-Chrome-Handles_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-chrome-handles-c81231',
+                  path: '../../models/furniture/basin/C81231.glb',
+                  dimensions: { width: 51, height: 97, depth: 46.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81231',
+                  price: '191.99',
+                  title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles'
+              },
+              {
+                  id: 'C81228',
+                  name: 'Build-in Basin',
+                  image: 'assets/productImages/furniture/C81228-1000-Cotton-White-Basin-Vanity-500mm-Chrome-Handles_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-500mm-chrome-handles-c81228',
+                  path: '../../models/furniture/basin/C81228.glb',
+                  dimensions: { width: 51.8, height: 81.8, depth: 42.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81228',
+                  price: '175.00',
+                  title: 'Milos Cotton White Basin Vanity 500mm - Chrome Handles'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_31',
+          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-brushed-handles-c81208',
+          name: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles',
+          price: '259.99',
+          image: 'assets/productImages/furniture/C81208-1000-Cotton-White-Basin-Vanity-600mm-Brushed-Handles_3.webp',
+          variants: [
+              {
+                  id: 'C81208',
+                  name: 'Built-in Basin',
+                  image: 'assets/productImages/furniture/C81208-1000-Cotton-White-Basin-Vanity-600mm-Brushed-Handles_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-brushed-handles-c81208',
+                  path: '../../models/furniture/basin/C81208.glb',
+                  dimensions: { width: 61.5, height: 81.8, depth: 47.8 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81208',
+                  price: '259.99',
+                  title: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles'
+              },
+              {
+                  id: 'C81210',
+                  name: 'Oval Basin',
+                  image: 'assets/productImages/furniture/C81210-1000-Cotton-White-Vanity-Basin-600mm-Brushed-Handles_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-600mm-brushed-handles-c81210',
+                  path: '../../models/furniture/basin/C81210.glb',
+                  dimensions: { width: 60.9, height: 96.5, depth: 47.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81210',
+                  price: '223.00',
+                  title: 'Milos Cotton White Vanity with Oval Basin 600mm - Brushed Handles'
+              },
+              {
+                  id: 'C81211',
+                  name: 'Troy Basin',
+                  image: 'assets/productImages/furniture/C81211-1000-Cotton-White-Vanity-Basin-600mm-Brushed-Handles_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-600mm-brushed-handles-c81211',
+                  path: '../../models/furniture/basin/C81211.glb',
+                  dimensions: { width: 60.9, height: 95.1, depth: 47.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C81211',
+                  price: '279.99',
+                  title: 'Milos Cotton White Vanity with Troy Basin 600mm - Brushed Handles'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_32',
+          link: 'https://www.bathroommountain.co.uk/harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm',
+          name: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm',
+          price: '179.00',
+          image: 'assets/productImages/furniture/c77479-1000-harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm.webp',
+          variants: [
+              {
+                  id: 'C77479',
+                  name: 'Charcoal Elm',
+                  image: 'assets/productImages/furniture/c77479-1000-harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm',
+                  path: '../../models/furniture/basin/C77479.glb',
+                  dimensions: { width: 50.1, height: 83.6, depth: 30 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77479',
+                  price: '179.00',
+                  title: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm'
+              },
+              {
+                  id: 'C79614',
+                  name: 'Navy Blue',
+                  image: 'assets/productImages/furniture/C79614-1000-Navy-Blue-Vanity-Semi-Recessed-Basin-500mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/harper-navy-blue-vanity-with-semi-recessed-basin-500mm-c79614',
+                  path: '../../models/furniture/basin/C79614.glb',
+                  dimensions: { width: 50.1, height: 83.6, depth: 30 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C79614',
+                  price: '239.99',
+                  title: 'Harper Navy Blue Vanity with Semi Recessed Basin 500mm'
+              },
+              {
+                  id: 'C77016',
+                  name: 'Stone Grey',
+                  image: 'assets/productImages/furniture/C77016-1000-Pebble-Grey-Vanity-with-Semi-Recessed-Basin-500mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/harper-pebble-grey-vanity-with-semi-recessed-basin-marble-top-500mm-c77016',
+                  path: '../../models/furniture/basin/C77016.glb',
+                  dimensions: { width: 50, height: 83.6, depth: 30 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77016',
+                  price: '239.99',
+                  title: 'Harper Stone Grey Vanity with Semi Recessed Basin 500mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_33',
+          link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-denver-toilet-500mm-c78423',
+          name: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Denver Toilet 500mm',
+          price: '271.99',
+          image: 'assets/productImages/furniture/C78423-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+          variants: [
+              {
+                  id: 'C78423',
+                  name: 'Denver Toilet',
+                  image: 'assets/productImages/furniture/C78423-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-denver-toilet-500mm-c78423',
+                  path: '../../models/furniture/basin/C78423.glb',
+                  dimensions: { width: 50.6, height: 89, depth: 85.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78423',
+                  price: '271.99',
+                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Denver Toilet 500mm'
+              },
+              {
+                  id: 'C78424',
+                  name: 'Atlanta Toilet',
+                  image: 'assets/productImages/furniture/C78424-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-atlanta-toilet-500mm-c78424',
+                  path: '../../models/furniture/basin/C78424.glb',
+                  dimensions: { width: 50.6, height: 89, depth: 85.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78424',
+                  price: '287.00',
+                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Atlanta Toilet 500mm'
+              },
+              {
+                  id: 'C78421',
+                  name: 'Austin Toilet',
+                  image: 'assets/productImages/furniture/C78421-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-austin-toilet-500mm-c78421',
+                  path: '../../models/furniture/basin/C78421.glb',
+                  dimensions: { width: 50.6, height: 89, depth: 87 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78421',
+                  price: '239.99',
+                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Austin Toilet 500mm'
+              },
+              {
+                  id: 'C78420',
+                  name: 'No Toilet',
+                  image: 'assets/productImages/furniture/C78420-1000-White-2-In-1-Combined-Wash-Basin-Back-To-Wall-Unit_3.webp',
+                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-back-to-wall-unit-500mm-c78420',
+                  path: '../../models/furniture/basin/C78420.glb',
+                  dimensions: { width: 50.6, height: 89, depth: 36 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78420',
+                  price: '151.99',
+                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Back To Wall Unit 500mm'
+              },
+              {
+                  id: 'C78422',
+                  name: 'Seattle Toilet',
+                  image: 'assets/productImages/furniture/C78422-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-seattle-toilet-500mm-c78422',
+                  path: '../../models/furniture/basin/C78422.glb',
+                  dimensions: { width: 50.6, height: 89, depth: 86.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78422',
+                  price: '319.99',
+                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Seattle Toilet 500mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_34',
+          link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-boston-v2-toilet-1500mm-c78397',
+          name: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Boston Toilet 1500mm',
+          price: '999.99',
+          image: 'assets/productImages/furniture/C78397-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
+          variants: [
+              {
+                  id: 'C78397',
+                  name: 'Boston Toilet',
+                  image: 'assets/productImages/furniture/C78397-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-boston-v2-toilet-1500mm-c78397',
+                  path: '../../models/furniture/basin/C78397.glb',
+                  dimensions: { width: 150.2, height: 95.5, depth: 85.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78397',
+                  price: '999.99',
+                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Boston Toilet 1500mm'
+              },
+              {
+                  id: 'C78396',
+                  name: 'Hudson Toilet With Wooden Seat',
+                  image: 'assets/productImages/furniture/c78396-1000-inky-blue-vanity-basin-top-toilet-wooden-1500mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-hudson-toilet-with-wooden-seat-1500mm-c78396',
+                  path: '../../models/furniture/basin/C78396.glb',
+                  dimensions: { width: 150.1, height: 95.1, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78396',
+                  price: '799.00',
+                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Hudson Toilet with Wooden Seat 1500mm'
+              },
+              {
+                  id: 'C78393',
+                  name: 'No Toilet',
+                  image: 'assets/productImages/furniture/c78393-1000-inky-blue-vanity-basin-marble-top-1500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-1500mm-excludes-pan-cistern-c78393',
+                  path: '../../models/furniture/basin/C78393.glb',
+                  dimensions: { width: 150.2, height: 95.5, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78393',
+                  price: '695.99',
+                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top 1500mm (Excludes Pan & Cistern)'
+              },
+              {
+                  id: 'C78394',
+                  name: 'Seattle Toilet',
+                  image: 'assets/productImages/furniture/C78394-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-seattle-toilet-1500mm-c78394',
+                  path: '../../models/furniture/basin/C78394.glb',
+                  dimensions: { width: 150.2, height: 95.5, depth: 82.6 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C78394',
+                  price: '949.99',
+                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Seattle Toilet 1500mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
+      {
+          id: 'furniture_variant_35',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-800mm-c77098',
+          name: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm',
+          price: '367.00',
+          image: 'assets/productImages/furniture/C77098-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
+          variants: [
+              {
+                  id: 'C77098',
+                  name: 'Boston Toilet',
+                  image: 'assets/productImages/furniture/C77098-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-800mm-c77098',
+                  path: '../../models/furniture/basin/C77098.glb',
+                  dimensions: { width: 81, height: 113.1, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77098',
+                  price: '367.00',
+                  title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm'
+              },
+              {
+                  id: 'C77635',
+                  name: 'No Basin',
+                  image: 'assets/productImages/furniture/c77635-1000-chalk-white-cabinet-with-marble-top-exclude-counter-top-basin.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cabinet-with-marble-top-800mm-exclude-counter-top-basin-c77635',
+                  path: '../../models/furniture/basin/C77635.glb',
+                  dimensions: { width: 81.1, height: 81.8, depth: 41.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77635',
+                  price: '335.99',
+                  title: 'Bermuda Chalk White Cabinet with Marble Top 800mm - Excludes Counter Top Basin'
+              },
+              {
+                  id: 'C77097',
+                  name: 'Oval Basin',
+                  image: 'assets/productImages/furniture/C77097-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-oval-counter-top-basin-800mm-c77097',
+                  path: '../../models/furniture/basin/C77097.glb',
+                  dimensions: { width: 81, height: 113.1, depth: 43 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77097',
+                  price: '449.99',
+                  title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 800mm'
               },
           ],
           variantType: 'Width Options',
