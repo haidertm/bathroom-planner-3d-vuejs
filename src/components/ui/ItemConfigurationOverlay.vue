@@ -1,11 +1,10 @@
 <template>
-  <div v-if="selectedItem" :style="overlayStyle">
+  <div v-if="selectedItem && screenPosition" :style="overlayStyle">
     <div :style="controlsContainerStyle">
       <div :style="buttonsContainerStyle">
-        <!-- Rotation Toggle Button -->
         <button
-            type="button"
             v-if="showRotationToggle"
+            type="button"
             @click="toggleRotation"
             :style="rotationButtonStyle"
             :title="rotationLocal ? 'Disable rotation arrows' : 'Enable rotation arrows'"
@@ -35,8 +34,9 @@
 </template>
 
 <script setup>
-import {computed, ref, watch} from 'vue'
+import {computed, ref, watch, onMounted, onBeforeUnmount} from 'vue'
 import productData from '../../mocks/productData'
+import * as THREE from 'three'
 
 const props = defineProps({
   selectedItem: {
@@ -50,6 +50,18 @@ const props = defineProps({
   showRotationToggle: {
     type: Boolean,
     default: false
+  },
+  scene: {
+    type: Object, // THREE.Scene
+    default: null
+  },
+  camera: {
+    type: Object, // THREE.Camera
+    default: null
+  },
+  renderer: {
+    type: Object, // THREE.WebGLRenderer
+    default: null
   }
 })
 
@@ -57,11 +69,80 @@ const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'
 
 // Local state for rotation toggle
 const rotationLocal = ref(props.rotationEnabled)
-    // Keep local state in sync with parent prop
+const screenPosition = ref(null)
+
+// Keep local state in sync with parent prop
 watch(() => props.rotationEnabled, (v) => {
   rotationLocal.value = v
 })
 
+// Calculate screen position of the selected 3D object
+const calculateScreenPosition = () => {
+  if (!props.selectedItem || !props.scene || !props.camera || !props.renderer) {
+    screenPosition.value = null
+    return
+  }
+
+  try {
+    // Find the 3D object in the scene
+    let selectedObject = null
+    props.scene.traverse((child) => {
+      if (child.userData && child.userData.itemId === props.selectedItem.id) {
+        selectedObject = child
+      }
+    })
+
+    if (!selectedObject) {
+      screenPosition.value = null
+      return
+    }
+
+    // Calculate the bounding box to get the visual center
+    const boundingBox = new THREE.Box3().setFromObject(selectedObject)
+    const center = new THREE.Vector3()
+    boundingBox.getCenter(center)
+
+    // Project center to screen coordinates
+    const projected = center.clone().project(props.camera)
+
+    // Convert from NDC (-1 to +1) to screen pixels
+    const rect = props.renderer.domElement.getBoundingClientRect()
+    const x = rect.left + ((projected.x + 1) / 2) * rect.width
+    const y = rect.top + ((-projected.y + 1) / 2) * rect.height
+
+    screenPosition.value = { x, y }
+  } catch (error) {
+    console.error('Error calculating screen position:', error)
+    screenPosition.value = null
+  }
+}
+
+// Update position whenever relevant props change
+watch([
+  () => props.selectedItem,
+  () => props.scene,
+  () => props.camera,
+  () => props.renderer
+], () => {
+  calculateScreenPosition()
+}, { immediate: true })
+
+// Update position on animation frame for smooth tracking
+let animationFrameId = null
+const updateLoop = () => {
+  calculateScreenPosition()
+  animationFrameId = requestAnimationFrame(updateLoop)
+}
+
+onMounted(() => {
+  updateLoop()
+})
+
+onBeforeUnmount(() => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+})
 
 // Check if the selected item has multiple variants available
 const hasMultipleVariants = computed(() => {
@@ -123,14 +204,21 @@ const deleteItem = () => {
   window.dispatchEvent(new CustomEvent('object-selected', { detail: { itemId: null } }))
 }
 
-// Styles
-const overlayStyle = computed(() => ({
-  position: 'fixed',
-  top: '130px',
-  right: '16px',
-  zIndex: '1000',
-  pointerEvents: 'all'
-}))
+// Styles - updated to use calculated screen position
+const overlayStyle = computed(() => {
+  if (!screenPosition.value) {
+    return { display: 'none' }
+  }
+
+  return {
+    position: 'fixed',
+    left: `${screenPosition.value.x}px`, // Center horizontally on object
+    top: `${screenPosition.value.y + 100}px`, // Position below object with more spacing
+    zIndex: '1000',
+    pointerEvents: 'all',
+    transform: 'translateX(-50%)' // Center the buttons horizontally
+  }
+})
 
 const controlsContainerStyle = computed(() => ({
   backgroundColor: 'white',

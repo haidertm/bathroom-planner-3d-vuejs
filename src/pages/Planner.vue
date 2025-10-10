@@ -26,6 +26,9 @@
     />
     <ItemConfigurationOverlay
         :selected-item="selectedBathroomItem"
+        :scene="sceneManagerRef?.scene || null"
+        :camera="sceneManagerRef?.camera || null"
+        :renderer="sceneManagerRef?.renderer || null"
         :rotation-enabled="rotationArrowsEnabled"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
