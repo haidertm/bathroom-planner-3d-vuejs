@@ -2791,7 +2791,7 @@ const productData: ProductData = {
         }
       ],
       variantType: 'Size Options',
-      features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
+      features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
     },
     {
       id: 'shower_variant_2',
@@ -2826,7 +2826,7 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Size Options',
-      features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
+      features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
     },
     {
       id: 'shower_variant_2',
@@ -2850,9 +2850,6 @@ const productData: ProductData = {
           },
           movement: { // NEW: Sink movement configuration
             snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
             allowVerticalMovement: false,
             allowFreeRotation: false
           },
@@ -2875,9 +2872,6 @@ const productData: ProductData = {
           },
           movement: { // NEW: Sink movement configuration
             snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
             allowVerticalMovement: false,
             allowFreeRotation: false
           },
@@ -2900,9 +2894,6 @@ const productData: ProductData = {
           },
           movement: { // NEW: Sink movement configuration
             snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
             allowVerticalMovement: false,
             allowFreeRotation: false
           },
@@ -2925,9 +2916,6 @@ const productData: ProductData = {
           },
           movement: { // NEW: Sink movement configuration
             snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
             allowVerticalMovement: false,
             allowFreeRotation: false
           },
@@ -2937,7 +2925,7 @@ const productData: ProductData = {
         },
       ],
       variantType: 'Size Options',
-      features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
+      features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
     },
   ],
 
