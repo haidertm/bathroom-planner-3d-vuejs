@@ -97,13 +97,16 @@ const calculateScreenPosition = () => {
       return
     }
 
-    // Calculate the bounding box to get the visual center
+    // Calculate the bounding box to get the visual center and size
     const boundingBox = new THREE.Box3().setFromObject(selectedObject)
     const center = new THREE.Vector3()
     boundingBox.getCenter(center)
 
-    // Project center to screen coordinates
-    const projected = center.clone().project(props.camera)
+    // Get the right edge of the bounding box
+    const rightEdge = new THREE.Vector3(boundingBox.max.x, center.y, center.z)
+
+    // Project right edge to screen coordinates
+    const projected = rightEdge.clone().project(props.camera)
 
     // Convert from NDC (-1 to +1) to screen pixels
     const rect = props.renderer.domElement.getBoundingClientRect()
@@ -212,11 +215,11 @@ const overlayStyle = computed(() => {
 
   return {
     position: 'fixed',
-    left: `${screenPosition.value.x}px`, // Center horizontally on object
-    top: `${screenPosition.value.y + 100}px`, // Position below object with more spacing
+    left: `${screenPosition.value.x + 20}px`, // Position to the right with 20px gap
+    top: `${screenPosition.value.y}px`, // Vertically centered with object
     zIndex: '1000',
     pointerEvents: 'all',
-    transform: 'translateX(-50%)' // Center the buttons horizontally
+    transform: 'translateY(-50%)' // Center vertically
   }
 })
 
