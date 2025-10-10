@@ -97,21 +97,42 @@ const calculateScreenPosition = () => {
       return
     }
 
-    // Calculate the bounding box to get the visual center and size
+    // Calculate the bounding box in world space
     const boundingBox = new THREE.Box3().setFromObject(selectedObject)
-    const center = new THREE.Vector3()
-    boundingBox.getCenter(center)
 
-    // Get the right edge of the bounding box
-    const rightEdge = new THREE.Vector3(boundingBox.max.x, center.y, center.z)
+    // Get all 8 corners of the bounding box
+    const corners = [
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z)
+    ]
 
-    // Project right edge to screen coordinates
-    const projected = rightEdge.clone().project(props.camera)
-
-    // Convert from NDC (-1 to +1) to screen pixels
+    // Project all corners to screen space
     const rect = props.renderer.domElement.getBoundingClientRect()
-    const x = rect.left + ((projected.x + 1) / 2) * rect.width
-    const y = rect.top + ((-projected.y + 1) / 2) * rect.height
+    let minScreenX = Infinity
+    let maxScreenX = -Infinity
+    let minScreenY = Infinity
+    let maxScreenY = -Infinity
+
+    corners.forEach(corner => {
+      const projected = corner.clone().project(props.camera)
+      const screenX = rect.left + ((projected.x + 1) / 2) * rect.width
+      const screenY = rect.top + ((-projected.y + 1) / 2) * rect.height
+
+      minScreenX = Math.min(minScreenX, screenX)
+      maxScreenX = Math.max(maxScreenX, screenX)
+      minScreenY = Math.min(minScreenY, screenY)
+      maxScreenY = Math.max(maxScreenY, screenY)
+    })
+
+    // Position at the right edge of the screen-space bounding box, vertically centered
+    const x = maxScreenX
+    const y = (minScreenY + maxScreenY) / 2
 
     screenPosition.value = { x, y }
   } catch (error) {
