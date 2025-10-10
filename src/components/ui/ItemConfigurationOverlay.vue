@@ -82,16 +82,16 @@ watch(() => props.rotationEnabled, (v) => {
   rotationLocal.value = v
 })
 
-// Cache the selected object when selection changes
-watch(() => props.selectedItem?.id, (newId) => {
+// Cache the selected object when selection changes or scene becomes available
+watch([() => props.selectedItem?.id, () => props.scene], ([newId, scene]) => {
   cachedSelectedObject.value = null
 
-  if (!newId || !props.scene) {
+  if (!newId || !scene) {
     return
   }
 
   // Traverse scene to find and cache the selected object
-  props.scene.traverse((child) => {
+  scene.traverse((child) => {
     if (child.userData && child.userData.itemId === newId) {
       cachedSelectedObject.value = child
     }
@@ -246,10 +246,6 @@ watch(overlayRef, (newRef) => {
   if (newRef) {
     calculateScreenPosition()
   }
-})
-
-onMounted(() => {
-  // Animation loop is now controlled by the watcher
 })
 
 onBeforeUnmount(() => {
