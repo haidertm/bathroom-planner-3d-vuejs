@@ -649,6 +649,70 @@ const productData: ProductData = {
           price: '431.99',
           title: 'Lucia Chalk White Basin Vanity 830mm'
         },
+        {
+          id: 'C76358',
+          name: 'Curved Basin',
+          image: 'assets/productImages/furniture/c76358-1000-lucia-chalk-white-vanity-with-oak-top-_-curved-counter-t.webp',
+          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-curved-counter-top-basin-840mm',
+          path: '../../models/furniture/basin/C76358.glb',
+          dimensions: { width: 84, height: 95.6, depth: 47.1 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76358',
+          price: '479.00',
+          title: 'Lucia Chalk White Vanity With Oak Effect Top & Curved Counter Top Basin 840mm'
+        },
+        {
+          id: 'C76449',
+          name: 'No Basin',
+          image: 'assets/productImages/furniture/c76449-1000-lucia-chalk-white-vanity-with-oak-top-840mm.webp',
+          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-cabinet-with-oak-top-840mm-excludes-counter-top-basin',
+          path: '../../models/furniture/basin/C76449.glb',
+          dimensions: { width: 84, height: 82, depth: 47.1 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76449',
+          price: '569.99',
+          title: 'Lucia Chalk White Cabinet with Oak Effect Top 840mm - Excludes Counter Top Basin'
+        },
+        {
+          id: 'C76357',
+          name: 'Oval Basin',
+          image: 'assets/productImages/furniture/c76357-1000-lucia-chalk-white-vanity-with-oak-top-_-oval-counter-top.webp',
+          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-oval-counter-top-basin-840mm',
+          path: '../../models/furniture/basin/C76357.glb',
+          dimensions: { width: 84, height: 99, depth: 47.1 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76357',
+          price: '471.99',
+          title: 'Lucia Chalk White Vanity With Oak Effect Top & Oval Counter Top Basin 840mm'
+        },
+        {
+          id: 'C76356',
+          name: 'Traditional Basin',
+          image: 'assets/productImages/furniture/c76356-1000-lucia-chalk-white-vanity-with-oak-top-_-round-counter-to.webp',
+          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-round-counter-top-basin-840mm-c76356',
+          path: '../../models/furniture/basin/C76356.glb',
+          dimensions: { width: 84, height: 97.6, depth: 47.1 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76356',
+          price: '589.99',
+          title: 'Lucia Chalk White Vanity With Oak Top & Round Counter Top Basin 840mm'
+        },
       ],
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
@@ -893,6 +957,27 @@ const productData: ProductData = {
                   sku: 'C78439',
                   price: '225',
                   title: 'Bermuda Inky Blue Basin Vanity 600mm'
+              },
+              {
+                  id: 'C79848',
+                  name: '400mm',
+                  image: 'assets/productImages/furniture/c79848-1000-bermuda-inky-blue-cloakroom-basin-vanity-400mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-cloakroom-basin-vanity-400mm-c79848',
+                  path: '../../models/furniture/basin/C79848.glb',
+                  dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C79848',
+                  price: '189.99',
+                  title: 'Bermuda Inky Blue Cloakroom Basin Vanity 400mm'
               },
               {
                   id: 'C79848',
@@ -2275,6 +2360,49 @@ const productData: ProductData = {
           variantType: 'Width Options',
           features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
       },
+      {
+          id: 'furniture_variant_36',
+          link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm-c76244',
+          name: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm',
+          price: '229.99',
+          image: 'assets/productImages/furniture/c76244-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm.webp',
+          variants: [
+              {
+                  id: 'C76244',
+                  name: '500mm Wall Hung',
+                  image: 'assets/productImages/furniture/c76244-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm-c76244',
+                  path: '../../models/furniture/basin/C76244.glb',
+                  dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77098',
+                  price: '229.99',
+                  title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm'
+              },
+              {
+                  id: 'C76245',
+                  name: '500mm Floorstanding',
+                  image: 'assets/productImages/furniture/c76245-1000-corsica-storm-grey-basin-drawer-vanity-500mm.webp',
+                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-short-projection-basin-drawer-vanity-500mm',
+                  path: '../../models/furniture/basin/C76245.glb',
+                  dimensions: { width: 50.4, height: 85, depth: 34.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C76245',
+                  price: '199.00',
+                  title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 500mm'
+              },
+          ],
+          variantType: 'Width Options',
+          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+      },
   ],
 
   Mirror: [
@@ -2700,6 +2828,117 @@ const productData: ProductData = {
       variantType: 'Size Options',
       features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
     },
+    {
+      id: 'shower_variant_2',
+      link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
+      name: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower',
+      price: '259.00',
+      image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+      variants: [
+        {
+          id: 'C27059',
+          name: '300mm + Hand Shower',
+          image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
+          path: '../../models/shower/C27059.glb',
+          dimensions: { width: 45.6, height: 162.8, depth: 52.2 },
+          floorOffset: 21.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C27059',
+          price: '259.00',
+          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower'
+        },
+        {
+          id: 'C27054',
+          name: '200mm',
+          image: 'assets/productImages/shower/C27054-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
+          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-c27054',
+          path: '../../models/shower/C27054.glb',
+          dimensions: { width: 20, height: 85.7, depth: 48.1 },
+          floorOffset: 98.6,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C27054',
+          price: '199.99',
+          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head'
+        },
+        {
+          id: 'C27058',
+          name: '200mm + Hand Shower',
+          image: 'assets/productImages/shower/C27058-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
+          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-hand-shower-c27058',
+          path: '../../models/shower/C27058.glb',
+          dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+          floorOffset: 40.5,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C27058',
+          price: '179.00',
+          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head & Hand Shower'
+        },
+        {
+          id: 'C27055',
+          name: '300mm + Hand Shower',
+          image: 'assets/productImages/shower/C27055-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-c27055',
+          path: '../../models/shower/C27055.glb',
+          dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+          floorOffset: 98.6,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C27055',
+          price: '219.99',
+          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head'
+        },
+      ],
+      variantType: 'Size Options',
+      features: ['6mm Tempered Glass', 'Sliding Door', 'Easy Clean Glass']
+    },
   ],
 
   Bath: [
@@ -2834,7 +3073,49 @@ const productData: ProductData = {
           sku: 'C51089',
           price: '599.99',
           title: 'Kensington 1700mm Freestanding Slipper Bath'
-        }
+        },
+        {
+          id: 'C51098',
+          name: '1370mm',
+          image: 'assets/productImages/bath/C51098-1000-Kensington-1370mm-Freestanding-Slipper-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/kensington-1370mm-freestanding-slipper-bath-c51098',
+          path: '../../models/bath/C51098.glb',
+          dimensions: { width: 137.2, height: 67, depth: 71.7 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+                snapToWall: false,
+                allowVerticalMovement: false,
+                allowFreeRotation: true
+            },
+          sku: 'C51098',
+          price: '579.99',
+          title: 'Kensington 1370mm Freestanding Slipper Bath'
+        },
+        {
+          id: 'C51088',
+          name: '1500mm',
+          image: 'assets/productImages/bath/C51088-1000-Kensington-V2-1500mm-Freestanding-Slipper-Bath_13.webp',
+          link: 'https://www.bathroommountain.co.uk/kensington-v2-1500mm-freestanding-slipper-bath-c51088',
+          path: '../../models/bath/C51088.glb',
+          dimensions: { width: 152.2, height: 67, depth: 73.1 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+                snapToWall: false,
+                allowVerticalMovement: false,
+                allowFreeRotation: true
+            },
+          sku: 'C51088',
+          price: '589.99',
+          title: 'Kensington 1500mm Freestanding Slipper Bath'
+        },
       ],
       variantType: 'Orientation',
       features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
@@ -4144,6 +4425,59 @@ const productData: ProductData = {
                   sku: 'C66029',
                   price: '124.99',
                   title: 'Seattle Rimless Close Coupled Toilet With Soft Close Seat'
+              },
+          ],
+          variantType: 'Style Options',
+          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+      },
+    {
+          id: 'toilet_variant_21',
+          link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66271',
+          name: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Seat',
+          price: '175.00',
+          image: 'assets/productImages/toilet/c66271-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+          variants: [
+              {
+                  id: 'C66271',
+                  name: 'Soft Close Seat',
+                  image: 'assets/productImages/toilet/c66271-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66271',
+                  path: '../../models/toilet/C66271.glb',
+                  dimensions: { width: 86.8, height: 82.8, depth: 87.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66271',
+                  price: '175.00',
+                  title: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
+              },
+              {
+                  id: 'C66272',
+                  name: 'Soft Close Slim Seat',
+                  image: 'assets/productImages/toilet/c66272-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66272',
+                  path: '../../models/toilet/C66272.glb',
+                  dimensions: { width: 86.7, height: 82.8, depth: 87.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66272',
+                  price: '219.99',
+                  title: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
               },
           ],
           variantType: 'Style Options',
