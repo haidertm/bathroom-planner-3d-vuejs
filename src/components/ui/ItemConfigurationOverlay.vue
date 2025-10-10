@@ -103,7 +103,23 @@ watch([() => props.selectedItem?.id, () => props.scene], ([newId, scene]) => {
 
 // Calculate screen position of the selected 3D object
 const calculateScreenPosition = () => {
-  if (!cachedSelectedObject.value || !props.camera || !props.renderer) {
+  if (!props.camera || !props.renderer) {
+    screenPosition.value = null
+    return
+  }
+
+  // Fallback: if object not cached yet, attempt one-time resolve
+  if (!cachedSelectedObject.value && props.selectedItem?.id && props.scene) {
+    props.scene.traverseVisible((child) => {
+      if (cachedSelectedObject.value) return // Early exit once found
+      if (child.userData?.itemId === props.selectedItem.id) {
+        cachedSelectedObject.value = child
+      }
+    })
+  }
+
+  // Bail out if still no cached object after resolve attempt
+  if (!cachedSelectedObject.value) {
     screenPosition.value = null
     return
   }
@@ -199,8 +215,10 @@ watch([
 
 // Computed to determine if animation loop should run
 const shouldRunAnimationLoop = computed(() => {
+  // Run loop when there's a selection and 3D context is ready
+  // (even if cachedSelectedObject isn't resolved yet)
   return !!(
-      cachedSelectedObject.value &&
+      props.selectedItem?.id &&
       props.scene &&
       props.camera &&
       props.renderer
