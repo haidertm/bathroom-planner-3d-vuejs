@@ -70,32 +70,38 @@ const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'
 // Local state for rotation toggle
 const rotationLocal = ref(props.rotationEnabled)
 const screenPosition = ref(null)
+const cachedSelectedObject = ref(null)
 
 // Keep local state in sync with parent prop
 watch(() => props.rotationEnabled, (v) => {
   rotationLocal.value = v
 })
 
+// Cache the selected object when selection changes
+watch(() => props.selectedItem?.id, (newId) => {
+  cachedSelectedObject.value = null
+
+  if (!newId || !props.scene) {
+    return
+  }
+
+  // Traverse scene to find and cache the selected object
+  props.scene.traverse((child) => {
+    if (child.userData && child.userData.itemId === newId) {
+      cachedSelectedObject.value = child
+    }
+  })
+}, { immediate: true })
+
 // Calculate screen position of the selected 3D object
 const calculateScreenPosition = () => {
-  if (!props.selectedItem || !props.scene || !props.camera || !props.renderer) {
+  if (!cachedSelectedObject.value || !props.camera || !props.renderer) {
     screenPosition.value = null
     return
   }
 
   try {
-    // Find the 3D object in the scene
-    let selectedObject = null
-    props.scene.traverse((child) => {
-      if (child.userData && child.userData.itemId === props.selectedItem.id) {
-        selectedObject = child
-      }
-    })
-
-    if (!selectedObject) {
-      screenPosition.value = null
-      return
-    }
+    const selectedObject = cachedSelectedObject.value
 
     // Calculate the bounding box in world space
     const boundingBox = new THREE.Box3().setFromObject(selectedObject)
@@ -111,6 +117,21 @@ const calculateScreenPosition = () => {
       new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
       new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z)
     ]
+
+    // Get the center for visibility check
+    const center = new THREE.Vector3()
+    boundingBox.getCenter(center)
+    const projectedCenter = center.clone().project(props.camera)
+
+    // Check if object is behind camera or off-screen
+    // z < -1 means behind camera, z > 1 means beyond far plane
+    // x/y outside [-1, 1] means off-screen
+    if (projectedCenter.z < -1 || projectedCenter.z > 1 ||
+        projectedCenter.x < -1 || projectedCenter.x > 1 ||
+        projectedCenter.y < -1 || projectedCenter.y > 1) {
+      screenPosition.value = null
+      return
+    }
 
     // Project all corners to screen space
     const rect = props.renderer.domElement.getBoundingClientRect()
@@ -143,29 +164,65 @@ const calculateScreenPosition = () => {
 
 // Update position whenever relevant props change
 watch([
-  () => props.selectedItem,
-  () => props.scene,
+  () => cachedSelectedObject.value,
   () => props.camera,
   () => props.renderer
 ], () => {
   calculateScreenPosition()
 }, { immediate: true })
 
+// Computed to determine if animation loop should run
+const shouldRunAnimationLoop = computed(() => {
+  return !!(
+      cachedSelectedObject.value &&
+      props.scene &&
+      props.camera &&
+      props.renderer
+  )
+})
+
 // Update position on animation frame for smooth tracking
 let animationFrameId = null
+
 const updateLoop = () => {
   calculateScreenPosition()
-  animationFrameId = requestAnimationFrame(updateLoop)
+
+  // Only schedule next frame if conditions are still met
+  if (shouldRunAnimationLoop.value) {
+    animationFrameId = requestAnimationFrame(updateLoop)
+  } else {
+    animationFrameId = null
+  }
 }
 
+const startAnimationLoop = () => {
+  if (!animationFrameId && shouldRunAnimationLoop.value) {
+    animationFrameId = requestAnimationFrame(updateLoop)
+  }
+}
+
+const stopAnimationLoop = () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+}
+
+// Watch for condition changes to start/stop loop
+watch(shouldRunAnimationLoop, (shouldRun) => {
+  if (shouldRun) {
+    startAnimationLoop()
+  } else {
+    stopAnimationLoop()
+  }
+}, { immediate: true })
+
 onMounted(() => {
-  updateLoop()
+  // Animation loop is now controlled by the watcher
 })
 
 onBeforeUnmount(() => {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId)
-  }
+  stopAnimationLoop()
 })
 
 // Check if the selected item has multiple variants available
@@ -238,7 +295,7 @@ const overlayStyle = computed(() => {
     position: 'fixed',
     left: `${screenPosition.value.x + 20}px`, // Position to the right with 20px gap
     top: `${screenPosition.value.y}px`, // Vertically centered with object
-    zIndex: '1000',
+    zIndex: '1100',
     pointerEvents: 'all',
     transform: 'translateY(-50%)' // Center vertically
   }
