@@ -144,9 +144,10 @@ const calculateScreenPosition = () => {
     let maxScreenY = -Infinity
 
     corners.forEach(corner => {
-      const projected = corner.clone().project(props.camera)
-      const screenX = rect.left + ((projected.x + 1) / 2) * rect.width
-      const screenY = rect.top + ((-projected.y + 1) / 2) * rect.height
+      // Project corner in place (safe because corners are reset each frame)
+      corner.project(props.camera)
+      const screenX = rect.left + ((corner.x + 1) / 2) * rect.width
+      const screenY = rect.top + ((-corner.y + 1) / 2) * rect.height
 
       minScreenX = Math.min(minScreenX, screenX)
       maxScreenX = Math.max(maxScreenX, screenX)
