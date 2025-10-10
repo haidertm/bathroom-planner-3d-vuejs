@@ -92,9 +92,10 @@ watch([() => props.selectedItem?.id, () => props.scene], ([newId, scene]) => {
     return
   }
 
-  // Traverse scene to find and cache the selected object
-  scene.traverse((child) => {
-    if (child.userData && child.userData.itemId === newId) {
+  // Traverse visible objects and stop once target is found
+  scene.traverseVisible((child) => {
+    if (cachedSelectedObject.value) return // Early exit once found
+    if (child.userData?.itemId === newId) {
       cachedSelectedObject.value = child
     }
   })
