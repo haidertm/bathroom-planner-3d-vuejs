@@ -70,6 +70,8 @@ const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'
 // Reusable objects to avoid allocations every frame
 const boundingBox = new THREE.Box3()
 const corners = Array.from({ length: 8 }, () => new THREE.Vector3())
+const center = new THREE.Vector3()
+const projectedCenter = new THREE.Vector3()
 
 // Local state for rotation toggle
 const rotationLocal = ref(props.rotationEnabled)
@@ -121,10 +123,9 @@ const calculateScreenPosition = () => {
     corners[6].set(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z)
     corners[7].set(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z)
 
-    // Get the center for visibility check
-    const center = new THREE.Vector3()
+    // Get the center for visibility check (reuse module-level Vector3s)
     boundingBox.getCenter(center)
-    const projectedCenter = center.clone().project(props.camera)
+    projectedCenter.copy(center).project(props.camera)
 
     // Check if object is behind camera or off-screen
     // z < -1 means behind camera, z > 1 means beyond far plane
