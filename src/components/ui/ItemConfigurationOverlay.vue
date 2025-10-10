@@ -1,5 +1,5 @@
 <template>
-  <div v-if="selectedItem && screenPosition" :style="overlayStyle">
+  <div v-if="selectedItem && screenPosition" ref="overlayRef" :style="overlayStyle">
     <div :style="controlsContainerStyle">
       <div :style="buttonsContainerStyle">
         <button
@@ -67,10 +67,14 @@ const props = defineProps({
 
 const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'])
 
+// Reusable corner vectors to avoid allocations every frame
+const corners = Array.from({ length: 8 }, () => new THREE.Vector3())
+
 // Local state for rotation toggle
 const rotationLocal = ref(props.rotationEnabled)
 const screenPosition = ref(null)
 const cachedSelectedObject = ref(null)
+const overlayRef = ref(null)
 
 // Keep local state in sync with parent prop
 watch(() => props.rotationEnabled, (v) => {
@@ -106,17 +110,15 @@ const calculateScreenPosition = () => {
     // Calculate the bounding box in world space
     const boundingBox = new THREE.Box3().setFromObject(selectedObject)
 
-    // Get all 8 corners of the bounding box
-    const corners = [
-      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
-      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
-      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z),
-      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z),
-      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z),
-      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.max.z),
-      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
-      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z)
-    ]
+    // Update the reusable corner vectors with bounding box coordinates
+    corners[0].set(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z)
+    corners[1].set(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z)
+    corners[2].set(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z)
+    corners[3].set(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z)
+    corners[4].set(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z)
+    corners[5].set(boundingBox.max.x, boundingBox.min.y, boundingBox.max.z)
+    corners[6].set(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z)
+    corners[7].set(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z)
 
     // Get the center for visibility check
     const center = new THREE.Vector3()
@@ -152,8 +154,28 @@ const calculateScreenPosition = () => {
     })
 
     // Position at the right edge of the screen-space bounding box, vertically centered
-    const x = maxScreenX
-    const y = (minScreenY + maxScreenY) / 2
+    let x = maxScreenX
+    let y = (minScreenY + maxScreenY) / 2
+
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    // Estimate or get actual overlay dimensions
+    const overlayWidth = overlayRef.value?.offsetWidth || 250 // Fallback to estimated width
+    const overlayHeight = overlayRef.value?.offsetHeight || 60 // Fallback to estimated height
+    const xOffset = 20 // The offset we add in overlayStyle
+    const padding = 10 // Additional padding from viewport edge
+
+    // Clamp x to keep overlay within viewport (accounting for offset and width)
+    const minX = padding
+    const maxX = viewportWidth - overlayWidth - xOffset - padding
+    x = Math.max(minX, Math.min(x, maxX))
+
+    // Clamp y to keep overlay within viewport (accounting for height and vertical centering)
+    const minY = overlayHeight / 2 + padding
+    const maxY = viewportHeight - overlayHeight / 2 - padding
+    y = Math.max(minY, Math.min(y, maxY))
 
     screenPosition.value = { x, y }
   } catch (error) {
@@ -216,6 +238,13 @@ watch(shouldRunAnimationLoop, (shouldRun) => {
     stopAnimationLoop()
   }
 }, { immediate: true })
+
+// Recalculate position when overlay ref becomes available (to use actual dimensions)
+watch(overlayRef, (newRef) => {
+  if (newRef) {
+    calculateScreenPosition()
+  }
+})
 
 onMounted(() => {
   // Animation loop is now controlled by the watcher
