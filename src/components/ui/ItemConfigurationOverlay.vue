@@ -67,7 +67,8 @@ const props = defineProps({
 
 const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'])
 
-// Reusable corner vectors to avoid allocations every frame
+// Reusable objects to avoid allocations every frame
+const boundingBox = new THREE.Box3()
 const corners = Array.from({ length: 8 }, () => new THREE.Vector3())
 
 // Local state for rotation toggle
@@ -107,8 +108,8 @@ const calculateScreenPosition = () => {
   try {
     const selectedObject = cachedSelectedObject.value
 
-    // Calculate the bounding box in world space
-    const boundingBox = new THREE.Box3().setFromObject(selectedObject)
+    // Reuse the bounding box and update it with the selected object
+    boundingBox.setFromObject(selectedObject)
 
     // Update the reusable corner vectors with bounding box coordinates
     corners[0].set(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z)
