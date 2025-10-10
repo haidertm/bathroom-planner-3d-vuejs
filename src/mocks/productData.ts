@@ -424,7 +424,7 @@ const productData: ProductData = {
         {
           id: 'C76448',
           name: 'No Basin',
-          image: 'assets/productImages/furniture//home/hamza/Desktop/c76448-1000-lucia-chalk-white-vanity-with-oak-top-640mm.webp.webp',
+          image: 'assets/productImages/furniture/c76448-1000-lucia-chalk-white-vanity-with-oak-top-640mm.webp',
           link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-cabinet-with-oak-top-640mm-excludes-counter-top-basin',
           path: '../../models/furniture/basin/C76448.glb',
           dimensions: { width: 64, height: 81.7, depth: 47.4 },
