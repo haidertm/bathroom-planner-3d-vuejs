@@ -1648,7 +1648,7 @@ const productData: ProductData = {
                   name: 'Oval Basin',
                   image: 'assets/productImages/furniture/C81184-1000-Mersey-Gloss-White-Vanity-with-Oval-Basin-600mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-with-oval-basin-600mm-c81184',
-                  path: '../../models/furniture/basin/C81214.glb',
+                  path: '../../models/furniture/basin/C81184.glb',
                   dimensions: { width: 61, height: 95.1, depth: 48.3 },
                   orientation: {
                       type: 'face_into_room',
@@ -1727,7 +1727,7 @@ const productData: ProductData = {
                   },
                   sku: 'C79923',
                   price: '124.99',
-                  title: 'Capri Navy Blue Combination Vanity Basin and Denver Toilet 1050mm - Chrome Handles'
+                  title: 'Quartz Gloss White Vanity with Semi Recessed Basin 550mm'
               },
               {
                   id: 'C79922',
@@ -1822,7 +1822,7 @@ const productData: ProductData = {
               },
               {
                   id: 'C76753',
-                  name: '650mm',
+                  name: 'Seattle Toilet',
                   image: 'assets/productImages/furniture/C76753-1000-Grey-Vanity-Basin-and-Seattle-Toilet-1150mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-seattle-toilet-1150mm-c76753',
                   path: '../../models/furniture/basin/C76753.glb',
@@ -1866,7 +1866,7 @@ const productData: ProductData = {
               {
                   id: 'C81584',
                   name: 'Curved Basin',
-                  image: 'assets/productImages/furniture/C81584-1000-White-Vanity-Drawer-Marble-Top-Basin-600mm_2.webp.webp',
+                  image: 'assets/productImages/furniture/C81584-1000-White-Vanity-Drawer-Marble-Top-Basin-600mm_2.webp',
                   link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-drawer-with-marble-top-curved-counter-top-basin-600mm-c81584',
                   path: '../../models/furniture/basin/C81584.glb',
                   dimensions: { width: 60, height: 113.3, depth: 45.8 },
@@ -3213,8 +3213,8 @@ const productData: ProductData = {
                   title: 'Stafford 1600x700 Round Single Ended Bath'
               },
           ],
-          variantType: 'Orientation',
-          features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+          variantType: 'Size Options',
+          features: ['Single Ended Design', 'Acrylic Construction', 'Multiple Lengths']
       },
     {
           id: 'bath_5',
@@ -3321,7 +3321,7 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Orientation',
-          features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+        features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
       },
   ],
 
@@ -4010,7 +4010,7 @@ const productData: ProductData = {
               },
               {
                   id: 'C66150',
-                  name: 'Soft Close Seat',
+                  name: 'Soft Close Slim Seat',
                   image: 'assets/productImages/toilet/C66150-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat_1.webp',
                   link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-slim-seat-c66150',
                   path: '../../models/toilet/C66150.glb',
