@@ -85,7 +85,7 @@ watch(() => props.rotationEnabled, (v) => {
 })
 
 // Cache the selected object when selection changes or scene becomes available
-watch([() => props.selectedItem?.id, () => props.scene], ([newId, scene]) => {
+watch([() => props.selectedItem?.id, () => props.selectedItem?.sku, () => props.scene], ([newId, newSku, scene]) => {
   cachedSelectedObject.value = null
 
   if (!newId || !scene) {
