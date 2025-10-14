@@ -2408,7 +2408,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-double-vanity-with-marble-top-undermount-basins-1200mm-c76359v2',
           name: 'Lucia Chalk White Double Vanity with Marble Top & Undermount Basins 1200mm',
           price: '791.00',
-          image: 'assets/productImages/furniture/C76350V2-1000-White-Vanity-Marble-Top-Undermount-Basin-630mm_5.webp',
+          image: 'assets/productImages/furniture/C76359V2-1000-White-Vanity-Marble-Top-Undermount-Basins-1200mm.webp',
           variants: [
               {
                   id: 'C76359V2',
@@ -2623,7 +2623,7 @@ const productData: ProductData = {
           id: 'furniture_variant_40',
           link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-chrome-handles-c81236',
           name: 'Milos Cotton White Basin Vanity 800mm - Chrome Handles',
-          price: '159.99',
+          price: '239.00',
           image: 'assets/productImages/furniture/C81236-1000-Cotton-White-Basin-Vanity-800mm-Chrome-Handles_1.webp',
           variants: [
               {
@@ -5248,7 +5248,7 @@ const productData: ProductData = {
               },
           ],
           variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+          features: ['Back To Wall', 'Soft Close Seat', 'Multiple Styles']
       },
     {
           id: 'toilet_variant_23',
