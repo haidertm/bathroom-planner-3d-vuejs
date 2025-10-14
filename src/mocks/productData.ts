@@ -3390,7 +3390,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/shower/C46004-1000-London-6mm-Sliding-Shower-Enclosure-1200x800mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x800mm-c46004',
                   path: '../../models/shower/C46004.glb',
-                  dimensions: { width: 80.5, height: 185.5, depth: 119.4 },
+                  dimensions: { width: 119.4, height: 185.5, depth: 80.5 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
