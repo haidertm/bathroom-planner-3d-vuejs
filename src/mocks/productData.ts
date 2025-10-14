@@ -3414,7 +3414,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/shower/C46241-1000-London-6mm-Sliding-Shower-Enclosure-1000x700mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x700mm-c46241',
                   path: '../../models/shower/C46241.glb',
-                  dimensions: { width: 76.2, height: 185.2, depth: 100.3 },
+                  dimensions: { width: 100.3, height: 185.2, depth: 76.2 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -3487,7 +3487,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/shower/C46242-1000-London-6mm-Sliding-Shower-Enclosure-1100x700mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x700mm-c46242',
                   path: '../../models/shower/C46242.glb',
-                  dimensions: { width: 70.2, height: 185.2, depth: 110.1 },
+                  dimensions: { width: 110.1, height: 185.2, depth: 70.2 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0,
@@ -3511,7 +3511,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/shower/C46243-1000-London-6mm-Sliding-Shower-Enclosure-1100x760mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x760mm-c46243',
                   path: '../../models/shower/C46243.glb',
-                  dimensions: { width: 76.2, height: 185.2, depth: 110.1 },
+                  dimensions: { width: 110.1, height: 185.2, depth: 76.2 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0,
@@ -3559,7 +3559,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/shower/C46244-1000-London-6mm-Sliding-Shower-Enclosure-1100x900mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x900mm-c46244',
                   path: '../../models/shower/C46244.glb',
-                  dimensions: { width: 90.2, height: 185.2, depth: 110.1 },
+                  dimensions: { width: 110.1, height: 185.2, depth: 90.2 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0,
@@ -3583,7 +3583,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/shower/C46245-1000-London-6mm-Sliding-Shower-Enclosure-1200x700mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x700mm-c46245',
                   path: '../../models/shower/C46245.glb',
-                  dimensions: { width: 69.9, height: 185.5, depth: 119.4 },
+                  dimensions: { width: 119.4, height: 185.5, depth: 69.9 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0,
@@ -3607,7 +3607,7 @@ const productData: ProductData = {
                   image: 'assets/productImages/shower/C46246-1000-London-6mm-Sliding-Shower-Enclosure-1200x760mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x760mm-c46246',
                   path: '../../models/shower/C46246.glb',
-                  dimensions: { width: 76.1, height: 185.5, depth: 119.4 },
+                  dimensions: { width: 119.4, height: 185.5, depth: 76.1 },
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0,
