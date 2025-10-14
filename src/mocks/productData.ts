@@ -2527,7 +2527,7 @@ const productData: ProductData = {
           id: 'furniture_variant_39',
           link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-basin-drawer-vanity-800mm-c79823',
           name: 'Crete Fluted Linen White Wall Hung Basin Drawer Vanity 800mm',
-          price: '159.99',
+          price: '351.00',
           image: 'assets/productImages/furniture/c79823-1000-linen-white-wall-hung-basin-drawer-vanity-800mm.webp',
           variants: [
               {
@@ -2682,7 +2682,7 @@ const productData: ProductData = {
           id: 'furniture_variant_41',
           link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-600mm-c81576',
           name: 'Corsica Gloss White Wall Hung Basin Drawer Vanity 600mm',
-          price: '159.99',
+          price: '279.99',
           image: 'assets/productImages/furniture/C81576-1000-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
           variants: [
               {
@@ -3459,7 +3459,7 @@ const productData: ProductData = {
               },
               {
                   id: 'C46002',
-                  name: '1400x900mm',
+                  name: '1000x800mm',
                   image: 'assets/productImages/shower/C46002-1000-London-6mm-Sliding-Shower-Enclosure-1000x800mm_2.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x800mm-c46002',
                   path: '../../models/shower/C46002.glb',
@@ -3507,7 +3507,7 @@ const productData: ProductData = {
               },
               {
                   id: 'C46243',
-                  name: '1400x900mm',
+                  name: '1100x760mm',
                   image: 'assets/productImages/shower/C46243-1000-London-6mm-Sliding-Shower-Enclosure-1100x760mm_1.webp',
                   link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x760mm-c46243',
                   path: '../../models/shower/C46243.glb',
