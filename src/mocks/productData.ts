@@ -3238,7 +3238,224 @@ const productData: ProductData = {
           sku: 'C46175',
           price: '289.99',
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x900mm'
-        }
+        },
+          /////  new models here
+        {
+          id: 'C46007',
+          name: '1000x800mm',
+          image: 'assets/productImages/shower/c46007-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x800mm.webp',
+          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x800mm-c46007',
+          path: '../../models/shower/C46007.glb',
+          dimensions: { width: 96.3, height: 185.3, depth: 77 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0,
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C46007',
+          price: '187.00',
+          title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x800mm'
+        },
+        {
+          id: 'C46008',
+          name: '1100x800mm',
+          image: 'assets/productImages/shower/c46008-1000-london-matt-black-6mm-sliding-shower-enclosure-1100x800mm.webp',
+          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x800mm-c46008',
+          path: '../../models/shower/C46008.glb',
+          dimensions: { width: 119.4, height: 185.5, depth: 85.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0,
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C46008',
+          price: '239.99',
+          title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x800mm'
+        },
+        // {
+        //   id: 'C46010',
+        //   name: '1200x900mm',
+        //   image: 'assets/productImages/shower/C46010-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x900mm_2.webp',
+        //   link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x900mm-c46010',
+        //   path: '../../models/shower/C46010.glb',
+        //   dimensions: { width: 139.4, height: 185.5, depth: 90 },
+        //   orientation: {
+        //     type: 'face_into_room',
+        //     wallBuffer: 0,
+        //     description: 'Corner shower installation'
+        //   },
+        //   movement: { // NEW: Sink movement configuration
+        //     snapToWall: true,
+        //     cornerInstallOnly: {
+        //       enabled: true
+        //     },
+        //     allowVerticalMovement: false,
+        //     allowFreeRotation: false
+        //   },
+        //   sku: 'C46010',
+        //   price: '207.00',
+        //   title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x900mm'
+        // },
+        {
+          id: 'C46174',
+          name: '1400x800mm',
+          image: 'assets/productImages/shower/C46174-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1400x800mm_1_1.webp',
+          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1400x800mm-c46174',
+          path: '../../models/shower/C46174.glb',
+          dimensions: { width: 139.4, height: 185.5, depth: 88.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0,
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C46174',
+          price: '223.00',
+          title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x800mm'
+        },
+        {
+          id: 'C46247',
+          name: '1000x700mm',
+          image: 'assets/productImages/shower/C46247-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1000x700mm_3.webp',
+          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x700mm-c46247',
+          path: '../../models/shower/C46247.glb',
+          dimensions: { width: 100.4, height: 185.5, depth: 70 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0,
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C46247',
+          price: '219.99',
+          title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x700mm'
+        },
+        {
+          id: 'C46248',
+          name: '1100x700mm',
+          image: 'assets/productImages/shower/C46248-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1100x700mm_3.webp',
+          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x700mm-c46248',
+          path: '../../models/shower/C46248.glb',
+          dimensions: { width: 106.3, height: 185.3, depth: 67 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0,
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C46248',
+          price: '234.99',
+          title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x700mm'
+        },
+        {
+          id: 'C46249',
+          name: '1100x900mm',
+          image: 'assets/productImages/shower/C46249-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1100x900mm_1.webp',
+          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x900mm-c46249',
+          path: '../../models/shower/C46249.glb',
+          dimensions: { width: 106.3, height: 185.3, depth: 87 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0,
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C46249',
+          price: '249.99',
+          title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x900mm'
+        },
+        {
+          id: 'C46250',
+          name: '1200x700mm',
+          image: 'assets/productImages/shower/C46250-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x700mm_3.webp',
+          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x700mm-c46250',
+          path: '../../models/shower/C46250.glb',
+          dimensions: { width: 116.3, height: 185.3, depth: 67 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0,
+            description: 'Corner shower installation'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            cornerInstallOnly: {
+              enabled: true
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: 'C46250',
+          price: '244.99',
+          title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x700mm'
+        },
+        // {
+        //   id: 'C46251',
+        //   name: '1200x760mm',
+        //   image: 'assets/productImages/shower/C46251-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x760mm_3.webp',
+        //   link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x760mm-c46251',
+        //   path: '../../models/shower/C46251.glb',
+        //   dimensions: { width: 139.4, height: 185.5, depth: 90 },
+        //   orientation: {
+        //     type: 'face_into_room',
+        //     wallBuffer: 0,
+        //     description: 'Corner shower installation'
+        //   },
+        //   movement: { // NEW: Sink movement configuration
+        //     snapToWall: true,
+        //     cornerInstallOnly: {
+        //       enabled: true
+        //     },
+        //     allowVerticalMovement: false,
+        //     allowFreeRotation: false
+        //   },
+        //   sku: 'C46251',
+        //   price: '249.99',
+        //   title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x760mm'
+        // },
       ],
       variantType: 'Size Options',
       features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
@@ -3279,7 +3496,7 @@ const productData: ProductData = {
       features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
     },
     {
-      id: 'shower_variant_2',
+      id: 'shower_variant_3',
       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
       name: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower',
       price: '259.00',
@@ -3377,7 +3594,7 @@ const productData: ProductData = {
       variantType: 'Size Options',
       features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
     },
-      {
+    {
           id: 'shower_variant_4',
           link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x800mm-c46004',
           name: 'London 6mm Sliding Shower Enclosure 1200x800mm',
@@ -3653,6 +3870,307 @@ const productData: ProductData = {
           variantType: 'Size Options',
           features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
       },
+    {
+          id: 'shower_variant_5',
+          link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
+          name: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower',
+          price: '199.99',
+          image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+          variants: [
+              {
+                  id: 'C27038',
+                  name: '300mm + Hand Shower',
+                  image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
+                  path: '../../models/shower/C27038.glb',
+                  dimensions: { width: 54, height: 152.9, depth: 53.3 },
+                  floorOffset: 32,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C27038',
+                  price: '199.99',
+                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower'
+              },
+              {
+                  id: 'C27032',
+                  name: '200mm',
+                  image: 'assets/productImages/shower/C27032-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-c27032',
+                  path: '../../models/shower/C27032.glb',
+                  dimensions: { width: 20, height: 86.4, depth: 47.5 },
+                  floorOffset: 98.6,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C27032',
+                  price: '149.99',
+                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head'
+              },
+              {
+                  id: 'C27036',
+                  name: '200mm + Hand Shower',
+                  image: 'assets/productImages/shower/C27036-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-hand-shower-c27036',
+                  path: '../../models/shower/C27036.glb',
+                  dimensions: { width: 38.4, height: 153, depth: 47.5 },
+                  floorOffset: 32,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C27036',
+                  price: '145.00',
+                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Hand Shower'
+              },
+              {
+                  id: 'C27037',
+                  name: '200mm + Slider Shower',
+                  image: 'assets/productImages/shower/27037-1000-chrome-square-thermostatic-shower-set-200mm-head.webp',
+                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-slider-hand-shower-c27037',
+                  path: '../../models/shower/C27037.glb',
+                  dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+                  floorOffset: 98.6,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C27037',
+                  price: '199.99',
+                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Slider Hand Shower'
+              },
+              {
+                  id: 'C27033',
+                  name: '300mm',
+                  image: 'assets/productImages/shower/C27033-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-c27033',
+                  path: '../../models/shower/C27033.glb',
+                  dimensions: { width: 30, height: 86.4, depth: 52.5 },
+                  floorOffset: 98.6,
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C27033',
+                  price: '179.99',
+                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head'
+              },
+          ],
+          variantType: 'Size Options',
+          features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
+      },
+      {
+          id: 'shower_variant_6',
+          link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-760x760mm-c46011',
+          name: 'London 6mm Pivot Shower Enclosure 760x760mm',
+          price: '209.99',
+          image: 'assets/productImages/shower/C46011-1000-London-6mm-Pivot-Shower-Enclosure-760x760mm_2.webp',
+          variants: [
+              {
+                  id: 'C46011',
+                  name: '760 x 760mm',
+                  image: 'assets/productImages/shower/C46011-1000-London-6mm-Pivot-Shower-Enclosure-760x760mm_2.webp',
+                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-760x760mm-c46011',
+                  path: '../../models/shower/C46011.glb',
+                  dimensions: { width: 76.9, height: 185.2, depth: 76.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C46011',
+                  price: '209.99',
+                  title: 'London 6mm Pivot Shower Enclosure 760x760mm'
+              },
+              {
+                  id: 'C46252',
+                  name: '700 x 700mm',
+                  image: 'assets/productImages/shower/C46252-1000-London-6mm-Pivot-Shower-Enclosure-700x700mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-700x700mm-c46252',
+                  path: '../../models/shower/C46252.glb',
+                  dimensions: { width: 76.9, height: 185.2, depth: 76.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C46252',
+                  price: '199.99',
+                  title: 'London 6mm Pivot Shower Enclosure 700x700mm'
+              },
+              {
+                  id: 'C46012',
+                  name: '800 x 800mm',
+                  image: 'assets/productImages/shower/C46012-1000-London-6mm-Pivot-Shower-Enclosure-800x800mm_2.webp',
+                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-800x800mm-c46012',
+                  path: '../../models/shower/C46012.glb',
+                  dimensions: { width: 79.9, height: 185.2, depth: 79.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C46012',
+                  price: '219.99',
+                  title: 'London 6mm Pivot Shower Enclosure 800x800mm'
+              },
+              {
+                  id: 'C46253',
+                  name: '900 x 700',
+                  image: 'assets/productImages/shower/C46253-1000-London-6mm-Pivot-Shower-Enclosure-900x700mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-900x700mm-c46253',
+                  path: '../../models/shower/C46253.glb',
+                  dimensions: { width: 90.9, height: 185.2, depth: 76.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C46253',
+                  price: '219.99',
+                  title: 'London 6mm Pivot Shower Enclosure 900x700mm'
+              },
+              {
+                  id: 'C46013',
+                  name: '900 x 900mm',
+                  image: 'assets/productImages/shower/C46013-1000-London-6mm-Pivot-Shower-Enclosure-900x900mm_2.webp',
+                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-900x900mm-c46013',
+                  path: '../../models/shower/C46013.glb',
+                  dimensions: { width: 91.7, height: 185.2, depth: 91.6 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C46013',
+                  price: '183.00',
+                  title: 'London 6mm Pivot Shower Enclosure 900x900mm'
+              },
+              {
+                  id: 'C46255',
+                  name: '1000 x 700mm',
+                  image: 'assets/productImages/shower/C46255-1000-London-6mm-Pivot-Shower-Enclosure-1000x700mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-1000x700mm-c46255',
+                  path: '../../models/shower/C46255.glb',
+                  dimensions: { width: 101.1, height: 185.2, depth: 76.5 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C46255',
+                  price: '187.00',
+                  title: 'London 6mm Pivot Shower Enclosure 1000x700mm'
+              },
+              {
+                  id: 'C46176',
+                  name: '1000 x 760mm',
+                  image: 'assets/productImages/shower/c46176-1000-london-6mm-pivot-shower-enclosure-1000x760mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-1000x760mm-c46176',
+                  path: '../../models/shower/C46176.glb',
+                  dimensions: { width: 101.3, height: 185.2, depth: 83.9 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Corner shower installation'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C46176',
+                  price: '239.99',
+                  title: 'London 6mm Pivot Shower Enclosure 1000x760mm'
+              },
+          ],
+          variantType: 'Size Options',
+          features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
+      },
+
   ],
 
   Bath: [
@@ -4044,6 +4562,80 @@ const productData: ProductData = {
                   sku: 'C53022',
                   price: '209.99',
                   title: 'Hereford 1800x800 Square Single Ended Bath'
+              },
+          ],
+          variantType: 'Orientation',
+        features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+      },
+    {
+          id: 'bath_6',
+          link: 'https://www.bathroommountain.co.uk/richmond-v2-1500mm-freestanding-slipper-bath-c51090',
+          name: 'Richmond 1500mm Freestanding Slipper Bath',
+          price: '449.00',
+          image: 'assets/productImages/bath/c51090-1000-richmond-v2-1500mm-freestanding-slipper-bath.webp',
+          variants: [
+              {
+                  id: 'C51090',
+                  name: '1500mm',
+                  image: 'assets/productImages/bath/c51090-1000-richmond-v2-1500mm-freestanding-slipper-bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/richmond-v2-1500mm-freestanding-slipper-bath-c51090',
+                  path: '../../models/bath/C51090.glb',
+                  dimensions: { width: 149.7, height: 66.8, depth: 71.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: {
+                      snapToWall: false,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: true
+                  },
+                  sku: 'C51090',
+                  price: '449.00',
+                  title: 'Richmond 1500mm Freestanding Slipper Bath'
+              },
+              {
+                  id: 'C51097',
+                  name: '1350mm',
+                  image: 'assets/productImages/bath/C51097-1000-Richmond-1370mm-Freestanding-Slipper-Bath_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/richmond-1370mm-freestanding-slipper-bath-c51097',
+                  path: '../../models/bath/C51097.glb',
+                  dimensions: { width: 136.7, height: 66.8, depth: 71.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: {
+                      snapToWall: false,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: true
+                  },
+                  sku: 'C51097',
+                  price: '439.99',
+                  title: 'Richmond 1370mm Freestanding Slipper Bath'
+              },
+              {
+                  id: 'C51091',
+                  name: '1700',
+                  image: 'assets/productImages/bath/c51091-1000-richmond-v2-1700mm-freestanding-slipper-bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/richmond-v2-1700mm-freestanding-slipper-bath-c51091',
+                  path: '../../models/bath/C51091.glb',
+                  dimensions: { width: 170, height: 66.9, depth: 73.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: {
+                      snapToWall: false,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: true
+                  },
+                  sku: 'C51091',
+                  price: '579.99',
+                  title: 'Richmond 1700mm Freestanding Slipper Bath'
               },
           ],
           variantType: 'Orientation',
