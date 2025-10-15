@@ -252,6 +252,54 @@ const productData: ProductData = {
           price: '287.00',
           title: 'Bermuda Chalk White Basin Vanity 800mm'
         },
+        {
+          id: 'C76306',
+          name: '1200mm Width',
+          image: 'assets/productImages/furniture/C76306-1000-Bermuda-Chalk-White-Double-Basin-Vanity-1200mm_1.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-double-basin-vanity-1200mm',
+          path: '../../models/furniture/basin/C76306.glb',
+          dimensions: { width: 121, height: 98.2, depth: 41.6 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76306',
+          price: '499.00',
+          title: 'Bermuda Chalk White Double Basin Vanity 1200mm'
+        },
+        {
+          id: 'C76302',
+          name: '400mm Width',
+          image: 'assets/productImages/furniture/c76302-1000-bermuda-chalk-white-cloakroom-basin-vanity-400mm.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cloakroom-basin-vanity-400mm',
+          path: '../../models/furniture/basin/C76302.glb',
+          dimensions: { width: 40.4, height: 85.1, depth: 25.5 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76302',
+          price: '149.00',
+          title: 'Bermuda Chalk White Cloakroom Basin Vanity 400mm'
+        },
+        {
+          id: 'C76303',
+          name: '500mm Width',
+          image: 'assets/productImages/furniture/c76303-1000-bermuda-chalk-white-basin-vanity-500mm.webp',
+          link: 'https://www.bathroommountain.co.uk/bermuda-clalk-white-basin-vanity-500mm-c76303',
+          path: '../../models/furniture/basin/C76303.glb',
+          dimensions: { width: 51.3, height: 84, depth: 41.4 },
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          sku: 'C76303',
+          price: '269.99',
+          title: 'Bermuda Chalk White Basin Vanity 500mm'
+        },
       ],
       variantType: 'Width Options',
       features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
@@ -2130,6 +2178,22 @@ const productData: ProductData = {
                   sku: 'C77016',
                   price: '239.99',
                   title: 'Harper Stone Grey Vanity with Semi Recessed Basin 500mm'
+              },
+              {
+                  id: 'C77012',
+                  name: 'Gloss White',
+                  image: 'assets/productImages/furniture/C77012-1000-Gloss-White-Vanity-500mm_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/harper-gloss-white-vanity-with-semi-recessed-basin-marble-top-500mm-c77012',
+                  path: '../../models/furniture/basin/C77012.glb',
+                  dimensions: { width: 50, height: 83.6, depth: 30 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  sku: 'C77012',
+                  price: '179.00',
+                  title: 'Harper Gloss White Vanity with Semi Recessed Basin 500mm'
               },
           ],
           variantType: 'Width Options',
@@ -5293,6 +5357,48 @@ const productData: ProductData = {
                   sku: 'C66181',
                   price: '143.00',
                   title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66182',
+                  name: 'Comfort Height',
+                  image: 'assets/productImages/toilet/C66182-1000-Comfort-Height-Close-Coupled-Toilet-Soft-Close-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-seat-c66182',
+                  path: '../../models/toilet/C66182.glb',
+                  dimensions: { width: 77.5, height: 83.2, depth: 84.7 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66182',
+                  price: '159.00',
+                  title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Seat'
+              },
+              {
+                  id: 'C66180',
+                  name: 'Standard',
+                  image: 'assets/productImages/toilet/C66180-1000-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+                  link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-seat-c66180',
+                  path: '../../models/toilet/C66180.glb',
+                  dimensions: { width: 37.1, height: 78.2, depth: 63.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C66180',
+                  price: '127.00',
+                  title: 'Portland Close Coupled Toilet With Soft Close Seat'
               },
           ],
           variantType: 'Style Options',
