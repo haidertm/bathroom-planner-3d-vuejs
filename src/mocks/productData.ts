@@ -3401,30 +3401,6 @@ const productData: ProductData = {
           title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x800mm'
         },
         {
-          id: 'C46247',
-          name: '1000x700mm',
-          image: 'assets/productImages/shower/C46247-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1000x700mm_3.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x700mm-c46247',
-          path: '../../models/shower/C46247.glb',
-          dimensions: { width: 100.4, height: 185.5, depth: 70 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46247',
-          price: '219.99',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x700mm'
-        },
-        {
           id: 'C46248',
           name: '1100x700mm',
           image: 'assets/productImages/shower/C46248-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1100x700mm_3.webp',
