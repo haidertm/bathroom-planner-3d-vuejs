@@ -3498,7 +3498,7 @@ const productData: ProductData = {
         // },
       ],
       variantType: 'Size Options',
-      features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
+      features: ['Thermostatic Control', 'Dual Outlet', 'Chrome Finish']
     },
     {
       id: 'shower_variant_2',
