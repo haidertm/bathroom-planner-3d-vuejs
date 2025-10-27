@@ -385,27 +385,14 @@ export const checkWallCollision = (
   const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
   const isFlushMounted = wallBuffer === 0;
 
-  // Calculate actual object bounds using productData dimensions
-  const halfWidth = (dimensions.width * scale) / 2;
-  const halfDepth = (dimensions.depth * scale) / 2;
-
-  // Object bounding box
-  const objectMinX = position.x - halfWidth;
-  const objectMaxX = position.x + halfWidth;
-  const objectMinZ = position.z - halfDepth;
-  const objectMaxZ = position.z + halfDepth;
-
   // Room interior boundaries (where objects can be placed)
   const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  // Check if object extends beyond interior boundaries
-  const collideWest = objectMinX < interior.minX;
-  const collideEast = objectMaxX > interior.maxX;
-  const collideNorth = objectMinZ < interior.minZ;
-  const collideSouth = objectMaxZ > interior.maxZ;
+  // For wall-snapped objects, determine which wall they're on to account for rotation
+  const movementConfig = getMovementConfig(objectType, item);
+  let nearestWall: 'north' | 'south' | 'east' | 'west' = 'north';
 
-  // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
-  if (isFlushMounted) {
+  if (movementConfig.snapToWall) {
     // Calculate distances to each wall face
     const wallDistances = {
       north: Math.abs(position.z - wallFaces.north),
@@ -415,9 +402,48 @@ export const checkWallCollision = (
     };
 
     // Find the nearest wall
-    const nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+    nearestWall = Object.entries(wallDistances).reduce((a, b) =>
       wallDistances[a[0]] < wallDistances[b[0]] ? a : b
     )[0] as 'north' | 'south' | 'east' | 'west';
+  }
+
+  // Calculate actual object bounds using productData dimensions
+  // ✅ CRITICAL FIX: Account for rotation based on which wall the object is on
+  const halfWidth = (dimensions.width * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
+
+  let objectMinX: number, objectMaxX: number, objectMinZ: number, objectMaxZ: number;
+
+  // For objects on east/west walls, dimensions are swapped due to 90° rotation
+  if (movementConfig.snapToWall && (nearestWall === 'east' || nearestWall === 'west')) {
+    // Object is rotated 90°: depth becomes width, width becomes depth
+    objectMinX = position.x - halfDepth;
+    objectMaxX = position.x + halfDepth;
+    objectMinZ = position.z - halfWidth;
+    objectMaxZ = position.z + halfWidth;
+  } else {
+    // Object faces north/south or is freestanding: use normal dimensions
+    objectMinX = position.x - halfWidth;
+    objectMaxX = position.x + halfWidth;
+    objectMinZ = position.z - halfDepth;
+    objectMaxZ = position.z + halfDepth;
+  }
+
+  // Check if object extends beyond interior boundaries
+  const collideWest = objectMinX < interior.minX;
+  const collideEast = objectMaxX > interior.maxX;
+  const collideNorth = objectMinZ < interior.minZ;
+  const collideSouth = objectMaxZ > interior.maxZ;
+
+  // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
+  if (isFlushMounted) {
+    // Calculate distances to each wall face (for flush mounting check)
+    const wallDistances = {
+      north: Math.abs(position.z - wallFaces.north),
+      south: Math.abs(position.z - wallFaces.south),
+      east: Math.abs(position.x - wallFaces.east),
+      west: Math.abs(position.x - wallFaces.west)
+    };
 
     // Tolerance for flush mounting (2cm)
     const flushTolerance = 2;
@@ -483,33 +509,73 @@ export const checkCollision = (
     return false;
   }
 
-  // ✅ CRITICAL: Calculate actual 3D bounding boxes accounting for floorOffset
+  // ✅ CRITICAL: Calculate actual 3D bounding boxes accounting for floorOffset AND rotation
 
-  // Object 1 bounding box (scaled dimensions)
-  const obj1Width = dims1.width * scale1;
+  // Determine which wall each object is on (for rotation calculation)
+  const getObjectWall = (pos: Position, item?: BathroomItem): 'north' | 'south' | 'east' | 'west' | null => {
+    if (!item) return null;
+    const movementConfig = getMovementConfig(item.type, item);
+    if (!movementConfig.snapToWall) return null;
+
+    // Calculate distances to each wall face (using relative positions)
+    const distToNorth = Math.abs(pos.z + 150); // Assuming room is 300cm, north wall is at -150
+    const distToSouth = Math.abs(pos.z - 150);
+    const distToEast = Math.abs(pos.x - 150);
+    const distToWest = Math.abs(pos.x + 150);
+
+    const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
+    if (minDist === distToNorth) return 'north';
+    if (minDist === distToSouth) return 'south';
+    if (minDist === distToEast) return 'east';
+    return 'west';
+  };
+
+  const obj1Wall = getObjectWall(pos1, item1);
+  const obj2Wall = getObjectWall(pos2, item2);
+
+  // Object 1 bounding box (scaled dimensions, accounting for rotation)
+  const obj1BaseWidth = dims1.width * scale1;
+  const obj1BaseDepth = dims1.depth * scale1;
   const obj1Height = dims1.height * scale1;
-  const obj1Depth = dims1.depth * scale1;
-  const obj1FloorOffset = dims1.floorOffset * scale1; // ✅ Scale the floor offset too
+  const obj1FloorOffset = dims1.floorOffset * scale1;
 
-  // Object 2 bounding box (scaled dimensions)
-  const obj2Width = dims2.width * scale2;
+  // Swap width/depth if object is rotated 90° (on east/west walls)
+  let obj1Width: number, obj1Depth: number;
+  if (obj1Wall === 'east' || obj1Wall === 'west') {
+    obj1Width = obj1BaseDepth; // Rotated: depth becomes width
+    obj1Depth = obj1BaseWidth; // Rotated: width becomes depth
+  } else {
+    obj1Width = obj1BaseWidth;
+    obj1Depth = obj1BaseDepth;
+  }
+
+  // Object 2 bounding box (scaled dimensions, accounting for rotation)
+  const obj2BaseWidth = dims2.width * scale2;
+  const obj2BaseDepth = dims2.depth * scale2;
   const obj2Height = dims2.height * scale2;
-  const obj2Depth = dims2.depth * scale2;
-  const obj2FloorOffset = dims2.floorOffset * scale2; // ✅ Scale the floor offset too
+  const obj2FloorOffset = dims2.floorOffset * scale2;
+
+  // Swap width/depth if object is rotated 90° (on east/west walls)
+  let obj2Width: number, obj2Depth: number;
+  if (obj2Wall === 'east' || obj2Wall === 'west') {
+    obj2Width = obj2BaseDepth; // Rotated: depth becomes width
+    obj2Depth = obj2BaseWidth; // Rotated: width becomes depth
+  } else {
+    obj2Width = obj2BaseWidth;
+    obj2Depth = obj2BaseDepth;
+  }
 
   // ✅ CRITICAL: Calculate actual 3D positions accounting for floorOffset
-  // The floorOffset represents how much the object is elevated in its GLB model
-  const obj1ActualY = pos1.y + obj1FloorOffset; // Object's bottom position in 3D space
-  const obj2ActualY = pos2.y + obj2FloorOffset; // Object's bottom position in 3D space
+  const obj1ActualY = pos1.y + obj1FloorOffset;
+  const obj2ActualY = pos2.y + obj2FloorOffset;
 
   // ✅ CRITICAL: Calculate bounding box boundaries in 3D space
-  const obj1MinY = obj1ActualY; // Bottom of object 1
-  const obj1MaxY = obj1ActualY + obj1Height; // Top of object 1
+  const obj1MinY = obj1ActualY;
+  const obj1MaxY = obj1ActualY + obj1Height;
+  const obj2MinY = obj2ActualY;
+  const obj2MaxY = obj2ActualY + obj2Height;
 
-  const obj2MinY = obj2ActualY; // Bottom of object 2
-  const obj2MaxY = obj2ActualY + obj2Height; // Top of object 2
-
-  // Horizontal bounding boxes (unchanged)
+  // Horizontal bounding boxes (now accounting for rotation)
   const obj1MinX = pos1.x - obj1Width / 2;
   const obj1MaxX = pos1.x + obj1Width / 2;
   const obj2MinX = pos2.x - obj2Width / 2;
