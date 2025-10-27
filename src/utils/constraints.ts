@@ -387,13 +387,13 @@ export const checkWallCollision = (
 
   // Calculate actual object bounds using productData dimensions
   const halfWidth = (dimensions.width * scale) / 2;
-  // const halfDepth = (dimensions.depth * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
 
   // Object bounding box
   const objectMinX = position.x - halfWidth;
   const objectMaxX = position.x + halfWidth;
-  const objectMinZ = position.z - halfWidth;
-  const objectMaxZ = position.z + halfWidth;
+  const objectMinZ = position.z - halfDepth;
+  const objectMaxZ = position.z + halfDepth;
 
   // Room interior boundaries (where objects can be placed)
   const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
@@ -978,7 +978,7 @@ export const findFreeWallPosition = (
   }
 
   if (!movementConfig.snapToWall) {
-    return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig);
+    return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig, sku);
   }
 
   console.log('>>>111 SKU', sku);
@@ -1206,18 +1206,39 @@ const findFreeStandingPosition = (
   scale: number,
   existingItems: BathroomItem[],
   maxAttempts: number,
-  movement?: MovementConfig
+  movement?: MovementConfig,
+  sku?: string
 ): { position: Position; rotation: number } => {
 
   const movementConfig = movement ?? getMovementConfig(objectType);
-  const buffer = 30; // Buffer from walls for free-standing objects
+
+  // Get actual object dimensions
+  const dimensions = getDimensions(objectType, sku);
+  if (!dimensions) {
+    console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeStandingPosition`);
+    // Fallback to center if no dimensions
+    const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
+    return {
+      position: {
+        x: (interior.minX + interior.maxX) / 2,
+        y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
+        z: (interior.minZ + interior.maxZ) / 2
+      },
+      rotation: 0
+    };
+  }
+
+  // Use actual object dimensions as buffer from walls
+  const halfWidth = (dimensions.width * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
+
   const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  // Define free-standing area within interior space
-  const minX = interior.minX + buffer;
-  const maxX = interior.maxX - buffer;
-  const minZ = interior.minZ + buffer;
-  const maxZ = interior.maxZ - buffer;
+  // Define free-standing area within interior space using actual object dimensions
+  const minX = interior.minX + halfWidth;
+  const maxX = interior.maxX - halfWidth;
+  const minZ = interior.minZ + halfDepth;
+  const maxZ = interior.maxZ - halfDepth;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const position = {
@@ -1228,12 +1249,13 @@ const findFreeStandingPosition = (
 
     const rotation = 0;
 
-    // Create temporary item for collision detection
+    // Create temporary item for collision detection with SKU
     const tempItem: BathroomItem = {
       id: -1,
       type: objectType,
       position: [position.x, position.y, position.z] as [number, number, number],
-      scale: scale
+      scale: scale,
+      sku: sku
     };
 
     // Check for collisions
