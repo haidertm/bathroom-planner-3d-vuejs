@@ -78,11 +78,12 @@ export const wouldCollideWithExistingOrWalls = (
   existingItems: BathroomItem[],
   roomWidth: number,
   roomHeight: number,
-  currentItem?: BathroomItem
+  currentItem?: BathroomItem,
+  rotation?: number
 ): boolean => {
 
-  // 1. Check wall collision using actual dimensions
-  if (checkWallCollision(position, objectType, scale, roomWidth, roomHeight, currentItem)) {
+  // 1. Check wall collision using actual dimensions (with rotation for free-rotation objects)
+  if (checkWallCollision(position, objectType, scale, roomWidth, roomHeight, currentItem, rotation)) {
     return true;
   }
 
@@ -374,7 +375,8 @@ export const checkWallCollision = (
   scale: number,
   roomWidth: number,
   roomHeight: number,
-  item?: BathroomItem
+  item?: BathroomItem,
+  rotation?: number
 ): boolean => {
 
   const dimensions = getDimensions(objectType, item?.sku, item?.model);
@@ -414,8 +416,25 @@ export const checkWallCollision = (
 
   let objectMinX: number, objectMaxX: number, objectMinZ: number, objectMaxZ: number;
 
+  // ✅ NEW: For free-rotation objects, calculate axis-aligned bounding box
+  if (movementConfig.allowFreeRotation && !movementConfig.snapToWall && rotation !== undefined) {
+    const cosAngle = Math.abs(Math.cos(rotation));
+    const sinAngle = Math.abs(Math.sin(rotation));
+
+    // Calculate rotated bounding box dimensions
+    const rotatedWidth = (dimensions.width * scale * cosAngle) + (dimensions.depth * scale * sinAngle);
+    const rotatedDepth = (dimensions.width * scale * sinAngle) + (dimensions.depth * scale * cosAngle);
+
+    const halfRotatedWidth = rotatedWidth / 2;
+    const halfRotatedDepth = rotatedDepth / 2;
+
+    objectMinX = position.x - halfRotatedWidth;
+    objectMaxX = position.x + halfRotatedWidth;
+    objectMinZ = position.z - halfRotatedDepth;
+    objectMaxZ = position.z + halfRotatedDepth;
+  }
   // For objects on east/west walls, dimensions are swapped due to 90° rotation
-  if (movementConfig.snapToWall && (nearestWall === 'east' || nearestWall === 'west')) {
+  else if (movementConfig.snapToWall && (nearestWall === 'east' || nearestWall === 'west')) {
     // Object is rotated 90°: depth becomes width, width becomes depth
     objectMinX = position.x - halfDepth;
     objectMaxX = position.x + halfDepth;

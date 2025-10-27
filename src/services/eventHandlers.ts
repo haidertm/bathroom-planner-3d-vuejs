@@ -389,11 +389,12 @@ export class EventHandlers {
     objectType: ComponentType,
     objectScale: number,
     itemId: number,
-    currentItem?: BathroomItem
+    currentItem?: BathroomItem,
+    rotation?: number
   ): boolean {
     const currentItems = this.getCurrentItems();
 
-    // 🔧 Use the new collision detection that includes walls
+    // 🔧 Use the new collision detection that includes walls (with rotation for free-rotation objects)
     return wouldCollideWithExistingOrWalls(
       position,
       objectType,
@@ -402,7 +403,8 @@ export class EventHandlers {
       currentItems,
       this.roomWidthRef.value,
       this.roomHeightRef.value,
-      currentItem
+      currentItem,
+      rotation
     );
   }
 
@@ -1078,7 +1080,8 @@ export class EventHandlers {
                     objectType,
                     objectScale,
                     itemId,
-                    currentItem
+                    currentItem,
+                    objectRotation
                 );
                 setOutlineColor(isColliding);
             }
