@@ -1168,14 +1168,15 @@ export class EventHandlers {
           return; // Exit if no valid intersection
         } else {
           // ✅ Now position the object at the cursor position on the nearest wall
-          let newX = closestPoint.x;
-          let newZ = closestPoint.z;
+          // Apply dragOffset to maintain the original click position relative to object
+          let newX = closestPoint.x + this.dragOffset.x;
+          let newZ = closestPoint.z + this.dragOffset.z;
           let newY;
 
-          // ✅ Adjust Y position for floor offset
+          // ✅ Adjust Y position
           if (movementConfig.allowVerticalMovement) {
-            // Cursor is pointing at visual position, so subtract floorOffset to get pivot position
-            newY = closestPoint.y - floorOffset;
+            // Apply dragOffset to maintain vertical position relative to click point
+            newY = closestPoint.y + this.dragOffset.y;
           } else {
             // Keep current Y if not allowing vertical movement
             newY = this.selectedObject.position.y;
