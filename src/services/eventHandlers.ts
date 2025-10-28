@@ -394,7 +394,7 @@ export class EventHandlers {
   ): boolean {
     const currentItems = this.getCurrentItems();
 
-    // 🔧 Use the new collision detection that includes walls (with rotation for free-rotation objects)
+      // 🔧 Use collision detection that includes walls and supports rotation-aware bounds
     return wouldCollideWithExistingOrWalls(
       position,
       objectType,
