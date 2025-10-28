@@ -1101,9 +1101,6 @@ export class EventHandlers {
         const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
         const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
-        // ✅ NEW: Get floorOffset to adjust visual positioning
-        const floorOffset = (dimensions?.floorOffset || 0) * objectScale;
-
         // ✅ NEW: Track current wall to prevent jumping
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
