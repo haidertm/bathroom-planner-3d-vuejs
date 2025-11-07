@@ -605,14 +605,29 @@ export const checkCollision = (
   const obj2MinZ = pos2.z - obj2Depth / 2;
   const obj2MaxZ = pos2.z + obj2Depth / 2;
 
-  // Add collision buffers
+  // Add collision buffers - expand each object's bounding box
   const horizontalBuffer = 10; // 10cm horizontal buffer
   const verticalBuffer = 3;    // 3cm vertical buffer
 
-  // ✅ CRITICAL: Proper 3D bounding box overlap detection
-  const overlapX = !(obj1MaxX + horizontalBuffer < obj2MinX || obj2MaxX + horizontalBuffer < obj1MinX);
-  const overlapZ = !(obj1MaxZ + horizontalBuffer < obj2MinZ || obj2MaxZ + horizontalBuffer < obj1MinZ);
-  const overlapY = !(obj1MaxY + verticalBuffer < obj2MinY || obj2MaxY + verticalBuffer < obj1MinY);
+  // ✅ FIXED: Expand bounding boxes by buffer amount before checking overlap
+  const obj1MinXWithBuffer = obj1MinX - horizontalBuffer;
+  const obj1MaxXWithBuffer = obj1MaxX + horizontalBuffer;
+  const obj1MinZWithBuffer = obj1MinZ - horizontalBuffer;
+  const obj1MaxZWithBuffer = obj1MaxZ + horizontalBuffer;
+  const obj1MinYWithBuffer = obj1MinY - verticalBuffer;
+  const obj1MaxYWithBuffer = obj1MaxY + verticalBuffer;
+
+  const obj2MinXWithBuffer = obj2MinX - horizontalBuffer;
+  const obj2MaxXWithBuffer = obj2MaxX + horizontalBuffer;
+  const obj2MinZWithBuffer = obj2MinZ - horizontalBuffer;
+  const obj2MaxZWithBuffer = obj2MaxZ + horizontalBuffer;
+  const obj2MinYWithBuffer = obj2MinY - verticalBuffer;
+  const obj2MaxYWithBuffer = obj2MaxY + verticalBuffer;
+
+  // ✅ CRITICAL: Proper 3D bounding box overlap detection with buffers
+  const overlapX = !(obj1MaxXWithBuffer < obj2MinXWithBuffer || obj2MaxXWithBuffer < obj1MinXWithBuffer);
+  const overlapZ = !(obj1MaxZWithBuffer < obj2MinZWithBuffer || obj2MaxZWithBuffer < obj1MinZWithBuffer);
+  const overlapY = !(obj1MaxYWithBuffer < obj2MinYWithBuffer || obj2MaxYWithBuffer < obj1MinYWithBuffer);
 
   const hasCollision = overlapX && overlapZ && overlapY;
 
@@ -1180,16 +1195,9 @@ export const findFreeWallPosition = (
     }
   }
 
-  // Fallback position
-  const fallbackRotation = getObjectRotationForWall(objectType, 'south', orientation);
-  return {
-    position: {
-      x: 0,
-      y: getWallPositionY(movementConfig, spawnHeight),
-      z: wallFaces.south + buffer
-    },
-    rotation: fallbackRotation
-  };
+  // ✅ FIXED: No free position found - return null instead of forcing placement
+  console.warn(`⚠️ Cannot find free wall position for ${objectType} - all positions are occupied`);
+  return null;
 };
 
 // New function for finding free corner positions
@@ -1275,7 +1283,7 @@ const findFreeStandingPosition = (
   maxAttempts: number,
   movement?: MovementConfig,
   sku?: string
-): { position: Position; rotation: number } => {
+): { position: Position; rotation: number } | null => {
 
   const movementConfig = movement ?? getMovementConfig(objectType);
 
@@ -1354,14 +1362,50 @@ const findFreeStandingPosition = (
     }
   }
 
-  // Fallback to center of interior space
+  // ✅ FIXED: Check if fallback center position is free before using it
+  const fallbackPosition = {
+    x: (interior.minX + interior.maxX) / 2,
+    y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
+    z: (interior.minZ + interior.maxZ) / 2
+  };
+
+  // Create temporary item for collision detection
+  const fallbackTempItem: BathroomItem = {
+    id: -1,
+    type: objectType,
+    position: [fallbackPosition.x, fallbackPosition.y, fallbackPosition.z] as [number, number, number],
+    scale: scale,
+    sku: sku
+  };
+
+  // Check if fallback position collides
+  let fallbackHasCollision = false;
+  for (const item of existingItems) {
+    if (checkCollision(
+      fallbackPosition,
+      objectType,
+      scale,
+      { x: item.position[0], y: item.position[1], z: item.position[2] },
+      item.type,
+      item.scale || 1.0,
+      fallbackTempItem,
+      item
+    )) {
+      fallbackHasCollision = true;
+      break;
+    }
+  }
+
+  if (fallbackHasCollision) {
+    // No free position available, even at center
+    console.warn(`⚠️ Cannot find free standing position for ${objectType} - all positions occupied including center`);
+    return null;
+  }
+
+  // Fallback position is free, use it
   console.log(`⚠️ Using fallback center position in interior space for ${objectType}`);
   return {
-    position: {
-      x: (interior.minX + interior.maxX) / 2,
-      y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
-      z: (interior.minZ + interior.maxZ) / 2
-    },
+    position: fallbackPosition,
     rotation: 0
   };
 };
