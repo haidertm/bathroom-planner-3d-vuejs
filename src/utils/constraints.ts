@@ -1042,7 +1042,7 @@ export const findFreeWallPosition = (
   spawnHeight?: number,
   _floorOffset?: number,
   sku?: string
-): { position: Position; rotation: number } => {
+): { position: Position; rotation: number } | null => {
 
   console.log('🎯 Finding free position on interior walls for:', objectType, movement);
 
@@ -1050,7 +1050,7 @@ export const findFreeWallPosition = (
 
   // For corner-only items, find a free corner
   if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
-    return findFreeCornerPosition(
+    const cornerResult = findFreeCornerPosition(
       roomWidth,
       roomHeight,
       objectType,
@@ -1060,6 +1060,14 @@ export const findFreeWallPosition = (
       movementConfig,
       sku
     );
+
+    // Return null if no free corner is available
+    if (!cornerResult) {
+      console.warn('⚠️ Cannot add corner item - all corners are occupied');
+      return null;
+    }
+
+    return cornerResult;
   }
 
   if (!movementConfig.snapToWall) {
@@ -1194,7 +1202,7 @@ export const findFreeCornerPosition = (
   orientation: OrientationConfig = DEFAULT_ORIENTATION,
   movement?: MovementConfig,
   sku?: string
-): { position: Position; rotation: number } => {
+): { position: Position; rotation: number } | null => {
 
   const corners = getRoomCorners(roomWidth, roomHeight);
 
@@ -1202,44 +1210,12 @@ export const findFreeCornerPosition = (
 
   if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
     console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
-    // Fallback if no dimensions found
-    return {
-      position: corners[0].position,
-      rotation: 0
-    };
+    // Return null if no dimensions found
+    return null;
   }
-
-  const halfWidth = (dimensions.width * scale) / 2;
-  const halfDepth = (dimensions.depth * scale) / 2;
 
   // Try each corner
   for (const corner of corners) {
-
-    // const offsetPosition = {
-    //   x: corner.position.x,
-    //   y: 0,
-    //   z: corner.position.z
-    // };
-
-    // // Offset based on which corner we're in, using actual object dimensions
-    // switch (corner.type) {
-    //   case 'north-west':
-    //     offsetPosition.x += halfWidth * 0.5;  // Offset slightly inward
-    //     offsetPosition.z += halfDepth * 0.5;
-    //     break;
-    //   case 'north-east':
-    //     offsetPosition.x -= halfWidth * 0.5;
-    //     offsetPosition.z += halfDepth * 0.5;
-    //     break;
-    //   case 'south-east':
-    //     offsetPosition.x -= halfWidth * 0.5;
-    //     offsetPosition.z -= halfDepth * 0.5;
-    //     break;
-    //   case 'south-west':
-    //     offsetPosition.x += halfWidth * 0.5;
-    //     offsetPosition.z -= halfDepth * 0.5;
-    //     break;
-    // }
 
     const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
       type: objectType,
@@ -1249,14 +1225,34 @@ export const findFreeCornerPosition = (
       sku
     });
 
-    // Check if this corner position would collide
+    console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
+    console.log(`🔍 Existing items count:`, existingItems.length);
+    console.log(`🔍 Existing items:`, existingItems.map(item => ({
+      type: item.type,
+      sku: item.sku,
+      position: item.position
+    })));
+
+    // Create temporary item with SKU for proper collision detection
+    const tempItem: BathroomItem = {
+      id: -1,
+      type: objectType,
+      position: [result.position.x, result.position.y, result.position.z] as [number, number, number],
+      scale: scale,
+      sku: sku
+    };
+
+    // Check if this corner position would collide with existing items
     const wouldCollide = wouldCollideWithExisting(
       result.position,
       objectType,
       scale,
       -1, // New item, no ID yet
-      existingItems
+      existingItems,
+      tempItem // Pass temporary item for proper dimension lookup
     );
+
+    console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
 
     if (!wouldCollide) {
       console.log(`>>>111 ✅ Found free corner: ${corner.type}`);
@@ -1264,23 +1260,9 @@ export const findFreeCornerPosition = (
     }
   }
 
-  // If no free corner, return the first corner (user can manually move)
-  console.warn('⚠️ No free corners available, using north-west');
-
-  // Apply the same dimension-based offset for the fallback position
-  const fallbackCorner = corners[0];
-  const fallbackOffset = {
-    x: fallbackCorner.position.x + halfWidth * 0.5,
-    y: 0,
-    z: fallbackCorner.position.z + halfDepth * 0.5
-  };
-
-  return constrainToCorner(fallbackOffset, roomWidth, roomHeight, {
-    type: objectType,
-    scale,
-    orientation,
-    movement
-  });
+  // If no free corner, return null instead of forcing placement
+  console.warn('⚠️ No free corners available for corner stall shower');
+  return null;
 };
 
 // Helper function for free-standing objects (updated for interior space)
