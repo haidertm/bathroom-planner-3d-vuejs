@@ -6348,6 +6348,74 @@ const productData: ProductData = {
             variantType: 'Size Options',
             features: ['110mm Standard Size', '4 Screw Mounting Holes', 'Inspection Cap', 'PVC Construction']
         },
+    ],
+    WindowAndDoor: [
+        {
+            id: 'window_door_set',
+            link: '#',
+            name: 'Windows & Doors',
+            price: '0.00',
+            image: 'assets/productImages/door/door.png',
+            variants: [
+                {
+                    id: 'standard_door',
+                    name: 'Door 800×2100mm',
+                    image: 'assets/productImages/door/door.png',
+                    link: '#',
+                    path: '../../models/door/Door.glb',
+                    dimensions: {
+                        width: 99.1,    // 800mm = 80cm
+                        height: 222.8,  // 2100mm = 210cm
+                        depth: 18.8     // 100mm frame depth
+                    },
+                    floorOffset: -0.2, // Door starts at floor level
+                    spawnHeight: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - door is part of wall
+                        description: 'Door mounted on wall'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: false, // Door must stay on floor
+                        allowFreeRotation: false
+                    },
+                    sku: 'DOOR800X2100',
+                    price: '0.00',
+                    title: 'Standard Door 800×2100mm'
+                },
+                {
+                    id: 'standard_window',
+                    name: 'Window 600×800mm',
+                    image: 'assets/productImages/window/window.png',
+                    link: '#',
+                    path: '/models/window/Window.glb',
+                    dimensions: {
+                        width: 99.1,    // 600mm = 60cm
+                        height: 78.8,   // 800mm = 80cm
+                        depth: 14.7      // 50mm frame depth
+                    },
+                    floorOffset: 134.6, // Position window higher on wall (100cm from floor)
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - window is part of wall
+                        description: 'Window mounted on wall'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true,
+                        allowFreeRotation: false,
+                        minHeight: 20,  // Minimum 50cm from floor
+                        maxHeight: 150  // Maximum 200cm from floor
+                    },
+                    sku: 'WIN600X800',
+                    price: '0.00',
+                    title: 'Standard Window 600×800mm'
+                },
+            ],
+            variantType: 'Type',
+            features: ['Wall Mounted', 'Standard Sizes', 'Easy Installation']
+        }
     ]
 };
 

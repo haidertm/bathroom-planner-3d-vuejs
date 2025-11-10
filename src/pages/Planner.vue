@@ -30,6 +30,7 @@
         :camera="sceneManagerRef?.camera || null"
         :renderer="sceneManagerRef?.renderer || null"
         :rotation-enabled="rotationArrowsEnabled"
+        :is-dragging="isDraggingObject"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
@@ -198,6 +199,18 @@ const selectedBathroomItem = computed(() => {
   if (!selectedItemId.value) return null
   return items.value.find(item => item.id === selectedItemId.value)
 })
+
+// Track dragging state to hide overlay during drag
+const isDraggingObject = ref(false)
+
+// Handlers for drag state changes
+const handleDragStart = () => {
+  isDraggingObject.value = true
+}
+
+const handleDragEnd = () => {
+  isDraggingObject.value = false
+}
 
 const handleRotationToggleFromOverlay = (enabled) => {
   console.log('Rotation toggle from overlay:', enabled);
@@ -1126,6 +1139,9 @@ onMounted(async () => {
     console.log('🔗 Connecting variant configuration to EventHandlers')
     eventHandlersRef.value.onItemSelected = handleItemSelection
     eventHandlersRef.value.onItemDeselected = handleItemDeselection
+    // Connect drag state handlers
+    eventHandlersRef.value.onDragStart = handleDragStart
+    eventHandlersRef.value.onDragEnd = handleDragEnd
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);

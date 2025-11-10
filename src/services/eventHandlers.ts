@@ -120,6 +120,8 @@ export class EventHandlers {
   private rotationArrows: RotationArrows | null = null;
   public onItemSelected?: (itemId: number) => void;
   public onItemDeselected?: () => void;
+  public onDragStart?: () => void;
+  public onDragEnd?: () => void;
 
   constructor (
     scene: THREE.Scene,
@@ -722,6 +724,11 @@ export class EventHandlers {
       } else { // Left click for dragging
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+
+        // Notify that dragging has started
+        if (this.onDragStart) {
+          this.onDragStart();
+        }
 
         // Store original position for potential snap-back
         // Note: If we just moved the object, this will store the NEW position
@@ -1520,6 +1527,7 @@ export class EventHandlers {
     }
 
     // Reset all states
+    const wasDragging = this.isDragging;
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -1528,6 +1536,11 @@ export class EventHandlers {
     this.hasMouseMoved = false;
     this.wasEmptySpaceClicked = false;
     this.renderer.domElement.style.cursor = 'default';
+
+    // Notify that dragging has ended
+    if (wasDragging && this.onDragEnd) {
+      this.onDragEnd();
+    }
   }
 
   private handleContextMenu (event: MouseEvent): void {
@@ -1966,6 +1979,7 @@ export class EventHandlers {
     }
 
     // Reset all states
+    const wasDragging = this.isDragging;
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -1973,6 +1987,11 @@ export class EventHandlers {
     this.isScaling = false;
     this.hasMouseMoved = false; // Reset movement tracking
     this.wasEmptySpaceClicked = false; // Reset empty space flag
+
+    // Notify that dragging has ended
+    if (wasDragging && this.onDragEnd) {
+      this.onDragEnd();
+    }
   }
 
   private handleResize (): void {
@@ -1998,6 +2017,7 @@ export class EventHandlers {
     }
 
     // Clear all drag states
+    const wasDragging = this.isDragging;
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -2006,6 +2026,11 @@ export class EventHandlers {
 
     // Reset cursor
     this.renderer.domElement.style.cursor = 'default';
+
+    // Notify that dragging has ended
+    if (wasDragging && this.onDragEnd) {
+      this.onDragEnd();
+    }
 
     // ✅ ADD: Clean up drag plane visualization
     if (this.dragPlaneHelper) {
