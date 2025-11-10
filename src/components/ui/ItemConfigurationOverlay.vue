@@ -62,6 +62,10 @@ const props = defineProps({
   renderer: {
     type: Object, // THREE.WebGLRenderer
     default: null
+  },
+  isDragging: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -334,7 +338,8 @@ const deleteItem = () => {
 
 // Styles - updated to use calculated screen position
 const overlayStyle = computed(() => {
-  if (!screenPosition.value) {
+  // Hide if no position calculated or if dragging
+  if (!screenPosition.value || props.isDragging) {
     return { display: 'none' }
   }
 
