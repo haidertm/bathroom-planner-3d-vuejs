@@ -214,15 +214,15 @@
       </div>
 
       <!-- Textures Button -->
-<!--      <div :style="accordionSectionStyle">-->
-<!--        <button-->
-<!--            @click="toggleTextureDrawer"-->
-<!--            :style="textureButtonStyle"-->
-<!--        >-->
-<!--          <h4 :style="accordionTitleStyle">Textures</h4>-->
-<!--          <span :style="textureArrowStyle">▶</span>-->
-<!--        </button>-->
-<!--      </div>-->
+      <div :style="accordionSectionStyle">
+        <button
+            @click="toggleTextureDrawer"
+            :style="textureButtonStyle"
+        >
+          <h4 :style="accordionTitleStyle">Textures</h4>
+          <span :style="textureArrowStyle">▶</span>
+        </button>
+      </div>
     </div>
 
     <!-- Texture Drawer Overlay -->
@@ -569,6 +569,29 @@ const bathroomCategories = [
                 <!-- Heat indicator (small flame/heat symbol) -->
                 <path d="M8 2.5 C8 2.5 9 1.5 9 3 C9 4 8.5 4.5 8.5 4.5 C8.5 4.5 9.5 4 9.5 5.5 C9.5 6.5 8.5 7 8 7 C7.5 7 6.5 6.5 6.5 5.5 C6.5 4 7.5 4.5 7.5 4.5 C7.5 4.5 7 4 7 3 C7 1.5 8 2.5 8 2.5Z" fill="currentColor" opacity="0.6"/>
           </svg>`
+  },
+  {
+    id: 'windows_doors',
+    label: 'Windows & Doors',
+    component: 'WindowAndDoor',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Door frame (left side) -->
+      <rect x="3" y="4" width="8" height="16" rx="0.5"/>
+      <!-- Door panel divisions -->
+      <path d="M3 12h8"/>
+      <path d="M7 4v16"/>
+      <!-- Door handle -->
+      <circle cx="9.5" cy="12" r="0.5"/>
+
+      <!-- Window frame (right side) -->
+      <rect x="13" y="6" width="8" height="10" rx="0.5"/>
+      <!-- Window cross -->
+      <path d="M13 11h8"/>
+      <path d="M17 6v10"/>
+      <!-- Window panes detail -->
+      <path d="M15 8.5h4" stroke-width="0.5" opacity="0.5"/>
+      <path d="M15 13.5h4" stroke-width="0.5" opacity="0.5"/>
+    </svg>`
   }
 ]
 
@@ -1319,7 +1342,7 @@ const drawerStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
   top: isMobileDevice.value ? '0' : '130px',
   left: isMobileDevice.value ? '0' : '0',
-  height: isMobileDevice.value ? '100vh' : '100vh',
+  height: isMobileDevice.value ? '100vh' : 'calc(100vh - 130px)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   backgroundColor: '#ffffff',
