@@ -733,7 +733,7 @@ const addItem = async (type, productData = null) => {
   const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
   // Find a free position on any wall
-  const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
+  const positionResult = findFreeWallPosition(
       roomWidth.value,
       roomHeight.value,
       type,
@@ -747,6 +747,14 @@ const addItem = async (type, productData = null) => {
       selectedVariant.sku,
 
   )
+
+  // Check if no free position was found (all corners occupied for corner items)
+  if (!positionResult) {
+    alert('Cannot add item - all available corners are occupied. Please remove an existing item first.')
+    return
+  }
+
+  const { position: freePosition, rotation: wallRotation } = positionResult
 
   const newItem = {
     id: generateUniqueId(),

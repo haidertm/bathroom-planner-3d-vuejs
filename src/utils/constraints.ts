@@ -78,11 +78,12 @@ export const wouldCollideWithExistingOrWalls = (
   existingItems: BathroomItem[],
   roomWidth: number,
   roomHeight: number,
-  currentItem?: BathroomItem
+  currentItem?: BathroomItem,
+  rotation?: number
 ): boolean => {
 
-  // 1. Check wall collision using actual dimensions
-  if (checkWallCollision(position, objectType, scale, roomWidth, roomHeight, currentItem)) {
+  // 1. Check wall collision using actual dimensions (with rotation for free-rotation objects)
+  if (checkWallCollision(position, objectType, scale, roomWidth, roomHeight, currentItem, rotation)) {
     return true;
   }
 
@@ -374,7 +375,8 @@ export const checkWallCollision = (
   scale: number,
   roomWidth: number,
   roomHeight: number,
-  item?: BathroomItem
+  item?: BathroomItem,
+  rotation?: number
 ): boolean => {
 
   const dimensions = getDimensions(objectType, item?.sku, item?.model);
@@ -385,27 +387,14 @@ export const checkWallCollision = (
   const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
   const isFlushMounted = wallBuffer === 0;
 
-  // Calculate actual object bounds using productData dimensions
-  const halfWidth = (dimensions.width * scale) / 2;
-  // const halfDepth = (dimensions.depth * scale) / 2;
-
-  // Object bounding box
-  const objectMinX = position.x - halfWidth;
-  const objectMaxX = position.x + halfWidth;
-  const objectMinZ = position.z - halfWidth;
-  const objectMaxZ = position.z + halfWidth;
-
   // Room interior boundaries (where objects can be placed)
   const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  // Check if object extends beyond interior boundaries
-  const collideWest = objectMinX < interior.minX;
-  const collideEast = objectMaxX > interior.maxX;
-  const collideNorth = objectMinZ < interior.minZ;
-  const collideSouth = objectMaxZ > interior.maxZ;
+  // For wall-snapped objects, determine which wall they're on to account for rotation
+  const movementConfig = getMovementConfig(objectType, item);
+  let nearestWall: 'north' | 'south' | 'east' | 'west' = 'north';
 
-  // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
-  if (isFlushMounted) {
+  if (movementConfig.snapToWall) {
     // Calculate distances to each wall face
     const wallDistances = {
       north: Math.abs(position.z - wallFaces.north),
@@ -415,9 +404,65 @@ export const checkWallCollision = (
     };
 
     // Find the nearest wall
-    const nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+    nearestWall = Object.entries(wallDistances).reduce((a, b) =>
       wallDistances[a[0]] < wallDistances[b[0]] ? a : b
     )[0] as 'north' | 'south' | 'east' | 'west';
+  }
+
+  // Calculate actual object bounds using productData dimensions
+  // ✅ CRITICAL FIX: Account for rotation based on which wall the object is on
+  const halfWidth = (dimensions.width * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
+
+  let objectMinX: number, objectMaxX: number, objectMinZ: number, objectMaxZ: number;
+
+  // ✅ NEW: For free-rotation objects, calculate axis-aligned bounding box
+  if (movementConfig.allowFreeRotation && !movementConfig.snapToWall && rotation !== undefined) {
+    const cosAngle = Math.abs(Math.cos(rotation));
+    const sinAngle = Math.abs(Math.sin(rotation));
+
+    // Calculate rotated bounding box dimensions
+    const rotatedWidth = (dimensions.width * scale * cosAngle) + (dimensions.depth * scale * sinAngle);
+    const rotatedDepth = (dimensions.width * scale * sinAngle) + (dimensions.depth * scale * cosAngle);
+
+    const halfRotatedWidth = rotatedWidth / 2;
+    const halfRotatedDepth = rotatedDepth / 2;
+
+    objectMinX = position.x - halfRotatedWidth;
+    objectMaxX = position.x + halfRotatedWidth;
+    objectMinZ = position.z - halfRotatedDepth;
+    objectMaxZ = position.z + halfRotatedDepth;
+  }
+  // For objects on east/west walls, dimensions are swapped due to 90° rotation
+  else if (movementConfig.snapToWall && (nearestWall === 'east' || nearestWall === 'west')) {
+    // Object is rotated 90°: depth becomes width, width becomes depth
+    objectMinX = position.x - halfDepth;
+    objectMaxX = position.x + halfDepth;
+    objectMinZ = position.z - halfWidth;
+    objectMaxZ = position.z + halfWidth;
+  } else {
+    // Object faces north/south or is freestanding: use normal dimensions
+    objectMinX = position.x - halfWidth;
+    objectMaxX = position.x + halfWidth;
+    objectMinZ = position.z - halfDepth;
+    objectMaxZ = position.z + halfDepth;
+  }
+
+  // Check if object extends beyond interior boundaries
+  const collideWest = objectMinX < interior.minX;
+  const collideEast = objectMaxX > interior.maxX;
+  const collideNorth = objectMinZ < interior.minZ;
+  const collideSouth = objectMaxZ > interior.maxZ;
+
+  // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
+  if (isFlushMounted) {
+    // Calculate distances to each wall face (for flush mounting check)
+    const wallDistances = {
+      north: Math.abs(position.z - wallFaces.north),
+      south: Math.abs(position.z - wallFaces.south),
+      east: Math.abs(position.x - wallFaces.east),
+      west: Math.abs(position.x - wallFaces.west)
+    };
 
     // Tolerance for flush mounting (2cm)
     const flushTolerance = 2;
@@ -483,33 +528,73 @@ export const checkCollision = (
     return false;
   }
 
-  // ✅ CRITICAL: Calculate actual 3D bounding boxes accounting for floorOffset
+  // ✅ CRITICAL: Calculate actual 3D bounding boxes accounting for floorOffset AND rotation
 
-  // Object 1 bounding box (scaled dimensions)
-  const obj1Width = dims1.width * scale1;
+  // Determine which wall each object is on (for rotation calculation)
+  const getObjectWall = (pos: Position, item?: BathroomItem): 'north' | 'south' | 'east' | 'west' | null => {
+    if (!item) return null;
+    const movementConfig = getMovementConfig(item.type, item);
+    if (!movementConfig.snapToWall) return null;
+
+    // Calculate distances to each wall face (using relative positions)
+    const distToNorth = Math.abs(pos.z + 150); // Assuming room is 300cm, north wall is at -150
+    const distToSouth = Math.abs(pos.z - 150);
+    const distToEast = Math.abs(pos.x - 150);
+    const distToWest = Math.abs(pos.x + 150);
+
+    const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
+    if (minDist === distToNorth) return 'north';
+    if (minDist === distToSouth) return 'south';
+    if (minDist === distToEast) return 'east';
+    return 'west';
+  };
+
+  const obj1Wall = getObjectWall(pos1, item1);
+  const obj2Wall = getObjectWall(pos2, item2);
+
+  // Object 1 bounding box (scaled dimensions, accounting for rotation)
+  const obj1BaseWidth = dims1.width * scale1;
+  const obj1BaseDepth = dims1.depth * scale1;
   const obj1Height = dims1.height * scale1;
-  const obj1Depth = dims1.depth * scale1;
-  const obj1FloorOffset = dims1.floorOffset * scale1; // ✅ Scale the floor offset too
+  const obj1FloorOffset = dims1.floorOffset * scale1;
 
-  // Object 2 bounding box (scaled dimensions)
-  const obj2Width = dims2.width * scale2;
+  // Swap width/depth if object is rotated 90° (on east/west walls)
+  let obj1Width: number, obj1Depth: number;
+  if (obj1Wall === 'east' || obj1Wall === 'west') {
+    obj1Width = obj1BaseDepth; // Rotated: depth becomes width
+    obj1Depth = obj1BaseWidth; // Rotated: width becomes depth
+  } else {
+    obj1Width = obj1BaseWidth;
+    obj1Depth = obj1BaseDepth;
+  }
+
+  // Object 2 bounding box (scaled dimensions, accounting for rotation)
+  const obj2BaseWidth = dims2.width * scale2;
+  const obj2BaseDepth = dims2.depth * scale2;
   const obj2Height = dims2.height * scale2;
-  const obj2Depth = dims2.depth * scale2;
-  const obj2FloorOffset = dims2.floorOffset * scale2; // ✅ Scale the floor offset too
+  const obj2FloorOffset = dims2.floorOffset * scale2;
+
+  // Swap width/depth if object is rotated 90° (on east/west walls)
+  let obj2Width: number, obj2Depth: number;
+  if (obj2Wall === 'east' || obj2Wall === 'west') {
+    obj2Width = obj2BaseDepth; // Rotated: depth becomes width
+    obj2Depth = obj2BaseWidth; // Rotated: width becomes depth
+  } else {
+    obj2Width = obj2BaseWidth;
+    obj2Depth = obj2BaseDepth;
+  }
 
   // ✅ CRITICAL: Calculate actual 3D positions accounting for floorOffset
-  // The floorOffset represents how much the object is elevated in its GLB model
-  const obj1ActualY = pos1.y + obj1FloorOffset; // Object's bottom position in 3D space
-  const obj2ActualY = pos2.y + obj2FloorOffset; // Object's bottom position in 3D space
+  const obj1ActualY = pos1.y + obj1FloorOffset;
+  const obj2ActualY = pos2.y + obj2FloorOffset;
 
   // ✅ CRITICAL: Calculate bounding box boundaries in 3D space
-  const obj1MinY = obj1ActualY; // Bottom of object 1
-  const obj1MaxY = obj1ActualY + obj1Height; // Top of object 1
+  const obj1MinY = obj1ActualY;
+  const obj1MaxY = obj1ActualY + obj1Height;
+  const obj2MinY = obj2ActualY;
+  const obj2MaxY = obj2ActualY + obj2Height;
 
-  const obj2MinY = obj2ActualY; // Bottom of object 2
-  const obj2MaxY = obj2ActualY + obj2Height; // Top of object 2
-
-  // Horizontal bounding boxes (unchanged)
+  // Horizontal bounding boxes (now accounting for rotation)
   const obj1MinX = pos1.x - obj1Width / 2;
   const obj1MaxX = pos1.x + obj1Width / 2;
   const obj2MinX = pos2.x - obj2Width / 2;
@@ -520,14 +605,29 @@ export const checkCollision = (
   const obj2MinZ = pos2.z - obj2Depth / 2;
   const obj2MaxZ = pos2.z + obj2Depth / 2;
 
-  // Add collision buffers
+  // Add collision buffers - expand each object's bounding box
   const horizontalBuffer = 10; // 10cm horizontal buffer
   const verticalBuffer = 3;    // 3cm vertical buffer
 
-  // ✅ CRITICAL: Proper 3D bounding box overlap detection
-  const overlapX = !(obj1MaxX + horizontalBuffer < obj2MinX || obj2MaxX + horizontalBuffer < obj1MinX);
-  const overlapZ = !(obj1MaxZ + horizontalBuffer < obj2MinZ || obj2MaxZ + horizontalBuffer < obj1MinZ);
-  const overlapY = !(obj1MaxY + verticalBuffer < obj2MinY || obj2MaxY + verticalBuffer < obj1MinY);
+  // ✅ FIXED: Expand bounding boxes by buffer amount before checking overlap
+  const obj1MinXWithBuffer = obj1MinX - horizontalBuffer;
+  const obj1MaxXWithBuffer = obj1MaxX + horizontalBuffer;
+  const obj1MinZWithBuffer = obj1MinZ - horizontalBuffer;
+  const obj1MaxZWithBuffer = obj1MaxZ + horizontalBuffer;
+  const obj1MinYWithBuffer = obj1MinY - verticalBuffer;
+  const obj1MaxYWithBuffer = obj1MaxY + verticalBuffer;
+
+  const obj2MinXWithBuffer = obj2MinX - horizontalBuffer;
+  const obj2MaxXWithBuffer = obj2MaxX + horizontalBuffer;
+  const obj2MinZWithBuffer = obj2MinZ - horizontalBuffer;
+  const obj2MaxZWithBuffer = obj2MaxZ + horizontalBuffer;
+  const obj2MinYWithBuffer = obj2MinY - verticalBuffer;
+  const obj2MaxYWithBuffer = obj2MaxY + verticalBuffer;
+
+  // ✅ CRITICAL: Proper 3D bounding box overlap detection with buffers
+  const overlapX = !(obj1MaxXWithBuffer < obj2MinXWithBuffer || obj2MaxXWithBuffer < obj1MinXWithBuffer);
+  const overlapZ = !(obj1MaxZWithBuffer < obj2MinZWithBuffer || obj2MaxZWithBuffer < obj1MinZWithBuffer);
+  const overlapY = !(obj1MaxYWithBuffer < obj2MinYWithBuffer || obj2MaxYWithBuffer < obj1MinYWithBuffer);
 
   const hasCollision = overlapX && overlapZ && overlapY;
 
@@ -957,7 +1057,7 @@ export const findFreeWallPosition = (
   spawnHeight?: number,
   _floorOffset?: number,
   sku?: string
-): { position: Position; rotation: number } => {
+): { position: Position; rotation: number } | null => {
 
   console.log('🎯 Finding free position on interior walls for:', objectType, movement);
 
@@ -965,7 +1065,7 @@ export const findFreeWallPosition = (
 
   // For corner-only items, find a free corner
   if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
-    return findFreeCornerPosition(
+    const cornerResult = findFreeCornerPosition(
       roomWidth,
       roomHeight,
       objectType,
@@ -975,10 +1075,18 @@ export const findFreeWallPosition = (
       movementConfig,
       sku
     );
+
+    // Return null if no free corner is available
+    if (!cornerResult) {
+      console.warn('⚠️ Cannot add corner item - all corners are occupied');
+      return null;
+    }
+
+    return cornerResult;
   }
 
   if (!movementConfig.snapToWall) {
-    return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig);
+    return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig, sku);
   }
 
   console.log('>>>111 SKU', sku);
@@ -1087,16 +1195,9 @@ export const findFreeWallPosition = (
     }
   }
 
-  // Fallback position
-  const fallbackRotation = getObjectRotationForWall(objectType, 'south', orientation);
-  return {
-    position: {
-      x: 0,
-      y: getWallPositionY(movementConfig, spawnHeight),
-      z: wallFaces.south + buffer
-    },
-    rotation: fallbackRotation
-  };
+  // ✅ FIXED: No free position found - return null instead of forcing placement
+  console.warn(`⚠️ Cannot find free wall position for ${objectType} - all positions are occupied`);
+  return null;
 };
 
 // New function for finding free corner positions
@@ -1109,7 +1210,7 @@ export const findFreeCornerPosition = (
   orientation: OrientationConfig = DEFAULT_ORIENTATION,
   movement?: MovementConfig,
   sku?: string
-): { position: Position; rotation: number } => {
+): { position: Position; rotation: number } | null => {
 
   const corners = getRoomCorners(roomWidth, roomHeight);
 
@@ -1117,44 +1218,12 @@ export const findFreeCornerPosition = (
 
   if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
     console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
-    // Fallback if no dimensions found
-    return {
-      position: corners[0].position,
-      rotation: 0
-    };
+    // Return null if no dimensions found
+    return null;
   }
-
-  const halfWidth = (dimensions.width * scale) / 2;
-  const halfDepth = (dimensions.depth * scale) / 2;
 
   // Try each corner
   for (const corner of corners) {
-
-    // const offsetPosition = {
-    //   x: corner.position.x,
-    //   y: 0,
-    //   z: corner.position.z
-    // };
-
-    // // Offset based on which corner we're in, using actual object dimensions
-    // switch (corner.type) {
-    //   case 'north-west':
-    //     offsetPosition.x += halfWidth * 0.5;  // Offset slightly inward
-    //     offsetPosition.z += halfDepth * 0.5;
-    //     break;
-    //   case 'north-east':
-    //     offsetPosition.x -= halfWidth * 0.5;
-    //     offsetPosition.z += halfDepth * 0.5;
-    //     break;
-    //   case 'south-east':
-    //     offsetPosition.x -= halfWidth * 0.5;
-    //     offsetPosition.z -= halfDepth * 0.5;
-    //     break;
-    //   case 'south-west':
-    //     offsetPosition.x += halfWidth * 0.5;
-    //     offsetPosition.z -= halfDepth * 0.5;
-    //     break;
-    // }
 
     const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
       type: objectType,
@@ -1164,14 +1233,34 @@ export const findFreeCornerPosition = (
       sku
     });
 
-    // Check if this corner position would collide
+    console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
+    console.log(`🔍 Existing items count:`, existingItems.length);
+    console.log(`🔍 Existing items:`, existingItems.map(item => ({
+      type: item.type,
+      sku: item.sku,
+      position: item.position
+    })));
+
+    // Create temporary item with SKU for proper collision detection
+    const tempItem: BathroomItem = {
+      id: -1,
+      type: objectType,
+      position: [result.position.x, result.position.y, result.position.z] as [number, number, number],
+      scale: scale,
+      sku: sku
+    };
+
+    // Check if this corner position would collide with existing items
     const wouldCollide = wouldCollideWithExisting(
       result.position,
       objectType,
       scale,
       -1, // New item, no ID yet
-      existingItems
+      existingItems,
+      tempItem // Pass temporary item for proper dimension lookup
     );
+
+    console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
 
     if (!wouldCollide) {
       console.log(`>>>111 ✅ Found free corner: ${corner.type}`);
@@ -1179,23 +1268,9 @@ export const findFreeCornerPosition = (
     }
   }
 
-  // If no free corner, return the first corner (user can manually move)
-  console.warn('⚠️ No free corners available, using north-west');
-
-  // Apply the same dimension-based offset for the fallback position
-  const fallbackCorner = corners[0];
-  const fallbackOffset = {
-    x: fallbackCorner.position.x + halfWidth * 0.5,
-    y: 0,
-    z: fallbackCorner.position.z + halfDepth * 0.5
-  };
-
-  return constrainToCorner(fallbackOffset, roomWidth, roomHeight, {
-    type: objectType,
-    scale,
-    orientation,
-    movement
-  });
+  // If no free corner, return null instead of forcing placement
+  console.warn('⚠️ No free corners available for corner stall shower');
+  return null;
 };
 
 // Helper function for free-standing objects (updated for interior space)
@@ -1206,18 +1281,39 @@ const findFreeStandingPosition = (
   scale: number,
   existingItems: BathroomItem[],
   maxAttempts: number,
-  movement?: MovementConfig
-): { position: Position; rotation: number } => {
+  movement?: MovementConfig,
+  sku?: string
+): { position: Position; rotation: number } | null => {
 
   const movementConfig = movement ?? getMovementConfig(objectType);
-  const buffer = 30; // Buffer from walls for free-standing objects
+
+  // Get actual object dimensions
+  const dimensions = getDimensions(objectType, sku);
+  if (!dimensions) {
+    console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeStandingPosition`);
+    // Fallback to center if no dimensions
+    const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
+    return {
+      position: {
+        x: (interior.minX + interior.maxX) / 2,
+        y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
+        z: (interior.minZ + interior.maxZ) / 2
+      },
+      rotation: 0
+    };
+  }
+
+  // Use actual object dimensions as buffer from walls
+  const halfWidth = (dimensions.width * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
+
   const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
-  // Define free-standing area within interior space
-  const minX = interior.minX + buffer;
-  const maxX = interior.maxX - buffer;
-  const minZ = interior.minZ + buffer;
-  const maxZ = interior.maxZ - buffer;
+  // Define free-standing area within interior space using actual object dimensions
+  const minX = interior.minX + halfWidth;
+  const maxX = interior.maxX - halfWidth;
+  const minZ = interior.minZ + halfDepth;
+  const maxZ = interior.maxZ - halfDepth;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const position = {
@@ -1228,12 +1324,13 @@ const findFreeStandingPosition = (
 
     const rotation = 0;
 
-    // Create temporary item for collision detection
+    // Create temporary item for collision detection with SKU
     const tempItem: BathroomItem = {
       id: -1,
       type: objectType,
       position: [position.x, position.y, position.z] as [number, number, number],
-      scale: scale
+      scale: scale,
+      sku: sku
     };
 
     // Check for collisions
@@ -1265,14 +1362,50 @@ const findFreeStandingPosition = (
     }
   }
 
-  // Fallback to center of interior space
+  // ✅ FIXED: Check if fallback center position is free before using it
+  const fallbackPosition = {
+    x: (interior.minX + interior.maxX) / 2,
+    y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
+    z: (interior.minZ + interior.maxZ) / 2
+  };
+
+  // Create temporary item for collision detection
+  const fallbackTempItem: BathroomItem = {
+    id: -1,
+    type: objectType,
+    position: [fallbackPosition.x, fallbackPosition.y, fallbackPosition.z] as [number, number, number],
+    scale: scale,
+    sku: sku
+  };
+
+  // Check if fallback position collides
+  let fallbackHasCollision = false;
+  for (const item of existingItems) {
+    if (checkCollision(
+      fallbackPosition,
+      objectType,
+      scale,
+      { x: item.position[0], y: item.position[1], z: item.position[2] },
+      item.type,
+      item.scale || 1.0,
+      fallbackTempItem,
+      item
+    )) {
+      fallbackHasCollision = true;
+      break;
+    }
+  }
+
+  if (fallbackHasCollision) {
+    // No free position available, even at center
+    console.warn(`⚠️ Cannot find free standing position for ${objectType} - all positions occupied including center`);
+    return null;
+  }
+
+  // Fallback position is free, use it
   console.log(`⚠️ Using fallback center position in interior space for ${objectType}`);
   return {
-    position: {
-      x: (interior.minX + interior.maxX) / 2,
-      y: movementConfig.allowVerticalMovement ? (movementConfig.minHeight || 0) : 0,
-      z: (interior.minZ + interior.maxZ) / 2
-    },
+    position: fallbackPosition,
     rotation: 0
   };
 };
