@@ -6351,9 +6351,9 @@ const productData: ProductData = {
     ],
     WindowAndDoor: [
         {
-            id: 'window_door_set',
+            id: 'door',
             link: '#',
-            name: 'Windows & Doors',
+            name: 'Doors',
             price: '0.00',
             image: 'assets/productImages/door/door.png',
             variants: [
@@ -6384,12 +6384,23 @@ const productData: ProductData = {
                     price: '0.00',
                     title: 'Standard Door 800×2100mm'
                 },
+            ],
+            variantType: 'Type',
+            features: ['Wall Mounted', 'Standard Sizes', 'Easy Installation']
+        },
+        {
+            id: 'window',
+            link: '#',
+            name: 'Windows',
+            price: '0.00',
+            image: 'assets/productImages/window/window.png',
+            variants: [
                 {
                     id: 'standard_window',
                     name: 'Window 600×800mm',
                     image: 'assets/productImages/window/window.png',
                     link: '#',
-                    path: '/models/window/Window.glb',
+                    path: '../../models/window/window.glb',
                     dimensions: {
                         width: 99.1,    // 600mm = 60cm
                         height: 78.8,   // 800mm = 80cm
