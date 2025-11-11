@@ -125,7 +125,6 @@ export class SceneManager {
     // });
 
     // Check renderer capabilities
-    const maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
     // FIXED: Log scene initialization
     console.log('✅ Scene initialized successfully:', {
       sceneBackground: this.scene.background,
@@ -269,12 +268,12 @@ export class SceneManager {
           const disposeMaterial = (mat: THREE.Material) => {
             // Store texture references before disposal
             const textures: THREE.Texture[] = [];
-            if ('map' in mat && mat.map) textures.push(mat.map);
-            if ('normalMap' in mat && mat.normalMap) textures.push(mat.normalMap);
-            if ('roughnessMap' in mat && mat.roughnessMap) textures.push(mat.roughnessMap);
-            if ('metalnessMap' in mat && mat.metalnessMap) textures.push(mat.metalnessMap);
-            if ('emissiveMap' in mat && mat.emissiveMap) textures.push(mat.emissiveMap);
-            if ('envMap' in mat && mat.envMap) textures.push(mat.envMap);
+            if ('map' in mat && mat.map) textures.push(mat.map as any);
+            if ('normalMap' in mat && mat.normalMap) textures.push(mat.normalMap as any);
+            if ('roughnessMap' in mat && mat.roughnessMap) textures.push(mat.roughnessMap as any);
+            if ('metalnessMap' in mat && mat.metalnessMap) textures.push(mat.metalnessMap as any);
+            if ('emissiveMap' in mat && mat.emissiveMap) textures.push(mat.emissiveMap as any);
+            if ('envMap' in mat && mat.envMap) textures.push(mat.envMap as any);
 
             // Temporarily remove texture references to prevent disposal
             if ('map' in mat) mat.map = null;
