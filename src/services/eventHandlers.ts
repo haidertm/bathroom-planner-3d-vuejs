@@ -668,7 +668,7 @@ export class EventHandlers {
 
             // Only move if a collision-free position was found
             if (newPosition) {
-              // Apply the new position
+              // Apply the new position to Three.js object
               this.selectedObject.position.set(newPosition.x, newPosition.y, newPosition.z);
 
               // Apply the correct rotation for the new wall
@@ -676,17 +676,11 @@ export class EventHandlers {
                 this.selectedObject.rotation.y = newPosition.rotation;
               }
 
-              // Update the item data immediately
-              this.setItems((prevItems: BathroomItem[]) => {
-                return prevItems.map(item =>
-                  item.id === itemId
-                    ? {
-                      ...item,
-                      position: [newPosition.x, newPosition.y, newPosition.z],
-                      rotation: newPosition.rotation
-                    }
-                    : item
-                );
+              // Update the item data and save to history using queueUpdate
+              // Since isDragOperation is false at this point, queueUpdate will apply immediately and save to history
+              this.queueUpdate(itemId, {
+                position: [newPosition.x, newPosition.y, newPosition.z],
+                rotation: newPosition.rotation
               });
 
               console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall at collision-free position`);
