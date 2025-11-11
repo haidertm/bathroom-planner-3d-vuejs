@@ -124,6 +124,7 @@ export class SceneManager {
     //   logarithmicDepthBuffer: true  // Set it in the constructor options
     // });
 
+    // Check renderer capabilities
     // FIXED: Log scene initialization
     console.log('✅ Scene initialized successfully:', {
       sceneBackground: this.scene.background,
@@ -262,10 +263,34 @@ export class SceneManager {
           child.geometry.dispose();
         }
         if (child.material) {
+          // Dispose materials but NOT their textures
+          // Textures are managed by textureManager and should be cached/reused
+          const disposeMaterial = (mat: THREE.Material) => {
+            // Store texture references before disposal
+            const textures: THREE.Texture[] = [];
+            if ('map' in mat && mat.map) textures.push(mat.map as any);
+            if ('normalMap' in mat && mat.normalMap) textures.push(mat.normalMap as any);
+            if ('roughnessMap' in mat && mat.roughnessMap) textures.push(mat.roughnessMap as any);
+            if ('metalnessMap' in mat && mat.metalnessMap) textures.push(mat.metalnessMap as any);
+            if ('emissiveMap' in mat && mat.emissiveMap) textures.push(mat.emissiveMap as any);
+            if ('envMap' in mat && mat.envMap) textures.push(mat.envMap as any);
+
+            // Temporarily remove texture references to prevent disposal
+            if ('map' in mat) mat.map = null;
+            if ('normalMap' in mat) mat.normalMap = null;
+            if ('roughnessMap' in mat) mat.roughnessMap = null;
+            if ('metalnessMap' in mat) mat.metalnessMap = null;
+            if ('emissiveMap' in mat) mat.emissiveMap = null;
+            if ('envMap' in mat) mat.envMap = null;
+
+            // Now dispose material (without textures)
+            mat.dispose();
+          };
+
           if (Array.isArray(child.material)) {
-            child.material.forEach(material => material.dispose());
+            child.material.forEach(disposeMaterial);
           } else {
-            child.material.dispose();
+            disposeMaterial(child.material);
           }
         }
       }
@@ -494,14 +519,16 @@ export class SceneManager {
         }
     }
 
-  updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
+  async updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): Promise<void> {
     if (!this.scene) return;
 
     if (this.floorRef) {
       this.scene.remove(this.floorRef);
+      // Properly dispose the old floor (without disposing cached textures)
+      this.disposeModel(this.floorRef);
     }
 
-    const floorMaterial = this.createEnhancedFloorMaterial(floorTexture);
+    const floorMaterial = await this.createEnhancedFloorMaterial(floorTexture);
     this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     this.scene.add(this.floorRef);
 
@@ -513,8 +540,8 @@ export class SceneManager {
     }
   }
 
-  private createEnhancedFloorMaterial (floorTexture: TextureConfig): THREE.MeshStandardMaterial {
-    const material = textureManager.createTexturedMaterial(floorTexture);
+  private async createEnhancedFloorMaterial (floorTexture: TextureConfig): Promise<THREE.MeshStandardMaterial> {
+    const material = await textureManager.createTexturedMaterialAsync(floorTexture);
 
     // Enhanced floor material properties
     material.roughness = 0;
@@ -534,9 +561,10 @@ export class SceneManager {
   updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
     if (!this.scene) return;
 
-    // Remove existing walls
+    // Remove existing walls and properly dispose them
     this.wallRefs.forEach(wall => {
       if (wall.parent) wall.parent.remove(wall);
+      this.disposeModel(wall);
     });
     this.wallRefs = [];
 
