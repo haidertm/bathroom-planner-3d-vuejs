@@ -656,12 +656,13 @@ export class EventHandlers {
             // Determine the best visible wall (usually opposite wall)
             const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
 
-            // Move object to the target wall immediately
-            const newPosition = this.getPositionOnWall(
+            // Find an empty space on the target wall (collision-aware)
+            const newPosition = this.findEmptySpaceOnWall(
               targetWall,
               this.selectedObject.position,
               objectType,
               objectScale,
+              itemId,
               currentItem
             );
 
@@ -686,7 +687,7 @@ export class EventHandlers {
               );
             });
 
-            console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall`);
+            console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall at collision-free position`);
           }
         }
       }
@@ -835,6 +836,238 @@ export class EventHandlers {
     }
 
     return { x, y, z, rotation };
+  }
+
+  /**
+   * Find an empty space on a wall for the object, avoiding collisions
+   */
+  private findEmptySpaceOnWall (
+    wall: WallType,
+    currentPosition: THREE.Vector3,
+    objectType: ComponentType,
+    objectScale: number,
+    itemId: number,
+    currentItem?: BathroomItem
+  ): { x: number; y: number; z: number; rotation: number } {
+    // Get initial position on wall
+    const basePosition = this.getPositionOnWall(wall, currentPosition, objectType, objectScale, currentItem);
+
+    // Check if base position is collision-free WITH the correct rotation for the target wall
+    const currentItems = this.getCurrentItems();
+
+    // Create a temporary test item with the target wall's rotation to check collisions accurately
+    const testItem = currentItem ? { ...currentItem } : undefined;
+
+    // ✅ CRITICAL FIX: Check vertical collision at base position
+    let isColliding = wouldCollideWithExisting(
+      { x: basePosition.x, y: basePosition.y, z: basePosition.z },
+      objectType,
+      objectScale,
+      itemId,
+      currentItems,
+      testItem
+    );
+
+    if (!isColliding) {
+      console.log(`✅ Base position on ${wall} wall is free (x:${basePosition.x.toFixed(1)}, y:${basePosition.y.toFixed(1)}, z:${basePosition.z.toFixed(1)})`);
+      return basePosition; // Base position is fine
+    }
+
+    console.log(`🔍 Base position on ${wall} wall has collision, searching for empty space (horizontal and vertical)...`);
+
+    // Calculate dimensions for spacing
+    const roomHalfWidth = this.roomWidthRef.value / 2;
+    const roomHalfHeight = this.roomHeightRef.value / 2;
+    const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+    const objectWidth = ((dimensions?.width || 50) * objectScale);
+    const halfWidth = objectWidth / 2;
+
+    // Add spacing between objects to prevent touching
+    const OBJECT_SPACING = 10; // 10cm gap between objects
+    const step = objectWidth + OBJECT_SPACING;
+
+    // For north/south walls, we move along X axis using object width
+    // For east/west walls, we move along Z axis, but object is rotated 90°, so we use object width (not depth)
+    const searchStep = (wall === 'north' || wall === 'south') ? step : step;
+
+    const maxAttempts = 30; // Increased attempts for better coverage
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Try alternating left and right from base position
+      // Pattern: +step, -step, +2*step, -2*step, +3*step, -3*step...
+      const direction = (attempt % 2 === 0) ? 1 : -1;
+      const magnitude = Math.ceil(attempt / 2);
+      const offset = searchStep * magnitude * direction;
+
+      let testX = basePosition.x;
+      let testZ = basePosition.z;
+      let testPosition;
+
+      // Adjust position based on wall orientation
+      if (wall === 'north' || wall === 'south') {
+        testX = basePosition.x + offset;
+
+        // Clamp to wall boundaries with proper half-width
+        testX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, testX));
+
+        // Skip if we've hit the wall boundary and can't move further
+        if ((direction > 0 && testX >= roomHalfWidth - halfWidth) ||
+            (direction < 0 && testX <= -roomHalfWidth + halfWidth)) {
+          continue;
+        }
+
+        testPosition = {
+          x: testX,
+          y: basePosition.y,
+          z: basePosition.z,
+          rotation: basePosition.rotation
+        };
+      } else { // east or west
+        testZ = basePosition.z + offset;
+
+        // For east/west walls, the object rotates, so we need to use halfWidth for Z constraint
+        testZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, testZ));
+
+        // Skip if we've hit the wall boundary and can't move further
+        if ((direction > 0 && testZ >= roomHalfHeight - halfWidth) ||
+            (direction < 0 && testZ <= -roomHalfHeight + halfWidth)) {
+          continue;
+        }
+
+        testPosition = {
+          x: basePosition.x,
+          y: basePosition.y,
+          z: testZ,
+          rotation: basePosition.rotation
+        };
+      }
+
+      // Check if this position is collision-free with proper rotation
+      const wouldCollide = wouldCollideWithExisting(
+        { x: testPosition.x, y: testPosition.y, z: testPosition.z },
+        objectType,
+        objectScale,
+        itemId,
+        currentItems,
+        testItem
+      );
+
+      if (!wouldCollide) {
+        console.log(`✅ Found empty space on ${wall} wall at offset ${offset.toFixed(0)}cm (attempt ${attempt})`);
+        return testPosition;
+      } else {
+        console.log(`❌ Position at offset ${offset.toFixed(0)}cm still collides (attempt ${attempt})`);
+      }
+    }
+
+    // ✅ NEW: If horizontal search failed, try different Y positions (vertical search)
+    console.log(`🔍 Horizontal search exhausted, trying vertical search...`);
+
+    // Get movement config to check if vertical movement is allowed
+    const movementConfig = getMovementConfig(objectType, currentItem);
+
+    if (movementConfig?.allowVerticalMovement) {
+      const objectHeight = ((dimensions?.height || 50) * objectScale);
+      const spawnHeight = dimensions?.spawnHeight || 0;
+
+      // ✅ CRITICAL: Get valid height constraints to prevent going through ceiling/floor
+      const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
+
+      // Try different heights: spawn height, then heights above and below
+      const heightAttempts = [
+        spawnHeight, // Try default spawn height
+        spawnHeight + objectHeight + 10, // Try one object-height above (with 10cm spacing)
+        spawnHeight - objectHeight - 10, // Try one object-height below (with 10cm spacing)
+        spawnHeight + (objectHeight * 2) + 20, // Try two object-heights above
+        spawnHeight - (objectHeight * 2) - 20, // Try two object-heights below
+      ].filter(testY => testY >= heightConstraints.min && testY <= heightConstraints.max); // ✅ Filter to valid range
+
+      console.log(`🔍 Valid height range: ${heightConstraints.min.toFixed(1)}cm to ${heightConstraints.max.toFixed(1)}cm`);
+
+      for (const testY of heightAttempts) {
+        // Skip if Y is same as base position (already tested)
+        if (Math.abs(testY - basePosition.y) < 5) continue;
+
+        console.log(`🔍 Trying vertical position: y=${testY.toFixed(1)}cm`);
+
+        // Check if this Y position alone is collision-free
+        const testPositionAtNewHeight = {
+          x: basePosition.x,
+          y: testY,
+          z: basePosition.z,
+          rotation: basePosition.rotation
+        };
+
+        let wouldCollide = wouldCollideWithExisting(
+          { x: testPositionAtNewHeight.x, y: testPositionAtNewHeight.y, z: testPositionAtNewHeight.z },
+          objectType,
+          objectScale,
+          itemId,
+          currentItems,
+          testItem
+        );
+
+        if (!wouldCollide) {
+          console.log(`✅ Found empty space at different height: y=${testY.toFixed(1)}cm`);
+          return testPositionAtNewHeight;
+        }
+
+        // If still colliding, try horizontal search at this new Y position
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const direction = (attempt % 2 === 0) ? 1 : -1;
+          const magnitude = Math.ceil(attempt / 2);
+          const offset = searchStep * magnitude * direction;
+
+          let testX = basePosition.x;
+          let testZ = basePosition.z;
+
+          if (wall === 'north' || wall === 'south') {
+            testX = basePosition.x + offset;
+            testX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, testX));
+
+            if ((direction > 0 && testX >= roomHalfWidth - halfWidth) ||
+                (direction < 0 && testX <= -roomHalfWidth + halfWidth)) {
+              continue;
+            }
+          } else { // east or west
+            testZ = basePosition.z + offset;
+            testZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, testZ));
+
+            if ((direction > 0 && testZ >= roomHalfHeight - halfWidth) ||
+                (direction < 0 && testZ <= -roomHalfHeight + halfWidth)) {
+              continue;
+            }
+          }
+
+          const testPosition = {
+            x: testX,
+            y: testY,
+            z: testZ,
+            rotation: basePosition.rotation
+          };
+
+          wouldCollide = wouldCollideWithExisting(
+            { x: testPosition.x, y: testPosition.y, z: testPosition.z },
+            objectType,
+            objectScale,
+            itemId,
+            currentItems,
+            testItem
+          );
+
+          if (!wouldCollide) {
+            console.log(`✅ Found empty space at y=${testY.toFixed(1)}cm, offset=${offset.toFixed(0)}cm`);
+            return testPosition;
+          }
+        }
+      }
+    }
+
+    // If no empty space found after all attempts (horizontal and vertical), warn and return base position
+    console.warn(`⚠️ Could not find empty space on ${wall} wall after exhaustive search`);
+    console.warn(`⚠️ Falling back to base position - object may overlap`);
+
+    return basePosition;
   }
 
   /**

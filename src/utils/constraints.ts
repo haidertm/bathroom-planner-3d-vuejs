@@ -606,8 +606,9 @@ export const checkCollision = (
   const obj2MaxZ = pos2.z + obj2Depth / 2;
 
   // Add collision buffers - expand each object's bounding box
-  const horizontalBuffer = 10; // 10cm horizontal buffer
-  const verticalBuffer = 3;    // 3cm vertical buffer
+  // Moderate buffers for realistic spacing while preventing false positives
+  const horizontalBuffer = 5; // 5cm horizontal buffer (10cm total gap when near)
+  const verticalBuffer = 2;   // 2cm vertical buffer (4cm total gap when stacked)
 
   // ✅ FIXED: Expand bounding boxes by buffer amount before checking overlap
   const obj1MinXWithBuffer = obj1MinX - horizontalBuffer;
