@@ -1014,7 +1014,9 @@ export class EventHandlers {
           objectScale,
           itemId,
           currentItems,
-          testItem
+          testItem,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value
         );
 
         if (!wouldCollide) {
@@ -1062,7 +1064,9 @@ export class EventHandlers {
             objectScale,
             itemId,
             currentItems,
-            testItem
+            testItem,
+            this.roomWidthRef.value,
+            this.roomHeightRef.value
           );
 
           if (!wouldCollide) {
