@@ -87,8 +87,8 @@ export const wouldCollideWithExistingOrWalls = (
     return true;
   }
 
-  // 2. Check collision with existing objects
-  return wouldCollideWithExisting(position, objectType, scale, objectId, existingItems, currentItem);
+  // 2. Check collision with existing objects (passing room dimensions for accurate wall detection)
+  return wouldCollideWithExisting(position, objectType, scale, objectId, existingItems, currentItem, roomWidth, roomHeight);
 };
 
 /**
@@ -516,7 +516,9 @@ export const checkCollision = (
   type2: ComponentType,
   scale2: number,
   item1?: BathroomItem,
-  item2?: BathroomItem
+  item2?: BathroomItem,
+  roomWidth?: number,
+  roomHeight?: number
 ): boolean => {
 
   // Get enhanced dimensions including floorOffset
@@ -536,11 +538,20 @@ export const checkCollision = (
     const movementConfig = getMovementConfig(item.type, item);
     if (!movementConfig.snapToWall) return null;
 
-    // Calculate distances to each wall face (using relative positions)
-    const distToNorth = Math.abs(pos.z + 150); // Assuming room is 300cm, north wall is at -150
-    const distToSouth = Math.abs(pos.z - 150);
-    const distToEast = Math.abs(pos.x - 150);
-    const distToWest = Math.abs(pos.x + 150);
+    // Calculate distances to each wall face (using actual room dimensions)
+    const roomHalfWidth = roomWidth ? roomWidth / 2 : 300; // Use actual room width or fallback to 300cm
+    const roomHalfHeight = roomHeight ? roomHeight / 2 : 300; // Use actual room height or fallback to 300cm
+    const wallThickness = WALL_SETTINGS.THICKNESS;
+
+    const northWall = -roomHalfHeight + wallThickness;
+    const southWall = roomHalfHeight - wallThickness;
+    const eastWall = roomHalfWidth - wallThickness;
+    const westWall = -roomHalfWidth + wallThickness;
+
+    const distToNorth = Math.abs(pos.z - northWall);
+    const distToSouth = Math.abs(pos.z - southWall);
+    const distToEast = Math.abs(pos.x - eastWall);
+    const distToWest = Math.abs(pos.x - westWall);
 
     const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
     if (minDist === distToNorth) return 'north';
@@ -704,7 +715,9 @@ export const wouldCollideWithExisting = (
   scale: number,
   objectId: number,
   existingItems: BathroomItem[],
-  currentItem?: BathroomItem // Optional: the item being moved/placed
+  currentItem?: BathroomItem, // Optional: the item being moved/placed
+  roomWidth?: number,
+  roomHeight?: number
 ): boolean => {
   for (const item of existingItems) {
     if (item.id === objectId) {
@@ -714,7 +727,7 @@ export const wouldCollideWithExisting = (
     const itemPosition = { x: item.position[0], y: item.position[1], z: item.position[2] };
     const itemScale = item.scale || 1.0;
 
-    // Use enhanced collision detection with full item data
+    // Use enhanced collision detection with full item data AND room dimensions
     const hasCollision = checkCollision(
       position,
       objectType,
@@ -723,7 +736,9 @@ export const wouldCollideWithExisting = (
       item.type,
       itemScale,
       currentItem,
-      item
+      item,
+      roomWidth,
+      roomHeight
     );
 
     if (hasCollision) {

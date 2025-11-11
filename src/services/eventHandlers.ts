@@ -666,28 +666,33 @@ export class EventHandlers {
               currentItem
             );
 
-            // Apply the new position
-            this.selectedObject.position.set(newPosition.x, newPosition.y, newPosition.z);
+            // Only move if a collision-free position was found
+            if (newPosition) {
+              // Apply the new position
+              this.selectedObject.position.set(newPosition.x, newPosition.y, newPosition.z);
 
-            // Apply the correct rotation for the new wall
-            if (!movementConfig.allowFreeRotation) {
-              this.selectedObject.rotation.y = newPosition.rotation;
+              // Apply the correct rotation for the new wall
+              if (!movementConfig.allowFreeRotation) {
+                this.selectedObject.rotation.y = newPosition.rotation;
+              }
+
+              // Update the item data immediately
+              this.setItems((prevItems: BathroomItem[]) => {
+                return prevItems.map(item =>
+                  item.id === itemId
+                    ? {
+                      ...item,
+                      position: [newPosition.x, newPosition.y, newPosition.z],
+                      rotation: newPosition.rotation
+                    }
+                    : item
+                );
+              });
+
+              console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall at collision-free position`);
+            } else {
+              console.log(`⚠️ No space available on ${targetWall} wall - keeping object on hidden ${currentWall} wall`);
             }
-
-            // Update the item data immediately
-            this.setItems((prevItems: BathroomItem[]) => {
-              return prevItems.map(item =>
-                item.id === itemId
-                  ? {
-                    ...item,
-                    position: [newPosition.x, newPosition.y, newPosition.z],
-                    rotation: newPosition.rotation
-                  }
-                  : item
-              );
-            });
-
-            console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall at collision-free position`);
           }
         }
       }
@@ -840,6 +845,7 @@ export class EventHandlers {
 
   /**
    * Find an empty space on a wall for the object, avoiding collisions
+   * Returns null if no collision-free space is available
    */
   private findEmptySpaceOnWall (
     wall: WallType,
@@ -848,7 +854,7 @@ export class EventHandlers {
     objectScale: number,
     itemId: number,
     currentItem?: BathroomItem
-  ): { x: number; y: number; z: number; rotation: number } {
+  ): { x: number; y: number; z: number; rotation: number } | null {
     // Get initial position on wall
     const basePosition = this.getPositionOnWall(wall, currentPosition, objectType, objectScale, currentItem);
 
@@ -858,14 +864,16 @@ export class EventHandlers {
     // Create a temporary test item with the target wall's rotation to check collisions accurately
     const testItem = currentItem ? { ...currentItem } : undefined;
 
-    // ✅ CRITICAL FIX: Check vertical collision at base position
+    // ✅ CRITICAL FIX: Check vertical collision at base position (with room dimensions)
     let isColliding = wouldCollideWithExisting(
       { x: basePosition.x, y: basePosition.y, z: basePosition.z },
       objectType,
       objectScale,
       itemId,
       currentItems,
-      testItem
+      testItem,
+      this.roomWidthRef.value,
+      this.roomHeightRef.value
     );
 
     if (!isColliding) {
@@ -942,14 +950,16 @@ export class EventHandlers {
         };
       }
 
-      // Check if this position is collision-free with proper rotation
+      // Check if this position is collision-free with proper rotation (with room dimensions)
       const wouldCollide = wouldCollideWithExisting(
         { x: testPosition.x, y: testPosition.y, z: testPosition.z },
         objectType,
         objectScale,
         itemId,
         currentItems,
-        testItem
+        testItem,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value
       );
 
       if (!wouldCollide) {
@@ -1063,11 +1073,11 @@ export class EventHandlers {
       }
     }
 
-    // If no empty space found after all attempts (horizontal and vertical), warn and return base position
+    // If no empty space found after all attempts (horizontal and vertical), return null
     console.warn(`⚠️ Could not find empty space on ${wall} wall after exhaustive search`);
-    console.warn(`⚠️ Falling back to base position - object may overlap`);
+    console.warn(`⚠️ Keeping object on current wall - no space available on target wall`);
 
-    return basePosition;
+    return null;
   }
 
   /**
