@@ -735,12 +735,40 @@ export class EventHandlers {
         this.originalDragPosition.copy(this.selectedObject.position);
         this.originalDragRotation = this.selectedObject.rotation.y;
 
-        this.updateDragPlane(this.selectedObject);
+        // ✅ FIX: For wall-mounted objects, calculate dragOffset using the wall plane
+        if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+          // Determine which wall the object is on
+          const currentWall = this.determineCurrentWall(this.selectedObject.position);
+          const roomHalfWidth = this.roomWidthRef.value / 2;
+          const roomHalfHeight = this.roomHeightRef.value / 2;
 
-        this.raycaster.setFromCamera(this.mouse, this.camera);
-        const intersectPoint = new THREE.Vector3();
-        this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
-        this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
+          // Create the wall plane
+          const wallPlanes: { [key: string]: THREE.Plane } = {
+            north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
+            south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
+            east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
+            west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
+          };
+
+          const wallPlane = wallPlanes[currentWall];
+
+          // Calculate intersection with wall plane
+          this.raycaster.setFromCamera(this.mouse, this.camera);
+          const intersectPoint = new THREE.Vector3();
+          this.raycaster.ray.intersectPlane(wallPlane, intersectPoint);
+
+          // Calculate dragOffset from wall plane intersection
+          this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
+        } else {
+          // For non-wall objects, use the standard drag plane
+          this.updateDragPlane(this.selectedObject);
+
+          this.raycaster.setFromCamera(this.mouse, this.camera);
+          const intersectPoint = new THREE.Vector3();
+          this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
+          this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
+        }
+
         this.renderer.domElement.style.cursor = 'grabbing';
       }
 
@@ -1420,7 +1448,7 @@ export class EventHandlers {
 
           // ✅ Adjust Y position
           if (movementConfig.allowVerticalMovement) {
-            // Apply dragOffset to maintain vertical position relative to click point
+            // For wall-mounted objects, apply dragOffset to maintain where user clicked
             newY = closestPoint.y + this.dragOffset.y;
           } else {
             // Keep current Y if not allowing vertical movement
@@ -1438,7 +1466,7 @@ export class EventHandlers {
                   // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
                   newX = Math.max(
                       interior.minX + halfObjectWidth,  // Don't go into west wall
-                      Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
+                      Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall, use newX with offset
                   );
                   constrainedRotation = 0;
                   break;
@@ -1449,7 +1477,7 @@ export class EventHandlers {
                     // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
                    newX = Math.max(
                        interior.minX + halfObjectWidth,  // Don't go into west wall
-                       Math.min(interior.maxX - halfObjectWidth, closestPoint.x)  // Don't go into east wall
+                       Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall, use newX with offset
                    );
                    constrainedRotation = Math.PI;
                    break;
@@ -1460,7 +1488,7 @@ export class EventHandlers {
                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
                    newZ = Math.max(
                        interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
-                       Math.min(interior.maxZ - halfObjectWidth, closestPoint.z)  // Don't go into south wall
+                       Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall, use newZ with offset
                    );
                    constrainedRotation = -Math.PI / 2;
                    break;
@@ -1471,7 +1499,7 @@ export class EventHandlers {
                     // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
                     newZ = Math.max(
                         interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
-                        Math.min(interior.maxZ - halfObjectWidth, closestPoint.z)  // Don't go into south wall
+                        Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall, use newZ with offset
                     );
                     constrainedRotation = Math.PI / 2;
                     break;
@@ -1501,7 +1529,6 @@ export class EventHandlers {
           -this.selectedObject.position.y
         );
 
-        this.updateDragPlane(this.selectedObject);
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const cursorWorldPos = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(heightPlane, cursorWorldPos);
@@ -1527,7 +1554,6 @@ export class EventHandlers {
 
       } else {
         // Free movement objects - use traditional drag with offset
-        this.updateDragPlane(this.selectedObject);
         this.raycaster.setFromCamera(this.mouse, this.camera);
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
