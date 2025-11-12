@@ -22,10 +22,11 @@ import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
-import { MeasurementSystem } from './measurementSystem';
+import { MeasurementSystem } from './measurementSystem.ts';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
 import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
+import { RotationArrows } from './rotationArrows';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -116,6 +117,11 @@ export class EventHandlers {
   private showDragPlaneDebug: boolean = false; // Toggle this for debug visualization
   // Also add intersection point visualization in handleMouseMove:
   private debugIntersectionPoint: THREE.Mesh | null = null;
+  private rotationArrows: RotationArrows | null = null;
+  public onItemSelected?: (itemId: number) => void;
+  public onItemDeselected?: () => void;
+  public onDragStart?: () => void;
+  public onDragEnd?: () => void;
 
   constructor (
     scene: THREE.Scene,
@@ -199,9 +205,64 @@ export class EventHandlers {
     this.handleKeyDown = this.handleKeyDown.bind(this);
     // 🔧 FIX: Bind the new visibility change handler
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
+      this.rotationArrows = new RotationArrows(this.scene, this.camera, this.renderer);
 
     // Simple animation loop ONLY for zoom
     this.startSimpleZoomAnimation();
+      this.rotationArrows.setRotationChangeCallback((rotation: number) => {
+          if (this.selectedObject) {
+              // Batch arrow-driven rotations like a drag op
+              if (!this.isDragOperation) {
+                  this.isDragOperation = true;
+                  this.pendingUpdates.clear();
+              }
+              const itemId = this.selectedObject.userData.itemId as number;
+              const objectType = this.selectedObject.userData.type as ComponentType;
+
+              // Update the object's rotation
+              this.selectedObject.rotation.y = rotation;
+
+              // ✅ GENERIC: Check for ANY object that has free rotation and doesn't snap to walls
+              const currentItem = this.getCurrentItemData(itemId);
+              const movementConfig = getMovementConfig(objectType, currentItem);
+
+              // Apply rotation-aware positioning for all freestanding objects
+              if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+
+                  const currentPos = this.selectedObject.position.clone();
+                  const correctedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
+                  const EPS = 0.1; // cm
+
+                  if (Math.abs(correctedPos.x - currentPos.x) > EPS || Math.abs(correctedPos.z - currentPos.z) > EPS) {
+                      this.selectedObject.position.copy(correctedPos);
+
+                      // Update data model with both rotation and corrected position
+                      this.queueUpdate(itemId, {
+                          rotation: rotation,
+                          position: [correctedPos.x, correctedPos.y, correctedPos.z]
+                      });
+                  } else {
+                      // Position didn't need adjustment, just update rotation
+                      this.queueUpdate(itemId, { rotation });
+                  }
+              } else {
+                  // Wall-mounted or non-free-rotation objects - just update rotation
+                  this.queueUpdate(itemId, { rotation });
+              }
+
+              // Update arrow positions to follow the object
+              this.rotationArrows?.updateArrowPositions();
+          }
+      });
+
+      this.rotationArrows.setRotationCompleteCallback((rotation: number) => {
+          if (this.selectedObject) {
+              const itemId = this.selectedObject.userData.itemId as number;
+              console.log('🎯 Arrow rotation completed for item:', itemId, 'rotation:', rotation);
+              this.applyPendingUpdates();
+              this.isDragOperation = false;
+          }
+      });
   }
 
 // Add this method to create/update the drag plane visualization:
@@ -299,6 +360,13 @@ export class EventHandlers {
     this.wallCulling = wallCulling;
   }
 
+    public update(): void {
+        // Update rotation arrows
+        if (this.rotationArrows) {
+            this.rotationArrows.update();
+        }
+    }
+
   private startSimpleZoomAnimation (): void {
     const animate = () => {
       requestAnimationFrame(animate);
@@ -323,11 +391,12 @@ export class EventHandlers {
     objectType: ComponentType,
     objectScale: number,
     itemId: number,
-    currentItem?: BathroomItem
+    currentItem?: BathroomItem,
+    rotation?: number
   ): boolean {
     const currentItems = this.getCurrentItems();
 
-    // 🔧 Use the new collision detection that includes walls
+      // 🔧 Use collision detection that includes walls and supports rotation-aware bounds
     return wouldCollideWithExistingOrWalls(
       position,
       objectType,
@@ -336,7 +405,8 @@ export class EventHandlers {
       currentItems,
       this.roomWidthRef.value,
       this.roomHeightRef.value,
-      currentItem
+      currentItem,
+      rotation
     );
   }
 
@@ -514,9 +584,27 @@ export class EventHandlers {
     if (this.selectedObject && !intersected) {
       this.wasEmptySpaceClicked = true;
     }
+      if (this.rotationArrows && this.rotationArrows.isEnabled() && this.rotationArrows.isMouseOverArrows()) {
+          // Let rotation arrows handle this event
+          return;
+      }
 
     if (intersected) {
+        console.log('>>> item id', intersected)
+      const itemId = intersected.object.userData.itemId;
       this.selectedObject = intersected.object;
+
+        // Update rotation arrows when object is selected
+
+        if (!this.selectedObject || this.selectedObject.userData.itemId !== itemId) {
+            this.selectObject(intersected.object);
+
+            // EMIT selection event for variant configuration
+            if (this.onItemSelected && itemId) {
+                this.onItemSelected(itemId.toString());
+            }
+        }
+
 
       console.log('selectedObject >>>', this.selectedObject);
 
@@ -535,9 +623,17 @@ export class EventHandlers {
       // ✅ NEW: Auto-move objects from hidden walls to visible walls
       const objectType = this.selectedObject.userData.type as ComponentType;
       const objectScale = this.selectedObject.scale.x;
-      const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = currentItems.find(item => item.id === itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
+
+        if (this.rotationArrows) {
+            const canRotateFreely = movementConfig?.allowFreeRotation === true;
+            if (canRotateFreely) {
+                this.rotationArrows.setSelectedObject(this.selectedObject);
+            } else {
+                this.rotationArrows.setSelectedObject(null); // Hide arrows for non-rotatable objects
+            }
+        }
 
       // Only do this for wall-bound objects
       if (movementConfig?.snapToWall) {
@@ -613,16 +709,7 @@ export class EventHandlers {
       // Then set appropriate outline color based on current collision state
       setOutlineColor(isColliding);
 
-      if (event.button === 2) { // Right click for rotation
-        this.isObjectRotating = true;
-        this.isDragOperation = true; // Mark as drag operation
-        const rect = this.renderer.domElement.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        this.rotationStartAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
-        this.objectStartRotation = this.selectedObject.rotation.y;
-        this.renderer.domElement.style.cursor = 'crosshair';
-      } else if (event.ctrlKey || event.metaKey) { // Ctrl/Cmd + click for height adjustment
+       if (event.ctrlKey || event.metaKey) { // Ctrl/Cmd + click for height adjustment
         this.isHeightAdjusting = true;
         this.isDragOperation = true; // Mark as drag operation
         this.heightStartY = this.selectedObject.position.y;
@@ -637,6 +724,11 @@ export class EventHandlers {
       } else { // Left click for dragging
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+
+        // Notify that dragging has started
+        if (this.onDragStart) {
+          this.onDragStart();
+        }
 
         // Store original position for potential snap-back
         // Note: If we just moved the object, this will store the NEW position
@@ -653,6 +745,10 @@ export class EventHandlers {
       }
 
     } else {
+        if (this.selectedObject) {
+            this.clearSelection();
+        }
+
       if (event.button === 0) { // Left click for camera rotation
         this.isRotating = true;
         this.renderer.domElement.style.cursor = 'grabbing';
@@ -662,6 +758,31 @@ export class EventHandlers {
       window.dispatchEvent(new CustomEvent('object-selected'));
     }
   }
+
+    private selectObject(object: THREE.Object3D): void {
+        console.log('🎯 Selecting object:', object.userData.itemId);
+
+        // Clear previous selection first
+        if (this.selectedObject && this.selectedObject !== object) {
+            highlightObject(this.selectedObject, false);
+            setOutlineColor(false);
+        }
+
+        this.selectedObject = object;
+        highlightObject(object, true);
+
+        // Set up rotation arrows if enabled
+        if (this.rotationArrows) {
+            this.rotationArrows.setSelectedObject(object);
+        }
+
+        // Set up measurement system
+        if (this.measurementSystem) {
+            this.measurementSystem.setSelectedObject(object);
+        }
+
+        console.log('✅ Object selected successfully');
+    }
 
   /**
    * Calculate position on a specific wall
@@ -793,6 +914,9 @@ export class EventHandlers {
     if (mouseDistance > this.MOUSE_MOVE_THRESHOLD) {
       this.hasMouseMoved = true;
     }
+    if (this.rotationArrows && this.rotationArrows.isDraggingArrow()) {
+        return;
+    }
 
     const mousePos = updateMousePosition(event, this.renderer.domElement.getBoundingClientRect());
     this.mouse.set(mousePos.x, mousePos.y);
@@ -881,7 +1005,7 @@ export class EventHandlers {
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       const currentAngle = Math.atan2(event.clientY - centerY, event.clientX - centerX);
-      const deltaAngle = currentAngle - this.rotationStartAngle;
+        const deltaAngle = this.rotationStartAngle - currentAngle;
 
       this.selectedObject.rotation.y = this.objectStartRotation + deltaAngle;
 
@@ -900,6 +1024,78 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
+        // ✅ ROTATION-AWARE FIX for freestanding bathtubs
+        if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+
+            // Get cursor position on the existing drag plane and include initial offset
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
+            const followPoint = intersectPoint.add(this.dragOffset);
+
+            const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+
+            if (objectDimensions) {
+                const objectScale = this.selectedObject.scale.x;
+                const objectRotation = this.selectedObject.rotation.y;
+
+                // ✅ CRITICAL: Calculate rotated bounding box
+                const rotatedBounds = this.calculateRotatedBounds(
+                    objectDimensions.width * objectScale,
+                    objectDimensions.depth * objectScale,
+                    objectRotation
+                );
+
+                // Room boundaries
+                const roomHalfWidth = this.roomWidthRef.value / 2;
+                const roomHalfHeight = this.roomHeightRef.value / 2;
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+
+                const wallFaces = {
+                    west: -roomHalfWidth + wallThickness,
+                    east: roomHalfWidth - wallThickness,
+                    north: -roomHalfHeight + wallThickness,
+                    south: roomHalfHeight - wallThickness
+                };
+
+                // ✅ USE ROTATED BOUNDS for constraint calculation
+                const halfRotatedWidth = rotatedBounds.width / 2;
+                const halfRotatedHeight = rotatedBounds.height / 2;
+
+                // Calculate safe boundaries using rotated dimensions
+                const safeMinX = wallFaces.west + halfRotatedWidth;
+                const safeMaxX = wallFaces.east - halfRotatedWidth;
+                const safeMinZ = wallFaces.north + halfRotatedHeight;
+                const safeMaxZ = wallFaces.south - halfRotatedHeight;
+
+                // Apply constraints with rotated dimensions
+                const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
+                const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
+
+                // Set position
+                this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
+
+                // Update data model
+                this.queueUpdate(this.selectedObject.userData.itemId as number, {
+                    position: [constrainedX, this.selectedObject.position.y, constrainedZ],
+                    rotation: objectRotation
+                });
+
+                // Real-time collision feedback (parity with other drag paths)
+                const isColliding = this.checkCollisionState(
+                    { x: constrainedX, y: this.selectedObject.position.y, z: constrainedZ },
+                    objectType,
+                    objectScale,
+                    itemId,
+                    currentItem,
+                    objectRotation
+                );
+                setOutlineColor(isColliding);
+            }
+
+            return; // Exit early
+        }
+
       let constrainedPosition = { x: 0, y: 0, z: 0 };
       let constrainedRotation = this.selectedObject.rotation.y;
       let rotationChanged = false;
@@ -911,9 +1107,6 @@ export class EventHandlers {
         const roomHalfHeight = this.roomHeightRef.value / 2;
         const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
         const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
-
-        // ✅ NEW: Get floorOffset to adjust visual positioning
-        const floorOffset = (dimensions?.floorOffset || 0) * objectScale;
 
         // ✅ NEW: Track current wall to prevent jumping
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
@@ -979,21 +1172,22 @@ export class EventHandlers {
           return; // Exit if no valid intersection
         } else {
           // ✅ Now position the object at the cursor position on the nearest wall
-          let newX = closestPoint.x;
-          let newZ = closestPoint.z;
+          // Apply dragOffset to maintain the original click position relative to object
+          let newX = closestPoint.x + this.dragOffset.x;
+          let newZ = closestPoint.z + this.dragOffset.z;
           let newY;
 
-          // ✅ Adjust Y position for floor offset
+          // ✅ Adjust Y position
           if (movementConfig.allowVerticalMovement) {
-            // Cursor is pointing at visual position, so subtract floorOffset to get pivot position
-            newY = closestPoint.y - floorOffset;
+            // Apply dragOffset to maintain vertical position relative to click point
+            newY = closestPoint.y + this.dragOffset.y;
           } else {
             // Keep current Y if not allowing vertical movement
             newY = this.selectedObject.position.y;
           }
 
             const { interior, wallFaces } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
-            const objectWidth = dimensions?.width * objectScale;
+            const objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
             const halfObjectWidth = objectWidth / 2;
           // Adjust position based on which wall and apply constraints
            switch (closestWall) {
@@ -1196,6 +1390,62 @@ export class EventHandlers {
     }
   }
 
+    private calculateRotatedBounds(width: number, depth: number, rotation: number): { width: number; height: number } {
+
+        const cosAngle = Math.abs(Math.cos(rotation));
+        const sinAngle = Math.abs(Math.sin(rotation));
+
+        const rotatedWidth = width * cosAngle + depth * sinAngle;
+        const rotatedHeight = width * sinAngle + depth * cosAngle;
+
+        return {
+            width: rotatedWidth,
+            height: rotatedHeight
+        };
+    }
+
+    private constrainFreeRotationObjectPosition(position: THREE.Vector3, objectType: ComponentType, currentItem?: BathroomItem): THREE.Vector3 {
+        const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+        if (!objectDimensions) {
+            return position;
+        }
+
+        const objectScale = this.selectedObject?.scale.x || 1;
+        const objectRotation = this.selectedObject?.rotation.y || 0;
+
+        // ✅ Calculate rotated bounding box for any object
+        const rotatedBounds = this.calculateRotatedBounds(
+            objectDimensions.width * objectScale,
+            objectDimensions.depth * objectScale,
+            objectRotation
+        );
+
+        // Room boundaries (same for all objects)
+        const roomHalfWidth = this.roomWidthRef.value / 2;
+        const roomHalfHeight = this.roomHeightRef.value / 2;
+        const wallThickness = 12;
+
+        const wallFaces = {
+            west: -roomHalfWidth + wallThickness,
+            east: roomHalfWidth - wallThickness,
+            north: -roomHalfHeight + wallThickness,
+            south: roomHalfHeight - wallThickness
+        };
+
+        const halfRotatedWidth = rotatedBounds.width / 2;
+        const halfRotatedHeight = rotatedBounds.height / 2;
+
+        const safeMinX = wallFaces.west + halfRotatedWidth;
+        const safeMaxX = wallFaces.east - halfRotatedWidth;
+        const safeMinZ = wallFaces.north + halfRotatedHeight;
+        const safeMaxZ = wallFaces.south - halfRotatedHeight;
+
+        const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
+        const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
+
+        return new THREE.Vector3(constrainedX, position.y, constrainedZ);
+    }
+
   private handleMouseUp (): void {
     if (this.isDragOperation) {
       this.applyPendingUpdates();
@@ -1265,6 +1515,7 @@ export class EventHandlers {
       console.log('🎯 Deselecting object - was click on empty space, not drag');
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
+        this.clearSelection();
 
       // Clear measurement system selection
       if (this.measurementSystem) {
@@ -1276,6 +1527,7 @@ export class EventHandlers {
     }
 
     // Reset all states
+    const wasDragging = this.isDragging;
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -1284,6 +1536,11 @@ export class EventHandlers {
     this.hasMouseMoved = false;
     this.wasEmptySpaceClicked = false;
     this.renderer.domElement.style.cursor = 'default';
+
+    // Notify that dragging has ended
+    if (wasDragging && this.onDragEnd) {
+      this.onDragEnd();
+    }
   }
 
   private handleContextMenu (event: MouseEvent): void {
@@ -1381,6 +1638,9 @@ export class EventHandlers {
 
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+          window.dispatchEvent(new CustomEvent('object-selected', {
+              detail: { itemId: this.selectedObject?.userData?.itemId ?? null }
+          }));
 
         // NEW: Store original position for potential snap-back
         this.originalDragPosition.copy(this.selectedObject.position);
@@ -1709,6 +1969,7 @@ export class EventHandlers {
       console.log('🎯 Deselecting object - was tap on empty space, not drag');
       highlightObject(this.selectedObject, false);
       this.selectedObject = null;
+        this.clearSelection();
 
       if (this.measurementSystem) {
         this.measurementSystem.setSelectedObject(null);
@@ -1718,6 +1979,7 @@ export class EventHandlers {
     }
 
     // Reset all states
+    const wasDragging = this.isDragging;
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -1725,6 +1987,11 @@ export class EventHandlers {
     this.isScaling = false;
     this.hasMouseMoved = false; // Reset movement tracking
     this.wasEmptySpaceClicked = false; // Reset empty space flag
+
+    // Notify that dragging has ended
+    if (wasDragging && this.onDragEnd) {
+      this.onDragEnd();
+    }
   }
 
   private handleResize (): void {
@@ -1750,6 +2017,7 @@ export class EventHandlers {
     }
 
     // Clear all drag states
+    const wasDragging = this.isDragging;
     this.isDragging = false;
     this.isRotating = false;
     this.isObjectRotating = false;
@@ -1758,6 +2026,11 @@ export class EventHandlers {
 
     // Reset cursor
     this.renderer.domElement.style.cursor = 'default';
+
+    // Notify that dragging has ended
+    if (wasDragging && this.onDragEnd) {
+      this.onDragEnd();
+    }
 
     // ✅ ADD: Clean up drag plane visualization
     if (this.dragPlaneHelper) {
@@ -1828,17 +2101,41 @@ export class EventHandlers {
     window.removeEventListener('resize', this.handleResize);
   }
 
-  public clearSelection (): void {
-    if (this.selectedObject) {
-      highlightObject(this.selectedObject, false);
-      setOutlineColor(false);
-      this.selectedObject = null;
+    public clearSelection(): void {
+        console.log('🧹 Clearing selection, selectedObject:', this.selectedObject);
+
+        if (this.selectedObject) {
+            highlightObject(this.selectedObject, false);
+            setOutlineColor(false);
+            this.selectedObject = null;
+
+            // EMIT deselection event
+            if (this.onItemDeselected) {
+                this.onItemDeselected();
+            }
+        }
+
+        // Clear arrows and measurements
+        if (this.rotationArrows) {
+            this.rotationArrows.setSelectedObject(null);
+        }
+
+        if (this.measurementSystem) {
+            this.measurementSystem.setSelectedObject(null);
+        }
+
+        console.log('🧹 clearSelection completed');
     }
-    // Clear measurement system selection
-    if (this.measurementSystem) {
-      this.measurementSystem.setSelectedObject(null);
+
+    public setRotationArrowsEnabled(enabled: boolean): void {
+        console.log('setRotationArrowsEnabled called:', enabled);
+        if (this.rotationArrows) {
+            this.rotationArrows.setEnabled(enabled);
+            console.log('✅ Rotation arrows enabled state set to:', enabled);
+        } else {
+            console.log('⚠️ Rotation arrows not initialized');
+        }
     }
-  }
 
   public isDragOperationActive (): boolean {
     return this.isDragOperation;
@@ -1866,7 +2163,7 @@ export class EventHandlers {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    const halfWidth = ((dimensions.width) * objectScale) / 2;
+    const halfWidth = dimensions && dimensions.width ? ((dimensions.width) * objectScale) / 2 : 0;
     const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
     // ✅ ADD: Wall switching threshold - makes it easier to switch walls

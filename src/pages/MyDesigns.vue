@@ -28,15 +28,17 @@
 
       <div class="designs-grid">
         <!-- New Design Card -->
+        <router-link to="/" class="card-link" aria-label="Create a new design">
         <div class="design-card new-design-card">
           <div class="new-design-content">
             <div class="plus-icon">+</div>
             <h3>Create a New Design</h3>
           </div>
           <div class="card-actions">
-            <router-link to="/" class="action-button primary">START DESIGNING</router-link>
+            <span class="action-button primary">START DESIGNING</span>
           </div>
         </div>
+        </router-link>
 
         <!-- Existing Design Cards -->
         <div class="design-card" v-for="design in designs" :key="design.id">
@@ -78,7 +80,7 @@
           </div>
 
           <div class="card-actions">
-            <button @click="loadDesign(design)" class="action-button primary">OPEN DESIGN</button>
+            <button type="button" @click="loadDesign(design)" class="action-button primary">OPEN DESIGN</button>
           </div>
         </div>
       </div>
@@ -469,7 +471,7 @@ const makePrivate = async () => {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 300px;
+  min-height: 364px;
 }
 
 .new-design-content {
@@ -633,6 +635,22 @@ const makePrivate = async () => {
   padding: 0 20px 20px;
 }
 
+.card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+ .card-link:focus-visible .design-card {
+   outline: 2px solid #29275B;
+   outline-offset: 4px;
+   border-radius: 16px;
+ }
+
+.action-button.primary {
+  background: #29275B;
+  color: white;
+}
+
 .action-button {
   width: 100%;
   padding: 12px 24px;
@@ -645,16 +663,6 @@ const makePrivate = async () => {
   text-decoration: none;
   display: block;
   text-align: center;
-}
-
-.action-button.primary {
-  background: #29275B;
-  color: white;
-}
-
-.action-button.primary:hover {
-  background: #1e1b47;
-  transform: translateY(-1px);
 }
 
 .empty-state {

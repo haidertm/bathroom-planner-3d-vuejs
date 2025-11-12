@@ -24,7 +24,28 @@
         @constrain-objects="constrainObjects"
         @toggle-wall-culling="handleWallCullingToggle"
     />
+    <ItemConfigurationOverlay
+        :selected-item="selectedBathroomItem"
+        :scene="sceneManagerRef?.scene || null"
+        :camera="sceneManagerRef?.camera || null"
+        :renderer="sceneManagerRef?.renderer || null"
+        :rotation-enabled="rotationArrowsEnabled"
+        :is-dragging="isDraggingObject"
+        @configure-variants="handleConfigureVariants"
+        @delete-item="deleteItem"
+        @toggle-rotation="handleRotationToggleFromOverlay"
+        :show-rotation-toggle="showRotationToggle"
+    />
 
+    <!-- Variant Configuration Drawer -->
+    <VariantConfigurationDrawer
+        :is-open="isVariantDrawerOpen"
+        :product="variantConfigProduct"
+        :current-variant="variantConfigCurrentVariant"
+        :item-id="variantConfigItemId"
+        @close="handleVariantDrawerClose"
+        @swap-variant="handleVariantSwap"
+    />
     <!-- Toggle button for texture panel -->
     <button
         v-if="!showTexturePanel"
@@ -115,6 +136,7 @@ import * as THREE from 'three';
 import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
 import { useAuth } from '../composables/useAuth'
 import { designService } from '../services/designService'
+import RotationArrowsToggle from '../components/ui/RotationArrowsToggle.vue'
 
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
@@ -129,22 +151,27 @@ import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXT
 import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
 
 // Services
-import { SceneManager } from '../services/sceneManager.js'
-import { EventHandlers } from '../services/eventHandlers.js'
+import { SceneManager } from '../services/sceneManager'
+import { EventHandlers } from '../services/eventHandlers'
 
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
 
 // Utils - Updated imports to include collision detection
 import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls } from '../utils/constraints.js'
-import { isMobile } from '../utils/helpers.ts'
+import {highlightObject, isMobile} from '../utils/helpers.ts'
 
 // Composables
 import { useUndoRedo } from '../composables/useUndoRedo.js'
-import Sidebar from '../components/ui/sidebar.vue';
+import Sidebar from '../components/ui/sidebar.vue'
+import ItemConfigurationOverlay from '../components/ui/ItemConfigurationOverlay.vue'
+import VariantConfigurationDrawer from '../components/ui/VariantConfigurationDrawer.vue'
+import { swapItemVariant, findProductByVariantSku } from '../utils/variantSwapUtils'
 import Header from '../components/ui/Header.vue';
 import MigrationPrompt from '../components/ui/MigrationPrompt.vue';
 import { getScaleForUnits } from '../utils/units.js';
+import {getMovementConfig} from "../utils/models.js";
+import productData from '../mocks/productData'
 
 // Router
 const router = useRouter()
@@ -166,8 +193,258 @@ const hasUnsavedChanges = ref(false)
 // ADD THIS: Missing reactive reference for instructions popup
 const showInstructions = ref(false)
 
+const selectedObjectId = ref(null)
+
 // ID counter to ensure unique IDs
 const nextIdRef = ref(2000)
+const rotationArrowsEnabled = ref(false) // Default: disabled
+const selectedObjectCanRotate = ref(false)
+
+const showRotationToggle = computed(() => {
+  return selectedObjectCanRotate.value
+})
+
+
+const selectedItemId = ref(null)
+const selectedBathroomItem = computed(() => {
+  console.log('>>> who is here', selectedItemId.value)
+  if (!selectedItemId.value) return null
+  return items.value.find(item => item.id === selectedItemId.value)
+})
+
+// Track dragging state to hide overlay during drag
+const isDraggingObject = ref(false)
+
+// Handlers for drag state changes
+const handleDragStart = () => {
+  isDraggingObject.value = true
+}
+
+const handleDragEnd = () => {
+  isDraggingObject.value = false
+}
+
+const handleRotationToggleFromOverlay = (enabled) => {
+  console.log('Rotation toggle from overlay:', enabled);
+  rotationArrowsEnabled.value = enabled;
+
+  if (eventHandlersRef.value && eventHandlersRef.value.setRotationArrowsEnabled) {
+    eventHandlersRef.value.setRotationArrowsEnabled(enabled);
+
+    // If disabling and we have a selected object, make sure arrows are hidden
+    if (!enabled && eventHandlersRef.value.selectedObject) {
+      // Force hide arrows when toggle is turned off
+      eventHandlersRef.value.rotationArrows?.setSelectedObject(null);
+    }
+    // If enabling and we have a selected object that can rotate, show arrows
+    else if (enabled && eventHandlersRef.value.selectedObject && selectedObjectCanRotate.value) {
+      eventHandlersRef.value.rotationArrows?.setSelectedObject(eventHandlersRef.value.selectedObject);
+    }
+  }
+}
+
+
+// Variant configuration state
+const isVariantDrawerOpen = ref(false)
+const variantConfigProduct = ref(null)
+const variantConfigCurrentVariant = ref(null)
+const variantConfigItemId = ref(null)
+
+// 3. Add these event handlers to your existing methods
+const handleItemSelection = (itemId) => {
+  console.log('🎯 Item selected:', itemId)
+  selectedItemId.value = Number(itemId)
+}
+
+const handleItemDeselection = () => {
+  console.log('🎯 Item deselected')
+  selectedItemId.value = null
+}
+
+const handleConfigureVariants = (config) => {
+  console.log('⚙️ Configure variants:', config)
+
+  // If called from overlay, find the product data
+  if (!config.product && config.itemId) {
+    const item = items.value.find(item => item.id === config.itemId)
+    if (item && item.sku && item.type) {
+      const result = findProductByVariantSku(item.sku, item.type, productData)
+      if (result) {
+        config.product = result.product
+        config.currentVariant = result.variant
+      }
+    }
+  }
+
+  if (config.product && config.currentVariant) {
+    variantConfigProduct.value = config.product
+    variantConfigCurrentVariant.value = config.currentVariant
+    variantConfigItemId.value = config.itemId
+    isVariantDrawerOpen.value = true
+  } else {
+    console.warn('⚠️ Cannot configure variants: missing product or variant data')
+  }
+}
+
+const handleVariantDrawerClose = () => {
+  isVariantDrawerOpen.value = false
+  variantConfigProduct.value = null
+  variantConfigCurrentVariant.value = null
+  variantConfigItemId.value = null
+}
+
+const handleVariantSwap = async (swapConfig) => {
+  console.log('🔄 Starting variant swap:', swapConfig)
+
+  try {
+    const { itemId, newVariant, product } = swapConfig
+
+    const currentItemIndex = items.value.findIndex(item => item.id === itemId)
+    if (currentItemIndex === -1) {
+      console.error('❌ Item not found for variant swap:', itemId)
+      return
+    }
+
+    const currentItem = items.value[currentItemIndex]
+    console.log('Current item found:', currentItem)
+
+    // Create the swapped item
+    const swappedItem = swapItemVariant(currentItem, newVariant)
+
+    console.log('Swapped item created:', swappedItem)
+
+    // Update items array
+    const newItems = [...items.value]
+    newItems[currentItemIndex] = swappedItem
+
+    // Prevent watcher interference during swap
+    lastUpdateSource.value = 'variantSwap-processing'
+    items.value = newItems
+
+    // Handle scene update directly - DON'T let the watcher do it
+    if (sceneManagerRef.value) {
+      console.log('🔄 Handling variant swap scene update directly')
+      try {
+        // Remove old item first
+        await sceneManagerRef.value.removeSingleItem(itemId)
+        console.log('✅ Old item removed')
+
+        // Add new variant
+        await sceneManagerRef.value.addSingleItem(swappedItem)
+        console.log('✅ New variant added')
+
+        // IMPORTANT: Wait for the scene to update, then reselect the new object
+        setTimeout(async () => {
+          if (sceneManagerRef.value && sceneManagerRef.value.existingItems) {
+            const addedModel = sceneManagerRef.value.existingItems.get(swappedItem.id)
+            if (addedModel) {
+              console.log('🔍 New model found in scene:', addedModel)
+              console.log('🔍 Model userData:', addedModel.userData)
+
+              // CRITICAL: Reselect the new object in the event handler
+              if (eventHandlersRef.value) {
+                console.log('🎯 Reselecting swapped object...')
+
+                // Clear current selection first
+                if (eventHandlersRef.value.selectedObject) {
+                  eventHandlersRef.value.clearSelection()
+                }
+
+                // Set the new object as selected
+                eventHandlersRef.value.selectedObject = addedModel
+
+                // Highlight the new object
+                highlightObject(addedModel, true)
+
+                // Update selectedItemId to maintain UI state
+                selectedItemId.value = swappedItem.id
+                selectedObjectId.value = swappedItem.id
+
+                // Update measurements if enabled
+                if (eventHandlersRef.value.measurementSystem) {
+                  eventHandlersRef.value.measurementSystem.setSelectedObject(addedModel)
+                }
+
+                // Update rotation arrows if enabled and object can rotate
+                if (eventHandlersRef.value.rotationArrows) {
+                  const canRotate = selectedObjectCanRotate.value
+                  if (rotationArrowsEnabled.value && canRotate) {
+                    eventHandlersRef.value.rotationArrows.setSelectedObject(addedModel)
+                  } else {
+                    eventHandlersRef.value.rotationArrows.setSelectedObject(null)
+                  }
+                }
+
+                // Trigger selection change handler to update UI
+                handleObjectSelectionChange()
+
+                console.log('✅ Object reselected after variant swap')
+              }
+            } else {
+              console.warn('⚠️ Could not find newly added model in scene')
+            }
+          }
+          // Mark completion for watchers
+          lastUpdateSource.value = 'variantSwap-complete'
+        }, 100) // Small delay to ensure scene update is complete
+
+      } catch (error) {
+        console.error('❌ Error during scene update in variant swap:', error)
+        // Fallback: let the watcher handle the update
+        lastUpdateSource.value = 'variantSwap-fallback'
+      }
+    }
+
+    // Mark as saved after successful swap
+    hasUnsavedChanges.value = true
+
+    // Save to history
+    saveToHistory({
+      items: newItems,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value
+    })
+
+    console.log('✅ Variant swap completed successfully')
+
+    // Close the variant drawer
+    handleVariantDrawerClose()
+  } catch (error) {
+    console.error('❌ Variant swap failed:', error)
+    alert('Failed to swap variant. Please try again.')
+    handleVariantDrawerClose()
+  }
+}
+// Listen for object selection changes
+const handleObjectSelectionChange = () => {
+
+  if (eventHandlersRef.value && eventHandlersRef.value.selectedObject) {
+    const selectedObject = eventHandlersRef.value.selectedObject
+
+    const objectType = selectedObject.userData.type
+    const itemId = selectedObject.userData.itemId
+    selectedItemId.value = itemId
+
+    // Set the selected object ID for the remove button
+    selectedObjectId.value = itemId
+
+    // Get current items and find the selected one
+    const currentItems = getItems()
+    const currentItem = currentItems.find(item => item.id === itemId)
+
+    // Check if this object allows free rotation
+    const movementConfig = getMovementConfig(objectType, currentItem)
+    const canRotate = movementConfig?.allowFreeRotation === true
+
+    selectedObjectCanRotate.value = canRotate
+  } else {
+    // Clear selection
+    selectedObjectId.value = null
+    selectedObjectCanRotate.value = false
+  }
+}
 
 // Add these reactive variables
 const previousItems = ref([])
@@ -222,7 +499,7 @@ const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
-const showGrid = ref(true)
+const showGrid = ref(false)
 const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
 const preventCollisionPlacement = ref(true)
@@ -470,7 +747,7 @@ const addItem = async (type, productData = null) => {
   hasUnsavedChanges.value = true
   const defaults = {
     height: 0,
-    scale: getScaleForUnits(1.0, 'meters'),
+    scale: getScaleForUnits(1.0, 'centimeters'),
     orientation: DEFAULT_ORIENTATION
   }
 
@@ -484,7 +761,7 @@ const addItem = async (type, productData = null) => {
   const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
   // Find a free position on any wall
-  const { position: freePosition, rotation: wallRotation } = findFreeWallPosition(
+  const positionResult = findFreeWallPosition(
       roomWidth.value,
       roomHeight.value,
       type,
@@ -498,6 +775,14 @@ const addItem = async (type, productData = null) => {
       selectedVariant.sku,
 
   )
+
+  // Check if no free position was found (all corners occupied for corner items)
+  if (!positionResult) {
+    alert('Cannot add item - all available corners are occupied. Please remove an existing item first.')
+    return
+  }
+
+  const { position: freePosition, rotation: wallRotation } = positionResult
 
   const newItem = {
     id: generateUniqueId(),
@@ -556,26 +841,39 @@ const addItem = async (type, productData = null) => {
   })
 }
 
-const deleteItem = (itemId) => {
-  console.log('Deleting item with ID:', itemId)
-  console.log('Current items:', items.value.map(item => ({ id: item.id, type: item.type })))
+// 4. Modify your existing deleteItem function to clear selection
+const deleteItem = async (itemId) => {
+  console.log('🗑️ Deleting item:', itemId)
+  hasUnsavedChanges.value = true
 
-  // FOR IMMEDIATE PERFORMANCE BOOST: Remove single item from scene directly
-  if (sceneManagerRef.value && !isInitialLoad.value) {
+  // CRITICAL: Remove from 3D scene first
+  if (sceneManagerRef.value) {
     try {
-      sceneManagerRef.value.removeSingleItem(itemId)
-      console.log(`✅ Removed item ${ itemId } directly from scene`)
+      await sceneManagerRef.value.removeSingleItem(itemId)
+      console.log('✅ Item removed from 3D scene')
     } catch (error) {
-      console.error('❌ Failed to remove item directly, falling back to full update:', error)
+      console.error('❌ Failed to remove item from scene:', error)
     }
   }
 
+  // Ensure 3D selection state is cleared
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
+  }
+
   const newItems = items.value.filter(item => item.id !== itemId)
-
-  console.log('Items after deletion:', newItems.map(item => ({ id: item.id, type: item.type })))
-
   items.value = newItems
   lastUpdateSource.value = 'delete'
+
+  // Clear selection if deleted item was selected
+  if (selectedItemId.value === itemId) {
+    selectedItemId.value = null
+  }
+
+  // Clear the selectedObjectId for the remove button
+  if (selectedObjectId.value === itemId) {
+    selectedObjectId.value = null
+  }
 
   saveToHistory({
     items: newItems,
@@ -584,6 +882,8 @@ const deleteItem = (itemId) => {
     currentFloorTexture: currentFloorTexture.value,
     currentWallTexture: currentWallTexture.value
   })
+
+  console.log('✅ Item deleted successfully')
 }
 
 const handleUndo = () => {
@@ -796,6 +1096,7 @@ const loadDesignData = (designData) => {
 
 // Initialize scene
 onMounted(async () => {
+  window.addEventListener('object-selected', handleObjectSelectionChange)
   // Override F5 and Ctrl+R
   document.addEventListener('keydown', (e) => {
     if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
@@ -852,6 +1153,18 @@ onMounted(async () => {
       currentFloorTexture,         // ADD THIS LINE
       currentWallTexture          // ADD THIS LINE
   ))
+
+// ADD THESE LINES RIGHT AFTER THE ABOVE CODE:
+  if (eventHandlersRef.value) {
+    console.log('🔗 Connecting variant configuration to EventHandlers')
+    eventHandlersRef.value.onItemSelected = handleItemSelection
+    eventHandlersRef.value.onItemDeselected = handleItemDeselection
+    // Connect drag state handlers
+    eventHandlersRef.value.onDragStart = handleDragStart
+    eventHandlersRef.value.onDragEnd = handleDragEnd
+  }
+
+  sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
 
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
@@ -994,6 +1307,9 @@ onUnmounted(() => {
   }
 
   window.removeEventListener('toggle-measurements', handleMeasurementToggle)
+  window.removeEventListener('object-selected', handleObjectSelectionChange)
+  window.removeEventListener('object-selected', handleMeasurementUpdate)
+  window.removeEventListener('object-moved', handleMeasurementUpdate)
 
   // Remove resize listener
   window.removeEventListener('resize', () => {
@@ -1107,6 +1423,15 @@ const handleSmartUpdate = async (newItems, updateSource) => {
         // Use incremental update for these operations
         console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
+        break
+      case 'variantSwap-processing':
+        // Skip scene update while variant swap is processing
+        console.log('⏭️ Skipping scene update during variant swap processing')
+        break
+
+      case 'variantSwap-complete':
+        // Scene already updated directly
+        console.log('✅ Variant swap scene already updated directly')
         break
 
       default:
