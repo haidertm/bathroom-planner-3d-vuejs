@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import RoomShapeSelector from '../pages/RoomShapeSelector.vue'
-import Planner from '../pages/Planner.vue' // Renamed from Home
+import Planner from '../pages/Planner.vue'
 import MyDesigns from '../pages/MyDesigns.vue'
 import RoomDimensions from '../pages/RoomDimensions.vue'
+import Login from '../pages/Login.vue'
+import SharedDesign from '../pages/SharedDesign.vue'
 
 const routes = [
     {
@@ -24,6 +26,16 @@ const routes = [
         path: '/room-dimensions',
         name: 'RoomDimensions',
         component: RoomDimensions
+    },
+    {
+        path: '/login',
+        name: 'Login',
+        component: Login
+    },
+    {
+        path: '/shared/:token',
+        name: 'SharedDesign',
+        component: SharedDesign
     }
 ]
 

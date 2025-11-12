@@ -6,6 +6,9 @@
     </div>
 
     <div :style="navStyle">
+      <!-- Auth Button -->
+      <AuthButton />
+
       <!-- Save Button (visible only on Planner page and outside hamburger menu) -->
       <button
           v-if="$route.name === 'Planner'"
@@ -114,6 +117,7 @@
 
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
+import AuthButton from './AuthButton.vue'
 
 const props = defineProps({
   logo: {

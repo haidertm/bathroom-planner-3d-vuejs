@@ -45,14 +45,17 @@
               <div class="thumbnail-content">
                 <span class="room-icon">🏠</span>
                 <div class="room-info">
-                  <span class="room-size">{{ design.roomWidth }}m × {{ design.roomHeight }}m</span>
-                  <span class="item-count">{{ design.itemCount }} items</span>
+                  <span class="room-size">{{ design.room_width }}cm × {{ design.room_height }}cm</span>
+                  <span class="item-count">{{ itemCount(design) }} items</span>
                 </div>
               </div>
             </div>
             <div class="design-menu">
               <button @click="toggleMenu(design.id)" class="menu-trigger">⋮</button>
               <div v-if="activeMenu === design.id" class="menu-dropdown">
+                <button @click="shareDesign(design)" class="menu-item">
+                  🔗 Share
+                </button>
                 <button @click="duplicateDesign(design)" class="menu-item">
                   📋 Duplicate
                 </button>
@@ -69,8 +72,8 @@
           <div class="design-info">
             <h3 class="design-title">{{ design.name }}</h3>
             <div class="design-meta">
-              <span class="meta-item">Modified {{ formatDate(design.createdAt) }}</span>
-              <span class="meta-item expiry">Available for 86 days</span>
+              <span class="meta-item">Modified {{ formatDate(design.updated_at) }}</span>
+              <span class="meta-item share-status" v-if="design.is_public">🔗 Shared</span>
             </div>
           </div>
 
@@ -80,8 +83,14 @@
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div class="loading-state" v-if="loading && designs.length === 0">
+        <div class="spinner"></div>
+        <p>Loading your designs...</p>
+      </div>
+
       <!-- Empty State -->
-      <div class="empty-state" v-if="designs.length === 0">
+      <div class="empty-state" v-if="!loading && designs.length === 0">
         <div class="empty-content">
           <div class="empty-icon">🎨</div>
           <h3>No designs saved yet</h3>
@@ -90,36 +99,99 @@
         </div>
       </div>
     </div>
+
+    <!-- Share Modal -->
+    <div v-if="showShareModal" class="modal-overlay" @click="closeShareModal">
+      <div class="modal-content" @click.stop>
+        <button @click="closeShareModal" class="modal-close">✕</button>
+
+        <h2>Share Design</h2>
+        <p class="modal-description">
+          Anyone with this link can view and duplicate this design
+        </p>
+
+        <div class="share-url-container">
+          <input
+            v-model="shareUrl"
+            type="text"
+            readonly
+            class="share-url-input"
+            @focus="($event.target as HTMLInputElement)?.select()"
+          />
+          <button @click="copyShareUrl" class="copy-button">
+            {{ copySuccess ? '✓ Copied!' : '📋 Copy' }}
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button @click="makePrivate" class="btn-danger">
+            Make Private
+          </button>
+          <button @click="closeShareModal" class="btn-secondary">
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script setup>
-import {ref, onMounted} from 'vue'
+<script setup lang="ts">
+import {ref, onMounted, computed} from 'vue'
 import {useRouter} from 'vue-router'
+import { useAuth } from '../composables/useAuth'
+import { designService } from '../services/designService'
+import type { Design } from '../lib/supabase'
 
 const router = useRouter()
+const { isAuthenticated } = useAuth()
 const activeMenu = ref(null)
+const loading = ref(true)
+const showShareModal = ref(false)
+const shareModalDesign = ref<Design | null>(null)
+const shareUrl = ref('')
+const copySuccess = ref(false)
 
-// Sample designs data (in real app, this would come from localStorage or API)
-const designs = ref([
-])
+// Designs data from Supabase
+const designs = ref<Design[]>([])
 
-onMounted(() => {
-  // Load designs from localStorage if available
-  const savedDesigns = localStorage.getItem('saved-designs')
-  if (savedDesigns) {
-    designs.value = JSON.parse(savedDesigns)
+onMounted(async () => {
+  // Redirect to login if not authenticated
+  if (!isAuthenticated.value) {
+    router.push('/login')
+    return
   }
+
+  // Load designs from Supabase
+  await loadDesigns()
 })
 
-const formatDate = (date) => {
+const loadDesigns = async () => {
+  loading.value = true
+  const { data, error } = await designService.getUserDesigns()
+
+  if (error) {
+    console.error('Failed to load designs:', error)
+    alert('Failed to load designs. Please try again.')
+  } else if (data) {
+    designs.value = data
+  }
+
+  loading.value = false
+}
+
+const itemCount = computed(() => (design: Design) => {
+  return design.items?.length || 0
+})
+
+const formatDate = (date: string) => {
   const now = new Date()
   const designDate = new Date(date)
-  const diffTime = Math.abs(now - designDate)
+  const diffTime = Math.abs(now.getTime() - designDate.getTime())
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-  if (diffDays === 1) return 'today'
-  if (diffDays === 2) return 'yesterday'
+  if (diffDays === 0) return 'today'
+  if (diffDays === 1) return 'yesterday'
   if (diffDays <= 7) return `${diffDays} days ago`
 
   return designDate.toLocaleDateString()
@@ -129,31 +201,26 @@ const toggleMenu = (designId) => {
   activeMenu.value = activeMenu.value === designId ? null : designId
 }
 
-const loadDesign = (design) => {
+const loadDesign = (design: Design) => {
   try {
-    // Use the original data format that Planner.vue expects
-    const designToLoad = design.originalData || {
+    // Convert Supabase design format to the format Planner.vue expects
+    const designToLoad = {
       id: design.id,
       name: design.name,
-      timestamp: design.timestamp,
+      timestamp: new Date(design.created_at).getTime(),
       items: design.items || [],
-      roomWidth: design.roomWidth || 300,
-      roomHeight: design.roomHeight || 250,
-      currentFloorTexture: 0,
-      currentWallTexture: 0,
-      preview: null
+      roomWidth: design.room_width,
+      roomHeight: design.room_height,
+      currentFloorTexture: design.current_floor_texture || 0,
+      currentWallTexture: design.current_wall_texture || 0,
     }
 
     console.log('💾 Design data to load:', designToLoad)
 
     // Store the design to load in localStorage
     localStorage.setItem('design-to-load', JSON.stringify(designToLoad))
-    // Try router navigation first
-    router.push('/planner').catch((error) => {
-      console.error('❌ Router navigation failed:', error)
-      // Use router's base URL for better SPA compatibility
-      window.location.href = router.resolve('/planner').href
-    })
+    // Navigate to planner
+    router.push('/planner')
 
   } catch (error) {
     console.error('❌ Error loading design:', error)
@@ -161,34 +228,121 @@ const loadDesign = (design) => {
   }
 }
 
-const duplicateDesign = (design) => {
-  const duplicatedDesign = {
-    ...design,
-    id: Date.now(),
-    name: `${design.name} (Copy)`,
-    createdAt: new Date()
+const duplicateDesign = async (design: Design) => {
+  activeMenu.value = null
+  loading.value = true
+
+  const { error } = await designService.duplicateDesign(design.id)
+
+  if (error) {
+    alert('Failed to duplicate design. Please try again.')
+  } else {
+    await loadDesigns()
   }
 
-  designs.value.push(duplicatedDesign)
-  localStorage.setItem('saved-designs', JSON.stringify(designs.value))
-  activeMenu.value = null
+  loading.value = false
 }
 
-const renameDesign = (design) => {
+const renameDesign = async (design: Design) => {
   const newName = prompt('Enter new name for the design:', design.name)
-  if (newName && newName.trim()) {
-    design.name = newName.trim()
-    localStorage.setItem('saved-designs', JSON.stringify(designs.value))
-  }
   activeMenu.value = null
+
+  if (newName && newName.trim()) {
+    loading.value = true
+
+    const { error } = await designService.updateDesign(design.id, { name: newName.trim() })
+
+    if (error) {
+      alert('Failed to rename design. Please try again.')
+    } else {
+      await loadDesigns()
+    }
+
+    loading.value = false
+  }
 }
 
-const deleteDesign = (designId) => {
+const deleteDesign = async (designId: string) => {
   if (confirm('Are you sure you want to delete this design? This action cannot be undone.')) {
-    designs.value = designs.value.filter(d => d.id !== designId)
-    localStorage.setItem('saved-designs', JSON.stringify(designs.value))
+    activeMenu.value = null
+    loading.value = true
+
+    const { error } = await designService.deleteDesign(designId)
+
+    if (error) {
+      alert('Failed to delete design. Please try again.')
+    } else {
+      await loadDesigns()
+    }
+
+    loading.value = false
+  } else {
+    activeMenu.value = null
   }
+}
+
+const shareDesign = async (design: Design) => {
   activeMenu.value = null
+  loading.value = true
+
+  let token = design.share_token
+
+  // Generate share token if it doesn't exist
+  if (!token) {
+    const { token: newToken, error } = await designService.generateShareToken(design.id)
+
+    if (error || !newToken) {
+      alert('Failed to generate share link. Please try again.')
+      loading.value = false
+      return
+    }
+
+    token = newToken
+  }
+
+  shareUrl.value = designService.getShareUrl(token)
+  shareModalDesign.value = design
+  showShareModal.value = true
+  loading.value = false
+}
+
+const copyShareUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    copySuccess.value = true
+    setTimeout(() => {
+      copySuccess.value = false
+    }, 2000)
+  } catch (error) {
+    console.error('Failed to copy:', error)
+    alert('Failed to copy link. Please copy it manually.')
+  }
+}
+
+const closeShareModal = () => {
+  showShareModal.value = false
+  shareModalDesign.value = null
+  shareUrl.value = ''
+  copySuccess.value = false
+}
+
+const makePrivate = async () => {
+  if (!shareModalDesign.value) return
+
+  const confirmed = confirm('This will disable the share link. Are you sure?')
+  if (!confirmed) return
+
+  loading.value = true
+  const { error } = await designService.removeShareToken(shareModalDesign.value.id)
+
+  if (error) {
+    alert('Failed to make design private. Please try again.')
+  } else {
+    await loadDesigns()
+    closeShareModal()
+  }
+
+  loading.value = false
 }
 </script>
 
@@ -555,6 +709,166 @@ const deleteDesign = (designId) => {
 
 .help-link:hover {
   text-decoration: underline;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #29275B;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  color: #7f8c8d;
+  font-size: 16px;
+}
+
+.share-status {
+  color: #29275B !important;
+  font-weight: 600;
+}
+
+/* Share Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: #f7fafc;
+  color: #4a5568;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #edf2f7;
+  transform: rotate(90deg);
+}
+
+.modal-content h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  color: #1a202c;
+}
+
+.modal-description {
+  color: #718096;
+  margin: 0 0 24px 0;
+  font-size: 14px;
+}
+
+.share-url-container {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.share-url-input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: monospace;
+  background: #f7fafc;
+}
+
+.share-url-input:focus {
+  outline: none;
+  border-color: #29275B;
+}
+
+.copy-button {
+  padding: 12px 20px;
+  background: #29275B;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copy-button:hover {
+  background: #1e1b47;
+  transform: translateY(-1px);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.modal-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-danger {
+  background: #fff;
+  color: #e53e3e;
+  border: 2px solid #e53e3e !important;
+}
+
+.btn-danger:hover {
+  background: #fff5f5;
+}
+
+.btn-secondary {
+  background: #29275B;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #1e1b47;
 }
 
 @media (max-width: 768px) {

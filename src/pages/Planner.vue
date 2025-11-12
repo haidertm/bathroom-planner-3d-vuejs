@@ -47,6 +47,9 @@
         @close-instructions="showInstructions = false"
     />
 
+    <!-- Migration Prompt for localStorage designs -->
+    <MigrationPrompt v-if="isAuthenticated" />
+
     <!-- Canvas container positioned on the right side -->
     <div
         ref="mountRef"
@@ -110,6 +113,8 @@ import { loadRoomDimensionsFromStorage, saveRoomDimensionsToStorage } from '../c
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
 import * as THREE from 'three';
 import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
+import { useAuth } from '../composables/useAuth'
+import { designService } from '../services/designService'
 
 // Components
 import Toolbar from '../components/ui/Toolbar.vue'
@@ -138,10 +143,17 @@ import { isMobile } from '../utils/helpers.ts'
 import { useUndoRedo } from '../composables/useUndoRedo.js'
 import Sidebar from '../components/ui/sidebar.vue';
 import Header from '../components/ui/Header.vue';
+import MigrationPrompt from '../components/ui/MigrationPrompt.vue';
 import { getScaleForUnits } from '../utils/units.js';
 
 // Router
 const router = useRouter()
+
+// Auth
+const { isAuthenticated, user } = useAuth()
+
+// Design state
+const currentDesignId = ref(null)
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -369,7 +381,16 @@ watch([roomWidth, roomHeight], ([newWidth, newHeight]) => {
   roomHeightRef.value = newHeight
 })
 
-const handleSaveDesign = () => {
+const handleSaveDesign = async () => {
+  // Check if user is authenticated
+  if (!isAuthenticated.value) {
+    const shouldLogin = window.confirm('You need to sign in to save designs. Would you like to sign in now?')
+    if (shouldLogin) {
+      router.push('/login')
+    }
+    return
+  }
+
   try {
     // Generate a more user-friendly name with time
     const now = new Date()
@@ -377,36 +398,30 @@ const handleSaveDesign = () => {
     const dateString = now.toLocaleDateString()
 
     const designData = {
-      id: Date.now(), // Simple timestamp-based ID
       name: `Bathroom Design - ${ dateString } ${ timeString }`,
-      timestamp: Date.now(),
       items: JSON.parse(JSON.stringify(items.value)), // Deep clone to avoid reference issues
-      roomWidth: roomWidth.value,
-      roomHeight: roomHeight.value,
-      currentFloorTexture: currentFloorTexture.value,
-      currentWallTexture: currentWallTexture.value,
-      preview: null // Could add canvas snapshot later
-    }
-    // Get existing designs from localStorage
-    let existingDesigns = []
-    try {
-      const savedDesigns = localStorage.getItem('saved-designs')
-      existingDesigns = JSON.parse(savedDesigns || '[]')
-    } catch (parseError) {
-      existingDesigns = []
+      room_width: roomWidth.value,
+      room_height: roomHeight.value,
+      current_floor_texture: currentFloorTexture.value,
+      current_wall_texture: currentWallTexture.value,
     }
 
-    // Add new design to the beginning of the array
-    existingDesigns.unshift(designData)
+    let result
+    if (currentDesignId.value) {
+      // Update existing design
+      result = await designService.updateDesign(currentDesignId.value, designData)
+    } else {
+      // Create new design
+      result = await designService.createDesign(designData)
+      if (result.data) {
+        currentDesignId.value = result.data.id
+      }
+    }
 
-    // Keep only last 20 designs to prevent storage bloat
-    const trimmedDesigns = existingDesigns.slice(0, 20)
+    if (result.error) {
+      throw new Error(result.error)
+    }
 
-    // Save back to localStorage
-    localStorage.setItem('saved-designs', JSON.stringify(trimmedDesigns))
-
-    // Verify it was saved
-    const verification = localStorage.getItem('saved-designs')
     // Show success feedback with better UX
     hasUnsavedChanges.value = false
     if (window.confirm('Design saved successfully! Would you like to view your saved designs?')) {
@@ -416,7 +431,7 @@ const handleSaveDesign = () => {
 
   } catch (error) {
     console.error('❌ Failed to save design:', error)
-    alert('Failed to save design. Please try again.')
+    alert('Failed to save design. Please sign in and try again.')
   }
 }
 
@@ -704,6 +719,11 @@ const checkForDesignToLoad = () => {
 
       // Clear the flag so it doesn't load again
       localStorage.removeItem('design-to-load')
+
+      // Set the current design ID if it exists
+      if (design.id) {
+        currentDesignId.value = design.id
+      }
 
       // Load the design
       loadDesignData(design)
