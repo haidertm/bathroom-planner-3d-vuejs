@@ -1139,7 +1139,7 @@ export class EventHandlers {
 
     // For north/south walls, we move along X axis using object width
     // For east/west walls, we move along Z axis, but object is rotated 90°, so we use object width (not depth)
-    const searchStep = (wall === 'north' || wall === 'south') ? step : step;
+    const searchStep = step;
 
     const maxAttempts = 30; // Increased attempts for better coverage
 
