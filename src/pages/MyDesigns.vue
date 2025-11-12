@@ -146,7 +146,7 @@ import { designService } from '../services/designService'
 import type { Design } from '../lib/supabase'
 
 const router = useRouter()
-const { isAuthenticated } = useAuth()
+const { isAuthenticated, loading: authLoading } = useAuth()
 const activeMenu = ref(null)
 const loading = ref(true)
 const showShareModal = ref(false)
@@ -158,6 +158,11 @@ const copySuccess = ref(false)
 const designs = ref<Design[]>([])
 
 onMounted(async () => {
+  // Wait for auth state to load
+  while (authLoading.value) {
+    await new Promise(resolve => setTimeout(resolve, 50))
+  }
+
   // Redirect to login if not authenticated
   if (!isAuthenticated.value) {
     router.push('/login')
