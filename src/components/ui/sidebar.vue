@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="isSidebarVisible || !isMobileDevice" :style="searchSectionStyle">
+    <div v-if="(isSidebarVisible || !isMobileDevice) && !(isMobileDevice && isTextureDrawerOpen)" :style="searchSectionStyle">
       <div :style="searchContainerStyle">
         <!-- Search Icon -->
         <div :style="searchIconStyle" aria-hidden="true">
