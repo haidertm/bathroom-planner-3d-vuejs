@@ -30,7 +30,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-short-projection-basin-drawer-vanity-600mm-c76236',
           path: '../../models/furniture/basin/C76236.glb',
           dimensions: { width: 60.4, height: 55, depth: 34.7 },
-          floorOffset: 25,
+          floorOffset: 0,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -40,7 +40,6 @@ const productData: ProductData = {
             snapToWall: true,
             allowVerticalMovement: false,
             allowFreeRotation: false,
-            minHeight: 15,
           },
           sku: 'C76236',
           price: '179.00',
@@ -62,8 +61,6 @@ const productData: ProductData = {
             snapToWall: true,
             allowVerticalMovement: false,
             allowFreeRotation: false,
-            minHeight: 70,
-            maxHeight: 120
           },
           sku: 'C76237',
           price: '219.00',
@@ -165,7 +162,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
           path: '../../models/furniture/basin/C76234.glb',
           dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
-          floorOffset: 10,
+          floorOffset: 0,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -175,8 +172,6 @@ const productData: ProductData = {
                 snapToWall: true,
                 allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
                 allowFreeRotation: false,
-                minHeight: 10, // Minimum height from floor
-                maxHeight: 10
             },
           sku: 'C76234',
           price: '183.99',
