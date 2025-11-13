@@ -663,6 +663,18 @@ const handleSaveDesign = async () => {
   if (!isAuthenticated.value) {
     const shouldLogin = window.confirm('You need to sign in to save designs. Would you like to sign in now?')
     if (shouldLogin) {
+      // Save current design state before redirecting to login
+      const pendingDesign = {
+        items: JSON.parse(JSON.stringify(items.value)),
+        roomWidth: roomWidth.value,
+        roomHeight: roomHeight.value,
+        currentFloorTexture: currentFloorTexture.value,
+        currentWallTexture: currentWallTexture.value,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('pending-design-save', JSON.stringify(pendingDesign))
+      console.log('💾 Design state saved before login redirect')
+
       router.push('/login')
     }
     return
@@ -1011,6 +1023,42 @@ const loadSavedRoomDimensions = () => {
 }
 
 
+const checkForPendingDesignSave = () => {
+  try {
+    // Only check for pending design if user is authenticated
+    if (!isAuthenticated.value) {
+      return false
+    }
+
+    const pendingDesign = localStorage.getItem('pending-design-save')
+    if (pendingDesign) {
+      const design = JSON.parse(pendingDesign)
+
+      // Clear the flag so it doesn't load again
+      localStorage.removeItem('pending-design-save')
+
+      // Load the pending design
+      loadDesignData(design)
+
+      console.log('✅ Pending design restored after login')
+
+      // Optionally show a message to the user
+      setTimeout(() => {
+        const shouldSave = window.confirm('Your design has been restored! Would you like to save it now?')
+        if (shouldSave) {
+          handleSaveDesign()
+        }
+      }, 500)
+
+      return true
+    }
+  } catch (error) {
+    console.error('❌ Failed to check for pending design save:', error)
+    localStorage.removeItem('pending-design-save') // Clean up on error
+  }
+  return false
+}
+
 const checkForDesignToLoad = () => {
   try {
     const designToLoad = localStorage.getItem('design-to-load')
@@ -1115,10 +1163,15 @@ onMounted(async () => {
     }
   }
   window.addEventListener('header-save-design', handleSaveDesign)
+
+  // Check for pending design save (after login redirect)
+  const wasPendingDesignRestored = checkForPendingDesignSave()
+
   // Check if we need to load a specific design from MyDesigns page
   const wasDesignLoaded = checkForDesignToLoad()
-  // If no design was loaded, load saved room dimensions as usual
-  if (!wasDesignLoaded) {
+
+  // If no design was loaded and no pending design was restored, load saved room dimensions as usual
+  if (!wasDesignLoaded && !wasPendingDesignRestored) {
     const dimensionsLoaded = loadSavedRoomDimensions()
 
     if (dimensionsLoaded) {
@@ -1296,6 +1349,43 @@ watch([showWallGrid], ([newShowWallGrid]) => {
 watch(measurementEnabled, (enabled) => {
   if (sceneManagerRef.value) {
     sceneManagerRef.value.enableMeasurements(enabled)
+  }
+});
+
+// Watch for authentication state changes to restore pending designs
+watch(isAuthenticated, (newAuthState, oldAuthState) => {
+  // Only check when user becomes authenticated (false -> true)
+  if (newAuthState && !oldAuthState) {
+    console.log('🔐 User just logged in, checking for pending design...')
+
+    // Small delay to ensure scene is ready
+    setTimeout(() => {
+      const pendingDesign = localStorage.getItem('pending-design-save')
+      if (pendingDesign) {
+        try {
+          const design = JSON.parse(pendingDesign)
+
+          // Clear the flag so it doesn't load again
+          localStorage.removeItem('pending-design-save')
+
+          // Load the pending design
+          loadDesignData(design)
+
+          console.log('✅ Pending design restored after login via watcher')
+
+          // Show a message to the user
+          setTimeout(() => {
+            const shouldSave = window.confirm('Your design has been restored! Would you like to save it now?')
+            if (shouldSave) {
+              handleSaveDesign()
+            }
+          }, 500)
+        } catch (error) {
+          console.error('❌ Failed to restore pending design via watcher:', error)
+          localStorage.removeItem('pending-design-save') // Clean up on error
+        }
+      }
+    }, 300)
   }
 });
 
