@@ -270,6 +270,8 @@ const resetForm = () => {
 .success-message {
   text-align: center;
   padding: 20px 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .success-icon {
