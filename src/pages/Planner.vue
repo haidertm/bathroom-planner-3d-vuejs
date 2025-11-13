@@ -1092,10 +1092,7 @@ const loadDesignData = (designData) => {
       throw new Error('Invalid design data')
     }
 
-    // Load items (furniture, fixtures, etc.)
-    items.value = designData.items || []
-
-    // Load room dimensions
+    // Load room dimensions first
     roomWidth.value = designData.roomWidth || ROOM_DEFAULTS.WIDTH
     roomHeight.value = designData.roomHeight || ROOM_DEFAULTS.HEIGHT
 
@@ -1107,6 +1104,20 @@ const loadDesignData = (designData) => {
     currentFloorTexture.value = designData.currentFloorTexture || DEFAULT_FLOOR_TEXTURE
     currentWallTexture.value = designData.currentWallTexture || DEFAULT_WALL_TEXTURE
 
+    // Load items and constrain them to room boundaries
+    const loadedItems = designData.items || []
+
+    // Constrain all objects to ensure they're in valid positions
+    const constrainedItems = constrainAllObjectsToRoom(loadedItems, roomWidth.value, roomHeight.value)
+    items.value = constrainedItems
+
+    console.log('Design loaded and constrained:', {
+      itemCount: items.value.length,
+      roomSize: `${ roomWidth.value }x${ roomHeight.value }cm`,
+      floorTexture: currentFloorTexture.value,
+      wallTexture: currentWallTexture.value
+    })
+
     // Save the loaded state to history
     setTimeout(() => {
       saveToHistory({
@@ -1117,13 +1128,6 @@ const loadDesignData = (designData) => {
         currentWallTexture: currentWallTexture.value
       })
     }, 100)
-
-    console.log('Design loaded successfully:', {
-      itemCount: items.value.length,
-      roomSize: `${ roomWidth.value }x${ roomHeight.value }cm`,
-      floorTexture: currentFloorTexture.value,
-      wallTexture: currentWallTexture.value
-    })
 
   } catch (error) {
     console.error('❌ Failed to load design data:', error)
@@ -1358,34 +1362,42 @@ watch(isAuthenticated, (newAuthState, oldAuthState) => {
   if (newAuthState && !oldAuthState) {
     console.log('🔐 User just logged in, checking for pending design...')
 
-    // Small delay to ensure scene is ready
-    setTimeout(() => {
-      const pendingDesign = localStorage.getItem('pending-design-save')
-      if (pendingDesign) {
-        try {
-          const design = JSON.parse(pendingDesign)
+    // Ensure scene is ready before loading design
+    const waitForSceneReady = () => {
+      if (sceneManagerRef.value && eventHandlersRef.value) {
+        const pendingDesign = localStorage.getItem('pending-design-save')
+        if (pendingDesign) {
+          try {
+            const design = JSON.parse(pendingDesign)
 
-          // Clear the flag so it doesn't load again
-          localStorage.removeItem('pending-design-save')
+            // Clear the flag so it doesn't load again
+            localStorage.removeItem('pending-design-save')
 
-          // Load the pending design
-          loadDesignData(design)
+            // Load the pending design
+            loadDesignData(design)
 
-          console.log('✅ Pending design restored after login via watcher')
+            console.log('✅ Pending design restored after login via watcher')
 
-          // Show a message to the user
-          setTimeout(() => {
-            const shouldSave = window.confirm('Your design has been restored! Would you like to save it now?')
-            if (shouldSave) {
-              handleSaveDesign()
-            }
-          }, 500)
-        } catch (error) {
-          console.error('❌ Failed to restore pending design via watcher:', error)
-          localStorage.removeItem('pending-design-save') // Clean up on error
+            // Show a message to the user
+            setTimeout(() => {
+              const shouldSave = window.confirm('Your design has been restored! Would you like to save it now?')
+              if (shouldSave) {
+                handleSaveDesign()
+              }
+            }, 500)
+          } catch (error) {
+            console.error('❌ Failed to restore pending design via watcher:', error)
+            localStorage.removeItem('pending-design-save') // Clean up on error
+          }
         }
+      } else {
+        // Scene not ready yet, wait a bit longer
+        setTimeout(waitForSceneReady, 100)
       }
-    }, 300)
+    }
+
+    // Start checking if scene is ready
+    setTimeout(waitForSceneReady, 300)
   }
 });
 
