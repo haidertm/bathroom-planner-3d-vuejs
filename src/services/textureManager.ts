@@ -39,7 +39,7 @@ class TextureManager {
     texture.mapping = THREE.EquirectangularReflectionMapping;
   }
 
-  createTexturedMaterial(textureConfig: TextureConfig): THREE.MeshStandardMaterial {
+  createTexturedMaterial(textureConfig: TextureConfig, roomDimensions?: { width: number, height: number }): THREE.MeshStandardMaterial {
     // Check if we should use file or color
     const hasValidFile: boolean = Boolean(textureConfig.file) &&
       textureConfig.file.trim() !== "";
@@ -71,10 +71,22 @@ class TextureManager {
     // Check if texture is already loaded
     const cacheKey: string = `${textureConfig.file}_${textureConfig.scale?.join('x') || 'default'}`;
     if (this.loadedTextures.has(cacheKey)) {
-      const texture = this.loadedTextures.get(cacheKey);
-      if (texture) {
-        // Reuse the same cached texture (do NOT clone)
-        // This is safe because we prevent texture disposal in disposeModel
+      const cachedTexture = this.loadedTextures.get(cacheKey);
+      if (cachedTexture) {
+        // CRITICAL FIX: Clone the texture to avoid modifying the shared cached instance
+        const texture = cachedTexture.clone();
+        texture.needsUpdate = true;
+
+        // Copy essential properties from cached texture
+        texture.wrapS = cachedTexture.wrapS;
+        texture.wrapT = cachedTexture.wrapT;
+        texture.minFilter = cachedTexture.minFilter;
+        texture.magFilter = cachedTexture.magFilter;
+        texture.anisotropy = cachedTexture.anisotropy;
+
+        // Apply room-specific scaling to the cloned texture
+        this.setupTextureProperties(texture, textureConfig, roomDimensions);
+
         material.map = texture;
         material.needsUpdate = true;
       }
@@ -85,7 +97,7 @@ class TextureManager {
     this.textureLoader.load(
       textureConfig.file,
       (texture: THREE.Texture) => {
-        this.setupTextureProperties(texture, textureConfig);
+        this.setupTextureProperties(texture, textureConfig, roomDimensions);
 
         // Store loaded texture with scale info
         this.loadedTextures.set(cacheKey, texture);
@@ -94,14 +106,8 @@ class TextureManager {
         material.map = texture;
         material.needsUpdate = true;
 
-        // CRITICAL: Force material to update so the texture appears
-        // This triggers Three.js to recognize the texture has been added
-        if (material.map) {
-          material.map.needsUpdate = true;
-        }
-
-        // DISABLED: Normal map was making textures look blurry/noisy
-        // this.generateNormalMap(texture, material);
+          // DISABLED: generateNormalMap uses Math.random() which causes different patterns on each refresh
+          // this.generateNormalMap(texture, material);
       },
       (progress: ProgressEvent<EventTarget>) => {
         if (progress.lengthComputable) {
@@ -119,7 +125,7 @@ class TextureManager {
     return material;
   }
 
-  private setupTextureProperties(texture: THREE.Texture, config: TextureConfig): void {
+  private setupTextureProperties(texture: THREE.Texture, config: TextureConfig, roomDimensions?: { width: number, height: number }): void {
     // Configure texture for better quality and performance
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
@@ -132,18 +138,29 @@ class TextureManager {
     texture.magFilter = THREE.LinearFilter;
     texture.anisotropy = 16; // Maximum anisotropy for better quality
 
-    // Use custom scale if provided
-    const scaleX: number = config.scale ? config.scale[0] : 4;
-    const scaleY: number = config.scale ? config.scale[1] : 4;
-    texture.repeat.set(scaleX, scaleY);
+    // FIX: Calculate texture repeat based on room dimensions for proper scaling
+    if (roomDimensions) {
+      // Get the base scale from texture config
+      const baseScaleX = config.scale ? config.scale[0] : 4;
+      const baseScaleY = config.scale ? config.scale[1] : 4;
 
-    // CRITICAL: Mark texture as needing update to force re-upload to GPU
-    texture.needsUpdate = true;
+      // Scale factor: room size in meters (roomWidth is in meters already)
+      // We want textures to maintain consistent visual size as room changes
+      const repeatX = (roomDimensions.width / 100) * (baseScaleX / 4);
+      const repeatY = (roomDimensions.height / 100) * (baseScaleY / 4);
+
+      texture.repeat.set(repeatX, repeatY);
+    } else {
+      // Use default scale if no room dimensions provided
+      const scaleX: number = config.scale ? config.scale[0] : 4;
+      const scaleY: number = config.scale ? config.scale[1] : 4;
+      texture.repeat.set(scaleX, scaleY);
+    }
   }
 
   private addColorVariations(material: THREE.MeshStandardMaterial, baseColor: number): void {
-    // Add subtle roughness variation for more realistic solid colors
-    material.roughness = 0.7 + Math.random() * 0.2;
+    // FIXED: Use consistent values instead of Math.random() to avoid different appearance on refresh
+    material.roughness = 0.8;
 
     // Add very subtle metalness for some materials
     const color = new THREE.Color(baseColor);
@@ -152,11 +169,11 @@ class TextureManager {
 
     // Slightly more metallic for darker colors
     if (hsl.l < 0.3) {
-      material.metalness = 0.1 + Math.random() * 0.1;
+      material.metalness = 0.15;
     }
 
-    // Add environment map intensity variation
-    material.envMapIntensity = 0.2 + Math.random() * 0.3;
+    // Use consistent environment map intensity
+    material.envMapIntensity = 0.3;
   }
 
   // Create specialized materials for different surface types
@@ -224,86 +241,6 @@ class TextureManager {
   isTextureCached(textureConfig: TextureConfig): boolean {
     const cacheKey: string = `${textureConfig.file}_${textureConfig.scale?.join('x') || 'default'}`;
     return this.loadedTextures.has(cacheKey);
-  }
-
-  // NEW: Async version that waits for texture to load
-  async createTexturedMaterialAsync(textureConfig: TextureConfig): Promise<THREE.MeshStandardMaterial> {
-    // Check if we should use file or color
-    const hasValidFile: boolean = Boolean(textureConfig.file) &&
-      textureConfig.file.trim() !== "";
-
-    // Create material with enhanced properties
-    const material = new THREE.MeshStandardMaterial({
-      color: hasValidFile ? 0xffffff : textureConfig.color,
-      roughness: 0.8,
-      metalness: 0.1,
-      envMapIntensity: 0.3,
-      transparent: false,
-      opacity: 1.0,
-      side: THREE.FrontSide,
-      shadowSide: THREE.DoubleSide
-    });
-
-    // Add environment map if available
-    if (this.environmentMap) {
-      material.envMap = this.environmentMap;
-    }
-
-    // If no valid file, return enhanced material with just color
-    if (!hasValidFile) {
-      this.addColorVariations(material, textureConfig.color);
-      return material;
-    }
-
-    // Check if texture is already loaded
-    const cacheKey: string = `${textureConfig.file}_${textureConfig.scale?.join('x') || 'default'}`;
-    if (this.loadedTextures.has(cacheKey)) {
-      const texture = this.loadedTextures.get(cacheKey);
-      if (texture) {
-        console.log(`✅ Using cached texture: ${cacheKey}`);
-        material.map = texture;
-        material.needsUpdate = true;
-      }
-      return material;
-    }
-
-    // Wait for texture to load
-    console.log(`📥 Loading new texture (async): ${textureConfig.file}`);
-    return new Promise((resolve) => {
-      this.textureLoader.load(
-        textureConfig.file,
-        (texture: THREE.Texture) => {
-          console.log(`✅ Texture loaded successfully (async): ${textureConfig.file}`);
-          this.setupTextureProperties(texture, textureConfig);
-
-          // Store loaded texture with scale info
-          this.loadedTextures.set(cacheKey, texture);
-          console.log(`💾 Cached texture: ${cacheKey}, total cached: ${this.loadedTextures.size}`);
-
-          // Apply texture to material
-          material.map = texture;
-          material.needsUpdate = true;
-
-          if (material.map) {
-            material.map.needsUpdate = true;
-          }
-
-          console.log(`🎨 Material ready with texture loaded`);
-
-          // DISABLED: Normal map was making textures look blurry/noisy
-          // this.generateNormalMap(texture, material);
-
-          resolve(material);
-        },
-        undefined,
-        (error: unknown) => {
-          console.warn(`Failed to load texture: ${textureConfig.file}, falling back to color`, error);
-          this.addColorVariations(material, textureConfig.color);
-          material.needsUpdate = true;
-          resolve(material); // Resolve with color fallback instead of rejecting
-        }
-      );
-    });
   }
 
   // Preload commonly used textures
