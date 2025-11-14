@@ -6350,7 +6350,7 @@ const productData: ProductData = {
             link: '#',
             name: 'Doors',
             price: '0.00',
-            image: 'assets/productImages/door/door.png',
+            image: 'assets/productImages/door/door-white.png',
             variants: [
                 {
                     id: 'white_door',
@@ -6415,7 +6415,7 @@ const productData: ProductData = {
             link: '#',
             name: 'Windows',
             price: '0.00',
-            image: 'assets/productImages/window/window.png',
+            image: 'assets/productImages/window/window-white.png',
             variants: [
                 {
                     id: 'white_window',
