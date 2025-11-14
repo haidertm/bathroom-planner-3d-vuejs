@@ -73,10 +73,8 @@ class TextureManager {
     if (this.loadedTextures.has(cacheKey)) {
       const texture = this.loadedTextures.get(cacheKey);
       if (texture) {
-        // Reuse the same cached texture (do NOT clone)
-        // This is safe because we prevent texture disposal in disposeModel
         material.map = texture;
-        material.needsUpdate = true;
+        this.setupTextureProperties(texture, textureConfig);
       }
       return material;
     }
@@ -94,14 +92,8 @@ class TextureManager {
         material.map = texture;
         material.needsUpdate = true;
 
-        // CRITICAL: Force material to update so the texture appears
-        // This triggers Three.js to recognize the texture has been added
-        if (material.map) {
-          material.map.needsUpdate = true;
-        }
-
-        // DISABLED: Normal map was making textures look blurry/noisy
-        // this.generateNormalMap(texture, material);
+          // Generate normal map from height data if not present
+          this.generateNormalMap(texture, material);
       },
       (progress: ProgressEvent<EventTarget>) => {
         if (progress.lengthComputable) {
@@ -136,9 +128,6 @@ class TextureManager {
     const scaleX: number = config.scale ? config.scale[0] : 4;
     const scaleY: number = config.scale ? config.scale[1] : 4;
     texture.repeat.set(scaleX, scaleY);
-
-    // CRITICAL: Mark texture as needing update to force re-upload to GPU
-    texture.needsUpdate = true;
   }
 
   private addColorVariations(material: THREE.MeshStandardMaterial, baseColor: number): void {
@@ -158,6 +147,46 @@ class TextureManager {
     // Add environment map intensity variation
     material.envMapIntensity = 0.2 + Math.random() * 0.3;
   }
+
+    private generateNormalMap(diffuseTexture: THREE.Texture, material: THREE.MeshStandardMaterial): void {
+        // Simple normal map generation for enhanced surface detail
+        // This is a basic implementation - in production you'd use proper normal map generation
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) return;
+
+        canvas.width = 256;
+        canvas.height = 256;
+
+        // Create a simple normal map pattern
+        const imageData = ctx.createImageData(256, 256);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+            const x = (i / 4) % 256;
+            const y = Math.floor((i / 4) / 256);
+
+            // Simple noise-based normal map
+            const noise = Math.random() * 0.1 + 0.45;
+
+            data[i] = 128 + (x % 2 === 0 ? 10 : -10);     // R (X normal)
+            data[i + 1] = 128 + (y % 2 === 0 ? 10 : -10); // G (Y normal)
+            data[i + 2] = 255 * noise;                     // B (Z normal)
+            data[i + 3] = 255;                             // A
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+
+        // Create normal map texture
+        const normalTexture = new THREE.CanvasTexture(canvas);
+        normalTexture.wrapS = THREE.RepeatWrapping;
+        normalTexture.wrapT = THREE.RepeatWrapping;
+        normalTexture.repeat.copy(diffuseTexture.repeat);
+
+        material.normalMap = normalTexture;
+        material.normalScale = new THREE.Vector2(0.3, 0.3);
+    }
 
   // Create specialized materials for different surface types
   createFloorMaterial(textureConfig: TextureConfig): THREE.MeshStandardMaterial {
@@ -224,86 +253,6 @@ class TextureManager {
   isTextureCached(textureConfig: TextureConfig): boolean {
     const cacheKey: string = `${textureConfig.file}_${textureConfig.scale?.join('x') || 'default'}`;
     return this.loadedTextures.has(cacheKey);
-  }
-
-  // NEW: Async version that waits for texture to load
-  async createTexturedMaterialAsync(textureConfig: TextureConfig): Promise<THREE.MeshStandardMaterial> {
-    // Check if we should use file or color
-    const hasValidFile: boolean = Boolean(textureConfig.file) &&
-      textureConfig.file.trim() !== "";
-
-    // Create material with enhanced properties
-    const material = new THREE.MeshStandardMaterial({
-      color: hasValidFile ? 0xffffff : textureConfig.color,
-      roughness: 0.8,
-      metalness: 0.1,
-      envMapIntensity: 0.3,
-      transparent: false,
-      opacity: 1.0,
-      side: THREE.FrontSide,
-      shadowSide: THREE.DoubleSide
-    });
-
-    // Add environment map if available
-    if (this.environmentMap) {
-      material.envMap = this.environmentMap;
-    }
-
-    // If no valid file, return enhanced material with just color
-    if (!hasValidFile) {
-      this.addColorVariations(material, textureConfig.color);
-      return material;
-    }
-
-    // Check if texture is already loaded
-    const cacheKey: string = `${textureConfig.file}_${textureConfig.scale?.join('x') || 'default'}`;
-    if (this.loadedTextures.has(cacheKey)) {
-      const texture = this.loadedTextures.get(cacheKey);
-      if (texture) {
-        console.log(`✅ Using cached texture: ${cacheKey}`);
-        material.map = texture;
-        material.needsUpdate = true;
-      }
-      return material;
-    }
-
-    // Wait for texture to load
-    console.log(`📥 Loading new texture (async): ${textureConfig.file}`);
-    return new Promise((resolve) => {
-      this.textureLoader.load(
-        textureConfig.file,
-        (texture: THREE.Texture) => {
-          console.log(`✅ Texture loaded successfully (async): ${textureConfig.file}`);
-          this.setupTextureProperties(texture, textureConfig);
-
-          // Store loaded texture with scale info
-          this.loadedTextures.set(cacheKey, texture);
-          console.log(`💾 Cached texture: ${cacheKey}, total cached: ${this.loadedTextures.size}`);
-
-          // Apply texture to material
-          material.map = texture;
-          material.needsUpdate = true;
-
-          if (material.map) {
-            material.map.needsUpdate = true;
-          }
-
-          console.log(`🎨 Material ready with texture loaded`);
-
-          // DISABLED: Normal map was making textures look blurry/noisy
-          // this.generateNormalMap(texture, material);
-
-          resolve(material);
-        },
-        undefined,
-        (error: unknown) => {
-          console.warn(`Failed to load texture: ${textureConfig.file}, falling back to color`, error);
-          this.addColorVariations(material, textureConfig.color);
-          material.needsUpdate = true;
-          resolve(material); // Resolve with color fallback instead of rejecting
-        }
-      );
-    });
   }
 
   // Preload commonly used textures

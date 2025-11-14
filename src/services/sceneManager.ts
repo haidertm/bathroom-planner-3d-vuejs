@@ -255,47 +255,23 @@ export class SceneManager {
     });
   }
 
-  // Helper method to properly dispose of models
-  private disposeModel (model: THREE.Object3D): void {
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          // Dispose materials but NOT their textures
-          // Textures are managed by textureManager and should be cached/reused
-          const disposeMaterial = (mat: THREE.Material) => {
-            // Store texture references before disposal
-            const textures: THREE.Texture[] = [];
-            if ('map' in mat && mat.map) textures.push(mat.map as any);
-            if ('normalMap' in mat && mat.normalMap) textures.push(mat.normalMap as any);
-            if ('roughnessMap' in mat && mat.roughnessMap) textures.push(mat.roughnessMap as any);
-            if ('metalnessMap' in mat && mat.metalnessMap) textures.push(mat.metalnessMap as any);
-            if ('emissiveMap' in mat && mat.emissiveMap) textures.push(mat.emissiveMap as any);
-            if ('envMap' in mat && mat.envMap) textures.push(mat.envMap as any);
-
-            // Temporarily remove texture references to prevent disposal
-            if ('map' in mat) mat.map = null;
-            if ('normalMap' in mat) mat.normalMap = null;
-            if ('roughnessMap' in mat) mat.roughnessMap = null;
-            if ('metalnessMap' in mat) mat.metalnessMap = null;
-            if ('emissiveMap' in mat) mat.emissiveMap = null;
-            if ('envMap' in mat) mat.envMap = null;
-
-            // Now dispose material (without textures)
-            mat.dispose();
-          };
-
-          if (Array.isArray(child.material)) {
-            child.material.forEach(disposeMaterial);
-          } else {
-            disposeMaterial(child.material);
-          }
-        }
-      }
-    });
-  }
+    // Helper method to properly dispose of models
+    private disposeModel (model: THREE.Object3D): void {
+        model.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(material => material.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
+        });
+    }
 
   // Add method to add single item (for real-time adding)
   // Method to add single item (for real-time adding from Planner.vue)
@@ -519,14 +495,12 @@ export class SceneManager {
         }
     }
 
-  async updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): Promise<void> {
-    if (!this.scene) return;
+   async updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
+        if (!this.scene) return;
 
-    if (this.floorRef) {
-      this.scene.remove(this.floorRef);
-      // Properly dispose the old floor (without disposing cached textures)
-      this.disposeModel(this.floorRef);
-    }
+        if (this.floorRef) {
+            this.scene.remove(this.floorRef);
+        }
 
     const floorMaterial = await this.createEnhancedFloorMaterial(floorTexture);
     this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
@@ -540,8 +514,8 @@ export class SceneManager {
     }
   }
 
-  private async createEnhancedFloorMaterial (floorTexture: TextureConfig): Promise<THREE.MeshStandardMaterial> {
-    const material = await textureManager.createTexturedMaterialAsync(floorTexture);
+    private createEnhancedFloorMaterial (floorTexture: TextureConfig): THREE.MeshStandardMaterial {
+        const material = textureManager.createTexturedMaterial(floorTexture);
 
     // Enhanced floor material properties
     material.roughness = 0;
@@ -561,12 +535,11 @@ export class SceneManager {
   updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
     if (!this.scene) return;
 
-    // Remove existing walls and properly dispose them
-    this.wallRefs.forEach(wall => {
-      if (wall.parent) wall.parent.remove(wall);
-      this.disposeModel(wall);
-    });
-    this.wallRefs = [];
+        // Remove existing walls
+        this.wallRefs.forEach(wall => {
+            if (wall.parent) wall.parent.remove(wall);
+        });
+        this.wallRefs = [];
 
     // Create new walls with enhanced materials
     const wallMaterial = this.createEnhancedWallMaterial(wallTexture);
