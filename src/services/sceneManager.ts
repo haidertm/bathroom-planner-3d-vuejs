@@ -495,14 +495,15 @@ export class SceneManager {
         }
     }
 
-   async updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
+   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
         if (!this.scene) return;
 
         if (this.floorRef) {
             this.scene.remove(this.floorRef);
         }
 
-    const floorMaterial = await this.createEnhancedFloorMaterial(floorTexture);
+    // FIX: Pass room dimensions to material creation
+    const floorMaterial = this.createEnhancedFloorMaterial(floorTexture, roomWidth, roomHeight);
     this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     this.scene.add(this.floorRef);
 
@@ -514,20 +515,14 @@ export class SceneManager {
     }
   }
 
-    private createEnhancedFloorMaterial (floorTexture: TextureConfig): THREE.MeshStandardMaterial {
-        const material = textureManager.createTexturedMaterial(floorTexture);
+    private createEnhancedFloorMaterial (floorTexture: TextureConfig, roomWidth: number, roomHeight: number): THREE.MeshStandardMaterial {
+        // FIX: Pass room dimensions to texture manager for proper scaling
+        const material = textureManager.createTexturedMaterial(floorTexture, { width: roomWidth, height: roomHeight });
 
     // Enhanced floor material properties
     material.roughness = 0;
     material.metalness = 0.02;
     material.envMapIntensity = 0.5;
-
-
-    // material.clearcoat = 0.8;
-    // material.clearcoatRoughness = 0.1;
-    //
-    // // Enhance reflectivity
-    // material.reflectivity = 0.9;
 
     return material;
   }
