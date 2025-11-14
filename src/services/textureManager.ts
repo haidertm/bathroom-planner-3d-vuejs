@@ -146,8 +146,8 @@ class TextureManager {
 
       // Scale factor: room size in meters (roomWidth is in meters already)
       // We want textures to maintain consistent visual size as room changes
-      const repeatX = (roomDimensions.width / 3) * (baseScaleX / 4);
-      const repeatY = (roomDimensions.height / 3) * (baseScaleY / 4);
+      const repeatX = (roomDimensions.width / 100) * (baseScaleX / 4);
+      const repeatY = (roomDimensions.height / 100) * (baseScaleY / 4);
 
       texture.repeat.set(repeatX, repeatY);
     } else {
@@ -175,46 +175,6 @@ class TextureManager {
     // Use consistent environment map intensity
     material.envMapIntensity = 0.3;
   }
-
-    private generateNormalMap(diffuseTexture: THREE.Texture, material: THREE.MeshStandardMaterial): void {
-        // Simple normal map generation for enhanced surface detail
-        // This is a basic implementation - in production you'd use proper normal map generation
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) return;
-
-        canvas.width = 256;
-        canvas.height = 256;
-
-        // Create a simple normal map pattern
-        const imageData = ctx.createImageData(256, 256);
-        const data = imageData.data;
-
-        for (let i = 0; i < data.length; i += 4) {
-            const x = (i / 4) % 256;
-            const y = Math.floor((i / 4) / 256);
-
-            // Simple noise-based normal map
-            const noise = Math.random() * 0.1 + 0.45;
-
-            data[i] = 128 + (x % 2 === 0 ? 10 : -10);     // R (X normal)
-            data[i + 1] = 128 + (y % 2 === 0 ? 10 : -10); // G (Y normal)
-            data[i + 2] = 255 * noise;                     // B (Z normal)
-            data[i + 3] = 255;                             // A
-        }
-
-        ctx.putImageData(imageData, 0, 0);
-
-        // Create normal map texture
-        const normalTexture = new THREE.CanvasTexture(canvas);
-        normalTexture.wrapS = THREE.RepeatWrapping;
-        normalTexture.wrapT = THREE.RepeatWrapping;
-        normalTexture.repeat.copy(diffuseTexture.repeat);
-
-        material.normalMap = normalTexture;
-        material.normalScale = new THREE.Vector2(0.3, 0.3);
-    }
 
   // Create specialized materials for different surface types
   createFloorMaterial(textureConfig: TextureConfig): THREE.MeshStandardMaterial {
