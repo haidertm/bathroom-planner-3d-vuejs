@@ -160,7 +160,13 @@ const hasAnyPendingChanges = computed(() => {
 // Methods
 const goToPlanner = () => {
   // Save room dimensions to localStorage using utility function
-  saveRoomDimensionsToStorage(roomDimensions.width, roomDimensions.height)
+  // Include notch dimensions if they exist (for L-shaped rooms)
+  saveRoomDimensionsToStorage(
+    roomDimensions.width,
+    roomDimensions.height,
+    roomDimensions.notchWidth,
+    roomDimensions.notchHeight
+  )
 
   // Navigate to planner
   router.push('/planner')
@@ -864,11 +870,22 @@ const setShapeBasedDefaults = () => {
   try {
     const selectedShape = localStorage.getItem('selected-room-shape')
 
-    if (selectedShape && (selectedShape === 'square' || selectedShape === 'rectangular')) {
+    if (selectedShape && (selectedShape === 'square' || selectedShape === 'rectangular' || selectedShape === 'l-shape')) {
       const shapeDefaults = getShapeDefaultDimensions(selectedShape)
 
       roomDimensions.width = shapeDefaults.width
       roomDimensions.height = shapeDefaults.height
+
+      // Store notch dimensions for l-shape, or 0 for square/rectangular
+      if (selectedShape === 'l-shape') {
+        roomDimensions.notchWidth = shapeDefaults.notchWidth || 150
+        roomDimensions.notchHeight = shapeDefaults.notchHeight || 150
+      } else {
+        // For square and rectangular, explicitly set notch to 0
+        roomDimensions.notchWidth = 0
+        roomDimensions.notchHeight = 0
+      }
+
       try {
         localStorage.removeItem('selected-room-shape')
         console.log('✅ Shape selection consumed and removed from localStorage')

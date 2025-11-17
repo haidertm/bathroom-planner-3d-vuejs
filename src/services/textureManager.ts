@@ -146,8 +146,8 @@ class TextureManager {
 
       // Scale factor: room size in meters (roomWidth is in meters already)
       // We want textures to maintain consistent visual size as room changes
-      const repeatX = (roomDimensions.width / 30000) * (baseScaleX / 4);
-      const repeatY = (roomDimensions.height / 30000) * (baseScaleY / 4);
+      const repeatX = (roomDimensions.width / 100) * (baseScaleX / 4);
+      const repeatY = (roomDimensions.height / 100) * (baseScaleY / 4);
 
       texture.repeat.set(repeatX, repeatY);
     } else {

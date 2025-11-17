@@ -1866,8 +1866,8 @@ export class EventHandlers {
                 case 'notch-east':
                     // Vertical notch edge (runs north-south at X = notch.maxX)
                     // Object snaps to this edge and slides along Z axis
-                    // Position: notch edge + wall buffer + half of object depth (to prevent clipping)
-                    newX = notch.maxX + halfObjectDepth + wallBuffer;
+                    // Position: notch edge + half of object depth (to prevent clipping into notch)
+                    newX = notch.maxX + halfObjectDepth;
                     newZ = Math.max(
                         notch.minZ + halfObjectWidth,  // Don't go past top of notch
                         Math.min(interior.maxZ - halfObjectWidth, newZ)  // Allow transition to south wall
@@ -1878,8 +1878,8 @@ export class EventHandlers {
                 case 'notch-south':
                     // Horizontal notch edge (runs east-west at Z = notch.maxZ)
                     // Object snaps to this edge and slides along X axis
-                    // Position: notch edge + wall buffer + half of object depth (to prevent clipping)
-                    newZ = notch.maxZ + halfObjectDepth + wallBuffer;
+                    // Position: notch edge + half of object depth (to prevent clipping into notch)
+                    newZ = notch.maxZ + halfObjectDepth;
                     newX = Math.max(
                         notch.minX + halfObjectWidth,  // Don't go past left of notch
                         Math.min(interior.maxX - halfObjectWidth, newX)  // Allow transition to east wall
