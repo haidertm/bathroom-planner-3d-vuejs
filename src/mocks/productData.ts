@@ -6350,20 +6350,20 @@ const productData: ProductData = {
             link: '#',
             name: 'Doors',
             price: '0.00',
-            image: 'assets/productImages/door/door.png',
+            image: 'assets/productImages/door/door-white.png',
             variants: [
                 {
-                    id: 'standard_door',
-                    name: 'Door 800×2100mm',
-                    image: 'assets/productImages/door/door.png',
+                    id: 'white_door',
+                    name: 'White Door 800×2135mm',
+                    image: 'assets/productImages/door/door-white.png',
                     link: '#',
-                    path: '../../models/door/Door.glb',
+                    path: '../../models/door/door-white.glb',
                     dimensions: {
-                        width: 99.1,    // 800mm = 80cm
-                        height: 222.8,  // 2100mm = 210cm
-                        depth: 18.8     // 100mm frame depth
+                        width: 80,
+                        height: 213.5,
+                        depth: 18.1
                     },
-                    floorOffset: -0.2, // Door starts at floor level
+                    floorOffset: -0.2,
                     spawnHeight: 0,
                     orientation: {
                         type: 'face_into_room',
@@ -6375,33 +6375,60 @@ const productData: ProductData = {
                         allowVerticalMovement: false, // Door must stay on floor
                         allowFreeRotation: false
                     },
-                    sku: 'DOOR800X2100',
+                    sku: 'DOOR-WHITE-800X2135',
                     price: '0.00',
-                    title: 'Standard Door 800×2100mm'
+                    title: 'White Door 800×2100mm'
+                },
+                {
+                    id: 'brown_door',
+                    name: 'Brown Door 800×2100mm',
+                    image: 'assets/productImages/door/door.png',
+                    link: '#',
+                    path: '../../models/door/Door.glb',
+                    dimensions: {
+                        width: 80,
+                        height: 213.5,
+                        depth: 18.1
+                    },
+                    floorOffset: -0.2,
+                    spawnHeight: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - door is part of wall
+                        description: 'Door mounted on wall'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: false, // Door must stay on floor
+                        allowFreeRotation: false
+                    },
+                    sku: 'DOOR-BROWN-800X2100',
+                    price: '0.00',
+                    title: 'Brown Door 800×2100mm'
                 },
             ],
-            variantType: 'Type',
-            features: ['Wall Mounted', 'Standard Sizes', 'Easy Installation']
+            variantType: 'Color Options',
+            features: ['Wall Mounted', 'Standard Sizes', 'Easy Installation', 'Multiple Colors']
         },
         {
             id: 'window',
             link: '#',
             name: 'Windows',
             price: '0.00',
-            image: 'assets/productImages/window/window.png',
+            image: 'assets/productImages/window/window-white.png',
             variants: [
                 {
-                    id: 'standard_window',
-                    name: 'Window 600×800mm',
-                    image: 'assets/productImages/window/window.png',
+                    id: 'white_window',
+                    name: 'White Window 800×600mm',
+                    image: 'assets/productImages/window/window-white.png',
                     link: '#',
-                    path: '../../models/window/window.glb',
+                    path: '../../models/window/window-white.glb',
                     dimensions: {
-                        width: 99.1,    // 600mm = 60cm
-                        height: 78.8,   // 800mm = 80cm
-                        depth: 14.7      // 50mm frame depth
+                        width: 80,
+                        height: 60.1,
+                        depth: 11.7
                     },
-                    floorOffset: 134.6, // Position window higher on wall (100cm from floor)
+                    floorOffset: 153.2,
                     orientation: {
                         type: 'face_into_room',
                         wallBuffer: 0, // Flush with wall - window is part of wall
@@ -6411,16 +6438,44 @@ const productData: ProductData = {
                         snapToWall: true,
                         allowVerticalMovement: true,
                         allowFreeRotation: false,
-                        minHeight: 20,  // Minimum 50cm from floor
-                        maxHeight: 150  // Maximum 200cm from floor
+                        minHeight: 20,
+                        maxHeight: 150
                     },
-                    sku: 'WIN600X800',
+                    sku: 'WIN-WHITE-800X600',
                     price: '0.00',
-                    title: 'Standard Window 600×800mm'
+                    title: 'White Window 800×600mm'
+                },
+                {
+                    id: 'brown_window',
+                    name: 'Brown Window 800×600mm',
+                    image: 'assets/productImages/window/window.png',
+                    link: '#',
+                    path: '../../models/window/window.glb',
+                    dimensions: {
+                        width: 80,
+                        height: 60.1,
+                        depth: 11.7
+                    },
+                    floorOffset: 153.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - window is part of wall
+                        description: 'Window mounted on wall'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true,
+                        allowFreeRotation: false,
+                        minHeight: 20,
+                        maxHeight: 150
+                    },
+                    sku: 'WIN-BROWN-800X600',
+                    price: '0.00',
+                    title: 'Brown Window 800×600mm'
                 },
             ],
-            variantType: 'Type',
-            features: ['Wall Mounted', 'Standard Sizes', 'Easy Installation']
+            variantType: 'Color Options',
+            features: ['Wall Mounted', 'Standard Sizes', 'Easy Installation', 'Multiple Colors']
         }
     ]
 };
