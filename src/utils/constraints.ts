@@ -68,7 +68,7 @@ export interface BathroomItem {
 }
 
 /**
- * Enhanced collision detection that includes walls
+ * Enhanced collision detection that includes walls and L-shape notch
  */
 export const wouldCollideWithExistingOrWalls = (
   position: Position,
@@ -79,11 +79,13 @@ export const wouldCollideWithExistingOrWalls = (
   roomWidth: number,
   roomHeight: number,
   currentItem?: BathroomItem,
-  rotation?: number
+  rotation?: number,
+  notchWidth?: number,
+  notchHeight?: number
 ): boolean => {
 
-  // 1. Check wall collision using actual dimensions (with rotation for free-rotation objects)
-  if (checkWallCollision(position, objectType, scale, roomWidth, roomHeight, currentItem, rotation)) {
+  // 1. Check wall collision using actual dimensions (with rotation for free-rotation objects and L-shape notch)
+  if (checkWallCollision(position, objectType, scale, roomWidth, roomHeight, currentItem, rotation, notchWidth, notchHeight)) {
     return true;
   }
 
@@ -367,7 +369,7 @@ const getOrientationFromProductData = (sku?: string, objectType?: ComponentType)
 };
 
 /**
- * Enhanced wall collision detection that accounts for flush-mounted objects
+ * Enhanced wall collision detection that accounts for flush-mounted objects and L-shaped rooms
  */
 export const checkWallCollision = (
   position: Position,
@@ -376,8 +378,20 @@ export const checkWallCollision = (
   roomWidth: number,
   roomHeight: number,
   item?: BathroomItem,
-  rotation?: number
+  rotation?: number,
+  notchWidth?: number,
+  notchHeight?: number
 ): boolean => {
+
+  // 🔍 DEBUG: Log notch dimensions to verify they're being passed
+  if (notchWidth && notchHeight) {
+    console.log('🔍 checkWallCollision received notch dimensions:', {
+      notchWidth,
+      notchHeight,
+      objectType,
+      position: { x: position.x.toFixed(1), z: position.z.toFixed(1) }
+    });
+  }
 
   const dimensions = getDimensions(objectType, item?.sku, item?.model);
   if (!dimensions) return false;
@@ -388,7 +402,7 @@ export const checkWallCollision = (
   const isFlushMounted = wallBuffer === 0;
 
   // Room interior boundaries (where objects can be placed)
-  const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
+  const { interior, wallFaces } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
   // For wall-snapped objects, determine which wall they're on to account for rotation
   const movementConfig = getMovementConfig(objectType, item);
@@ -453,6 +467,32 @@ export const checkWallCollision = (
   const collideEast = objectMaxX > interior.maxX;
   const collideNorth = objectMinZ < interior.minZ;
   const collideSouth = objectMaxZ > interior.maxZ;
+
+  // ✅ CRITICAL: Check notch collision FIRST before any other checks (including early returns)
+  if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+    // Calculate actual half dimensions based on the rotated bounding box
+    const actualHalfWidth = (objectMaxX - objectMinX) / 2;
+    const actualHalfDepth = (objectMaxZ - objectMinZ) / 2;
+
+    const isInNotch = isPositionInNotch(
+      position,
+      actualHalfWidth,
+      actualHalfDepth,
+      roomWidth,
+      roomHeight,
+      notchWidth,
+      notchHeight
+    );
+
+    if (isInNotch) {
+      console.log('🔴 NOTCH COLLISION: Object is in L-shape notch area:', {
+        objectType,
+        position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+        notchDimensions: `${notchWidth} × ${notchHeight}cm`
+      });
+      return true; // Block placement in notch area immediately
+    }
+  }
 
   // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
   if (isFlushMounted) {
@@ -685,7 +725,12 @@ export const checkCollision = (
 /**
  * NEW: Get interior room boundaries for the new wall system
  */
-export const getInteriorBoundaries = (roomWidth: number, roomHeight: number) => {
+export const getInteriorBoundaries = (
+  roomWidth: number,
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
+) => {
   const wallThickness = WALL_SETTINGS.THICKNESS;
 
   return {
@@ -704,8 +749,78 @@ export const getInteriorBoundaries = (roomWidth: number, roomHeight: number) => 
       south: (roomHeight / 2) - wallThickness,
       east: (roomWidth / 2) - wallThickness,
       west: -(roomWidth / 2) + wallThickness
-    }
+    },
+    // L-shape notch info (if applicable)
+    notch: notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0 ? {
+      width: notchWidth,
+      height: notchHeight,
+      minX: -(roomWidth / 2) + wallThickness,
+      maxX: -(roomWidth / 2) + notchWidth - wallThickness,
+      minZ: -(roomHeight / 2) + wallThickness,
+      maxZ: -(roomHeight / 2) + notchHeight - wallThickness
+    } : null
   };
+};
+
+/**
+ * Check if a position (with object dimensions) is in the L-shaped notch area
+ * Returns true if ANY part of the object would be in the notch
+ */
+export const isPositionInNotch = (
+  position: Position,
+  objectHalfWidth: number,
+  objectHalfDepth: number,
+  roomWidth: number,
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
+): boolean => {
+  // If no notch dimensions, this is not an L-shaped room
+  if (!notchWidth || !notchHeight || notchWidth <= 0 || notchHeight <= 0) {
+    return false;
+  }
+
+  const wallThickness = WALL_SETTINGS.THICKNESS;
+
+  // Notch boundaries (top-left corner)
+  const notchMinX = -(roomWidth / 2) + wallThickness;
+  const notchMaxX = -(roomWidth / 2) + notchWidth - wallThickness;
+  const notchMinZ = -(roomHeight / 2) + wallThickness;
+  const notchMaxZ = -(roomHeight / 2) + notchHeight - wallThickness;
+
+  // Object boundaries
+  const objMinX = position.x - objectHalfWidth;
+  const objMaxX = position.x + objectHalfWidth;
+  const objMinZ = position.z - objectHalfDepth;
+  const objMaxZ = position.z + objectHalfDepth;
+
+  // Check if object overlaps with notch area
+  const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
+  const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
+
+  const isInNotch = xOverlap && zOverlap;
+
+  // 🔍 DEBUG: Log detailed notch check
+  console.log('🔍 isPositionInNotch check:', {
+    position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+    objectHalfDims: { width: objectHalfWidth.toFixed(1), depth: objectHalfDepth.toFixed(1) },
+    objectBounds: {
+      minX: objMinX.toFixed(1),
+      maxX: objMaxX.toFixed(1),
+      minZ: objMinZ.toFixed(1),
+      maxZ: objMaxZ.toFixed(1)
+    },
+    notchBounds: {
+      minX: notchMinX.toFixed(1),
+      maxX: notchMaxX.toFixed(1),
+      minZ: notchMinZ.toFixed(1),
+      maxZ: notchMaxZ.toFixed(1)
+    },
+    overlap: { x: xOverlap, z: zOverlap },
+    result: isInNotch ? '❌ IN NOTCH' : '✅ NOT IN NOTCH'
+  });
+
+  return isInNotch;
 };
 
 // ENHANCED: Check if a position would cause collision with existing objects
@@ -756,6 +871,7 @@ export const wouldCollideWithExisting = (
 
 /**
  * Clean room constraint using ONLY productData.ts values
+ * Updated to handle L-shaped rooms with notch areas
  */
 export const constrainToRoom = (
   position: Position,
@@ -765,14 +881,26 @@ export const constrainToRoom = (
     type: objectType,
     scale = 1.0,
     orientation = DEFAULT_ORIENTATION,
-    item
+    item,
+    notchWidth,
+    notchHeight
   }: {
     type: ComponentType | null;
     scale?: number;
     orientation?: OrientationConfig;
     item?: BathroomItem;
+    notchWidth?: number;
+    notchHeight?: number;
   }
 ): { position: Position; rotation: number } => {
+
+  console.log('🎯 constrainToRoom CALLED:', {
+    objectType,
+    position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+    notchWidth: notchWidth || 'NOT PROVIDED',
+    notchHeight: notchHeight || 'NOT PROVIDED',
+    hasNotch: !!(notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0)
+  });
 
   if (!objectType) return { position, rotation: 0 };
 
@@ -785,7 +913,7 @@ export const constrainToRoom = (
   }
 
   const movementConfig = getMovementConfig(objectType, item);
-  const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
+  const { interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
   // Use actual product dimensions
   const halfWidth = (dimensions.width * scale) / 2;
@@ -794,18 +922,57 @@ export const constrainToRoom = (
   console.log(`🏠 Room constraint using productData for ${objectType}:`, {
     productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
     scaledHalfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
-    sku: item?.sku
+    sku: item?.sku,
+    isLShape: notchWidth && notchHeight ? true : false
   });
 
-  // Calculate constrained position using actual object size
-  const constrainedPosition = {
+  // ✅ UPDATED: For L-shaped rooms, adjust interior boundaries to exclude notch
+  let effectiveMinX = interior.minX;
+  let effectiveMinZ = interior.minZ;
+
+  if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+    const wallThickness = WALL_SETTINGS.THICKNESS;
+    const notchMaxX = -(roomWidth / 2) + notchWidth - wallThickness;
+    const notchMaxZ = -(roomHeight / 2) + notchHeight - wallThickness;
+
+    console.log('🔧 constrainToRoom: L-shape notch boundary check:', {
+      position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+      halfDims: { width: halfWidth.toFixed(1), depth: halfDepth.toFixed(1) },
+      notchMaxX: notchMaxX.toFixed(1),
+      notchMaxZ: notchMaxZ.toFixed(1),
+      leftEdge: (position.x - halfWidth).toFixed(1),
+      topEdge: (position.z - halfDepth).toFixed(1),
+      wouldEnterNotchX: position.x - halfWidth < notchMaxX,
+      wouldEnterNotchZ: position.z - halfDepth < notchMaxZ
+    });
+
+    // The notch creates a restricted area in the top-left (northwest) corner
+    // Treat notch boundaries as walls that objects cannot pass through
+
+    // If object's left edge would be in notch X range, enforce notch boundary
+    if (position.x - halfWidth < notchMaxX) {
+      // Object is in the X range of the notch - set boundary at notch edge
+      effectiveMinX = Math.max(effectiveMinX, notchMaxX);
+      console.log(`🧱 Notch X boundary enforced: effectiveMinX = ${effectiveMinX.toFixed(1)}`);
+    }
+
+    // If object's top edge would be in notch Z range, enforce notch boundary
+    if (position.z - halfDepth < notchMaxZ) {
+      // Object is in the Z range of the notch - set boundary at notch edge
+      effectiveMinZ = Math.max(effectiveMinZ, notchMaxZ);
+      console.log(`🧱 Notch Z boundary enforced: effectiveMinZ = ${effectiveMinZ.toFixed(1)}`);
+    }
+  }
+
+  // Calculate constrained position using effective boundaries (accounting for notch)
+  let constrainedPosition = {
     x: Math.max(
-      interior.minX + halfWidth,
+      effectiveMinX + halfWidth,
       Math.min(interior.maxX - halfWidth, position.x)
     ),
     y: Math.max(0, position.y),
     z: Math.max(
-      interior.minZ + halfDepth,
+      effectiveMinZ + halfDepth,
       Math.min(interior.maxZ - halfDepth, position.z)
     )
   };

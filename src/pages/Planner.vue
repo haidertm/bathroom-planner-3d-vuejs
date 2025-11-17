@@ -487,6 +487,8 @@ const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
+const notchWidth = ref(150) // Default notch width for L-shape (1.5m)
+const notchHeight = ref(150) // Default notch height for L-shape (1.5m)
 const showGrid = ref(false)
 const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
@@ -978,9 +980,19 @@ const loadSavedRoomDimensions = () => {
     roomWidthRef.value = dimensions.width
     roomHeightRef.value = dimensions.height
 
+    // Load notch dimensions if they exist (for L-shaped rooms)
+    if (dimensions.notchWidth !== undefined) {
+      notchWidth.value = dimensions.notchWidth
+    }
+    if (dimensions.notchHeight !== undefined) {
+      notchHeight.value = dimensions.notchHeight
+    }
+
     console.log('Room dimensions loaded (CM):', {
       width: dimensions.width + 'cm',
-      height: dimensions.height + 'cm'
+      height: dimensions.height + 'cm',
+      notchWidth: dimensions.notchWidth ? dimensions.notchWidth + 'cm' : 'N/A',
+      notchHeight: dimensions.notchHeight ? dimensions.notchHeight + 'cm' : 'N/A'
     })
 
     return true
@@ -1125,6 +1137,8 @@ onMounted(async () => {
       renderer,
       roomWidthRef,
       roomHeightRef,
+      notchWidth,                  // For L-shaped rooms
+      notchHeight,                 // For L-shaped rooms
       setItems, // Use our custom setItems function
       getItems, // Use our custom getItems function
       deleteItem,
@@ -1147,8 +1161,8 @@ onMounted(async () => {
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
 
   // Set up initial scene
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
   eventHandlersRef.value.setWallCulling(sceneManager.wallCulling)
 
@@ -1222,11 +1236,11 @@ onMounted(async () => {
 })
 
 // Watch for room geometry changes
-watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
+watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], () => {
   if (!sceneManagerRef.value) return
 
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 })
 
@@ -1234,8 +1248,8 @@ watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
 watch([currentFloorTexture, currentWallTexture], () => {
   if (!sceneManagerRef.value) return
 
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
 })
 
 // MODIFIED: Only update scene for non-drag operations

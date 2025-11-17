@@ -8,6 +8,8 @@ import { AxisIndicatorsDebug } from '../utils/axisIndicatorsDebug.js';
 import {
   createFloor,
   createWalls,
+  createLShapeFloor,
+  createLShapeWalls,
   createCustomGrid,
   createWallGridLines
 } from '../models/roomGeometry';
@@ -495,7 +497,7 @@ export class SceneManager {
         }
     }
 
-   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): void {
+   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
         if (!this.scene) return;
 
         if (this.floorRef) {
@@ -504,7 +506,17 @@ export class SceneManager {
 
     // FIX: Pass room dimensions to material creation
     const floorMaterial = this.createEnhancedFloorMaterial(floorTexture, roomWidth, roomHeight);
-    this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
+
+    // Check if we should create an L-shaped floor
+    const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
+
+    if (isLShape) {
+      console.log('Creating L-shaped floor with notch dimensions:', { notchWidth, notchHeight });
+      this.floorRef = createLShapeFloor(roomWidth, roomHeight, notchWidth!, notchHeight!, floorMaterial);
+    } else {
+      this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
+    }
+
     this.scene.add(this.floorRef);
 
         // 🔥 UPDATE: Reposition lights when room dimensions change
@@ -527,7 +539,7 @@ export class SceneManager {
     return material;
   }
 
-  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
+  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
     if (!this.scene) return;
 
         // Remove existing walls
@@ -538,7 +550,17 @@ export class SceneManager {
 
     // Create new walls with enhanced materials
     const wallMaterial = this.createEnhancedWallMaterial(wallTexture);
-    this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
+
+    // Check if we should create L-shaped walls
+    const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
+
+    if (isLShape) {
+      console.log('Creating L-shaped walls with notch dimensions:', { notchWidth, notchHeight });
+      this.wallRefs = createLShapeWalls(roomWidth, roomHeight, notchWidth!, notchHeight!, wallMaterial);
+    } else {
+      this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
+    }
+
     this.wallRefs.forEach(wall => this.scene!.add(wall));
     this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
     // NEW: Add axis indicators

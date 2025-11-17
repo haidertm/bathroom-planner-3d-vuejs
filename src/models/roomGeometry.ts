@@ -255,3 +255,176 @@ export const createFloor = (
 
   return floor;
 }
+
+/**
+ * Create L-shaped walls (6 walls total)
+ * The L-shape is defined by total width, height, and notch dimensions
+ */
+export const createLShapeWalls = (
+  totalWidth: number,
+  totalHeight: number,
+  notchWidth: number,
+  notchHeight: number,
+  wallMaterial: THREE.Material
+): THREE.Mesh[] => {
+  const { HEIGHT: wallHeight, THICKNESS: wallThickness } = WALL_SETTINGS;
+  const walls: THREE.Mesh[] = [];
+  const wallOffset = wallThickness / 2;
+
+  // Calculate key positions
+  // The notch is in the top-left corner
+  const halfWidth = totalWidth / 2;
+  const halfHeight = totalHeight / 2;
+
+  // L-shape walls (6 walls):
+  // 1. Top wall (right side of notch)
+  const topWallWidth = totalWidth - notchWidth;
+  const topWallCenterX = halfWidth - topWallWidth / 2;
+  walls.push(
+    createWall(
+      new THREE.BoxGeometry(topWallWidth, wallHeight, wallThickness),
+      [topWallCenterX, wallHeight / 2, -halfHeight + wallOffset],
+      'top',
+      wallMaterial
+    )
+  );
+
+  // 2. Right wall (full height)
+  walls.push(
+    createWall(
+      new THREE.BoxGeometry(wallThickness, wallHeight, totalHeight),
+      [halfWidth - wallOffset, wallHeight / 2, 0],
+      'right',
+      wallMaterial
+    )
+  );
+
+  // 3. Bottom wall (full width)
+  walls.push(
+    createWall(
+      new THREE.BoxGeometry(totalWidth, wallHeight, wallThickness),
+      [0, wallHeight / 2, halfHeight - wallOffset],
+      'bottom',
+      wallMaterial
+    )
+  );
+
+  // 4. Left wall (bottom portion, below notch)
+  const leftWallHeight = totalHeight - notchHeight;
+  const leftWallCenterZ = halfHeight - leftWallHeight / 2;
+  walls.push(
+    createWall(
+      new THREE.BoxGeometry(wallThickness, wallHeight, leftWallHeight),
+      [-halfWidth + wallOffset, wallHeight / 2, leftWallCenterZ],
+      'left',
+      wallMaterial
+    )
+  );
+
+  // 5. Inner horizontal wall (bottom of notch)
+  walls.push(
+    createWall(
+      new THREE.BoxGeometry(notchWidth, wallHeight, wallThickness),
+      [-halfWidth + notchWidth / 2, wallHeight / 2, -halfHeight + notchHeight - wallOffset],
+      'inner-horizontal',
+      wallMaterial
+    )
+  );
+
+  // 6. Inner vertical wall (right side of notch)
+  walls.push(
+    createWall(
+      new THREE.BoxGeometry(wallThickness, wallHeight, notchHeight),
+      [-halfWidth + notchWidth - wallOffset, wallHeight / 2, -halfHeight + notchHeight / 2],
+      'inner-vertical',
+      wallMaterial
+    )
+  );
+
+  console.log('✅ L-shaped walls created: 6 walls');
+  return walls;
+};
+
+/**
+ * Helper function to create a single wall
+ */
+const createWall = (
+  geometry: THREE.BoxGeometry,
+  position: [number, number, number],
+  direction: string,
+  material: THREE.Material
+): THREE.Mesh => {
+  const wall = new THREE.Mesh(geometry, material);
+  wall.position.set(position[0], position[1], position[2]);
+  wall.receiveShadow = true;
+  wall.userData.isWall = true;
+  wall.userData.wallDirection = direction;
+  wall.name = `Wall_${direction}`;
+  return wall;
+};
+
+/**
+ * Create L-shaped floor
+ * Uses THREE.Shape to create a custom L-shaped geometry
+ */
+export const createLShapeFloor = (
+  totalWidth: number,
+  totalHeight: number,
+  notchWidth: number,
+  notchHeight: number,
+  floorMaterial: THREE.Material
+): THREE.Mesh => {
+  console.log('🏗️ Creating L-shaped floor with dimensions:', { totalWidth, totalHeight, notchWidth, notchHeight });
+
+  const floorThickness = 1;
+
+  // Create L-shape using Shape
+  const shape = new THREE.Shape();
+
+  // Start from bottom-left corner and trace the L-shape clockwise
+  const halfWidth = totalWidth / 2;
+  const halfHeight = totalHeight / 2;
+
+  // Start at bottom-left
+  shape.moveTo(-halfWidth, -halfHeight);
+
+  // Go to top-left (below the notch)
+  shape.lineTo(-halfWidth, -halfHeight + (totalHeight - notchHeight));
+
+  // Go right to the inner corner (bottom of notch)
+  shape.lineTo(-halfWidth + notchWidth, -halfHeight + (totalHeight - notchHeight));
+
+  // Go up to top (right of notch)
+  shape.lineTo(-halfWidth + notchWidth, halfHeight);
+
+  // Go right to top-right corner
+  shape.lineTo(halfWidth, halfHeight);
+
+  // Go down to bottom-right corner
+  shape.lineTo(halfWidth, -halfHeight);
+
+  // Close the shape back to start
+  shape.lineTo(-halfWidth, -halfHeight);
+
+  // Extrude the shape to create 3D geometry
+  const extrudeSettings = {
+    depth: floorThickness,
+    bevelEnabled: false
+  };
+
+  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+  // Rotate to lay flat (ExtrudeGeometry extrudes along Z-axis)
+  geometry.rotateX(-Math.PI / 2);
+
+  const floor = new THREE.Mesh(geometry, floorMaterial);
+  floor.position.y = -floorThickness / 2;
+  floor.receiveShadow = true;
+  floor.userData.isFloor = true;
+  floor.userData.isLShape = true;
+  floor.name = 'LShapeFloor';
+
+  console.log('✅ L-shaped floor created');
+
+  return floor;
+};
