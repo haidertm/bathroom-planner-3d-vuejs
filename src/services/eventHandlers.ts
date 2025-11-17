@@ -657,6 +657,18 @@ export class EventHandlers {
               .map(status => status.direction)
           );
 
+          // ✅ ADD NOTCH WALLS to visible walls if notch exists
+          const { notch } = getInteriorBoundaries(
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+          if (notch) {
+            visibleWalls.add('notch-east');
+            visibleWalls.add('notch-south');
+          }
+
           // If object is on a hidden wall, move it to the opposite visible wall
           if (!visibleWalls.has(currentWall)) {
             console.log(`🔄 Object is on hidden ${currentWall} wall, moving to visible wall`);
@@ -750,13 +762,27 @@ export class EventHandlers {
           const roomHalfWidth = this.roomWidthRef.value / 2;
           const roomHalfHeight = this.roomHeightRef.value / 2;
 
-          // Create the wall plane
+          // ✅ Get notch boundaries for L-shaped rooms
+          const { notch } = getInteriorBoundaries(
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+
+          // Create the wall planes
           const wallPlanes: { [key: string]: THREE.Plane } = {
             north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
             south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
             east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
             west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
           };
+
+          // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
+          if (notch) {
+            wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
+            wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+          }
 
           const wallPlane = wallPlanes[currentWall];
 
@@ -1567,7 +1593,7 @@ export class EventHandlers {
         let foundValidIntersection = false;
 
         // ✅ WALL STICKINESS: Add a bias to prefer staying on current wall
-        const WALL_SWITCH_THRESHOLD = 30; // 30cm bias to stay on current wall (reduced for smoother transitions)
+        const WALL_SWITCH_THRESHOLD = 80; // 80cm bias to stay on current wall (increased for stickier behavior)
 
         // First, check intersection with current wall
         let currentWallDistance = Infinity;
@@ -1589,7 +1615,7 @@ export class EventHandlers {
             }
             // ✅ For notch-east: check if intersection is on the vertical notch wall segment
             else if (currentWall === 'notch-east' && notch) {
-              if (Math.abs(intersectPoint.x - notch.maxX) <= 50 &&
+              if (Math.abs(intersectPoint.x - notch.maxX) <= 20 &&
                   intersectPoint.z >= notch.minZ &&
                   intersectPoint.z <= notch.maxZ &&
                   intersectPoint.y >= -50 && intersectPoint.y <= 300) {
@@ -1598,7 +1624,7 @@ export class EventHandlers {
             }
             // ✅ For notch-south: check if intersection is on the horizontal notch wall segment
             else if (currentWall === 'notch-south' && notch) {
-              if (Math.abs(intersectPoint.z - notch.maxZ) <= 50 &&
+              if (Math.abs(intersectPoint.z - notch.maxZ) <= 20 &&
                   intersectPoint.x >= notch.minX &&
                   intersectPoint.x <= notch.maxX &&
                   intersectPoint.y >= -50 && intersectPoint.y <= 300) {
