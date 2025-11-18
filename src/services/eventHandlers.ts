@@ -1980,7 +1980,7 @@ export class EventHandlers {
                     // Vertical notch edge (runs north-south at X = notch.maxX)
                     // Object snaps to this edge and slides along Z axis
                     // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
-                    newX = notch?.maxX ? notch.maxX + wallBuffer : 0;
+                    newX = notch?.maxX ? notch.maxX + wallBuffer + 5 : 0;
                     newZ = Math.max(
                         notch?.minZ ? notch.minZ + halfObjectWidth : 0,  // Don't go past top of notch
                         Math.min(interior.maxZ - halfObjectWidth, newZ)  // Allow transition to south wall
@@ -1992,7 +1992,7 @@ export class EventHandlers {
                     // Horizontal notch edge (runs east-west at Z = notch.maxZ)
                     // Object snaps to this edge and slides along X axis
                     // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
-                    newZ = notch?.maxZ ? notch?.maxZ + wallBuffer : 0;
+                    newZ = notch?.maxZ ? notch?.maxZ + wallBuffer + 5 : 0;
                     newX = Math.max(
                         notch?.minX ? notch?.minX + halfObjectWidth : 0,  // Don't go past left of notch
                         Math.min(interior.maxX - halfObjectWidth, newX)  // Allow transition to east wall
@@ -2086,13 +2086,14 @@ export class EventHandlers {
         }
       }
 
-      // Check collisions
+      // Check collisions with proper rotation
       const isColliding = this.checkCollisionState(
         { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
         objectType,
         objectScale,
         itemId,
-        currentItem
+        currentItem,
+        constrainedRotation  // ✅ FIX: Pass rotation to collision detection
       );
 
       // Update outline color
