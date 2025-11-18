@@ -8,7 +8,7 @@ export interface RoomDefaults {
   readonly STEP: number;
 }
 
-export type WallType = 'north' | 'south' | 'east' | 'west';
+export type WallType = 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
 export const ROOM_DEFAULTS: RoomDefaults = {
   WIDTH: 300, // default

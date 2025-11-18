@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { WALL_SETTINGS } from '../constants/dimensions';
 
 // Type definitions
-type WallDirection = 'north' | 'south' | 'east' | 'west';
+type WallDirection = 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
 interface RoomSize {
   width: number;

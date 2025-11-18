@@ -1305,7 +1305,9 @@ export class EventHandlers {
       north: 'south',
       south: 'north',
       east: 'west',
-      west: 'east'
+      west: 'east',
+        "notch-east": "notch-south",
+        "notch-south": "notch-east"
     };
 
     const oppositeWall = opposites[currentWall];
@@ -1903,9 +1905,9 @@ export class EventHandlers {
 
           // Calculate object width and depth for boundary constraints
           const objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
-          const objectDepth = dimensions && dimensions.depth ? dimensions?.depth * objectScale : 0;
+          // const objectDepth = dimensions && dimensions.depth ? dimensions?.depth * objectScale : 0;
           const halfObjectWidth = objectWidth / 2;
-          const halfObjectDepth = objectDepth / 2;
+          // const halfObjectDepth = objectDepth / 2;
 
           // ✅ NOTCH HANDLING: Use notch boundaries for L-shaped rooms
           // For north/south walls: object slides along X axis, so use notch.maxX as minimum X boundary
@@ -1978,9 +1980,9 @@ export class EventHandlers {
                     // Vertical notch edge (runs north-south at X = notch.maxX)
                     // Object snaps to this edge and slides along Z axis
                     // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
-                    newX = notch.maxX + wallBuffer;
+                    newX = notch?.maxX ? notch.maxX + wallBuffer : 0;
                     newZ = Math.max(
-                        notch.minZ + halfObjectWidth,  // Don't go past top of notch
+                        notch?.minZ ? notch.minZ + halfObjectWidth : 0,  // Don't go past top of notch
                         Math.min(interior.maxZ - halfObjectWidth, newZ)  // Allow transition to south wall
                     );
                     constrainedRotation = Math.PI / 2;  // Face away from notch (toward east)
@@ -1990,9 +1992,9 @@ export class EventHandlers {
                     // Horizontal notch edge (runs east-west at Z = notch.maxZ)
                     // Object snaps to this edge and slides along X axis
                     // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
-                    newZ = notch.maxZ + wallBuffer;
+                    newZ = notch?.maxZ ? notch?.maxZ + wallBuffer : 0;
                     newX = Math.max(
-                        notch.minX + halfObjectWidth,  // Don't go past left of notch
+                        notch?.minX ? notch?.minX + halfObjectWidth : 0,  // Don't go past left of notch
                         Math.min(interior.maxX - halfObjectWidth, newX)  // Allow transition to east wall
                     );
                     constrainedRotation = 0;  // Face away from notch (toward south)
