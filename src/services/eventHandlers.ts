@@ -1592,8 +1592,16 @@ export class EventHandlers {
         let minDistance = Infinity;
         let foundValidIntersection = false;
 
-        // ✅ WALL STICKINESS: Add a bias to prefer staying on current wall
-        const WALL_SWITCH_THRESHOLD = 80; // 80cm bias to stay on current wall (increased for stickier behavior)
+        // ✅ WALL STICKINESS: Helper function to determine if two walls are perpendicular
+        const areWallsPerpendicular = (wall1: WallType, wall2: WallType): boolean => {
+          // Define wall orientations
+          const horizontalWalls = new Set(['north', 'south', 'notch-south']);
+          const verticalWalls = new Set(['east', 'west', 'notch-east']);
+
+          // Perpendicular if one is horizontal and the other is vertical
+          return (horizontalWalls.has(wall1) && verticalWalls.has(wall2)) ||
+                 (verticalWalls.has(wall1) && horizontalWalls.has(wall2));
+        };
 
         // First, check intersection with current wall
         let currentWallDistance = Infinity;
@@ -1605,12 +1613,28 @@ export class EventHandlers {
             // ✅ Validate intersection based on wall type
             let isValidIntersection = false;
 
-            // For regular walls: check room bounds
+            // For regular walls: check room bounds with tolerance for wall transitions
             if (currentWall === 'north' || currentWall === 'south' || currentWall === 'east' || currentWall === 'west') {
-              if (Math.abs(intersectPoint.x) <= roomHalfWidth &&
-                  Math.abs(intersectPoint.z) <= roomHalfHeight &&
+              // ✅ Allow intersections slightly outside bounds to enable smooth wall transitions
+              const TRANSITION_TOLERANCE = 200; // 200cm tolerance for smoother transitions
+              if (Math.abs(intersectPoint.x) <= roomHalfWidth + TRANSITION_TOLERANCE &&
+                  Math.abs(intersectPoint.z) <= roomHalfHeight + TRANSITION_TOLERANCE &&
                   intersectPoint.y >= -50 && intersectPoint.y <= 300) {
-                isValidIntersection = true;
+
+                // ✅ CRITICAL FIX: For L-shaped rooms, check that intersection is NOT inside the notch cutout
+                if (notch) {
+                  // Check if intersection point is inside the notch rectangle (not just quadrant!)
+                  const isInsideNotch =
+                    intersectPoint.x >= notch.minX && intersectPoint.x <= notch.maxX &&
+                    intersectPoint.z >= notch.minZ && intersectPoint.z <= notch.maxZ;
+
+                  if (!isInsideNotch) {
+                    isValidIntersection = true;
+                  }
+                  // If inside notch, leave isValidIntersection = false
+                } else {
+                  isValidIntersection = true;
+                }
               }
             }
             // ✅ For notch-east: check if intersection is on the vertical notch wall segment
@@ -1633,7 +1657,23 @@ export class EventHandlers {
             }
 
             if (isValidIntersection) {
-              currentWallDistance = this.camera.position.distanceTo(intersectPoint);
+              // ✅ FIX: Calculate perpendicular distance to current wall, not camera distance
+              if (currentWall === 'north') {
+                currentWallDistance = Math.abs(intersectPoint.z + roomHalfHeight);
+              } else if (currentWall === 'south') {
+                currentWallDistance = Math.abs(intersectPoint.z - roomHalfHeight);
+              } else if (currentWall === 'east') {
+                currentWallDistance = Math.abs(intersectPoint.x - roomHalfWidth);
+              } else if (currentWall === 'west') {
+                currentWallDistance = Math.abs(intersectPoint.x + roomHalfWidth);
+              } else if (currentWall === 'notch-east' && notch) {
+                currentWallDistance = Math.abs(intersectPoint.x - notch.maxX);
+              } else if (currentWall === 'notch-south' && notch) {
+                currentWallDistance = Math.abs(intersectPoint.z - notch.maxZ);
+              } else {
+                currentWallDistance = this.camera.position.distanceTo(intersectPoint); // fallback
+              }
+
               currentWallPoint.copy(intersectPoint);
               foundValidIntersection = true;
               closestWall = currentWall;
@@ -1734,7 +1774,19 @@ export class EventHandlers {
               if (Math.abs(intersectPoint.x) <= roomHalfWidth &&
                   Math.abs(intersectPoint.z) <= roomHalfHeight &&
                   intersectPoint.y >= -50 && intersectPoint.y <= 300) {
-                isValidIntersection = true;
+
+                // ✅ Also check notch for other walls
+                if (notch) {
+                  const isInsideNotch =
+                    intersectPoint.x >= notch.minX && intersectPoint.x <= notch.maxX &&
+                    intersectPoint.z >= notch.minZ && intersectPoint.z <= notch.maxZ;
+
+                  if (!isInsideNotch) {
+                    isValidIntersection = true;
+                  }
+                } else {
+                  isValidIntersection = true;
+                }
               }
             }
             // ✅ For notch-east: check if intersection is on the vertical notch wall segment
@@ -1757,17 +1809,74 @@ export class EventHandlers {
             }
 
             if (isValidIntersection) {
-              // Calculate distance from camera to this intersection
-              const distance = this.camera.position.distanceTo(intersectPoint);
+              // ✅ FIX: Calculate perpendicular distance from intersection point to wall plane
+              // This measures how close the cursor position is to each wall, not camera distance
+              let distance: number;
+              const roomHalfWidth = this.roomWidthRef.value / 2;
+              const roomHalfHeight = this.roomHeightRef.value / 2;
 
-              // ✅ Only switch walls if this wall is SIGNIFICANTLY closer
-              // Apply threshold bias to prevent unwanted jumping
-              if (distance < minDistance - WALL_SWITCH_THRESHOLD) {
-                minDistance = distance;
-                closestWall = wall as WallType;
-                closestPoint.copy(intersectPoint);
-                foundValidIntersection = true;
-                console.log(`🔄 Switching from ${currentWall} to ${wall} (distance difference: ${(currentWallDistance - distance).toFixed(0)}cm)`);
+              // Calculate perpendicular distance to this wall based on wall type
+              if (wall === 'north') {
+                distance = Math.abs(intersectPoint.z + roomHalfHeight);
+              } else if (wall === 'south') {
+                distance = Math.abs(intersectPoint.z - roomHalfHeight);
+              } else if (wall === 'east') {
+                distance = Math.abs(intersectPoint.x - roomHalfWidth);
+              } else if (wall === 'west') {
+                distance = Math.abs(intersectPoint.x + roomHalfWidth);
+              } else if (wall === 'notch-east' && notch) {
+                distance = Math.abs(intersectPoint.x - notch.maxX);
+              } else if (wall === 'notch-south' && notch) {
+                distance = Math.abs(intersectPoint.z - notch.maxZ);
+              } else {
+                distance = this.camera.position.distanceTo(intersectPoint); // fallback
+              }
+
+              // ✅ CRITICAL FIX: If current wall intersection is invalid (not foundValidIntersection yet),
+              // immediately accept the closest valid alternative wall without requiring threshold
+              // This prevents objects from getting stuck when transitioning between walls
+              if (!foundValidIntersection) {
+                // No valid current wall intersection - accept any valid alternative wall
+                if (distance < minDistance) {
+                  minDistance = distance;
+                  closestWall = wall as WallType;
+                  closestPoint.copy(intersectPoint);
+                  foundValidIntersection = true;
+                  console.log(`🔄 Emergency switch to ${wall} (current wall invalid, distance: ${distance.toFixed(0)}cm)`);
+                }
+              } else {
+                // Current wall is valid - use threshold-based switching
+                // ✅ DYNAMIC THRESHOLD: Use different thresholds for perpendicular vs parallel transitions
+                const isPerpendicular = areWallsPerpendicular(currentWall, wall as WallType);
+                let threshold = isPerpendicular ? 30 : 80; // 30cm for perpendicular (smooth), 80cm for parallel (prevent jumping)
+
+                // ✅ SPECIAL CASE: At notch corner boundary positions, use minimal threshold for ultra-smooth transitions
+                if (notch && this.selectedObject) {
+                  const objectPos = this.selectedObject.position;
+                  const BOUNDARY_TOLERANCE = 50; // Within 50cm of boundary
+
+                  // Check if object is at notch boundary positions (where walls meet notch walls)
+                  const atNotchZBoundary = Math.abs(objectPos.z - notch.maxZ) < BOUNDARY_TOLERANCE; // On east/west wall at notch Z
+                  const atNotchXBoundary = Math.abs(objectPos.x - notch.maxX) < BOUNDARY_TOLERANCE; // On north/south wall at notch X
+
+                  if ((currentWall === 'east' && atNotchZBoundary) ||
+                      (currentWall === 'west' && atNotchZBoundary) ||
+                      (currentWall === 'south' && atNotchXBoundary) ||
+                      (currentWall === 'north' && atNotchXBoundary)) {
+                    threshold = 5; // Ultra-low threshold at boundary positions
+                    console.log(`🎯 At notch boundary on ${currentWall} - using ultra-low threshold: ${threshold}cm`);
+                  }
+                }
+
+                // ✅ Only switch walls if this wall is SIGNIFICANTLY closer
+                // Apply threshold bias to prevent unwanted jumping
+                if (distance < minDistance - threshold) {
+                  minDistance = distance;
+                  closestWall = wall as WallType;
+                  closestPoint.copy(intersectPoint);
+                  foundValidIntersection = true;
+                  console.log(`🔄 Switching from ${currentWall} to ${wall} (${isPerpendicular ? 'perpendicular' : 'parallel'}, threshold: ${threshold}cm, distance difference: ${(currentWallDistance - distance).toFixed(0)}cm)`);
+                }
               }
             }
           }
@@ -1832,10 +1941,11 @@ export class EventHandlers {
                case 'south':
                    // Keep object flush to south wall
                    newZ = wallFaces.south - wallBuffer;
-                    // FIXED: Prevent object from extending beyond interior boundaries (including notch)
+                   // ✅ CRITICAL FIX: South wall is opposite to notch - don't apply notch constraint!
+                   // The notch is on the NORTH side, so south wall should use full room X-range
                    newX = Math.max(
-                       effectiveMinX + halfObjectWidth,  // Don't go into west wall or notch
-                       Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall, use newX with offset
+                       interior.minX + halfObjectWidth,  // Use actual west boundary, NOT notch boundary
+                       Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall
                    );
                    constrainedRotation = Math.PI;
                    break;
@@ -1843,10 +1953,11 @@ export class EventHandlers {
                case 'east':
                    // Keep object flush to east wall
                    newX = wallFaces.east - wallBuffer;
-                   // FIXED: Prevent object from extending beyond interior boundaries (including notch)
+                   // ✅ CRITICAL FIX: East wall is opposite to notch - don't apply notch constraint!
+                   // The notch is on the WEST side, so east wall should use full room Z-range
                    newZ = Math.max(
-                       effectiveMinZ + halfObjectWidth,  // Don't go into north wall or notch (object rotated, so use halfObjectWidth)
-                       Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall, use newZ with offset
+                       interior.minZ + halfObjectWidth,  // Use actual north boundary, NOT notch boundary
+                       Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall
                    );
                    constrainedRotation = -Math.PI / 2;
                    break;
@@ -1866,8 +1977,8 @@ export class EventHandlers {
                 case 'notch-east':
                     // Vertical notch edge (runs north-south at X = notch.maxX)
                     // Object snaps to this edge and slides along Z axis
-                    // Position: notch edge + half of object depth (to prevent clipping into notch)
-                    newX = notch.maxX + halfObjectDepth;
+                    // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
+                    newX = notch.maxX + wallBuffer;
                     newZ = Math.max(
                         notch.minZ + halfObjectWidth,  // Don't go past top of notch
                         Math.min(interior.maxZ - halfObjectWidth, newZ)  // Allow transition to south wall
@@ -1878,8 +1989,8 @@ export class EventHandlers {
                 case 'notch-south':
                     // Horizontal notch edge (runs east-west at Z = notch.maxZ)
                     // Object snaps to this edge and slides along X axis
-                    // Position: notch edge + half of object depth (to prevent clipping into notch)
-                    newZ = notch.maxZ + halfObjectDepth;
+                    // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
+                    newZ = notch.maxZ + wallBuffer;
                     newX = Math.max(
                         notch.minX + halfObjectWidth,  // Don't go past left of notch
                         Math.min(interior.maxX - halfObjectWidth, newX)  // Allow transition to east wall
@@ -1903,6 +2014,8 @@ export class EventHandlers {
           }
 
           console.log(`📍 Cursor on ${closestWall} wall at (${newX.toFixed(0)}, ${newZ.toFixed(0)})`);
+          console.log(`🔍 Debug - closestPoint: (${closestPoint.x.toFixed(0)}, ${closestPoint.z.toFixed(0)}), dragOffset: (${this.dragOffset.x.toFixed(0)}, ${this.dragOffset.z.toFixed(0)})`);
+          console.log(`🔍 Debug - Final position: (${constrainedPosition.x.toFixed(0)}, ${constrainedPosition.z.toFixed(0)}), Current wall: ${currentWall}`);
         }
 
       } else if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
