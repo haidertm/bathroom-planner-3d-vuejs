@@ -712,7 +712,7 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   saveRoomDimensionsToStorage(newWidth, newHeight)
 
   // Constrain objects and update scene
-  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight)
+  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight, notchWidth.value, notchHeight.value)
   items.value = constrainedItems
   lastUpdateSource.value = 'roomSize'
 
@@ -931,7 +931,7 @@ const handleShowTexturePanel = () => {
 }
 
 const constrainObjects = () => {
-  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value)
+  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, notchWidth.value, notchHeight.value)
   items.value = constrainedItems
   lastUpdateSource.value = 'constrain'
 }

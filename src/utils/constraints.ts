@@ -1158,6 +1158,7 @@ export const constrainToRoom = (
 
 /**
  * ✅ FIXED: Clean wall constraint for flush-mounted objects
+ * ✅ UPDATED: Now supports L-shaped room notch walls
  */
 export const constrainToWalls = (
   position: Position,
@@ -1167,12 +1168,16 @@ export const constrainToWalls = (
     type: objectType,
     scale = 1.0,
     orientation = DEFAULT_ORIENTATION,
-    item
+    item,
+    notchWidth,
+    notchHeight
   }: {
     type: ComponentType | null;
     scale?: number;
     orientation?: OrientationConfig;
     item?: BathroomItem;
+    notchWidth?: number;
+    notchHeight?: number;
   }
 ): { position: Position; rotation: number } => {
 
@@ -1196,7 +1201,7 @@ export const constrainToWalls = (
     });
   }
 
-  const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
+  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
   // Use actual product dimensions
   const halfWidth = (dimensions.width * scale) / 2;
@@ -1212,20 +1217,27 @@ export const constrainToWalls = (
     halfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
     wallBuffer: wallBuffer.toFixed(1) + 'cm',
     isFlushMounted,
+    isLShape: !!notch,
     sku: item?.sku
   });
 
-  // Calculate distances to each wall
-  const wallDistances = {
+  // ✅ NEW: Calculate distances to all walls including notch walls
+  const wallDistances: Record<string, number> = {
     north: Math.abs(position.z - wallFaces.north),
     south: Math.abs(position.z - wallFaces.south),
     east: Math.abs(position.x - wallFaces.east),
     west: Math.abs(position.x - wallFaces.west)
   };
 
+  // ✅ NEW: Add notch walls if this is an L-shaped room
+  if (notch) {
+    wallDistances['notch-east'] = Math.abs(position.x - notch.maxX);
+    wallDistances['notch-south'] = Math.abs(position.z - notch.maxZ);
+  }
+
   const nearestWall = Object.entries(wallDistances).reduce((a, b) =>
     wallDistances[a[0]] < wallDistances[b[0]] ? a : b
-  )[0] as 'north' | 'south' | 'east' | 'west';
+  )[0] as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
   let constrainedPosition = { ...position }; // ✅ Start with original position
   let wallRotation = 0;
@@ -1339,6 +1351,68 @@ export const constrainToWalls = (
 
       wallRotation = getObjectRotationForWall(objectType, 'west', orientation);
       break;
+
+    // ✅ NEW: Handle notch-east wall (vertical edge of L-shape notch)
+    case 'notch-east':
+      if (!notch) break; // Safety check
+
+      // Treat like east wall - snap X coordinate to notch edge
+      if (isFlushMounted) {
+        constrainedPosition.x = notch.maxX;
+      } else {
+        constrainedPosition.x = notch.maxX + halfDepth + wallBuffer;
+      }
+
+      // ✅ Allow Z to slide freely along the notch wall within valid range
+      // Only constrain if object would extend beyond room bounds
+      const wouldExtendNotchNorth = position.z - halfWidth < notch.minZ;
+      const wouldExtendNotchSouth = position.z + halfWidth > interior.maxZ;
+
+      if (wouldExtendNotchNorth || wouldExtendNotchSouth) {
+        constrainedPosition.z = Math.max(
+          notch.minZ + halfWidth,
+          Math.min(interior.maxZ - halfWidth, position.z)
+        );
+        console.log(`🔧 NOTCH-EAST: Z constrained: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+      } else {
+        constrainedPosition.z = position.z;
+        console.log(`🎯 NOTCH-EAST: Z preserved for smooth sliding: ${position.z.toFixed(1)}`);
+      }
+
+      wallRotation = getObjectRotationForWall(objectType, 'east', orientation);
+      console.log(`✅ NOTCH-EAST wall constraint applied: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
+      break;
+
+    // ✅ NEW: Handle notch-south wall (horizontal edge of L-shape notch)
+    case 'notch-south':
+      if (!notch) break; // Safety check
+
+      // Treat like south wall - snap Z coordinate to notch edge
+      if (isFlushMounted) {
+        constrainedPosition.z = notch.maxZ;
+      } else {
+        constrainedPosition.z = notch.maxZ + halfDepth + wallBuffer;
+      }
+
+      // ✅ Allow X to slide freely along the notch wall within valid range
+      // Only constrain if object would extend beyond room bounds
+      const wouldExtendNotchWest = position.x - halfWidth < notch.minX;
+      const wouldExtendNotchEast = position.x + halfWidth > interior.maxX;
+
+      if (wouldExtendNotchWest || wouldExtendNotchEast) {
+        constrainedPosition.x = Math.max(
+          notch.minX + halfWidth,
+          Math.min(interior.maxX - halfWidth, position.x)
+        );
+        console.log(`🔧 NOTCH-SOUTH: X constrained: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+      } else {
+        constrainedPosition.x = position.x;
+        console.log(`🎯 NOTCH-SOUTH: X preserved for smooth sliding: ${position.x.toFixed(1)}`);
+      }
+
+      wallRotation = getObjectRotationForWall(objectType, 'south', orientation);
+      console.log(`✅ NOTCH-SOUTH wall constraint applied: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
+      break;
   }
 
   // Handle vertical positioning
@@ -1379,6 +1453,8 @@ export const snapToNearestWall = (
     scale?: number;
     orientation?: OrientationConfig;
     item?: BathroomItem;
+    notchWidth?: number;
+    notchHeight?: number;
   }
 ): { position: Position; rotation: number } => {
   return constrainToWalls(position, roomWidth, roomHeight, orientationDetails);
@@ -1769,7 +1845,9 @@ const getWallPositionY = (movementConfig: MovementConfig, objectSpawnHeight?: nu
 export const constrainAllObjectsToRoom = (
   items: BathroomItem[],
   roomWidth: number,
-  roomHeight: number
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
 ): BathroomItem[] => {
   return items.map(item => {
     const position = { x: item.position[0], y: item.position[1], z: item.position[2] };
@@ -1784,7 +1862,9 @@ export const constrainAllObjectsToRoom = (
         type: item.type,
         scale: item.scale,
         orientation: item.model?.orientation,
-        item
+        item,
+        notchWidth,
+        notchHeight
       });
       constrainedPosition = result.position;
       constrainedRotation = result.rotation;
@@ -1794,7 +1874,9 @@ export const constrainAllObjectsToRoom = (
         type: item.type,
         scale: item.scale,
         orientation: item.model?.orientation,
-        item
+        item,
+        notchWidth,
+        notchHeight
       });
       constrainedPosition = result.position;
       constrainedRotation = item.rotation || 0;

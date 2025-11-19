@@ -2953,13 +2953,27 @@ export class EventHandlers {
     const currentWall = this.selectedObject ?
       this.determineCurrentWall(this.selectedObject.position) : null;
 
+    // ✅ NEW: Get notch boundaries for L-shaped rooms
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     // Calculate wall distances
-    const wallDistances = {
+    const wallDistances: Record<string, number> = {
       north: Math.abs(mouseWorldPos.z + roomHalfHeight),
       south: Math.abs(mouseWorldPos.z - roomHalfHeight),
       east: Math.abs(mouseWorldPos.x - roomHalfWidth),
       west: Math.abs(mouseWorldPos.x + roomHalfWidth)
     };
+
+    // ✅ NEW: Add notch walls if this is an L-shaped room
+    if (notch) {
+      wallDistances['notch-east'] = Math.abs(mouseWorldPos.x - notch.maxX);
+      wallDistances['notch-south'] = Math.abs(mouseWorldPos.z - notch.maxZ);
+    }
 
     const sortedWalls = Object.entries(wallDistances).sort((a, b) => a[1] - b[1]);
     const closestWall = sortedWalls[0][0];
@@ -3045,6 +3059,14 @@ export class EventHandlers {
     // ✅ FIX: Calculate position with correct dimension constraints
     let position = { x: 0, z: 0 };
 
+    // ✅ NEW: Get effective boundaries for L-shaped rooms
+    const { interior } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     switch (nearestWall) {
       case 'north':
         // Use halfWidth for X constraint (mirror is 60cm wide)
@@ -3068,6 +3090,23 @@ export class EventHandlers {
         position.x = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
         // Use halfWidth for Z constraint when on side walls (mirror rotates)
         position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
+        break;
+
+      // ✅ NEW: Handle notch walls for L-shaped rooms
+      case 'notch-east':
+        if (notch) {
+          position.x = notch.maxX + wallBuffer + WALL_SETTINGS.THICKNESS;
+          // Allow sliding along Z within notch bounds and extending to room edge
+          position.z = Math.max(notch.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, mouseWorldPos.z));
+        }
+        break;
+
+      case 'notch-south':
+        if (notch) {
+          position.z = notch.maxZ + wallBuffer + WALL_SETTINGS.THICKNESS;
+          // Allow sliding along X within notch bounds and extending to room edge
+          position.x = Math.max(notch.minX + halfWidth, Math.min(interior.maxX - halfWidth, mouseWorldPos.x));
+        }
         break;
     }
 
