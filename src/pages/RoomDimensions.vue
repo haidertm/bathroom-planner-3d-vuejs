@@ -97,8 +97,8 @@ const setInputRef = (el, inputId) => {
 }
 
 // Reactive data
-const roomDimensions = reactive({width: 300, height: 250})
-const pendingDimensions = reactive({width: null, height: null})
+const roomDimensions = reactive({width: 300, height: 250, notchWidth: 0, notchHeight: 0})
+const pendingDimensions = reactive({width: null, height: null, notchWidth: null, notchHeight: null})
 const canvasWidth = ref(600)
 const canvasHeight = ref(500)
 const scale = ref(1)
@@ -110,7 +110,7 @@ const ctx = ref(null)
 // Interaction
 const isDragging = ref(null)
 const dragStartPos = reactive({x: 0, y: 0})
-const dragStartDimensions = reactive({width: 0, height: 0})
+const dragStartDimensions = reactive({width: 0, height: 0, notchWidth: 0, notchHeight: 0})
 const dragStartRoomCenter = reactive({x: 0, y: 0})
 const hoveredHandle = ref(null)
 const hoveredRoom = ref(false)
@@ -132,6 +132,10 @@ const lastDragTime = ref(0)
 const dragThrottleMs = ref(16) // ~60fps
 
 // Computed properties
+const isLShape = computed(() => {
+  return roomDimensions.notchWidth > 0 && roomDimensions.notchHeight > 0
+})
+
 const effectiveScale = computed(() => {
   return scale.value * zoomLevel.value
 })
@@ -142,6 +146,14 @@ const roomPixelWidth = computed(() => {
 
 const roomPixelHeight = computed(() => {
   return roomDimensions.height * effectiveScale.value
+})
+
+const notchPixelWidth = computed(() => {
+  return roomDimensions.notchWidth * effectiveScale.value
+})
+
+const notchPixelHeight = computed(() => {
+  return roomDimensions.notchHeight * effectiveScale.value
 })
 
 const roomBounds = computed(() => {
@@ -205,19 +217,62 @@ const handleResize = () => {
 const updateHandles = () => {
   const bounds = roomBounds.value
 
-  handles.value = [
+  // For L-shape, position top and left handles differently
+  const topHandleX = isLShape.value
+    ? bounds.left + (notchPixelWidth.value + roomPixelWidth.value) / 2
+    : bounds.left + roomPixelWidth.value / 2
+
+  const leftHandleY = isLShape.value
+    ? bounds.top + (notchPixelHeight.value + roomPixelHeight.value) / 2
+    : bounds.top + roomPixelHeight.value / 2
+
+  const baseHandles = [
     // Only edge handles (green resize icons)
-    {id: 'top', x: bounds.left + roomPixelWidth.value / 2, y: bounds.top, type: 'edge', cursor: 'ns-resize'},
+    {id: 'top', x: topHandleX, y: bounds.top, type: 'edge', cursor: 'ns-resize'},
     {id: 'right', x: bounds.right, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize'},
     {id: 'bottom', x: bounds.left + roomPixelWidth.value / 2, y: bounds.bottom, type: 'edge', cursor: 'ns-resize'},
-    {id: 'left', x: bounds.left, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize'}
+    {id: 'left', x: bounds.left, y: leftHandleY, type: 'edge', cursor: 'ew-resize'}
   ]
+
+  // Add notch handles for L-shape
+  if (isLShape.value) {
+    const notchHandles = [
+      // Handle for notch width (vertical edge of notch)
+      {
+        id: 'notch-width',
+        x: bounds.left + notchPixelWidth.value,
+        y: bounds.top + notchPixelHeight.value / 2,
+        type: 'notch',
+        cursor: 'ew-resize'
+      },
+      // Handle for notch height (horizontal edge of notch)
+      {
+        id: 'notch-height',
+        x: bounds.left + notchPixelWidth.value / 2,
+        y: bounds.top + notchPixelHeight.value,
+        type: 'notch',
+        cursor: 'ns-resize'
+      }
+    ]
+    handles.value = [...baseHandles, ...notchHandles]
+  } else {
+    handles.value = baseHandles
+  }
 }
 
 const updateDimensionInputs = () => {
   const bounds = roomBounds.value
 
-  dimensionInputs.value = [
+  // For L-shape, position top and left labels differently
+  const topLabelX = isLShape.value
+    ? bounds.left + (notchPixelWidth.value + roomPixelWidth.value) / 2 - 40
+    : bounds.left + roomPixelWidth.value / 2 - 40
+
+  const leftLabelY = isLShape.value
+    ? bounds.top + (notchPixelHeight.value + roomPixelHeight.value) / 2 - 12.5
+    : bounds.top + roomPixelHeight.value / 2 - 12.5
+
+  const baseInputs = [
     // Top
     {
       id: 'width-top',
@@ -230,7 +285,7 @@ const updateDimensionInputs = () => {
       editing: false,
       style: {
         position: 'absolute',
-        left: (bounds.left + roomPixelWidth.value / 2 - 40) + 'px',
+        left: topLabelX + 'px',
         top: (bounds.top - 35) + 'px',
         width: '80px',
         height: '25px'
@@ -271,7 +326,7 @@ const updateDimensionInputs = () => {
       style: {
         position: 'absolute',
         left: (bounds.left - 90) + 'px',
-        top: (bounds.top + roomPixelHeight.value / 2 - 12.5) + 'px',
+        top: leftLabelY + 'px',
         width: '80px',
         height: '25px'
       },
@@ -298,6 +353,54 @@ const updateDimensionInputs = () => {
       onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'height-right'))
     }
   ]
+
+  // Add notch dimension inputs for L-shape
+  if (isLShape.value) {
+    const notchInputs = [
+      // Notch width input (horizontal, above notch)
+      {
+        id: 'notch-width',
+        value: roomDimensions.notchWidth,
+        tempValue: pendingDimensions.notchWidth || roomDimensions.notchWidth,
+        originalValue: roomDimensions.notchWidth,
+        unit: 'cm',
+        min: 50,
+        max: Math.min(ROOM_DEFAULTS.MAX_SIZE, roomDimensions.width - 50),
+        editing: false,
+        style: {
+          position: 'absolute',
+          left: (bounds.left + notchPixelWidth.value / 2 - 40) + 'px',
+          top: (bounds.top - 35) + 'px',
+          width: '80px',
+          height: '25px'
+        },
+        onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'notch-width'))
+      },
+
+      // Notch height input (vertical, left of notch)
+      {
+        id: 'notch-height',
+        value: roomDimensions.notchHeight,
+        tempValue: pendingDimensions.notchHeight || roomDimensions.notchHeight,
+        originalValue: roomDimensions.notchHeight,
+        unit: 'cm',
+        min: 50,
+        max: Math.min(ROOM_DEFAULTS.MAX_SIZE, roomDimensions.height - 50),
+        editing: false,
+        style: {
+          position: 'absolute',
+          left: (bounds.left - 90) + 'px',
+          top: (bounds.top + notchPixelHeight.value / 2 - 12.5) + 'px',
+          width: '80px',
+          height: '25px'
+        },
+        onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'notch-height'))
+      }
+    ]
+    dimensionInputs.value = [...baseInputs, ...notchInputs]
+  } else {
+    dimensionInputs.value = baseInputs
+  }
 }
 
 const startEditing = (input) => {
@@ -338,7 +441,11 @@ const handleInputChange = (input) => {
   // Set pending dimensions when user types to show the apply changes button
   const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
 
-  if (input.id.includes('width')) {
+  if (input.id === 'notch-width') {
+    pendingDimensions.notchWidth = validatedValue
+  } else if (input.id === 'notch-height') {
+    pendingDimensions.notchHeight = validatedValue
+  } else if (input.id.includes('width')) {
     pendingDimensions.width = validatedValue
   } else {
     pendingDimensions.height = validatedValue
@@ -352,7 +459,13 @@ const finishEditing = (input) => {
   input.tempValue = validatedValue
 
   // Apply changes immediately when user clicks outside (blur event)
-  if (input.id.includes('width')) {
+  if (input.id === 'notch-width') {
+    roomDimensions.notchWidth = validatedValue
+    pendingDimensions.notchWidth = null
+  } else if (input.id === 'notch-height') {
+    roomDimensions.notchHeight = validatedValue
+    pendingDimensions.notchHeight = null
+  } else if (input.id.includes('width')) {
     roomDimensions.width = validatedValue
     pendingDimensions.width = null // Clear pending changes to hide apply button
   } else {
@@ -374,7 +487,11 @@ const cancelEditing = (input) => {
   input.tempValue = input.value
 
   // Clear pending changes to hide apply button when canceling
-  if (input.id.includes('width')) {
+  if (input.id === 'notch-width') {
+    pendingDimensions.notchWidth = null
+  } else if (input.id === 'notch-height') {
+    pendingDimensions.notchHeight = null
+  } else if (input.id.includes('width')) {
     pendingDimensions.width = null
   } else {
     pendingDimensions.height = null
@@ -385,7 +502,11 @@ const cancelEditing = (input) => {
 }
 
 const hasPendingChanges = (input) => {
-  if (input.id.includes('width')) {
+  if (input.id === 'notch-width') {
+    return pendingDimensions.notchWidth !== null && pendingDimensions.notchWidth !== roomDimensions.notchWidth
+  } else if (input.id === 'notch-height') {
+    return pendingDimensions.notchHeight !== null && pendingDimensions.notchHeight !== roomDimensions.notchHeight
+  } else if (input.id.includes('width')) {
     return pendingDimensions.width !== null && pendingDimensions.width !== roomDimensions.width
   } else {
     return pendingDimensions.height !== null && pendingDimensions.height !== roomDimensions.height
@@ -475,6 +596,8 @@ const handleCanvasMouseDown = (e) => {
     dragStartPos.y = pos.y
     dragStartDimensions.width = roomDimensions.width
     dragStartDimensions.height = roomDimensions.height
+    dragStartDimensions.notchWidth = roomDimensions.notchWidth
+    dragStartDimensions.notchHeight = roomDimensions.notchHeight
     dragStartRoomCenter.x = roomCenter.x
     dragStartRoomCenter.y = roomCenter.y
     lastDragTime.value = 0
@@ -648,6 +771,8 @@ const handleCanvasTouchStart = (e) => {
     dragStartPos.y = pos.y
     dragStartDimensions.width = roomDimensions.width
     dragStartDimensions.height = roomDimensions.height
+    dragStartDimensions.notchWidth = roomDimensions.notchWidth
+    dragStartDimensions.notchHeight = roomDimensions.notchHeight
     dragStartRoomCenter.x = roomCenter.x
     dragStartRoomCenter.y = roomCenter.y
     lastDragTime.value = 0
@@ -766,17 +891,29 @@ const handleDrag = (currentPos) => {
       newHeight = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.height - scaledDeltaY))
       newCenterY = startBounds.bottom - (newHeight * effectiveScale.value) / 2
       break
+    case 'notch-width':
+      // Adjust notch width
+      roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)) * 100) / 100
+      break
+    case 'notch-height':
+      // Adjust notch height
+      roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)) * 100) / 100
+      break
   }
 
-  // Apply changes
-  roomDimensions.width = Math.round(newWidth * 100) / 100
-  roomDimensions.height = Math.round(newHeight * 100) / 100
-  roomCenter.x = newCenterX
-  roomCenter.y = newCenterY
+  // Apply changes for main dimensions
+  if (isDragging.value !== 'notch-width' && isDragging.value !== 'notch-height') {
+    roomDimensions.width = Math.round(newWidth * 100) / 100
+    roomDimensions.height = Math.round(newHeight * 100) / 100
+    roomCenter.x = newCenterX
+    roomCenter.y = newCenterY
+  }
 
   // Clear pending changes since dragging overrides them
   pendingDimensions.width = null
   pendingDimensions.height = null
+  pendingDimensions.notchWidth = null
+  pendingDimensions.notchHeight = null
 }
 
 const handleCanvasWheel = (e) => {
@@ -793,16 +930,46 @@ const draw = () => {
 
   const bounds = roomBounds.value
 
-  // Draw room
-  context.fillStyle = hoveredRoom.value && !isDragging.value ? '#f7fafc' : '#ffffff'
-  context.fillRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
+  // Draw room based on shape
+  if (isLShape.value) {
+    drawLShape(context, bounds)
+  } else {
+    // Draw rectangular room
+    context.fillStyle = hoveredRoom.value && !isDragging.value ? '#f7fafc' : '#ffffff'
+    context.fillRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
 
-  context.strokeStyle = '#2d3748'
-  context.lineWidth = 8
-  context.strokeRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
+    context.strokeStyle = '#2d3748'
+    context.lineWidth = 8
+    context.strokeRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
+  }
 
   // Draw green resize handles
   drawHandles(context)
+}
+
+const drawLShape = (context, bounds) => {
+  // L-shape is drawn as: full rectangle minus top-right notch
+  // Path: Start bottom-left, go up to notch height, right to notch width,
+  // up to top, right to end, down to bottom, left to start
+
+  context.beginPath()
+  context.moveTo(bounds.left, bounds.bottom) // Bottom-left
+  context.lineTo(bounds.left, bounds.top + notchPixelHeight.value) // Up to notch bottom
+  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value) // Right to notch corner
+  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top) // Up to top
+  context.lineTo(bounds.right, bounds.top) // Right to top-right
+  context.lineTo(bounds.right, bounds.bottom) // Down to bottom-right
+  context.lineTo(bounds.left, bounds.bottom) // Left to start
+  context.closePath()
+
+  // Fill
+  context.fillStyle = hoveredRoom.value && !isDragging.value ? '#f7fafc' : '#ffffff'
+  context.fill()
+
+  // Stroke
+  context.strokeStyle = '#2d3748'
+  context.lineWidth = 8
+  context.stroke()
 }
 
 const drawHandles = (context) => {
