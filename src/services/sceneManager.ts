@@ -563,11 +563,13 @@ export class SceneManager {
 
     this.wallRefs.forEach(wall => this.scene!.add(wall));
     this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
-    // NEW: Add axis indicators
+    // NEW: Add axis indicators with notch support for L-shaped rooms
     this.axisIndicatorsDebug.createAxisIndicators(
       this.scene,
       roomWidth,
       roomHeight,
+      notchWidth || 0,
+      notchHeight || 0,
       this.debugLabelsEnabled
     );
 
@@ -597,12 +599,14 @@ export class SceneManager {
     return material;
   }
 
-  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true): void {
+  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true, notchWidth?: number, notchHeight?: number): void {
     console.log('🔄 SceneManager.updateGrid called with:', {
       roomWidth,
       roomHeight,
       showGrid,
-      showWallGrid
+      showWallGrid,
+      notchWidth,
+      notchHeight
     });
 
     if (!this.scene) {
@@ -673,12 +677,12 @@ export class SceneManager {
         let totalWallGridLines = 0;
 
         this.wallRefs.forEach((wall, index) => {
-          const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west';
+          const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
           if (wallDirection) {
             console.log(`🔨 Creating grid for ${wallDirection} wall...`);
 
-            const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight);
+            const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight, notchWidth, notchHeight);
 
             console.log(`📏 Wall grid lines created for ${wallDirection}:`, wallGridLines.length);
 
