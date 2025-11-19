@@ -272,13 +272,19 @@ const updateDimensionInputs = () => {
     ? bounds.top + (notchPixelHeight.value + roomPixelHeight.value) / 2 - 12.5
     : bounds.top + roomPixelHeight.value / 2 - 12.5
 
+  // Calculate actual wall dimensions for L-shape
+  const topWallWidth = isLShape.value ? roomDimensions.width - roomDimensions.notchWidth : roomDimensions.width
+  const bottomWallWidth = roomDimensions.width
+  const leftWallHeight = isLShape.value ? roomDimensions.height - roomDimensions.notchHeight : roomDimensions.height
+  const rightWallHeight = roomDimensions.height
+
   const baseInputs = [
-    // Top
+    // Top (reduced width if L-shape)
     {
       id: 'width-top',
-      value: roomDimensions.width,
-      tempValue: pendingDimensions.width || roomDimensions.width,
-      originalValue: roomDimensions.width,
+      value: topWallWidth,
+      tempValue: pendingDimensions.width || topWallWidth,
+      originalValue: topWallWidth,
       unit: 'cm',
       min: ROOM_DEFAULTS.MIN_SIZE,
       max: ROOM_DEFAULTS.MAX_SIZE,
@@ -293,12 +299,12 @@ const updateDimensionInputs = () => {
       onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'width-top'))
     },
 
-    // Bottom
+    // Bottom (full width)
     {
       id: 'width-bottom',
-      value: roomDimensions.width,
-      tempValue: pendingDimensions.width || roomDimensions.width,
-      originalValue: roomDimensions.width,
+      value: bottomWallWidth,
+      tempValue: pendingDimensions.width || bottomWallWidth,
+      originalValue: bottomWallWidth,
       unit: 'cm',
       min: ROOM_DEFAULTS.MIN_SIZE,
       max: ROOM_DEFAULTS.MAX_SIZE,
@@ -313,12 +319,12 @@ const updateDimensionInputs = () => {
       onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'width-bottom'))
     },
 
-    // Left
+    // Left (reduced height if L-shape)
     {
       id: 'height-left',
-      value: roomDimensions.height,
-      tempValue: pendingDimensions.height || roomDimensions.height,
-      originalValue: roomDimensions.height,
+      value: leftWallHeight,
+      tempValue: pendingDimensions.height || leftWallHeight,
+      originalValue: leftWallHeight,
       unit: 'cm',
       min: ROOM_DEFAULTS.MIN_SIZE,
       max: ROOM_DEFAULTS.MAX_SIZE,
@@ -333,12 +339,12 @@ const updateDimensionInputs = () => {
       onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'height-left'))
     },
 
-    // Right
+    // Right (full height)
     {
       id: 'height-right',
-      value: roomDimensions.height,
-      tempValue: pendingDimensions.height || roomDimensions.height,
-      originalValue: roomDimensions.height,
+      value: rightWallHeight,
+      tempValue: pendingDimensions.height || rightWallHeight,
+      originalValue: rightWallHeight,
       unit: 'cm',
       min: ROOM_DEFAULTS.MIN_SIZE,
       max: ROOM_DEFAULTS.MAX_SIZE,
