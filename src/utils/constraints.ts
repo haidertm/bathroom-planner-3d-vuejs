@@ -141,12 +141,8 @@ export const getRoomCorners = (
       walls: ['west', 'notch-south'] as [WallType, WallType]
     });
 
-    // Add the notch-corner (where notch-east wall meets notch-south wall)
-    validCorners.push({
-      type: 'notch-corner' as CornerType,
-      position: { x: notch.maxX, y: 0, z: notch.maxZ },
-      walls: ['notch-east', 'notch-south'] as [WallType, WallType]
-    });
+    // Removed notch-corner (where notch-east wall meets notch-south wall)
+    // User requested to disable corner install placement at this corner
 
     // Add the notch-east-north corner (where notch-east wall meets north wall)
     validCorners.push({
@@ -156,7 +152,6 @@ export const getRoomCorners = (
     });
 
     console.log('✅ Added notch-interior corner at:', { x: notch.minX.toFixed(1), z: notch.maxZ.toFixed(1) });
-    console.log('✅ Added notch-corner at:', { x: notch.maxX.toFixed(1), z: notch.maxZ.toFixed(1) });
     console.log('✅ Added notch-east-north corner at:', { x: notch.maxX.toFixed(1), z: notch.minZ.toFixed(1) });
     return validCorners;
   }
@@ -324,14 +319,7 @@ export const constrainToCorner = (
       console.log(`✅ Positioning at notch-interior corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
       break;
 
-    case 'notch-corner':
-      // Corner where notch-east wall meets notch-south wall
-      // Object should be flush against both walls, opening toward northwest (into notch)
-      // Same pattern as north-east: object extends left from east wall and down from south wall
-      constrainedPosition.x = nearestCorner.position.x - wallBuffer;
-      constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
-      console.log(`✅ Positioning at notch-corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
-      break;
+    // Removed notch-corner case - corner install placement disabled at user's request
 
     case 'notch-east-north':
       // Corner where notch-east wall meets north wall
