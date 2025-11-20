@@ -2040,7 +2040,9 @@ export class EventHandlers {
             scale: objectScale,
             orientation: currentItem?.model?.orientation,
             item: currentItem,
-            movement: movementConfig
+            movement: movementConfig,
+            notchWidth: this.notchWidthRef.value,
+            notchHeight: this.notchHeightRef.value
           }
         );
 

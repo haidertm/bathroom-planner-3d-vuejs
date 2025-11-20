@@ -19,9 +19,9 @@ export interface Position {
 }
 
 // Wall identification
-export type WallType = 'north' | 'south' | 'east' | 'west';
-// Corner identification
-export type CornerType = 'north-east' | 'north-west' | 'south-east' | 'south-west';
+export type WallType = 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
+// Corner identification (includes notch corners for L-shaped rooms)
+export type CornerType = 'north-east' | 'north-west' | 'south-east' | 'south-west' | 'notch-interior' | 'notch-corner' | 'notch-east-north';
 
 export interface CornerInfo {
   type: CornerType;
@@ -95,14 +95,17 @@ export const wouldCollideWithExistingOrWalls = (
 
 /**
  * Get all corner positions in the room
+ * For L-shaped rooms with notch, excludes corners that are in the notch area
  */
 export const getRoomCorners = (
   roomWidth: number,
-  roomHeight: number
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
 ): CornerInfo[] => {
-  const { wallFaces } = getInteriorBoundaries(roomWidth, roomHeight);
+  const { wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
-  return [
+  const allCorners = [
     {
       type: 'north-west',
       position: { x: wallFaces.west, y: 0, z: wallFaces.north },
@@ -124,17 +127,47 @@ export const getRoomCorners = (
       walls: ['south', 'east'] as [WallType, WallType]
     }
   ];
+
+  // ✅ For L-shaped rooms, exclude the northwest corner (which is in the notch)
+  // and add two notch corners: notch-interior and notch-corner
+  if (notch) {
+    console.log('🔍 getRoomCorners: L-shaped room detected - excluding north-west, adding notch corners');
+    const validCorners = allCorners.filter(corner => corner.type !== 'north-west');
+
+    // Add the notch-interior corner (where west wall meets notch-south wall)
+    validCorners.push({
+      type: 'notch-interior' as CornerType,
+      position: { x: notch.minX, y: 0, z: notch.maxZ },
+      walls: ['west', 'notch-south'] as [WallType, WallType]
+    });
+
+    // Add the notch-corner (where notch-east wall meets notch-south wall)
+    validCorners.push({
+      type: 'notch-corner' as CornerType,
+      position: { x: notch.maxX, y: 0, z: notch.maxZ },
+      walls: ['notch-east', 'notch-south'] as [WallType, WallType]
+    });
+
+    console.log('✅ Added notch-interior corner at:', { x: notch.minX.toFixed(1), z: notch.maxZ.toFixed(1) });
+    console.log('✅ Added notch-corner at:', { x: notch.maxX.toFixed(1), z: notch.maxZ.toFixed(1) });
+    return validCorners;
+  }
+
+  return allCorners;
 };
 
 /**
  * Find the nearest corner to a given position
+ * For L-shaped rooms, only considers valid corners (excludes northwest corner in notch)
  */
 export const getNearestCorner = (
   position: Position,
   roomWidth: number,
-  roomHeight: number
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
 ): CornerInfo => {
-  const corners = getRoomCorners(roomWidth, roomHeight);
+  const corners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
   let nearestCorner = corners[0];
   let minDistance = Infinity;
@@ -156,14 +189,17 @@ export const getNearestCorner = (
 
 /**
  * Check if a position is in a corner (within tolerance)
+ * For L-shaped rooms, only checks valid corners (excludes northwest corner in notch)
  */
 export const isInCorner = (
   position: Position,
   roomWidth: number,
   roomHeight: number,
-  tolerance: number = 30 // 30cm tolerance
+  tolerance: number = 30, // 30cm tolerance
+  notchWidth?: number,
+  notchHeight?: number
 ): boolean => {
-  const corners = getRoomCorners(roomWidth, roomHeight);
+  const corners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
   return corners.some(corner => {
     const distance = Math.sqrt(
@@ -177,6 +213,7 @@ export const isInCorner = (
 /**
  * Constrain position to nearest corner for corner-only items
  * Objects will be positioned flush in the corner
+ * For L-shaped rooms, only considers valid corners (excludes northwest corner in notch)
  */
 export const constrainToCorner = (
   position: Position,
@@ -188,7 +225,9 @@ export const constrainToCorner = (
     orientation = DEFAULT_ORIENTATION,
     item,
     movement,
-    sku
+    sku,
+    notchWidth,
+    notchHeight
   }: {
     type: ComponentType | null;
     scale?: number;
@@ -196,6 +235,8 @@ export const constrainToCorner = (
     item?: BathroomItem;
     movement?: MovementConfig;
     sku?: string;
+    notchWidth?: number;
+    notchHeight?: number;
   }
 ): { position: Position; rotation: number } => {
 
@@ -207,7 +248,7 @@ export const constrainToCorner = (
     return { position, rotation: 0 };
   }
 
-  const nearestCorner = getNearestCorner(position, roomWidth, roomHeight);
+  const nearestCorner = getNearestCorner(position, roomWidth, roomHeight, notchWidth, notchHeight);
   const movementConfig = movement ?? getMovementConfig(objectType, item);
 
   console.log('>>>111 constrainging To Corner for movement', movementConfig);
@@ -264,6 +305,24 @@ export const constrainToCorner = (
       constrainedPosition.x = nearestCorner.position.x + wallBuffer; // Just wallBuffer like north-west
       constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer; // halfWidth like north-west
       // rotation = Math.PI; // 180 degrees
+      break;
+
+    case 'notch-interior':
+      // Corner where west wall meets notch-south wall
+      // Object should be flush against both walls, opening toward the room
+      // Same pattern as north-west: only X gets halfWidth, Z gets just wallBuffer
+      constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+      console.log(`✅ Positioning at notch-interior corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
+      break;
+
+    case 'notch-corner':
+      // Corner where notch-east wall meets notch-south wall
+      // Object should be flush against both walls, opening toward northwest (into notch)
+      // Same pattern as north-east: object extends left from east wall and down from south wall
+      constrainedPosition.x = nearestCorner.position.x - wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
+      console.log(`✅ Positioning at notch-corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
       break;
   }
 
@@ -1197,7 +1256,9 @@ export const constrainToWalls = (
       type: objectType,
       scale,
       orientation,
-      item
+      item,
+      notchWidth,
+      notchHeight
     });
   }
 
@@ -1360,7 +1421,7 @@ export const constrainToWalls = (
       if (isFlushMounted) {
         constrainedPosition.x = notch.maxX;
       } else {
-        constrainedPosition.x = notch.maxX + halfDepth + wallBuffer;
+        constrainedPosition.x = notch.maxX - halfDepth - wallBuffer;  // Same pattern as regular east wall
       }
 
       // ✅ Allow Z to slide freely along the notch wall within valid range
@@ -1391,7 +1452,7 @@ export const constrainToWalls = (
       if (isFlushMounted) {
         constrainedPosition.z = notch.maxZ;
       } else {
-        constrainedPosition.z = notch.maxZ + halfDepth + wallBuffer;
+        constrainedPosition.z = notch.maxZ - halfDepth - wallBuffer;  // Same pattern as regular south wall
       }
 
       // ✅ Allow X to slide freely along the notch wall within valid range
@@ -1474,7 +1535,9 @@ export const findFreeWallPosition = (
   movement?: MovementConfig,
   spawnHeight?: number,
   _floorOffset?: number,
-  sku?: string
+  sku?: string,
+  notchWidth?: number,
+  notchHeight?: number
 ): { position: Position; rotation: number } | null => {
 
   console.log('🎯 Finding free position on interior walls for:', objectType, movement);
@@ -1491,7 +1554,9 @@ export const findFreeWallPosition = (
       existingItems,
       orientation,
       movementConfig,
-      sku
+      sku,
+      notchWidth,
+      notchHeight
     );
 
     // Return null if no free corner is available
@@ -1512,9 +1577,10 @@ export const findFreeWallPosition = (
     const dimensions = getDimensions(objectType, sku);
 
     const halfWidth = dimensions && dimensions.width ? dimensions.width / 2 : 0;
+    const halfDepth = dimensions && dimensions.depth ? dimensions.depth / 2 : 0;
 
   const buffer = getObjectWallBuffer({ orientation, scale });
-  const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight);
+  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
   // Define walls with proper interior positioning
   const walls = [
@@ -1527,7 +1593,7 @@ export const findFreeWallPosition = (
         return {
           x: minX + t * (maxX - minX),
           y: getWallPositionY(movementConfig, spawnHeight),
-          z: wallFaces.north + buffer  // Object's back edge at wall
+          z: wallFaces.north + halfDepth + buffer  // Match constrainToWalls pattern
         }
       },
       rotation: getObjectRotationForWall(objectType, 'north', orientation)
@@ -1540,7 +1606,7 @@ export const findFreeWallPosition = (
         return {
           x: minX + t * (maxX - minX),
           y: getWallPositionY(movementConfig, spawnHeight),
-          z: wallFaces.south - buffer
+          z: wallFaces.south - halfDepth - buffer  // Match constrainToWalls pattern
         };
       },
       rotation: getObjectRotationForWall(objectType, 'south', orientation)
@@ -1551,7 +1617,7 @@ export const findFreeWallPosition = (
         const minZ = interior.minZ + halfWidth;  // Don't go past north corner
         const maxZ = interior.maxZ - halfWidth;  // Don't go past south corner
         return {
-          x: wallFaces.east - buffer,
+          x: wallFaces.east - halfDepth - buffer,  // Match constrainToWalls pattern
           y: getWallPositionY(movementConfig, spawnHeight),
           z: minZ + t * (maxZ - minZ)
         };
@@ -1564,7 +1630,7 @@ export const findFreeWallPosition = (
         const minZ = interior.minZ + halfWidth;
         const maxZ = interior.maxZ - halfWidth;
         return {
-          x: wallFaces.west + buffer,
+          x: wallFaces.west + halfDepth + buffer,  // Match constrainToWalls pattern
           y: getWallPositionY(movementConfig, spawnHeight),
           z: minZ + t * (maxZ - minZ)
         };
@@ -1572,6 +1638,61 @@ export const findFreeWallPosition = (
       rotation: getObjectRotationForWall(objectType, 'west', orientation)
     }
   ];
+
+  // ✅ Add notch walls for L-shaped rooms if object fits
+  if (notch && dimensions) {
+    const objectWidth = dimensions.width * scale;
+
+    // Calculate notch wall lengths
+    const notchEastWallLength = notch.maxZ - notch.minZ;
+    const notchSouthWallLength = notch.maxX - notch.minX;
+
+    console.log('🔍 Checking notch wall fit:', {
+      objectWidth: objectWidth.toFixed(1),
+      notchEastLength: notchEastWallLength.toFixed(1),
+      notchSouthLength: notchSouthWallLength.toFixed(1)
+    });
+
+    // Add notch-east wall if object fits
+    if (objectWidth <= notchEastWallLength) {
+      console.log('✅ Object fits on notch-east wall');
+      walls.push({
+        name: 'notch-east',
+        getPosition: (t: number) => {
+          const minZ = notch.minZ + halfWidth;
+          const maxZ = notch.maxZ - halfWidth;
+          return {
+            x: notch.maxX - halfDepth - buffer,  // Match constrainToWalls pattern (same as regular east wall)
+            y: getWallPositionY(movementConfig, spawnHeight),
+            z: minZ + t * (maxZ - minZ)
+          };
+        },
+        rotation: getObjectRotationForWall(objectType, 'east', orientation)
+      });
+    } else {
+      console.log('⚠️ Object too wide for notch-east wall');
+    }
+
+    // Add notch-south wall if object fits
+    if (objectWidth <= notchSouthWallLength) {
+      console.log('✅ Object fits on notch-south wall');
+      walls.push({
+        name: 'notch-south',
+        getPosition: (t: number) => {
+          const minX = notch.minX + halfWidth;
+          const maxX = notch.maxX - halfWidth;
+          return {
+            x: minX + t * (maxX - minX),
+            y: getWallPositionY(movementConfig, spawnHeight),
+            z: notch.maxZ - halfDepth - buffer  // Match constrainToWalls pattern (same as regular south wall)
+          };
+        },
+        rotation: getObjectRotationForWall(objectType, 'south', orientation)
+      });
+    } else {
+      console.log('⚠️ Object too wide for notch-south wall');
+    }
+  }
 
   // Try to find a free position
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -1627,10 +1748,12 @@ export const findFreeCornerPosition = (
   existingItems: BathroomItem[] = [],
   orientation: OrientationConfig = DEFAULT_ORIENTATION,
   movement?: MovementConfig,
-  sku?: string
+  sku?: string,
+  notchWidth?: number,
+  notchHeight?: number
 ): { position: Position; rotation: number } | null => {
 
-  const corners = getRoomCorners(roomWidth, roomHeight);
+  const corners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
   const dimensions = getDimensions(objectType, sku);
 

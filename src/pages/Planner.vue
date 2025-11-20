@@ -760,7 +760,8 @@ const addItem = async (type, productData = null) => {
       selectedVariant?.spawnHeight,
       selectedVariant?.floorOffset || 0,
       selectedVariant.sku,
-
+      notchWidth.value,
+      notchHeight.value
   )
 
   // Check if no free position was found (all corners occupied for corner items)
