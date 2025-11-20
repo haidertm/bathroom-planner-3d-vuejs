@@ -582,17 +582,18 @@ export const checkWallCollision = (
     });
 
     // ✅ Check if object is positioned on notch-east wall FIRST
-    // Allow 20cm buffer beyond boundaries to account for drag positioning
+    // Object must be OUTSIDE the notch area (x >= notchMaxX) and close to the wall
     const dragBuffer = 20;
-    // Object can be positioned slightly before notchMaxX (to the left) when against the wall
+    // CRITICAL FIX: Object must be at or beyond notchMaxX (not inside notch)
     if (distToNotchEast <= notchWallTolerance &&
-        position.x >= notchMaxX - notchWallTolerance &&
+        position.x >= notchMaxX &&  // ✅ Must be at or beyond the wall, NOT inside notch
         position.z >= notchMinZ - dragBuffer && position.z <= interior.maxZ + dragBuffer) {
       console.log('✅ Object on notch-east wall - no red outline (returning false)', {
         distToNotchEast: distToNotchEast.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
         posX: position.x.toFixed(1),
         posZ: position.z.toFixed(1),
+        notchMaxX: notchMaxX.toFixed(1),
         validRange: `${(notchMinZ - dragBuffer).toFixed(1)} to ${(interior.maxZ + dragBuffer).toFixed(1)}`,
         collisions: { north: collideNorth, south: collideSouth, east: collideEast }
       });
@@ -601,15 +602,17 @@ export const checkWallCollision = (
     }
 
     // ✅ Check if object is positioned on notch-south wall FIRST
-    // Object can be positioned slightly before notchMaxZ (above) when against the wall
+    // Object must be OUTSIDE the notch area (z >= notchMaxZ) and close to the wall
+    // CRITICAL FIX: Object must be at or beyond notchMaxZ (not inside notch)
     if (distToNotchSouth <= notchWallTolerance &&
-        position.z >= notchMaxZ - notchWallTolerance &&
+        position.z >= notchMaxZ &&  // ✅ Must be at or beyond the wall, NOT inside notch
         position.x >= notchMinX - dragBuffer && position.x <= interior.maxX + dragBuffer) {
       console.log('✅ Object on notch-south wall - no red outline (returning false)', {
         distToNotchSouth: distToNotchSouth.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
         posX: position.x.toFixed(1),
         posZ: position.z.toFixed(1),
+        notchMaxZ: notchMaxZ.toFixed(1),
         validRange: `${(notchMinX - dragBuffer).toFixed(1)} to ${(interior.maxX + dragBuffer).toFixed(1)}`,
         collisions: { east: collideEast, west: collideWest, south: collideSouth }
       });
@@ -1577,11 +1580,19 @@ export const findFreeWallPosition = (
   }
 
   console.log('>>>111 SKU', sku);
-  // GET OBJECT DIMENSIONS - THIS IS WHAT'S MISSING!
-    const dimensions = getDimensions(objectType, sku);
+  // GET OBJECT DIMENSIONS
+  const dimensions = getDimensions(objectType, sku);
 
-    const halfWidth = dimensions && dimensions.width ? dimensions.width / 2 : 0;
-    const halfDepth = dimensions && dimensions.depth ? dimensions.depth / 2 : 0;
+  // ✅ FIX: Add fallback dimensions to prevent placement outside room boundaries
+  // If dimensions are not available, use a safe minimum size (30cm x 30cm)
+  const DEFAULT_MIN_SIZE = 30; // 30cm minimum size
+
+  if (!dimensions || !dimensions.width || !dimensions.depth) {
+    console.warn(`⚠️ No dimensions found for ${objectType} (SKU: ${sku}). Using fallback size of ${DEFAULT_MIN_SIZE}cm to prevent boundary issues.`);
+  }
+
+  const halfWidth = dimensions && dimensions.width ? dimensions.width / 2 : DEFAULT_MIN_SIZE / 2;
+  const halfDepth = dimensions && dimensions.depth ? dimensions.depth / 2 : DEFAULT_MIN_SIZE / 2;
 
   const buffer = getObjectWallBuffer({ orientation, scale });
   const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
@@ -1707,26 +1718,46 @@ export const findFreeWallPosition = (
     const t = Math.random();
     const position = wall.getPosition(t);
 
-    // Check collision with existing items
+    // ✅ FIX: Create temporary item for proper collision detection
+    const tempItem: BathroomItem = {
+      id: -1,
+      type: objectType,
+      position: [position.x, position.y, position.z] as [number, number, number],
+      scale: scale,
+      sku: sku
+    };
+
+    // ✅ FIX: First check if position is valid (not in notch area or outside room boundaries)
+    const hasWallCollision = checkWallCollision(
+      position,
+      objectType,
+      scale,
+      roomWidth,
+      roomHeight,
+      tempItem,
+      undefined, // rotation not needed for wall-snapped items
+      notchWidth,
+      notchHeight
+    );
+
+    if (hasWallCollision) {
+      // Position is in notch area or outside boundaries, try another position
+      continue;
+    }
+
+    // ✅ Then check collision with existing items
     let hasCollision = false;
-      const tempItem: BathroomItem = {
-          id: -1,
-          type: objectType,
-          position: [position.x, position.y, position.z] as [number, number, number],
-          scale: scale,
-          sku: sku
-      };
     for (const item of existingItems) {
-        const findCollision = checkCollision(
-            position,
-            objectType,
-            scale,
-            { x: item.position[0], y: item.position[1], z: item.position[2] },
-            item.type,
-            item.scale || 1.0,
-            tempItem,
-            item
-        );
+      const findCollision = checkCollision(
+        position,
+        objectType,
+        scale,
+        { x: item.position[0], y: item.position[1], z: item.position[2] },
+        item.type,
+        item.scale || 1.0,
+        tempItem,
+        item
+      );
       if (findCollision) {
         hasCollision = true;
         break;
@@ -1734,6 +1765,10 @@ export const findFreeWallPosition = (
     }
 
     if (!hasCollision) {
+      console.log(`✅ Found valid position on ${wall.name} wall:`, {
+        position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+        attempt: attempt + 1
+      });
       return { position, rotation: wall.rotation };
     }
   }
