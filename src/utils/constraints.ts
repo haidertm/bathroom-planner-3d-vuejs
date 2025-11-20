@@ -1597,6 +1597,12 @@ export const findFreeWallPosition = (
   const buffer = getObjectWallBuffer({ orientation, scale });
   const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
+  // ✅ FIX: Check if object is flush-mounted BEFORE creating walls
+  const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+  const isFlushMounted = wallBuffer === 0;
+
+  console.log(`🔧 Initial placement flush check: ${isFlushMounted ? 'FLUSH-MOUNTED' : 'OFFSET'} (wallBuffer: ${wallBuffer})`);
+
   // Define walls with proper interior positioning
   const walls = [
     {
@@ -1608,7 +1614,8 @@ export const findFreeWallPosition = (
         return {
           x: minX + t * (maxX - minX),
           y: getWallPositionY(movementConfig, spawnHeight),
-          z: wallFaces.north + halfDepth + buffer  // Match constrainToWalls pattern
+          // ✅ FIX: Flush-mounted objects go directly at wall
+          z: isFlushMounted ? wallFaces.north : wallFaces.north + halfDepth + wallBuffer
         }
       },
       rotation: getObjectRotationForWall(objectType, 'north', orientation)
@@ -1621,7 +1628,8 @@ export const findFreeWallPosition = (
         return {
           x: minX + t * (maxX - minX),
           y: getWallPositionY(movementConfig, spawnHeight),
-          z: wallFaces.south - halfDepth - buffer  // Match constrainToWalls pattern
+          // ✅ FIX: Flush-mounted objects go directly at wall
+          z: isFlushMounted ? wallFaces.south : wallFaces.south - halfDepth - wallBuffer
         };
       },
       rotation: getObjectRotationForWall(objectType, 'south', orientation)
@@ -1632,7 +1640,8 @@ export const findFreeWallPosition = (
         const minZ = interior.minZ + halfWidth;  // Don't go past north corner
         const maxZ = interior.maxZ - halfWidth;  // Don't go past south corner
         return {
-          x: wallFaces.east - halfDepth - buffer,  // Match constrainToWalls pattern
+          // ✅ FIX: Flush-mounted objects go directly at wall
+          x: isFlushMounted ? wallFaces.east : wallFaces.east - halfDepth - wallBuffer,
           y: getWallPositionY(movementConfig, spawnHeight),
           z: minZ + t * (maxZ - minZ)
         };
@@ -1645,7 +1654,8 @@ export const findFreeWallPosition = (
         const minZ = interior.minZ + halfWidth;
         const maxZ = interior.maxZ - halfWidth;
         return {
-          x: wallFaces.west + halfDepth + buffer,  // Match constrainToWalls pattern
+          // ✅ FIX: Flush-mounted objects go directly at wall
+          x: isFlushMounted ? wallFaces.west : wallFaces.west + halfDepth + wallBuffer,
           y: getWallPositionY(movementConfig, spawnHeight),
           z: minZ + t * (maxZ - minZ)
         };
