@@ -672,9 +672,12 @@ export class EventHandlers {
           // If object is on a hidden wall, move it to the opposite visible wall
           if (!visibleWalls.has(currentWall)) {
             console.log(`🔄 Object is on hidden ${currentWall} wall, moving to visible wall`);
+            console.log(`📊 Visible walls:`, Array.from(visibleWalls));
+            console.log(`📍 Current position:`, this.selectedObject.position);
 
             // Determine the best visible wall (usually opposite wall)
             const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
+            console.log(`🎯 Target wall selected: ${targetWall}`);
 
             // Find an empty space on the target wall (collision-aware)
             const newPosition = this.findEmptySpaceOnWall(
@@ -685,6 +688,8 @@ export class EventHandlers {
               itemId,
               currentItem
             );
+
+            console.log(`📍 New position calculated:`, newPosition);
 
             // Only move if a collision-free position was found
             if (newPosition) {
@@ -870,29 +875,92 @@ export class EventHandlers {
     let z = currentPosition.z;
     let rotation = 0;
 
+    // ✅ Get notch boundaries for L-shaped rooms
+    const { interior, notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     switch (wall) {
       case 'north':
         z = -roomHalfHeight + halfDepth + wallBuffer;
         x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+
+        // ✅ CRITICAL: Check if X position is inside notch area
+        if (notch && x >= notch.minX && x <= notch.maxX) {
+          // Object would be in notch void - move it to notch.maxX boundary
+          x = notch.maxX + halfWidth;
+          console.log(`🔷 North wall: Adjusted X from notch area to ${x.toFixed(1)}`);
+        }
         rotation = 0;
         break;
 
       case 'south':
         z = roomHalfHeight - halfDepth - wallBuffer;
         x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+
+        // ✅ South wall typically doesn't need notch adjustment (notch is usually in north area)
+        // But check anyway for flexibility
+        if (notch && x >= notch.minX && x <= notch.maxX && z < notch.maxZ) {
+          x = notch.maxX + halfWidth;
+          console.log(`🔷 South wall: Adjusted X from notch area to ${x.toFixed(1)}`);
+        }
         rotation = Math.PI;
         break;
 
       case 'east':
         x = roomHalfWidth - halfDepth - wallBuffer;
         z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+
+        // ✅ CRITICAL FIX: Check if Z position is inside notch area
+        if (notch && z >= notch.minZ && z <= notch.maxZ) {
+          // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
+          z = notch.maxZ + halfWidth;
+          console.log(`🔷 East wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
+        }
         rotation = -Math.PI / 2;
         break;
 
       case 'west':
         x = -roomHalfWidth + halfDepth + wallBuffer;
         z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+
+        // ✅ CRITICAL FIX: Check if Z position is inside notch area
+        if (notch && z >= notch.minZ && z <= notch.maxZ) {
+          // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
+          z = notch.maxZ + halfWidth;
+          console.log(`🔷 West wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
+        }
         rotation = Math.PI / 2;
+        break;
+
+      // ✅ NEW: Handle notch walls for L-shaped rooms
+      case 'notch-east':
+        if (notch) {
+          // Position on the vertical notch edge (runs north-south at X = notch.maxX)
+          x = notch.maxX + halfDepth + wallBuffer + 5;
+          // Constrain Z to be within notch bounds and room bounds
+          z = Math.max(
+            notch.minZ + halfWidth,
+            Math.min(interior.maxZ - halfWidth, z)
+          );
+          rotation = Math.PI / 2; // Face away from notch (toward east)
+        }
+        break;
+
+      case 'notch-south':
+        if (notch) {
+          // Position on the horizontal notch edge (runs east-west at Z = notch.maxZ)
+          z = notch.maxZ + halfDepth + wallBuffer + 5;
+          // Constrain X to be within notch bounds and room bounds
+          x = Math.max(
+            notch.minX + halfWidth,
+            Math.min(interior.maxX - halfWidth, x)
+          );
+          rotation = 0; // Face away from notch (toward south)
+        }
         break;
     }
 
@@ -1300,6 +1368,17 @@ export class EventHandlers {
     currentWall: WallType,
     visibleWalls: Set<string>
   ): WallType {
+    // ✅ CRITICAL FIX: For L-shaped rooms, check if object position is in notch area
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
+    // Get object's current position if available
+    const objectPosition = this.selectedObject?.position;
+
     // Define opposite walls
     const opposites: { [key in WallType]: WallType } = {
       north: 'south',
@@ -1310,7 +1389,39 @@ export class EventHandlers {
         "notch-south": "notch-east"
     };
 
-    const oppositeWall = opposites[currentWall];
+    let oppositeWall = opposites[currentWall];
+
+    // ✅ NEW: For L-shaped rooms, check if we need to use a notch wall instead
+    if (notch && objectPosition) {
+      // If moving from east to west, but object Z is in notch range, use notch-east instead
+      if (currentWall === 'east' &&
+          objectPosition.z >= notch.minZ &&
+          objectPosition.z <= notch.maxZ) {
+        oppositeWall = 'notch-east';
+        console.log(`🔷 East → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
+      }
+      // If moving from west to east, but object Z is in notch range, use notch-east instead
+      else if (currentWall === 'west' &&
+               objectPosition.z >= notch.minZ &&
+               objectPosition.z <= notch.maxZ) {
+        oppositeWall = 'notch-east';
+        console.log(`🔷 West → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
+      }
+      // If moving from north to south, but object X is in notch range, use notch-south instead
+      else if (currentWall === 'north' &&
+               objectPosition.x >= notch.minX &&
+               objectPosition.x <= notch.maxX) {
+        oppositeWall = 'notch-south';
+        console.log(`🔷 North → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
+      }
+      // If moving from south to north, but object X is in notch range, use notch-south instead
+      else if (currentWall === 'south' &&
+               objectPosition.x >= notch.minX &&
+               objectPosition.x <= notch.maxX) {
+        oppositeWall = 'notch-south';
+        console.log(`🔷 South → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
+      }
+    }
 
     // If opposite wall is visible, use it
     if (visibleWalls.has(oppositeWall)) {
@@ -1326,14 +1437,20 @@ export class EventHandlers {
       // Looking north/south
       if (cameraDirection.z < 0 && visibleWalls.has('north')) return 'north';
       if (cameraDirection.z > 0 && visibleWalls.has('south')) return 'south';
+      // ✅ NEW: Check for notch-south wall
+      if (visibleWalls.has('notch-south')) return 'notch-south';
     } else {
       // Looking east/west
       if (cameraDirection.x > 0 && visibleWalls.has('east')) return 'east';
       if (cameraDirection.x < 0 && visibleWalls.has('west')) return 'west';
+      // ✅ NEW: Check for notch-east wall
+      if (visibleWalls.has('notch-east')) return 'notch-east';
     }
 
-    // Return first available visible wall
-    return (Array.from(visibleWalls)[0] || 'north') as 'north' | 'south' | 'east' | 'west';
+    // ✅ CRITICAL FIX: Return first available visible wall WITHOUT restricting to only 4 walls
+    // This allows notch walls to be returned
+    const firstVisibleWall = Array.from(visibleWalls)[0];
+    return (firstVisibleWall || 'north') as WallType;
   }
 
 
