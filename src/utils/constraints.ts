@@ -148,8 +148,16 @@ export const getRoomCorners = (
       walls: ['notch-east', 'notch-south'] as [WallType, WallType]
     });
 
+    // Add the notch-east-north corner (where notch-east wall meets north wall)
+    validCorners.push({
+      type: 'notch-east-north' as CornerType,
+      position: { x: notch.maxX, y: 0, z: notch.minZ },
+      walls: ['notch-east', 'north'] as [WallType, WallType]
+    });
+
     console.log('✅ Added notch-interior corner at:', { x: notch.minX.toFixed(1), z: notch.maxZ.toFixed(1) });
     console.log('✅ Added notch-corner at:', { x: notch.maxX.toFixed(1), z: notch.maxZ.toFixed(1) });
+    console.log('✅ Added notch-east-north corner at:', { x: notch.maxX.toFixed(1), z: notch.minZ.toFixed(1) });
     return validCorners;
   }
 
@@ -260,7 +268,7 @@ export const constrainToCorner = (
   // For corner items, we position them flush in the corner
   // The object's center should be at half its dimensions from each wall
   const halfWidth = (dimensions.width * scale) / 2;
-  // const halfDepth = (dimensions.depth * scale) / 2;
+  const halfDepth = (dimensions.depth * scale) / 2;
 
   let constrainedPosition = { ...nearestCorner.position };
   let rotation = 0;
@@ -323,6 +331,14 @@ export const constrainToCorner = (
       constrainedPosition.x = nearestCorner.position.x - wallBuffer;
       constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
       console.log(`✅ Positioning at notch-corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
+      break;
+
+    case 'notch-east-north':
+      // Corner where notch-east wall meets north wall
+      // Same pattern as notch-interior: halfWidth for X, wallBuffer for Z
+      constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+      console.log(`✅ Positioning at notch-east-north corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
       break;
   }
 

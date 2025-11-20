@@ -28,7 +28,8 @@ export const DefaultCornerObjectRotation = {
   'south-east': Math.PI,
   'south-west': Math.PI / 2,
   'notch-interior': 0, // Interior corner where west wall meets notch-south wall (similar to north-west)
-  'notch-corner': -Math.PI / 2 // Corner where notch-east meets notch-south wall (similar to north-east)
+  'notch-corner': -Math.PI / 2, // Corner where notch-east meets notch-south wall (similar to north-east)
+  'notch-east-north': 0 // Corner where notch-east meets north wall (same as notch-interior)
 }
 
 export type cornerInstallOnly = {
@@ -40,6 +41,7 @@ export type cornerInstallOnly = {
     'south-east': number,
     'notch-interior'?: number // Optional: for L-shaped rooms
     'notch-corner'?: number // Optional: for L-shaped rooms
+    'notch-east-north'?: number // Optional: for L-shaped rooms (where notch-east meets north wall)
   }
 } | false
 
