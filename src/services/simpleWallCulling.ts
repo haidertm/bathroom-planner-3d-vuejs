@@ -8,6 +8,8 @@ type WallDirection = 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch
 interface RoomSize {
   width: number;
   height: number;
+  notchWidth?: number;
+  notchHeight?: number;
 }
 
 interface WallToHide {
@@ -47,7 +49,7 @@ export class SimpleWallCulling {
   }
 
   /**
-   * UPDATED: Wall identification for interior walls system
+   * UPDATED: Wall identification for interior walls system with notch support
    */
   private identifyWalls (): void {
     console.log('🔍 Identifying walls for interior wall system...');
@@ -57,14 +59,28 @@ export class SimpleWallCulling {
     const roomHalfHeight: number = this.roomSize.height / 2;
     const wallThickness = WALL_SETTINGS.THICKNESS;
     const wallOffset = wallThickness / 2;
+    const notchWidth = this.roomSize.notchWidth || 0;
+    const notchHeight = this.roomSize.notchHeight || 0;
 
     // Calculate expected wall positions for interior walls system
-    const expectedPositions = {
-      north: -roomHalfHeight + wallOffset,
-      south: roomHalfHeight - wallOffset,
-      east: roomHalfWidth - wallOffset,
-      west: -roomHalfWidth + wallOffset
+    const expectedPositions: Record<string, { x?: number; z?: number }> = {
+      north: { z: -roomHalfHeight + wallOffset },
+      south: { z: roomHalfHeight - wallOffset },
+      east: { x: roomHalfWidth - wallOffset },
+      west: { x: -roomHalfWidth + wallOffset }
     };
+
+    // Add notch wall positions if notch exists
+    if (notchWidth > 0 && notchHeight > 0) {
+      expectedPositions['notch-south'] = {
+        x: -roomHalfWidth + notchWidth / 2,
+        z: -roomHalfHeight + notchHeight - wallOffset
+      };
+      expectedPositions['notch-east'] = {
+        x: -roomHalfWidth + notchWidth - wallOffset,
+        z: -roomHalfHeight + notchHeight / 2
+      };
+    }
 
     console.log('Expected wall positions (interior system):', expectedPositions);
 
@@ -75,23 +91,46 @@ export class SimpleWallCulling {
 
       const tolerance = wallThickness; // Use wall thickness as tolerance
 
+      // Check notch walls first (if they exist)
+      if (notchWidth > 0 && notchHeight > 0) {
+        const notchSouthPos = expectedPositions['notch-south'];
+        const notchEastPos = expectedPositions['notch-east'];
+
+        // Notch-south wall (horizontal edge at bottom of notch)
+        if (notchSouthPos &&
+            Math.abs(pos.x - notchSouthPos.x!) < tolerance &&
+            Math.abs(pos.z - notchSouthPos.z!) < tolerance) {
+          this.wallMap.set(wall, 'notch-south');
+          console.log(`✅ Wall ${index} identified as NOTCH-SOUTH wall`);
+          return;
+        }
+        // Notch-east wall (vertical edge at right of notch)
+        else if (notchEastPos &&
+                 Math.abs(pos.x - notchEastPos.x!) < tolerance &&
+                 Math.abs(pos.z - notchEastPos.z!) < tolerance) {
+          this.wallMap.set(wall, 'notch-east');
+          console.log(`✅ Wall ${index} identified as NOTCH-EAST wall`);
+          return;
+        }
+      }
+
       // North wall (negative Z, interior position)
-      if (Math.abs(pos.z - expectedPositions.north) < tolerance) {
+      if (Math.abs(pos.z - expectedPositions.north.z!) < tolerance) {
         this.wallMap.set(wall, 'north');
         console.log(`✅ Wall ${index} identified as NORTH wall`);
       }
       // South wall (positive Z, interior position)
-      else if (Math.abs(pos.z - expectedPositions.south) < tolerance) {
+      else if (Math.abs(pos.z - expectedPositions.south.z!) < tolerance) {
         this.wallMap.set(wall, 'south');
         console.log(`✅ Wall ${index} identified as SOUTH wall`);
       }
       // East wall (positive X, interior position)
-      else if (Math.abs(pos.x - expectedPositions.east) < tolerance) {
+      else if (Math.abs(pos.x - expectedPositions.east.x!) < tolerance) {
         this.wallMap.set(wall, 'east');
         console.log(`✅ Wall ${index} identified as EAST wall`);
       }
       // West wall (negative X, interior position)
-      else if (Math.abs(pos.x - expectedPositions.west) < tolerance) {
+      else if (Math.abs(pos.x - expectedPositions.west.x!) < tolerance) {
         this.wallMap.set(wall, 'west');
         console.log(`✅ Wall ${index} identified as WEST wall`);
       }
@@ -141,8 +180,8 @@ export class SimpleWallCulling {
     });
   }
 
-  updateRoomSize (width: number, height: number): void {
-    this.roomSize = { width, height };
+  updateRoomSize (width: number, height: number, notchWidth?: number, notchHeight?: number): void {
+    this.roomSize = { width, height, notchWidth, notchHeight };
     // Re-identify walls with new size
     if (this.walls.length > 0) {
       this.identifyWalls();
@@ -180,6 +219,9 @@ export class SimpleWallCulling {
 
     const wallsToHide: WallToHide[] = [];
 
+    const notchWidth = this.roomSize.notchWidth || 0;
+    const notchHeight = this.roomSize.notchHeight || 0;
+
     this.wallMap.forEach((direction: WallDirection, wall: THREE.Mesh) => {
       let shouldHide: boolean = false;
 
@@ -206,6 +248,20 @@ export class SimpleWallCulling {
           // Hide west wall if camera is west of the wall position
           const westWallPos = -roomHalfWidth + wallThickness / 2;
           shouldHide = cameraPos.x < westWallPos - hideDistance;
+          break;
+
+        case 'notch-south':
+          // Hide notch-south wall if camera is north of the wall position (in the notch area)
+          // Notch-south is a horizontal wall at the bottom of the notch
+          const notchSouthWallPos = -roomHalfHeight + notchHeight - wallThickness / 2;
+          shouldHide = cameraPos.z < notchSouthWallPos - hideDistance;
+          break;
+
+        case 'notch-east':
+          // Hide notch-east wall if camera is west of the wall position (in the notch area)
+          // Notch-east is a vertical wall at the right edge of the notch
+          const notchEastWallPos = -roomHalfWidth + notchWidth - wallThickness / 2;
+          shouldHide = cameraPos.x < notchEastWallPos - hideDistance;
           break;
       }
 
@@ -272,13 +328,27 @@ export class SimpleWallCulling {
     const roomHalfHeight: number = this.roomSize.height / 2;
     const wallThickness = WALL_SETTINGS.THICKNESS;
     const wallOffset = wallThickness / 2;
+    const notchWidth = this.roomSize.notchWidth || 0;
+    const notchHeight = this.roomSize.notchHeight || 0;
 
-    const expectedPositions = {
+    const expectedPositions: Record<string, { x?: number; z?: number }> = {
       north: { z: -roomHalfHeight + wallOffset },
       south: { z: roomHalfHeight - wallOffset },
       east: { x: roomHalfWidth - wallOffset },
       west: { x: -roomHalfWidth + wallOffset }
     };
+
+    // Add notch wall positions if notch exists
+    if (notchWidth > 0 && notchHeight > 0) {
+      expectedPositions['notch-south'] = {
+        x: -roomHalfWidth + notchWidth / 2,
+        z: -roomHalfHeight + notchHeight - wallOffset
+      };
+      expectedPositions['notch-east'] = {
+        x: -roomHalfWidth + notchWidth - wallOffset,
+        z: -roomHalfHeight + notchHeight / 2
+      };
+    }
 
     return Array.from(this.wallMap.entries()).map(([wall, direction]) => ({
       direction,

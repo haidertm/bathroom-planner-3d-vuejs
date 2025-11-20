@@ -575,8 +575,8 @@ export class SceneManager {
 
       // 🔥 UPDATE: Reposition lights when room dimensions change
       this.setupEnhancedLighting(roomWidth);
-    // Update wall culling manager with new walls and room size
-    this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
+    // Update wall culling manager with new walls and room size (including notch dimensions)
+    this.wallCullingManager.updateRoomSize(roomWidth, roomHeight, notchWidth, notchHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
     // Update measurement system with new room dimensions
     if (this.measurementSystem) {
