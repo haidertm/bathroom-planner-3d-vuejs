@@ -40,6 +40,8 @@ export class MeasurementSystem {
   private currentMeasurements: MeasurementData | null = null;
   private roomWidth: number = 300;
   private roomHeight: number = 250;
+  private notchWidth: number = 0;
+  private notchHeight: number = 0;
   private existingItems: BathroomItem[] = [];
 
   constructor (scene: THREE.Scene, _camera: THREE.Camera, _renderer: THREE.WebGLRenderer) {
@@ -80,9 +82,11 @@ export class MeasurementSystem {
     }
   }
 
-  public updateRoomDimensions (width: number, height: number): void {
+  public updateRoomDimensions (width: number, height: number, notchWidth?: number, notchHeight?: number): void {
     this.roomWidth = width;
     this.roomHeight = height;
+    this.notchWidth = notchWidth || 0;
+    this.notchHeight = notchHeight || 0;
     if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
     }
@@ -210,11 +214,33 @@ export class MeasurementSystem {
     const roomHalfHeight = this.roomHeight / 2;
     const wallThickness = WALL_SETTINGS.THICKNESS + 1; // Use wall width from WALL_SETTINGS
 
-    // Calculate space to room boundaries
-    const spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallThickness;
-    const spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallThickness;
-    const spaceToNorthWall = (position.z + roomHalfHeight) - width / 2 - wallThickness;
-    const spaceToSouthWall = (roomHalfHeight - position.z) - width / 2 - wallThickness;
+    // Get interior boundaries including notch information
+    const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+
+    // Calculate space to main room boundaries
+    let spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallThickness;
+    let spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallThickness;
+    let spaceToNorthWall = (position.z + roomHalfHeight) - width / 2 - wallThickness;
+    let spaceToSouthWall = (roomHalfHeight - position.z) - width / 2 - wallThickness;
+
+    // ✅ NEW: Consider notch walls as boundaries for L-shaped rooms
+    if (notch) {
+      // Check if object is near the notch-east wall (vertical wall at notch.maxX)
+      // This wall blocks movement to the LEFT (west direction) for objects east of it
+      if (position.x > notch.maxX) {
+        const spaceToNotchEastWall = position.x - width / 2 - notch.maxX - wallThickness;
+        spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
+        console.log(`📏 Object near notch-east wall: spaceToNotchEastWall=${spaceToNotchEastWall.toFixed(1)}cm`);
+      }
+
+      // Check if object is near the notch-south wall (horizontal wall at notch.maxZ)
+      // This wall blocks movement to the FRONT (north direction) for objects south of it
+      if (position.z > notch.maxZ) {
+        const spaceToNotchSouthWall = position.z - width / 2 - notch.maxZ - wallThickness;
+        spaceToNorthWall = Math.min(spaceToNorthWall, spaceToNotchSouthWall);
+        console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm`);
+      }
+    }
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
@@ -889,11 +915,42 @@ export class MeasurementSystem {
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
       if (label.id === 'space-left') {
         const startX = position.x - measurements.objectWidth / 2;
-        const endX = startX - measurements.spaceLeft;
+        let endX = startX - measurements.spaceLeft;
 
-        // ✅ Apply wall offset for consistent positioning
+        // ✅ Check if object is in notch-affected area
+        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+        let lineY = objectCenterY;
+
         let lineZ = position.z;
-        if (measurements.isWallBound && measurements.wallDirection) {
+        let notchLineAdjusted = false;
+
+        console.log(`📏 space-left DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
+        if (notch) {
+          console.log(`📏 space-left DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
+
+          // Check if line ends at notch-east wall (object is east of it)
+          if (position.x > notch.maxX) {
+            const distanceToNotchWall = Math.abs(endX - notch.maxX);
+            console.log(`📏 space-left: Object east of notch-east wall! endX=${endX.toFixed(1)}, notch.maxX=${notch.maxX.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
+
+            if (distanceToNotchWall < 20) {
+              endX = notch.maxX + 3;
+              lineY = objectCenterY + 5;
+              lineZ = position.z + 20;
+              notchLineAdjusted = true;
+              console.log(`📏 ✅ APPLYING space-left adjustment for notch-east wall: lineZ offset by 20cm`);
+            }
+          }
+
+          // ✅ NEW: Check if object is near notch-south wall - offset horizontal lines away from wall
+          if (position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
+            lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
+            console.log(`📏 ✅ APPLYING space-left Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)} (20cm from wall at ${notch.maxZ.toFixed(1)})`);
+          }
+        }
+
+        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
+        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5; // 5cm away from wall face
 
@@ -905,18 +962,24 @@ export class MeasurementSystem {
           }
         }
 
-        points.push(new THREE.Vector3(startX, objectCenterY, lineZ));
-        points.push(new THREE.Vector3(endX, objectCenterY, lineZ));
-        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, lineZ), 'vertical');
-        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
+        points.push(new THREE.Vector3(startX, lineY, lineZ));
+        points.push(new THREE.Vector3(endX, lineY, lineZ));
+        this.createEndMarker(new THREE.Vector3(startX, lineY, lineZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(endX, lineY, lineZ), 'vertical');
 
       } else if (label.id === 'space-right') {
         const startX = position.x + measurements.objectWidth / 2;
         const endX = startX + measurements.spaceRight;
 
-        // ✅ Apply wall offset for consistent positioning
+        // ✅ Check if object is near notch-south wall
+        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
         let lineZ = position.z;
-        if (measurements.isWallBound && measurements.wallDirection) {
+
+        if (notch && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
+          lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
+          console.log(`📏 ✅ APPLYING space-right Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)}`);
+        } else if (measurements.isWallBound && measurements.wallDirection) {
+          // Apply standard wall offset
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
@@ -935,34 +998,70 @@ export class MeasurementSystem {
 
       } else if (label.id === 'space-front') {
         const startZ = position.z - measurements.objectWidth / 2;
-        const endZ = startZ - measurements.spaceFront;
+        let endZ = startZ - measurements.spaceFront;
 
-        // ✅ Apply wall offset for consistent positioning
+        // ✅ Check if object is in notch-affected area
+        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+        let lineY = objectCenterY;
         let lineX = position.x;
-        if (measurements.isWallBound && measurements.wallDirection) {
+        let notchLineAdjusted = false;
+
+        console.log(`📏 space-front DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
+        if (notch) {
+          console.log(`📏 space-front DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
+
+          // Check if line ends at notch-south wall (object is south of it)
+          if (position.z > notch.maxZ) {
+            const distanceToNotchWall = Math.abs(endZ - notch.maxZ);
+            console.log(`📏 space-front: Object south of notch-south wall! endZ=${endZ.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
+
+            if (distanceToNotchWall < 20) {
+              endZ = notch.maxZ + 3;
+              lineY = objectCenterY + 5;
+              lineX = position.x + 20;
+              notchLineAdjusted = true;
+              console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm`);
+            }
+          }
+
+          // ✅ NEW: Check if object is near notch-east wall - offset vertical lines away from wall
+          if (position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+            lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
+            console.log(`📏 ✅ APPLYING space-front X-offset for notch-east wall: lineX=${lineX.toFixed(1)} (20cm from wall at ${notch.maxX.toFixed(1)})`);
+          }
+        }
+
+        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
+        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
           switch (measurements.wallDirection) {
-            case 'north': lineX = position.x; break; // Keep original X for north/south walls
-            case 'south': lineX = position.x; break; // Keep original X for north/south walls
-            case 'east': lineX = wallFaces.east - offset; break; // Move west from east wall
-            case 'west': lineX = wallFaces.west + offset; break; // Move east from west wall
+            case 'north': lineX = position.x; break;
+            case 'south': lineX = position.x; break;
+            case 'east': lineX = wallFaces.east - offset; break;
+            case 'west': lineX = wallFaces.west + offset; break;
           }
         }
 
-        points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
-        points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'vertical');
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'vertical');
+        points.push(new THREE.Vector3(lineX, lineY, startZ));
+        points.push(new THREE.Vector3(lineX, lineY, endZ));
+        this.createEndMarker(new THREE.Vector3(lineX, lineY, startZ), 'vertical');
+        this.createEndMarker(new THREE.Vector3(lineX, lineY, endZ), 'vertical');
 
       } else if (label.id === 'space-back') {
         const startZ = position.z + measurements.objectWidth / 2;
         const endZ = startZ + measurements.spaceBack;
 
-        // ✅ Apply wall offset for consistent positioning
+        // ✅ Check if object is near notch-east wall - offset vertical lines away from wall
+        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
         let lineX = position.x;
-        if (measurements.isWallBound && measurements.wallDirection) {
+
+        if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+          lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
+          console.log(`📏 ✅ APPLYING space-back X-offset for notch-east wall: lineX=${lineX.toFixed(1)}`);
+        } else if (measurements.isWallBound && measurements.wallDirection) {
+          // Apply standard wall offset
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 

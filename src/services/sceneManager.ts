@@ -72,7 +72,7 @@ export class SceneManager {
     this.bathroomItemsGroup.name = 'bathroomItems';
     this.wallLabelsDebug = new WallLabelsDebug();
     this.axisIndicatorsDebug = new AxisIndicatorsDebug(); // Add this
-    this.debugLabelsEnabled = true; // Debug visuals disabled by default for cleaner initial view
+    this.debugLabelsEnabled = false; // Debug visuals disabled by default for cleaner initial view
   }
 
   initializeScene (): SceneComponents {
@@ -521,9 +521,9 @@ export class SceneManager {
 
         // 🔥 UPDATE: Reposition lights when room dimensions change
         this.setupEnhancedLighting(roomWidth);
-    // Update measurement system with new room dimensions
+    // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
-      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
     }
   }
 
@@ -578,9 +578,9 @@ export class SceneManager {
     // Update wall culling manager with new walls and room size (including notch dimensions)
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight, notchWidth, notchHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
-    // Update measurement system with new room dimensions
+    // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
-      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
     }
   }
 
