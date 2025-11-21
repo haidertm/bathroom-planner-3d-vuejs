@@ -1734,8 +1734,14 @@ export class EventHandlers {
 
             // For regular walls: check room bounds with tolerance for wall transitions
             if (currentWall === 'north' || currentWall === 'south' || currentWall === 'east' || currentWall === 'west') {
-              // ✅ Allow intersections slightly outside bounds to enable smooth wall transitions
-              const TRANSITION_TOLERANCE = 200; // 200cm tolerance for smoother transitions
+              // ✅ DYNAMIC TOLERANCE: Use higher tolerance when on north/west walls in L-shaped rooms
+              // (to allow smooth transitions to notch walls), otherwise use lower tolerance
+              let TRANSITION_TOLERANCE = 10; // Default: 10cm for regular transitions
+              if (notch && (currentWall === 'north' || currentWall === 'west')) {
+                // Higher tolerance when on north/west walls in L-shaped room (can transition to notch walls)
+                TRANSITION_TOLERANCE = 200;
+              }
+
               if (Math.abs(intersectPoint.x) <= roomHalfWidth + TRANSITION_TOLERANCE &&
                   Math.abs(intersectPoint.z) <= roomHalfHeight + TRANSITION_TOLERANCE &&
                   intersectPoint.y >= -50 && intersectPoint.y <= 300) {
