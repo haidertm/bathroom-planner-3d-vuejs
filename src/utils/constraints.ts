@@ -710,6 +710,8 @@ export const checkWallCollision = (
     const distToNotchEast = Math.abs(position.x - notchMaxX);
     const distToNotchSouth = Math.abs(position.z - notchMaxZ);
 
+    const dragBuffer = 20; // Buffer for smooth dragging near wall edges
+
     console.log('🔍 Notch wall check:', {
       objectType,
       posX: position.x.toFixed(1),
@@ -724,30 +726,34 @@ export const checkWallCollision = (
     });
 
     // ✅ Check if object is positioned on notch-east wall
-    // Object should be: east of notch edge AND within valid Z range (can slide to south wall)
+    // Object should be: east of notch edge AND within valid Z range (actually on the notch wall, not across the room)
+    // ✅ CRITICAL FIX: Restrict Z range to notch area only, not entire room
     if (distToNotchEast <= notchWallTolerance &&
         position.x >= notchMaxX &&
-        position.z >= notchMinZ && position.z <= interior.maxZ) {
+        position.z >= notchMinZ && position.z <= notchMaxZ + dragBuffer) {
       console.log('✅ Object on notch-east wall - no red outline (returning false)', {
         distToNotchEast: distToNotchEast.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
         posX: position.x.toFixed(1),
-        posZ: position.z.toFixed(1)
+        posZ: position.z.toFixed(1),
+        zRange: `${notchMinZ.toFixed(1)} to ${(notchMaxZ + dragBuffer).toFixed(1)}`
       });
       // Object is properly positioned on notch-east wall - allow placement
       return false;
     }
 
     // ✅ Check if object is positioned on notch-south wall
-    // Object should be: south of notch edge AND within valid X range (can slide to east wall)
+    // Object should be: south of notch edge AND within valid X range (actually on the notch wall, not across the room)
+    // ✅ CRITICAL FIX: Restrict X range to notch area only, not entire room
     if (distToNotchSouth <= notchWallTolerance &&
         position.z >= notchMaxZ &&
-        position.x >= notchMinX && position.x <= interior.maxX) {
+        position.x >= notchMinX && position.x <= notchMaxX + dragBuffer) {
       console.log('✅ Object on notch-south wall - no red outline (returning false)', {
         distToNotchSouth: distToNotchSouth.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
         posX: position.x.toFixed(1),
-        posZ: position.z.toFixed(1)
+        posZ: position.z.toFixed(1),
+        xRange: `${notchMinX.toFixed(1)} to ${(notchMaxX + dragBuffer).toFixed(1)}`
       });
       // Object is properly positioned on notch-south wall - allow placement
       return false;

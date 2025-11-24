@@ -388,7 +388,8 @@ export class MeasurementSystem {
     if (notch) {
       // Check if object is near the notch-east wall (vertical wall at notch.maxX)
       // This wall blocks movement to the LEFT (west direction) for objects east of it
-      if (position.x > notch.maxX) {
+      // ✅ CRITICAL FIX: Only apply if object Z is within notch Z range (actually near the notch wall)
+      if (position.x > notch.maxX && position.z >= notch.minZ && position.z <= notch.maxZ) {
         // notch.maxX is interior face - add wallThickness to get exterior face
         const spaceToNotchEastWall = position.x - width / 2 - notch.maxX - wallThickness;
         spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
@@ -397,7 +398,8 @@ export class MeasurementSystem {
 
       // Check if object is near the notch-south wall (horizontal wall at notch.maxZ)
       // This wall blocks movement to the FRONT (north direction) for objects south of it
-      if (position.z > notch.maxZ) {
+      // ✅ CRITICAL FIX: Only apply if object X is within notch X range (actually near the notch wall)
+      if (position.z > notch.maxZ && position.x >= notch.minX && position.x <= notch.maxX) {
         // notch.maxZ is interior face - add wallThickness to get exterior face
         const spaceToNotchSouthWall = position.z - width / 2 - notch.maxZ - wallThickness;
         spaceToNorthWall = Math.min(spaceToNorthWall, spaceToNotchSouthWall);
