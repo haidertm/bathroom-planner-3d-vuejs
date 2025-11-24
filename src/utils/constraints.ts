@@ -446,6 +446,14 @@ export const checkWallCollision = (
   notchHeight?: number
 ): boolean => {
 
+  // 🔍 DETAILED DEBUG LOG: Show position for every object
+  console.log('🔍🔍🔍 checkWallCollision called:', {
+    objectType,
+    position: { x: position.x.toFixed(1), y: position.y.toFixed(1), z: position.z.toFixed(1) },
+    roomDimensions: { width: roomWidth, height: roomHeight },
+    notchDimensions: notchWidth && notchHeight ? { width: notchWidth, height: notchHeight } : 'none'
+  });
+
   // 🔍 DEBUG: Log notch dimensions to verify they're being passed
   if (notchWidth && notchHeight) {
     console.log('🔍 checkWallCollision received notch dimensions:', {
@@ -477,16 +485,18 @@ export const checkWallCollision = (
       const tolerance = 30; // 30cm tolerance for wall detection
 
       // Check if object is on notch-east wall (vertical edge)
+      // ✅ CRITICAL FIX: Restrict Z range to notch area only, not entire room
       if (Math.abs(position.x - notch.maxX) < tolerance &&
           position.z >= notch.minZ &&
-          position.z <= interior.maxZ) {
+          position.z <= notch.maxZ + tolerance) {
         nearestWall = 'notch-east';
         console.log('🔧 checkWallCollision: Object detected on notch-east wall for bounding box');
       }
       // Check if object is on notch-south wall (horizontal edge)
+      // ✅ CRITICAL FIX: Restrict X range to notch area only, not entire room
       else if (Math.abs(position.z - notch.maxZ) < tolerance &&
                position.x >= notch.minX &&
-               position.x <= interior.maxX) {
+               position.x <= notch.maxX + tolerance) {
         nearestWall = 'notch-south';
         console.log('🔧 checkWallCollision: Object detected on notch-south wall for bounding box');
       }
@@ -661,6 +671,25 @@ export const checkWallCollision = (
     // Check if object is properly flush-mounted to the nearest wall
     const isProperlyFlushMounted = wallDistances[nearestWall] <= flushTolerance;
 
+    console.log('🔍🔍 FLUSH-MOUNTED CHECK:', {
+      nearestWall,
+      wallFaces: {
+        north: wallFaces.north.toFixed(1),
+        south: wallFaces.south.toFixed(1),
+        east: wallFaces.east.toFixed(1),
+        west: wallFaces.west.toFixed(1)
+      },
+      wallDistances: {
+        north: wallDistances.north.toFixed(1),
+        south: wallDistances.south.toFixed(1),
+        east: wallDistances.east.toFixed(1),
+        west: wallDistances.west.toFixed(1)
+      },
+      distanceToNearestWall: wallDistances[nearestWall]?.toFixed(1) || 'undefined',
+      flushTolerance,
+      isProperlyFlushMounted
+    });
+
     if (isProperlyFlushMounted) {
       // For flush-mounted objects positioned correctly, only check collisions on non-wall sides
       switch (nearestWall) {
@@ -764,13 +793,30 @@ export const checkWallCollision = (
   const hasWallCollision = collideWest || collideEast || collideNorth || collideSouth;
 
   if (hasWallCollision) {
-    console.log('🔴 WALL COLLISION:', {
+    console.log('🔴🔴🔴 RED OUTLINE - WALL COLLISION DETECTED:', {
       objectType,
+      position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
       isFlushMounted,
       productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
       scaledSize: `${(dimensions.width * scale).toFixed(1)} × ${(dimensions.depth * scale).toFixed(1)}cm`,
-      position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-      collisions: { west: collideWest, east: collideEast, north: collideNorth, south: collideSouth }
+      collisions: { west: collideWest, east: collideEast, north: collideNorth, south: collideSouth },
+      interior: {
+        minX: interior.minX.toFixed(1),
+        maxX: interior.maxX.toFixed(1),
+        minZ: interior.minZ.toFixed(1),
+        maxZ: interior.maxZ.toFixed(1)
+      },
+      objectBounds: {
+        minX: objectMinX.toFixed(1),
+        maxX: objectMaxX.toFixed(1),
+        minZ: objectMinZ.toFixed(1),
+        maxZ: objectMaxZ.toFixed(1)
+      }
+    });
+  } else {
+    console.log('✅ No collision - object placement is valid at:', {
+      x: position.x.toFixed(1),
+      z: position.z.toFixed(1)
     });
   }
 
