@@ -1378,9 +1378,9 @@ export class MeasurementSystem {
             lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
             break;
           case 'notch-south':
-            // ✅ For notch-south wall, move into the room (north)
+            // ✅ For notch-south wall, move away from wall (south) - same as horizontal lines
             lineX = position.x;
-            lineZ = notch ? notch.maxZ - offset : position.z;
+            lineZ = notch ? notch.maxZ + 10 : position.z;
             break;
           case 'east':
             lineX = wallFaces.east - offset; // Move WEST (away from east wall)
@@ -1391,8 +1391,8 @@ export class MeasurementSystem {
             lineZ = position.z;
             break;
           case 'notch-east':
-            // ✅ For notch-east wall, move into the room (west)
-            lineX = notch ? notch.maxX - offset : position.x;
+            // ✅ For notch-east wall, move away from wall (east) - same as horizontal lines
+            lineX = notch ? notch.maxX + 10 : position.x;
             lineZ = position.z;
             break;
         }
@@ -1436,9 +1436,9 @@ export class MeasurementSystem {
             lineZ = wallFaces.south - offset; // Move NORTH (away from south wall)
             break;
           case 'notch-south':
-            // ✅ For notch-south wall, move into the room (north)
+            // ✅ For notch-south wall, move away from wall (south) - same as horizontal lines
             lineX = position.x;
-            lineZ = notch ? notch.maxZ - offset : position.z;
+            lineZ = notch ? notch.maxZ + 10 : position.z;
             break;
           case 'east':
             lineX = wallFaces.east - offset; // Move WEST (away from east wall)
@@ -1449,8 +1449,8 @@ export class MeasurementSystem {
             lineZ = position.z;
             break;
           case 'notch-east':
-            // ✅ For notch-east wall, move into the room (west)
-            lineX = notch ? notch.maxX - offset : position.x;
+            // ✅ For notch-east wall, move away from wall (east) - same as horizontal lines
+            lineX = notch ? notch.maxX + 10 : position.x;
             lineZ = position.z;
             break;
         }
@@ -1485,6 +1485,7 @@ export class MeasurementSystem {
       });
 
       const line = new THREE.Line(geometry, material);
+      line.renderOrder = 999; // Render in front of walls (labels use 1000)
       line.userData = { lineId: label.id };
       this.measurementLines.add(line);
     }
@@ -1533,6 +1534,7 @@ export class MeasurementSystem {
     });
 
       const marker = new THREE.Line(geometry, material);
+      marker.renderOrder = 999; // Render in front of walls (same as measurement lines)
       marker.userData = {
           type: 'endMarker',
           direction,
