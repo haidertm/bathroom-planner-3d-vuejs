@@ -1993,10 +1993,19 @@ export class EventHandlers {
                   }
                 }
 
+                // ✅ NEW: Give notch walls priority by applying a distance bonus
+                let effectiveDistance = distance;
+                const isNotchWall = wall === 'notch-east' || wall === 'notch-south';
+                if (isNotchWall) {
+                  // Subtract 50cm from notch wall distance to make them "artificially closer"
+                  effectiveDistance = distance - 50;
+                  console.log(`🎯 Notch wall ${wall} distance bonus: ${distance.toFixed(0)}cm → ${effectiveDistance.toFixed(0)}cm`);
+                }
+
                 // ✅ Only switch walls if this wall is SIGNIFICANTLY closer
                 // Apply threshold bias to prevent unwanted jumping
-                if (distance < minDistance - threshold) {
-                  minDistance = distance;
+                if (effectiveDistance < minDistance - threshold) {
+                  minDistance = distance; // Store actual distance, not effective
                   closestWall = wall as WallType;
                   closestPoint.copy(intersectPoint);
                   foundValidIntersection = true;
