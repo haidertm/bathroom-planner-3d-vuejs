@@ -389,17 +389,19 @@ export class MeasurementSystem {
       // Check if object is near the notch-east wall (vertical wall at notch.maxX)
       // This wall blocks movement to the LEFT (west direction) for objects east of it
       if (position.x > notch.maxX) {
+        // notch.maxX is interior face - add wallThickness to get exterior face
         const spaceToNotchEastWall = position.x - width / 2 - notch.maxX - wallThickness;
         spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
-        console.log(`📏 Object near notch-east wall: spaceToNotchEastWall=${spaceToNotchEastWall.toFixed(1)}cm`);
+        console.log(`📏 Object near notch-east wall: spaceToNotchEastWall=${spaceToNotchEastWall.toFixed(1)}cm (interior face at ${notch.maxX.toFixed(1)}, exterior at ${(notch.maxX + wallThickness).toFixed(1)})`);
       }
 
       // Check if object is near the notch-south wall (horizontal wall at notch.maxZ)
       // This wall blocks movement to the FRONT (north direction) for objects south of it
       if (position.z > notch.maxZ) {
+        // notch.maxZ is interior face - add wallThickness to get exterior face
         const spaceToNotchSouthWall = position.z - width / 2 - notch.maxZ - wallThickness;
         spaceToNorthWall = Math.min(spaceToNorthWall, spaceToNotchSouthWall);
-        console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm`);
+        console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm (interior face at ${notch.maxZ.toFixed(1)}, exterior at ${(notch.maxZ + wallThickness).toFixed(1)})`);
       }
     }
 
@@ -1207,11 +1209,11 @@ export class MeasurementSystem {
             console.log(`📏 space-left: Object east of notch-east wall! endX=${endX.toFixed(1)}, notch.maxX=${notch.maxX.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
 
             if (distanceToNotchWall < 20) {
-              endX = notch.maxX + 3;
+              // Don't override endX - let the space calculation handle it
               lineY = objectCenterY + 5;
               lineZ = position.z + 20;
               notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-left adjustment for notch-east wall: lineZ offset by 20cm`);
+              console.log(`📏 ✅ APPLYING space-left adjustment for notch-east wall: lineZ offset by 20cm, endX=${endX.toFixed(1)}`);
             }
           }
 
@@ -1289,11 +1291,11 @@ export class MeasurementSystem {
             console.log(`📏 space-front: Object south of notch-south wall! endZ=${endZ.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
 
             if (distanceToNotchWall < 20) {
-              endZ = notch.maxZ + 3;
+              // Don't override endZ - let the space calculation handle it
               lineY = objectCenterY + 5;
               lineX = position.x + 20;
               notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm`);
+              console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm, endZ=${endZ.toFixed(1)}`);
             }
           }
 
