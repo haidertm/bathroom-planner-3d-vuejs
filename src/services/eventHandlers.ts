@@ -2035,8 +2035,10 @@ export class EventHandlers {
           // ✅ NOTCH HANDLING: Use notch boundaries for L-shaped rooms
           // For north/south walls: object slides along X axis, so use notch.maxX as minimum X boundary
           // For east/west walls: object slides along Z axis, so use notch.maxZ as minimum Z boundary
-          const effectiveMinX = notch ? notch.maxX : interior.minX;
-          const effectiveMinZ = notch ? notch.maxZ : interior.minZ;
+          // ⚠️ CRITICAL: Add wall thickness to notch boundaries to prevent objects from entering the notch wall
+          // notch.maxX/maxZ represent the INNER surface of notch walls, so we add thickness to get the OUTER edge
+          const effectiveMinX = notch ? notch.maxX + WALL_SETTINGS.THICKNESS : interior.minX;
+          const effectiveMinZ = notch ? notch.maxZ + WALL_SETTINGS.THICKNESS : interior.minZ;
 
           if (notch) {
             console.log('🔷 Notch boundaries:', {
