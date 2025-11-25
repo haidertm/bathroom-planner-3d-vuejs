@@ -29,6 +29,7 @@
             <div
                 v-for="input in dimensionInputs"
                 :key="input.id"
+                v-show="shouldShowLabel(input.id)"
                 class="dimension-input-overlay"
                 :style="input.style"
                 @click="input.onClick"
@@ -363,7 +364,8 @@ const updateDimensionInputs = () => {
   // Add notch dimension inputs for L-shape
   if (isLShape.value) {
     const notchInputs = [
-      // Notch width input (horizontal, above notch)
+      // Notch width input - positioned near the horizontal notch-south wall
+      // (near notch-height green dot, since that wall's length = notchWidth)
       {
         id: 'notch-width',
         value: roomDimensions.notchWidth,
@@ -375,15 +377,18 @@ const updateDimensionInputs = () => {
         editing: false,
         style: {
           position: 'absolute',
+          // Horizontally centered with the horizontal notch wall (notch-height handle position)
           left: (bounds.left + notchPixelWidth.value / 2 - 40) + 'px',
-          top: (bounds.top - 35) + 'px',
+          // Position below the horizontal notch wall
+          top: (bounds.top + notchPixelHeight.value + 10) + 'px',
           width: '80px',
           height: '25px'
         },
         onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'notch-width'))
       },
 
-      // Notch height input (vertical, left of notch)
+      // Notch height input - positioned near the vertical notch-east wall
+      // (near notch-width green dot, since that wall's length = notchHeight)
       {
         id: 'notch-height',
         value: roomDimensions.notchHeight,
@@ -395,7 +400,9 @@ const updateDimensionInputs = () => {
         editing: false,
         style: {
           position: 'absolute',
-          left: (bounds.left - 90) + 'px',
+          // Position to the right of the vertical notch wall (notch-width handle position)
+          left: (bounds.left + notchPixelWidth.value + 10) + 'px',
+          // Vertically centered with the vertical notch wall
           top: (bounds.top + notchPixelHeight.value / 2 - 12.5) + 'px',
           width: '80px',
           height: '25px'
@@ -517,6 +524,31 @@ const hasPendingChanges = (input) => {
   } else {
     return pendingDimensions.height !== null && pendingDimensions.height !== roomDimensions.height
   }
+}
+
+// Determine which labels should be visible during dragging
+const shouldShowLabel = (inputId) => {
+  // If not dragging or moving room, show all labels
+  if (!isDragging.value || isDragging.value === 'room-move') {
+    return true
+  }
+
+  // Map of which handle affects which labels
+  const affectedLabels = {
+    // Dragging top/bottom changes height → show height labels
+    'top': ['height-left', 'height-right'],
+    'bottom': ['height-left', 'height-right'],
+    // Dragging left/right changes width → show width labels
+    'left': ['width-top', 'width-bottom'],
+    'right': ['width-top', 'width-bottom'],
+    // Dragging notch-width changes notchWidth → affects notch-width and width-top (topWallWidth = width - notchWidth)
+    'notch-width': ['notch-width', 'width-top'],
+    // Dragging notch-height changes notchHeight → affects notch-height and height-left (leftWallHeight = height - notchHeight)
+    'notch-height': ['notch-height', 'height-left']
+  }
+
+  const labelsToShow = affectedLabels[isDragging.value]
+  return labelsToShow ? labelsToShow.includes(inputId) : true
 }
 
 const cancelAllPendingChanges = () => {
@@ -928,6 +960,42 @@ const handleCanvasWheel = (e) => {
   zoomLevel.value = Math.max(0.5, Math.min(2, zoomLevel.value + delta))
 }
 
+// Helper to get wall color based on dragging state
+// Highlights walls whose dimensions are changing (not the grabbed wall)
+const getWallColor = (wallId) => {
+  if (!isDragging.value || isDragging.value === 'room-move') {
+    return '#2d3748' // Default dark color
+  }
+
+  // Map handles to walls whose dimensions change
+  const handleToAffectedWalls = {
+    // Changing height affects left/right walls (they display the height)
+    'top': ['left', 'right'],
+    'bottom': ['left', 'right'],
+    // Changing width affects top/bottom walls (they display the width)
+    'left': ['top', 'bottom'],
+    'right': ['top', 'bottom'],
+    // Changing notch-width affects notch-south (its length = notchWidth) and top wall (topWallWidth = width - notchWidth)
+    'notch-width': ['notch-south', 'top'],
+    // Changing notch-height affects notch-east (its length = notchHeight) and left wall (leftWallHeight = height - notchHeight)
+    'notch-height': ['notch-east', 'left']
+  }
+
+  const affectedWalls = handleToAffectedWalls[isDragging.value] || []
+  return affectedWalls.includes(wallId) ? '#48bb78' : '#2d3748'
+}
+
+// Helper to draw a single wall segment
+const drawWall = (context, x1, y1, x2, y2, color) => {
+  context.beginPath()
+  context.moveTo(x1, y1)
+  context.lineTo(x2, y2)
+  context.strokeStyle = color
+  context.lineWidth = 8
+  context.lineCap = 'round'
+  context.stroke()
+}
+
 const draw = () => {
   const context = ctx.value
 
@@ -940,13 +1008,15 @@ const draw = () => {
   if (isLShape.value) {
     drawLShape(context, bounds)
   } else {
-    // Draw rectangular room
+    // Draw rectangular room - fill first
     context.fillStyle = hoveredRoom.value && !isDragging.value ? '#f7fafc' : '#ffffff'
     context.fillRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
 
-    context.strokeStyle = '#2d3748'
-    context.lineWidth = 8
-    context.strokeRect(bounds.left, bounds.top, roomPixelWidth.value, roomPixelHeight.value)
+    // Draw each wall separately with appropriate color
+    drawWall(context, bounds.left, bounds.top, bounds.right, bounds.top, getWallColor('top'))
+    drawWall(context, bounds.right, bounds.top, bounds.right, bounds.bottom, getWallColor('right'))
+    drawWall(context, bounds.right, bounds.bottom, bounds.left, bounds.bottom, getWallColor('bottom'))
+    drawWall(context, bounds.left, bounds.bottom, bounds.left, bounds.top, getWallColor('left'))
   }
 
   // Draw green resize handles
@@ -954,28 +1024,39 @@ const draw = () => {
 }
 
 const drawLShape = (context, bounds) => {
-  // L-shape is drawn as: full rectangle minus top-right notch
-  // Path: Start bottom-left, go up to notch height, right to notch width,
-  // up to top, right to end, down to bottom, left to start
+  // L-shape: draw fill first, then individual wall segments
 
+  // Fill the L-shape
   context.beginPath()
-  context.moveTo(bounds.left, bounds.bottom) // Bottom-left
-  context.lineTo(bounds.left, bounds.top + notchPixelHeight.value) // Up to notch bottom
-  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value) // Right to notch corner
-  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top) // Up to top
-  context.lineTo(bounds.right, bounds.top) // Right to top-right
-  context.lineTo(bounds.right, bounds.bottom) // Down to bottom-right
-  context.lineTo(bounds.left, bounds.bottom) // Left to start
+  context.moveTo(bounds.left, bounds.bottom)
+  context.lineTo(bounds.left, bounds.top + notchPixelHeight.value)
+  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value)
+  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top)
+  context.lineTo(bounds.right, bounds.top)
+  context.lineTo(bounds.right, bounds.bottom)
+  context.lineTo(bounds.left, bounds.bottom)
   context.closePath()
-
-  // Fill
   context.fillStyle = hoveredRoom.value && !isDragging.value ? '#f7fafc' : '#ffffff'
   context.fill()
 
-  // Stroke
-  context.strokeStyle = '#2d3748'
-  context.lineWidth = 8
-  context.stroke()
+  // Draw each wall segment with appropriate color
+  // Left wall (from bottom to notch)
+  drawWall(context, bounds.left, bounds.bottom, bounds.left, bounds.top + notchPixelHeight.value, getWallColor('left'))
+
+  // Notch-south wall (horizontal notch wall)
+  drawWall(context, bounds.left, bounds.top + notchPixelHeight.value, bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value, getWallColor('notch-south'))
+
+  // Notch-east wall (vertical notch wall)
+  drawWall(context, bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value, bounds.left + notchPixelWidth.value, bounds.top, getWallColor('notch-east'))
+
+  // Top wall (from notch to right)
+  drawWall(context, bounds.left + notchPixelWidth.value, bounds.top, bounds.right, bounds.top, getWallColor('top'))
+
+  // Right wall
+  drawWall(context, bounds.right, bounds.top, bounds.right, bounds.bottom, getWallColor('right'))
+
+  // Bottom wall
+  drawWall(context, bounds.right, bounds.bottom, bounds.left, bounds.bottom, getWallColor('bottom'))
 }
 
 const drawHandles = (context) => {
