@@ -15,10 +15,13 @@
         @close="handleTextureClose"
         :room-width="roomWidth"
         :room-height="roomHeight"
+        :notch-width="notchWidth"
+        :notch-height="notchHeight"
         :show-grid="showGrid"
         :show-wall-grid="showWallGrid"
         :wall-culling-enabled="wallCullingEnabled"
         @room-size-change="handleRoomSizeChange"
+        @notch-size-change="handleNotchSizeChange"
         @toggle-grid="setShowGrid"
         @toggle-wall-grid="setShowWallGrid"
         @constrain-objects="constrainObjects"
@@ -722,6 +725,33 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
       items: constrainedItems,
       roomWidth: newWidth,
       roomHeight: newHeight,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value
+    })
+  }, 100)
+}
+
+// Notch size change handler (for L-shaped rooms)
+const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
+  notchWidth.value = newNotchWidth
+  notchHeight.value = newNotchHeight
+
+  // Save the updated dimensions to localStorage (including notch dimensions)
+  saveRoomDimensionsToStorage(roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+
+  // Constrain objects and update scene
+  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+  items.value = constrainedItems
+  lastUpdateSource.value = 'notchSize'
+
+  // Save to history
+  setTimeout(() => {
+    saveToHistory({
+      items: constrainedItems,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      notchWidth: newNotchWidth,
+      notchHeight: newNotchHeight,
       currentFloorTexture: currentFloorTexture.value,
       currentWallTexture: currentWallTexture.value
     })

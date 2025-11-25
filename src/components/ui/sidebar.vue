@@ -209,6 +209,73 @@
                 </div>
               </label>
             </div>
+
+            <!-- L-Shape Notch Controls (only visible for L-shaped rooms) -->
+            <template v-if="isLShape">
+              <div :style="notchSectionHeaderStyle">
+                <span>L-Shape Notch Dimensions</span>
+              </div>
+
+              <div :style="controlGroupStyle">
+                <label :style="labelStyle">
+                  Notch Width: {{ safeToFixed(localNotchWidth, 0) }}cm
+                  <div :style="inputSliderContainerStyle">
+                    <input
+                        type="number"
+                        :min="ROOM_DEFAULTS.MIN_SIZE"
+                        :max="maxNotchWidth"
+                        :step="ROOM_DEFAULTS.STEP"
+                        :value="localNotchWidth"
+                        @input="updateNotchWidthFromInput"
+                        @blur="validateAndUpdateNotchWidth"
+                        :style="numberInputStyle"
+                        placeholder="Notch Width"
+                        class="modern-number-input"
+                    />
+                    <input
+                        type="range"
+                        :min="ROOM_DEFAULTS.MIN_SIZE"
+                        :max="maxNotchWidth"
+                        :step="ROOM_DEFAULTS.STEP"
+                        :value="localNotchWidth"
+                        @input="updateNotchWidthFromSlider"
+                        :style="sliderStyle"
+                        class="modern-slider"
+                    />
+                  </div>
+                </label>
+              </div>
+
+              <div :style="controlGroupStyle">
+                <label :style="labelStyle">
+                  Notch Length: {{ safeToFixed(localNotchHeight, 0) }}cm
+                  <div :style="inputSliderContainerStyle">
+                    <input
+                        type="number"
+                        :min="ROOM_DEFAULTS.MIN_SIZE"
+                        :max="maxNotchHeight"
+                        :step="ROOM_DEFAULTS.STEP"
+                        :value="localNotchHeight"
+                        @input="updateNotchHeightFromInput"
+                        @blur="validateAndUpdateNotchHeight"
+                        :style="numberInputStyle"
+                        placeholder="Notch Height"
+                        class="modern-number-input"
+                    />
+                    <input
+                        type="range"
+                        :min="ROOM_DEFAULTS.MIN_SIZE"
+                        :max="maxNotchHeight"
+                        :step="ROOM_DEFAULTS.STEP"
+                        :value="localNotchHeight"
+                        @input="updateNotchHeightFromSlider"
+                        :style="sliderStyle"
+                        class="modern-slider"
+                    />
+                  </div>
+                </label>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -340,6 +407,14 @@ const props = defineProps({
     type: Number,
     required: true
   },
+  notchWidth: {
+    type: Number,
+    default: 0
+  },
+  notchHeight: {
+    type: Number,
+    default: 0
+  },
   showGrid: {
     type: Boolean,
     required: true
@@ -374,6 +449,7 @@ const emit = defineEmits([
   'close',
   'add',
   'room-size-change',
+  'notch-size-change',
   'toggle-grid',
   'toggle-wall-grid',
   'constrain-objects',
@@ -636,7 +712,14 @@ onBeforeUnmount(() => {
 // Local state for inputs
 const localRoomWidth = ref(Number(props.roomWidth) || ROOM_DEFAULTS.WIDTH)
 const localRoomHeight = ref(Number(props.roomHeight) || ROOM_DEFAULTS.HEIGHT)
+const localNotchWidth = ref(Number(props.notchWidth) || 0)
+const localNotchHeight = ref(Number(props.notchHeight) || 0)
 const isInternalUpdate = ref(false)
+
+// Computed to check if the room is L-shaped
+const isLShape = computed(() => {
+  return localNotchWidth.value > 0 && localNotchHeight.value > 0
+})
 
 // FIXED: Get model paths for category
 const getCategoryModelPaths = (category) => {
@@ -733,6 +816,18 @@ watch(() => props.roomHeight, (newHeight) => {
   if (!isInternalUpdate.value) {
     // Values are already in centimeters
     localRoomHeight.value = Number(newHeight) || ROOM_DEFAULTS.HEIGHT
+  }
+})
+
+watch(() => props.notchWidth, (newNotchWidth) => {
+  if (!isInternalUpdate.value) {
+    localNotchWidth.value = Number(newNotchWidth) || 0
+  }
+})
+
+watch(() => props.notchHeight, (newNotchHeight) => {
+  if (!isInternalUpdate.value) {
+    localNotchHeight.value = Number(newNotchHeight) || 0
   }
 })
 
@@ -956,6 +1051,81 @@ const validateAndUpdateHeight = (event) => {
     isInternalUpdate.value = false
   }, 100)
 }
+
+// Notch dimension update methods (for L-shaped rooms)
+const updateNotchWidthFromInput = (event) => {
+  const newValue = Number(event.target.value)
+  if (!isNaN(newValue)) {
+    localNotchWidth.value = newValue
+    if (newValue >= 0 && newValue <= localRoomWidth.value - ROOM_DEFAULTS.MIN_SIZE) {
+      isInternalUpdate.value = true
+      emit('notch-size-change', newValue, localNotchHeight.value)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
+  }
+}
+
+const updateNotchHeightFromInput = (event) => {
+  const newValue = Number(event.target.value)
+  if (!isNaN(newValue)) {
+    localNotchHeight.value = newValue
+    if (newValue >= 0 && newValue <= localRoomHeight.value - ROOM_DEFAULTS.MIN_SIZE) {
+      isInternalUpdate.value = true
+      emit('notch-size-change', localNotchWidth.value, newValue)
+      setTimeout(() => {
+        isInternalUpdate.value = false
+      }, 100)
+    }
+  }
+}
+
+const updateNotchWidthFromSlider = (event) => {
+  const newValue = Number(event.target.value)
+  localNotchWidth.value = newValue
+  isInternalUpdate.value = true
+  emit('notch-size-change', newValue, localNotchHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const updateNotchHeightFromSlider = (event) => {
+  const newValue = Number(event.target.value)
+  localNotchHeight.value = newValue
+  isInternalUpdate.value = true
+  emit('notch-size-change', localNotchWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const validateAndUpdateNotchWidth = (event) => {
+  const maxNotchWidth = localRoomWidth.value - ROOM_DEFAULTS.MIN_SIZE
+  const newValue = validateValue(event.target.value, 0, maxNotchWidth)
+  localNotchWidth.value = newValue
+  isInternalUpdate.value = true
+  emit('notch-size-change', newValue, localNotchHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const validateAndUpdateNotchHeight = (event) => {
+  const maxNotchHeight = localRoomHeight.value - ROOM_DEFAULTS.MIN_SIZE
+  const newValue = validateValue(event.target.value, 0, maxNotchHeight)
+  localNotchHeight.value = newValue
+  isInternalUpdate.value = true
+  emit('notch-size-change', localNotchWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+// Computed max values for notch sliders
+const maxNotchWidth = computed(() => Math.max(0, localRoomWidth.value - ROOM_DEFAULTS.MIN_SIZE))
+const maxNotchHeight = computed(() => Math.max(0, localRoomHeight.value - ROOM_DEFAULTS.MIN_SIZE))
 
 // NEW: Enhanced category item style with subtle loading states
 const getEnhancedCategoryItemStyle = (category) => {
@@ -1216,6 +1386,22 @@ const accordionTitleStyle = computed(() => ({
 const roomSettingsContentStyle = computed(() => ({
   padding: '20px',
   backgroundColor: '#fafbfc'
+}))
+
+// L-Shape notch section header style
+const notchSectionHeaderStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '12px 16px',
+  marginBottom: '16px',
+  marginTop: '8px',
+  backgroundColor: '#f0f4f8',
+  borderRadius: '8px',
+  border: '1px solid #e2e8f0',
+  fontSize: isMobileDevice.value ? '13px' : '14px',
+  fontWeight: '600',
+  color: '#29275B',
+  fontFamily: 'Arial, sans-serif'
 }))
 
 const controlGroupStyle = computed(() => ({
