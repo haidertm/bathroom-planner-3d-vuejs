@@ -279,6 +279,10 @@ const updateDimensionInputs = () => {
   const leftWallHeight = isLShape.value ? roomDimensions.height - roomDimensions.notchHeight : roomDimensions.height
   const rightWallHeight = roomDimensions.height
 
+  // Compute minimum room dimensions (must leave 50cm gap from notch to prevent walls touching)
+  const minWidth = isLShape.value ? Math.max(ROOM_DEFAULTS.MIN_SIZE, roomDimensions.notchWidth + 50) : ROOM_DEFAULTS.MIN_SIZE
+  const minHeight = isLShape.value ? Math.max(ROOM_DEFAULTS.MIN_SIZE, roomDimensions.notchHeight + 50) : ROOM_DEFAULTS.MIN_SIZE
+
   const baseInputs = [
     // Top (reduced width if L-shape)
     {
@@ -287,7 +291,7 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.width || topWallWidth,
       originalValue: topWallWidth,
       unit: 'cm',
-      min: ROOM_DEFAULTS.MIN_SIZE,
+      min: minWidth,
       max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
@@ -307,7 +311,7 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.width || bottomWallWidth,
       originalValue: bottomWallWidth,
       unit: 'cm',
-      min: ROOM_DEFAULTS.MIN_SIZE,
+      min: minWidth,
       max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
@@ -327,7 +331,7 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.height || leftWallHeight,
       originalValue: leftWallHeight,
       unit: 'cm',
-      min: ROOM_DEFAULTS.MIN_SIZE,
+      min: minHeight,
       max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
@@ -347,7 +351,7 @@ const updateDimensionInputs = () => {
       tempValue: pendingDimensions.height || rightWallHeight,
       originalValue: rightWallHeight,
       unit: 'cm',
-      min: ROOM_DEFAULTS.MIN_SIZE,
+      min: minHeight,
       max: ROOM_DEFAULTS.MAX_SIZE,
       editing: false,
       style: {
@@ -908,33 +912,37 @@ const handleDrag = (currentPos) => {
     bottom: dragStartRoomCenter.y + (dragStartDimensions.height * effectiveScale.value) / 2
   }
 
+  // Compute minimum dimensions to prevent notch walls from touching main walls (50cm gap required)
+  const minWidth = isLShape.value ? Math.max(ROOM_DEFAULTS.MIN_SIZE, roomDimensions.notchWidth + 50) : ROOM_DEFAULTS.MIN_SIZE
+  const minHeight = isLShape.value ? Math.max(ROOM_DEFAULTS.MIN_SIZE, roomDimensions.notchHeight + 50) : ROOM_DEFAULTS.MIN_SIZE
+
   switch (isDragging.value) {
     case 'right':
       // Keep left edge fixed, expand/contract to the right
-      newWidth = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.width + scaledDeltaX))
+      newWidth = Math.max(minWidth, Math.min(600, dragStartDimensions.width + scaledDeltaX))
       newCenterX = startBounds.left + (newWidth * effectiveScale.value) / 2
       break
     case 'bottom':
       // Keep top edge fixed, expand/contract downward
-      newHeight = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.height + scaledDeltaY))
+      newHeight = Math.max(minHeight, Math.min(600, dragStartDimensions.height + scaledDeltaY))
       newCenterY = startBounds.top + (newHeight * effectiveScale.value) / 2
       break
     case 'left':
       // Keep right edge fixed, expand/contract to the left
-      newWidth = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.width - scaledDeltaX))
+      newWidth = Math.max(minWidth, Math.min(600, dragStartDimensions.width - scaledDeltaX))
       newCenterX = startBounds.right - (newWidth * effectiveScale.value) / 2
       break
     case 'top':
       // Keep bottom edge fixed, expand/contract upward
-      newHeight = Math.max(ROOM_DEFAULTS.MIN_SIZE, Math.min(600, dragStartDimensions.height - scaledDeltaY))
+      newHeight = Math.max(minHeight, Math.min(600, dragStartDimensions.height - scaledDeltaY))
       newCenterY = startBounds.bottom - (newHeight * effectiveScale.value) / 2
       break
     case 'notch-width':
-      // Adjust notch width
+      // Adjust notch width (must leave 50cm gap to prevent walls touching)
       roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)) * 100) / 100
       break
     case 'notch-height':
-      // Adjust notch height
+      // Adjust notch height (must leave 50cm gap to prevent walls touching)
       roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)) * 100) / 100
       break
   }

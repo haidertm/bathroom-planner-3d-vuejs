@@ -156,7 +156,7 @@
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
-                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :min="minRoomWidth"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
                       :value="localRoomWidth"
@@ -168,7 +168,7 @@
                   />
                   <input
                       type="range"
-                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :min="minRoomWidth"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
                       :value="localRoomWidth"
@@ -186,7 +186,7 @@
                 <div :style="inputSliderContainerStyle">
                   <input
                       type="number"
-                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :min="minRoomHeight"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
                       :value="localRoomHeight"
@@ -198,7 +198,7 @@
                   />
                   <input
                       type="range"
-                      :min="ROOM_DEFAULTS.MIN_SIZE"
+                      :min="minRoomHeight"
                       :max="ROOM_DEFAULTS.MAX_SIZE"
                       :step="ROOM_DEFAULTS.STEP"
                       :value="localRoomHeight"
@@ -986,7 +986,8 @@ const updateWidthFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
     localRoomWidth.value = newValue
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+    // Use minRoomWidth to prevent room from shrinking below notch size + buffer
+    if (newValue >= minRoomWidth.value && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
       isInternalUpdate.value = true
       emit('room-size-change', newValue, localRoomHeight.value)
       setTimeout(() => {
@@ -1000,7 +1001,8 @@ const updateHeightFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
     localRoomHeight.value = newValue
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
+    // Use minRoomHeight to prevent room from shrinking below notch size + buffer
+    if (newValue >= minRoomHeight.value && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
       isInternalUpdate.value = true
       emit('room-size-change', localRoomWidth.value, newValue)
       setTimeout(() => {
@@ -1031,7 +1033,8 @@ const updateHeightFromSlider = (event) => {
 }
 
 const validateAndUpdateWidth = (event) => {
-  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, ROOM_DEFAULTS.MAX_SIZE)
+  // Use minRoomWidth to prevent room from shrinking below notch size + buffer
+  const newValue = validateValue(event.target.value, minRoomWidth.value, ROOM_DEFAULTS.MAX_SIZE)
   localRoomWidth.value = newValue
   isInternalUpdate.value = true
   // Emit values in centimeters (no conversion needed)
@@ -1042,7 +1045,8 @@ const validateAndUpdateWidth = (event) => {
 }
 
 const validateAndUpdateHeight = (event) => {
-  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, ROOM_DEFAULTS.MAX_SIZE)
+  // Use minRoomHeight to prevent room from shrinking below notch size + buffer
+  const newValue = validateValue(event.target.value, minRoomHeight.value, ROOM_DEFAULTS.MAX_SIZE)
   localRoomHeight.value = newValue
   isInternalUpdate.value = true
   // Emit values in centimeters (no conversion needed)
@@ -1057,7 +1061,8 @@ const updateNotchWidthFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
     localNotchWidth.value = newValue
-    if (newValue >= 0 && newValue <= localRoomWidth.value - ROOM_DEFAULTS.MIN_SIZE) {
+    // Notch must be at least MIN_SIZE and leave at least 50cm gap to prevent walls touching
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= maxNotchWidth.value) {
       isInternalUpdate.value = true
       emit('notch-size-change', newValue, localNotchHeight.value)
       setTimeout(() => {
@@ -1071,7 +1076,8 @@ const updateNotchHeightFromInput = (event) => {
   const newValue = Number(event.target.value)
   if (!isNaN(newValue)) {
     localNotchHeight.value = newValue
-    if (newValue >= 0 && newValue <= localRoomHeight.value - ROOM_DEFAULTS.MIN_SIZE) {
+    // Notch must be at least MIN_SIZE and leave at least 50cm gap to prevent walls touching
+    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= maxNotchHeight.value) {
       isInternalUpdate.value = true
       emit('notch-size-change', localNotchWidth.value, newValue)
       setTimeout(() => {
@@ -1101,9 +1107,13 @@ const updateNotchHeightFromSlider = (event) => {
   }, 100)
 }
 
+// Computed max values for notch sliders (must leave at least 50cm gap to prevent walls touching)
+const maxNotchWidth = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomWidth.value - 50))
+const maxNotchHeight = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomHeight.value - 50))
+
 const validateAndUpdateNotchWidth = (event) => {
-  const maxNotchWidth = localRoomWidth.value - ROOM_DEFAULTS.MIN_SIZE
-  const newValue = validateValue(event.target.value, 0, maxNotchWidth)
+  // Use computed maxNotchWidth to ensure 50cm gap
+  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, maxNotchWidth.value)
   localNotchWidth.value = newValue
   isInternalUpdate.value = true
   emit('notch-size-change', newValue, localNotchHeight.value)
@@ -1113,8 +1123,8 @@ const validateAndUpdateNotchWidth = (event) => {
 }
 
 const validateAndUpdateNotchHeight = (event) => {
-  const maxNotchHeight = localRoomHeight.value - ROOM_DEFAULTS.MIN_SIZE
-  const newValue = validateValue(event.target.value, 0, maxNotchHeight)
+  // Use computed maxNotchHeight to ensure 50cm gap
+  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, maxNotchHeight.value)
   localNotchHeight.value = newValue
   isInternalUpdate.value = true
   emit('notch-size-change', localNotchWidth.value, newValue)
@@ -1123,9 +1133,20 @@ const validateAndUpdateNotchHeight = (event) => {
   }, 100)
 }
 
-// Computed max values for notch sliders
-const maxNotchWidth = computed(() => Math.max(0, localRoomWidth.value - ROOM_DEFAULTS.MIN_SIZE))
-const maxNotchHeight = computed(() => Math.max(0, localRoomHeight.value - ROOM_DEFAULTS.MIN_SIZE))
+// Computed min values for room dimensions (must be at least notch + 50cm buffer when L-shaped)
+const minRoomWidth = computed(() => {
+  if (isLShape.value && localNotchWidth.value > 0) {
+    return Math.max(ROOM_DEFAULTS.MIN_SIZE, localNotchWidth.value + 50)
+  }
+  return ROOM_DEFAULTS.MIN_SIZE
+})
+
+const minRoomHeight = computed(() => {
+  if (isLShape.value && localNotchHeight.value > 0) {
+    return Math.max(ROOM_DEFAULTS.MIN_SIZE, localNotchHeight.value + 50)
+  }
+  return ROOM_DEFAULTS.MIN_SIZE
+})
 
 // NEW: Enhanced category item style with subtle loading states
 const getEnhancedCategoryItemStyle = (category) => {
