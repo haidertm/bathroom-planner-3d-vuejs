@@ -1614,9 +1614,49 @@ export class EventHandlers {
                 const safeMinZ = wallFaces.north + halfRotatedHeight;
                 const safeMaxZ = wallFaces.south - halfRotatedHeight;
 
-                // Apply constraints with rotated dimensions
-                const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
-                const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
+                // Apply basic room boundary constraints first
+                let constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
+                let constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
+
+                // ✅ NOTCH BOUNDARY CHECK: Prevent bathtub from entering notch area
+                const notchWidth = this.notchWidthRef.value;
+                const notchHeight = this.notchHeightRef.value;
+
+                if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+                    // Calculate notch boundaries (top-left corner)
+                    const notchMinX = -roomHalfWidth + wallThickness;
+                    const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
+                    const notchMinZ = -roomHalfHeight + wallThickness;
+                    const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
+
+                    // Calculate object boundaries at current constrained position
+                    const objMinX = constrainedX - halfRotatedWidth;
+                    const objMaxX = constrainedX + halfRotatedWidth;
+                    const objMinZ = constrainedZ - halfRotatedHeight;
+                    const objMaxZ = constrainedZ + halfRotatedHeight;
+
+                    // Check if object would overlap with notch area
+                    const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
+                    const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
+
+                    // If overlapping notch, push out to nearest valid position
+                    if (xOverlap && zOverlap) {
+                        const clearanceBuffer = 5; // 5cm clearance from notch walls
+
+                        // Calculate distances to push object out of notch
+                        const pushRight = notchMaxX + halfRotatedWidth + clearanceBuffer - constrainedX;
+                        const pushDown = notchMaxZ + halfRotatedHeight + clearanceBuffer - constrainedZ;
+
+                        // Choose the smaller push distance (nearest edge)
+                        if (pushRight < pushDown) {
+                            // Push to the right of notch
+                            constrainedX = notchMaxX + halfRotatedWidth + clearanceBuffer;
+                        } else {
+                            // Push below notch
+                            constrainedZ = notchMaxZ + halfRotatedHeight + clearanceBuffer;
+                        }
+                    }
+                }
 
                 // Set position
                 this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
