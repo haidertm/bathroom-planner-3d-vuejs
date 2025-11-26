@@ -2323,7 +2323,8 @@ export class EventHandlers {
         // Room boundaries (same for all objects)
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
-        const wallThickness = 12;
+        const wallThickness = WALL_SETTINGS.THICKNESS;
+        const buffer = 2; // Small buffer to prevent visual overlap with walls
 
         const wallFaces = {
             west: -roomHalfWidth + wallThickness,
@@ -2335,13 +2336,55 @@ export class EventHandlers {
         const halfRotatedWidth = rotatedBounds.width / 2;
         const halfRotatedHeight = rotatedBounds.height / 2;
 
-        const safeMinX = wallFaces.west + halfRotatedWidth;
-        const safeMaxX = wallFaces.east - halfRotatedWidth;
-        const safeMinZ = wallFaces.north + halfRotatedHeight;
-        const safeMaxZ = wallFaces.south - halfRotatedHeight;
+        const safeMinX = wallFaces.west + halfRotatedWidth + buffer;
+        const safeMaxX = wallFaces.east - halfRotatedWidth - buffer;
+        const safeMinZ = wallFaces.north + halfRotatedHeight + buffer;
+        const safeMaxZ = wallFaces.south - halfRotatedHeight - buffer;
 
-        const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
-        const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
+        let constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
+        let constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
+
+        // ✅ Check for L-shaped room notch area
+        const notchWidth = this.notchWidthRef.value;
+        const notchHeight = this.notchHeightRef.value;
+
+        if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+            // Notch boundaries (top-left corner of room) with buffer
+            const notchMinX = -roomHalfWidth + wallThickness;
+            const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
+            const notchMinZ = -roomHalfHeight + wallThickness;
+            const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
+
+            // Object boundaries after initial constraint (with buffer for overlap check)
+            const objMinX = constrainedX - halfRotatedWidth - buffer;
+            const objMaxX = constrainedX + halfRotatedWidth + buffer;
+            const objMinZ = constrainedZ - halfRotatedHeight - buffer;
+            const objMaxZ = constrainedZ + halfRotatedHeight + buffer;
+
+            // Check if object overlaps with notch area
+            const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
+            const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
+
+            if (xOverlap && zOverlap) {
+                // Object is in the notch area - push it out
+                // Calculate how much to push in each direction (with buffer)
+                const pushEast = notchMaxX + halfRotatedWidth + buffer - constrainedX;  // Push to the right of notch
+                const pushSouth = notchMaxZ + halfRotatedHeight + buffer - constrainedZ; // Push below the notch
+
+                // Choose the smaller push to minimize displacement
+                if (pushEast <= pushSouth) {
+                    // Push east (away from notch-east wall)
+                    constrainedX = notchMaxX + halfRotatedWidth + buffer;
+                } else {
+                    // Push south (away from notch-south wall)
+                    constrainedZ = notchMaxZ + halfRotatedHeight + buffer;
+                }
+
+                // Re-apply main wall constraints after notch adjustment
+                constrainedX = Math.max(safeMinX, Math.min(safeMaxX, constrainedX));
+                constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, constrainedZ));
+            }
+        }
 
         return new THREE.Vector3(constrainedX, position.y, constrainedZ);
     }
