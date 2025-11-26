@@ -473,6 +473,22 @@ export const createLShapeFloor = (
   // Rotate to lay flat (ExtrudeGeometry extrudes along Z-axis)
   geometry.rotateX(-Math.PI / 2);
 
+  // CRITICAL FIX: Normalize UV coordinates to 0-1 range
+  // ExtrudeGeometry generates UVs based on world coordinates (e.g., -1.5 to 1.5)
+  // but BoxGeometry (used for regular floors) uses 0-1 range
+  // This normalization ensures consistent texture scaling between room shapes
+  const uvAttribute = geometry.getAttribute('uv');
+  if (uvAttribute) {
+    const uvArray = uvAttribute.array as Float32Array;
+    for (let i = 0; i < uvArray.length; i += 2) {
+      // Normalize X: map from [-halfWidth, halfWidth] to [0, 1]
+      uvArray[i] = (uvArray[i] + halfWidth) / totalWidth;
+      // Normalize Y: map from [-halfHeight, halfHeight] to [0, 1]
+      uvArray[i + 1] = (uvArray[i + 1] + halfHeight) / totalHeight;
+    }
+    uvAttribute.needsUpdate = true;
+  }
+
   const floor = new THREE.Mesh(geometry, floorMaterial);
   floor.position.y = -floorThickness / 2;
   floor.receiveShadow = true;
