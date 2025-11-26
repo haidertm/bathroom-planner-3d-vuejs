@@ -46,7 +46,7 @@
           >
             <div class="shape-icon">
               <svg width="80" height="80" viewBox="0 0 80 80">
-                <path d="M10 10 L10 70 L40 70 L40 40 L70 40 L70 10 Z" fill="none" stroke="#29275B" stroke-width="3"/>
+                <path d="M10 10 L10 70 L40 70 L40 40 L70 40 L70 10 Z" fill="none" stroke="#29275B" stroke-width="3" transform="rotate(180 40 40)"/>
               </svg>
             </div>
             <h3>L-Shape</h3>
