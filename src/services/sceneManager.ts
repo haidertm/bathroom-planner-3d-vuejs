@@ -436,8 +436,17 @@ export class SceneManager {
       modelConfig,
       {
         onPlaceholderReady: (placeholder) => {
-          // Add placeholder to scene with item's transform
-          placeholder.position.set(item.position[0], item.position[1], item.position[2]);
+          // Get floorOffset from model config - this affects where the model's bottom actually is
+          const floorOffset = item.model?.floorOffset || 0;
+
+          // Position the placeholder accounting for floorOffset
+          // The model's visual bottom = position.y + floorOffset
+          // So we need to adjust the placeholder's Y position to match
+          placeholder.position.set(
+            item.position[0],
+            item.position[1] + floorOffset, // Adjust Y by floorOffset so placeholder bottom matches model bottom
+            item.position[2]
+          );
           placeholder.rotation.y = item.rotation || 0;
           const scale = item.scale || 1.0;
           placeholder.scale.set(scale, scale, scale);
@@ -448,6 +457,7 @@ export class SceneManager {
           placeholder.userData.type = item.type;
           placeholder.userData.isPlaceholder = true;
           placeholder.userData.sku = item.sku;
+          placeholder.userData.floorOffset = floorOffset;
 
           // Add to scene
           this.bathroomItemsGroup.add(placeholder);
@@ -459,7 +469,9 @@ export class SceneManager {
           const placeholderSize = placeholderBox.getSize(new THREE.Vector3());
 
           console.log(`🔲 Progressive: Placeholder added to scene for item ${item.id}`, {
-            position: [item.position[0], item.position[1], item.position[2]],
+            itemPosition: [item.position[0], item.position[1], item.position[2]],
+            floorOffset: floorOffset,
+            adjustedPlaceholderY: item.position[1] + floorOffset,
             rotation: item.rotation,
             configDimensions: modelConfig.dimensions,
             actualPlaceholderSize: {
