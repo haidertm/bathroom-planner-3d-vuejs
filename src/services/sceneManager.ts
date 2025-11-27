@@ -455,10 +455,11 @@ export class SceneManager {
         onFullModelReady: (fullModel) => {
           // Swap placeholder with full model
           if (placeholderInScene && placeholderInScene.parent) {
-            // Apply transform and metadata to full model
+            // Apply position and rotation from placeholder
+            // NOTE: Do NOT copy scale - the full model already has correct scale from loading
             fullModel.position.copy(placeholderInScene.position);
             fullModel.rotation.copy(placeholderInScene.rotation);
-            fullModel.scale.copy(placeholderInScene.scale);
+            // fullModel.scale is already correct from model loading (scale 100 applied)
 
             fullModel.userData.isBathroomItem = true;
             fullModel.userData.itemId = item.id;
@@ -466,6 +467,12 @@ export class SceneManager {
             fullModel.userData.orientation = getOrientationForItem(item);
             fullModel.userData.sku = item.sku;
             fullModel.userData.model = item.model;
+
+            console.log(`🔄 Progressive: Swapping placeholder with full model for item ${item.id}`, {
+              placeholderPosition: placeholderInScene.position.toArray(),
+              fullModelScale: fullModel.scale.toArray(),
+              placeholderParent: !!placeholderInScene.parent
+            });
 
             // Add full model and remove placeholder
             this.bathroomItemsGroup.add(fullModel);
@@ -480,6 +487,11 @@ export class SceneManager {
 
             console.log(`✅ Progressive: Full model swapped in for item ${item.id}`);
             callbacks?.onFullModelAdded?.(fullModel);
+          } else {
+            console.warn(`⚠️ Progressive: Cannot swap - placeholder missing or no parent`, {
+              hasPlaceholder: !!placeholderInScene,
+              hasParent: placeholderInScene?.parent ? true : false
+            });
           }
         },
         onProgress: (progress) => {
