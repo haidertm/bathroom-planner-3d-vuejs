@@ -19,6 +19,7 @@ interface LoadingPromise {
 
 export type Position = [number, number, number];
 type ModelLoadedCallback = () => void;
+type ModelProgressCallback = (progress: number) => void;
 
 // Singleton model manager with dynamic loading
 class ModelManager {
@@ -171,10 +172,10 @@ class ModelManager {
     return this.preloadedCategories.has(category);
   }
 
-  // Existing loadModel method
-    async loadModel(name: string, model: ObjectModel): Promise<THREE.Group> {
+  // Existing loadModel method - now with optional progress callback
+    async loadModel(name: string, model: ObjectModel, onProgress?: ModelProgressCallback): Promise<THREE.Group> {
         try {
-            const result = await this.performModelLoad(name, model);
+            const result = await this.performModelLoad(name, model, onProgress);
 
             // Mark as loaded and trigger callbacks
             this.loadedModels.add(name);
@@ -201,10 +202,11 @@ class ModelManager {
   }
 
     // NEW: The actual model loading implementation
-    private async performModelLoad(modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
+    private async performModelLoad(modelName: string, modelConfig: ObjectModel, onProgress?: ModelProgressCallback): Promise<THREE.Group> {
         // Return cached model if available
         if (this.cache[modelName]) {
             console.log(`🎯 Using cached model: ${modelName}`);
+            onProgress?.(100); // Immediately report 100% for cached models
             return this.cloneModelWithMaterials(this.cache[modelName]);
         }
 
@@ -244,14 +246,23 @@ class ModelManager {
                     // Clean up loading promise
                     delete this.loadingPromises[modelName];
 
+                    // Report 100% complete
+                    onProgress?.(100);
+
                     console.log(`🎉 Model ${modelName} loaded and cached successfully`);
                     resolve(model);
                 },
                 (progress) => {
-                    // Optional: Handle loading progress
+                    // Handle real loading progress
                     if (progress.lengthComputable) {
                         const percentComplete = (progress.loaded / progress.total) * 100;
                         console.log(`📈 Loading ${modelName}: ${percentComplete.toFixed(1)}%`);
+                        onProgress?.(percentComplete);
+                    } else {
+                        // If length not computable, estimate based on loaded bytes
+                        // Use logarithmic scale capped at 90% (save 10% for processing)
+                        const estimatedProgress = Math.min(90, Math.log10(progress.loaded / 1000 + 1) * 30);
+                        onProgress?.(estimatedProgress);
                     }
                 },
                 (error) => {

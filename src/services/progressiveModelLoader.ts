@@ -22,12 +22,16 @@ export interface PlaceholderConfig {
 }
 
 const DEFAULT_PLACEHOLDER_CONFIG: PlaceholderConfig = {
-  wireframeColor: 0x6366f1, // Indigo color
+  wireframeColor: 0x6366f1, // Indigo color for wireframe
   fillColor: 0xe0e7ff,      // Light indigo
   fillOpacity: 0.3,
   wireframeOpacity: 0.8,
   showPulseAnimation: true
 };
+
+// Green color for progress bar
+const PROGRESS_BAR_COLOR = 0x22c55e; // Tailwind green-500
+const PROGRESS_BAR_BG_COLOR = 0x16a34a; // Tailwind green-600 (darker for background)
 
 /**
  * ProgressiveModelLoader - Handles progressive loading of 3D models
@@ -111,13 +115,21 @@ export class ProgressiveModelLoader {
 
     console.log(`🔲 Progressive: Placeholder CREATED and notified for ${sku}`);
 
-    // Step 2: Load full model in background
+    // Step 2: Load full model in background with REAL progress tracking
     try {
-      // Start loading with progress simulation (runs concurrently)
-      this.simulateProgress(sku, onProgress, abortController.signal);
+      // Create progress handler that updates both visual and callback
+      const handleProgress = (progress: number) => {
+        if (abortController.signal.aborted) return;
 
-      // Actually load the model
-      const fullModel = await this.modelManager.loadModel(sku, modelConfig);
+        // Update visual progress bar on placeholder
+        this.updatePlaceholderProgress(placeholder, progress);
+
+        // Notify external callback
+        onProgress?.(progress);
+      };
+
+      // Actually load the model with real progress callback
+      const fullModel = await this.modelManager.loadModel(sku, modelConfig, handleProgress);
 
       // Check if loading was aborted
       if (abortController.signal.aborted) {
@@ -125,7 +137,8 @@ export class ProgressiveModelLoader {
         return placeholder;
       }
 
-      // Complete progress
+      // Ensure progress shows 100% complete
+      this.updatePlaceholderProgress(placeholder, 100);
       onProgress?.(100);
 
       // Clean up placeholder tracking
@@ -224,13 +237,13 @@ export class ProgressiveModelLoader {
   }
 
   /**
-   * Create a loading indicator (spinning ring) for the placeholder
+   * Create a circular progress indicator for the placeholder
    */
   private createLoadingIndicator(
     width: number,
     height: number,
     depth: number,
-    config: PlaceholderConfig
+    _config: PlaceholderConfig // Unused - using hardcoded green colors
   ): THREE.Group {
     const indicatorGroup = new THREE.Group();
 
@@ -238,28 +251,84 @@ export class ProgressiveModelLoader {
     // The placeholder extends from z=0 to z=depth, so center is at z=depth/2
     indicatorGroup.position.set(0, height + 10, depth / 2);
 
-    // Create a torus (ring) as loading spinner
-    const radius = Math.min(width, depth) * 0.15;
-    const tubeRadius = radius * 0.15;
-    const torusGeometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 24, Math.PI * 1.5);
+    // Calculate radius based on placeholder size
+    const radius = Math.min(width, depth) * 0.18;
+    const tubeRadius = radius * 0.12;
 
-    const torusMaterial = new THREE.MeshBasicMaterial({
-      color: config.wireframeColor,
+    // Create background ring (full circle, darker green)
+    const bgGeometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 48, Math.PI * 2);
+    const bgMaterial = new THREE.MeshBasicMaterial({
+      color: PROGRESS_BAR_BG_COLOR,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.3
     });
+    const bgRing = new THREE.Mesh(bgGeometry, bgMaterial);
+    bgRing.rotation.x = Math.PI / 2; // Lay flat
+    bgRing.name = 'ProgressBackground';
 
-    const torus = new THREE.Mesh(torusGeometry, torusMaterial);
-    torus.rotation.x = Math.PI / 2; // Lay flat
+    // Create progress arc (starts at 0, grows to full circle)
+    // Start with a tiny arc (5% = ~18 degrees)
+    const initialArc = Math.PI * 2 * 0.05;
+    const progressGeometry = new THREE.TorusGeometry(radius, tubeRadius * 1.2, 8, 48, initialArc);
+    const progressMaterial = new THREE.MeshBasicMaterial({
+      color: PROGRESS_BAR_COLOR, // Bright green
+      transparent: true,
+      opacity: 1.0
+    });
+    const progressRing = new THREE.Mesh(progressGeometry, progressMaterial);
+    progressRing.rotation.x = Math.PI / 2; // Lay flat
+    progressRing.rotation.z = Math.PI / 2; // Start from top (12 o'clock)
+    progressRing.name = 'ProgressArc';
 
-    indicatorGroup.add(torus);
+    indicatorGroup.add(bgRing);
+    indicatorGroup.add(progressRing);
 
-    // Store for animation
-    indicatorGroup.userData.spinner = torus;
-    indicatorGroup.userData.materials = [torusMaterial];
-    indicatorGroup.userData.geometries = [torusGeometry];
+    // Store references for progress updates
+    indicatorGroup.userData.progressRing = progressRing;
+    indicatorGroup.userData.radius = radius;
+    indicatorGroup.userData.tubeRadius = tubeRadius * 1.2;
+    indicatorGroup.userData.currentProgress = 5;
+    indicatorGroup.userData.materials = [bgMaterial, progressMaterial];
+    indicatorGroup.userData.geometries = [bgGeometry, progressGeometry];
 
     return indicatorGroup;
+  }
+
+  /**
+   * Update the progress on a placeholder's circular progress bar
+   */
+  updatePlaceholderProgress(placeholder: THREE.Group, progress: number): void {
+    const loadingIndicator = placeholder.getObjectByName('PlaceholderLoadingIndicator');
+    if (!loadingIndicator) return;
+
+    const progressRing = loadingIndicator.userData.progressRing as THREE.Mesh;
+    if (!progressRing) return;
+
+    const radius = loadingIndicator.userData.radius;
+    const tubeRadius = loadingIndicator.userData.tubeRadius;
+    const currentProgress = loadingIndicator.userData.currentProgress || 0;
+
+    // Only update if progress changed significantly (avoid too many geometry updates)
+    if (Math.abs(progress - currentProgress) < 1) return;
+
+    // Calculate arc length based on progress (0-100 -> 0 to 2*PI)
+    const arcLength = Math.PI * 2 * (progress / 100);
+
+    // Dispose old geometry
+    progressRing.geometry.dispose();
+
+    // Create new geometry with updated arc
+    const newGeometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 48, arcLength);
+    progressRing.geometry = newGeometry;
+
+    // Update stored progress
+    loadingIndicator.userData.currentProgress = progress;
+
+    // Update geometries array for disposal
+    const geometries = loadingIndicator.userData.geometries as THREE.BufferGeometry[];
+    if (geometries && geometries.length > 1) {
+      geometries[1] = newGeometry;
+    }
   }
 
   /**
@@ -284,10 +353,14 @@ export class ProgressiveModelLoader {
         fillMesh.material.opacity = 0.2 + Math.sin(elapsed * 0.004) * 0.1;
       }
 
-      // Rotate the loading indicator
+      // Add subtle glow pulse to progress bar
       const loadingIndicator = group.getObjectByName('PlaceholderLoadingIndicator');
-      if (loadingIndicator && loadingIndicator.userData.spinner) {
-        loadingIndicator.userData.spinner.rotation.z += 0.05;
+      if (loadingIndicator) {
+        const progressRing = loadingIndicator.userData.progressRing as THREE.Mesh;
+        if (progressRing && progressRing.material instanceof THREE.MeshBasicMaterial) {
+          // Subtle pulse on the progress ring opacity
+          progressRing.material.opacity = 0.85 + Math.sin(elapsed * 0.006) * 0.15;
+        }
       }
 
       animationId = requestAnimationFrame(animate);
@@ -299,41 +372,6 @@ export class ProgressiveModelLoader {
     // Store animation ID for cleanup
     group.userData.animationId = animationId;
   }
-
-  /**
-   * Simulate loading progress while actual loading happens
-   */
-  private async simulateProgress(
-    _sku: string, // SKU is for logging/debugging purposes
-    onProgress?: (progress: number) => void,
-    signal?: AbortSignal
-  ): Promise<void> {
-    let progress = 5;
-    const maxProgress = 95; // Leave room for actual completion
-
-    return new Promise((resolve) => {
-      const interval = setInterval(() => {
-        if (signal?.aborted) {
-          clearInterval(interval);
-          resolve();
-          return;
-        }
-
-        // Exponential slowdown as we approach max
-        const remaining = maxProgress - progress;
-        const increment = Math.max(0.5, remaining * 0.1);
-        progress = Math.min(maxProgress, progress + increment);
-
-        onProgress?.(Math.round(progress));
-
-        if (progress >= maxProgress - 0.5) {
-          clearInterval(interval);
-          resolve();
-        }
-      }, 150);
-    });
-  }
-
   /**
    * Swap a placeholder with the full model in the scene
    */
