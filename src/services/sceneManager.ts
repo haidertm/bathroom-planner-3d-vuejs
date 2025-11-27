@@ -455,38 +455,44 @@ export class SceneManager {
         onFullModelReady: (fullModel) => {
           // Swap placeholder with full model
           if (placeholderInScene && placeholderInScene.parent) {
-            // Apply position and rotation from placeholder
-            // NOTE: Do NOT copy scale - the full model already has correct scale from loading
-            fullModel.position.copy(placeholderInScene.position);
-            fullModel.rotation.copy(placeholderInScene.rotation);
-            // fullModel.scale is already correct from model loading (scale 100 applied)
+            // IMPORTANT: Wrap the loaded model in a Group to match createModel's structure
+            // This ensures consistent behavior with dragging and selection
+            const wrapper = new THREE.Group();
+            wrapper.position.copy(placeholderInScene.position);
+            wrapper.rotation.copy(placeholderInScene.rotation);
+            // Scale stays at 1 for the wrapper - the model inside has the correct scale
 
-            fullModel.userData.isBathroomItem = true;
-            fullModel.userData.itemId = item.id;
-            fullModel.userData.type = item.type;
-            fullModel.userData.orientation = getOrientationForItem(item);
-            fullModel.userData.sku = item.sku;
-            fullModel.userData.model = item.model;
+            // Add the loaded model to the wrapper
+            wrapper.add(fullModel);
+
+            // Set userData on the wrapper (same as createModel does)
+            wrapper.userData.isBathroomItem = true;
+            wrapper.userData.itemId = item.id;
+            wrapper.userData.type = item.type;
+            wrapper.userData.orientation = getOrientationForItem(item);
+            wrapper.userData.sku = item.sku;
+            wrapper.userData.model = item.model;
 
             console.log(`🔄 Progressive: Swapping placeholder with full model for item ${item.id}`, {
               placeholderPosition: placeholderInScene.position.toArray(),
+              wrapperPosition: wrapper.position.toArray(),
               fullModelScale: fullModel.scale.toArray(),
               placeholderParent: !!placeholderInScene.parent
             });
 
-            // Add full model and remove placeholder
-            this.bathroomItemsGroup.add(fullModel);
+            // Add wrapper (containing full model) and remove placeholder
+            this.bathroomItemsGroup.add(wrapper);
             this.bathroomItemsGroup.remove(placeholderInScene);
             progressiveLoader.disposePlaceholder(placeholderInScene);
 
-            // Update tracking
-            this.existingItems.set(item.id, fullModel);
+            // Update tracking with the wrapper (not the inner model)
+            this.existingItems.set(item.id, wrapper);
 
-            // Enhance materials
+            // Enhance materials on the inner model
             this.enhanceModelMaterials(fullModel);
 
             console.log(`✅ Progressive: Full model swapped in for item ${item.id}`);
-            callbacks?.onFullModelAdded?.(fullModel);
+            callbacks?.onFullModelAdded?.(wrapper);
           } else {
             console.warn(`⚠️ Progressive: Cannot swap - placeholder missing or no parent`, {
               hasPlaceholder: !!placeholderInScene,
