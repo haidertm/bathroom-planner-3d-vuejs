@@ -3,10 +3,14 @@
 
 import { ref } from 'vue'
 import { ModelManager } from '../models/bathroomFixtures'
+import { ProgressiveModelLoader } from '../services/progressiveModelLoader'
 
 // Shared loading states
 export const variantLoadingStates = ref(new Map())
 export const variantProgress = ref(new Map())
+
+// Track progressive loading states
+export const progressiveLoadingStates = ref(new Map()) // sku -> { placeholder, isLoading }
 
 /**
  * Check if a variant model is already loaded
@@ -134,15 +138,19 @@ export const loadVariantModel = async (variant, progressCallback = null) => {
  * @returns {boolean} - True if model is loaded
  */
 export const isVariantModelLoadedWithCache = (variant, product = null, firstVariantPreloaded = null) => {
-    const variantKey = variant.id || variant.sku || variant.name
+    const baseSku = variant.id || variant.sku || variant.name
 
     try {
         // First check if this is a preloaded first variant
         if (product && firstVariantPreloaded && firstVariantPreloaded.has(product.id)) {
             const preloadInfo = firstVariantPreloaded.get(product.id)
-            if (preloadInfo && preloadInfo.variantKey === variantKey) {
-                console.log('✅ Found preloaded first variant:', variantKey)
-                return true
+            if (preloadInfo) {
+                // Check both key formats - the preloadInfo.variantKey might be full (type-sku) or simple (sku)
+                const preloadedKey = preloadInfo.variantKey
+                if (preloadedKey === baseSku || preloadedKey.endsWith(`-${baseSku}`)) {
+                    console.log('✅ Found preloaded first variant:', preloadedKey)
+                    return true
+                }
             }
         }
 
@@ -228,4 +236,190 @@ export const useLoadingModal = () => {
 export const clearAllLoadingStates = () => {
     variantLoadingStates.value.clear()
     variantProgress.value.clear()
+    progressiveLoadingStates.value.clear()
+}
+
+// ============================================================================
+// PROGRESSIVE LOADING API
+// ============================================================================
+
+/**
+ * Load a variant model progressively with instant placeholder feedback
+ * Returns a placeholder immediately while the full model loads in background
+ *
+ * @param {Object} variant - The variant object to load
+ * @param {Object} callbacks - Callbacks for loading stages
+ * @param {Function} callbacks.onPlaceholderReady - Called when placeholder is ready
+ * @param {Function} callbacks.onFullModelReady - Called when full model is loaded
+ * @param {Function} callbacks.onProgress - Called with progress updates (0-100)
+ * @param {Function} callbacks.onError - Called on error
+ * @param {string} [type] - Optional component type (e.g., 'Radiator') for consistent cache keys
+ * @returns {Promise<THREE.Group>} - The loaded model (or placeholder on error)
+ */
+export const loadVariantModelProgressively = async (variant, callbacks = {}, type = null) => {
+    const baseSku = variant.id || variant.sku || variant.name
+    // Use full key format (type-sku) if type is provided, for consistency with actual loading
+    const variantKey = type ? `${type}-${baseSku}` : baseSku
+
+    console.log('🔄 Progressive loading started for:', variantKey, type ? `(with type: ${type})` : '(no type)')
+
+    // Set loading state
+    variantLoadingStates.value.set(variantKey, true)
+    variantProgress.value.set(variantKey, 0)
+    progressiveLoadingStates.value.set(variantKey, { isLoading: true, placeholder: null })
+
+    const progressiveLoader = ProgressiveModelLoader.getInstance()
+
+    // Build model config - use the full key as the model name for cache consistency
+    // IMPORTANT: Default scale is 100 to match Planner.vue's hardcoded scale
+    const modelConfig = {
+        name: variantKey,
+        path: variant.path,
+        scale: variant.scale ?? 100,
+        dimensions: variant.dimensions,
+        movement: variant.movement,
+        orientation: variant.orientation
+    }
+
+    try {
+        const result = await progressiveLoader.loadProgressively(
+            variantKey,
+            modelConfig,
+            {
+                onPlaceholderReady: (placeholder) => {
+                    console.log('🔲 Placeholder ready for:', variantKey)
+                    progressiveLoadingStates.value.set(variantKey, {
+                        isLoading: true,
+                        placeholder
+                    })
+                    callbacks.onPlaceholderReady?.(placeholder)
+                },
+                onFullModelReady: (model) => {
+                    console.log('✅ Full model ready for:', variantKey)
+                    variantProgress.value.set(variantKey, 100)
+
+                    // Small delay to show 100% before clearing
+                    setTimeout(() => {
+                        variantLoadingStates.value.set(variantKey, false)
+                        variantProgress.value.delete(variantKey)
+                        progressiveLoadingStates.value.set(variantKey, {
+                            isLoading: false,
+                            placeholder: null
+                        })
+                    }, 300)
+
+                    callbacks.onFullModelReady?.(model)
+                },
+                onProgress: (progress) => {
+                    variantProgress.value.set(variantKey, progress)
+                    callbacks.onProgress?.(progress)
+                },
+                onError: (error) => {
+                    console.error('❌ Progressive loading error for:', variantKey, error)
+                    variantLoadingStates.value.set(variantKey, false)
+                    variantProgress.value.delete(variantKey)
+                    progressiveLoadingStates.value.delete(variantKey)
+                    callbacks.onError?.(error)
+                }
+            }
+        )
+
+        return result
+    } catch (error) {
+        console.error('❌ Progressive loading failed for:', variantKey, error)
+        variantLoadingStates.value.set(variantKey, false)
+        variantProgress.value.delete(variantKey)
+        progressiveLoadingStates.value.delete(variantKey)
+        throw error
+    }
+}
+
+/**
+ * Check if a variant is being loaded progressively
+ * @param {Object} variant - The variant object
+ * @returns {boolean}
+ */
+export const isLoadingProgressively = (variant) => {
+    const variantKey = variant.id || variant.sku || variant.name
+    const state = progressiveLoadingStates.value.get(variantKey)
+    return state?.isLoading || false
+}
+
+/**
+ * Get the placeholder for a variant being loaded progressively
+ * @param {Object} variant - The variant object
+ * @returns {THREE.Group|null}
+ */
+export const getProgressivePlaceholder = (variant) => {
+    const variantKey = variant.id || variant.sku || variant.name
+    const state = progressiveLoadingStates.value.get(variantKey)
+    return state?.placeholder || null
+}
+
+/**
+ * Abort progressive loading for a variant
+ * @param {Object} variant - The variant object
+ */
+export const abortProgressiveLoading = (variant) => {
+    const variantKey = variant.id || variant.sku || variant.name
+    const progressiveLoader = ProgressiveModelLoader.getInstance()
+    progressiveLoader.abortLoading(variantKey)
+
+    variantLoadingStates.value.set(variantKey, false)
+    variantProgress.value.delete(variantKey)
+    progressiveLoadingStates.value.delete(variantKey)
+}
+
+/**
+ * Swap a placeholder with the full model in the scene
+ * @param {THREE.Object3D} placeholder - The placeholder to replace
+ * @param {THREE.Group} fullModel - The full model to swap in
+ * @param {boolean} preserveTransform - Whether to preserve position/rotation/scale
+ * @returns {boolean} - Success status
+ */
+export const swapPlaceholderWithModel = (placeholder, fullModel, preserveTransform = true) => {
+    const progressiveLoader = ProgressiveModelLoader.getInstance()
+    return progressiveLoader.swapPlaceholderWithModel(placeholder, fullModel, preserveTransform)
+}
+
+/**
+ * Create a placeholder for a variant (for manual use)
+ * @param {Object} variant - The variant object with dimensions
+ * @param {Object} config - Optional placeholder configuration
+ * @returns {THREE.Group}
+ */
+export const createVariantPlaceholder = (variant, config = {}) => {
+    const progressiveLoader = ProgressiveModelLoader.getInstance()
+    return progressiveLoader.createBoundingBoxPlaceholder(variant.dimensions, config)
+}
+
+/**
+ * Dispose of a placeholder properly
+ * @param {THREE.Object3D} placeholder - The placeholder to dispose
+ */
+export const disposePlaceholder = (placeholder) => {
+    const progressiveLoader = ProgressiveModelLoader.getInstance()
+    progressiveLoader.disposePlaceholder(placeholder)
+}
+
+/**
+ * Check if model is cached (instant availability)
+ * @param {Object} variant - The variant object
+ * @param {string} [type] - Optional component type for full cache key check
+ * @returns {boolean}
+ */
+export const isModelCached = (variant, type = null) => {
+    const baseSku = variant.id || variant.sku || variant.name
+    const modelManager = ModelManager.getInstance()
+
+    // Check both key formats - simple sku and type-sku
+    if (type) {
+        const fullKey = `${type}-${baseSku}`
+        if (modelManager.isModelCached(fullKey)) {
+            return true
+        }
+    }
+
+    // Also check the simple key format for backward compatibility
+    return modelManager.isModelCached(baseSku)
 }

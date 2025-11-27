@@ -2,7 +2,8 @@
 
 import * as THREE from 'three';
 import { type MeasurementData, MeasurementSystem } from './measurementSystem';
-import { createModel } from '../models/bathroomFixtures';
+import { createModel, ModelManager } from '../models/bathroomFixtures';
+import { ProgressiveModelLoader } from './progressiveModelLoader';
 import { WallLabelsDebug } from '../utils/wallLabelsDebug.js';
 import { AxisIndicatorsDebug } from '../utils/axisIndicatorsDebug.js';
 import {
@@ -352,6 +353,314 @@ export class SceneManager {
     } else {
       console.warn(`⚠️ Item ${itemId} not found in scene for removal`);
     }
+  }
+
+  // ============================================================================
+  // PROGRESSIVE LOADING METHODS
+  // ============================================================================
+
+  /**
+   * Add an item progressively - shows placeholder immediately, then swaps to full model
+   * This provides instant visual feedback while the actual model loads
+   */
+  async addSingleItemProgressively(
+    item: BathroomItem,
+    callbacks?: {
+      onPlaceholderAdded?: (placeholder: THREE.Group) => void;
+      onFullModelAdded?: (model: THREE.Group) => void;
+      onProgress?: (progress: number) => void;
+    }
+  ): Promise<THREE.Group> {
+    console.log('🔄 SceneManager.addSingleItemProgressively called:', {
+      itemId: item.id,
+      sku: item.sku,
+      modelName: item.model?.name
+    });
+
+    // Check if item already exists
+    if (this.existingItems.has(item.id)) {
+      console.log(`⚠️ Progressive: Item ${item.id} already exists, updating instead`);
+      const existingModel = this.existingItems.get(item.id);
+      if (existingModel) {
+        this.updateExistingModel(existingModel, item);
+        return existingModel as THREE.Group;
+      }
+    }
+
+    const progressiveLoader = ProgressiveModelLoader.getInstance();
+    const modelManager = ModelManager.getInstance();
+    const sku = item.sku || item.model?.name || `item_${item.id}`;
+
+    console.log('🔍 SceneManager - Checking cache for SKU:', sku);
+
+    // Check if model is already cached - use fast path
+    const isCached = modelManager.isModelCached(sku);
+    console.log('🔍 SceneManager - Model cached?', isCached);
+
+    if (isCached) {
+      console.log(`✅ Progressive: Model ${sku} cached, using fast path (no placeholder)`);
+      await this.addSingleItem(item);
+      const model = this.existingItems.get(item.id) as THREE.Group;
+      callbacks?.onProgress?.(100);
+      callbacks?.onFullModelAdded?.(model);
+      return model;
+    }
+
+    console.log('🔲 SceneManager - Model NOT cached, will show placeholder for:', sku);
+
+    // Model not cached - use progressive loading
+    // Ensure dimensions are always defined for placeholder creation
+    const defaultDimensions = { width: 50, height: 50, depth: 50 };
+    const modelConfig = item.model
+      ? {
+          ...item.model,
+          dimensions: item.model.dimensions || defaultDimensions
+        }
+      : {
+          name: sku,
+          path: '',
+          dimensions: defaultDimensions
+        };
+
+    console.log('🔲 SceneManager - Placeholder dimensions:', modelConfig.dimensions);
+
+    let placeholderInScene: THREE.Group | null = null;
+
+    const model = await progressiveLoader.loadProgressively(
+      sku,
+      modelConfig,
+      {
+        onPlaceholderReady: (placeholder) => {
+          // Add placeholder to scene with item's transform
+          placeholder.position.set(item.position[0], item.position[1], item.position[2]);
+          placeholder.rotation.y = item.rotation || 0;
+          const scale = item.scale || 1.0;
+          placeholder.scale.set(scale, scale, scale);
+
+          // Set userData
+          placeholder.userData.isBathroomItem = true;
+          placeholder.userData.itemId = item.id;
+          placeholder.userData.type = item.type;
+          placeholder.userData.isPlaceholder = true;
+          placeholder.userData.sku = item.sku;
+
+          // Add to scene
+          this.bathroomItemsGroup.add(placeholder);
+          this.existingItems.set(item.id, placeholder);
+          placeholderInScene = placeholder;
+
+          console.log(`🔲 Progressive: Placeholder added to scene for item ${item.id}`);
+          callbacks?.onPlaceholderAdded?.(placeholder);
+        },
+        onFullModelReady: (fullModel) => {
+          // Swap placeholder with full model
+          if (placeholderInScene && placeholderInScene.parent) {
+            // Apply transform and metadata to full model
+            fullModel.position.copy(placeholderInScene.position);
+            fullModel.rotation.copy(placeholderInScene.rotation);
+            fullModel.scale.copy(placeholderInScene.scale);
+
+            fullModel.userData.isBathroomItem = true;
+            fullModel.userData.itemId = item.id;
+            fullModel.userData.type = item.type;
+            fullModel.userData.orientation = getOrientationForItem(item);
+            fullModel.userData.sku = item.sku;
+            fullModel.userData.model = item.model;
+
+            // Add full model and remove placeholder
+            this.bathroomItemsGroup.add(fullModel);
+            this.bathroomItemsGroup.remove(placeholderInScene);
+            progressiveLoader.disposePlaceholder(placeholderInScene);
+
+            // Update tracking
+            this.existingItems.set(item.id, fullModel);
+
+            // Enhance materials
+            this.enhanceModelMaterials(fullModel);
+
+            console.log(`✅ Progressive: Full model swapped in for item ${item.id}`);
+            callbacks?.onFullModelAdded?.(fullModel);
+          }
+        },
+        onProgress: (progress) => {
+          callbacks?.onProgress?.(progress);
+        },
+        onError: (error) => {
+          console.error(`❌ Progressive: Failed to load model for item ${item.id}:`, error);
+        }
+      }
+    );
+
+    return model;
+  }
+
+  /**
+   * Swap an existing item's model with a new variant progressively
+   * Shows placeholder immediately while new variant loads
+   */
+  async swapItemVariantProgressively(
+    itemId: number,
+    newVariant: any,
+    callbacks?: {
+      onPlaceholderSwapped?: (placeholder: THREE.Group) => void;
+      onFullModelSwapped?: (model: THREE.Group) => void;
+      onProgress?: (progress: number) => void;
+    }
+  ): Promise<THREE.Group | null> {
+    const existingModel = this.existingItems.get(itemId);
+    if (!existingModel) {
+      console.error(`❌ Progressive: Item ${itemId} not found for variant swap`);
+      return null;
+    }
+
+    console.log(`🔄 Progressive: Starting variant swap for item ${itemId}`);
+
+    const progressiveLoader = ProgressiveModelLoader.getInstance();
+    const modelManager = ModelManager.getInstance();
+    const sku = newVariant.sku || newVariant.name;
+
+    // Store original transform before swapping
+    const originalPosition = existingModel.position.clone();
+    const originalRotation = existingModel.rotation.clone();
+    const originalScale = existingModel.scale.clone();
+    const originalUserData = { ...existingModel.userData };
+
+    // Check if new variant is cached - use fast path
+    if (modelManager.isModelCached(sku)) {
+      console.log(`✅ Progressive: Variant ${sku} cached, using fast path`);
+
+      // Load the cached model
+      const modelConfig = {
+        name: newVariant.name || sku,
+        path: newVariant.path,
+        scale: newVariant.scale ?? 1.0,
+        dimensions: newVariant.dimensions,
+        movement: newVariant.movement,
+        orientation: newVariant.orientation
+      };
+
+      const newModel = await modelManager.loadModel(sku, modelConfig);
+
+      // Apply transform
+      newModel.position.copy(originalPosition);
+      newModel.rotation.copy(originalRotation);
+      newModel.scale.copy(originalScale);
+
+      // Update userData
+      newModel.userData = {
+        ...originalUserData,
+        sku: sku,
+        model: modelConfig,
+        orientation: newVariant.orientation || originalUserData.orientation,
+        isPlaceholder: false
+      };
+
+      // Swap in scene
+      this.bathroomItemsGroup.add(newModel);
+      this.bathroomItemsGroup.remove(existingModel);
+      this.disposeModel(existingModel);
+      this.existingItems.set(itemId, newModel);
+
+      this.enhanceModelMaterials(newModel);
+
+      callbacks?.onProgress?.(100);
+      callbacks?.onFullModelSwapped?.(newModel);
+
+      return newModel;
+    }
+
+    // Model not cached - use progressive loading with placeholder
+    const modelConfig = {
+      name: newVariant.name || sku,
+      path: newVariant.path,
+      scale: newVariant.scale ?? 1.0,
+      dimensions: newVariant.dimensions,
+      movement: newVariant.movement,
+      orientation: newVariant.orientation
+    };
+
+    let placeholderInScene: THREE.Group | null = null;
+
+    const newModel = await progressiveLoader.loadProgressively(
+      sku,
+      modelConfig,
+      {
+        onPlaceholderReady: (placeholder) => {
+          // Apply original transform to placeholder
+          placeholder.position.copy(originalPosition);
+          placeholder.rotation.copy(originalRotation);
+          placeholder.scale.copy(originalScale);
+
+          // Set userData
+          placeholder.userData = {
+            ...originalUserData,
+            sku: sku,
+            isPlaceholder: true
+          };
+
+          // Swap existing model with placeholder
+          this.bathroomItemsGroup.add(placeholder);
+          this.bathroomItemsGroup.remove(existingModel);
+          this.disposeModel(existingModel);
+          this.existingItems.set(itemId, placeholder);
+          placeholderInScene = placeholder;
+
+          console.log(`🔲 Progressive: Placeholder swapped for variant ${sku}`);
+          callbacks?.onPlaceholderSwapped?.(placeholder);
+        },
+        onFullModelReady: (fullModel) => {
+          if (placeholderInScene && placeholderInScene.parent) {
+            // Apply transform from placeholder
+            fullModel.position.copy(placeholderInScene.position);
+            fullModel.rotation.copy(placeholderInScene.rotation);
+            fullModel.scale.copy(placeholderInScene.scale);
+
+            // Update userData
+            fullModel.userData = {
+              ...originalUserData,
+              sku: sku,
+              model: modelConfig,
+              orientation: newVariant.orientation || originalUserData.orientation,
+              isPlaceholder: false
+            };
+
+            // Swap placeholder with full model
+            this.bathroomItemsGroup.add(fullModel);
+            this.bathroomItemsGroup.remove(placeholderInScene);
+            progressiveLoader.disposePlaceholder(placeholderInScene);
+            this.existingItems.set(itemId, fullModel);
+
+            this.enhanceModelMaterials(fullModel);
+
+            console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
+            callbacks?.onFullModelSwapped?.(fullModel);
+          }
+        },
+        onProgress: (progress) => {
+          callbacks?.onProgress?.(progress);
+        },
+        onError: (error) => {
+          console.error(`❌ Progressive: Failed to load variant ${sku}:`, error);
+        }
+      }
+    );
+
+    return newModel;
+  }
+
+  /**
+   * Get the model for an item (could be placeholder or full model)
+   */
+  getItemModel(itemId: number): THREE.Object3D | undefined {
+    return this.existingItems.get(itemId);
+  }
+
+  /**
+   * Check if an item's current model is a placeholder
+   */
+  isItemPlaceholder(itemId: number): boolean {
+    const model = this.existingItems.get(itemId);
+    return model?.userData?.isPlaceholder === true;
   }
 
 // Method to clear all items efficiently

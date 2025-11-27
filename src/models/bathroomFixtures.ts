@@ -48,6 +48,16 @@ class ModelManager {
         return this.loadedModels.has(modelName);
     }
 
+    // NEW: Check if model is in cache (for progressive loading)
+    isModelCached(modelName: string): boolean {
+        return modelName in this.cache;
+    }
+
+    // NEW: Check if model is currently loading
+    isModelLoading(modelName: string): boolean {
+        return modelName in this.loadingPromises;
+    }
+
     // NEW: Register callback for when a specific model loads
     onModelLoaded(modelName: string, callback: ModelLoadedCallback): void {
         if (this.isModelLoaded(modelName)) {
