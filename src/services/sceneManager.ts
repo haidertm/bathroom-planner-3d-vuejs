@@ -488,8 +488,10 @@ export class SceneManager {
             // IMPORTANT: Wrap the loaded model in a Group to match createModel's structure
             // This ensures consistent behavior with dragging and selection
             const wrapper = new THREE.Group();
-            wrapper.position.copy(placeholderInScene.position);
-            wrapper.rotation.copy(placeholderInScene.rotation);
+            // Use ORIGINAL item position (not placeholder position which has floorOffset added)
+            // The model handles its own floorOffset internally
+            wrapper.position.set(item.position[0], item.position[1], item.position[2]);
+            wrapper.rotation.y = item.rotation || 0;
             // Scale stays at 1 for the wrapper - the model inside has the correct scale
 
             // Reset fullModel position to origin before adding to wrapper
@@ -513,6 +515,7 @@ export class SceneManager {
             const modelCenter = modelBox.getCenter(new THREE.Vector3());
 
             console.log(`🔄 Progressive: Swapping placeholder with full model for item ${item.id}`, {
+              originalItemPosition: [item.position[0], item.position[1], item.position[2]],
               placeholderPosition: placeholderInScene.position.toArray(),
               placeholderDimensions: placeholderInScene.userData.dimensions,
               wrapperPosition: wrapper.position.toArray(),
