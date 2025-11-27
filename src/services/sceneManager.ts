@@ -422,7 +422,12 @@ export class SceneManager {
           dimensions: defaultDimensions
         };
 
-    console.log('🔲 SceneManager - Placeholder dimensions:', modelConfig.dimensions);
+    console.log('🔲 SceneManager - Progressive loading config:', {
+      dimensions: modelConfig.dimensions,
+      itemPosition: item.position,
+      itemRotation: item.rotation,
+      modelScale: modelConfig.scale
+    });
 
     let placeholderInScene: THREE.Group | null = null;
 
@@ -449,7 +454,20 @@ export class SceneManager {
           this.existingItems.set(item.id, placeholder);
           placeholderInScene = placeholder;
 
-          console.log(`🔲 Progressive: Placeholder added to scene for item ${item.id}`);
+          // Calculate placeholder world bounds for logging
+          const placeholderBox = new THREE.Box3().setFromObject(placeholder);
+          const placeholderSize = placeholderBox.getSize(new THREE.Vector3());
+
+          console.log(`🔲 Progressive: Placeholder added to scene for item ${item.id}`, {
+            position: [item.position[0], item.position[1], item.position[2]],
+            rotation: item.rotation,
+            configDimensions: modelConfig.dimensions,
+            actualPlaceholderSize: {
+              width: placeholderSize.x,
+              height: placeholderSize.y,
+              depth: placeholderSize.z
+            }
+          });
           callbacks?.onPlaceholderAdded?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
@@ -462,6 +480,10 @@ export class SceneManager {
             wrapper.rotation.copy(placeholderInScene.rotation);
             // Scale stays at 1 for the wrapper - the model inside has the correct scale
 
+            // Reset fullModel position to origin before adding to wrapper
+            // (the wrapper's position handles the world position)
+            fullModel.position.set(0, 0, 0);
+
             // Add the loaded model to the wrapper
             wrapper.add(fullModel);
 
@@ -473,10 +495,20 @@ export class SceneManager {
             wrapper.userData.sku = item.sku;
             wrapper.userData.model = item.model;
 
+            // Calculate model bounds for debugging
+            const modelBox = new THREE.Box3().setFromObject(wrapper);
+            const modelSize = modelBox.getSize(new THREE.Vector3());
+            const modelCenter = modelBox.getCenter(new THREE.Vector3());
+
             console.log(`🔄 Progressive: Swapping placeholder with full model for item ${item.id}`, {
               placeholderPosition: placeholderInScene.position.toArray(),
+              placeholderDimensions: placeholderInScene.userData.dimensions,
               wrapperPosition: wrapper.position.toArray(),
               fullModelScale: fullModel.scale.toArray(),
+              fullModelBounds: {
+                size: { x: modelSize.x, y: modelSize.y, z: modelSize.z },
+                center: { x: modelCenter.x, y: modelCenter.y, z: modelCenter.z }
+              },
               placeholderParent: !!placeholderInScene.parent
             });
 

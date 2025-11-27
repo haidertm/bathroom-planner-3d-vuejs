@@ -152,6 +152,11 @@ export class ProgressiveModelLoader {
 
   /**
    * Create a bounding box placeholder based on model dimensions
+   * The placeholder is aligned so that:
+   * - Bottom face is at y=0 (floor level)
+   * - Back face is at z=0 (wall position) - extends into room in +Z direction
+   * - Centered on X axis
+   * This matches how most wall-mounted models are positioned
    */
   createBoundingBoxPlaceholder(
     dimensions: { width: number; height: number; depth?: number },
@@ -168,9 +173,11 @@ export class ProgressiveModelLoader {
     // Create box geometry
     const geometry = new THREE.BoxGeometry(w, h, d);
 
-    // Center the geometry at the bottom (y=0 is floor level)
-    // Shift the geometry so the bottom face is at y=0
-    geometry.translate(0, h / 2, 0);
+    // Position the geometry so:
+    // - Bottom is at y=0 (translate up by h/2)
+    // - Back face is at z=0, extends into room (translate forward by d/2)
+    // This matches how wall-mounted models are typically positioned
+    geometry.translate(0, h / 2, d / 2);
 
     // Create wireframe (edges)
     const edgesGeometry = new THREE.EdgesGeometry(geometry);
@@ -227,8 +234,9 @@ export class ProgressiveModelLoader {
   ): THREE.Group {
     const indicatorGroup = new THREE.Group();
 
-    // Position at top center of placeholder
-    indicatorGroup.position.set(0, height + 10, 0);
+    // Position at top center of placeholder (accounting for geometry offset)
+    // The placeholder extends from z=0 to z=depth, so center is at z=depth/2
+    indicatorGroup.position.set(0, height + 10, depth / 2);
 
     // Create a torus (ring) as loading spinner
     const radius = Math.min(width, depth) * 0.15;
