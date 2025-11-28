@@ -247,13 +247,14 @@ export class ProgressiveModelLoader {
   ): THREE.Group {
     const indicatorGroup = new THREE.Group();
 
-    // Position at top center of placeholder (accounting for geometry offset)
-    // The placeholder extends from z=0 to z=depth, so center is at z=depth/2
-    indicatorGroup.position.set(0, height + 10, depth / 2);
+    // Position at FRONT CENTER of placeholder (facing the user)
+    // The placeholder: back at z=0 (wall), front at z=depth, bottom at y=0, top at y=height
+    // Place progress bar at center of front face, slightly in front
+    indicatorGroup.position.set(0, height / 2, depth + 2);
 
-    // Calculate radius based on placeholder size
-    const radius = Math.min(width, depth) * 0.18;
-    const tubeRadius = radius * 0.12;
+    // Calculate radius based on placeholder size - make it more visible
+    const radius = Math.min(width, height) * 0.2;
+    const tubeRadius = radius * 0.15;
 
     // Create background ring (full circle, darker green)
     const bgGeometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 48, Math.PI * 2);
@@ -263,7 +264,7 @@ export class ProgressiveModelLoader {
       opacity: 0.3
     });
     const bgRing = new THREE.Mesh(bgGeometry, bgMaterial);
-    bgRing.rotation.x = Math.PI / 2; // Lay flat
+    // No rotation - ring faces forward (toward user) by default
     bgRing.name = 'ProgressBackground';
 
     // Create progress arc (starts at 0, grows to full circle)
@@ -276,7 +277,7 @@ export class ProgressiveModelLoader {
       opacity: 1.0
     });
     const progressRing = new THREE.Mesh(progressGeometry, progressMaterial);
-    progressRing.rotation.x = Math.PI / 2; // Lay flat
+    // No rotation.x - ring faces forward
     progressRing.rotation.z = Math.PI / 2; // Start from top (12 o'clock)
     progressRing.name = 'ProgressArc';
 
