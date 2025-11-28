@@ -598,7 +598,7 @@ export class SceneManager {
       const modelConfig = {
         name: newVariant.name || sku,
         path: newVariant.path,
-        scale: newVariant.scale ?? 1.0,
+        scale: newVariant.scale ?? 100, // Default to 100, not 1 (models are typically scaled up)
         dimensions: newVariant.dimensions,
         movement: newVariant.movement,
         orientation: newVariant.orientation
@@ -639,7 +639,7 @@ export class SceneManager {
     const modelConfig = {
       name: newVariant.name || sku,
       path: newVariant.path,
-      scale: newVariant.scale ?? 1.0,
+      scale: newVariant.scale ?? 100, // Default to 100, not 1 (models are typically scaled up)
       dimensions: newVariant.dimensions,
       movement: newVariant.movement,
       orientation: newVariant.orientation
