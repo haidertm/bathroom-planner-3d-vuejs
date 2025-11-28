@@ -429,87 +429,95 @@ export class SceneManager {
       modelScale: modelConfig.scale
     });
 
-    let modelInScene: THREE.Group | null = null;
+    let placeholderInScene: THREE.Group | null = null;
 
     const model = await progressiveLoader.loadProgressively(
       sku,
       modelConfig,
       {
-        onPlaceholderReady: (ghostModel) => {
-          // The ghost model IS the actual model with placeholder materials applied
-          // We wrap it in a Group for consistent structure with dragging/selection
+        onPlaceholderReady: (placeholder) => {
+          // Box placeholder shown immediately for instant feedback
+          // Get positioning parameters from model config
+          const floorOffset = item.model?.floorOffset || 0;
+          const spawnHeight = item.model?.spawnHeight || 0;
 
-          const wrapper = new THREE.Group();
-          // Position the wrapper at the item's position
-          wrapper.position.set(item.position[0], item.position[1], item.position[2]);
-          wrapper.rotation.y = item.rotation || 0;
-          // Scale stays at 1 for the wrapper - the model inside has the correct scale
+          // For wall-mounted models:
+          // - Visual bottom = spawnHeight + floorOffset
+          // The placeholder geometry has bottom at local y=0
+          const placeholderY = spawnHeight + floorOffset;
 
-          // Reset ghostModel position to origin (wrapper handles world position)
-          ghostModel.position.set(0, 0, 0);
-          ghostModel.rotation.set(0, 0, 0);
+          placeholder.position.set(
+            item.position[0],
+            placeholderY,
+            item.position[2]
+          );
+          placeholder.rotation.y = item.rotation || 0;
+          const scale = item.scale || 1.0;
+          placeholder.scale.set(scale, scale, scale);
 
-          // Add the ghost model to the wrapper
-          wrapper.add(ghostModel);
+          // Set userData
+          placeholder.userData.isBathroomItem = true;
+          placeholder.userData.itemId = item.id;
+          placeholder.userData.type = item.type;
+          placeholder.userData.isPlaceholder = true;
+          placeholder.userData.sku = item.sku;
+          placeholder.userData.floorOffset = floorOffset;
+          placeholder.userData.spawnHeight = spawnHeight;
 
-          // Set userData on the wrapper
-          wrapper.userData.isBathroomItem = true;
-          wrapper.userData.itemId = item.id;
-          wrapper.userData.type = item.type;
-          wrapper.userData.isPlaceholder = true;
-          wrapper.userData.sku = item.sku;
-          wrapper.userData.model = item.model;
-          wrapper.userData.orientation = getOrientationForItem(item);
+          // Add to scene
+          this.bathroomItemsGroup.add(placeholder);
+          this.existingItems.set(item.id, placeholder);
+          placeholderInScene = placeholder;
 
-          // Add wrapper to scene
-          this.bathroomItemsGroup.add(wrapper);
-          this.existingItems.set(item.id, wrapper);
-          modelInScene = wrapper;
-
-          // Calculate bounds for logging
-          const modelBox = new THREE.Box3().setFromObject(wrapper);
-          const modelSize = modelBox.getSize(new THREE.Vector3());
-
-          console.log(`🔲 Progressive: Ghost model added to scene for item ${item.id}`, {
+          console.log(`🔲 Progressive: Box placeholder added for item ${item.id}`, {
             itemPosition: [item.position[0], item.position[1], item.position[2]],
-            rotation: item.rotation,
-            configDimensions: modelConfig.dimensions,
-            actualModelSize: {
-              width: modelSize.x,
-              height: modelSize.y,
-              depth: modelSize.z
-            }
+            spawnHeight,
+            floorOffset,
+            placeholderY
           });
-          callbacks?.onPlaceholderAdded?.(wrapper);
+          callbacks?.onPlaceholderAdded?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
-          // The fullModel is the SAME object as ghostModel, just with materials restored
-          // We already have it in scene via the wrapper, just update userData
+          // Swap box placeholder with full model
+          if (placeholderInScene && placeholderInScene.parent) {
+            // Wrap the loaded model in a Group for consistent drag behavior
+            const wrapper = new THREE.Group();
+            // Use ORIGINAL item position (model handles floorOffset internally)
+            wrapper.position.set(item.position[0], item.position[1], item.position[2]);
+            wrapper.rotation.y = item.rotation || 0;
 
-          if (modelInScene) {
-            // Update wrapper userData to indicate it's no longer a placeholder
-            modelInScene.userData.isPlaceholder = false;
+            // Reset fullModel position to origin (wrapper handles world position)
+            fullModel.position.set(0, 0, 0);
 
-            // Enhance materials on the model
+            // Add the loaded model to the wrapper
+            wrapper.add(fullModel);
+
+            // Set userData on the wrapper
+            wrapper.userData.isBathroomItem = true;
+            wrapper.userData.itemId = item.id;
+            wrapper.userData.type = item.type;
+            wrapper.userData.orientation = getOrientationForItem(item);
+            wrapper.userData.sku = item.sku;
+            wrapper.userData.model = item.model;
+
+            // Swap: add wrapper, remove placeholder
+            this.bathroomItemsGroup.add(wrapper);
+            this.bathroomItemsGroup.remove(placeholderInScene);
+            progressiveLoader.disposePlaceholder(placeholderInScene);
+
+            // Update tracking
+            this.existingItems.set(item.id, wrapper);
+
+            // Enhance materials
             this.enhanceModelMaterials(fullModel);
 
-            // Calculate bounds for logging
-            const modelBox = new THREE.Box3().setFromObject(modelInScene);
-            const modelSize = modelBox.getSize(new THREE.Vector3());
-            const modelCenter = modelBox.getCenter(new THREE.Vector3());
-
-            console.log(`✅ Progressive: Full model ready for item ${item.id}`, {
-              wrapperPosition: modelInScene.position.toArray(),
-              fullModelScale: fullModel.scale.toArray(),
-              fullModelBounds: {
-                size: { x: modelSize.x, y: modelSize.y, z: modelSize.z },
-                center: { x: modelCenter.x, y: modelCenter.y, z: modelCenter.z }
-              }
-            });
-
-            callbacks?.onFullModelAdded?.(modelInScene);
+            console.log(`✅ Progressive: Full model swapped for item ${item.id}`);
+            callbacks?.onFullModelAdded?.(wrapper);
           } else {
-            console.warn(`⚠️ Progressive: Model not in scene for item ${item.id}`);
+            console.warn(`⚠️ Progressive: Cannot swap - placeholder missing`, {
+              hasPlaceholder: !!placeholderInScene,
+              hasParent: placeholderInScene?.parent ? true : false
+            });
           }
         },
         onProgress: (progress) => {
@@ -621,84 +629,95 @@ export class SceneManager {
       floorOffset: newVariant.floorOffset
     };
 
-    let wrapperInScene: THREE.Group | null = null;
+    let placeholderInScene: THREE.Group | null = null;
 
     const newModel = await progressiveLoader.loadProgressively(
       sku,
       modelConfig,
       {
-        onPlaceholderReady: (ghostModel) => {
-          // The ghost model IS the actual model with placeholder materials applied
-          // We wrap it in a Group for consistent structure
-
+        onPlaceholderReady: (placeholder) => {
+          // Box placeholder shown immediately for instant feedback
           const spawnHeight = newVariant.spawnHeight || 0;
+          const floorOffset = newVariant.floorOffset || 0;
+          const placeholderY = spawnHeight + floorOffset;
 
-          const wrapper = new THREE.Group();
-          // Position the wrapper - use original X/Z, spawnHeight for Y
-          // (model handles floorOffset internally)
-          wrapper.position.set(originalPosition.x, spawnHeight, originalPosition.z);
-          wrapper.rotation.copy(originalRotation);
-          // Wrapper scale stays at 1 - the model inside has the correct scale
+          // Position placeholder
+          placeholder.position.set(originalPosition.x, placeholderY, originalPosition.z);
+          placeholder.rotation.copy(originalRotation);
 
-          // Reset ghostModel position to origin (wrapper handles world position)
-          ghostModel.position.set(0, 0, 0);
-          ghostModel.rotation.set(0, 0, 0);
-
-          // Add ghost model to wrapper
-          wrapper.add(ghostModel);
-
-          // Set userData on the wrapper
-          wrapper.userData = {
+          // Set userData
+          placeholder.userData = {
             ...originalUserData,
-            isBathroomItem: true,
-            itemId: itemId,
             sku: sku,
-            model: modelConfig,
-            type: originalUserData.type,
-            orientation: newVariant.orientation || originalUserData.orientation,
-            isPlaceholder: true
+            isPlaceholder: true,
+            spawnHeight: spawnHeight,
+            floorOffset: floorOffset
           };
 
-          // Swap existing model with new wrapper containing ghost model
-          this.bathroomItemsGroup.add(wrapper);
+          // Swap existing model with box placeholder
+          this.bathroomItemsGroup.add(placeholder);
           this.bathroomItemsGroup.remove(existingModel);
           this.disposeModel(existingModel);
-          this.existingItems.set(itemId, wrapper);
-          wrapperInScene = wrapper;
+          this.existingItems.set(itemId, placeholder);
+          placeholderInScene = placeholder;
 
-          console.log(`🔲 Progressive: Ghost model swapped for variant ${sku}`, {
+          console.log(`🔲 Progressive: Box placeholder swapped for variant ${sku}`, {
             spawnHeight,
-            wrapperPosition: wrapper.position.toArray()
+            floorOffset,
+            placeholderY
           });
-          callbacks?.onPlaceholderSwapped?.(wrapper);
+          callbacks?.onPlaceholderSwapped?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
-          // The fullModel is the SAME object as ghostModel, just with materials restored
-          // We already have it in scene via the wrapper, just update userData
+          // Swap box placeholder with full model
+          const spawnHeight = newVariant.spawnHeight || 0;
 
           console.log(`🔄 onFullModelReady called for item ${itemId}:`, {
-            hasWrapperInScene: !!wrapperInScene,
+            hasPlaceholderInScene: !!placeholderInScene,
             fullModelName: fullModel.name
           });
 
-          if (wrapperInScene) {
-            // Update wrapper userData to indicate it's no longer a placeholder
-            wrapperInScene.userData.isPlaceholder = false;
+          if (placeholderInScene && placeholderInScene.parent) {
+            // Wrap the model in a Group for consistent drag behavior
+            const wrapper = new THREE.Group();
+            // Use spawnHeight for Y (model handles floorOffset internally)
+            wrapper.position.set(originalPosition.x, spawnHeight, originalPosition.z);
+            wrapper.rotation.copy(originalRotation);
 
-            // Enhance materials on the model
+            // Reset fullModel position to origin
+            fullModel.position.set(0, 0, 0);
+            fullModel.rotation.set(0, 0, 0);
+
+            // Add fullModel to wrapper
+            wrapper.add(fullModel);
+
+            // Set userData on the wrapper
+            wrapper.userData = {
+              ...originalUserData,
+              isBathroomItem: true,
+              itemId: itemId,
+              sku: sku,
+              model: modelConfig,
+              type: originalUserData.type,
+              orientation: newVariant.orientation || originalUserData.orientation,
+              isPlaceholder: false
+            };
+
+            // Swap: add wrapper, remove placeholder
+            this.bathroomItemsGroup.add(wrapper);
+            this.bathroomItemsGroup.remove(placeholderInScene);
+            progressiveLoader.disposePlaceholder(placeholderInScene);
+
+            // Update tracking
+            this.existingItems.set(itemId, wrapper);
+
+            // Enhance materials
             this.enhanceModelMaterials(fullModel);
 
-            // Verify wrapper is in scene
-            console.log(`🔍 Verification for item ${itemId}:`, {
-              wrapperParent: wrapperInScene.parent?.name || wrapperInScene.parent?.type || 'none',
-              wrapperInGroup: this.bathroomItemsGroup.children.includes(wrapperInScene),
-              existingItemsHasId: this.existingItems.has(itemId)
-            });
-
-            console.log(`✅ Progressive: Full variant model ready for item ${itemId}`);
-            callbacks?.onFullModelSwapped?.(wrapperInScene);
+            console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
+            callbacks?.onFullModelSwapped?.(wrapper);
           } else {
-            console.warn(`⚠️ Progressive: Wrapper not in scene for item ${itemId}`);
+            console.warn(`⚠️ Progressive: Cannot swap - placeholder missing for item ${itemId}`);
           }
         },
         onProgress: (progress) => {

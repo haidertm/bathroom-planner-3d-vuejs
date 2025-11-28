@@ -63,7 +63,13 @@ export class ProgressiveModelLoader {
   }
 
   /**
-   * Load a model progressively - shows actual model shape with ghost materials
+   * Load a model progressively with instant placeholder feedback
+   *
+   * Flow:
+   * 1. Show box placeholder immediately (instant feedback)
+   * 2. Load the actual model in background
+   * 3. When loaded, apply ghost materials and swap with box
+   * 4. Restore real materials and notify full model ready
    */
   async loadProgressively(
     sku: string,
@@ -91,72 +97,76 @@ export class ProgressiveModelLoader {
       return cachedModel;
     }
 
-    console.log(`🔲 ProgressiveLoader - Model ${sku} NOT loaded, loading with ghost materials`);
+    console.log(`🔲 ProgressiveLoader - Model ${sku} NOT loaded, showing box placeholder first`);
 
     // Create abort controller for this load operation
     const abortController = new AbortController();
     this.loadingAbortControllers.set(sku, abortController);
 
+    // Step 1: Create and show box placeholder IMMEDIATELY for instant feedback
+    const boxPlaceholder = this.createBoundingBoxPlaceholder(
+      modelConfig.dimensions,
+      placeholderConfig
+    );
+    boxPlaceholder.name = `placeholder_${sku}`;
+    boxPlaceholder.userData.isPlaceholder = true;
+    boxPlaceholder.userData.isBoxPlaceholder = true;
+    boxPlaceholder.userData.sku = sku;
+    boxPlaceholder.userData.modelConfig = modelConfig;
+
+    this.activePlaceholders.set(sku, boxPlaceholder);
+
+    // Notify that box placeholder is ready (instant feedback)
+    console.log(`🔲 Progressive: Box placeholder ready for ${sku}`);
+    onPlaceholderReady?.(boxPlaceholder);
+    onProgress?.(5);
+
     try {
-      // Progress tracking
+      // Step 2: Load the actual model in background with progress tracking
       const handleProgress = (progress: number) => {
         if (abortController.signal.aborted) return;
+        // Update progress bar on box placeholder
+        this.updatePlaceholderProgress(boxPlaceholder, progress);
         onProgress?.(progress);
       };
 
-      // Load the actual model
       const model = await this.modelManager.loadModel(sku, modelConfig, handleProgress);
 
       // Check if loading was aborted
       if (abortController.signal.aborted) {
         console.log(`⚠️ Progressive: Loading aborted for ${sku}`);
-        return model;
+        return boxPlaceholder;
       }
 
-      // Store original materials and apply ghost/placeholder materials
+      // Step 3: Model loaded - apply ghost materials for shape preview
       const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
       this.applyGhostMaterials(model, originalMaterials, placeholderConfig);
       this.originalMaterialsMap.set(sku, originalMaterials);
 
-      // Add progress indicator to the model
-      const progressIndicator = this.createProgressIndicatorForModel(model, placeholderConfig);
-      model.add(progressIndicator);
-
-      // Mark as placeholder
-      model.name = `placeholder_${sku}`;
+      // Mark model as ghost placeholder
+      model.name = `ghost_${sku}`;
       model.userData.isPlaceholder = true;
+      model.userData.isGhostModel = true;
       model.userData.sku = sku;
       model.userData.modelConfig = modelConfig;
-      model.userData.progressIndicator = progressIndicator;
 
-      this.activePlaceholders.set(sku, model);
-
-      // Add pulse animation
+      // Add pulse animation to ghost model
       if (placeholderConfig.showPulseAnimation) {
         this.addPulseAnimation(model);
       }
 
-      // Notify that placeholder (ghost model) is ready
-      console.log(`🔲 Progressive: Ghost model placeholder ready for ${sku}`);
-      onPlaceholderReady?.(model);
+      console.log(`🔲 Progressive: Ghost model ready, will restore materials for ${sku}`);
 
       // Update progress to 100%
-      this.updatePlaceholderProgress(model, 100);
+      this.updatePlaceholderProgress(boxPlaceholder, 100);
       onProgress?.(100);
 
-      // Clean up and restore original materials
-      this.activePlaceholders.delete(sku);
-      this.loadingAbortControllers.delete(sku);
+      // Step 4: Restore original materials (transition from ghost to real)
+      // Small delay to show ghost effect briefly (optional - can be removed)
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Restore original materials
       this.restoreOriginalMaterials(model, sku);
-
-      // Remove progress indicator
-      if (model.userData.progressIndicator) {
-        model.remove(model.userData.progressIndicator);
-        this.disposeProgressIndicator(model.userData.progressIndicator);
-        delete model.userData.progressIndicator;
-      }
 
       // Stop animation
       if (model.userData.animationId) {
@@ -166,11 +176,16 @@ export class ProgressiveModelLoader {
 
       // Update userData
       model.userData.isPlaceholder = false;
+      model.userData.isGhostModel = false;
       model.name = `model_${sku}`;
+
+      // Clean up
+      this.activePlaceholders.delete(sku);
+      this.loadingAbortControllers.delete(sku);
 
       console.log(`✅ Progressive: Full model ready for ${sku}`);
 
-      // Notify that full model is ready
+      // Notify that full model is ready (this will trigger the swap in sceneManager)
       onFullModelReady?.(model);
 
       return model;
@@ -182,15 +197,141 @@ export class ProgressiveModelLoader {
       this.originalMaterialsMap.delete(sku);
       onError?.(error as Error);
 
-      // Create a fallback box placeholder on error
-      const fallbackPlaceholder = this.createFallbackBoxPlaceholder(
-        modelConfig.dimensions,
-        placeholderConfig
-      );
-      fallbackPlaceholder.userData.isPlaceholder = true;
-      fallbackPlaceholder.userData.sku = sku;
-      return fallbackPlaceholder;
+      // Keep the box placeholder on error
+      return boxPlaceholder;
     }
+  }
+
+  /**
+   * Create a bounding box placeholder for instant feedback
+   */
+  createBoundingBoxPlaceholder(
+    dimensions: { width: number; height: number; depth?: number },
+    config: PlaceholderConfig = DEFAULT_PLACEHOLDER_CONFIG
+  ): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'BoxPlaceholder';
+
+    const w = dimensions.width;
+    const h = dimensions.height;
+    const d = dimensions.depth || dimensions.width;
+
+    // Create box geometry - positioned so bottom is at y=0
+    const geometry = new THREE.BoxGeometry(w, h, d);
+    geometry.translate(0, h / 2, d / 2);
+
+    // Create wireframe
+    const edgesGeometry = new THREE.EdgesGeometry(geometry);
+    const wireframeMaterial = new THREE.LineBasicMaterial({
+      color: config.wireframeColor,
+      transparent: true,
+      opacity: config.wireframeOpacity
+    });
+    const wireframe = new THREE.LineSegments(edgesGeometry, wireframeMaterial);
+
+    // Create translucent fill
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: config.fillColor,
+      transparent: true,
+      opacity: config.fillOpacity,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const fill = new THREE.Mesh(geometry.clone(), fillMaterial);
+
+    group.add(wireframe);
+    group.add(fill);
+
+    // Add progress indicator
+    const progressIndicator = this.createProgressIndicatorForBox(w, h, d);
+    group.add(progressIndicator);
+
+    // Store references for cleanup and progress updates
+    group.userData.materials = [wireframeMaterial, fillMaterial];
+    group.userData.geometries = [geometry, edgesGeometry];
+    group.userData.progressIndicator = progressIndicator;
+    group.userData.dimensions = { width: w, height: h, depth: d };
+
+    // Add pulse animation
+    if (config.showPulseAnimation) {
+      this.addBoxPulseAnimation(group, fillMaterial);
+    }
+
+    return group;
+  }
+
+  /**
+   * Create progress indicator for box placeholder
+   */
+  private createProgressIndicatorForBox(width: number, height: number, depth: number): THREE.Group {
+    const indicatorGroup = new THREE.Group();
+    indicatorGroup.name = 'ProgressIndicator';
+
+    // Position at front center of the box
+    indicatorGroup.position.set(0, height / 2, depth + 2);
+
+    // Calculate radius based on box size
+    const radius = Math.min(width, height) * 0.2;
+    const tubeRadius = radius * 0.15;
+
+    // Create background ring (full circle, darker green)
+    const bgGeometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 48, Math.PI * 2);
+    const bgMaterial = new THREE.MeshBasicMaterial({
+      color: PROGRESS_BAR_BG_COLOR,
+      transparent: true,
+      opacity: 0.3
+    });
+    const bgRing = new THREE.Mesh(bgGeometry, bgMaterial);
+    bgRing.name = 'ProgressBackground';
+
+    // Create progress arc
+    const initialArc = Math.PI * 2 * 0.05;
+    const progressGeometry = new THREE.TorusGeometry(radius, tubeRadius * 1.2, 8, 48, initialArc);
+    const progressMaterial = new THREE.MeshBasicMaterial({
+      color: PROGRESS_BAR_COLOR,
+      transparent: true,
+      opacity: 1.0
+    });
+    const progressRing = new THREE.Mesh(progressGeometry, progressMaterial);
+    progressRing.rotation.z = Math.PI / 2; // Start from top
+    progressRing.name = 'ProgressArc';
+
+    indicatorGroup.add(bgRing);
+    indicatorGroup.add(progressRing);
+
+    // Store references for progress updates
+    indicatorGroup.userData.progressRing = progressRing;
+    indicatorGroup.userData.radius = radius;
+    indicatorGroup.userData.tubeRadius = tubeRadius * 1.2;
+    indicatorGroup.userData.currentProgress = 5;
+    indicatorGroup.userData.materials = [bgMaterial, progressMaterial];
+    indicatorGroup.userData.geometries = [bgGeometry, progressGeometry];
+
+    return indicatorGroup;
+  }
+
+  /**
+   * Add pulse animation to box placeholder
+   */
+  private addBoxPulseAnimation(group: THREE.Group, fillMaterial: THREE.MeshBasicMaterial): void {
+    let animationId: number;
+    const startTime = Date.now();
+    const baseOpacity = fillMaterial.opacity;
+
+    const animate = () => {
+      if (!group.parent) {
+        cancelAnimationFrame(animationId);
+        return;
+      }
+
+      const elapsed = Date.now() - startTime;
+      fillMaterial.opacity = baseOpacity + Math.sin(elapsed * 0.004) * 0.15;
+
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+    group.userData.animationId = animationId;
   }
 
   /**
@@ -254,69 +395,7 @@ export class ProgressiveModelLoader {
   }
 
   /**
-   * Create a progress indicator positioned on the model
-   */
-  private createProgressIndicatorForModel(
-    model: THREE.Group,
-    _config: PlaceholderConfig
-  ): THREE.Group {
-    const indicatorGroup = new THREE.Group();
-    indicatorGroup.name = 'ProgressIndicator';
-
-    // Calculate model bounds to position the progress bar
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-
-    // Position at front center of the model
-    indicatorGroup.position.set(
-      center.x - model.position.x,
-      center.y - model.position.y,
-      box.max.z - model.position.z + 5 // In front of the model
-    );
-
-    // Calculate radius based on model size
-    const radius = Math.min(size.x, size.y) * 0.15;
-    const tubeRadius = radius * 0.15;
-
-    // Create background ring (full circle, darker green)
-    const bgGeometry = new THREE.TorusGeometry(radius, tubeRadius, 8, 48, Math.PI * 2);
-    const bgMaterial = new THREE.MeshBasicMaterial({
-      color: PROGRESS_BAR_BG_COLOR,
-      transparent: true,
-      opacity: 0.3
-    });
-    const bgRing = new THREE.Mesh(bgGeometry, bgMaterial);
-    bgRing.name = 'ProgressBackground';
-
-    // Create progress arc (starts at 0, grows to full circle)
-    const initialArc = Math.PI * 2 * 0.05;
-    const progressGeometry = new THREE.TorusGeometry(radius, tubeRadius * 1.2, 8, 48, initialArc);
-    const progressMaterial = new THREE.MeshBasicMaterial({
-      color: PROGRESS_BAR_COLOR,
-      transparent: true,
-      opacity: 1.0
-    });
-    const progressRing = new THREE.Mesh(progressGeometry, progressMaterial);
-    progressRing.rotation.z = Math.PI / 2; // Start from top
-    progressRing.name = 'ProgressArc';
-
-    indicatorGroup.add(bgRing);
-    indicatorGroup.add(progressRing);
-
-    // Store references for progress updates
-    indicatorGroup.userData.progressRing = progressRing;
-    indicatorGroup.userData.radius = radius;
-    indicatorGroup.userData.tubeRadius = tubeRadius * 1.2;
-    indicatorGroup.userData.currentProgress = 5;
-    indicatorGroup.userData.materials = [bgMaterial, progressMaterial];
-    indicatorGroup.userData.geometries = [bgGeometry, progressGeometry];
-
-    return indicatorGroup;
-  }
-
-  /**
-   * Update the progress on a model's progress indicator
+   * Update the progress on a placeholder's progress indicator
    */
   updatePlaceholderProgress(model: THREE.Group, progress: number): void {
     const progressIndicator = model.userData.progressIndicator || model.getObjectByName('ProgressIndicator');
