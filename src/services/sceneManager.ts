@@ -606,10 +606,11 @@ export class SceneManager {
 
       const newModel = await modelManager.loadModel(sku, modelConfig);
 
-      // Apply transform
+      // Apply transform (position and rotation only)
+      // NOTE: Don't copy scale - the model already has correct scale from loader
       newModel.position.copy(originalPosition);
       newModel.rotation.copy(originalRotation);
-      newModel.scale.copy(originalScale);
+      // newModel.scale is already correct from modelManager.loadModel()
 
       // Update userData
       newModel.userData = {
@@ -683,30 +684,30 @@ export class SceneManager {
           // Get the current model in the scene (could be placeholder or original)
           const currentModel = this.existingItems.get(itemId);
 
-          // Determine position/rotation/scale source
+          // Determine position/rotation source (NOT scale - model has correct scale from loader)
           // Priority: placeholderInScene > currentModel > originalPosition
           let sourcePosition = originalPosition;
           let sourceRotation = originalRotation;
-          let sourceScale = originalScale;
 
           if (placeholderInScene) {
             sourcePosition = placeholderInScene.position.clone();
             sourceRotation = placeholderInScene.rotation.clone();
-            sourceScale = placeholderInScene.scale.clone();
             console.log(`📍 Using placeholder transform for item ${itemId}`);
           } else if (currentModel) {
             sourcePosition = currentModel.position.clone();
             sourceRotation = currentModel.rotation.clone();
-            sourceScale = currentModel.scale.clone();
             console.log(`📍 Using currentModel transform for item ${itemId}`);
           } else {
             console.log(`📍 Using original transform for item ${itemId}`);
           }
 
           // Apply transform to full model
+          // NOTE: Only copy position and rotation, NOT scale!
+          // The fullModel already has the correct scale baked in from the loader
+          // Copying placeholder's scale (which might be 1) would make the model invisible
           fullModel.position.copy(sourcePosition);
           fullModel.rotation.copy(sourceRotation);
-          fullModel.scale.copy(sourceScale);
+          // fullModel.scale is already correct from modelManager.loadModel()
 
           // Update userData
           fullModel.userData = {
@@ -718,19 +719,26 @@ export class SceneManager {
           };
 
           // Add full model to scene
+          console.log(`➕ Adding fullModel to scene for item ${itemId}`, {
+            position: [fullModel.position.x, fullModel.position.y, fullModel.position.z],
+            scale: [fullModel.scale.x, fullModel.scale.y, fullModel.scale.z],
+            visible: fullModel.visible,
+            childrenCount: fullModel.children.length
+          });
           this.bathroomItemsGroup.add(fullModel);
+          console.log(`➕ fullModel added. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
 
           // Remove placeholder if it exists
           if (placeholderInScene && placeholderInScene.parent) {
             this.bathroomItemsGroup.remove(placeholderInScene);
             progressiveLoader.disposePlaceholder(placeholderInScene);
-            console.log(`🗑️ Removed placeholder for item ${itemId}`);
+            console.log(`🗑️ Removed placeholder for item ${itemId}. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
           }
           // Remove current model if different from placeholder
           else if (currentModel && currentModel.parent && currentModel !== placeholderInScene) {
             this.bathroomItemsGroup.remove(currentModel);
             this.disposeModel(currentModel);
-            console.log(`🗑️ Removed current model for item ${itemId}`);
+            console.log(`🗑️ Removed current model for item ${itemId}. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
           }
 
           // Update tracking
@@ -738,6 +746,13 @@ export class SceneManager {
 
           // Enhance materials
           this.enhanceModelMaterials(fullModel);
+
+          // Verify model is still in scene
+          console.log(`🔍 Verification for item ${itemId}:`, {
+            fullModelParent: fullModel.parent?.name || fullModel.parent?.type || 'none',
+            fullModelInGroup: this.bathroomItemsGroup.children.includes(fullModel),
+            existingItemsHasId: this.existingItems.has(itemId)
+          });
 
           console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
           callbacks?.onFullModelSwapped?.(fullModel);
