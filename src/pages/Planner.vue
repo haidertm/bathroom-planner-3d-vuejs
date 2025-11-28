@@ -888,8 +888,8 @@ const addItem = async (type, productData = null) => {
     })
   }
 
-  // PERFORMANCE BOOST: Add directly to scene first (if not initial load)
-  if (sceneManagerRef.value && !isInitialLoad.value) {
+  // PERFORMANCE BOOST: Add directly to scene (including first item)
+  if (sceneManagerRef.value) {
     try {
       // Use progressive loading if model isn't cached (shows placeholder first)
       const useProgressive = productData?.useProgressiveLoading === true
@@ -898,7 +898,8 @@ const addItem = async (type, productData = null) => {
         useProgressiveLoading: productData?.useProgressiveLoading,
         useProgressive,
         itemId: newItem.id,
-        sku: newItem.sku
+        sku: newItem.sku,
+        isFirstItem: isInitialLoad.value
       })
 
       if (useProgressive) {
@@ -920,6 +921,13 @@ const addItem = async (type, productData = null) => {
         console.log('⚡ Using direct add (no placeholder) for item:', newItem.id)
         await sceneManagerRef.value.addSingleItem(newItem)
       }
+
+      // Mark initial load as complete so watcher uses smart update instead of full update
+      if (isInitialLoad.value) {
+        isInitialLoad.value = false
+        previousItems.value = [newItem]
+      }
+
       console.log(`✅ Added item ${ newItem.id } to scene`)
     } catch (error) {
       console.error('❌ Failed to add item directly:', error)
