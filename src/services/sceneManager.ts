@@ -674,66 +674,73 @@ export class SceneManager {
           callbacks?.onPlaceholderSwapped?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
-          // Handle two cases:
-          // 1. Placeholder exists - swap placeholder with full model
-          // 2. No placeholder (model was cached) - swap existing model with full model
+          console.log(`🔄 onFullModelReady called for item ${itemId}:`, {
+            hasPlaceholderInScene: !!placeholderInScene,
+            placeholderHasParent: placeholderInScene?.parent ? true : false,
+            fullModelName: fullModel.name
+          });
 
+          // Get the current model in the scene (could be placeholder or original)
+          const currentModel = this.existingItems.get(itemId);
+
+          // Determine position/rotation/scale source
+          // Priority: placeholderInScene > currentModel > originalPosition
+          let sourcePosition = originalPosition;
+          let sourceRotation = originalRotation;
+          let sourceScale = originalScale;
+
+          if (placeholderInScene) {
+            sourcePosition = placeholderInScene.position.clone();
+            sourceRotation = placeholderInScene.rotation.clone();
+            sourceScale = placeholderInScene.scale.clone();
+            console.log(`📍 Using placeholder transform for item ${itemId}`);
+          } else if (currentModel) {
+            sourcePosition = currentModel.position.clone();
+            sourceRotation = currentModel.rotation.clone();
+            sourceScale = currentModel.scale.clone();
+            console.log(`📍 Using currentModel transform for item ${itemId}`);
+          } else {
+            console.log(`📍 Using original transform for item ${itemId}`);
+          }
+
+          // Apply transform to full model
+          fullModel.position.copy(sourcePosition);
+          fullModel.rotation.copy(sourceRotation);
+          fullModel.scale.copy(sourceScale);
+
+          // Update userData
+          fullModel.userData = {
+            ...originalUserData,
+            sku: sku,
+            model: modelConfig,
+            orientation: newVariant.orientation || originalUserData.orientation,
+            isPlaceholder: false
+          };
+
+          // Add full model to scene
+          this.bathroomItemsGroup.add(fullModel);
+
+          // Remove placeholder if it exists
           if (placeholderInScene && placeholderInScene.parent) {
-            // Case 1: Placeholder exists - swap it with full model
-            fullModel.position.copy(placeholderInScene.position);
-            fullModel.rotation.copy(placeholderInScene.rotation);
-            fullModel.scale.copy(placeholderInScene.scale);
-
-            // Update userData
-            fullModel.userData = {
-              ...originalUserData,
-              sku: sku,
-              model: modelConfig,
-              orientation: newVariant.orientation || originalUserData.orientation,
-              isPlaceholder: false
-            };
-
-            // Swap placeholder with full model
-            this.bathroomItemsGroup.add(fullModel);
             this.bathroomItemsGroup.remove(placeholderInScene);
             progressiveLoader.disposePlaceholder(placeholderInScene);
-            this.existingItems.set(itemId, fullModel);
-
-            this.enhanceModelMaterials(fullModel);
-
-            console.log(`✅ Progressive: Full variant model swapped (from placeholder) for item ${itemId}`);
-            callbacks?.onFullModelSwapped?.(fullModel);
-          } else {
-            // Case 2: No placeholder (model was cached) - swap existing model directly
-            const currentModel = this.existingItems.get(itemId);
-
-            // Apply original transform
-            fullModel.position.copy(originalPosition);
-            fullModel.rotation.copy(originalRotation);
-            fullModel.scale.copy(originalScale);
-
-            // Update userData
-            fullModel.userData = {
-              ...originalUserData,
-              sku: sku,
-              model: modelConfig,
-              orientation: newVariant.orientation || originalUserData.orientation,
-              isPlaceholder: false
-            };
-
-            // Swap existing model with full model
-            this.bathroomItemsGroup.add(fullModel);
-            if (currentModel && currentModel.parent) {
-              this.bathroomItemsGroup.remove(currentModel);
-              this.disposeModel(currentModel);
-            }
-            this.existingItems.set(itemId, fullModel);
-
-            this.enhanceModelMaterials(fullModel);
-
-            console.log(`✅ Progressive: Full variant model swapped (no placeholder) for item ${itemId}`);
-            callbacks?.onFullModelSwapped?.(fullModel);
+            console.log(`🗑️ Removed placeholder for item ${itemId}`);
           }
+          // Remove current model if different from placeholder
+          else if (currentModel && currentModel.parent && currentModel !== placeholderInScene) {
+            this.bathroomItemsGroup.remove(currentModel);
+            this.disposeModel(currentModel);
+            console.log(`🗑️ Removed current model for item ${itemId}`);
+          }
+
+          // Update tracking
+          this.existingItems.set(itemId, fullModel);
+
+          // Enhance materials
+          this.enhanceModelMaterials(fullModel);
+
+          console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
+          callbacks?.onFullModelSwapped?.(fullModel);
         },
         onProgress: (progress) => {
           callbacks?.onProgress?.(progress);
