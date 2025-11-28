@@ -103,6 +103,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-800mm',
           path: '../../models/furniture/basin/C77606.glb',
           dimensions: { width: 81.3, height: 53, depth: 44 },
+          floorOffset: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
