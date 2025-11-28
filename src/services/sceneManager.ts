@@ -674,8 +674,12 @@ export class SceneManager {
           callbacks?.onPlaceholderSwapped?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
+          // Handle two cases:
+          // 1. Placeholder exists - swap placeholder with full model
+          // 2. No placeholder (model was cached) - swap existing model with full model
+
           if (placeholderInScene && placeholderInScene.parent) {
-            // Apply transform from placeholder
+            // Case 1: Placeholder exists - swap it with full model
             fullModel.position.copy(placeholderInScene.position);
             fullModel.rotation.copy(placeholderInScene.rotation);
             fullModel.scale.copy(placeholderInScene.scale);
@@ -697,7 +701,37 @@ export class SceneManager {
 
             this.enhanceModelMaterials(fullModel);
 
-            console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
+            console.log(`✅ Progressive: Full variant model swapped (from placeholder) for item ${itemId}`);
+            callbacks?.onFullModelSwapped?.(fullModel);
+          } else {
+            // Case 2: No placeholder (model was cached) - swap existing model directly
+            const currentModel = this.existingItems.get(itemId);
+
+            // Apply original transform
+            fullModel.position.copy(originalPosition);
+            fullModel.rotation.copy(originalRotation);
+            fullModel.scale.copy(originalScale);
+
+            // Update userData
+            fullModel.userData = {
+              ...originalUserData,
+              sku: sku,
+              model: modelConfig,
+              orientation: newVariant.orientation || originalUserData.orientation,
+              isPlaceholder: false
+            };
+
+            // Swap existing model with full model
+            this.bathroomItemsGroup.add(fullModel);
+            if (currentModel && currentModel.parent) {
+              this.bathroomItemsGroup.remove(currentModel);
+              this.disposeModel(currentModel);
+            }
+            this.existingItems.set(itemId, fullModel);
+
+            this.enhanceModelMaterials(fullModel);
+
+            console.log(`✅ Progressive: Full variant model swapped (no placeholder) for item ${itemId}`);
             callbacks?.onFullModelSwapped?.(fullModel);
           }
         },
