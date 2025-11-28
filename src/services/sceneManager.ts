@@ -665,7 +665,9 @@ export class SceneManager {
       scale: newVariant.scale ?? 100, // Default to 100, not 1 (models are typically scaled up)
       dimensions: newVariant.dimensions,
       movement: newVariant.movement,
-      orientation: newVariant.orientation
+      orientation: newVariant.orientation,
+      spawnHeight: newVariant.spawnHeight,
+      floorOffset: newVariant.floorOffset
     };
 
     let placeholderInScene: THREE.Group | null = null;
@@ -675,8 +677,20 @@ export class SceneManager {
       modelConfig,
       {
         onPlaceholderReady: (placeholder) => {
-          // Apply original transform to placeholder
-          placeholder.position.copy(originalPosition);
+          // Get positioning parameters from new variant
+          const spawnHeight = newVariant.spawnHeight || 0;
+          const floorOffset = newVariant.floorOffset || 0;
+
+          // For wall-mounted models, calculate proper Y position
+          // Visual bottom = spawnHeight + floorOffset
+          const placeholderY = spawnHeight + floorOffset;
+
+          // Apply transform - use original X/Z but calculated Y for wall-mounted items
+          placeholder.position.set(
+            originalPosition.x,
+            placeholderY, // Use calculated Y for proper wall-mounted positioning
+            originalPosition.z
+          );
           placeholder.rotation.copy(originalRotation);
           placeholder.scale.copy(originalScale);
 
@@ -684,7 +698,9 @@ export class SceneManager {
           placeholder.userData = {
             ...originalUserData,
             sku: sku,
-            isPlaceholder: true
+            isPlaceholder: true,
+            spawnHeight: spawnHeight,
+            floorOffset: floorOffset
           };
 
           // Swap existing model with placeholder
@@ -694,7 +710,12 @@ export class SceneManager {
           this.existingItems.set(itemId, placeholder);
           placeholderInScene = placeholder;
 
-          console.log(`🔲 Progressive: Placeholder swapped for variant ${sku}`);
+          console.log(`🔲 Progressive: Placeholder swapped for variant ${sku}`, {
+            spawnHeight,
+            floorOffset,
+            placeholderY,
+            calculation: `spawnHeight(${spawnHeight}) + floorOffset(${floorOffset}) = ${placeholderY}`
+          });
           callbacks?.onPlaceholderSwapped?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
