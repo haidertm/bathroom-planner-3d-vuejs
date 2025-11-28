@@ -1,6 +1,6 @@
 // src/services/progressiveModelLoader.ts
 // Progressive Model Loading with Placeholder Support
-// Provides instant visual feedback while loading large 3D models
+// Shows actual model shape with ghost/wireframe material while loading
 
 import * as THREE from 'three';
 import { ModelManager } from '../models/bathroomFixtures';
@@ -24,8 +24,8 @@ export interface PlaceholderConfig {
 const DEFAULT_PLACEHOLDER_CONFIG: PlaceholderConfig = {
   wireframeColor: 0x6366f1, // Indigo color for wireframe
   fillColor: 0xe0e7ff,      // Light indigo
-  fillOpacity: 0.3,
-  wireframeOpacity: 0.8,
+  fillOpacity: 0.4,
+  wireframeOpacity: 0.9,
   showPulseAnimation: true
 };
 
@@ -37,17 +37,19 @@ const PROGRESS_BAR_BG_COLOR = 0x16a34a; // Tailwind green-600 (darker for backgr
  * ProgressiveModelLoader - Handles progressive loading of 3D models
  *
  * Loading Strategy:
- * 1. Instantly show a bounding box placeholder based on model dimensions
- * 2. Load the full model in the background
- * 3. Swap placeholder with full model when ready
+ * 1. Load the actual model
+ * 2. Apply ghost/placeholder materials to show the real shape
+ * 3. Display progress bar on the model
+ * 4. Restore original materials when fully loaded
  *
- * This provides immediate visual feedback while the actual model loads.
+ * This shows the actual model silhouette while loading.
  */
 export class ProgressiveModelLoader {
   private static instance: ProgressiveModelLoader;
   private modelManager: ModelManager;
   private activePlaceholders: Map<string, THREE.Group> = new Map();
   private loadingAbortControllers: Map<string, AbortController> = new Map();
+  private originalMaterialsMap: Map<string, Map<THREE.Mesh, THREE.Material | THREE.Material[]>> = new Map();
 
   private constructor() {
     this.modelManager = ModelManager.getInstance();
@@ -61,8 +63,7 @@ export class ProgressiveModelLoader {
   }
 
   /**
-   * Load a model progressively with placeholder support
-   * Returns the placeholder immediately, then calls onFullModelReady when loaded
+   * Load a model progressively - shows actual model shape with ghost materials
    */
   async loadProgressively(
     sku: string,
@@ -90,170 +91,192 @@ export class ProgressiveModelLoader {
       return cachedModel;
     }
 
-    console.log(`🔲 ProgressiveLoader - Model ${sku} NOT loaded, CREATING PLACEHOLDER`);
+    console.log(`🔲 ProgressiveLoader - Model ${sku} NOT loaded, loading with ghost materials`);
 
     // Create abort controller for this load operation
     const abortController = new AbortController();
     this.loadingAbortControllers.set(sku, abortController);
 
-    // Step 1: Create and return placeholder immediately
-    const placeholder = this.createBoundingBoxPlaceholder(
-      modelConfig.dimensions,
-      placeholderConfig
-    );
-    placeholder.name = `placeholder_${sku}`;
-    placeholder.userData.isPlaceholder = true;
-    placeholder.userData.sku = sku;
-    placeholder.userData.modelConfig = modelConfig;
-
-    this.activePlaceholders.set(sku, placeholder);
-
-    // Notify that placeholder is ready
-    console.log(`🔲 Progressive: Calling onPlaceholderReady for ${sku}`);
-    onPlaceholderReady?.(placeholder);
-    onProgress?.(5);
-
-    console.log(`🔲 Progressive: Placeholder CREATED and notified for ${sku}`);
-
-    // Step 2: Load full model in background with REAL progress tracking
     try {
-      // Create progress handler that updates both visual and callback
+      // Progress tracking
       const handleProgress = (progress: number) => {
         if (abortController.signal.aborted) return;
-
-        // Update visual progress bar on placeholder
-        this.updatePlaceholderProgress(placeholder, progress);
-
-        // Notify external callback
         onProgress?.(progress);
       };
 
-      // Actually load the model with real progress callback
-      const fullModel = await this.modelManager.loadModel(sku, modelConfig, handleProgress);
+      // Load the actual model
+      const model = await this.modelManager.loadModel(sku, modelConfig, handleProgress);
 
       // Check if loading was aborted
       if (abortController.signal.aborted) {
         console.log(`⚠️ Progressive: Loading aborted for ${sku}`);
-        return placeholder;
+        return model;
       }
 
-      // Ensure progress shows 100% complete
-      this.updatePlaceholderProgress(placeholder, 100);
+      // Store original materials and apply ghost/placeholder materials
+      const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+      this.applyGhostMaterials(model, originalMaterials, placeholderConfig);
+      this.originalMaterialsMap.set(sku, originalMaterials);
+
+      // Add progress indicator to the model
+      const progressIndicator = this.createProgressIndicatorForModel(model, placeholderConfig);
+      model.add(progressIndicator);
+
+      // Mark as placeholder
+      model.name = `placeholder_${sku}`;
+      model.userData.isPlaceholder = true;
+      model.userData.sku = sku;
+      model.userData.modelConfig = modelConfig;
+      model.userData.progressIndicator = progressIndicator;
+
+      this.activePlaceholders.set(sku, model);
+
+      // Add pulse animation
+      if (placeholderConfig.showPulseAnimation) {
+        this.addPulseAnimation(model);
+      }
+
+      // Notify that placeholder (ghost model) is ready
+      console.log(`🔲 Progressive: Ghost model placeholder ready for ${sku}`);
+      onPlaceholderReady?.(model);
+
+      // Update progress to 100%
+      this.updatePlaceholderProgress(model, 100);
       onProgress?.(100);
 
-      // Clean up placeholder tracking
+      // Clean up and restore original materials
       this.activePlaceholders.delete(sku);
       this.loadingAbortControllers.delete(sku);
 
-      console.log(`✅ Progressive: Full model loaded for ${sku}`);
+      // Restore original materials
+      this.restoreOriginalMaterials(model, sku);
+
+      // Remove progress indicator
+      if (model.userData.progressIndicator) {
+        model.remove(model.userData.progressIndicator);
+        this.disposeProgressIndicator(model.userData.progressIndicator);
+        delete model.userData.progressIndicator;
+      }
+
+      // Stop animation
+      if (model.userData.animationId) {
+        cancelAnimationFrame(model.userData.animationId);
+        delete model.userData.animationId;
+      }
+
+      // Update userData
+      model.userData.isPlaceholder = false;
+      model.name = `model_${sku}`;
+
+      console.log(`✅ Progressive: Full model ready for ${sku}`);
 
       // Notify that full model is ready
-      onFullModelReady?.(fullModel);
+      onFullModelReady?.(model);
 
-      return fullModel;
+      return model;
 
     } catch (error) {
       console.error(`❌ Progressive: Failed to load model ${sku}:`, error);
       this.activePlaceholders.delete(sku);
       this.loadingAbortControllers.delete(sku);
+      this.originalMaterialsMap.delete(sku);
       onError?.(error as Error);
 
-      // Return placeholder on error (better than nothing)
-      return placeholder;
+      // Create a fallback box placeholder on error
+      const fallbackPlaceholder = this.createFallbackBoxPlaceholder(
+        modelConfig.dimensions,
+        placeholderConfig
+      );
+      fallbackPlaceholder.userData.isPlaceholder = true;
+      fallbackPlaceholder.userData.sku = sku;
+      return fallbackPlaceholder;
     }
   }
 
   /**
-   * Create a bounding box placeholder based on model dimensions
-   * The placeholder is aligned so that:
-   * - Bottom face is at y=0 (floor level)
-   * - Back face is at z=0 (wall position) - extends into room in +Z direction
-   * - Centered on X axis
-   * This matches how most wall-mounted models are positioned
+   * Apply ghost/placeholder materials to the model
    */
-  createBoundingBoxPlaceholder(
-    dimensions: { width: number; height: number; depth?: number },
-    config: PlaceholderConfig = DEFAULT_PLACEHOLDER_CONFIG
-  ): THREE.Group {
-    const group = new THREE.Group();
-    group.name = 'ModelPlaceholder';
+  private applyGhostMaterials(
+    model: THREE.Group,
+    originalMaterials: Map<THREE.Mesh, THREE.Material | THREE.Material[]>,
+    config: PlaceholderConfig
+  ): void {
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        // Store original material
+        originalMaterials.set(child, child.material);
 
-    // Convert dimensions from cm to scene units (assuming 1 unit = 1 cm)
-    const w = dimensions.width;
-    const h = dimensions.height;
-    const d = dimensions.depth || dimensions.width;
+        // Create ghost material
+        const ghostMaterial = new THREE.MeshBasicMaterial({
+          color: config.fillColor,
+          transparent: true,
+          opacity: config.fillOpacity,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
 
-    // Create box geometry
-    const geometry = new THREE.BoxGeometry(w, h, d);
+        // Create wireframe material
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+          color: config.wireframeColor,
+          transparent: true,
+          opacity: config.wireframeOpacity,
+          wireframe: true
+        });
 
-    // Position the geometry so:
-    // - Bottom is at y=0 (translate up by h/2)
-    // - Back face is at z=0, extends into room (translate forward by d/2)
-    // This matches how wall-mounted models are typically positioned
-    geometry.translate(0, h / 2, d / 2);
-
-    // Create wireframe (edges)
-    const edgesGeometry = new THREE.EdgesGeometry(geometry);
-    const wireframeMaterial = new THREE.LineBasicMaterial({
-      color: config.wireframeColor,
-      transparent: true,
-      opacity: config.wireframeOpacity,
-      linewidth: 2
+        // Use an array of materials - ghost fill + wireframe overlay
+        child.material = [ghostMaterial, wireframeMaterial];
+      }
     });
-    const wireframe = new THREE.LineSegments(edgesGeometry, wireframeMaterial);
-    wireframe.name = 'PlaceholderWireframe';
-
-    // Create semi-transparent fill
-    const fillMaterial = new THREE.MeshBasicMaterial({
-      color: config.fillColor,
-      transparent: true,
-      opacity: config.fillOpacity,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const fill = new THREE.Mesh(geometry.clone(), fillMaterial);
-    fill.name = 'PlaceholderFill';
-
-    // Add loading indicator (spinning element at top)
-    const loadingIndicator = this.createLoadingIndicator(w, h, d, config);
-    loadingIndicator.name = 'PlaceholderLoadingIndicator';
-
-    group.add(wireframe);
-    group.add(fill);
-    group.add(loadingIndicator);
-
-    // Store materials for disposal
-    group.userData.materials = [wireframeMaterial, fillMaterial];
-    group.userData.geometries = [geometry, edgesGeometry];
-    group.userData.isPlaceholder = true;
-    group.userData.dimensions = dimensions;
-
-    // Add pulse animation if enabled
-    if (config.showPulseAnimation) {
-      this.addPulseAnimation(group);
-    }
-
-    return group;
   }
 
   /**
-   * Create a circular progress indicator for the placeholder
+   * Restore original materials to the model
    */
-  private createLoadingIndicator(
-    width: number,
-    height: number,
-    depth: number,
-    _config: PlaceholderConfig // Unused - using hardcoded green colors
+  private restoreOriginalMaterials(model: THREE.Group, sku: string): void {
+    const originalMaterials = this.originalMaterialsMap.get(sku);
+    if (!originalMaterials) return;
+
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh && originalMaterials.has(child)) {
+        // Dispose ghost materials
+        if (Array.isArray(child.material)) {
+          child.material.forEach(mat => mat.dispose());
+        } else if (child.material) {
+          child.material.dispose();
+        }
+
+        // Restore original material
+        child.material = originalMaterials.get(child)!;
+      }
+    });
+
+    this.originalMaterialsMap.delete(sku);
+  }
+
+  /**
+   * Create a progress indicator positioned on the model
+   */
+  private createProgressIndicatorForModel(
+    model: THREE.Group,
+    _config: PlaceholderConfig
   ): THREE.Group {
     const indicatorGroup = new THREE.Group();
+    indicatorGroup.name = 'ProgressIndicator';
 
-    // Position at FRONT CENTER of placeholder (facing the user)
-    // The placeholder: back at z=0 (wall), front at z=depth, bottom at y=0, top at y=height
-    // Place progress bar at center of front face, slightly in front
-    indicatorGroup.position.set(0, height / 2, depth + 2);
+    // Calculate model bounds to position the progress bar
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
 
-    // Calculate radius based on placeholder size - make it more visible
-    const radius = Math.min(width, height) * 0.2;
+    // Position at front center of the model
+    indicatorGroup.position.set(
+      center.x - model.position.x,
+      center.y - model.position.y,
+      box.max.z - model.position.z + 5 // In front of the model
+    );
+
+    // Calculate radius based on model size
+    const radius = Math.min(size.x, size.y) * 0.15;
     const tubeRadius = radius * 0.15;
 
     // Create background ring (full circle, darker green)
@@ -264,21 +287,18 @@ export class ProgressiveModelLoader {
       opacity: 0.3
     });
     const bgRing = new THREE.Mesh(bgGeometry, bgMaterial);
-    // No rotation - ring faces forward (toward user) by default
     bgRing.name = 'ProgressBackground';
 
     // Create progress arc (starts at 0, grows to full circle)
-    // Start with a tiny arc (5% = ~18 degrees)
     const initialArc = Math.PI * 2 * 0.05;
     const progressGeometry = new THREE.TorusGeometry(radius, tubeRadius * 1.2, 8, 48, initialArc);
     const progressMaterial = new THREE.MeshBasicMaterial({
-      color: PROGRESS_BAR_COLOR, // Bright green
+      color: PROGRESS_BAR_COLOR,
       transparent: true,
       opacity: 1.0
     });
     const progressRing = new THREE.Mesh(progressGeometry, progressMaterial);
-    // No rotation.x - ring faces forward
-    progressRing.rotation.z = Math.PI / 2; // Start from top (12 o'clock)
+    progressRing.rotation.z = Math.PI / 2; // Start from top
     progressRing.name = 'ProgressArc';
 
     indicatorGroup.add(bgRing);
@@ -296,23 +316,23 @@ export class ProgressiveModelLoader {
   }
 
   /**
-   * Update the progress on a placeholder's circular progress bar
+   * Update the progress on a model's progress indicator
    */
-  updatePlaceholderProgress(placeholder: THREE.Group, progress: number): void {
-    const loadingIndicator = placeholder.getObjectByName('PlaceholderLoadingIndicator');
-    if (!loadingIndicator) return;
+  updatePlaceholderProgress(model: THREE.Group, progress: number): void {
+    const progressIndicator = model.userData.progressIndicator || model.getObjectByName('ProgressIndicator');
+    if (!progressIndicator) return;
 
-    const progressRing = loadingIndicator.userData.progressRing as THREE.Mesh;
+    const progressRing = progressIndicator.userData.progressRing as THREE.Mesh;
     if (!progressRing) return;
 
-    const radius = loadingIndicator.userData.radius;
-    const tubeRadius = loadingIndicator.userData.tubeRadius;
-    const currentProgress = loadingIndicator.userData.currentProgress || 0;
+    const radius = progressIndicator.userData.radius;
+    const tubeRadius = progressIndicator.userData.tubeRadius;
+    const currentProgress = progressIndicator.userData.currentProgress || 0;
 
-    // Only update if progress changed significantly (avoid too many geometry updates)
+    // Only update if progress changed significantly
     if (Math.abs(progress - currentProgress) < 1) return;
 
-    // Calculate arc length based on progress (0-100 -> 0 to 2*PI)
+    // Calculate arc length based on progress
     const arcLength = Math.PI * 2 * (progress / 100);
 
     // Dispose old geometry
@@ -323,90 +343,110 @@ export class ProgressiveModelLoader {
     progressRing.geometry = newGeometry;
 
     // Update stored progress
-    loadingIndicator.userData.currentProgress = progress;
+    progressIndicator.userData.currentProgress = progress;
 
     // Update geometries array for disposal
-    const geometries = loadingIndicator.userData.geometries as THREE.BufferGeometry[];
+    const geometries = progressIndicator.userData.geometries as THREE.BufferGeometry[];
     if (geometries && geometries.length > 1) {
       geometries[1] = newGeometry;
     }
   }
 
   /**
-   * Add pulse animation to placeholder
+   * Dispose progress indicator resources
    */
-  private addPulseAnimation(group: THREE.Group): void {
+  private disposeProgressIndicator(indicator: THREE.Group): void {
+    if (indicator.userData.geometries) {
+      indicator.userData.geometries.forEach((geo: THREE.BufferGeometry) => geo.dispose());
+    }
+    if (indicator.userData.materials) {
+      indicator.userData.materials.forEach((mat: THREE.Material) => mat.dispose());
+    }
+  }
+
+  /**
+   * Add pulse animation to the ghost model
+   */
+  private addPulseAnimation(model: THREE.Group): void {
     let animationId: number;
     const startTime = Date.now();
+    const meshesWithGhostMaterial: THREE.Mesh[] = [];
+
+    // Collect all meshes with ghost materials
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh && Array.isArray(child.material)) {
+        meshesWithGhostMaterial.push(child);
+      }
+    });
 
     const animate = () => {
-      if (!group.parent) {
-        // Group was removed from scene, stop animation
+      if (!model.parent) {
         cancelAnimationFrame(animationId);
         return;
       }
 
       const elapsed = Date.now() - startTime;
 
-      // Apply subtle pulse to fill opacity
-      const fillMesh = group.getObjectByName('PlaceholderFill') as THREE.Mesh;
-      if (fillMesh && fillMesh.material instanceof THREE.MeshBasicMaterial) {
-        fillMesh.material.opacity = 0.2 + Math.sin(elapsed * 0.004) * 0.1;
-      }
-
-      // Add subtle glow pulse to progress bar
-      const loadingIndicator = group.getObjectByName('PlaceholderLoadingIndicator');
-      if (loadingIndicator) {
-        const progressRing = loadingIndicator.userData.progressRing as THREE.Mesh;
-        if (progressRing && progressRing.material instanceof THREE.MeshBasicMaterial) {
-          // Subtle pulse on the progress ring opacity
-          progressRing.material.opacity = 0.85 + Math.sin(elapsed * 0.006) * 0.15;
+      // Pulse the ghost material opacity
+      meshesWithGhostMaterial.forEach((mesh) => {
+        if (Array.isArray(mesh.material)) {
+          const ghostMat = mesh.material[0] as THREE.MeshBasicMaterial;
+          if (ghostMat) {
+            ghostMat.opacity = 0.3 + Math.sin(elapsed * 0.004) * 0.15;
+          }
         }
-      }
+      });
 
       animationId = requestAnimationFrame(animate);
     };
 
-    // Start animation
     animationId = requestAnimationFrame(animate);
-
-    // Store animation ID for cleanup
-    group.userData.animationId = animationId;
+    model.userData.animationId = animationId;
   }
+
   /**
-   * Swap a placeholder with the full model in the scene
+   * Create a fallback box placeholder (used when model loading fails)
    */
-  swapPlaceholderWithModel(
-    placeholder: THREE.Object3D,
-    fullModel: THREE.Group,
-    preserveTransform: boolean = true
-  ): boolean {
-    const parent = placeholder.parent;
-    if (!parent) {
-      console.warn('⚠️ Progressive: Placeholder has no parent, cannot swap');
-      return false;
-    }
+  private createFallbackBoxPlaceholder(
+    dimensions: { width: number; height: number; depth?: number },
+    config: PlaceholderConfig
+  ): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'FallbackPlaceholder';
 
-    if (preserveTransform) {
-      // Copy transform from placeholder to full model
-      fullModel.position.copy(placeholder.position);
-      fullModel.rotation.copy(placeholder.rotation);
-      fullModel.scale.copy(placeholder.scale);
+    const w = dimensions.width;
+    const h = dimensions.height;
+    const d = dimensions.depth || dimensions.width;
 
-      // Copy userData (except placeholder-specific data)
-      const { isPlaceholder, animationId, materials, geometries, ...restUserData } = placeholder.userData;
-      fullModel.userData = { ...fullModel.userData, ...restUserData };
-    }
+    const geometry = new THREE.BoxGeometry(w, h, d);
+    geometry.translate(0, h / 2, d / 2);
 
-    // Add full model to same parent
-    parent.add(fullModel);
+    // Create wireframe
+    const edgesGeometry = new THREE.EdgesGeometry(geometry);
+    const wireframeMaterial = new THREE.LineBasicMaterial({
+      color: config.wireframeColor,
+      transparent: true,
+      opacity: config.wireframeOpacity
+    });
+    const wireframe = new THREE.LineSegments(edgesGeometry, wireframeMaterial);
 
-    // Remove and dispose placeholder
-    parent.remove(placeholder);
-    this.disposePlaceholder(placeholder);
+    // Create fill
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: config.fillColor,
+      transparent: true,
+      opacity: config.fillOpacity,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const fill = new THREE.Mesh(geometry.clone(), fillMaterial);
 
-    console.log(`🔄 Progressive: Swapped placeholder with full model`);
-    return true;
+    group.add(wireframe);
+    group.add(fill);
+
+    group.userData.materials = [wireframeMaterial, fillMaterial];
+    group.userData.geometries = [geometry, edgesGeometry];
+
+    return group;
   }
 
   /**
@@ -416,6 +456,12 @@ export class ProgressiveModelLoader {
     // Stop animation if running
     if (placeholder.userData.animationId) {
       cancelAnimationFrame(placeholder.userData.animationId);
+    }
+
+    // Dispose progress indicator
+    const progressIndicator = placeholder.userData.progressIndicator;
+    if (progressIndicator) {
+      this.disposeProgressIndicator(progressIndicator);
     }
 
     // Dispose geometries
@@ -447,7 +493,6 @@ export class ProgressiveModelLoader {
         (child.material as THREE.Material)?.dispose();
       }
 
-      // Handle loading indicator
       if (child.userData.geometries) {
         child.userData.geometries.forEach((geo: THREE.BufferGeometry) => geo.dispose());
       }
@@ -456,7 +501,7 @@ export class ProgressiveModelLoader {
       }
     });
 
-    // Remove from parent if still attached
+    // Remove from parent
     if (placeholder.parent) {
       placeholder.parent.remove(placeholder);
     }
@@ -472,12 +517,13 @@ export class ProgressiveModelLoader {
       this.loadingAbortControllers.delete(sku);
     }
 
-    // Clean up placeholder if exists
     const placeholder = this.activePlaceholders.get(sku);
     if (placeholder) {
       this.disposePlaceholder(placeholder);
       this.activePlaceholders.delete(sku);
     }
+
+    this.originalMaterialsMap.delete(sku);
   }
 
   /**
@@ -498,17 +544,17 @@ export class ProgressiveModelLoader {
    * Clean up all active placeholders and abort all loading
    */
   cleanup(): void {
-    // Abort all loading operations
     this.loadingAbortControllers.forEach((controller) => {
       controller.abort();
     });
     this.loadingAbortControllers.clear();
 
-    // Dispose all placeholders
     this.activePlaceholders.forEach((placeholder) => {
       this.disposePlaceholder(placeholder);
     });
     this.activePlaceholders.clear();
+
+    this.originalMaterialsMap.clear();
   }
 }
 
@@ -517,12 +563,12 @@ export const getProgressiveModelLoader = (): ProgressiveModelLoader => {
   return ProgressiveModelLoader.getInstance();
 };
 
-// Export placeholder creation utility for external use
+// Export placeholder creation utility for external use (fallback box)
 export const createModelPlaceholder = (
   dimensions: { width: number; height: number; depth?: number },
   config?: PlaceholderConfig
 ): THREE.Group => {
-  return ProgressiveModelLoader.getInstance().createBoundingBoxPlaceholder(
+  return ProgressiveModelLoader.getInstance()['createFallbackBoxPlaceholder'](
     dimensions,
     config || DEFAULT_PLACEHOLDER_CONFIG
   );
