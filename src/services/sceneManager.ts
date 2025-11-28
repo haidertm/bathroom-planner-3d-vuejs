@@ -719,24 +719,40 @@ export class SceneManager {
           callbacks?.onPlaceholderSwapped?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
+          // Get positioning parameters from new variant
+          const spawnHeight = newVariant.spawnHeight || 0;
+          const floorOffset = newVariant.floorOffset || 0;
+
           console.log(`🔄 onFullModelReady called for item ${itemId}:`, {
             hasPlaceholderInScene: !!placeholderInScene,
             placeholderHasParent: placeholderInScene?.parent ? true : false,
-            fullModelName: fullModel.name
+            fullModelName: fullModel.name,
+            spawnHeight,
+            floorOffset
           });
 
           // Get the current model in the scene (could be placeholder or original)
           const currentModel = this.existingItems.get(itemId);
 
-          // Determine position/rotation source (NOT scale - model has correct scale from loader)
-          // Priority: placeholderInScene > currentModel > originalPosition
-          let sourcePosition = originalPosition;
+          // Determine position/rotation source
+          // IMPORTANT: The placeholder's Y position includes floorOffset for visual display,
+          // but the full model wrapper should use spawnHeight only because
+          // the model handles floorOffset internally.
+          let sourcePosition = originalPosition.clone();
           let sourceRotation = originalRotation;
 
           if (placeholderInScene) {
-            sourcePosition = placeholderInScene.position.clone();
+            // Use placeholder's X/Z position but calculate Y from spawnHeight only
+            // (model handles floorOffset internally)
+            sourcePosition.x = placeholderInScene.position.x;
+            sourcePosition.y = spawnHeight; // NOT placeholder.position.y which has floorOffset added
+            sourcePosition.z = placeholderInScene.position.z;
             sourceRotation = placeholderInScene.rotation.clone();
-            console.log(`📍 Using placeholder transform for item ${itemId}`);
+            console.log(`📍 Using placeholder X/Z with calculated Y for item ${itemId}:`, {
+              placeholderY: placeholderInScene.position.y,
+              wrapperY: spawnHeight,
+              note: 'Model handles floorOffset internally'
+            });
           } else if (currentModel) {
             sourcePosition = currentModel.position.clone();
             sourceRotation = currentModel.rotation.clone();
