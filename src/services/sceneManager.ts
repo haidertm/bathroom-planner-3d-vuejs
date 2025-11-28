@@ -606,33 +606,43 @@ export class SceneManager {
 
       const newModel = await modelManager.loadModel(sku, modelConfig);
 
-      // Apply transform (position and rotation only)
-      // NOTE: Don't copy scale - the model already has correct scale from loader
-      newModel.position.copy(originalPosition);
-      newModel.rotation.copy(originalRotation);
-      // newModel.scale is already correct from modelManager.loadModel()
+      // IMPORTANT: Wrap the model in a Group for consistent drag behavior
+      const wrapper = new THREE.Group();
+      wrapper.position.copy(originalPosition);
+      wrapper.rotation.copy(originalRotation);
+      // Wrapper scale stays at 1 - the model inside has the correct scale
 
-      // Update userData
-      newModel.userData = {
+      // Reset newModel position to origin (wrapper handles world position)
+      newModel.position.set(0, 0, 0);
+      newModel.rotation.set(0, 0, 0);
+
+      // Add newModel to wrapper
+      wrapper.add(newModel);
+
+      // Set userData on the wrapper
+      wrapper.userData = {
         ...originalUserData,
+        isBathroomItem: true,
+        itemId: itemId,
         sku: sku,
         model: modelConfig,
+        type: originalUserData.type,
         orientation: newVariant.orientation || originalUserData.orientation,
         isPlaceholder: false
       };
 
       // Swap in scene
-      this.bathroomItemsGroup.add(newModel);
+      this.bathroomItemsGroup.add(wrapper);
       this.bathroomItemsGroup.remove(existingModel);
       this.disposeModel(existingModel);
-      this.existingItems.set(itemId, newModel);
+      this.existingItems.set(itemId, wrapper);
 
       this.enhanceModelMaterials(newModel);
 
       callbacks?.onProgress?.(100);
-      callbacks?.onFullModelSwapped?.(newModel);
+      callbacks?.onFullModelSwapped?.(wrapper);
 
-      return newModel;
+      return wrapper;
     }
 
     // Model not cached - use progressive loading with placeholder
@@ -701,32 +711,41 @@ export class SceneManager {
             console.log(`📍 Using original transform for item ${itemId}`);
           }
 
-          // Apply transform to full model
-          // NOTE: Only copy position and rotation, NOT scale!
-          // The fullModel already has the correct scale baked in from the loader
-          // Copying placeholder's scale (which might be 1) would make the model invisible
-          fullModel.position.copy(sourcePosition);
-          fullModel.rotation.copy(sourceRotation);
-          // fullModel.scale is already correct from modelManager.loadModel()
+          // IMPORTANT: Wrap the model in a Group for consistent drag behavior
+          // This matches the structure used in addSingleItemProgressively and createModel
+          const wrapper = new THREE.Group();
+          wrapper.position.copy(sourcePosition);
+          wrapper.rotation.copy(sourceRotation);
+          // Wrapper scale stays at 1 - the model inside has the correct scale
 
-          // Update userData
-          fullModel.userData = {
+          // Reset fullModel position to origin (wrapper handles world position)
+          fullModel.position.set(0, 0, 0);
+          fullModel.rotation.set(0, 0, 0);
+
+          // Add fullModel to wrapper
+          wrapper.add(fullModel);
+
+          // Set userData on the wrapper (this is what drag system looks for)
+          wrapper.userData = {
             ...originalUserData,
+            isBathroomItem: true,
+            itemId: itemId,
             sku: sku,
             model: modelConfig,
+            type: originalUserData.type,
             orientation: newVariant.orientation || originalUserData.orientation,
             isPlaceholder: false
           };
 
-          // Add full model to scene
-          console.log(`➕ Adding fullModel to scene for item ${itemId}`, {
-            position: [fullModel.position.x, fullModel.position.y, fullModel.position.z],
-            scale: [fullModel.scale.x, fullModel.scale.y, fullModel.scale.z],
-            visible: fullModel.visible,
-            childrenCount: fullModel.children.length
+          // Add wrapper to scene
+          console.log(`➕ Adding wrapped fullModel to scene for item ${itemId}`, {
+            wrapperPosition: [wrapper.position.x, wrapper.position.y, wrapper.position.z],
+            fullModelScale: [fullModel.scale.x, fullModel.scale.y, fullModel.scale.z],
+            visible: wrapper.visible,
+            childrenCount: wrapper.children.length
           });
-          this.bathroomItemsGroup.add(fullModel);
-          console.log(`➕ fullModel added. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
+          this.bathroomItemsGroup.add(wrapper);
+          console.log(`➕ Wrapper added. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
 
           // Remove placeholder if it exists
           if (placeholderInScene && placeholderInScene.parent) {
@@ -741,21 +760,21 @@ export class SceneManager {
             console.log(`🗑️ Removed current model for item ${itemId}. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
           }
 
-          // Update tracking
-          this.existingItems.set(itemId, fullModel);
+          // Update tracking with the WRAPPER (not the inner model)
+          this.existingItems.set(itemId, wrapper);
 
-          // Enhance materials
+          // Enhance materials on the inner model
           this.enhanceModelMaterials(fullModel);
 
-          // Verify model is still in scene
+          // Verify wrapper is in scene
           console.log(`🔍 Verification for item ${itemId}:`, {
-            fullModelParent: fullModel.parent?.name || fullModel.parent?.type || 'none',
-            fullModelInGroup: this.bathroomItemsGroup.children.includes(fullModel),
+            wrapperParent: wrapper.parent?.name || wrapper.parent?.type || 'none',
+            wrapperInGroup: this.bathroomItemsGroup.children.includes(wrapper),
             existingItemsHasId: this.existingItems.has(itemId)
           });
 
           console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
-          callbacks?.onFullModelSwapped?.(fullModel);
+          callbacks?.onFullModelSwapped?.(wrapper);
         },
         onProgress: (progress) => {
           callbacks?.onProgress?.(progress);
