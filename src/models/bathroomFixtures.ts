@@ -254,14 +254,17 @@ class ModelManager {
                 },
                 (progress) => {
                     // Handle real loading progress
+                    // Cap download progress at 90% - remaining 10% is for parsing/processing
+                    // GLTFLoader reports download progress, but parsing large models takes time too
                     if (progress.lengthComputable) {
-                        const percentComplete = (progress.loaded / progress.total) * 100;
-                        console.log(`📈 Loading ${modelName}: ${percentComplete.toFixed(1)}%`);
-                        onProgress?.(percentComplete);
+                        // Scale download progress to 0-90% range (leave 10% for parsing)
+                        const downloadPercent = (progress.loaded / progress.total) * 90;
+                        console.log(`📈 Downloading ${modelName}: ${downloadPercent.toFixed(1)}%`);
+                        onProgress?.(downloadPercent);
                     } else {
                         // If length not computable, estimate based on loaded bytes
-                        // Use logarithmic scale capped at 90% (save 10% for processing)
-                        const estimatedProgress = Math.min(90, Math.log10(progress.loaded / 1000 + 1) * 30);
+                        // Use logarithmic scale capped at 80% (save 20% for processing)
+                        const estimatedProgress = Math.min(80, Math.log10(progress.loaded / 1000 + 1) * 30);
                         onProgress?.(estimatedProgress);
                     }
                 },
