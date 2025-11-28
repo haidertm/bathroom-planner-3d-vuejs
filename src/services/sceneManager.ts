@@ -436,15 +436,25 @@ export class SceneManager {
       modelConfig,
       {
         onPlaceholderReady: (placeholder) => {
-          // Get floorOffset from model config - this affects where the model's bottom actually is
+          // Get positioning parameters from model config
           const floorOffset = item.model?.floorOffset || 0;
+          const spawnHeight = item.model?.spawnHeight || 0;
 
-          // Position the placeholder accounting for floorOffset
-          // The model's visual bottom = position.y + floorOffset
-          // So we need to adjust the placeholder's Y position to match
+          // For wall-mounted models:
+          // - spawnHeight: the Y position where the model origin is placed
+          // - floorOffset: offset from origin to the visual bottom of the model
+          // - Visual bottom = spawnHeight + floorOffset
+          //
+          // The placeholder geometry has its bottom at local y=0 (after geometry.translate)
+          // So we need to position the placeholder so its bottom matches the model's visual bottom
+          //
+          // item.position[1] should already equal spawnHeight (set during item creation)
+          // But we read spawnHeight from item.model to ensure consistency
+          const placeholderY = spawnHeight + floorOffset;
+
           placeholder.position.set(
             item.position[0],
-            item.position[1] + floorOffset, // Adjust Y by floorOffset so placeholder bottom matches model bottom
+            placeholderY, // Position so placeholder bottom matches model's visual bottom
             item.position[2]
           );
           placeholder.rotation.y = item.rotation || 0;
@@ -458,6 +468,7 @@ export class SceneManager {
           placeholder.userData.isPlaceholder = true;
           placeholder.userData.sku = item.sku;
           placeholder.userData.floorOffset = floorOffset;
+          placeholder.userData.spawnHeight = spawnHeight;
 
           // Add to scene
           this.bathroomItemsGroup.add(placeholder);
@@ -470,8 +481,10 @@ export class SceneManager {
 
           console.log(`🔲 Progressive: Placeholder added to scene for item ${item.id}`, {
             itemPosition: [item.position[0], item.position[1], item.position[2]],
+            spawnHeight: spawnHeight,
             floorOffset: floorOffset,
-            adjustedPlaceholderY: item.position[1] + floorOffset,
+            placeholderY: placeholderY,
+            calculation: `spawnHeight(${spawnHeight}) + floorOffset(${floorOffset}) = ${placeholderY}`,
             rotation: item.rotation,
             configDimensions: modelConfig.dimensions,
             actualPlaceholderSize: {
