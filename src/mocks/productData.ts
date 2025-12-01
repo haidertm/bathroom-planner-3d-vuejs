@@ -6354,7 +6354,7 @@ const productData: ProductData = {
             variants: [
                 {
                     id: 'white_door',
-                    name: 'White Door 800×2100mm',
+                    name: 'White Door 800×2135mm',
                     image: 'assets/productImages/door/door-white.png',
                     link: '#',
                     path: '../../models/door/door-white.glb',
@@ -6375,7 +6375,7 @@ const productData: ProductData = {
                         allowVerticalMovement: false, // Door must stay on floor
                         allowFreeRotation: false
                     },
-                    sku: 'DOOR-WHITE-800X2100',
+                    sku: 'DOOR-WHITE-800X2135',
                     price: '0.00',
                     title: 'White Door 800×2100mm'
                 },
@@ -6419,7 +6419,7 @@ const productData: ProductData = {
             variants: [
                 {
                     id: 'white_window',
-                    name: 'White Window 600×800mm',
+                    name: 'White Window 800×600mm',
                     image: 'assets/productImages/window/window-white.png',
                     link: '#',
                     path: '../../models/window/window-white.glb',
@@ -6438,16 +6438,16 @@ const productData: ProductData = {
                         snapToWall: true,
                         allowVerticalMovement: true,
                         allowFreeRotation: false,
-                        minHeight: 20,  // Minimum 50cm from floor
-                        maxHeight: 150  // Maximum 200cm from floor
+                        minHeight: 20,
+                        maxHeight: 150
                     },
-                    sku: 'WIN-WHITE-600X800',
+                    sku: 'WIN-WHITE-800X600',
                     price: '0.00',
-                    title: 'White Window 600×800mm'
+                    title: 'White Window 800×600mm'
                 },
                 {
                     id: 'brown_window',
-                    name: 'Brown Window 600×800mm',
+                    name: 'Brown Window 800×600mm',
                     image: 'assets/productImages/window/window.png',
                     link: '#',
                     path: '../../models/window/window.glb',
@@ -6466,12 +6466,12 @@ const productData: ProductData = {
                         snapToWall: true,
                         allowVerticalMovement: true,
                         allowFreeRotation: false,
-                        minHeight: 20,  // Minimum 50cm from floor
-                        maxHeight: 150  // Maximum 200cm from floor
+                        minHeight: 20,
+                        maxHeight: 150
                     },
-                    sku: 'WIN-BROWN-600X800',
+                    sku: 'WIN-BROWN-800X600',
                     price: '0.00',
-                    title: 'Brown Window 600×800mm'
+                    title: 'Brown Window 800×600mm'
                 },
             ],
             variantType: 'Color Options',
