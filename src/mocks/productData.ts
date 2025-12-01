@@ -6386,9 +6386,9 @@ const productData: ProductData = {
                     link: '#',
                     path: '../../models/door/Door.glb',
                     dimensions: {
-                        width: 80,
-                        height: 213.5,
-                        depth: 18.1
+                        width: 99.1,
+                        height: 222.8,
+                        depth: 18.8
                     },
                     floorOffset: -0.2,
                     spawnHeight: 0,
@@ -6452,11 +6452,11 @@ const productData: ProductData = {
                     link: '#',
                     path: '../../models/window/window.glb',
                     dimensions: {
-                        width: 80,
-                        height: 60.1,
-                        depth: 11.7
+                        width: 99.1,
+                        height: 78.8,
+                        depth: 14.7
                     },
-                    floorOffset: 153.2,
+                    floorOffset: 134.6,
                     orientation: {
                         type: 'face_into_room',
                         wallBuffer: 0, // Flush with wall - window is part of wall

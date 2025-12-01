@@ -58,6 +58,8 @@ export class EventHandlers {
   private renderer: THREE.WebGLRenderer;
   private roomWidthRef: Ref<number>;
   private roomHeightRef: Ref<number>;
+  private notchWidthRef: Ref<number>;  // For L-shaped rooms
+  private notchHeightRef: Ref<number>; // For L-shaped rooms
   private setItems: SetItemsFunction;
   private getItems: GetItemsFunction;
   private deleteItem: DeleteItemFunction;
@@ -129,6 +131,8 @@ export class EventHandlers {
     renderer: THREE.WebGLRenderer,
     roomWidthRef: Ref<number>,
     roomHeightRef: Ref<number>,
+    notchWidthRef: Ref<number>,   // For L-shaped rooms
+    notchHeightRef: Ref<number>,  // For L-shaped rooms
     setItems: SetItemsFunction,
     getItems: GetItemsFunction,
     deleteItem: DeleteItemFunction,
@@ -143,6 +147,8 @@ export class EventHandlers {
     this.renderer = renderer;
     this.roomWidthRef = roomWidthRef;
     this.roomHeightRef = roomHeightRef;
+    this.notchWidthRef = notchWidthRef;   // For L-shaped rooms
+    this.notchHeightRef = notchHeightRef; // For L-shaped rooms
     this.setItems = setItems;
     this.getItems = getItems;
     this.deleteItem = deleteItem;
@@ -396,7 +402,7 @@ export class EventHandlers {
   ): boolean {
     const currentItems = this.getCurrentItems();
 
-      // 🔧 Use collision detection that includes walls and supports rotation-aware bounds
+      // 🔧 Use collision detection that includes walls, L-shape notch, and supports rotation-aware bounds
     return wouldCollideWithExistingOrWalls(
       position,
       objectType,
@@ -406,7 +412,9 @@ export class EventHandlers {
       this.roomWidthRef.value,
       this.roomHeightRef.value,
       currentItem,
-      rotation
+      rotation,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
     );
   }
 
@@ -649,12 +657,27 @@ export class EventHandlers {
               .map(status => status.direction)
           );
 
+          // ✅ ADD NOTCH WALLS to visible walls if notch exists
+          const { notch } = getInteriorBoundaries(
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+          if (notch) {
+            visibleWalls.add('notch-east');
+            visibleWalls.add('notch-south');
+          }
+
           // If object is on a hidden wall, move it to the opposite visible wall
           if (!visibleWalls.has(currentWall)) {
             console.log(`🔄 Object is on hidden ${currentWall} wall, moving to visible wall`);
+            console.log(`📊 Visible walls:`, Array.from(visibleWalls));
+            console.log(`📍 Current position:`, this.selectedObject.position);
 
             // Determine the best visible wall (usually opposite wall)
             const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
+            console.log(`🎯 Target wall selected: ${targetWall}`);
 
             // Find an empty space on the target wall (collision-aware)
             const newPosition = this.findEmptySpaceOnWall(
@@ -665,6 +688,8 @@ export class EventHandlers {
               itemId,
               currentItem
             );
+
+            console.log(`📍 New position calculated:`, newPosition);
 
             // Only move if a collision-free position was found
             if (newPosition) {
@@ -742,13 +767,27 @@ export class EventHandlers {
           const roomHalfWidth = this.roomWidthRef.value / 2;
           const roomHalfHeight = this.roomHeightRef.value / 2;
 
-          // Create the wall plane
+          // ✅ Get notch boundaries for L-shaped rooms
+          const { notch } = getInteriorBoundaries(
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+
+          // Create the wall planes
           const wallPlanes: { [key: string]: THREE.Plane } = {
             north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
             south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
             east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
             west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
           };
+
+          // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
+          if (notch) {
+            wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
+            wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+          }
 
           const wallPlane = wallPlanes[currentWall];
 
@@ -836,29 +875,92 @@ export class EventHandlers {
     let z = currentPosition.z;
     let rotation = 0;
 
+    // ✅ Get notch boundaries for L-shaped rooms
+    const { interior, notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     switch (wall) {
       case 'north':
         z = -roomHalfHeight + halfDepth + wallBuffer;
         x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+
+        // ✅ CRITICAL: Check if X position is inside notch area
+        if (notch && x >= notch.minX && x <= notch.maxX) {
+          // Object would be in notch void - move it to notch.maxX boundary
+          x = notch.maxX + halfWidth;
+          console.log(`🔷 North wall: Adjusted X from notch area to ${x.toFixed(1)}`);
+        }
         rotation = 0;
         break;
 
       case 'south':
         z = roomHalfHeight - halfDepth - wallBuffer;
         x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+
+        // ✅ South wall typically doesn't need notch adjustment (notch is usually in north area)
+        // But check anyway for flexibility
+        if (notch && x >= notch.minX && x <= notch.maxX && z < notch.maxZ) {
+          x = notch.maxX + halfWidth;
+          console.log(`🔷 South wall: Adjusted X from notch area to ${x.toFixed(1)}`);
+        }
         rotation = Math.PI;
         break;
 
       case 'east':
         x = roomHalfWidth - halfDepth - wallBuffer;
         z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+
+        // ✅ CRITICAL FIX: Check if Z position is inside notch area
+        if (notch && z >= notch.minZ && z <= notch.maxZ) {
+          // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
+          z = notch.maxZ + halfWidth;
+          console.log(`🔷 East wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
+        }
         rotation = -Math.PI / 2;
         break;
 
       case 'west':
         x = -roomHalfWidth + halfDepth + wallBuffer;
         z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+
+        // ✅ CRITICAL FIX: Check if Z position is inside notch area
+        if (notch && z >= notch.minZ && z <= notch.maxZ) {
+          // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
+          z = notch.maxZ + halfWidth;
+          console.log(`🔷 West wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
+        }
         rotation = Math.PI / 2;
+        break;
+
+      // ✅ NEW: Handle notch walls for L-shaped rooms
+      case 'notch-east':
+        if (notch) {
+          // Position on the vertical notch edge (runs north-south at X = notch.maxX)
+          x = notch.maxX + halfDepth + wallBuffer + 5;
+          // Constrain Z to be within notch bounds and room bounds
+          z = Math.max(
+            notch.minZ + halfWidth,
+            Math.min(interior.maxZ - halfWidth, z)
+          );
+          rotation = Math.PI / 2; // Face away from notch (toward east)
+        }
+        break;
+
+      case 'notch-south':
+        if (notch) {
+          // Position on the horizontal notch edge (runs east-west at Z = notch.maxZ)
+          z = notch.maxZ + halfDepth + wallBuffer + 5;
+          // Constrain X to be within notch bounds and room bounds
+          x = Math.max(
+            notch.minX + halfWidth,
+            Math.min(interior.maxX - halfWidth, x)
+          );
+          rotation = 0; // Face away from notch (toward south)
+        }
         break;
     }
 
@@ -1202,23 +1304,60 @@ export class EventHandlers {
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const tolerance = 30; // 30cm tolerance for wall detection
 
-    // Check each wall
+    // ✅ Check for L-shaped room notch walls first
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
+    if (notch) {
+      // Check notch-east wall (vertical edge at notch.maxX)
+      if (Math.abs(position.x - notch.maxX) < tolerance &&
+          position.z >= notch.minZ &&
+          position.z <= notch.maxZ) {
+        return 'notch-east';
+      }
+
+      // Check notch-south wall (horizontal edge at notch.maxZ)
+      if (Math.abs(position.z - notch.maxZ) < tolerance &&
+          position.x >= notch.minX &&
+          position.x <= notch.maxX) {
+        return 'notch-south';
+      }
+    }
+
+    // Check each main wall
     if (Math.abs(position.z + roomHalfHeight) < tolerance) return 'north';
     if (Math.abs(position.z - roomHalfHeight) < tolerance) return 'south';
     if (Math.abs(position.x - roomHalfWidth) < tolerance) return 'east';
     if (Math.abs(position.x + roomHalfWidth) < tolerance) return 'west';
 
-    // If not clearly on any wall, find nearest
-    const distances = {
+    // If not clearly on any wall, find nearest (including notch walls)
+    const distances: Record<string, number> = {
       north: Math.abs(position.z + roomHalfHeight),
       south: Math.abs(position.z - roomHalfHeight),
       east: Math.abs(position.x - roomHalfWidth),
       west: Math.abs(position.x + roomHalfWidth)
     };
 
+    // Add notch wall distances if notch exists
+    if (notch) {
+      // Distance to notch-east wall (check if within Z bounds)
+      if (position.z >= notch.minZ && position.z <= notch.maxZ) {
+        distances['notch-east'] = Math.abs(position.x - notch.maxX);
+      }
+
+      // Distance to notch-south wall (check if within X bounds)
+      if (position.x >= notch.minX && position.x <= notch.maxX) {
+        distances['notch-south'] = Math.abs(position.z - notch.maxZ);
+      }
+    }
+
     return Object.entries(distances).reduce((a, b) =>
-      distances[a[0] as 'north' | 'south' | 'east' | 'west'] < distances[b[0] as 'north' | 'south' | 'east' | 'west'] ? a : b
-    )[0] as 'north' | 'south' | 'east' | 'west';
+      distances[a[0]] < distances[b[0]] ? a : b
+    )[0] as WallType;
   }
 
   /**
@@ -1229,15 +1368,60 @@ export class EventHandlers {
     currentWall: WallType,
     visibleWalls: Set<string>
   ): WallType {
+    // ✅ CRITICAL FIX: For L-shaped rooms, check if object position is in notch area
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
+    // Get object's current position if available
+    const objectPosition = this.selectedObject?.position;
+
     // Define opposite walls
     const opposites: { [key in WallType]: WallType } = {
       north: 'south',
       south: 'north',
       east: 'west',
-      west: 'east'
+      west: 'east',
+        "notch-east": "notch-south",
+        "notch-south": "notch-east"
     };
 
-    const oppositeWall = opposites[currentWall];
+    let oppositeWall = opposites[currentWall];
+
+    // ✅ NEW: For L-shaped rooms, check if we need to use a notch wall instead
+    if (notch && objectPosition) {
+      // If moving from east to west, but object Z is in notch range, use notch-east instead
+      if (currentWall === 'east' &&
+          objectPosition.z >= notch.minZ &&
+          objectPosition.z <= notch.maxZ) {
+        oppositeWall = 'notch-east';
+        console.log(`🔷 East → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
+      }
+      // If moving from west to east, but object Z is in notch range, use notch-east instead
+      else if (currentWall === 'west' &&
+               objectPosition.z >= notch.minZ &&
+               objectPosition.z <= notch.maxZ) {
+        oppositeWall = 'notch-east';
+        console.log(`🔷 West → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
+      }
+      // If moving from north to south, but object X is in notch range, use notch-south instead
+      else if (currentWall === 'north' &&
+               objectPosition.x >= notch.minX &&
+               objectPosition.x <= notch.maxX) {
+        oppositeWall = 'notch-south';
+        console.log(`🔷 North → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
+      }
+      // If moving from south to north, but object X is in notch range, use notch-south instead
+      else if (currentWall === 'south' &&
+               objectPosition.x >= notch.minX &&
+               objectPosition.x <= notch.maxX) {
+        oppositeWall = 'notch-south';
+        console.log(`🔷 South → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
+      }
+    }
 
     // If opposite wall is visible, use it
     if (visibleWalls.has(oppositeWall)) {
@@ -1253,14 +1437,20 @@ export class EventHandlers {
       // Looking north/south
       if (cameraDirection.z < 0 && visibleWalls.has('north')) return 'north';
       if (cameraDirection.z > 0 && visibleWalls.has('south')) return 'south';
+      // ✅ NEW: Check for notch-south wall
+      if (visibleWalls.has('notch-south')) return 'notch-south';
     } else {
       // Looking east/west
       if (cameraDirection.x > 0 && visibleWalls.has('east')) return 'east';
       if (cameraDirection.x < 0 && visibleWalls.has('west')) return 'west';
+      // ✅ NEW: Check for notch-east wall
+      if (visibleWalls.has('notch-east')) return 'notch-east';
     }
 
-    // Return first available visible wall
-    return (Array.from(visibleWalls)[0] || 'north') as 'north' | 'south' | 'east' | 'west';
+    // ✅ CRITICAL FIX: Return first available visible wall WITHOUT restricting to only 4 walls
+    // This allows notch walls to be returned
+    const firstVisibleWall = Array.from(visibleWalls)[0];
+    return (firstVisibleWall || 'north') as WallType;
   }
 
 
@@ -1424,9 +1614,49 @@ export class EventHandlers {
                 const safeMinZ = wallFaces.north + halfRotatedHeight;
                 const safeMaxZ = wallFaces.south - halfRotatedHeight;
 
-                // Apply constraints with rotated dimensions
-                const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
-                const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
+                // Apply basic room boundary constraints first
+                let constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
+                let constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
+
+                // ✅ NOTCH BOUNDARY CHECK: Prevent bathtub from entering notch area
+                const notchWidth = this.notchWidthRef.value;
+                const notchHeight = this.notchHeightRef.value;
+
+                if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+                    // Calculate notch boundaries (top-left corner)
+                    const notchMinX = -roomHalfWidth + wallThickness;
+                    const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
+                    const notchMinZ = -roomHalfHeight + wallThickness;
+                    const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
+
+                    // Calculate object boundaries at current constrained position
+                    const objMinX = constrainedX - halfRotatedWidth;
+                    const objMaxX = constrainedX + halfRotatedWidth;
+                    const objMinZ = constrainedZ - halfRotatedHeight;
+                    const objMaxZ = constrainedZ + halfRotatedHeight;
+
+                    // Check if object would overlap with notch area
+                    const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
+                    const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
+
+                    // If overlapping notch, push out to nearest valid position
+                    if (xOverlap && zOverlap) {
+                        const clearanceBuffer = 5; // 5cm clearance from notch walls
+
+                        // Calculate distances to push object out of notch
+                        const pushRight = notchMaxX + halfRotatedWidth + clearanceBuffer - constrainedX;
+                        const pushDown = notchMaxZ + halfRotatedHeight + clearanceBuffer - constrainedZ;
+
+                        // Choose the smaller push distance (nearest edge)
+                        if (pushRight < pushDown) {
+                            // Push to the right of notch
+                            constrainedX = notchMaxX + halfRotatedWidth + clearanceBuffer;
+                        } else {
+                            // Push below notch
+                            constrainedZ = notchMaxZ + halfRotatedHeight + clearanceBuffer;
+                        }
+                    }
+                }
 
                 // Set position
                 this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
@@ -1467,7 +1697,19 @@ export class EventHandlers {
         // ✅ NEW: Track current wall to prevent jumping
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
-        // ✅ Get visible walls FIRST
+        // ✅ FIX: Project cursor onto ALL wall planes and use the closest intersection
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // ✅ GET NOTCH BOUNDARIES FIRST for L-shaped room support
+        const { interior, wallFaces, notch } = getInteriorBoundaries(
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          this.notchWidthRef.value,
+          this.notchHeightRef.value
+        );
+
+        // ✅ FIX: Use wall culling to determine which walls are visible for SWITCHING
+        // But always allow staying on the current wall (even if hidden)
         let visibleWalls: Set<string>;
         if (this.wallCulling && this.wallCulling.enabled) {
           const wallVisibility = this.wallCulling.getWallVisibilityStatus();
@@ -1480,16 +1722,34 @@ export class EventHandlers {
           visibleWalls = new Set(['north', 'south', 'east', 'west']);
         }
 
-        // ✅ FIX: Project cursor onto ALL wall planes and use the closest intersection
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        // ✅ ALWAYS include current wall - allow dragging along it even if hidden
+        if (currentWall) {
+          visibleWalls.add(currentWall);
+        }
+
+        // ✅ ADD NOTCH WALLS if notch exists (always visible for L-shaped rooms)
+        if (notch) {
+          visibleWalls.add('notch-east');
+          visibleWalls.add('notch-south');
+        }
 
         // Create planes for each wall
-        const wallPlanes:  { [key in WallType]: THREE.Plane } = {
+        const wallPlanes:  { [key: string]: THREE.Plane } = {
           north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
           south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
           east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
           west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
         };
+
+        // ✅ ADD NOTCH EDGES AS WALLS for L-shaped rooms
+        if (notch) {
+          // Vertical notch edge (runs north-south at X = notch.maxX)
+          // Plane equation: -x + notch.maxX = 0  →  x = notch.maxX
+          wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
+          // Horizontal notch edge (runs east-west at Z = notch.maxZ)
+          // Plane equation: -z + notch.maxZ = 0  →  z = notch.maxZ
+          wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+        }
 
         // Find where cursor ray intersects each wall
         let closestWall = currentWall || 'north';
@@ -1497,27 +1757,256 @@ export class EventHandlers {
         let minDistance = Infinity;
         let foundValidIntersection = false;
 
+        // First, check intersection with current wall
+        let currentWallDistance = Infinity;
+        let currentWallPoint = new THREE.Vector3();
+
+        if (currentWall && wallPlanes[currentWall] && visibleWalls.has(currentWall)) {
+          const intersectPoint = new THREE.Vector3();
+          if (this.raycaster.ray.intersectPlane(wallPlanes[currentWall], intersectPoint)) {
+            // ✅ Validate intersection based on wall type
+            let isValidIntersection = false;
+
+            // For regular walls: check room bounds with tolerance for wall transitions
+            if (currentWall === 'north' || currentWall === 'south' || currentWall === 'east' || currentWall === 'west') {
+              // ✅ DYNAMIC TOLERANCE: Use higher tolerance when on north/west walls in L-shaped rooms
+              // (to allow smooth transitions to notch walls), otherwise use lower tolerance
+              let TRANSITION_TOLERANCE = 10; // Default: 10cm for regular transitions
+              if (notch && (currentWall === 'north' || currentWall === 'west')) {
+                // Higher tolerance when on north/west walls in L-shaped room (can transition to notch walls)
+                TRANSITION_TOLERANCE = 200;
+              }
+
+              if (Math.abs(intersectPoint.x) <= roomHalfWidth + TRANSITION_TOLERANCE &&
+                  Math.abs(intersectPoint.z) <= roomHalfHeight + TRANSITION_TOLERANCE &&
+                  intersectPoint.y >= -50 && intersectPoint.y <= 300) {
+
+                // ✅ CRITICAL FIX: For L-shaped rooms, check that intersection is NOT inside the notch cutout
+                if (notch) {
+                  // Check if intersection point is inside the notch rectangle (not just quadrant!)
+                  const isInsideNotch =
+                    intersectPoint.x >= notch.minX && intersectPoint.x <= notch.maxX &&
+                    intersectPoint.z >= notch.minZ && intersectPoint.z <= notch.maxZ;
+
+                  if (!isInsideNotch) {
+                    isValidIntersection = true;
+                  }
+                  // If inside notch, leave isValidIntersection = false
+                } else {
+                  isValidIntersection = true;
+                }
+              }
+            }
+            // ✅ For notch-east: check if intersection is on the vertical notch wall segment
+            else if (currentWall === 'notch-east' && notch) {
+              if (Math.abs(intersectPoint.x - notch.maxX) <= 20 &&
+                  intersectPoint.z >= notch.minZ &&
+                  intersectPoint.z <= notch.maxZ &&
+                  intersectPoint.y >= -50 && intersectPoint.y <= 300) {
+                isValidIntersection = true;
+              }
+            }
+            // ✅ For notch-south: check if intersection is on the horizontal notch wall segment
+            else if (currentWall === 'notch-south' && notch) {
+              if (Math.abs(intersectPoint.z - notch.maxZ) <= 20 &&
+                  intersectPoint.x >= notch.minX &&
+                  intersectPoint.x <= notch.maxX &&
+                  intersectPoint.y >= -50 && intersectPoint.y <= 300) {
+                isValidIntersection = true;
+              }
+            }
+
+            if (isValidIntersection) {
+              // ✅ FIX: Use RAY DISTANCE (camera to intersection) as the metric
+              // The wall where the ray hits first (shortest distance) is where cursor points most directly
+              // Add stickiness bonus to current wall to prevent flickering
+              const rayDistance = this.camera.position.distanceTo(intersectPoint);
+              const STICKINESS_BONUS = 50; // Current wall gets 50cm advantage
+              currentWallDistance = rayDistance - STICKINESS_BONUS; // Make current wall "closer"
+
+              currentWallPoint.copy(intersectPoint);
+              foundValidIntersection = true;
+              closestWall = currentWall;
+              closestPoint.copy(currentWallPoint);
+              minDistance = currentWallDistance;
+            }
+          }
+        }
+
+        // ✅ WALL TRANSITION RULES: Define which walls can be switched to from current wall
+        // Allow transitions to adjacent walls based on L-shaped room geometry
+        const getAllowedWallTransitions = (fromWall: WallType): Set<WallType> => {
+          const allowed = new Set<WallType>();
+
+          switch(fromWall) {
+            case 'notch-east':
+              // Notch-east connects to all adjacent walls
+              allowed.add('north');  // ✅ Added: transition to north at top corner
+              allowed.add('south');
+              allowed.add('west');
+              allowed.add('east'); // Allow transition to parallel wall
+              if (notch) {
+                allowed.add('notch-south'); // ✅ Added: transition to perpendicular notch wall
+              }
+              break;
+            case 'notch-south':
+              // Notch-south connects to all adjacent walls
+              allowed.add('east');
+              allowed.add('south');
+              allowed.add('west');  // ✅ Added: transition to west at left corner
+              allowed.add('north'); // Allow transition to parallel wall
+              if (notch) {
+                allowed.add('notch-east'); // ✅ Added: transition to perpendicular notch wall
+              }
+              break;
+            case 'north':
+              // North wall connects to all perpendicular walls and notch walls
+              allowed.add('east');
+              allowed.add('west');
+              if (notch) {
+                allowed.add('notch-east');
+                allowed.add('notch-south'); // ✅ Added: transition to notch-south
+              }
+              break;
+            case 'south':
+              // South wall connects to all perpendicular walls and both notch edges
+              allowed.add('east');
+              allowed.add('west');
+              if (notch) {
+                allowed.add('notch-east');
+                allowed.add('notch-south');
+              }
+              break;
+            case 'east':
+              // East wall connects to all perpendicular walls and both notch walls
+              allowed.add('north');
+              allowed.add('south');
+              if (notch) {
+                allowed.add('notch-south');
+                allowed.add('notch-east');
+              }
+              break;
+            case 'west':
+              // West wall connects to all perpendicular walls and both notch walls
+              allowed.add('north');
+              allowed.add('south');
+              if (notch) {
+                allowed.add('notch-east');
+                allowed.add('notch-south'); // ✅ Added: transition to notch-south
+              }
+              break;
+          }
+
+          return allowed;
+        };
+
+        const allowedTransitions = currentWall ? getAllowedWallTransitions(currentWall) : new Set(Object.keys(wallPlanes));
+
+        // Now check other walls - only switch if significantly closer AND transition is allowed
         for (const [wall, plane] of Object.entries(wallPlanes)) {
-          // ✅ CRITICAL: Skip invisible walls
-          if (!visibleWalls.has(wall)) {
+          // Skip current wall (already checked) and invisible walls
+          if (wall === currentWall || !visibleWalls.has(wall)) {
             continue;
           }
+
+          // ✅ Skip walls that are not allowed transitions from current wall
+          if (!allowedTransitions.has(wall as WallType)) {
+            continue;
+          }
+
           const intersectPoint = new THREE.Vector3();
           if (this.raycaster.ray.intersectPlane(plane, intersectPoint)) {
-            // Check if this intersection is within room bounds
-            if (Math.abs(intersectPoint.x) <= roomHalfWidth &&
-              Math.abs(intersectPoint.z) <= roomHalfHeight &&
-              intersectPoint.y >= -50 && intersectPoint.y <= 300) { // Reasonable Y range
+            // ✅ Check if this intersection is within valid bounds (room bounds OR notch segment)
+            let isValidIntersection = false;
 
-              // Calculate distance from camera to this intersection
-              const distance = this.camera.position.distanceTo(intersectPoint);
+            // For regular walls: check room bounds
+            if (wall === 'north' || wall === 'south' || wall === 'east' || wall === 'west') {
+              if (Math.abs(intersectPoint.x) <= roomHalfWidth &&
+                  Math.abs(intersectPoint.z) <= roomHalfHeight &&
+                  intersectPoint.y >= -50 && intersectPoint.y <= 300) {
 
-              // Use the closest valid intersection
-              if (distance < minDistance) {
-                minDistance = distance;
-                closestWall = wall as WallType;
-                closestPoint.copy(intersectPoint);
-                foundValidIntersection = true;
+                // ✅ Also check notch for other walls
+                if (notch) {
+                  const isInsideNotch =
+                    intersectPoint.x >= notch.minX && intersectPoint.x <= notch.maxX &&
+                    intersectPoint.z >= notch.minZ && intersectPoint.z <= notch.maxZ;
+
+                  if (!isInsideNotch) {
+                    isValidIntersection = true;
+                  }
+                } else {
+                  isValidIntersection = true;
+                }
+              }
+            }
+            // ✅ For notch-east: check if intersection is on the vertical notch wall segment
+            else if (wall === 'notch-east' && notch) {
+              if (Math.abs(intersectPoint.x - notch.maxX) <= 50 && // Close to notch X position
+                  intersectPoint.z >= notch.minZ &&
+                  intersectPoint.z <= notch.maxZ &&
+                  intersectPoint.y >= -50 && intersectPoint.y <= 300) {
+                isValidIntersection = true;
+              }
+            }
+            // ✅ For notch-south: check if intersection is on the horizontal notch wall segment
+            else if (wall === 'notch-south' && notch) {
+              if (Math.abs(intersectPoint.z - notch.maxZ) <= 50 && // Close to notch Z position
+                  intersectPoint.x >= notch.minX &&
+                  intersectPoint.x <= notch.maxX &&
+                  intersectPoint.y >= -50 && intersectPoint.y <= 300) {
+                isValidIntersection = true;
+              }
+            }
+
+            if (isValidIntersection) {
+              // ✅ FIX: Use RAY DISTANCE for candidate walls too
+              // The wall with shortest ray distance is where cursor points most directly
+              const rayDistance = this.camera.position.distanceTo(intersectPoint);
+
+              // ✅ CRITICAL FIX: If current wall intersection is invalid (not foundValidIntersection yet),
+              // immediately accept the closest valid alternative wall without requiring threshold
+              // This prevents objects from getting stuck when transitioning between walls
+              if (!foundValidIntersection) {
+                // No valid current wall intersection - accept any valid alternative wall
+                if (rayDistance < minDistance) {
+                  minDistance = rayDistance;
+                  closestWall = wall as WallType;
+                  closestPoint.copy(intersectPoint);
+                  foundValidIntersection = true;
+                  console.log(`🔄 Emergency switch to ${wall} (current wall invalid, rayDist: ${rayDistance.toFixed(0)}cm)`);
+                }
+              } else {
+                // Current wall is valid - use simple ray distance comparison
+                // Current wall already has stickiness bonus applied (50cm advantage)
+                // Switch if candidate wall has shorter ray distance (cursor points more directly at it)
+
+                const isNotchWall = wall === 'notch-east' || wall === 'notch-south';
+
+                // ✅ NOTCH WALL RESTRICTION: Only allow switching to notch walls if object is near the notch
+                // This prevents unwanted jumps when dragging along main walls
+                let allowNotchSwitch = true;
+                if (isNotchWall && notch) {
+                  const objectPos = this.selectedObject.position;
+                  const NOTCH_PROXIMITY = 100; // Must be within 100cm of notch area
+
+                  if (wall === 'notch-east') {
+                    // Only switch to notch-east if object X is near notch.maxX
+                    allowNotchSwitch = objectPos.x < notch.maxX + NOTCH_PROXIMITY;
+                  } else if (wall === 'notch-south') {
+                    // Only switch to notch-south if object Z is near notch.maxZ
+                    allowNotchSwitch = objectPos.z < notch.maxZ + NOTCH_PROXIMITY;
+                  }
+                }
+
+                // Switch if this wall is closer (cursor points more directly at it)
+                const wouldSwitch = allowNotchSwitch && rayDistance < minDistance;
+
+                if (wouldSwitch) {
+                  minDistance = rayDistance;
+                  closestWall = wall as WallType;
+                  closestPoint.copy(intersectPoint);
+                  foundValidIntersection = true;
+                }
               }
             }
           }
@@ -1542,17 +2031,40 @@ export class EventHandlers {
             newY = this.selectedObject.position.y;
           }
 
-            const { interior, wallFaces } = getInteriorBoundaries(this.roomWidthRef.value, this.roomHeightRef.value);
-            const objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
-            const halfObjectWidth = objectWidth / 2;
+          // Calculate object width and depth for boundary constraints
+          const objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
+          // const objectDepth = dimensions && dimensions.depth ? dimensions?.depth * objectScale : 0;
+          const halfObjectWidth = objectWidth / 2;
+          // const halfObjectDepth = objectDepth / 2;
+
+          // ✅ NOTCH HANDLING: Use notch boundaries for L-shaped rooms
+          // For north/south walls: object slides along X axis, so use notch.maxX as minimum X boundary
+          // For east/west walls: object slides along Z axis, so use notch.maxZ as minimum Z boundary
+          // ⚠️ CRITICAL: Add wall thickness to notch boundaries to prevent objects from entering the notch wall
+          // notch.maxX/maxZ represent the INNER surface of notch walls, so we add thickness to get the OUTER edge
+          const effectiveMinX = notch ? notch.maxX + WALL_SETTINGS.THICKNESS : interior.minX;
+          const effectiveMinZ = notch ? notch.maxZ + WALL_SETTINGS.THICKNESS : interior.minZ;
+
+          if (notch) {
+            console.log('🔷 Notch boundaries:', {
+              notchMaxX: notch.maxX.toFixed(1),
+              notchMaxZ: notch.maxZ.toFixed(1),
+              effectiveMinX: effectiveMinX.toFixed(1),
+              effectiveMinZ: effectiveMinZ.toFixed(1),
+              cursorNewX: newX.toFixed(1),
+              cursorNewZ: newZ.toFixed(1),
+              wall: closestWall
+            });
+          }
+
           // Adjust position based on which wall and apply constraints
            switch (closestWall) {
               case 'north':
                   // Keep object flush to north wall
                   newZ = wallFaces.north + wallBuffer;
-                  // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                  // FIXED: Prevent object from extending beyond interior boundaries (including notch)
                   newX = Math.max(
-                      interior.minX + halfObjectWidth,  // Don't go into west wall
+                      effectiveMinX + halfObjectWidth,  // Don't go into west wall or notch
                       Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall, use newX with offset
                   );
                   constrainedRotation = 0;
@@ -1561,10 +2073,11 @@ export class EventHandlers {
                case 'south':
                    // Keep object flush to south wall
                    newZ = wallFaces.south - wallBuffer;
-                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                   // ✅ CRITICAL FIX: South wall is opposite to notch - don't apply notch constraint!
+                   // The notch is on the NORTH side, so south wall should use full room X-range
                    newX = Math.max(
-                       interior.minX + halfObjectWidth,  // Don't go into west wall
-                       Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall, use newX with offset
+                       interior.minX + halfObjectWidth,  // Use actual west boundary, NOT notch boundary
+                       Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall
                    );
                    constrainedRotation = Math.PI;
                    break;
@@ -1572,10 +2085,11 @@ export class EventHandlers {
                case 'east':
                    // Keep object flush to east wall
                    newX = wallFaces.east - wallBuffer;
-                   // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                   // ✅ CRITICAL FIX: East wall is opposite to notch - don't apply notch constraint!
+                   // The notch is on the WEST side, so east wall should use full room Z-range
                    newZ = Math.max(
-                       interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
-                       Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall, use newZ with offset
+                       interior.minZ + halfObjectWidth,  // Use actual north boundary, NOT notch boundary
+                       Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall
                    );
                    constrainedRotation = -Math.PI / 2;
                    break;
@@ -1583,12 +2097,37 @@ export class EventHandlers {
                 case 'west':
                     // Keep object flush to west wall
                     newX = wallFaces.west + wallBuffer;
-                    // FIXED: Prevent object from extending beyond interior boundaries (into adjacent walls)
+                    // FIXED: Prevent object from extending beyond interior boundaries (including notch)
                     newZ = Math.max(
-                        interior.minZ + halfObjectWidth,  // Don't go into north wall (object rotated, so use halfObjectWidth)
+                        effectiveMinZ + halfObjectWidth,  // Don't go into north wall or notch (object rotated, so use halfObjectWidth)
                         Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall, use newZ with offset
                     );
                     constrainedRotation = Math.PI / 2;
+                    break;
+
+                // ✅ NOTCH EDGE WALLS for L-shaped rooms
+                case 'notch-east':
+                    // Vertical notch edge (runs north-south at X = notch.maxX)
+                    // Object snaps to this edge and slides along Z axis
+                    // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
+                    newX = notch?.maxX ? notch.maxX + wallBuffer + 5 : 0;
+                    newZ = Math.max(
+                        notch?.minZ ? notch.minZ + halfObjectWidth : 0,  // Don't go past top of notch
+                        Math.min(interior.maxZ - halfObjectWidth, newZ)  // Allow transition to south wall
+                    );
+                    constrainedRotation = Math.PI / 2;  // Face away from notch (toward east)
+                    break;
+
+                case 'notch-south':
+                    // Horizontal notch edge (runs east-west at Z = notch.maxZ)
+                    // Object snaps to this edge and slides along X axis
+                    // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
+                    newZ = notch?.maxZ ? notch?.maxZ + wallBuffer + 5 : 0;
+                    newX = Math.max(
+                        notch?.minX ? notch?.minX + halfObjectWidth : 0,  // Don't go past left of notch
+                        Math.min(interior.maxX - halfObjectWidth, newX)  // Allow transition to east wall
+                    );
+                    constrainedRotation = 0;  // Face away from notch (toward south)
                     break;
             }
 
@@ -1607,6 +2146,8 @@ export class EventHandlers {
           }
 
           console.log(`📍 Cursor on ${closestWall} wall at (${newX.toFixed(0)}, ${newZ.toFixed(0)})`);
+          console.log(`🔍 Debug - closestPoint: (${closestPoint.x.toFixed(0)}, ${closestPoint.z.toFixed(0)}), dragOffset: (${this.dragOffset.x.toFixed(0)}, ${this.dragOffset.z.toFixed(0)})`);
+          console.log(`🔍 Debug - Final position: (${constrainedPosition.x.toFixed(0)}, ${constrainedPosition.z.toFixed(0)}), Current wall: ${currentWall}`);
         }
 
       } else if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
@@ -1629,7 +2170,9 @@ export class EventHandlers {
             scale: objectScale,
             orientation: currentItem?.model?.orientation,
             item: currentItem,
-            movement: movementConfig
+            movement: movementConfig,
+            notchWidth: this.notchWidthRef.value,
+            notchHeight: this.notchHeightRef.value
           }
         );
 
@@ -1658,7 +2201,9 @@ export class EventHandlers {
             type: objectType,
             scale: objectScale,
             orientation: this.selectedObject?.userData?.orientation,
-            item: currentItem
+            item: currentItem,
+            notchWidth: this.notchWidthRef.value,
+            notchHeight: this.notchHeightRef.value
           }
         );
 
@@ -1673,13 +2218,14 @@ export class EventHandlers {
         }
       }
 
-      // Check collisions
+      // Check collisions with proper rotation
       const isColliding = this.checkCollisionState(
         { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
         objectType,
         objectScale,
         itemId,
-        currentItem
+        currentItem,
+        constrainedRotation  // ✅ FIX: Pass rotation to collision detection
       );
 
       // Update outline color
@@ -1777,7 +2323,8 @@ export class EventHandlers {
         // Room boundaries (same for all objects)
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
-        const wallThickness = 12;
+        const wallThickness = WALL_SETTINGS.THICKNESS;
+        const buffer = 2; // Small buffer to prevent visual overlap with walls
 
         const wallFaces = {
             west: -roomHalfWidth + wallThickness,
@@ -1789,13 +2336,55 @@ export class EventHandlers {
         const halfRotatedWidth = rotatedBounds.width / 2;
         const halfRotatedHeight = rotatedBounds.height / 2;
 
-        const safeMinX = wallFaces.west + halfRotatedWidth;
-        const safeMaxX = wallFaces.east - halfRotatedWidth;
-        const safeMinZ = wallFaces.north + halfRotatedHeight;
-        const safeMaxZ = wallFaces.south - halfRotatedHeight;
+        const safeMinX = wallFaces.west + halfRotatedWidth + buffer;
+        const safeMaxX = wallFaces.east - halfRotatedWidth - buffer;
+        const safeMinZ = wallFaces.north + halfRotatedHeight + buffer;
+        const safeMaxZ = wallFaces.south - halfRotatedHeight - buffer;
 
-        const constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
-        const constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
+        let constrainedX = Math.max(safeMinX, Math.min(safeMaxX, position.x));
+        let constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, position.z));
+
+        // ✅ Check for L-shaped room notch area
+        const notchWidth = this.notchWidthRef.value;
+        const notchHeight = this.notchHeightRef.value;
+
+        if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+            // Notch boundaries (top-left corner of room) with buffer
+            const notchMinX = -roomHalfWidth + wallThickness;
+            const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
+            const notchMinZ = -roomHalfHeight + wallThickness;
+            const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
+
+            // Object boundaries after initial constraint (with buffer for overlap check)
+            const objMinX = constrainedX - halfRotatedWidth - buffer;
+            const objMaxX = constrainedX + halfRotatedWidth + buffer;
+            const objMinZ = constrainedZ - halfRotatedHeight - buffer;
+            const objMaxZ = constrainedZ + halfRotatedHeight + buffer;
+
+            // Check if object overlaps with notch area
+            const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
+            const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
+
+            if (xOverlap && zOverlap) {
+                // Object is in the notch area - push it out
+                // Calculate how much to push in each direction (with buffer)
+                const pushEast = notchMaxX + halfRotatedWidth + buffer - constrainedX;  // Push to the right of notch
+                const pushSouth = notchMaxZ + halfRotatedHeight + buffer - constrainedZ; // Push below the notch
+
+                // Choose the smaller push to minimize displacement
+                if (pushEast <= pushSouth) {
+                    // Push east (away from notch-east wall)
+                    constrainedX = notchMaxX + halfRotatedWidth + buffer;
+                } else {
+                    // Push south (away from notch-south wall)
+                    constrainedZ = notchMaxZ + halfRotatedHeight + buffer;
+                }
+
+                // Re-apply main wall constraints after notch adjustment
+                constrainedX = Math.max(safeMinX, Math.min(safeMaxX, constrainedX));
+                constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, constrainedZ));
+            }
+        }
 
         return new THREE.Vector3(constrainedX, position.y, constrainedZ);
     }
@@ -2143,7 +2732,9 @@ export class EventHandlers {
             {
               type: objectType,
               scale: objectScale,
-              orientation: this.selectedObject?.userData?.orientation
+              orientation: this.selectedObject?.userData?.orientation,
+              notchWidth: this.notchWidthRef.value,
+              notchHeight: this.notchHeightRef.value
             }
           );
 
@@ -2537,13 +3128,27 @@ export class EventHandlers {
     const currentWall = this.selectedObject ?
       this.determineCurrentWall(this.selectedObject.position) : null;
 
+    // ✅ NEW: Get notch boundaries for L-shaped rooms
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     // Calculate wall distances
-    const wallDistances = {
+    const wallDistances: Record<string, number> = {
       north: Math.abs(mouseWorldPos.z + roomHalfHeight),
       south: Math.abs(mouseWorldPos.z - roomHalfHeight),
       east: Math.abs(mouseWorldPos.x - roomHalfWidth),
       west: Math.abs(mouseWorldPos.x + roomHalfWidth)
     };
+
+    // ✅ NEW: Add notch walls if this is an L-shaped room
+    if (notch) {
+      wallDistances['notch-east'] = Math.abs(mouseWorldPos.x - notch.maxX);
+      wallDistances['notch-south'] = Math.abs(mouseWorldPos.z - notch.maxZ);
+    }
 
     const sortedWalls = Object.entries(wallDistances).sort((a, b) => a[1] - b[1]);
     const closestWall = sortedWalls[0][0];
@@ -2629,6 +3234,14 @@ export class EventHandlers {
     // ✅ FIX: Calculate position with correct dimension constraints
     let position = { x: 0, z: 0 };
 
+    // ✅ NEW: Get effective boundaries for L-shaped rooms
+    const { interior } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     switch (nearestWall) {
       case 'north':
         // Use halfWidth for X constraint (mirror is 60cm wide)
@@ -2652,6 +3265,23 @@ export class EventHandlers {
         position.x = -roomHalfWidth + wallBuffer + WALL_SETTINGS.THICKNESS;
         // Use halfWidth for Z constraint when on side walls (mirror rotates)
         position.z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, mouseWorldPos.z));
+        break;
+
+      // ✅ NEW: Handle notch walls for L-shaped rooms
+      case 'notch-east':
+        if (notch) {
+          position.x = notch.maxX + wallBuffer + WALL_SETTINGS.THICKNESS;
+          // Allow sliding along Z within notch bounds and extending to room edge
+          position.z = Math.max(notch.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, mouseWorldPos.z));
+        }
+        break;
+
+      case 'notch-south':
+        if (notch) {
+          position.z = notch.maxZ + wallBuffer + WALL_SETTINGS.THICKNESS;
+          // Allow sliding along X within notch bounds and extending to room edge
+          position.x = Math.max(notch.minX + halfWidth, Math.min(interior.maxX - halfWidth, mouseWorldPos.x));
+        }
         break;
     }
 

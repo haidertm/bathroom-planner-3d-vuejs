@@ -14,9 +14,11 @@ export class AxisIndicatorsDebug {
    * @param {THREE.Scene} scene - Your Three.js scene
    * @param {number} roomWidth - Room width in centimeters
    * @param {number} roomHeight - Room height in centimeters
+   * @param {number} notchWidth - Notch width for L-shaped rooms (optional)
+   * @param {number} notchHeight - Notch height for L-shaped rooms (optional)
    * @param {boolean} enabled - Whether to show indicators (default: true)
    */
-  createAxisIndicators(scene, roomWidth, roomHeight, enabled = true) {
+  createAxisIndicators(scene, roomWidth, roomHeight, notchWidth = 0, notchHeight = 0, enabled = true) {
     // Clear existing indicators first
     this.clearIndicators(scene);
 
@@ -36,16 +38,27 @@ export class AxisIndicatorsDebug {
       maxZ: (roomHeight / 2) - wallThickness
     };
 
+    // Calculate notch boundaries for L-shaped rooms
+    let notch = null;
+    if (notchWidth > 0 && notchHeight > 0) {
+      notch = {
+        minX: -(roomWidth / 2) + wallThickness,
+        maxX: -(roomWidth / 2) + notchWidth - wallThickness,
+        minZ: -(roomHeight / 2) + wallThickness,
+        maxZ: -(roomHeight / 2) + notchHeight - wallThickness
+      };
+    }
+
     const wallHeight = 250; // Matches your WALL_SETTINGS.HEIGHT
     const indicatorHeight = wallHeight * 0.3; // Position indicators at 30% of wall height
     const lineHeight = 50; // Height of the indicator lines
     const wallOffset = wallThickness / 2;
 
     // X-AXIS INDICATORS ON NORTH AND SOUTH WALLS
-    this.createXAxisIndicators(scene, interior, roomHeight, wallOffset, indicatorHeight, lineHeight);
+    this.createXAxisIndicators(scene, interior, notch, roomHeight, wallOffset, indicatorHeight, lineHeight);
 
     // Z-AXIS INDICATORS ON EAST AND WEST WALLS
-    this.createZAxisIndicators(scene, interior, roomWidth, wallOffset, indicatorHeight, lineHeight);
+    this.createZAxisIndicators(scene, interior, notch, roomWidth, wallOffset, indicatorHeight, lineHeight);
 
     console.log('📏 Axis indicators created:', {
       roomDimensions: `${roomWidth} × ${roomHeight}cm`,
@@ -60,17 +73,20 @@ export class AxisIndicatorsDebug {
   /**
    * Create X-axis indicators on North and South walls
    */
-  createXAxisIndicators(scene, interior, roomHeight, wallOffset, indicatorHeight, lineHeight) {
+  createXAxisIndicators(scene, interior, notch, roomHeight, wallOffset, indicatorHeight, lineHeight) {
     const roomHalfHeight = roomHeight / 2;
+
+    // For L-shaped rooms, north wall starts at notch.maxX, not interior.minX
+    const northMinX = notch ? notch.maxX : interior.minX;
 
     // X-axis indicators on NORTH wall (negative Z)
     const northWallZ = -roomHalfHeight + wallOffset - 40; // Position in front of wall
 
-    // X MIN indicator on North wall
+    // X MIN indicator on North wall (notch boundary for L-shape)
     this.createAxisIndicator(
       scene,
-      new THREE.Vector3(interior.minX, indicatorHeight, northWallZ),
-      `X: ${interior.minX.toFixed(0)}`,
+      new THREE.Vector3(northMinX, indicatorHeight, northWallZ),
+      `X: ${northMinX.toFixed(0)}`,
       '#ff4444', // Red like North wall
       'x-min',
       lineHeight,
@@ -135,8 +151,11 @@ export class AxisIndicatorsDebug {
   /**
    * Create Z-axis indicators on East and West walls
    */
-  createZAxisIndicators(scene, interior, roomWidth, wallOffset, indicatorHeight, lineHeight) {
+  createZAxisIndicators(scene, interior, notch, roomWidth, wallOffset, indicatorHeight, lineHeight) {
     const roomHalfWidth = roomWidth / 2;
+
+    // For L-shaped rooms, west wall starts at notch.maxZ, not interior.minZ
+    const westMinZ = notch ? notch.maxZ : interior.minZ;
 
     // Z-axis indicators on EAST wall (positive X)
     const eastWallX = roomHalfWidth - wallOffset + 40; // Position in front of wall
@@ -166,11 +185,11 @@ export class AxisIndicatorsDebug {
     // Z-axis indicators on WEST wall (negative X)
     const westWallX = -roomHalfWidth + wallOffset - 40; // Position in front of wall
 
-    // Z MIN indicator on West wall
+    // Z MIN indicator on West wall (notch boundary for L-shape)
     this.createAxisIndicator(
       scene,
-      new THREE.Vector3(westWallX, indicatorHeight, interior.minZ),
-      `Z: ${interior.minZ.toFixed(0)}`,
+      new THREE.Vector3(westWallX, indicatorHeight, westMinZ),
+      `Z: ${westMinZ.toFixed(0)}`,
       '#ffaa00', // Orange like West wall
       'z-min-west',
       lineHeight,

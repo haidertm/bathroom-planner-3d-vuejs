@@ -15,10 +15,13 @@
         @close="handleTextureClose"
         :room-width="roomWidth"
         :room-height="roomHeight"
+        :notch-width="notchWidth"
+        :notch-height="notchHeight"
         :show-grid="showGrid"
         :show-wall-grid="showWallGrid"
         :wall-culling-enabled="wallCullingEnabled"
         @room-size-change="handleRoomSizeChange"
+        @notch-size-change="handleNotchSizeChange"
         @toggle-grid="setShowGrid"
         @toggle-wall-grid="setShowWallGrid"
         @constrain-objects="constrainObjects"
@@ -487,6 +490,8 @@ const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
+const notchWidth = ref(0) // Default to square room (0 = no notch)
+const notchHeight = ref(0) // Default to square room (0 = no notch)
 const showGrid = ref(false)
 const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
@@ -710,7 +715,7 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   saveRoomDimensionsToStorage(newWidth, newHeight)
 
   // Constrain objects and update scene
-  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight)
+  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight, notchWidth.value, notchHeight.value)
   items.value = constrainedItems
   lastUpdateSource.value = 'roomSize'
 
@@ -720,6 +725,33 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
       items: constrainedItems,
       roomWidth: newWidth,
       roomHeight: newHeight,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value
+    })
+  }, 100)
+}
+
+// Notch size change handler (for L-shaped rooms)
+const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
+  notchWidth.value = newNotchWidth
+  notchHeight.value = newNotchHeight
+
+  // Save the updated dimensions to localStorage (including notch dimensions)
+  saveRoomDimensionsToStorage(roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+
+  // Constrain objects and update scene
+  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+  items.value = constrainedItems
+  lastUpdateSource.value = 'notchSize'
+
+  // Save to history
+  setTimeout(() => {
+    saveToHistory({
+      items: constrainedItems,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      notchWidth: newNotchWidth,
+      notchHeight: newNotchHeight,
       currentFloorTexture: currentFloorTexture.value,
       currentWallTexture: currentWallTexture.value
     })
@@ -758,7 +790,8 @@ const addItem = async (type, productData = null) => {
       selectedVariant?.spawnHeight,
       selectedVariant?.floorOffset || 0,
       selectedVariant.sku,
-
+      notchWidth.value,
+      notchHeight.value
   )
 
   // Check if no free position was found (all corners occupied for corner items)
@@ -929,7 +962,7 @@ const handleShowTexturePanel = () => {
 }
 
 const constrainObjects = () => {
-  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value)
+  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, notchWidth.value, notchHeight.value)
   items.value = constrainedItems
   lastUpdateSource.value = 'constrain'
 }
@@ -978,9 +1011,19 @@ const loadSavedRoomDimensions = () => {
     roomWidthRef.value = dimensions.width
     roomHeightRef.value = dimensions.height
 
+    // Load notch dimensions if they exist (for L-shaped rooms)
+    if (dimensions.notchWidth !== undefined) {
+      notchWidth.value = dimensions.notchWidth
+    }
+    if (dimensions.notchHeight !== undefined) {
+      notchHeight.value = dimensions.notchHeight
+    }
+
     console.log('Room dimensions loaded (CM):', {
       width: dimensions.width + 'cm',
-      height: dimensions.height + 'cm'
+      height: dimensions.height + 'cm',
+      notchWidth: dimensions.notchWidth ? dimensions.notchWidth + 'cm' : 'N/A',
+      notchHeight: dimensions.notchHeight ? dimensions.notchHeight + 'cm' : 'N/A'
     })
 
     return true
@@ -1125,6 +1168,8 @@ onMounted(async () => {
       renderer,
       roomWidthRef,
       roomHeightRef,
+      notchWidth,                  // For L-shaped rooms
+      notchHeight,                 // For L-shaped rooms
       setItems, // Use our custom setItems function
       getItems, // Use our custom getItems function
       deleteItem,
@@ -1147,8 +1192,8 @@ onMounted(async () => {
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
 
   // Set up initial scene
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
   eventHandlersRef.value.setWallCulling(sceneManager.wallCulling)
 
@@ -1222,11 +1267,11 @@ onMounted(async () => {
 })
 
 // Watch for room geometry changes
-watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
+watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], () => {
   if (!sceneManagerRef.value) return
 
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 })
 
@@ -1234,8 +1279,8 @@ watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
 watch([currentFloorTexture, currentWallTexture], () => {
   if (!sceneManagerRef.value) return
 
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
 })
 
 // MODIFIED: Only update scene for non-drag operations

@@ -8,6 +8,8 @@ import { AxisIndicatorsDebug } from '../utils/axisIndicatorsDebug.js';
 import {
   createFloor,
   createWalls,
+  createLShapeFloor,
+  createLShapeWalls,
   createCustomGrid,
   createWallGridLines
 } from '../models/roomGeometry';
@@ -255,47 +257,23 @@ export class SceneManager {
     });
   }
 
-  // Helper method to properly dispose of models
-  private disposeModel (model: THREE.Object3D): void {
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          // Dispose materials but NOT their textures
-          // Textures are managed by textureManager and should be cached/reused
-          const disposeMaterial = (mat: THREE.Material) => {
-            // Store texture references before disposal
-            const textures: THREE.Texture[] = [];
-            if ('map' in mat && mat.map) textures.push(mat.map as any);
-            if ('normalMap' in mat && mat.normalMap) textures.push(mat.normalMap as any);
-            if ('roughnessMap' in mat && mat.roughnessMap) textures.push(mat.roughnessMap as any);
-            if ('metalnessMap' in mat && mat.metalnessMap) textures.push(mat.metalnessMap as any);
-            if ('emissiveMap' in mat && mat.emissiveMap) textures.push(mat.emissiveMap as any);
-            if ('envMap' in mat && mat.envMap) textures.push(mat.envMap as any);
-
-            // Temporarily remove texture references to prevent disposal
-            if ('map' in mat) mat.map = null;
-            if ('normalMap' in mat) mat.normalMap = null;
-            if ('roughnessMap' in mat) mat.roughnessMap = null;
-            if ('metalnessMap' in mat) mat.metalnessMap = null;
-            if ('emissiveMap' in mat) mat.emissiveMap = null;
-            if ('envMap' in mat) mat.envMap = null;
-
-            // Now dispose material (without textures)
-            mat.dispose();
-          };
-
-          if (Array.isArray(child.material)) {
-            child.material.forEach(disposeMaterial);
-          } else {
-            disposeMaterial(child.material);
-          }
-        }
-      }
-    });
-  }
+    // Helper method to properly dispose of models
+    private disposeModel (model: THREE.Object3D): void {
+        model.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(material => material.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
+        });
+    }
 
   // Add method to add single item (for real-time adding)
   // Method to add single item (for real-time adding from Planner.vue)
@@ -519,76 +497,90 @@ export class SceneManager {
         }
     }
 
-  async updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): Promise<void> {
-    if (!this.scene) return;
+   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
+        if (!this.scene) return;
 
-    if (this.floorRef) {
-      this.scene.remove(this.floorRef);
-      // Properly dispose the old floor (without disposing cached textures)
-      this.disposeModel(this.floorRef);
+        if (this.floorRef) {
+            this.scene.remove(this.floorRef);
+        }
+
+    // FIX: Pass room dimensions to material creation
+    const floorMaterial = this.createEnhancedFloorMaterial(floorTexture, roomWidth, roomHeight);
+
+    // Check if we should create an L-shaped floor
+    const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
+
+    if (isLShape) {
+      console.log('Creating L-shaped floor with notch dimensions:', { notchWidth, notchHeight });
+      this.floorRef = createLShapeFloor(roomWidth, roomHeight, notchWidth!, notchHeight!, floorMaterial);
+    } else {
+      this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     }
 
-    const floorMaterial = await this.createEnhancedFloorMaterial(floorTexture);
-    this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     this.scene.add(this.floorRef);
 
         // 🔥 UPDATE: Reposition lights when room dimensions change
         this.setupEnhancedLighting(roomWidth);
-    // Update measurement system with new room dimensions
+    // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
-      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
     }
   }
 
-  private async createEnhancedFloorMaterial (floorTexture: TextureConfig): Promise<THREE.MeshStandardMaterial> {
-    const material = await textureManager.createTexturedMaterialAsync(floorTexture);
+    private createEnhancedFloorMaterial (floorTexture: TextureConfig, roomWidth: number, roomHeight: number): THREE.MeshStandardMaterial {
+        // FIX: Pass room dimensions to texture manager for proper scaling
+        const material = textureManager.createTexturedMaterial(floorTexture, { width: roomWidth, height: roomHeight });
 
     // Enhanced floor material properties
     material.roughness = 0;
     material.metalness = 0.02;
     material.envMapIntensity = 0.5;
 
-
-    // material.clearcoat = 0.8;
-    // material.clearcoatRoughness = 0.1;
-    //
-    // // Enhance reflectivity
-    // material.reflectivity = 0.9;
-
     return material;
   }
 
-  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
+  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
     if (!this.scene) return;
 
-    // Remove existing walls and properly dispose them
-    this.wallRefs.forEach(wall => {
-      if (wall.parent) wall.parent.remove(wall);
-      this.disposeModel(wall);
-    });
-    this.wallRefs = [];
+        // Remove existing walls
+        this.wallRefs.forEach(wall => {
+            if (wall.parent) wall.parent.remove(wall);
+        });
+        this.wallRefs = [];
 
     // Create new walls with enhanced materials
     const wallMaterial = this.createEnhancedWallMaterial(wallTexture);
-    this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
+
+    // Check if we should create L-shaped walls
+    const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
+
+    if (isLShape) {
+      console.log('Creating L-shaped walls with notch dimensions:', { notchWidth, notchHeight });
+      this.wallRefs = createLShapeWalls(roomWidth, roomHeight, notchWidth!, notchHeight!, wallMaterial);
+    } else {
+      this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
+    }
+
     this.wallRefs.forEach(wall => this.scene!.add(wall));
     this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
-    // NEW: Add axis indicators
+    // NEW: Add axis indicators with notch support for L-shaped rooms
     this.axisIndicatorsDebug.createAxisIndicators(
       this.scene,
       roomWidth,
       roomHeight,
+      notchWidth || 0,
+      notchHeight || 0,
       this.debugLabelsEnabled
     );
 
       // 🔥 UPDATE: Reposition lights when room dimensions change
       this.setupEnhancedLighting(roomWidth);
-    // Update wall culling manager with new walls and room size
-    this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
+    // Update wall culling manager with new walls and room size (including notch dimensions)
+    this.wallCullingManager.updateRoomSize(roomWidth, roomHeight, notchWidth, notchHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
-    // Update measurement system with new room dimensions
+    // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
-      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
     }
   }
 
@@ -607,12 +599,14 @@ export class SceneManager {
     return material;
   }
 
-  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true): void {
+  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true, notchWidth?: number, notchHeight?: number): void {
     console.log('🔄 SceneManager.updateGrid called with:', {
       roomWidth,
       roomHeight,
       showGrid,
-      showWallGrid
+      showWallGrid,
+      notchWidth,
+      notchHeight
     });
 
     if (!this.scene) {
@@ -683,12 +677,12 @@ export class SceneManager {
         let totalWallGridLines = 0;
 
         this.wallRefs.forEach((wall, index) => {
-          const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west';
+          const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
           if (wallDirection) {
             console.log(`🔨 Creating grid for ${wallDirection} wall...`);
 
-            const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight);
+            const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight, notchWidth, notchHeight);
 
             console.log(`📏 Wall grid lines created for ${wallDirection}:`, wallGridLines.length);
 
