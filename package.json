@@ -11,6 +11,7 @@
     "structure": "tree -a -I 'node_modules|.git|dist|build|.idea|.vscode|.codesandbox|.devcontainer' > project-structure.txt"
   },
   "dependencies": {
+    "@gtm-support/vue-gtm": "^3.1.0",
     "@react-three/drei": "^9.82.6",
     "@react-three/fiber": "^8.13.6",
     "three": "^0.160.0",
