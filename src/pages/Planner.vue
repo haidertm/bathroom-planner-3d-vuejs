@@ -812,14 +812,11 @@ const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
 }
 
 // ============================================================================
-// MIRROR PLACEMENT HELPERS - Position mirrors above vanity/furniture units
+// MIRROR PLACEMENT HELPERS - Position mirrors above furniture units
 // ============================================================================
 
-// List of vanity unit SKUs that mirrors should be placed above
-const VANITY_UNIT_SKUS = ['C76236', 'C76237']
-
 /**
- * Find all furniture/vanity units in the scene
+ * Find all furniture units in the scene
  * Returns array of all furniture items
  */
 const findAllFurnitureUnits = () => {
@@ -866,7 +863,6 @@ const hasMirrorAbove = (furnitureItem) => {
 
 /**
  * Find a furniture unit that doesn't have a mirror above it yet
- * Prioritizes vanity units (VANITY_UNIT_SKUS) first, then other furniture
  * Returns the first available furniture, or null if all have mirrors
  */
 const findAvailableFurnitureForMirror = () => {
@@ -879,19 +875,7 @@ const findAvailableFurnitureForMirror = () => {
     console.log(`  [${index}] ${item.sku || item.type}: hasMirrorAbove = ${hasM}`)
   })
 
-  // First, try to find a vanity unit without a mirror
-  const availableVanity = allFurniture.find(item =>
-    item.sku &&
-    VANITY_UNIT_SKUS.includes(item.sku) &&
-    !hasMirrorAbove(item)
-  )
-
-  if (availableVanity) {
-    console.log('🔍 Found available vanity:', availableVanity.sku)
-    return availableVanity
-  }
-
-  // If no vanity available, try any other furniture without a mirror
+  // Find any furniture without a mirror above it
   const availableFurniture = allFurniture.find(item => !hasMirrorAbove(item))
 
   if (availableFurniture) {
