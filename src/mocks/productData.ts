@@ -103,6 +103,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-800mm',
           path: '../../models/furniture/basin/C77606.glb',
           dimensions: { width: 81.3, height: 53, depth: 44 },
+          floorOffset: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -135,6 +136,7 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-1000mm',
           path: '../../models/furniture/basin/C77608.glb',
           dimensions: { width: 100.08, height: 53, depth: 43.9 },
+          floorOffset: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -1071,6 +1073,7 @@ const productData: ProductData = {
                   link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-double-basin-vanity-1200mm-c78440',
                   path: '../../models/furniture/basin/C78440.glb',
                   dimensions: { width: 121, height: 90.6, depth: 57.7 },
+                  floorOffset: 0,
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -1387,6 +1390,7 @@ const productData: ProductData = {
                   link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-wall-hung-short-projection-basin-drawer-vanity-500mm-c78548',
                   path: '../../models/furniture/basin/C78548.glb',
                   dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+                  floorOffset: 34.9,
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -2433,6 +2437,7 @@ const productData: ProductData = {
                   link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm-c76244',
                   path: '../../models/furniture/basin/C76244.glb',
                   dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+                  floorOffset: 35,
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap
@@ -2881,7 +2886,7 @@ const productData: ProductData = {
                   link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-curved-basin-600mm-c82107',
                   path: '../../models/furniture/basin/C82107.glb',
                   dimensions: { width: 61, height: 67.2, depth: 45.5 },
-                  floorOffset: 38.4,
+                  floorOffset: 37.5,
                   orientation: {
                       type: 'face_into_room',
                       wallBuffer: 0, // Flush with wall - no gap

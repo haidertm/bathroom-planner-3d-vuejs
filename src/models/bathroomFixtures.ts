@@ -19,6 +19,7 @@ interface LoadingPromise {
 
 export type Position = [number, number, number];
 type ModelLoadedCallback = () => void;
+type ModelProgressCallback = (progress: number) => void;
 
 // Singleton model manager with dynamic loading
 class ModelManager {
@@ -46,6 +47,16 @@ class ModelManager {
     // NEW: Method to check if specific model is loaded
     isModelLoaded(modelName: string): boolean {
         return this.loadedModels.has(modelName);
+    }
+
+    // NEW: Check if model is in cache (for progressive loading)
+    isModelCached(modelName: string): boolean {
+        return modelName in this.cache;
+    }
+
+    // NEW: Check if model is currently loading
+    isModelLoading(modelName: string): boolean {
+        return modelName in this.loadingPromises;
     }
 
     // NEW: Register callback for when a specific model loads
@@ -161,10 +172,10 @@ class ModelManager {
     return this.preloadedCategories.has(category);
   }
 
-  // Existing loadModel method
-    async loadModel(name: string, model: ObjectModel): Promise<THREE.Group> {
+  // Existing loadModel method - now with optional progress callback
+    async loadModel(name: string, model: ObjectModel, onProgress?: ModelProgressCallback): Promise<THREE.Group> {
         try {
-            const result = await this.performModelLoad(name, model);
+            const result = await this.performModelLoad(name, model, onProgress);
 
             // Mark as loaded and trigger callbacks
             this.loadedModels.add(name);
@@ -191,10 +202,11 @@ class ModelManager {
   }
 
     // NEW: The actual model loading implementation
-    private async performModelLoad(modelName: string, modelConfig: ObjectModel): Promise<THREE.Group> {
+    private async performModelLoad(modelName: string, modelConfig: ObjectModel, onProgress?: ModelProgressCallback): Promise<THREE.Group> {
         // Return cached model if available
         if (this.cache[modelName]) {
             console.log(`🎯 Using cached model: ${modelName}`);
+            onProgress?.(100); // Immediately report 100% for cached models
             return this.cloneModelWithMaterials(this.cache[modelName]);
         }
 
@@ -234,14 +246,26 @@ class ModelManager {
                     // Clean up loading promise
                     delete this.loadingPromises[modelName];
 
+                    // Report 100% complete
+                    onProgress?.(100);
+
                     console.log(`🎉 Model ${modelName} loaded and cached successfully`);
                     resolve(model);
                 },
                 (progress) => {
-                    // Optional: Handle loading progress
+                    // Handle real loading progress
+                    // Cap download progress at 90% - remaining 10% is for parsing/processing
+                    // GLTFLoader reports download progress, but parsing large models takes time too
                     if (progress.lengthComputable) {
-                        const percentComplete = (progress.loaded / progress.total) * 100;
-                        console.log(`📈 Loading ${modelName}: ${percentComplete.toFixed(1)}%`);
+                        // Scale download progress to 0-90% range (leave 10% for parsing)
+                        const downloadPercent = (progress.loaded / progress.total) * 90;
+                        console.log(`📈 Downloading ${modelName}: ${downloadPercent.toFixed(1)}%`);
+                        onProgress?.(downloadPercent);
+                    } else {
+                        // If length not computable, estimate based on loaded bytes
+                        // Use logarithmic scale capped at 80% (save 20% for processing)
+                        const estimatedProgress = Math.min(80, Math.log10(progress.loaded / 1000 + 1) * 30);
+                        onProgress?.(estimatedProgress);
                     }
                 },
                 (error) => {

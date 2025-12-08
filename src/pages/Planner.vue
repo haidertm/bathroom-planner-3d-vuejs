@@ -288,7 +288,7 @@ const handleVariantSwap = async (swapConfig) => {
   console.log('🔄 Starting variant swap:', swapConfig)
 
   try {
-    const { itemId, newVariant, product } = swapConfig
+    const { itemId, newVariant, product, useProgressiveLoading = false } = swapConfig
 
     const currentItemIndex = items.value.findIndex(item => item.id === itemId)
     if (currentItemIndex === -1) {
@@ -315,7 +315,60 @@ const handleVariantSwap = async (swapConfig) => {
     // Handle scene update directly - DON'T let the watcher do it
     if (sceneManagerRef.value) {
       console.log('🔄 Handling variant swap scene update directly')
+      console.log('🔄 Progressive loading enabled:', useProgressiveLoading)
+
       try {
+        if (useProgressiveLoading) {
+          // Use PROGRESSIVE loading - shows placeholder immediately
+          console.log('🔲 Using progressive variant swap with placeholder')
+
+          await sceneManagerRef.value.swapItemVariantProgressively(
+            itemId,
+            newVariant,
+            {
+              onPlaceholderSwapped: (placeholder) => {
+                console.log('🔲 Placeholder swapped into scene')
+                // Update selection to placeholder for immediate visual feedback
+                if (eventHandlersRef.value) {
+                  eventHandlersRef.value.selectedObject = placeholder
+                  highlightObject(placeholder, true)
+                  selectedItemId.value = swappedItem.id
+                  selectedObjectId.value = swappedItem.id
+                }
+              },
+              onFullModelSwapped: (fullModel) => {
+                console.log('✅ Full model swapped into scene')
+                // Update selection to full model
+                if (eventHandlersRef.value) {
+                  eventHandlersRef.value.selectedObject = fullModel
+                  highlightObject(fullModel, true)
+                  selectedItemId.value = swappedItem.id
+                  selectedObjectId.value = swappedItem.id
+
+                  // Update measurements if enabled
+                  if (eventHandlersRef.value.measurementSystem) {
+                    eventHandlersRef.value.measurementSystem.setSelectedObject(fullModel)
+                  }
+
+                  // Update rotation arrows if enabled
+                  if (eventHandlersRef.value.rotationArrows && rotationArrowsEnabled.value) {
+                    eventHandlersRef.value.rotationArrows.setSelectedObject(fullModel)
+                  }
+
+                  handleObjectSelectionChange()
+                }
+                lastUpdateSource.value = 'variantSwap-complete'
+              },
+              onProgress: (progress) => {
+                console.log(`📈 Progressive swap progress: ${progress}%`)
+              }
+            }
+          )
+          console.log('✅ Progressive variant swap initiated')
+          return // Early return - callbacks handle the rest
+        }
+
+        // Standard loading path (model is already cached)
         // Remove old item first
         await sceneManagerRef.value.removeSingleItem(itemId)
         console.log('✅ Old item removed')
@@ -835,11 +888,47 @@ const addItem = async (type, productData = null) => {
     })
   }
 
-  // PERFORMANCE BOOST: Add directly to scene first (if not initial load)
-  if (sceneManagerRef.value && !isInitialLoad.value) {
+  // PERFORMANCE BOOST: Add directly to scene (including first item)
+  if (sceneManagerRef.value) {
     try {
-      await sceneManagerRef.value.addSingleItem(newItem)
-      console.log(`✅ Added item ${ newItem.id } directly to scene`)
+      // Use progressive loading if model isn't cached (shows placeholder first)
+      const useProgressive = productData?.useProgressiveLoading === true
+
+      console.log('🎯 Planner addItem - Progressive loading check:', {
+        useProgressiveLoading: productData?.useProgressiveLoading,
+        useProgressive,
+        itemId: newItem.id,
+        sku: newItem.sku,
+        isFirstItem: isInitialLoad.value
+      })
+
+      if (useProgressive) {
+        console.log('🔲 Using progressive loading with placeholder for new item:', newItem.id)
+        await sceneManagerRef.value.addSingleItemProgressively(newItem, {
+          onPlaceholderAdded: (placeholder) => {
+            console.log('🔲 PLACEHOLDER ADDED to scene for item:', newItem.id)
+          },
+          onFullModelAdded: (model) => {
+            console.log('✅ Full model REPLACED placeholder for item:', newItem.id)
+          },
+          onProgress: (progress) => {
+            if (progress % 20 === 0) { // Log every 20%
+              console.log(`📈 Loading progress: ${progress}%`)
+            }
+          }
+        })
+      } else {
+        console.log('⚡ Using direct add (no placeholder) for item:', newItem.id)
+        await sceneManagerRef.value.addSingleItem(newItem)
+      }
+
+      // Mark initial load as complete so watcher uses smart update instead of full update
+      if (isInitialLoad.value) {
+        isInitialLoad.value = false
+        previousItems.value = [newItem]
+      }
+
+      console.log(`✅ Added item ${ newItem.id } to scene`)
     } catch (error) {
       console.error('❌ Failed to add item directly:', error)
       // Will fall back to full update via watcher

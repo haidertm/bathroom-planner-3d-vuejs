@@ -1,4 +1,4 @@
-<!-- VariantConfigurationDrawer.vue - Product Drawer Style with Live Preview + Loading Progress -->
+<!-- VariantConfigurationDrawer.vue - Product Drawer Style with Progressive Loading -->
 <template>
   <!-- Overlay -->
   <div v-if="isOpen" :style="overlayStyle" @click="closeDrawer"></div>
@@ -75,21 +75,15 @@
               {{ formatVariantSize(variant) }}
             </span>
 
-            <!-- Loading indicator for this variant -->
-            <div v-if="isVariantLoadingState(variant)" :style="variantLoadingStyle">
-              <div :style="variantSpinnerStyle"></div>
-              <span :style="loadingTextStyle">{{ Math.round(getVariantProgress(variant)) }}%</span>
-            </div>
-
             <!-- Show current badge on the variant list -->
-            <span v-else-if="isCurrentVariant(variant)" :style="currentVariantBadgeStyle">
+            <span v-if="isCurrentVariant(variant)" :style="currentVariantBadgeStyle">
               ✓ Current
             </span>
 
-            <!-- Progress bar for loading variants -->
-            <div v-if="isVariantLoadingState(variant)" :style="progressBarContainerStyle">
-              <div :style="getProgressBarStyle(variant)"></div>
-            </div>
+            <!-- Show cached/ready indicator for preloaded variants -->
+            <span v-else-if="isVariantCached(variant)" :style="cachedVariantBadgeStyle">
+              ✓ Ready
+            </span>
           </div>
         </div>
       </div>
@@ -106,29 +100,16 @@
         {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : 'SWAP VARIANT' }}
       </button>
     </div>
-
-    <!-- Loading Modal Component -->
-    <LoadingModal
-        :is-visible="modalState.showLoadingModal.value"
-        :progress="modalState.modalProgress.value"
-        title="Loading 3D Model"
-        message="Please wait while the variant model loads..."
-        @cancel="modalState.cancelLoading"
-    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { isMobile } from "../../utils/helpers"
-import LoadingModal from './LoadingModal.vue'
 import {
-  loadVariantModel,
+  loadVariantModelProgressively,
   isVariantModelLoaded,
-  isVariantLoadingState,
-  getVariantProgress,
-  useLoadingModal,
-  clearVariantLoadingState,
+  isModelCached,
 } from '../../utils/modelLoader'
 
 const isMobileDevice = computed(() => isMobile())
@@ -159,9 +140,6 @@ const drawerRef = ref(null)
 // Reactive state
 const selectedVariant = ref(null)
 
-// Use loading modal state manager
-const modalState = useLoadingModal()
-
 // Watch for prop changes
 watch(() => props.currentVariant, (newCurrentVariant) => {
   if (newCurrentVariant) {
@@ -184,32 +162,53 @@ const isCurrentVariant = (variant) => {
   return variant?.sku === props.currentVariant?.sku
 }
 
+// Check if variant model is cached (instant swap available)
+const isVariantCached = (variant) => {
+  return isModelCached(variant)
+}
+
 // Methods
 const selectVariant = async (variant) => {
-  if (isVariantLoadingState(variant)) return
-
   const variantKey = variant.id || variant.sku || variant.name
   console.log('🔄 Variant clicked:', variant.name || variant.sku)
 
   // Always select the variant first
   selectedVariant.value = variant
 
-  // Check if model is already loaded
-  const isModelLoaded = isVariantModelLoaded(variant)
+  // Check if model is already cached (instant availability)
+  if (isModelCached(variant)) {
+    console.log('✅ Model already cached, instant availability')
+    return
+  }
 
-  if (isModelLoaded) {
+  // Check if model is already loaded
+  if (isVariantModelLoaded(variant)) {
     console.log('✅ Model already loaded')
     return
   }
 
-  // Start loading the model in background (no modal, just progress bar)
-  console.log('🔄 Starting background model loading')
+  // Start PROGRESSIVE loading in background - preload for faster swap
+  // Note: The actual swap will use progressive loading with placeholder
+  console.log('🔄 Pre-loading variant model in background')
 
   try {
-    await loadVariantModel(variant)
+    await loadVariantModelProgressively(variant, {
+      onPlaceholderReady: () => {
+        console.log('🔲 Placeholder ready for variant:', variantKey)
+      },
+      onFullModelReady: () => {
+        console.log('✅ Full model ready for variant:', variantKey)
+      },
+      onProgress: () => {
+        // Progress tracked internally
+      },
+      onError: (error) => {
+        console.error('❌ Progressive loading error:', error)
+      }
+    })
     console.log('✅ Background loading completed')
   } catch (error) {
-    console.error('❌ Failed to load variant model in background:', error)
+    console.error('❌ Failed to pre-load variant model:', error)
   }
 }
 
@@ -219,56 +218,50 @@ const confirmSwap = async () => {
   const variant = selectedVariant.value
   const variantKey = variant.id || variant.sku || variant.name
 
-  // Check if the model is loaded
-  const isModelLoaded = isVariantModelLoaded(variant)
-  const isCurrentlyLoading = isVariantLoadingState(variant)
+  // Check if the model is cached (instant availability)
+  const isCached = isModelCached(variant)
 
-  // If model is already loaded, proceed directly
-  if (isModelLoaded && !isCurrentlyLoading) {
-    console.log('✅ Model already loaded, swapping immediately')
+  // If model is already cached, proceed directly - INSTANT swap
+  if (isCached) {
+    console.log('✅ Model cached, swapping immediately (instant)')
     emit('swap-variant', {
       itemId: props.itemId,
       newVariant: selectedVariant.value,
-      product: props.product
+      product: props.product,
+      useProgressiveLoading: false // Model is cached, no need for progressive
     })
     return
   }
 
-  // If model is not loaded or currently loading, show modal and load
-  console.log('🔄 Model not loaded, showing loading modal')
-  modalState.showModal()
+  // Check if the model is loaded (but might not be cached yet)
+  const isLoaded = isVariantModelLoaded(variant)
 
-  try {
-    // Set up cancel callback
-    let cancelled = false
-    modalState.setCancelCallback(() => {
-      cancelled = true
+  // If model is already loaded, proceed directly
+  if (isLoaded) {
+    console.log('✅ Model already loaded, swapping immediately')
+    emit('swap-variant', {
+      itemId: props.itemId,
+      newVariant: selectedVariant.value,
+      product: props.product,
+      useProgressiveLoading: false
     })
-
-    // Load the model
-    await loadVariantModel(variant, (progress) => {
-      if (!cancelled) {
-        modalState.updateProgress(progress)
-      }
-    })
-
-    // If not cancelled and loading completed, swap variant
-    if (!cancelled) {
-      modalState.updateProgress(100)
-      setTimeout(() => {
-        modalState.hideModal()
-        emit('swap-variant', {
-          itemId: props.itemId,
-          newVariant: selectedVariant.value,
-          product: props.product
-        })
-      }, 500)
-    }
-
-  } catch (error) {
-    console.error('❌ Failed to load model:', error)
-    modalState.hideModal()
+    return
   }
+
+  // Model is NOT loaded - use PROGRESSIVE loading for better UX
+  // This will show a placeholder immediately while the model loads
+  console.log('🔄 Model not loaded, using progressive loading with placeholder')
+
+  // Emit swap with progressive loading flag - scene will show placeholder first
+  emit('swap-variant', {
+    itemId: props.itemId,
+    newVariant: selectedVariant.value,
+    product: props.product,
+    useProgressiveLoading: true // Signal to use progressive loading
+  })
+
+  // Note: The loading modal is no longer needed for progressive loading
+  // because the placeholder provides immediate visual feedback in the scene
 }
 
 const closeDrawer = () => {
@@ -289,15 +282,7 @@ const formatVariantSize = (variant) => {
   return variant.name
 }
 
-// Cleanup
-onUnmounted(() => {
-  if (props.product && selectedVariant.value) {
-    const productId = props.product.id
-    const variantId = selectedVariant.value.id || selectedVariant.value.sku || selectedVariant.value.name
-    clearVariantLoadingState(productId, variantId)
-  }
-  modalState.hideModal()
-})
+// Cleanup - nothing special needed since progressive loading handles its own cleanup
 
 // Styles (keeping all your original styles)
 const overlayStyle = computed(() => ({
@@ -473,23 +458,22 @@ const optionsListStyle = computed(() => ({
 const getOptionItemStyle = (variant) => {
   const isSelected = selectedVariant.value?.sku === variant.sku
   const isCurrent = isCurrentVariant(variant)
-  const isLoading = isVariantLoadingState(variant)
+  const isCached = isVariantCached(variant)
 
   return {
     backgroundColor: isCurrent ? '#29275B' : (isSelected ? '#e0e7ff' : 'white'),
     color: isCurrent ? 'white' : '#1f2937',
     padding: '16px',
     borderRadius: '8px',
-    cursor: isLoading ? 'not-allowed' : 'pointer',
+    cursor: 'pointer',
     transition: 'all 0.2s ease',
-    border: isSelected && !isCurrent ? '2px solid #3b82f6' : 'none',
+    border: isSelected && !isCurrent ? '2px solid #3b82f6' : (isCached && !isCurrent ? '1px solid #10b981' : 'none'),
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     fontWeight: isCurrent ? '600' : '500',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    position: 'relative',
-    opacity: isLoading ? 0.7 : 1
+    position: 'relative'
   }
 }
 
@@ -501,6 +485,16 @@ const currentVariantBadgeStyle = computed(() => ({
   fontSize: '12px',
   fontWeight: '600',
   color: '#10b981'
+}))
+
+// Style for cached/ready variants (instant swap available)
+const cachedVariantBadgeStyle = computed(() => ({
+  fontSize: '11px',
+  fontWeight: '500',
+  color: '#6b7280',
+  backgroundColor: '#f3f4f6',
+  padding: '2px 8px',
+  borderRadius: '4px'
 }))
 
 const footerStyle = computed(() => ({
@@ -526,56 +520,9 @@ const addToRoomButtonStyle = computed(() => {
     letterSpacing: '0.5px'
   }
 })
-
-// NEW: Loading-specific styles (minimal and clean)
-const variantLoadingStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  fontSize: '12px',
-  color: '#6b7280'
-}))
-
-const variantSpinnerStyle = computed(() => ({
-  width: '16px',
-  height: '16px',
-  border: '2px solid #e5e7eb',
-  borderTop: '2px solid #3b82f6',
-  borderRadius: '50%',
-  animation: 'spin 1s linear infinite'
-}))
-
-const loadingTextStyle = computed(() => ({
-  fontSize: '12px',
-  fontWeight: '500'
-}))
-
-const progressBarContainerStyle = computed(() => ({
-  position: 'absolute',
-  bottom: '0',
-  left: '0',
-  right: '0',
-  height: '3px',
-  backgroundColor: '#e5e7eb',
-  borderRadius: '0 0 8px 8px',
-  overflow: 'hidden'
-}))
-
-const getProgressBarStyle = (variant) => computed(() => ({
-  height: '100%',
-  backgroundColor: '#3b82f6',
-  width: `${getVariantProgress(variant)}%`,
-  transition: 'width 0.3s ease',
-  borderRadius: '0 0 8px 8px'
-}))
 </script>
 
 <style scoped>
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .size-option:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
