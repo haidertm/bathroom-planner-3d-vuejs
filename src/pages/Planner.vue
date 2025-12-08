@@ -831,7 +831,6 @@ const hasMirrorAbove = (furnitureItem) => {
   const furniturePos = furnitureItem.position
   const furnitureDimensions = furnitureItem.model?.dimensions || { width: 60, height: 55, depth: 35 }
   const furnitureWall = detectWallFromPosition(furniturePos, furnitureItem.rotation || 0)
-  const furnitureTopY = furniturePos[1] + furnitureDimensions.height
 
   return items.value.some(item => {
     if (item.type !== 'Mirror') return false
@@ -842,11 +841,9 @@ const hasMirrorAbove = (furnitureItem) => {
     // Must be on the same wall
     if (mirrorWall !== furnitureWall) return false
 
-    // Mirror should be above or at the level of furniture top
-    const mirrorBottomY = mirrorPos[1] - (item.model?.floorOffset || 0)
-    if (mirrorBottomY < furnitureTopY - 20) return false // Allow some tolerance
-
     // Check horizontal proximity based on wall orientation
+    // This is the key check - if a mirror is horizontally aligned with the furniture on the same wall,
+    // we consider it "above" since mirrors are always placed at a height above furniture
     const proximityThreshold = furnitureDimensions.width / 2 + 50 // Half width + 50cm margin
 
     if (furnitureWall === 'north' || furnitureWall === 'south') {
