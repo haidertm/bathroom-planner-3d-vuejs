@@ -1,4 +1,4 @@
-# Bathroom Planner 3D - TODO & Roadmap!!!!
+# Bathroom Planner 3D - TODO & Roadmap
 
 ## 📏 **Measurement System (Highest Priority)**
 - [ ] **Real-time dimension display during drag**
