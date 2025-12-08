@@ -1,5 +1,13 @@
 <template>
   <div class="my-designs-container">
+    <!-- Template Selection Modal -->
+    <TemplateSelectionModal
+      :isVisible="showTemplateModal"
+      @close="showTemplateModal = false"
+      @select-scratch="handleStartFromScratch"
+      @select-template="handleSelectTemplate"
+    />
+
     <!-- Hero Section -->
     <div class="hero-section">
       <div class="hero-content">
@@ -8,9 +16,9 @@
           Access all your saved bathroom designs in one place. Load previous projects,
           create variations, or start fresh with new ideas to bring your vision to life.
         </p>
-        <router-link to="/" class="cta-button">
+        <button type="button" class="cta-button" @click="showTemplateModal = true">
           + Create New Design
-        </router-link>
+        </button>
       </div>
       <div class="hero-image">
         <div class="bathroom-preview">
@@ -28,7 +36,7 @@
 
       <div class="designs-grid">
         <!-- New Design Card -->
-        <router-link to="/" class="card-link" aria-label="Create a new design">
+        <div class="card-link" @click="showTemplateModal = true" role="button" tabindex="0" aria-label="Create a new design" @keydown.enter="showTemplateModal = true">
         <div class="design-card new-design-card">
           <div class="new-design-content">
             <div class="plus-icon">+</div>
@@ -38,7 +46,7 @@
             <span class="action-button primary">START DESIGNING</span>
           </div>
         </div>
-        </router-link>
+        </div>
 
         <!-- Existing Design Cards -->
         <div class="design-card" v-for="design in designs" :key="design.id">
@@ -88,7 +96,7 @@
           <div class="empty-icon">🎨</div>
           <h3>No designs saved yet</h3>
           <p>Start creating your first bathroom design and save it to access later</p>
-          <router-link to="/" class="cta-button">Begin Designing</router-link>
+          <button type="button" class="cta-button" @click="showTemplateModal = true">Begin Designing</button>
         </div>
       </div>
     </div>
@@ -98,9 +106,11 @@
 <script setup>
 import {ref, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
+import TemplateSelectionModal from '../components/ui/TemplateSelectionModal.vue'
 
 const router = useRouter()
 const activeMenu = ref(null)
+const showTemplateModal = ref(false)
 
 // Sample designs data (in real app, this would come from localStorage or API)
 const designs = ref([
@@ -191,6 +201,19 @@ const deleteDesign = (designId) => {
     localStorage.setItem('saved-designs', JSON.stringify(designs.value))
   }
   activeMenu.value = null
+}
+
+// Template selection handlers
+const handleStartFromScratch = () => {
+  // Go to room shape selector (home page), then room dimensions
+  router.push('/')
+}
+
+const handleSelectTemplate = (templateId) => {
+  // Store the selected template ID for the planner to use
+  localStorage.setItem('selected-template', templateId)
+  // Skip room dimensions and go directly to planner
+  router.push('/planner')
 }
 </script>
 

@@ -11,6 +11,11 @@ const routes = [
         component: RoomShapeSelector
     },
     {
+        path: '/room-dimensions',
+        name: 'RoomDimensions',
+        component: RoomDimensions
+    },
+    {
         path: '/planner',
         name: 'Planner',
         component: Planner
@@ -19,11 +24,6 @@ const routes = [
         path: '/my-designs',
         name: 'MyDesigns',
         component: MyDesigns
-    },
-    {
-        path: '/room-dimensions',
-        name: 'RoomDimensions',
-        component: RoomDimensions
     }
 ]
 

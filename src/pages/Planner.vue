@@ -147,6 +147,7 @@ import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
 import { CONSTRAINTS, ROOM_DEFAULTS } from '../constants/dimensions.js'
 import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures'
 import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
+import { getTemplateById } from '../constants/templates'
 
 // Services
 import { SceneManager } from '../services/sceneManager'
@@ -744,10 +745,8 @@ const handleSaveDesign = () => {
     const verification = localStorage.getItem('saved-designs')
     // Show success feedback with better UX
     hasUnsavedChanges.value = false
-    if (window.confirm('Design saved successfully! Would you like to view your saved designs?')) {
-      // Navigate to My Designs page
-      router.push('/my-designs')
-    }
+    // Navigate directly to My Designs page after saving
+    router.push('/my-designs')
 
   } catch (error) {
     console.error('❌ Failed to save design:', error)
@@ -1149,6 +1148,255 @@ const checkForDesignToLoad = () => {
   return false
 }
 
+/**
+ * Check if a template was selected and load it
+ * Returns true if a template was loaded, false otherwise
+ */
+const checkForTemplateToLoad = () => {
+  try {
+    const templateId = localStorage.getItem('selected-template')
+    if (templateId) {
+      // Clear the flag so it doesn't load again
+      localStorage.removeItem('selected-template')
+
+      const template = getTemplateById(templateId)
+      if (!template) {
+        console.warn('⚠️ Template not found:', templateId)
+        return false
+      }
+
+      // Load template data
+      loadTemplateData(template)
+
+      console.log('✅ Template loaded:', template.name)
+      return true
+    }
+  } catch (error) {
+    console.error('❌ Failed to check for template to load:', error)
+  }
+  return false
+}
+
+/**
+ * Find a product variant by SKU across all categories
+ */
+const findVariantBySku = (sku) => {
+  for (const [category, products] of Object.entries(productData)) {
+    for (const product of products) {
+      if (product.variants) {
+        const variant = product.variants.find((v) => v.sku === sku || v.id === sku)
+        if (variant) {
+          return { product, variant, category }
+        }
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Calculate position for an item based on wall and wallPosition
+ */
+const calculateWallPosition = (
+  wall,
+  wallPosition,
+  roomWidth,
+  roomHeight,
+  dimensions,
+  spawnHeight = 0
+) => {
+  const WALL_THICKNESS = 5
+  const halfRoomWidth = roomWidth / 2
+  const halfRoomHeight = roomHeight / 2
+
+  // Wall face positions (interior surface of walls)
+  const wallFaces = {
+    north: -halfRoomHeight + WALL_THICKNESS,
+    south: halfRoomHeight - WALL_THICKNESS,
+    east: halfRoomWidth - WALL_THICKNESS,
+    west: -halfRoomWidth + WALL_THICKNESS
+  }
+
+  // Interior bounds for positioning along walls
+  const interior = {
+    minX: -halfRoomWidth + WALL_THICKNESS,
+    maxX: halfRoomWidth - WALL_THICKNESS,
+    minZ: -halfRoomHeight + WALL_THICKNESS,
+    maxZ: halfRoomHeight - WALL_THICKNESS
+  }
+
+  const halfWidth = dimensions.width / 2
+  const halfDepth = dimensions.depth / 2
+  const t = wallPosition || 0.5 // Default to center
+
+  let position = { x: 0, y: spawnHeight, z: 0 }
+  let rotation = 0
+
+  switch (wall) {
+    case 'north': // Back wall - item flush against wall
+      position.x = interior.minX + halfWidth + t * (interior.maxX - interior.minX - dimensions.width)
+      position.z = wallFaces.north // Flush against north wall
+      rotation = 0 // Facing south
+      break
+
+    case 'south': // Front wall - item flush against wall
+      position.x = interior.minX + halfWidth + t * (interior.maxX - interior.minX - dimensions.width)
+      position.z = wallFaces.south // Flush against south wall
+      rotation = Math.PI // Facing north
+      break
+
+    case 'east': // Right wall - item flush against wall
+      position.x = wallFaces.east // Flush against east wall
+      position.z = interior.minZ + halfWidth + t * (interior.maxZ - interior.minZ - dimensions.width)
+      rotation = -Math.PI / 2 // Facing west
+      break
+
+    case 'west': // Left wall - item flush against wall
+      position.x = wallFaces.west // Flush against west wall
+      position.z = interior.minZ + halfWidth + t * (interior.maxZ - interior.minZ - dimensions.width)
+      rotation = Math.PI / 2 // Facing east
+      break
+
+    case 'corner-nw': // Back-left corner - flush in corner
+      position.x = wallFaces.west + halfWidth
+      position.z = wallFaces.north // Flush against north wall
+      rotation = 0
+      break
+
+    case 'corner-ne': // Back-right corner - flush in corner
+      position.x = wallFaces.east - halfWidth
+      position.z = wallFaces.north // Flush against north wall
+      rotation = 0
+      break
+
+    case 'corner-sw': // Front-left corner - flush in corner
+      position.x = wallFaces.west + halfWidth
+      position.z = wallFaces.south // Flush against south wall
+      rotation = Math.PI
+      break
+
+    case 'corner-se': // Front-right corner - flush in corner
+      position.x = wallFaces.east - halfWidth
+      position.z = wallFaces.south // Flush against south wall
+      rotation = Math.PI
+      break
+  }
+
+  return { position, rotation }
+}
+
+/**
+ * Convert template items to the format expected by the planner
+ * Places items at specific wall locations defined in the template
+ */
+const loadTemplateData = (template) => {
+  try {
+    // Set room dimensions from template
+    roomWidth.value = template.roomWidth
+    roomHeight.value = template.roomHeight
+    roomWidthRef.value = template.roomWidth
+    roomHeightRef.value = template.roomHeight
+
+    // Convert template items to planner items
+    const plannerItems = template.items.map((templateItem, index) => {
+      // Find the product data for this SKU
+      const productInfo = findVariantBySku(templateItem.sku)
+
+      if (!productInfo) {
+        console.warn(`⚠️ Product not found for SKU: ${templateItem.sku}`)
+        return null
+      }
+
+      const { product, variant, category } = productInfo
+
+      // Get orientation config from variant
+      const productOrientation = variant.orientation || {
+        type: 'face_into_room',
+        wallBuffer: 0,
+        description: 'Standard orientation'
+      }
+
+      // Calculate position based on wall and wallPosition
+      const { position, rotation } = calculateWallPosition(
+        templateItem.wall,
+        templateItem.wallPosition,
+        template.roomWidth,
+        template.roomHeight,
+        variant.dimensions,
+        variant.spawnHeight || 0
+      )
+
+      console.log(`📍 Template item ${templateItem.type} (${templateItem.sku}):`, {
+        wall: templateItem.wall,
+        wallPosition: templateItem.wallPosition,
+        calculatedPosition: position,
+        rotation: rotation,
+        dimensions: variant.dimensions
+      })
+
+      // Create the item in the format expected by the planner
+      return {
+        id: generateUniqueId(),
+        type: templateItem.type,
+        position: [position.x, position.y, position.z],
+        rotation: rotation,
+        scale: 1.0,
+        sku: templateItem.sku,
+        productName: variant.name || variant.title,
+        model: {
+          name: `${templateItem.type}-${templateItem.sku}`,
+          path: variant.path,
+          scale: 100,
+          orientation: productOrientation,
+          dimensions: variant.dimensions,
+          ...(variant.movement && { movement: variant.movement }),
+          floorOffset: variant.floorOffset || 0,
+          spawnHeight: variant.spawnHeight || 0
+        },
+        price: variant.price,
+        productId: product.id
+      }
+    }).filter(Boolean) // Remove any null items
+
+    // Set items
+    items.value = plannerItems
+
+    // Reset textures to defaults for new template
+    currentFloorTexture.value = DEFAULT_FLOOR_TEXTURE
+    currentWallTexture.value = DEFAULT_WALL_TEXTURE
+
+    // Save initial state to history
+    setTimeout(() => {
+      saveToHistory({
+        items: items.value,
+        roomWidth: roomWidth.value,
+        roomHeight: roomHeight.value,
+        currentFloorTexture: currentFloorTexture.value,
+        currentWallTexture: currentWallTexture.value
+      })
+    }, 100)
+
+    console.log('Template loaded successfully:', {
+      templateName: template.name,
+      itemCount: plannerItems.length,
+      roomSize: `${template.roomWidth}x${template.roomHeight}cm`
+    })
+
+  } catch (error) {
+    console.error('❌ Failed to load template data:', error)
+    alert('Failed to load template. Using default settings instead.')
+
+    // Reset to defaults
+    items.value = []
+    roomWidth.value = ROOM_DEFAULTS.WIDTH
+    roomHeight.value = ROOM_DEFAULTS.HEIGHT
+    roomWidthRef.value = ROOM_DEFAULTS.WIDTH
+    roomHeightRef.value = ROOM_DEFAULTS.HEIGHT
+    currentFloorTexture.value = DEFAULT_FLOOR_TEXTURE
+    currentWallTexture.value = DEFAULT_WALL_TEXTURE
+  }
+}
+
 const loadDesignData = (designData) => {
   try {
     // Validate design data
@@ -1229,8 +1477,10 @@ onMounted(async () => {
   window.addEventListener('header-save-design', handleSaveDesign)
   // Check if we need to load a specific design from MyDesigns page
   const wasDesignLoaded = checkForDesignToLoad()
-  // If no design was loaded, load saved room dimensions as usual
-  if (!wasDesignLoaded) {
+  // Check if we need to load a template
+  const wasTemplateLoaded = !wasDesignLoaded && checkForTemplateToLoad()
+  // If no design or template was loaded, load saved room dimensions as usual
+  if (!wasDesignLoaded && !wasTemplateLoaded) {
     const dimensionsLoaded = loadSavedRoomDimensions()
 
     if (dimensionsLoaded) {
