@@ -156,7 +156,7 @@ import { EventHandlers } from '../services/eventHandlers'
 import { createModel } from '../models/bathroomFixtures.ts'
 
 // Utils - Updated imports to include collision detection
-import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls } from '../utils/constraints.js'
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, wouldCollideWithExistingOrWalls, getInteriorBoundaries } from '../utils/constraints.js'
 import {highlightObject, isMobile} from '../utils/helpers.ts'
 
 // Composables
@@ -811,6 +811,254 @@ const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
   }, 100)
 }
 
+// ============================================================================
+// MIRROR PLACEMENT HELPERS - Position mirrors above vanity/furniture units
+// ============================================================================
+
+// List of vanity unit SKUs that mirrors should be placed above
+const VANITY_UNIT_SKUS = ['C76236', 'C76237']
+
+/**
+ * Find all furniture/vanity units in the scene
+ * Returns array of all furniture items
+ */
+const findAllFurnitureUnits = () => {
+  return items.value.filter(item => item.type === 'Furniture') || []
+}
+
+/**
+ * Check if a furniture item already has a mirror above it
+ * Returns true if there's already a mirror above this furniture
+ */
+const hasMirrorAbove = (furnitureItem) => {
+  const furniturePos = furnitureItem.position
+  const furnitureDimensions = furnitureItem.model?.dimensions || { width: 60, height: 55, depth: 35 }
+  const furnitureWall = detectWallFromPosition(furniturePos, furnitureItem.rotation || 0)
+  const furnitureTopY = furniturePos[1] + furnitureDimensions.height
+
+  return items.value.some(item => {
+    if (item.type !== 'Mirror') return false
+
+    const mirrorPos = item.position
+    const mirrorWall = detectWallFromPosition(mirrorPos, item.rotation || 0)
+
+    // Must be on the same wall
+    if (mirrorWall !== furnitureWall) return false
+
+    // Mirror should be above or at the level of furniture top
+    const mirrorBottomY = mirrorPos[1] - (item.model?.floorOffset || 0)
+    if (mirrorBottomY < furnitureTopY - 20) return false // Allow some tolerance
+
+    // Check horizontal proximity based on wall orientation
+    const proximityThreshold = furnitureDimensions.width / 2 + 50 // Half width + 50cm margin
+
+    if (furnitureWall === 'north' || furnitureWall === 'south') {
+      // For north/south walls, check X proximity
+      if (Math.abs(mirrorPos[0] - furniturePos[0]) > proximityThreshold) return false
+    } else {
+      // For east/west walls, check Z proximity
+      if (Math.abs(mirrorPos[2] - furniturePos[2]) > proximityThreshold) return false
+    }
+
+    return true
+  })
+}
+
+/**
+ * Find a furniture unit that doesn't have a mirror above it yet
+ * Prioritizes vanity units (VANITY_UNIT_SKUS) first, then other furniture
+ * Returns the first available furniture, or null if all have mirrors
+ */
+const findAvailableFurnitureForMirror = () => {
+  const allFurniture = findAllFurnitureUnits()
+  console.log('🔍 findAvailableFurnitureForMirror - Found furniture items:', allFurniture.length)
+
+  // Check each furniture item
+  allFurniture.forEach((item, index) => {
+    const hasM = hasMirrorAbove(item)
+    console.log(`  [${index}] ${item.sku || item.type}: hasMirrorAbove = ${hasM}`)
+  })
+
+  // First, try to find a vanity unit without a mirror
+  const availableVanity = allFurniture.find(item =>
+    item.sku &&
+    VANITY_UNIT_SKUS.includes(item.sku) &&
+    !hasMirrorAbove(item)
+  )
+
+  if (availableVanity) {
+    console.log('🔍 Found available vanity:', availableVanity.sku)
+    return availableVanity
+  }
+
+  // If no vanity available, try any other furniture without a mirror
+  const availableFurniture = allFurniture.find(item => !hasMirrorAbove(item))
+
+  if (availableFurniture) {
+    console.log('🔍 Found available furniture:', availableFurniture.sku || availableFurniture.type)
+    return availableFurniture
+  }
+
+  console.log('🔍 No furniture available without a mirror')
+  return null
+}
+
+/**
+ * Detect which wall an item is on based on its position
+ * Returns 'north', 'south', 'east', or 'west'
+ */
+const detectWallFromPosition = (position, vanityRotation) => {
+  // Use rotation to determine wall - more reliable than position
+  // Rotation 0 = north wall (facing south)
+  // Rotation Math.PI = south wall (facing north)
+  // Rotation -Math.PI/2 = east wall (facing west)
+  // Rotation Math.PI/2 = west wall (facing east)
+  const normalizedRotation = ((vanityRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
+
+  if (Math.abs(normalizedRotation) < 0.1 || Math.abs(normalizedRotation - 2 * Math.PI) < 0.1) {
+    return 'north'
+  } else if (Math.abs(normalizedRotation - Math.PI) < 0.1) {
+    return 'south'
+  } else if (Math.abs(normalizedRotation - Math.PI / 2) < 0.1) {
+    return 'west'
+  } else if (Math.abs(normalizedRotation - 3 * Math.PI / 2) < 0.1 || Math.abs(normalizedRotation + Math.PI / 2) < 0.1) {
+    return 'east'
+  }
+
+  // Fallback: use position to detect wall
+  const { wallFaces } = getInteriorBoundaries(roomWidth.value, roomHeight.value, notchWidth.value, notchHeight.value)
+  const tolerance = 50 // 50cm tolerance
+
+  if (Math.abs(position[2] - wallFaces.north) < tolerance) return 'north'
+  if (Math.abs(position[2] - wallFaces.south) < tolerance) return 'south'
+  if (Math.abs(position[0] - wallFaces.east) < tolerance) return 'east'
+  if (Math.abs(position[0] - wallFaces.west) < tolerance) return 'west'
+
+  return 'north' // Default fallback
+}
+
+
+/**
+ * Calculate position for a mirror above a furniture item
+ * Places the mirror centered above the furniture unit
+ */
+const calculateMirrorPositionAboveFurniture = (furnitureItem, mirrorVariant) => {
+  const furniturePos = furnitureItem.position
+  const furnitureRotation = furnitureItem.rotation || 0
+
+  const mirrorSpawnHeight = mirrorVariant?.spawnHeight || 120
+
+  // Mirror position: same X/Z as furniture (centered), at mirror's spawn height
+  const position = {
+    x: furniturePos[0],
+    y: mirrorSpawnHeight,
+    z: furniturePos[2]
+  }
+
+  console.log('🪞 Placing mirror centered above furniture')
+
+  return {
+    position,
+    rotation: furnitureRotation // Mirror should have same rotation as furniture (same wall)
+  }
+}
+
+/**
+ * Find a wall position for a mirror that doesn't collide with existing mirrors
+ * Tries each wall systematically with specific positions along the wall
+ */
+const findAlternativeWallPositionForMirror = (mirrorVariant) => {
+  const { wallFaces, interior } = getInteriorBoundaries(roomWidth.value, roomHeight.value, notchWidth.value, notchHeight.value)
+  const mirrorDimensions = mirrorVariant?.dimensions || { width: 60, height: 60, depth: 10 }
+  const mirrorSpawnHeight = mirrorVariant?.spawnHeight || 120
+  const halfWidth = mirrorDimensions.width / 2
+
+  // Get existing mirrors to avoid collision
+  const existingMirrors = items.value.filter(item => item.type === 'Mirror')
+  console.log('🔍 Finding alternative position, existing mirrors:', existingMirrors.length)
+
+  // Define wall configurations with rotation
+  const walls = [
+    { name: 'north', z: wallFaces.north, rotation: 0, getX: (t) => interior.minX + halfWidth + t * (interior.maxX - interior.minX - mirrorDimensions.width) },
+    { name: 'south', z: wallFaces.south, rotation: Math.PI, getX: (t) => interior.minX + halfWidth + t * (interior.maxX - interior.minX - mirrorDimensions.width) },
+    { name: 'east', x: wallFaces.east, rotation: -Math.PI / 2, getZ: (t) => interior.minZ + halfWidth + t * (interior.maxZ - interior.minZ - mirrorDimensions.width) },
+    { name: 'west', x: wallFaces.west, rotation: Math.PI / 2, getZ: (t) => interior.minZ + halfWidth + t * (interior.maxZ - interior.minZ - mirrorDimensions.width) }
+  ]
+
+  // Try positions along each wall (0%, 25%, 50%, 75%, 100%)
+  const positions = [0, 0.25, 0.5, 0.75, 1.0]
+
+  for (const wall of walls) {
+    for (const t of positions) {
+      let testPosition
+      if (wall.name === 'north' || wall.name === 'south') {
+        testPosition = { x: wall.getX(t), y: mirrorSpawnHeight, z: wall.z }
+      } else {
+        testPosition = { x: wall.x, y: mirrorSpawnHeight, z: wall.getZ(t) }
+      }
+
+      // Check if this position collides with any existing mirror
+      let hasCollision = false
+      for (const existingMirror of existingMirrors) {
+        const existingPos = existingMirror.position
+        const existingDim = existingMirror.model?.dimensions || { width: 60, height: 60 }
+
+        // Simple distance-based collision check
+        const dx = Math.abs(testPosition.x - existingPos[0])
+        const dz = Math.abs(testPosition.z - existingPos[2])
+        const minDistX = (mirrorDimensions.width + existingDim.width) / 2 + 10 // 10cm buffer
+        const minDistZ = (mirrorDimensions.depth + (existingDim.depth || 10)) / 2 + 10
+
+        // For items on same wall (same axis), check the other axis distance
+        if (wall.name === 'north' || wall.name === 'south') {
+          // Same Z (same wall), check X distance
+          if (Math.abs(testPosition.z - existingPos[2]) < 20 && dx < minDistX) {
+            hasCollision = true
+            break
+          }
+        } else {
+          // Same X (same wall), check Z distance
+          if (Math.abs(testPosition.x - existingPos[0]) < 20 && dz < minDistX) {
+            hasCollision = true
+            break
+          }
+        }
+      }
+
+      // Also check collision with furniture
+      const furniture = items.value.filter(item => item.type === 'Furniture')
+      for (const furn of furniture) {
+        const furnPos = furn.position
+        const furnDim = furn.model?.dimensions || { width: 60, height: 55, depth: 35 }
+
+        const dx = Math.abs(testPosition.x - furnPos[0])
+        const dz = Math.abs(testPosition.z - furnPos[2])
+
+        // Only check X/Z collision, mirrors are above furniture in Y
+        if (wall.name === 'north' || wall.name === 'south') {
+          if (Math.abs(testPosition.z - furnPos[2]) < furnDim.depth && dx < (mirrorDimensions.width + furnDim.width) / 2) {
+            hasCollision = true
+            break
+          }
+        } else {
+          if (Math.abs(testPosition.x - furnPos[0]) < furnDim.depth && dz < (mirrorDimensions.width + furnDim.width) / 2) {
+            hasCollision = true
+            break
+          }
+        }
+      }
+
+      if (!hasCollision) {
+        console.log(`✅ Found alternative position on ${wall.name} wall at t=${t}:`, testPosition)
+        return { position: testPosition, rotation: wall.rotation }
+      }
+    }
+  }
+
+  console.log('❌ No alternative wall position found for mirror')
+  return null
+}
+
 // 6. Update your Home.vue addItem function to handle product data:
 const addItem = async (type, productData = null) => {
   console.log('addItem called with type:', type)
@@ -830,30 +1078,91 @@ const addItem = async (type, productData = null) => {
   // ✅ CRITICAL: Get the correct orientation from productData
   const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
-  // Find a free position on any wall
-  const positionResult = findFreeWallPosition(
-      roomWidth.value,
-      roomHeight.value,
-      type,
-      defaults.scale,
-      items.value,
-      undefined, // No specific wall direction
-      productOrientation,
-      selectedVariant?.movement,
-      selectedVariant?.spawnHeight,
-      selectedVariant?.floorOffset || 0,
-      selectedVariant.sku,
-      notchWidth.value,
-      notchHeight.value
-  )
+  // ============================================================================
+  // MIRROR ABOVE FURNITURE LOGIC
+  // If adding a mirror and furniture exists without a mirror, position above it
+  // Only ONE mirror per furniture item - subsequent mirrors go on other walls
+  // ============================================================================
+  let freePosition = null
+  let wallRotation = 0
 
-  // Check if no free position was found (all corners occupied for corner items)
-  if (!positionResult) {
-    alert('Cannot add item - all available corners are occupied. Please remove an existing item first.')
-    return
+  if (type === 'Mirror') {
+    // Find a furniture item that doesn't have a mirror above it yet
+    const availableFurniture = findAvailableFurnitureForMirror()
+
+    if (availableFurniture) {
+      console.log('🪞 Found furniture without mirror, positioning mirror above it:', availableFurniture.sku || availableFurniture.type)
+
+      // Calculate position for the new mirror (centered above the furniture)
+      const mirrorPlacement = calculateMirrorPositionAboveFurniture(
+        availableFurniture,
+        selectedVariant
+      )
+
+      freePosition = mirrorPlacement.position
+      wallRotation = mirrorPlacement.rotation
+
+      console.log('🪞 Mirror position calculated:', {
+        x: freePosition.x.toFixed(1),
+        y: freePosition.y.toFixed(1),
+        z: freePosition.z.toFixed(1),
+        rotation: wallRotation,
+        aboveFurniture: availableFurniture.sku || availableFurniture.type
+      })
+    } else {
+      console.log('🪞 No furniture available without a mirror, finding alternative wall position')
+
+      // Use our smart alternative positioning for mirrors
+      const alternativePosition = findAlternativeWallPositionForMirror(selectedVariant)
+
+      if (alternativePosition) {
+        freePosition = alternativePosition.position
+        wallRotation = alternativePosition.rotation
+        console.log('🪞 Alternative mirror position found:', {
+          x: freePosition.x.toFixed(1),
+          y: freePosition.y.toFixed(1),
+          z: freePosition.z.toFixed(1),
+          rotation: wallRotation
+        })
+      } else {
+        console.log('🪞 No alternative position found, will try default findFreeWallPosition')
+      }
+    }
   }
 
-  const { position: freePosition, rotation: wallRotation } = positionResult
+  // If no furniture-relative position was calculated, use default positioning
+  if (!freePosition) {
+    console.log('🔍 Using default findFreeWallPosition for', type)
+
+    // Find a free position on any wall
+    const positionResult = findFreeWallPosition(
+        roomWidth.value,
+        roomHeight.value,
+        type,
+        defaults.scale,
+        items.value,
+        undefined, // No specific wall direction
+        productOrientation,
+        selectedVariant?.movement,
+        selectedVariant?.spawnHeight,
+        selectedVariant?.floorOffset || 0,
+        selectedVariant.sku,
+        notchWidth.value,
+        notchHeight.value
+    )
+
+    console.log('🔍 findFreeWallPosition result:', positionResult)
+
+    // Check if no free position was found (all corners occupied for corner items)
+    if (!positionResult) {
+      console.error('❌ findFreeWallPosition returned null - no available position found')
+      alert('Cannot add item - no available wall position found. Please remove an existing item or try a different wall.')
+      return
+    }
+
+    freePosition = positionResult.position
+    wallRotation = positionResult.rotation
+  }
 
   const newItem = {
     id: generateUniqueId(),
