@@ -15,10 +15,13 @@
         @close="handleTextureClose"
         :room-width="roomWidth"
         :room-height="roomHeight"
+        :notch-width="notchWidth"
+        :notch-height="notchHeight"
         :show-grid="showGrid"
         :show-wall-grid="showWallGrid"
         :wall-culling-enabled="wallCullingEnabled"
         @room-size-change="handleRoomSizeChange"
+        @notch-size-change="handleNotchSizeChange"
         @toggle-grid="setShowGrid"
         @toggle-wall-grid="setShowWallGrid"
         @constrain-objects="constrainObjects"
@@ -285,7 +288,7 @@ const handleVariantSwap = async (swapConfig) => {
   console.log('🔄 Starting variant swap:', swapConfig)
 
   try {
-    const { itemId, newVariant, product } = swapConfig
+    const { itemId, newVariant, product, useProgressiveLoading = false } = swapConfig
 
     const currentItemIndex = items.value.findIndex(item => item.id === itemId)
     if (currentItemIndex === -1) {
@@ -312,7 +315,60 @@ const handleVariantSwap = async (swapConfig) => {
     // Handle scene update directly - DON'T let the watcher do it
     if (sceneManagerRef.value) {
       console.log('🔄 Handling variant swap scene update directly')
+      console.log('🔄 Progressive loading enabled:', useProgressiveLoading)
+
       try {
+        if (useProgressiveLoading) {
+          // Use PROGRESSIVE loading - shows placeholder immediately
+          console.log('🔲 Using progressive variant swap with placeholder')
+
+          await sceneManagerRef.value.swapItemVariantProgressively(
+            itemId,
+            newVariant,
+            {
+              onPlaceholderSwapped: (placeholder) => {
+                console.log('🔲 Placeholder swapped into scene')
+                // Update selection to placeholder for immediate visual feedback
+                if (eventHandlersRef.value) {
+                  eventHandlersRef.value.selectedObject = placeholder
+                  highlightObject(placeholder, true)
+                  selectedItemId.value = swappedItem.id
+                  selectedObjectId.value = swappedItem.id
+                }
+              },
+              onFullModelSwapped: (fullModel) => {
+                console.log('✅ Full model swapped into scene')
+                // Update selection to full model
+                if (eventHandlersRef.value) {
+                  eventHandlersRef.value.selectedObject = fullModel
+                  highlightObject(fullModel, true)
+                  selectedItemId.value = swappedItem.id
+                  selectedObjectId.value = swappedItem.id
+
+                  // Update measurements if enabled
+                  if (eventHandlersRef.value.measurementSystem) {
+                    eventHandlersRef.value.measurementSystem.setSelectedObject(fullModel)
+                  }
+
+                  // Update rotation arrows if enabled
+                  if (eventHandlersRef.value.rotationArrows && rotationArrowsEnabled.value) {
+                    eventHandlersRef.value.rotationArrows.setSelectedObject(fullModel)
+                  }
+
+                  handleObjectSelectionChange()
+                }
+                lastUpdateSource.value = 'variantSwap-complete'
+              },
+              onProgress: (progress) => {
+                console.log(`📈 Progressive swap progress: ${progress}%`)
+              }
+            }
+          )
+          console.log('✅ Progressive variant swap initiated')
+          return // Early return - callbacks handle the rest
+        }
+
+        // Standard loading path (model is already cached)
         // Remove old item first
         await sceneManagerRef.value.removeSingleItem(itemId)
         console.log('✅ Old item removed')
@@ -487,6 +543,8 @@ const currentFloorTexture = ref(DEFAULT_FLOOR_TEXTURE)
 const currentWallTexture = ref(DEFAULT_WALL_TEXTURE)
 const roomWidth = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeight = ref(ROOM_DEFAULTS.HEIGHT)
+const notchWidth = ref(0) // Default to square room (0 = no notch)
+const notchHeight = ref(0) // Default to square room (0 = no notch)
 const showGrid = ref(false)
 const showWallGrid = ref(false)  // Wall grid checkbox
 const wallCullingEnabled = ref(true)
@@ -710,7 +768,7 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   saveRoomDimensionsToStorage(newWidth, newHeight)
 
   // Constrain objects and update scene
-  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight)
+  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight, notchWidth.value, notchHeight.value)
   items.value = constrainedItems
   lastUpdateSource.value = 'roomSize'
 
@@ -720,6 +778,33 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
       items: constrainedItems,
       roomWidth: newWidth,
       roomHeight: newHeight,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value
+    })
+  }, 100)
+}
+
+// Notch size change handler (for L-shaped rooms)
+const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
+  notchWidth.value = newNotchWidth
+  notchHeight.value = newNotchHeight
+
+  // Save the updated dimensions to localStorage (including notch dimensions)
+  saveRoomDimensionsToStorage(roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+
+  // Constrain objects and update scene
+  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+  items.value = constrainedItems
+  lastUpdateSource.value = 'notchSize'
+
+  // Save to history
+  setTimeout(() => {
+    saveToHistory({
+      items: constrainedItems,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      notchWidth: newNotchWidth,
+      notchHeight: newNotchHeight,
       currentFloorTexture: currentFloorTexture.value,
       currentWallTexture: currentWallTexture.value
     })
@@ -758,7 +843,8 @@ const addItem = async (type, productData = null) => {
       selectedVariant?.spawnHeight,
       selectedVariant?.floorOffset || 0,
       selectedVariant.sku,
-
+      notchWidth.value,
+      notchHeight.value
   )
 
   // Check if no free position was found (all corners occupied for corner items)
@@ -802,11 +888,47 @@ const addItem = async (type, productData = null) => {
     })
   }
 
-  // PERFORMANCE BOOST: Add directly to scene first (if not initial load)
-  if (sceneManagerRef.value && !isInitialLoad.value) {
+  // PERFORMANCE BOOST: Add directly to scene (including first item)
+  if (sceneManagerRef.value) {
     try {
-      await sceneManagerRef.value.addSingleItem(newItem)
-      console.log(`✅ Added item ${ newItem.id } directly to scene`)
+      // Use progressive loading if model isn't cached (shows placeholder first)
+      const useProgressive = productData?.useProgressiveLoading === true
+
+      console.log('🎯 Planner addItem - Progressive loading check:', {
+        useProgressiveLoading: productData?.useProgressiveLoading,
+        useProgressive,
+        itemId: newItem.id,
+        sku: newItem.sku,
+        isFirstItem: isInitialLoad.value
+      })
+
+      if (useProgressive) {
+        console.log('🔲 Using progressive loading with placeholder for new item:', newItem.id)
+        await sceneManagerRef.value.addSingleItemProgressively(newItem, {
+          onPlaceholderAdded: (placeholder) => {
+            console.log('🔲 PLACEHOLDER ADDED to scene for item:', newItem.id)
+          },
+          onFullModelAdded: (model) => {
+            console.log('✅ Full model REPLACED placeholder for item:', newItem.id)
+          },
+          onProgress: (progress) => {
+            if (progress % 20 === 0) { // Log every 20%
+              console.log(`📈 Loading progress: ${progress}%`)
+            }
+          }
+        })
+      } else {
+        console.log('⚡ Using direct add (no placeholder) for item:', newItem.id)
+        await sceneManagerRef.value.addSingleItem(newItem)
+      }
+
+      // Mark initial load as complete so watcher uses smart update instead of full update
+      if (isInitialLoad.value) {
+        isInitialLoad.value = false
+        previousItems.value = [newItem]
+      }
+
+      console.log(`✅ Added item ${ newItem.id } to scene`)
     } catch (error) {
       console.error('❌ Failed to add item directly:', error)
       // Will fall back to full update via watcher
@@ -929,7 +1051,7 @@ const handleShowTexturePanel = () => {
 }
 
 const constrainObjects = () => {
-  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value)
+  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, notchWidth.value, notchHeight.value)
   items.value = constrainedItems
   lastUpdateSource.value = 'constrain'
 }
@@ -978,9 +1100,19 @@ const loadSavedRoomDimensions = () => {
     roomWidthRef.value = dimensions.width
     roomHeightRef.value = dimensions.height
 
+    // Load notch dimensions if they exist (for L-shaped rooms)
+    if (dimensions.notchWidth !== undefined) {
+      notchWidth.value = dimensions.notchWidth
+    }
+    if (dimensions.notchHeight !== undefined) {
+      notchHeight.value = dimensions.notchHeight
+    }
+
     console.log('Room dimensions loaded (CM):', {
       width: dimensions.width + 'cm',
-      height: dimensions.height + 'cm'
+      height: dimensions.height + 'cm',
+      notchWidth: dimensions.notchWidth ? dimensions.notchWidth + 'cm' : 'N/A',
+      notchHeight: dimensions.notchHeight ? dimensions.notchHeight + 'cm' : 'N/A'
     })
 
     return true
@@ -1125,6 +1257,8 @@ onMounted(async () => {
       renderer,
       roomWidthRef,
       roomHeightRef,
+      notchWidth,                  // For L-shaped rooms
+      notchHeight,                 // For L-shaped rooms
       setItems, // Use our custom setItems function
       getItems, // Use our custom getItems function
       deleteItem,
@@ -1147,8 +1281,8 @@ onMounted(async () => {
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
 
   // Set up initial scene
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
   eventHandlersRef.value.setWallCulling(sceneManager.wallCulling)
 
@@ -1222,11 +1356,11 @@ onMounted(async () => {
 })
 
 // Watch for room geometry changes
-watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
+watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], () => {
   if (!sceneManagerRef.value) return
 
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
 })
 
@@ -1234,8 +1368,8 @@ watch([roomWidth, roomHeight, showGrid, showWallGrid], () => {
 watch([currentFloorTexture, currentWallTexture], () => {
   if (!sceneManagerRef.value) return
 
-  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value])
-  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value])
+  sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
+  sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
 })
 
 // MODIFIED: Only update scene for non-drag operations

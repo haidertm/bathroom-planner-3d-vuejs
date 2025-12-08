@@ -2,12 +2,15 @@
 
 import * as THREE from 'three';
 import { type MeasurementData, MeasurementSystem } from './measurementSystem';
-import { createModel } from '../models/bathroomFixtures';
+import { createModel, ModelManager } from '../models/bathroomFixtures';
+import { ProgressiveModelLoader } from './progressiveModelLoader';
 import { WallLabelsDebug } from '../utils/wallLabelsDebug.js';
 import { AxisIndicatorsDebug } from '../utils/axisIndicatorsDebug.js';
 import {
   createFloor,
   createWalls,
+  createLShapeFloor,
+  createLShapeWalls,
   createCustomGrid,
   createWallGridLines
 } from '../models/roomGeometry';
@@ -255,47 +258,23 @@ export class SceneManager {
     });
   }
 
-  // Helper method to properly dispose of models
-  private disposeModel (model: THREE.Object3D): void {
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          // Dispose materials but NOT their textures
-          // Textures are managed by textureManager and should be cached/reused
-          const disposeMaterial = (mat: THREE.Material) => {
-            // Store texture references before disposal
-            const textures: THREE.Texture[] = [];
-            if ('map' in mat && mat.map) textures.push(mat.map as any);
-            if ('normalMap' in mat && mat.normalMap) textures.push(mat.normalMap as any);
-            if ('roughnessMap' in mat && mat.roughnessMap) textures.push(mat.roughnessMap as any);
-            if ('metalnessMap' in mat && mat.metalnessMap) textures.push(mat.metalnessMap as any);
-            if ('emissiveMap' in mat && mat.emissiveMap) textures.push(mat.emissiveMap as any);
-            if ('envMap' in mat && mat.envMap) textures.push(mat.envMap as any);
-
-            // Temporarily remove texture references to prevent disposal
-            if ('map' in mat) mat.map = null;
-            if ('normalMap' in mat) mat.normalMap = null;
-            if ('roughnessMap' in mat) mat.roughnessMap = null;
-            if ('metalnessMap' in mat) mat.metalnessMap = null;
-            if ('emissiveMap' in mat) mat.emissiveMap = null;
-            if ('envMap' in mat) mat.envMap = null;
-
-            // Now dispose material (without textures)
-            mat.dispose();
-          };
-
-          if (Array.isArray(child.material)) {
-            child.material.forEach(disposeMaterial);
-          } else {
-            disposeMaterial(child.material);
-          }
-        }
-      }
-    });
-  }
+    // Helper method to properly dispose of models
+    private disposeModel (model: THREE.Object3D): void {
+        model.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(material => material.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
+        });
+    }
 
   // Add method to add single item (for real-time adding)
   // Method to add single item (for real-time adding from Planner.vue)
@@ -374,6 +353,504 @@ export class SceneManager {
     } else {
       console.warn(`⚠️ Item ${itemId} not found in scene for removal`);
     }
+  }
+
+  // ============================================================================
+  // PROGRESSIVE LOADING METHODS
+  // ============================================================================
+
+  /**
+   * Add an item progressively - shows placeholder immediately, then swaps to full model
+   * This provides instant visual feedback while the actual model loads
+   */
+  async addSingleItemProgressively(
+    item: BathroomItem,
+    callbacks?: {
+      onPlaceholderAdded?: (placeholder: THREE.Group) => void;
+      onFullModelAdded?: (model: THREE.Group) => void;
+      onProgress?: (progress: number) => void;
+    }
+  ): Promise<THREE.Group> {
+    console.log('🔄 SceneManager.addSingleItemProgressively called:', {
+      itemId: item.id,
+      sku: item.sku,
+      modelName: item.model?.name
+    });
+
+    // Check if item already exists
+    if (this.existingItems.has(item.id)) {
+      console.log(`⚠️ Progressive: Item ${item.id} already exists, updating instead`);
+      const existingModel = this.existingItems.get(item.id);
+      if (existingModel) {
+        this.updateExistingModel(existingModel, item);
+        return existingModel as THREE.Group;
+      }
+    }
+
+    const progressiveLoader = ProgressiveModelLoader.getInstance();
+    const modelManager = ModelManager.getInstance();
+    const sku = item.sku || item.model?.name || `item_${item.id}`;
+
+    console.log('🔍 SceneManager - Checking cache for SKU:', sku);
+
+    // Check if model is already cached - use fast path
+    const isCached = modelManager.isModelCached(sku);
+    console.log('🔍 SceneManager - Model cached?', isCached);
+
+    if (isCached) {
+      console.log(`✅ Progressive: Model ${sku} cached, using fast path (no placeholder)`);
+      await this.addSingleItem(item);
+      const model = this.existingItems.get(item.id) as THREE.Group;
+      callbacks?.onProgress?.(100);
+      callbacks?.onFullModelAdded?.(model);
+      return model;
+    }
+
+    console.log('🔲 SceneManager - Model NOT cached, will show placeholder for:', sku);
+
+    // Model not cached - use progressive loading
+    // Ensure dimensions are always defined for placeholder creation
+    const defaultDimensions = { width: 50, height: 50, depth: 50 };
+    const modelConfig = item.model
+      ? {
+          ...item.model,
+          dimensions: item.model.dimensions || defaultDimensions
+        }
+      : {
+          name: sku,
+          path: '',
+          dimensions: defaultDimensions
+        };
+
+    console.log('🔲 SceneManager - Progressive loading config:', {
+      dimensions: modelConfig.dimensions,
+      itemPosition: item.position,
+      itemRotation: item.rotation,
+      modelScale: modelConfig.scale
+    });
+
+    let placeholderInScene: THREE.Group | null = null;
+
+    const model = await progressiveLoader.loadProgressively(
+      sku,
+      modelConfig,
+      {
+        onPlaceholderReady: (placeholder) => {
+          // Get positioning parameters from model config
+          const floorOffset = item.model?.floorOffset || 0;
+          const spawnHeight = item.model?.spawnHeight || 0;
+
+          // For wall-mounted models:
+          // - spawnHeight: the Y position where the model origin is placed
+          // - floorOffset: offset from origin to the visual bottom of the model
+          // - Visual bottom = spawnHeight + floorOffset
+          //
+          // The placeholder geometry has its bottom at local y=0 (after geometry.translate)
+          // So we need to position the placeholder so its bottom matches the model's visual bottom
+          //
+          // item.position[1] should already equal spawnHeight (set during item creation)
+          // But we read spawnHeight from item.model to ensure consistency
+          const placeholderY = spawnHeight + floorOffset;
+
+          placeholder.position.set(
+            item.position[0],
+            placeholderY, // Position so placeholder bottom matches model's visual bottom
+            item.position[2]
+          );
+          placeholder.rotation.y = item.rotation || 0;
+          const scale = item.scale || 1.0;
+          placeholder.scale.set(scale, scale, scale);
+
+          // Set userData
+          placeholder.userData.isBathroomItem = true;
+          placeholder.userData.itemId = item.id;
+          placeholder.userData.type = item.type;
+          placeholder.userData.isPlaceholder = true;
+          placeholder.userData.sku = item.sku;
+          placeholder.userData.floorOffset = floorOffset;
+          placeholder.userData.spawnHeight = spawnHeight;
+
+          // Add to scene
+          this.bathroomItemsGroup.add(placeholder);
+          this.existingItems.set(item.id, placeholder);
+          placeholderInScene = placeholder;
+
+          // Calculate placeholder world bounds for logging
+          const placeholderBox = new THREE.Box3().setFromObject(placeholder);
+          const placeholderSize = placeholderBox.getSize(new THREE.Vector3());
+
+          console.log(`🔲 Progressive: Placeholder added to scene for item ${item.id}`, {
+            itemPosition: [item.position[0], item.position[1], item.position[2]],
+            spawnHeight: spawnHeight,
+            floorOffset: floorOffset,
+            placeholderY: placeholderY,
+            calculation: `spawnHeight(${spawnHeight}) + floorOffset(${floorOffset}) = ${placeholderY}`,
+            rotation: item.rotation,
+            configDimensions: modelConfig.dimensions,
+            actualPlaceholderSize: {
+              width: placeholderSize.x,
+              height: placeholderSize.y,
+              depth: placeholderSize.z
+            }
+          });
+          callbacks?.onPlaceholderAdded?.(placeholder);
+        },
+        onFullModelReady: (fullModel) => {
+          // Swap placeholder with full model
+          if (placeholderInScene && placeholderInScene.parent) {
+            // IMPORTANT: Wrap the loaded model in a Group to match createModel's structure
+            // This ensures consistent behavior with dragging and selection
+            const wrapper = new THREE.Group();
+            // Use ORIGINAL item position (not placeholder position which has floorOffset added)
+            // The model handles its own floorOffset internally
+            wrapper.position.set(item.position[0], item.position[1], item.position[2]);
+            wrapper.rotation.y = item.rotation || 0;
+            // Scale stays at 1 for the wrapper - the model inside has the correct scale
+
+            // Reset fullModel position to origin before adding to wrapper
+            // (the wrapper's position handles the world position)
+            fullModel.position.set(0, 0, 0);
+
+            // Add the loaded model to the wrapper
+            wrapper.add(fullModel);
+
+            // Set userData on the wrapper (same as createModel does)
+            wrapper.userData.isBathroomItem = true;
+            wrapper.userData.itemId = item.id;
+            wrapper.userData.type = item.type;
+            wrapper.userData.orientation = getOrientationForItem(item);
+            wrapper.userData.sku = item.sku;
+            wrapper.userData.model = item.model;
+
+            // Calculate model bounds for debugging
+            const modelBox = new THREE.Box3().setFromObject(wrapper);
+            const modelSize = modelBox.getSize(new THREE.Vector3());
+            const modelCenter = modelBox.getCenter(new THREE.Vector3());
+
+            console.log(`🔄 Progressive: Swapping placeholder with full model for item ${item.id}`, {
+              originalItemPosition: [item.position[0], item.position[1], item.position[2]],
+              placeholderPosition: placeholderInScene.position.toArray(),
+              placeholderDimensions: placeholderInScene.userData.dimensions,
+              wrapperPosition: wrapper.position.toArray(),
+              fullModelScale: fullModel.scale.toArray(),
+              fullModelBounds: {
+                size: { x: modelSize.x, y: modelSize.y, z: modelSize.z },
+                center: { x: modelCenter.x, y: modelCenter.y, z: modelCenter.z }
+              },
+              placeholderParent: !!placeholderInScene.parent
+            });
+
+            // Add wrapper (containing full model) and remove placeholder
+            this.bathroomItemsGroup.add(wrapper);
+            this.bathroomItemsGroup.remove(placeholderInScene);
+            progressiveLoader.disposePlaceholder(placeholderInScene);
+
+            // Update tracking with the wrapper (not the inner model)
+            this.existingItems.set(item.id, wrapper);
+
+            // Enhance materials on the inner model
+            this.enhanceModelMaterials(fullModel);
+
+            console.log(`✅ Progressive: Full model swapped in for item ${item.id}`);
+            callbacks?.onFullModelAdded?.(wrapper);
+          } else {
+            console.warn(`⚠️ Progressive: Cannot swap - placeholder missing or no parent`, {
+              hasPlaceholder: !!placeholderInScene,
+              hasParent: placeholderInScene?.parent ? true : false
+            });
+          }
+        },
+        onProgress: (progress) => {
+          callbacks?.onProgress?.(progress);
+        },
+        onError: (error) => {
+          console.error(`❌ Progressive: Failed to load model for item ${item.id}:`, error);
+        }
+      }
+    );
+
+    return model;
+  }
+
+  /**
+   * Swap an existing item's model with a new variant progressively
+   * Shows placeholder immediately while new variant loads
+   */
+  async swapItemVariantProgressively(
+    itemId: number,
+    newVariant: any,
+    callbacks?: {
+      onPlaceholderSwapped?: (placeholder: THREE.Group) => void;
+      onFullModelSwapped?: (model: THREE.Group) => void;
+      onProgress?: (progress: number) => void;
+    }
+  ): Promise<THREE.Group | null> {
+    const existingModel = this.existingItems.get(itemId);
+    if (!existingModel) {
+      console.error(`❌ Progressive: Item ${itemId} not found for variant swap`);
+      return null;
+    }
+
+    console.log(`🔄 Progressive: Starting variant swap for item ${itemId}`);
+
+    const progressiveLoader = ProgressiveModelLoader.getInstance();
+    const modelManager = ModelManager.getInstance();
+    const sku = newVariant.sku || newVariant.name;
+
+    // Store original transform before swapping
+    const originalPosition = existingModel.position.clone();
+    const originalRotation = existingModel.rotation.clone();
+    const originalScale = existingModel.scale.clone();
+    const originalUserData = { ...existingModel.userData };
+
+    // Check if new variant is cached - use fast path
+    if (modelManager.isModelCached(sku)) {
+      console.log(`✅ Progressive: Variant ${sku} cached, using fast path`);
+
+      // Load the cached model
+      const modelConfig = {
+        name: newVariant.name || sku,
+        path: newVariant.path,
+        scale: newVariant.scale ?? 100, // Default to 100, not 1 (models are typically scaled up)
+        dimensions: newVariant.dimensions,
+        movement: newVariant.movement,
+        orientation: newVariant.orientation
+      };
+
+      const newModel = await modelManager.loadModel(sku, modelConfig);
+
+      // IMPORTANT: Wrap the model in a Group for consistent drag behavior
+      const wrapper = new THREE.Group();
+      wrapper.position.copy(originalPosition);
+      wrapper.rotation.copy(originalRotation);
+      // Wrapper scale stays at 1 - the model inside has the correct scale
+
+      // Reset newModel position to origin (wrapper handles world position)
+      newModel.position.set(0, 0, 0);
+      newModel.rotation.set(0, 0, 0);
+
+      // Add newModel to wrapper
+      wrapper.add(newModel);
+
+      // Set userData on the wrapper
+      wrapper.userData = {
+        ...originalUserData,
+        isBathroomItem: true,
+        itemId: itemId,
+        sku: sku,
+        model: modelConfig,
+        type: originalUserData.type,
+        orientation: newVariant.orientation || originalUserData.orientation,
+        isPlaceholder: false
+      };
+
+      // Swap in scene
+      this.bathroomItemsGroup.add(wrapper);
+      this.bathroomItemsGroup.remove(existingModel);
+      this.disposeModel(existingModel);
+      this.existingItems.set(itemId, wrapper);
+
+      this.enhanceModelMaterials(newModel);
+
+      callbacks?.onProgress?.(100);
+      callbacks?.onFullModelSwapped?.(wrapper);
+
+      return wrapper;
+    }
+
+    // Model not cached - use progressive loading with placeholder
+    const modelConfig = {
+      name: newVariant.name || sku,
+      path: newVariant.path,
+      scale: newVariant.scale ?? 100, // Default to 100, not 1 (models are typically scaled up)
+      dimensions: newVariant.dimensions,
+      movement: newVariant.movement,
+      orientation: newVariant.orientation,
+      spawnHeight: newVariant.spawnHeight,
+      floorOffset: newVariant.floorOffset
+    };
+
+    let placeholderInScene: THREE.Group | null = null;
+
+    const newModel = await progressiveLoader.loadProgressively(
+      sku,
+      modelConfig,
+      {
+        onPlaceholderReady: (placeholder) => {
+          // Get positioning parameters from new variant
+          const spawnHeight = newVariant.spawnHeight || 0;
+          const floorOffset = newVariant.floorOffset || 0;
+
+          // For wall-mounted models, calculate proper Y position
+          // Visual bottom = spawnHeight + floorOffset
+          const placeholderY = spawnHeight + floorOffset;
+
+          // Apply transform - use original X/Z but calculated Y for wall-mounted items
+          placeholder.position.set(
+            originalPosition.x,
+            placeholderY, // Use calculated Y for proper wall-mounted positioning
+            originalPosition.z
+          );
+          placeholder.rotation.copy(originalRotation);
+          placeholder.scale.copy(originalScale);
+
+          // Set userData
+          placeholder.userData = {
+            ...originalUserData,
+            sku: sku,
+            isPlaceholder: true,
+            spawnHeight: spawnHeight,
+            floorOffset: floorOffset
+          };
+
+          // Swap existing model with placeholder
+          this.bathroomItemsGroup.add(placeholder);
+          this.bathroomItemsGroup.remove(existingModel);
+          this.disposeModel(existingModel);
+          this.existingItems.set(itemId, placeholder);
+          placeholderInScene = placeholder;
+
+          console.log(`🔲 Progressive: Placeholder swapped for variant ${sku}`, {
+            spawnHeight,
+            floorOffset,
+            placeholderY,
+            calculation: `spawnHeight(${spawnHeight}) + floorOffset(${floorOffset}) = ${placeholderY}`
+          });
+          callbacks?.onPlaceholderSwapped?.(placeholder);
+        },
+        onFullModelReady: (fullModel) => {
+          // Get positioning parameters from new variant
+          const spawnHeight = newVariant.spawnHeight || 0;
+          const floorOffset = newVariant.floorOffset || 0;
+
+          console.log(`🔄 onFullModelReady called for item ${itemId}:`, {
+            hasPlaceholderInScene: !!placeholderInScene,
+            placeholderHasParent: placeholderInScene?.parent ? true : false,
+            fullModelName: fullModel.name,
+            spawnHeight,
+            floorOffset
+          });
+
+          // Get the current model in the scene (could be placeholder or original)
+          const currentModel = this.existingItems.get(itemId);
+
+          // Determine position/rotation source
+          // IMPORTANT: The placeholder's Y position includes floorOffset for visual display,
+          // but the full model wrapper should use spawnHeight only because
+          // the model handles floorOffset internally.
+          let sourcePosition = originalPosition.clone();
+          let sourceRotation = originalRotation;
+
+          if (placeholderInScene) {
+            // Use placeholder's X/Z position but calculate Y from spawnHeight only
+            // (model handles floorOffset internally)
+            sourcePosition.x = placeholderInScene.position.x;
+            sourcePosition.y = spawnHeight; // NOT placeholder.position.y which has floorOffset added
+            sourcePosition.z = placeholderInScene.position.z;
+            sourceRotation = placeholderInScene.rotation.clone();
+            console.log(`📍 Using placeholder X/Z with calculated Y for item ${itemId}:`, {
+              placeholderY: placeholderInScene.position.y,
+              wrapperY: spawnHeight,
+              note: 'Model handles floorOffset internally'
+            });
+          } else if (currentModel) {
+            sourcePosition = currentModel.position.clone();
+            sourceRotation = currentModel.rotation.clone();
+            console.log(`📍 Using currentModel transform for item ${itemId}`);
+          } else {
+            console.log(`📍 Using original transform for item ${itemId}`);
+          }
+
+          // IMPORTANT: Wrap the model in a Group for consistent drag behavior
+          // This matches the structure used in addSingleItemProgressively and createModel
+          const wrapper = new THREE.Group();
+          wrapper.position.copy(sourcePosition);
+          wrapper.rotation.copy(sourceRotation);
+          // Wrapper scale stays at 1 - the model inside has the correct scale
+
+          // Reset fullModel position to origin (wrapper handles world position)
+          fullModel.position.set(0, 0, 0);
+          fullModel.rotation.set(0, 0, 0);
+
+          // Add fullModel to wrapper
+          wrapper.add(fullModel);
+
+          // Set userData on the wrapper (this is what drag system looks for)
+          wrapper.userData = {
+            ...originalUserData,
+            isBathroomItem: true,
+            itemId: itemId,
+            sku: sku,
+            model: modelConfig,
+            type: originalUserData.type,
+            orientation: newVariant.orientation || originalUserData.orientation,
+            isPlaceholder: false
+          };
+
+          // Add wrapper to scene
+          console.log(`➕ Adding wrapped fullModel to scene for item ${itemId}`, {
+            wrapperPosition: [wrapper.position.x, wrapper.position.y, wrapper.position.z],
+            fullModelScale: [fullModel.scale.x, fullModel.scale.y, fullModel.scale.z],
+            visible: wrapper.visible,
+            childrenCount: wrapper.children.length
+          });
+          this.bathroomItemsGroup.add(wrapper);
+          console.log(`➕ Wrapper added. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
+
+          // Remove placeholder if it exists
+          if (placeholderInScene && placeholderInScene.parent) {
+            this.bathroomItemsGroup.remove(placeholderInScene);
+            progressiveLoader.disposePlaceholder(placeholderInScene);
+            console.log(`🗑️ Removed placeholder for item ${itemId}. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
+          }
+          // Remove current model if different from placeholder
+          else if (currentModel && currentModel.parent && currentModel !== placeholderInScene) {
+            this.bathroomItemsGroup.remove(currentModel);
+            this.disposeModel(currentModel);
+            console.log(`🗑️ Removed current model for item ${itemId}. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
+          }
+
+          // Update tracking with the WRAPPER (not the inner model)
+          this.existingItems.set(itemId, wrapper);
+
+          // Enhance materials on the inner model
+          this.enhanceModelMaterials(fullModel);
+
+          // Verify wrapper is in scene
+          console.log(`🔍 Verification for item ${itemId}:`, {
+            wrapperParent: wrapper.parent?.name || wrapper.parent?.type || 'none',
+            wrapperInGroup: this.bathroomItemsGroup.children.includes(wrapper),
+            existingItemsHasId: this.existingItems.has(itemId)
+          });
+
+          console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
+          callbacks?.onFullModelSwapped?.(wrapper);
+        },
+        onProgress: (progress) => {
+          callbacks?.onProgress?.(progress);
+        },
+        onError: (error) => {
+          console.error(`❌ Progressive: Failed to load variant ${sku}:`, error);
+        }
+      }
+    );
+
+    return newModel;
+  }
+
+  /**
+   * Get the model for an item (could be placeholder or full model)
+   */
+  getItemModel(itemId: number): THREE.Object3D | undefined {
+    return this.existingItems.get(itemId);
+  }
+
+  /**
+   * Check if an item's current model is a placeholder
+   */
+  isItemPlaceholder(itemId: number): boolean {
+    const model = this.existingItems.get(itemId);
+    return model?.userData?.isPlaceholder === true;
   }
 
 // Method to clear all items efficiently
@@ -519,76 +996,90 @@ export class SceneManager {
         }
     }
 
-  async updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig): Promise<void> {
-    if (!this.scene) return;
+   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
+        if (!this.scene) return;
 
-    if (this.floorRef) {
-      this.scene.remove(this.floorRef);
-      // Properly dispose the old floor (without disposing cached textures)
-      this.disposeModel(this.floorRef);
+        if (this.floorRef) {
+            this.scene.remove(this.floorRef);
+        }
+
+    // FIX: Pass room dimensions to material creation
+    const floorMaterial = this.createEnhancedFloorMaterial(floorTexture, roomWidth, roomHeight);
+
+    // Check if we should create an L-shaped floor
+    const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
+
+    if (isLShape) {
+      console.log('Creating L-shaped floor with notch dimensions:', { notchWidth, notchHeight });
+      this.floorRef = createLShapeFloor(roomWidth, roomHeight, notchWidth!, notchHeight!, floorMaterial);
+    } else {
+      this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     }
 
-    const floorMaterial = await this.createEnhancedFloorMaterial(floorTexture);
-    this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
     this.scene.add(this.floorRef);
 
         // 🔥 UPDATE: Reposition lights when room dimensions change
         this.setupEnhancedLighting(roomWidth);
-    // Update measurement system with new room dimensions
+    // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
-      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
     }
   }
 
-  private async createEnhancedFloorMaterial (floorTexture: TextureConfig): Promise<THREE.MeshStandardMaterial> {
-    const material = await textureManager.createTexturedMaterialAsync(floorTexture);
+    private createEnhancedFloorMaterial (floorTexture: TextureConfig, roomWidth: number, roomHeight: number): THREE.MeshStandardMaterial {
+        // FIX: Pass room dimensions to texture manager for proper scaling
+        const material = textureManager.createTexturedMaterial(floorTexture, { width: roomWidth, height: roomHeight });
 
     // Enhanced floor material properties
     material.roughness = 0;
     material.metalness = 0.02;
     material.envMapIntensity = 0.5;
 
-
-    // material.clearcoat = 0.8;
-    // material.clearcoatRoughness = 0.1;
-    //
-    // // Enhance reflectivity
-    // material.reflectivity = 0.9;
-
     return material;
   }
 
-  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig): void {
+  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
     if (!this.scene) return;
 
-    // Remove existing walls and properly dispose them
-    this.wallRefs.forEach(wall => {
-      if (wall.parent) wall.parent.remove(wall);
-      this.disposeModel(wall);
-    });
-    this.wallRefs = [];
+        // Remove existing walls
+        this.wallRefs.forEach(wall => {
+            if (wall.parent) wall.parent.remove(wall);
+        });
+        this.wallRefs = [];
 
     // Create new walls with enhanced materials
     const wallMaterial = this.createEnhancedWallMaterial(wallTexture);
-    this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
+
+    // Check if we should create L-shaped walls
+    const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
+
+    if (isLShape) {
+      console.log('Creating L-shaped walls with notch dimensions:', { notchWidth, notchHeight });
+      this.wallRefs = createLShapeWalls(roomWidth, roomHeight, notchWidth!, notchHeight!, wallMaterial);
+    } else {
+      this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
+    }
+
     this.wallRefs.forEach(wall => this.scene!.add(wall));
     this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
-    // NEW: Add axis indicators
+    // NEW: Add axis indicators with notch support for L-shaped rooms
     this.axisIndicatorsDebug.createAxisIndicators(
       this.scene,
       roomWidth,
       roomHeight,
+      notchWidth || 0,
+      notchHeight || 0,
       this.debugLabelsEnabled
     );
 
       // 🔥 UPDATE: Reposition lights when room dimensions change
       this.setupEnhancedLighting(roomWidth);
-    // Update wall culling manager with new walls and room size
-    this.wallCullingManager.updateRoomSize(roomWidth, roomHeight);
+    // Update wall culling manager with new walls and room size (including notch dimensions)
+    this.wallCullingManager.updateRoomSize(roomWidth, roomHeight, notchWidth, notchHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
-    // Update measurement system with new room dimensions
+    // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
-      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight);
+      this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
     }
   }
 
@@ -607,12 +1098,14 @@ export class SceneManager {
     return material;
   }
 
-  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true): void {
+  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true, notchWidth?: number, notchHeight?: number): void {
     console.log('🔄 SceneManager.updateGrid called with:', {
       roomWidth,
       roomHeight,
       showGrid,
-      showWallGrid
+      showWallGrid,
+      notchWidth,
+      notchHeight
     });
 
     if (!this.scene) {
@@ -683,12 +1176,12 @@ export class SceneManager {
         let totalWallGridLines = 0;
 
         this.wallRefs.forEach((wall, index) => {
-          const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west';
+          const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
           if (wallDirection) {
             console.log(`🔨 Creating grid for ${wallDirection} wall...`);
 
-            const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight);
+            const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight, notchWidth, notchHeight);
 
             console.log(`📏 Wall grid lines created for ${wallDirection}:`, wallGridLines.length);
 
