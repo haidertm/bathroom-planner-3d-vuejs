@@ -40,12 +40,14 @@
                   :ref="el => setInputRef(el, input.id)"
                   v-model.number="input.tempValue"
                   type="number"
+                  step="1"
                   class="dimension-field"
                   :class="{ 'has-changes': input.tempValue !== input.originalValue }"
                   @input="handleInputChange(input)"
                   @blur="finishEditing(input)"
                   @keyup.enter="finishEditing(input)"
                   @keyup.escape="cancelEditing(input)"
+                  @keydown="preventDecimalInput"
                   :min="input.min"
                   :max="input.max"
               />
@@ -454,10 +456,19 @@ const startEditing = (input) => {
   })
 }
 
+// Prevent decimal point input
+const preventDecimalInput = (e) => {
+  // Block decimal point and comma (used as decimal in some locales)
+  if (e.key === '.' || e.key === ',') {
+    e.preventDefault()
+  }
+}
+
 // Handle input changes to show pending changes and apply button
 const handleInputChange = (input) => {
   // Set pending dimensions when user types to show the apply changes button
-  const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
+  // Round to integer - no decimals allowed
+  const validatedValue = Math.round(Math.max(input.min, Math.min(input.max, input.tempValue)))
 
   if (input.id === 'notch-width') {
     pendingDimensions.notchWidth = validatedValue
@@ -478,8 +489,8 @@ const handleInputChange = (input) => {
 
 const finishEditing = (input) => {
 
-  // Validate and constrain the temp value
-  const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
+  // Validate and constrain the temp value - round to integer, no decimals allowed
+  const validatedValue = Math.round(Math.max(input.min, Math.min(input.max, input.tempValue)))
   input.tempValue = validatedValue
 
   // Apply changes immediately when user clicks outside (blur event)
@@ -966,18 +977,18 @@ const handleDrag = (currentPos) => {
       break
     case 'notch-width':
       // Adjust notch width (must leave 50cm gap to prevent walls touching)
-      roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)) * 100) / 100
+      roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)))
       break
     case 'notch-height':
       // Adjust notch height (must leave 50cm gap to prevent walls touching)
-      roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)) * 100) / 100
+      roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)))
       break
   }
 
   // Apply changes for main dimensions
   if (isDragging.value !== 'notch-width' && isDragging.value !== 'notch-height') {
-    roomDimensions.width = Math.round(newWidth * 100) / 100
-    roomDimensions.height = Math.round(newHeight * 100) / 100
+    roomDimensions.width = Math.round(newWidth)
+    roomDimensions.height = Math.round(newHeight)
     roomCenter.x = newCenterX
     roomCenter.y = newCenterY
   }
