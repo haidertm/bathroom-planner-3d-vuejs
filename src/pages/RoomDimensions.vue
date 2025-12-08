@@ -32,7 +32,8 @@
                 v-show="shouldShowLabel(input.id)"
                 class="dimension-input-overlay"
                 :style="input.style"
-                @click="input.onClick"
+                @click.stop="input.onClick"
+                @mousedown.stop
             >
               <input
                   v-if="input.editing"
@@ -50,7 +51,7 @@
               />
               <div v-else class="dimension-display"
                    :class="{ 'has-pending-changes': hasPendingChanges(input) }"
-                   @click="startEditing(input)">
+                   @click.stop="startEditing(input)">
                 {{ input.value }}{{ input.unit }}
                 <span v-if="hasPendingChanges(input)" class="pending-indicator">*</span>
               </div>
@@ -462,9 +463,15 @@ const handleInputChange = (input) => {
     pendingDimensions.notchWidth = validatedValue
   } else if (input.id === 'notch-height') {
     pendingDimensions.notchHeight = validatedValue
-  } else if (input.id.includes('width')) {
+  } else if (input.id === 'width-top') {
+    // For L-shape, convert to full width
+    pendingDimensions.width = isLShape.value ? validatedValue + roomDimensions.notchWidth : validatedValue
+  } else if (input.id === 'width-bottom') {
     pendingDimensions.width = validatedValue
-  } else {
+  } else if (input.id === 'height-left') {
+    // For L-shape, convert to full height
+    pendingDimensions.height = isLShape.value ? validatedValue + roomDimensions.notchHeight : validatedValue
+  } else if (input.id === 'height-right') {
     pendingDimensions.height = validatedValue
   }
 }
@@ -482,12 +489,32 @@ const finishEditing = (input) => {
   } else if (input.id === 'notch-height') {
     roomDimensions.notchHeight = validatedValue
     pendingDimensions.notchHeight = null
-  } else if (input.id.includes('width')) {
+  } else if (input.id === 'width-top') {
+    // For L-shape, width-top shows reduced width (width - notchWidth)
+    // Convert back to full width
+    if (isLShape.value) {
+      roomDimensions.width = validatedValue + roomDimensions.notchWidth
+    } else {
+      roomDimensions.width = validatedValue
+    }
+    pendingDimensions.width = null
+  } else if (input.id === 'width-bottom') {
+    // width-bottom always shows full width
     roomDimensions.width = validatedValue
-    pendingDimensions.width = null // Clear pending changes to hide apply button
-  } else {
+    pendingDimensions.width = null
+  } else if (input.id === 'height-left') {
+    // For L-shape, height-left shows reduced height (height - notchHeight)
+    // Convert back to full height
+    if (isLShape.value) {
+      roomDimensions.height = validatedValue + roomDimensions.notchHeight
+    } else {
+      roomDimensions.height = validatedValue
+    }
+    pendingDimensions.height = null
+  } else if (input.id === 'height-right') {
+    // height-right always shows full height
     roomDimensions.height = validatedValue
-    pendingDimensions.height = null // Clear pending changes to hide apply button
+    pendingDimensions.height = null
   }
 
   input.editing = false
