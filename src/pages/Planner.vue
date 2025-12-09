@@ -890,28 +890,125 @@ const hasMirrorAbove = (furnitureItem) => {
 }
 
 /**
- * Find a furniture unit that doesn't have a mirror above it yet
- * Returns the first available furniture, or null if all have mirrors
+ * Check if there is clear space above furniture to place a mirror
+ * Returns true if the space above is clear (no radiators, other items overlapping)
+ * @param furnitureItem - The furniture item to check above
+ * @param mirrorVariant - The mirror variant with dimensions info
  */
-const findAvailableFurnitureForMirror = () => {
+const hasSpaceAboveFurniture = (furnitureItem, mirrorVariant) => {
+  const furniturePos = furnitureItem.position
+  const furnitureDimensions = furnitureItem.model?.dimensions || { width: 60, height: 55, depth: 35 }
+  const furnitureWall = detectWallFromPosition(furniturePos, furnitureItem.rotation || 0)
+
+  // Calculate furniture top Y
+  const furnitureFloorOffset = furnitureItem.model?.floorOffset ?? 0
+  const furnitureTopY = furniturePos[1] + furnitureFloorOffset + furnitureDimensions.height
+
+  // Calculate where the mirror would be placed
+  const mirrorDimensions = mirrorVariant?.dimensions || { width: 60, height: 60, depth: 10 }
+  const spawnHeightOffset = mirrorVariant?.spawnHeight ?? 5
+  const mirrorBottomY = furnitureTopY + spawnHeightOffset
+  const mirrorTopY = mirrorBottomY + mirrorDimensions.height
+
+  // Mirror would be centered on furniture
+  const mirrorX = furniturePos[0]
+  const mirrorZ = furniturePos[2]
+
+  // Check collision buffers
+  const horizontalBuffer = 10 // 10cm horizontal buffer for safety
+  const verticalBuffer = 5   // 5cm vertical buffer
+
+  // Check against ALL items (not just mirrors) for overlapping
+  const hasCollision = items.value.some(item => {
+    // Skip the furniture item itself
+    if (item.id === furnitureItem.id) return false
+    // Skip items that are not on the same wall (different wall = no collision concern)
+    const itemWall = detectWallFromPosition(item.position, item.rotation || 0)
+    if (itemWall !== furnitureWall) return false
+
+    const itemPos = item.position
+    const itemDimensions = item.model?.dimensions || { width: 60, height: 60, depth: 35 }
+    const itemFloorOffset = item.model?.floorOffset ?? 0
+
+    // Calculate item's Y range
+    const itemBottomY = itemPos[1] + itemFloorOffset
+    const itemTopY = itemBottomY + itemDimensions.height
+
+    // Check vertical overlap (with buffer)
+    const verticalOverlap = !(mirrorTopY + verticalBuffer < itemBottomY || itemTopY + verticalBuffer < mirrorBottomY)
+    if (!verticalOverlap) return false
+
+    // Check horizontal overlap based on wall orientation
+    let horizontalOverlap = false
+
+    if (furnitureWall === 'north' || furnitureWall === 'south') {
+      // For north/south walls, check X overlap
+      const mirrorMinX = mirrorX - mirrorDimensions.width / 2 - horizontalBuffer
+      const mirrorMaxX = mirrorX + mirrorDimensions.width / 2 + horizontalBuffer
+      const itemMinX = itemPos[0] - itemDimensions.width / 2
+      const itemMaxX = itemPos[0] + itemDimensions.width / 2
+
+      horizontalOverlap = !(mirrorMaxX < itemMinX || itemMaxX < mirrorMinX)
+    } else {
+      // For east/west walls, check Z overlap
+      const mirrorMinZ = mirrorZ - mirrorDimensions.width / 2 - horizontalBuffer
+      const mirrorMaxZ = mirrorZ + mirrorDimensions.width / 2 + horizontalBuffer
+      const itemMinZ = itemPos[2] - itemDimensions.width / 2
+      const itemMaxZ = itemPos[2] + itemDimensions.width / 2
+
+      horizontalOverlap = !(mirrorMaxZ < itemMinZ || itemMaxZ < mirrorMinZ)
+    }
+
+    if (horizontalOverlap && verticalOverlap) {
+      console.log('🚫 Space above furniture blocked by:', {
+        blockingItem: item.type,
+        blockingSku: item.sku,
+        itemYRange: `${itemBottomY.toFixed(1)} - ${itemTopY.toFixed(1)}`,
+        mirrorWouldBeAt: `${mirrorBottomY.toFixed(1)} - ${mirrorTopY.toFixed(1)}`
+      })
+      return true
+    }
+
+    return false
+  })
+
+  if (!hasCollision) {
+    console.log('✅ Space above furniture is clear for mirror placement')
+  }
+
+  return !hasCollision // Return true if there's NO collision (space is clear)
+}
+
+/**
+ * Find a furniture unit that doesn't have a mirror above it yet AND has clear space above
+ * Returns the first available furniture, or null if all have mirrors or blocked space
+ * @param mirrorVariant - The mirror variant to check space for (dimensions needed for collision check)
+ */
+const findAvailableFurnitureForMirror = (mirrorVariant = null) => {
   const allFurniture = findAllFurnitureUnits()
   console.log('🔍 findAvailableFurnitureForMirror - Found furniture items:', allFurniture.length)
 
   // Check each furniture item
   allFurniture.forEach((item, index) => {
     const hasM = hasMirrorAbove(item)
-    console.log(`  [${index}] ${item.sku || item.type}: hasMirrorAbove = ${hasM}`)
+    const hasSpace = hasSpaceAboveFurniture(item, mirrorVariant)
+    console.log(`  [${index}] ${item.sku || item.type}: hasMirrorAbove = ${hasM}, hasSpaceAbove = ${hasSpace}`)
   })
 
-  // Find any furniture without a mirror above it
-  const availableFurniture = allFurniture.find(item => !hasMirrorAbove(item))
+  // Find any furniture without a mirror above it AND with clear space above
+  // Must check both conditions:
+  // 1. No mirror already above (hasMirrorAbove returns false)
+  // 2. Clear space for the mirror (hasSpaceAboveFurniture returns true)
+  const availableFurniture = allFurniture.find(item =>
+    !hasMirrorAbove(item) && hasSpaceAboveFurniture(item, mirrorVariant)
+  )
 
   if (availableFurniture) {
-    console.log('🔍 Found available furniture:', availableFurniture.sku || availableFurniture.type)
+    console.log('🔍 Found available furniture with clear space:', availableFurniture.sku || availableFurniture.type)
     return availableFurniture
   }
 
-  console.log('🔍 No furniture available without a mirror')
+  console.log('🔍 No furniture available (all have mirrors or space is blocked)')
   return null
 }
 
@@ -1134,8 +1231,8 @@ const addItem = async (type, productData = null) => {
   let wallRotation = 0
 
   if (type === 'Mirror') {
-    // Find a furniture item that doesn't have a mirror above it yet
-    const availableFurniture = findAvailableFurnitureForMirror()
+    // Find a furniture item that doesn't have a mirror above it yet AND has clear space
+    const availableFurniture = findAvailableFurnitureForMirror(selectedVariant)
 
     if (availableFurniture) {
       console.log('🪞 Found furniture without mirror, positioning mirror above it:', availableFurniture.sku || availableFurniture.type)
