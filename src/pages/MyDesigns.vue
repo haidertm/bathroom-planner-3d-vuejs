@@ -272,6 +272,7 @@ const handleSelectTemplate = (templateId) => {
 }
 
 .cta-button {
+  cursor: pointer;
   display: inline-block;
   padding: 15px 30px;
   background: rgba(255, 255, 255, 0.2);
@@ -505,6 +506,7 @@ const handleSelectTemplate = (templateId) => {
 }
 
 .card-link {
+  cursor: pointer;
   display: block;
   color: inherit;
   text-decoration: none;
