@@ -1516,7 +1516,6 @@ const calculateWallPosition = (
   }
 
   const halfWidth = dimensions.width / 2
-  const halfDepth = dimensions.depth / 2
   const t = wallPosition || 0.5 // Default to center
   let position = { x: 0, y: spawnHeight, z: 0 }
   let rotation = 0
