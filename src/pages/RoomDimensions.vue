@@ -32,25 +32,28 @@
                 v-show="shouldShowLabel(input.id)"
                 class="dimension-input-overlay"
                 :style="input.style"
-                @click="input.onClick"
+                @click.stop="input.onClick"
+                @mousedown.stop
             >
               <input
                   v-if="input.editing"
                   :ref="el => setInputRef(el, input.id)"
                   v-model.number="input.tempValue"
                   type="number"
+                  step="1"
                   class="dimension-field"
                   :class="{ 'has-changes': input.tempValue !== input.originalValue }"
                   @input="handleInputChange(input)"
                   @blur="finishEditing(input)"
                   @keyup.enter="finishEditing(input)"
                   @keyup.escape="cancelEditing(input)"
+                  @keydown="preventDecimalInput"
                   :min="input.min"
                   :max="input.max"
               />
               <div v-else class="dimension-display"
                    :class="{ 'has-pending-changes': hasPendingChanges(input) }"
-                   @click="startEditing(input)">
+                   @click.stop="startEditing(input)">
                 {{ input.value }}{{ input.unit }}
                 <span v-if="hasPendingChanges(input)" class="pending-indicator">*</span>
               </div>
@@ -453,26 +456,43 @@ const startEditing = (input) => {
   })
 }
 
+// Prevent decimal point and scientific notation input
+const preventDecimalInput = (e) => {
+  // Block decimal point, comma (used as decimal in some locales),
+  // and 'e'/'E' (scientific notation) to ensure only integers
+  // keyCode 69 is 'e'/'E' for broader browser support
+  if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.keyCode === 69) {
+    e.preventDefault()
+  }
+}
+
 // Handle input changes to show pending changes and apply button
 const handleInputChange = (input) => {
   // Set pending dimensions when user types to show the apply changes button
-  const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
+  // Round to integer - no decimals allowed
+  const validatedValue = Math.round(Math.max(input.min, Math.min(input.max, input.tempValue)))
 
   if (input.id === 'notch-width') {
     pendingDimensions.notchWidth = validatedValue
   } else if (input.id === 'notch-height') {
     pendingDimensions.notchHeight = validatedValue
-  } else if (input.id.includes('width')) {
+  } else if (input.id === 'width-top') {
+    // For L-shape, convert to full width
+    pendingDimensions.width = isLShape.value ? validatedValue + roomDimensions.notchWidth : validatedValue
+  } else if (input.id === 'width-bottom') {
     pendingDimensions.width = validatedValue
-  } else {
+  } else if (input.id === 'height-left') {
+    // For L-shape, convert to full height
+    pendingDimensions.height = isLShape.value ? validatedValue + roomDimensions.notchHeight : validatedValue
+  } else if (input.id === 'height-right') {
     pendingDimensions.height = validatedValue
   }
 }
 
 const finishEditing = (input) => {
 
-  // Validate and constrain the temp value
-  const validatedValue = Math.max(input.min, Math.min(input.max, input.tempValue))
+  // Validate and constrain the temp value - round to integer, no decimals allowed
+  const validatedValue = Math.round(Math.max(input.min, Math.min(input.max, input.tempValue)))
   input.tempValue = validatedValue
 
   // Apply changes immediately when user clicks outside (blur event)
@@ -482,12 +502,32 @@ const finishEditing = (input) => {
   } else if (input.id === 'notch-height') {
     roomDimensions.notchHeight = validatedValue
     pendingDimensions.notchHeight = null
-  } else if (input.id.includes('width')) {
+  } else if (input.id === 'width-top') {
+    // For L-shape, width-top shows reduced width (width - notchWidth)
+    // Convert back to full width
+    if (isLShape.value) {
+      roomDimensions.width = validatedValue + roomDimensions.notchWidth
+    } else {
+      roomDimensions.width = validatedValue
+    }
+    pendingDimensions.width = null
+  } else if (input.id === 'width-bottom') {
+    // width-bottom always shows full width
     roomDimensions.width = validatedValue
-    pendingDimensions.width = null // Clear pending changes to hide apply button
-  } else {
+    pendingDimensions.width = null
+  } else if (input.id === 'height-left') {
+    // For L-shape, height-left shows reduced height (height - notchHeight)
+    // Convert back to full height
+    if (isLShape.value) {
+      roomDimensions.height = validatedValue + roomDimensions.notchHeight
+    } else {
+      roomDimensions.height = validatedValue
+    }
+    pendingDimensions.height = null
+  } else if (input.id === 'height-right') {
+    // height-right always shows full height
     roomDimensions.height = validatedValue
-    pendingDimensions.height = null // Clear pending changes to hide apply button
+    pendingDimensions.height = null
   }
 
   input.editing = false
@@ -939,18 +979,18 @@ const handleDrag = (currentPos) => {
       break
     case 'notch-width':
       // Adjust notch width (must leave 50cm gap to prevent walls touching)
-      roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)) * 100) / 100
+      roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)))
       break
     case 'notch-height':
       // Adjust notch height (must leave 50cm gap to prevent walls touching)
-      roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)) * 100) / 100
+      roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)))
       break
   }
 
   // Apply changes for main dimensions
   if (isDragging.value !== 'notch-width' && isDragging.value !== 'notch-height') {
-    roomDimensions.width = Math.round(newWidth * 100) / 100
-    roomDimensions.height = Math.round(newHeight * 100) / 100
+    roomDimensions.width = Math.round(newWidth)
+    roomDimensions.height = Math.round(newHeight)
     roomCenter.x = newCenterX
     roomCenter.y = newCenterY
   }
