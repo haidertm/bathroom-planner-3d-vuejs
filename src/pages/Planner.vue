@@ -170,6 +170,7 @@ import Header from '../components/ui/Header.vue';
 import { getScaleForUnits } from '../utils/units.js';
 import {getMovementConfig} from "../utils/models.js";
 import productData from '../mocks/productData'
+import { autoPositionItem } from '../utils/autoPositioning'
 
 // Router
 const router = useRouter()
@@ -1256,14 +1257,42 @@ const addItem = async (type, productData = null) => {
   const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
   // ============================================================================
-  // MIRROR ABOVE FURNITURE LOGIC
-  // If adding a mirror and furniture exists without a mirror, position above it
-  // Only ONE mirror per furniture item - subsequent mirrors go on other walls
+  // SMART AUTO-POSITIONING SYSTEM
+  // Uses intelligent placement logic based on item type and existing items:
+  // - Mirror: Above vanity, or eye-level on wall facing camera
+  // - Toilet: "Sidekick" to vanity (15cm to right/left)
+  // - Bath: Best corner (prioritize back wall)
+  // - Shower: Corner-bound, nearest to camera focus
+  // - Vanity/Furniture: Wall facing camera, centered
+  // - Towel Rail/Radiator: Near bath foot end or vanity side
   // ============================================================================
   let freePosition = null
   let wallRotation = 0
 
-  if (type === 'Mirror') {
+  // Build context for smart positioning
+  const autoPositionContext = {
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value,
+    notchWidth: notchWidth.value,
+    notchHeight: notchHeight.value,
+    existingItems: items.value,
+    cameraPosition: sceneManagerRef.value?.camera?.position
+      ? { x: sceneManagerRef.value.camera.position.x, y: sceneManagerRef.value.camera.position.y, z: sceneManagerRef.value.camera.position.z }
+      : undefined,
+    cameraTarget: { x: 0, y: 0, z: 0 } // Default look-at point (room center)
+  }
+
+  // Try smart auto-positioning first
+  const autoResult = autoPositionItem(type, autoPositionContext, selectedVariant, defaults.scale)
+
+  if (autoResult) {
+    console.log(`✅ Smart auto-position for ${type}:`, autoResult.placementMethod, autoResult.anchorItem?.type || '')
+    freePosition = autoResult.position
+    wallRotation = autoResult.rotation
+  }
+
+  // Fallback: Legacy mirror placement logic (for edge cases)
+  if (!freePosition && type === 'Mirror') {
     // Find a furniture item that doesn't have a mirror above it yet AND has clear space
     const availableFurniture = findAvailableFurnitureForMirror(selectedVariant)
 
@@ -1287,7 +1316,7 @@ const addItem = async (type, productData = null) => {
     }
   }
 
-  // If no furniture-relative position was calculated, use default positioning
+  // Final fallback: Generic wall position finding
   if (!freePosition) {
     // Find a free position on any wall
     const positionResult = findFreeWallPosition(
@@ -1301,7 +1330,7 @@ const addItem = async (type, productData = null) => {
         selectedVariant?.movement,
         selectedVariant?.spawnHeight,
         selectedVariant?.floorOffset || 0,
-        selectedVariant.sku,
+        selectedVariant?.sku,
         notchWidth.value,
         notchHeight.value
     )
