@@ -2113,7 +2113,7 @@ export class EventHandlers {
                     newX = notch?.maxX ? notch.maxX + wallBuffer + 5 : 0;
                     newZ = Math.max(
                         notch?.minZ ? notch.minZ + halfObjectWidth : 0,  // Don't go past top of notch
-                        Math.min(interior.maxZ - halfObjectWidth, newZ)  // Allow transition to south wall
+                        Math.min(notch?.maxZ ? notch.maxZ - halfObjectWidth : interior.maxZ - halfObjectWidth, newZ)  // ✅ FIX: Stop at corner (notch.maxZ), not interior.maxZ
                     );
                     constrainedRotation = Math.PI / 2;  // Face away from notch (toward east)
                     break;
@@ -2125,7 +2125,7 @@ export class EventHandlers {
                     newZ = notch?.maxZ ? notch?.maxZ + wallBuffer + 5 : 0;
                     newX = Math.max(
                         notch?.minX ? notch?.minX + halfObjectWidth : 0,  // Don't go past left of notch
-                        Math.min(interior.maxX - halfObjectWidth, newX)  // Allow transition to east wall
+                        Math.min(notch?.maxX ? notch.maxX - halfObjectWidth : interior.maxX - halfObjectWidth, newX)  // ✅ FIX: Stop at corner (notch.maxX), not interior.maxX
                     );
                     constrainedRotation = 0;  // Face away from notch (toward south)
                     break;
