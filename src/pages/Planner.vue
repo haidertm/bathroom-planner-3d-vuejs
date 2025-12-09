@@ -1518,7 +1518,6 @@ const calculateWallPosition = (
   const halfWidth = dimensions.width / 2
   const halfDepth = dimensions.depth / 2
   const t = wallPosition || 0.5 // Default to center
-
   let position = { x: 0, y: spawnHeight, z: 0 }
   let rotation = 0
 
@@ -1578,14 +1577,28 @@ const calculateWallPosition = (
 /**
  * Convert template items to the format expected by the planner
  * Places items at specific wall locations defined in the template
+ * Uses progressive loading to show placeholders while models load
  */
-const loadTemplateData = (template) => {
+const loadTemplateData = async (template) => {
   try {
+    console.log('🔲 loadTemplateData started for:', template.name)
+
+    // Clear existing items from scene first
+    if (sceneManagerRef.value) {
+      console.log('🧹 Clearing existing items before loading template...')
+      sceneManagerRef.value.clearAllItems()
+    }
+
+    // Clear Vue state items
+    items.value = []
+
     // Set room dimensions from template
     roomWidth.value = template.roomWidth
     roomHeight.value = template.roomHeight
     roomWidthRef.value = template.roomWidth
     roomHeightRef.value = template.roomHeight
+
+    console.log('📐 Room dimensions set:', template.roomWidth, 'x', template.roomHeight)
 
     // Convert template items to planner items
     const plannerItems = template.items.map((templateItem, index) => {
@@ -1648,12 +1661,37 @@ const loadTemplateData = (template) => {
       }
     }).filter(Boolean) // Remove any null items
 
-    // Set items
+    // Set items in Vue state
     items.value = plannerItems
 
     // Reset textures to defaults for new template
     currentFloorTexture.value = DEFAULT_FLOOR_TEXTURE
     currentWallTexture.value = DEFAULT_WALL_TEXTURE
+
+    // Use progressive loading for each item - shows placeholder while model loads
+    if (sceneManagerRef.value && plannerItems.length > 0) {
+      console.log('🔲 Loading template items with placeholders...', plannerItems.length, 'items')
+
+      // Mark as not initial load to prevent watcher from double-loading
+      isInitialLoad.value = false
+
+      // Load ALL items in parallel so all placeholders show immediately
+      const loadPromises = plannerItems.map((item) => {
+        return sceneManagerRef.value.addSingleItemProgressively(item, {
+          onPlaceholderAdded: (placeholder) => {
+            console.log(`🔲 Placeholder shown for ${item.type} (${item.sku})`)
+          },
+          onFullModelAdded: (model) => {
+            console.log(`✅ Full model loaded for ${item.type} (${item.sku})`)
+          }
+        }).catch(error => {
+          console.error(`❌ Failed to load item ${item.sku}:`, error)
+        })
+      })
+
+      // Wait for all to complete (placeholders show immediately, models load in background)
+      await Promise.all(loadPromises)
+    }
 
     // Save initial state to history
     setTimeout(() => {
@@ -1765,14 +1803,24 @@ onMounted(async () => {
     }
   }
   window.addEventListener('header-save-design', handleSaveDesign)
-  // Check if we need to load a specific design from MyDesigns page
-  const wasDesignLoaded = checkForDesignToLoad()
-  // Check if we need to load a template
-  const wasTemplateLoaded = !wasDesignLoaded && checkForTemplateToLoad()
-  // If no design or template was loaded, load saved room dimensions as usual
-  if (!wasDesignLoaded && !wasTemplateLoaded) {
-    const dimensionsLoaded = loadSavedRoomDimensions()
 
+  // Check for template or design BEFORE scene init to get correct room dimensions
+  const templateId = localStorage.getItem('selected-template')
+  const hasDesignToLoad = localStorage.getItem('design-to-load')
+
+  // Pre-set room dimensions from template if one is selected
+  if (templateId) {
+    const template = getTemplateById(templateId)
+    if (template) {
+      roomWidth.value = template.roomWidth
+      roomHeight.value = template.roomHeight
+      roomWidthRef.value = template.roomWidth
+      roomHeightRef.value = template.roomHeight
+      console.log('📐 Pre-setting template room dimensions:', template.roomWidth, 'x', template.roomHeight)
+    }
+  } else if (!hasDesignToLoad) {
+    // No template or design, load saved room dimensions
+    const dimensionsLoaded = loadSavedRoomDimensions()
     if (dimensionsLoaded) {
       console.log('Using saved room dimensions (CM):', {
         width: roomWidth.value + 'cm',
@@ -1785,6 +1833,7 @@ onMounted(async () => {
       })
     }
   }
+
   // Initialize scene manager
   const sceneManager = markRaw(new SceneManager())
   sceneManagerRef.value = sceneManager
@@ -1869,11 +1918,29 @@ onMounted(async () => {
     }
   }
 
-  // Load initial items - NOW ASYNC
-  try {
-    await sceneManagerRef.value.updateBathroomItems(items.value)
-  } catch (error) {
-    console.error('Error loading initial items:', error)
+  // Load template, design, or initial items AFTER scene is ready
+  const wasDesignLoaded = checkForDesignToLoad()
+
+  if (!wasDesignLoaded && templateId) {
+    // Template selected - load with progressive loading (shows placeholders)
+    console.log('🔲 Loading template with placeholders...')
+    localStorage.removeItem('selected-template') // Clear flag
+    const template = getTemplateById(templateId)
+    if (template) {
+      try {
+        await loadTemplateData(template)
+        console.log('✅ Template loaded with placeholders:', template.name)
+      } catch (error) {
+        console.error('❌ Failed to load template:', error)
+      }
+    }
+  } else if (!wasDesignLoaded) {
+    // No template or design - load any existing items
+    try {
+      await sceneManagerRef.value.updateBathroomItems(items.value)
+    } catch (error) {
+      console.error('Error loading initial items:', error)
+    }
   }
 
   // ADD THESE LINES to your existing onMounted:

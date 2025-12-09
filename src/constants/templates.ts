@@ -39,9 +39,9 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
    * Room Size: 2400mm x 2000mm (240cm x 200cm)
    *
    * Layout:
-   * - Bath (1700mm): Along BACK wall (north, 2400mm wall)
-   * - Vanity (600mm): On RIGHT wall (east)
-   * - Toilet: On RIGHT wall, next to vanity
+   * - Bath (1700mm): Along BACK wall (north, 2400mm wall) - flush against wall
+   * - Vanity (600mm): On RIGHT wall (east, 2000mm wall) - towards back
+   * - Toilet: On RIGHT wall, towards front (next to vanity)
    */
   'standard-family': {
     id: 'standard-family',
@@ -53,22 +53,23 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
     items: [
       {
         type: 'Bath',
-        sku: 'C53021', // Hereford 1700x750 Single Ended Bath
-        wall: 'corner-nw', // Back-left corner for bath
+        sku: 'C53021', // Hereford 1700x750 Single Ended Bath (170x75cm)
+        wall: 'north', // Along BACK wall (not corner)
+        wallPosition: 0.15, // Towards left side of back wall
         description: 'Standard Bath along back wall'
       },
       {
         type: 'Furniture',
         sku: 'C76237', // Corsica 600mm Floor Standing Vanity
         wall: 'east',
-        wallPosition: 0.3, // Towards back of right wall
+        wallPosition: 0.25, // Towards back of right wall
         description: 'Floor Standing Vanity 600mm on right wall'
       },
       {
         type: 'Toilet',
         sku: 'C66183', // Portland Close Coupled Toilet
         wall: 'east',
-        wallPosition: 0.7, // Towards front, next to vanity
+        wallPosition: 0.65, // Towards front, next to vanity
         description: 'Close Coupled Toilet on right wall'
       }
     ]
@@ -79,9 +80,9 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
    * Room Size: 1800mm x 1800mm (180cm x 180cm) - Square
    *
    * Layout:
-   * - Shower (900x900): Back-LEFT corner
-   * - Basin (450mm): On RIGHT wall
-   * - Toilet: On RIGHT wall, next to basin
+   * - Shower (900x900): Back-LEFT corner - flush in corner
+   * - Basin (450mm): On RIGHT wall - towards back
+   * - Toilet: On RIGHT wall - towards front (next to basin)
    */
   'compact-ensuite': {
     id: 'compact-ensuite',
@@ -94,21 +95,21 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
       {
         type: 'Shower',
         sku: 'C46013', // London 900x900 Pivot Shower
-        wall: 'corner-nw', // Back-left corner
+        wall: 'corner-nw', // Back-left corner - flush
         description: 'Quadrant Shower 900x900 in back-left corner'
       },
       {
         type: 'Furniture',
         sku: 'C77113', // Avon 450mm Basin Vanity
         wall: 'east',
-        wallPosition: 0.35, // Upper part of right wall
+        wallPosition: 0.2, // Towards back of right wall
         description: 'Wall Hung Basin 450mm on right wall'
       },
       {
         type: 'Toilet',
         sku: 'C66183', // Portland Close Coupled Toilet
         wall: 'east',
-        wallPosition: 0.7, // Lower part, next to basin
+        wallPosition: 0.6, // Towards front, next to basin
         description: 'Toilet on right wall next to basin'
       }
     ]
@@ -119,9 +120,9 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
    * Room Size: 900mm x 1600mm (90cm x 160cm) - Narrow
    *
    * Layout:
-   * - Toilet: Centered on BACK wall (900mm wall)
-   * - Basin (400mm): On LEFT wall
-   * - Door: On FRONT wall (south) to show clearance
+   * - Toilet: CENTERED on BACK wall (900mm wall) - flush against wall
+   * - Basin (400mm): On LEFT wall - towards front
+   * - Door: CENTERED on FRONT wall (south) to show clearance
    */
   'cloakroom': {
     id: 'cloakroom',
@@ -133,23 +134,23 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
     items: [
       {
         type: 'Toilet',
-        sku: 'C66183', // Portland Close Coupled Toilet
+        sku: 'C66175', // Portland Close Coupled Toilet
         wall: 'north',
-        wallPosition: 0.5, // Centered on back wall
+        wallPosition: 0.5, // CENTERED on back wall
         description: 'Standard Toilet centered on back wall'
       },
       {
         type: 'Furniture',
         sku: 'C76471', // Avon 400mm Cloakroom Basin
         wall: 'west',
-        wallPosition: 0.6, // Towards front of left wall
+        wallPosition: 0.55, // Towards front of left wall
         description: 'Cloakroom Basin 400mm on left wall'
       },
       {
         type: 'WindowAndDoor',
         sku: 'DOOR-WHITE-800X2135', // White Door 800mm
         wall: 'south',
-        wallPosition: 0.5, // Centered on front wall
+        wallPosition: 0.5, // CENTERED on front wall
         description: 'Door on front wall (opposite toilet) to show clearance'
       }
     ]
@@ -160,45 +161,37 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
    * Room Size: 2400mm x 2000mm (240cm x 200cm)
    *
    * Layout:
-   * - P-Shape Shower Bath: Along BACK wall
-   * - Storage/Radiator: In a corner (left wall)
-   * - Vanity: On RIGHT wall
-   * - Toilet: On RIGHT wall
+   * - P-Shape Shower Bath (L-shaped 1700x850): Along BACK wall - flush against wall
+   * - Vanity (600mm): On RIGHT wall (east) - towards back
+   * - Toilet: On RIGHT wall (east) - towards front (next to vanity)
    */
   'shower-bath-upgrade': {
     id: 'shower-bath-upgrade',
     name: 'Shower-Bath Upgrade',
-    description: 'L-shaped shower bath, storage, vanity and toilet',
+    description: 'P-shape shower bath, vanity and toilet',
     roomWidth: 240,
     roomHeight: 200,
     roomShape: 'rectangular',
     items: [
       {
         type: 'Bath',
-        sku: 'C57499', // L Shaped 1700 Shower Bath
-        wall: 'corner-nw', // Back-left corner for L-bath
+        sku: 'C57499', // L Shaped 1700 Shower Bath (170x85cm)
+        wall: 'corner-nw', // Back-left corner - flush against back wall
         description: 'P-Shape Shower Bath along back wall'
       },
       {
         type: 'Furniture',
         sku: 'C76237', // Corsica 600mm Floor Standing Vanity
         wall: 'east',
-        wallPosition: 0.3, // Upper part of right wall
-        description: 'Vanity on right wall'
+        wallPosition: 0.2, // Towards back of right wall
+        description: 'Vanity 600mm on right wall'
       },
       {
         type: 'Toilet',
         sku: 'C66183', // Portland Close Coupled Toilet
         wall: 'east',
-        wallPosition: 0.7, // Lower part of right wall
+        wallPosition: 0.6, // Towards front of right wall, next to vanity
         description: 'Toilet on right wall'
-      },
-      {
-        type: 'Radiator',
-        sku: '31019', // Faro Radiator (placeholder for Tall Cabinet)
-        wall: 'west',
-        wallPosition: 0.75, // Bottom of left wall
-        description: 'Storage/Radiator on left wall'
       }
     ]
   }

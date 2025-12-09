@@ -149,8 +149,6 @@
                 <rect x="88" y="25" width="18" height="25" fill="#29275B" opacity="0.6" rx="2"/>
                 <!-- Toilet on right wall -->
                 <rect x="88" y="55" width="18" height="22" fill="#29275B" opacity="0.6" rx="3"/>
-                <!-- Storage/Radiator on left wall -->
-                <rect x="12" y="60" width="10" height="25" fill="#29275B" opacity="0.4" rx="1"/>
               </svg>
             </div>
             <span class="template-name">Shower-Bath Upgrade</span>
