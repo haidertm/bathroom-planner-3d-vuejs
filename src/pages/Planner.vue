@@ -832,6 +832,12 @@ const hasMirrorAbove = (furnitureItem) => {
   const furnitureDimensions = furnitureItem.model?.dimensions || { width: 60, height: 55, depth: 35 }
   const furnitureWall = detectWallFromPosition(furniturePos, furnitureItem.rotation || 0)
 
+  // Calculate furniture top Y for vertical overlap check
+  // furniturePos[1] is the model's scene Y position (typically the center or pivot point)
+  // floorOffset indicates how far above Y=0 the model's visual bottom sits
+  const furnitureFloorOffset = furnitureItem.model?.floorOffset ?? 0
+  const furnitureTopY = furniturePos[1] + furnitureFloorOffset + furnitureDimensions.height
+
   return items.value.some(item => {
     if (item.type !== 'Mirror') return false
 
@@ -852,6 +858,32 @@ const hasMirrorAbove = (furnitureItem) => {
     } else {
       // For east/west walls, check Z proximity
       if (Math.abs(mirrorPos[2] - furniturePos[2]) > proximityThreshold) return false
+    }
+
+    // Calculate mirror bottom Y to verify it's actually above the furniture
+    // Coordinate convention: mirrorPos[1] is the scene Y position.
+    // - If floorOffset is defined, it indicates the offset from position.y to the visual bottom
+    // - If only dimensions.height is available, treat mirrorPos[1] as model center and compute bottom
+    // - Otherwise, fall back to mirrorPos[1] itself (assumes bottom-aligned or 0 offset)
+    const mirrorHeight = item.model?.dimensions?.height
+    let mirrorBottomY
+
+    if (item.model?.floorOffset !== undefined) {
+      // floorOffset defined: bottom = position.y + floorOffset
+      mirrorBottomY = mirrorPos[1] + item.model.floorOffset
+    } else if (mirrorHeight !== undefined) {
+      // No floorOffset but height is known: assume mirrorPos[1] is center, so bottom = center - height/2
+      mirrorBottomY = mirrorPos[1] - mirrorHeight / 2
+    } else {
+      // Neither available: fall back to position.y as a sensible default (assumes bottom at position)
+      mirrorBottomY = mirrorPos[1]
+    }
+
+    // Mirror must be positioned above the furniture's top (with small tolerance for touching)
+    const verticalTolerance = 5 // 5cm tolerance
+    if (mirrorBottomY < furnitureTopY - verticalTolerance) {
+      // Mirror bottom is below furniture top - not considered "above"
+      return false
     }
 
     return true
@@ -922,21 +954,56 @@ const detectWallFromPosition = (position, vanityRotation) => {
 /**
  * Calculate position for a mirror above a furniture item
  * Places the mirror centered above the furniture unit
+ *
+ * Mirror Y is computed relative to furniture top:
+ * - furnitureTopY = furniturePos[1] + floorOffset + height
+ * - mirrorY = furnitureTopY + spawnHeightOffset (gap between furniture top and mirror bottom)
  */
 const calculateMirrorPositionAboveFurniture = (furnitureItem, mirrorVariant) => {
   const furniturePos = furnitureItem.position
   const furnitureRotation = furnitureItem.rotation || 0
 
-  const mirrorSpawnHeight = mirrorVariant?.spawnHeight || 120
+  // Determine furniture height from available sources (try multiple field paths)
+  const furnitureHeight = furnitureItem.model?.dimensions?.height
+    ?? furnitureItem.dimensions?.height
+    ?? furnitureItem.size?.height
+    ?? furnitureItem.height
+    ?? null
 
-  // Mirror position: same X/Z as furniture (centered), at mirror's spawn height
+  // Calculate furniture top Y position
+  // floorOffset indicates how far above Y=0 the model's visual bottom sits
+  const furnitureFloorOffset = furnitureItem.model?.floorOffset ?? 0
+  let furnitureTopY
+
+  if (furnitureHeight !== null) {
+    // Furniture top = position Y + floorOffset + height
+    furnitureTopY = furniturePos[1] + furnitureFloorOffset + furnitureHeight
+  } else {
+    // Fallback: use furniture position Y if height is unavailable
+    // This assumes the furniture is floor-standing and we place mirror at a reasonable default
+    furnitureTopY = furniturePos[1]
+  }
+
+  // spawnHeight is treated as an offset above the furniture top (gap between furniture and mirror)
+  // If not specified, default to a small gap (e.g., 5cm) for visual separation
+  const spawnHeightOffset = mirrorVariant?.spawnHeight ?? 5
+
+  // Mirror Y = furniture top + offset gap
+  const mirrorY = furnitureTopY + spawnHeightOffset
+
+  // Mirror position: same X/Z as furniture (centered), Y computed relative to furniture top
   const position = {
     x: furniturePos[0],
-    y: mirrorSpawnHeight,
+    y: mirrorY,
     z: furniturePos[2]
   }
 
-  console.log('🪞 Placing mirror centered above furniture')
+  console.log('🪞 Placing mirror centered above furniture', {
+    furnitureTopY,
+    spawnHeightOffset,
+    mirrorY,
+    furnitureHeight: furnitureHeight ?? 'unknown'
+  })
 
   return {
     position,
