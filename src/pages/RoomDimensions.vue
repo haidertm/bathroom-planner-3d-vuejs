@@ -456,10 +456,12 @@ const startEditing = (input) => {
   })
 }
 
-// Prevent decimal point input
+// Prevent decimal point and scientific notation input
 const preventDecimalInput = (e) => {
-  // Block decimal point and comma (used as decimal in some locales)
-  if (e.key === '.' || e.key === ',') {
+  // Block decimal point, comma (used as decimal in some locales),
+  // and 'e'/'E' (scientific notation) to ensure only integers
+  // keyCode 69 is 'e'/'E' for broader browser support
+  if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.keyCode === 69) {
     e.preventDefault()
   }
 }
