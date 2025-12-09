@@ -756,6 +756,9 @@ const handleSaveDesign = () => {
 
 // Room size change handler
 const handleRoomSizeChange = (newWidth, newHeight) => {
+  const oldWidth = roomWidth.value
+  const oldHeight = roomHeight.value
+
   roomWidth.value = newWidth
   roomHeight.value = newHeight
 
@@ -767,7 +770,18 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   saveRoomDimensionsToStorage(newWidth, newHeight)
 
   // Constrain objects and update scene
-  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight, notchWidth.value, notchHeight.value)
+  // Pass old dimensions to ensure items stick to their walls
+  const constrainedItems = constrainAllObjectsToRoom(
+    items.value, 
+    newWidth, 
+    newHeight, 
+    notchWidth.value, 
+    notchHeight.value,
+    oldWidth,
+    oldHeight,
+    notchWidth.value,
+    notchHeight.value
+  )
   items.value = constrainedItems
   lastUpdateSource.value = 'roomSize'
 
@@ -785,6 +799,9 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 
 // Notch size change handler (for L-shaped rooms)
 const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
+  const oldNotchWidth = notchWidth.value
+  const oldNotchHeight = notchHeight.value
+
   notchWidth.value = newNotchWidth
   notchHeight.value = newNotchHeight
 
@@ -792,7 +809,18 @@ const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
   saveRoomDimensionsToStorage(roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
 
   // Constrain objects and update scene
-  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+  // Pass old dimensions to ensure items stick to their walls
+  const constrainedItems = constrainAllObjectsToRoom(
+    items.value, 
+    roomWidth.value, 
+    roomHeight.value, 
+    newNotchWidth, 
+    newNotchHeight,
+    roomWidth.value,
+    roomHeight.value,
+    oldNotchWidth,
+    oldNotchHeight
+  )
   items.value = constrainedItems
   lastUpdateSource.value = 'notchSize'
 
