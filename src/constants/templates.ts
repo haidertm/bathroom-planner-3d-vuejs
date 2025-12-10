@@ -57,7 +57,7 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
         type: 'Bath',
         sku: 'C53021', // Hereford 1700x750 Single Ended Bath (170x75cm)
         wall: 'north', // Along BACK wall (not corner)
-        wallPosition: 0.15, // Towards left side of back wall
+        wallPosition: 0.0001, // Towards left side of back wall
         description: 'Standard Bath along back wall'
       },
       {
