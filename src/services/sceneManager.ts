@@ -73,7 +73,7 @@ export class SceneManager {
     this.bathroomItemsGroup.name = 'bathroomItems';
     this.wallLabelsDebug = new WallLabelsDebug();
     this.axisIndicatorsDebug = new AxisIndicatorsDebug(); // Add this
-    this.debugLabelsEnabled = false; // Debug visuals disabled by default for cleaner initial view
+    this.debugLabelsEnabled = true; // Debug visuals disabled by default for cleaner initial view
   }
 
   initializeScene (): SceneComponents {

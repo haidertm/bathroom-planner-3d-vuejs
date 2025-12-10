@@ -22,7 +22,7 @@ import {
   constrainToCorner,
   checkWallCollision
 } from './constraints';
-import { getObjectRotationForWall } from './models';
+import { getObjectRotationForWall, getMovementConfig } from './models';
 import { DEFAULT_ORIENTATION, type OrientationConfig } from '../constants/models';
 
 // ============================================================================
@@ -171,6 +171,7 @@ const hasSpaceAtPosition = (
 ): boolean => {
   // First check: Wall boundaries
   // If roomWidth/roomHeight not provided, skip wall check
+  // Also skip wall check for corner-install items (they're placed at corners by design)
   if (roomWidth && roomHeight) {
     const tempItem: BathroomItem = {
       id: excludeItemId,
@@ -180,25 +181,35 @@ const hasSpaceAtPosition = (
       sku
     };
 
-    // Check if position would collide with walls (including L-shape notch)
-    const wallCollision = checkWallCollision(
-      position,
-      objectType,
-      scale,
-      roomWidth,
-      roomHeight,
-      tempItem,
-      undefined, // rotation
-      notchWidth,
-      notchHeight
-    );
+    // Skip wall collision for corner-install items during auto-positioning
+    const movementConfig = getMovementConfig(objectType, tempItem);
+    const isCornerInstall = movementConfig.cornerInstallOnly &&
+      typeof movementConfig.cornerInstallOnly === 'object' &&
+      movementConfig.cornerInstallOnly.enabled;
 
-    if (wallCollision) {
-      console.log(`🚫 Wall collision detected for ${objectType} at`, {
-        x: position.x.toFixed(1),
-        z: position.z.toFixed(1)
-      });
-      return false;
+    if (!isCornerInstall) {
+      // Check if position would collide with walls (including L-shape notch)
+      const wallCollision = checkWallCollision(
+        position,
+        objectType,
+        scale,
+        roomWidth,
+        roomHeight,
+        tempItem,
+        undefined, // rotation
+        notchWidth,
+        notchHeight
+      );
+
+      if (wallCollision) {
+        console.log(`🚫 Wall collision detected for ${objectType} at`, {
+          x: position.x.toFixed(1),
+          z: position.z.toFixed(1)
+        });
+        return false;
+      }
+    } else {
+      console.log(`✅ Skipping wall collision for corner-install ${objectType}`);
     }
   }
 
@@ -631,16 +642,76 @@ export const positionBath = (
   // Check if this is a corner-install bath
   const isCornerInstall = movement?.cornerInstallOnly?.enabled === true;
 
-  // Get all available corners, prioritized by back wall (south) first
+  // Find the door to determine the "back wall" (opposite to door)
+  // Note: Doors can be typed as 'Door' or 'WindowAndDoor' depending on source
+  const doors = existingItems.filter(item =>
+    item.type === 'Door' || item.type === ('WindowAndDoor' as any) || item.sku?.includes('DOOR')
+  );
+  let doorWall: WallType | null = null;
+  let backWall: WallType = 'south'; // Default to south if no door found
+
+  if (doors.length > 0) {
+    // Use the first door to determine door wall
+    doorWall = detectWallFromItem(doors[0], roomWidth, roomHeight, notchWidth, notchHeight);
+    // Back wall is opposite to door wall
+    const oppositeWalls: Record<WallType, WallType> = {
+      'north': 'south',
+      'south': 'north',
+      'east': 'west',
+      'west': 'east',
+      'notch-south': 'north',
+      'notch-east': 'west'
+    };
+    backWall = oppositeWalls[doorWall] || 'south';
+    console.log('🚪 Door found on', doorWall, 'wall -> Back wall is', backWall);
+  } else {
+    console.log('🚪 No door found, defaulting back wall to south');
+  }
+
+  // Get all available corners
   const allCorners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
-  // Prioritize corners: south corners first (back wall), then north corners
-  const priorityOrder: CornerType[] = ['south-east', 'south-west', 'north-east', 'north-west', 'notch-interior', 'notch-east-north'];
+  // Prioritize corners based on back wall (opposite to door)
+  // Corners on the back wall get highest priority, then cycle clockwise
+  const getCornerPriority = (cornerType: CornerType): number => {
+    // Define which corners are on which walls
+    const cornersOnWall: Record<WallType, CornerType[]> = {
+      'south': ['south-east', 'south-west'],
+      'north': ['north-east', 'north-west'],
+      'east': ['south-east', 'north-east'],
+      'west': ['south-west', 'north-west'],
+      'notch-south': ['notch-interior'],
+      'notch-east': ['notch-interior']
+    };
+
+    // Back wall corners get priority 1-2
+    if (cornersOnWall[backWall]?.includes(cornerType)) {
+      return cornersOnWall[backWall].indexOf(cornerType) + 1;
+    }
+
+    // Clockwise from back wall for other corners
+    const clockwiseOrder: WallType[] = ['south', 'west', 'north', 'east'];
+    const backWallIndex = clockwiseOrder.indexOf(backWall);
+
+    // Find which wall this corner is primarily on (not the back wall)
+    for (let i = 1; i < 4; i++) {
+      const wallIndex = (backWallIndex + i) % 4;
+      const wall = clockwiseOrder[wallIndex];
+      if (cornersOnWall[wall]?.includes(cornerType)) {
+        return 2 + i * 2 + cornersOnWall[wall].indexOf(cornerType);
+      }
+    }
+
+    // Notch corners get lowest priority
+    if (cornerType.includes('notch')) return 10;
+    return 99;
+  };
+
   const sortedCorners = [...allCorners].sort((a, b) => {
-    const priorityA = priorityOrder.indexOf(a.type);
-    const priorityB = priorityOrder.indexOf(b.type);
-    return (priorityA === -1 ? 999 : priorityA) - (priorityB === -1 ? 999 : priorityB);
+    return getCornerPriority(a.type) - getCornerPriority(b.type);
   });
+
+  console.log('🛁 Corner priority order:', sortedCorners.map(c => c.type).join(' -> '));
 
   // For corner-install baths, use constrainToCorner for proper placement
   if (isCornerInstall) {
@@ -688,14 +759,130 @@ export const positionBath = (
   }
 
   // For non-corner-install baths (freestanding), use manual corner positioning
+  // Rule: Snap bath length-ways against the LONGEST wall of each corner
   const bathDimensions = bathVariant?.dimensions || getDimensions('Bath', bathVariant?.sku) || { width: 170, height: 55, depth: 75 };
-  const { wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  const { wallFaces, notch, interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
-  const bathHalfWidth = bathDimensions.width * scale / 2;
-  const halfDepth = bathDimensions.depth * scale / 2;
+  const bathLength = bathDimensions.width * scale; // Bath length (the long dimension)
+  const bathWidth = bathDimensions.depth * scale;  // Bath width (the short dimension)
+  const bathHalfLength = bathLength / 2;
+  const bathHalfWidth = bathWidth / 2;
   const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
 
-  // Define corner configurations - prioritize back wall (south) corners
+  // Calculate wall lengths
+  const southWallLength = interior.maxX - interior.minX; // Full width of room
+  const northWallLength = notch ? (interior.maxX - notch.minX) : (interior.maxX - interior.minX);
+  const eastWallLength = interior.maxZ - interior.minZ;  // Full height of room
+  const westWallLength = notch ? (notch.maxZ - interior.minZ) : (interior.maxZ - interior.minZ);
+
+  console.log('🛁 Room wall lengths:', { south: southWallLength, north: northWallLength, east: eastWallLength, west: westWallLength });
+
+  // Helper to create corner config based on which wall is longer
+  const createCornerConfig = (
+    cornerName: string,
+    cornerType: CornerType,
+    wall1: WallType,
+    wall1Length: number,
+    wall2: WallType,
+    wall2Length: number,
+    priority: number
+  ) => {
+    // Determine which wall the bath should snap against (the longer one)
+    const snapToWall1 = wall1Length >= wall2Length;
+    const snapWall = snapToWall1 ? wall1 : wall2;
+
+    console.log(`🛁 Corner ${cornerName}: wall1=${wall1}(${wall1Length.toFixed(0)}cm) vs wall2=${wall2}(${wall2Length.toFixed(0)}cm) -> snap to ${snapWall}`);
+
+    let position: Position;
+    let rotation: number;
+
+    // Calculate position based on which wall to snap length against
+    if (cornerType === 'south-east') {
+      if (snapWall === 'south') {
+        // Length along south wall (X axis), depth toward north
+        position = {
+          x: wallFaces.east - bathHalfLength - wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.south - bathHalfWidth - wallBuffer
+        };
+        rotation = Math.PI; // Facing north
+      } else {
+        // Length along east wall (Z axis), depth toward west
+        position = {
+          x: wallFaces.east - bathHalfWidth - wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.south - bathHalfLength - wallBuffer
+        };
+        rotation = Math.PI / 2; // Facing west
+      }
+    } else if (cornerType === 'south-west') {
+      if (snapWall === 'south') {
+        // Length along south wall (X axis)
+        position = {
+          x: wallFaces.west + bathHalfLength + wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.south - bathHalfWidth - wallBuffer
+        };
+        rotation = Math.PI; // Facing north
+      } else {
+        // Length along west wall (Z axis)
+        position = {
+          x: wallFaces.west + bathHalfWidth + wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.south - bathHalfLength - wallBuffer
+        };
+        rotation = -Math.PI / 2; // Facing east
+      }
+    } else if (cornerType === 'north-east') {
+      if (snapWall === 'north') {
+        // Length along north wall (X axis)
+        position = {
+          x: wallFaces.east - bathHalfLength - wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.north + bathHalfWidth + wallBuffer
+        };
+        rotation = 0; // Facing south
+      } else {
+        // Length along east wall (Z axis)
+        position = {
+          x: wallFaces.east - bathHalfWidth - wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.north + bathHalfLength + wallBuffer
+        };
+        rotation = Math.PI / 2; // Facing west
+      }
+    } else if (cornerType === 'north-west') {
+      if (snapWall === 'north') {
+        // Length along north wall (X axis)
+        position = {
+          x: wallFaces.west + bathHalfLength + wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.north + bathHalfWidth + wallBuffer
+        };
+        rotation = 0; // Facing south
+      } else {
+        // Length along west wall (Z axis)
+        position = {
+          x: wallFaces.west + bathHalfWidth + wallBuffer,
+          y: spawnHeight,
+          z: wallFaces.north + bathHalfLength + wallBuffer
+        };
+        rotation = -Math.PI / 2; // Facing east
+      }
+    } else {
+      // Default fallback for notch corners
+      position = {
+        x: wallFaces.west + bathHalfLength + wallBuffer,
+        y: spawnHeight,
+        z: wallFaces.south - bathHalfWidth - wallBuffer
+      };
+      rotation = Math.PI;
+    }
+
+    return { name: cornerName, corner: cornerType, position, rotation, priority };
+  };
+
+  // Define corner configurations - prioritize corners on the back wall (opposite to door)
   const cornerConfigs: Array<{
     name: string;
     corner: CornerType;
@@ -704,80 +891,26 @@ export const positionBath = (
     priority: number;
   }> = [];
 
-  // South-East corner (back-right) - highest priority
-  cornerConfigs.push({
-    name: 'south-east',
-    corner: 'south-east',
-    position: {
-      x: wallFaces.east - bathHalfWidth - wallBuffer,
-      y: spawnHeight,
-      z: wallFaces.south - halfDepth - wallBuffer
-    },
-    rotation: getObjectRotationForWall('Bath', 'south', orientation),
-    priority: 1
-  });
+  // Add all corners with dynamic priority based on back wall
+  cornerConfigs.push(createCornerConfig('south-east', 'south-east', 'south', southWallLength, 'east', eastWallLength, getCornerPriority('south-east')));
+  cornerConfigs.push(createCornerConfig('south-west', 'south-west', 'south', southWallLength, 'west', westWallLength, getCornerPriority('south-west')));
 
-  // South-West corner (back-left)
-  cornerConfigs.push({
-    name: 'south-west',
-    corner: 'south-west',
-    position: {
-      x: wallFaces.west + bathHalfWidth + wallBuffer,
-      y: spawnHeight,
-      z: wallFaces.south - halfDepth - wallBuffer
-    },
-    rotation: getObjectRotationForWall('Bath', 'south', orientation),
-    priority: 2
-  });
-
-  // North-East corner
-  if (!notch) { // Skip if L-shaped room (notch is in NW)
-    cornerConfigs.push({
-      name: 'north-east',
-      corner: 'north-east',
-      position: {
-        x: wallFaces.east - bathHalfWidth - wallBuffer,
-        y: spawnHeight,
-        z: wallFaces.north + halfDepth + wallBuffer
-      },
-      rotation: getObjectRotationForWall('Bath', 'north', orientation),
-      priority: 3
-    });
-  }
-
-  // North-West corner (only for rectangular rooms)
   if (!notch) {
-    cornerConfigs.push({
-      name: 'north-west',
-      corner: 'north-west',
-      position: {
-        x: wallFaces.west + bathHalfWidth + wallBuffer,
-        y: spawnHeight,
-        z: wallFaces.north + halfDepth + wallBuffer
-      },
-      rotation: getObjectRotationForWall('Bath', 'north', orientation),
-      priority: 4
-    });
+    cornerConfigs.push(createCornerConfig('north-east', 'north-east', 'north', northWallLength, 'east', eastWallLength, getCornerPriority('north-east')));
+    cornerConfigs.push(createCornerConfig('north-west', 'north-west', 'north', northWallLength, 'west', westWallLength, getCornerPriority('north-west')));
   }
 
   // For L-shaped rooms, add notch corners
   if (notch) {
-    // Notch-interior corner
-    cornerConfigs.push({
-      name: 'notch-interior',
-      corner: 'notch-interior',
-      position: {
-        x: notch.minX + bathHalfWidth + wallBuffer,
-        y: spawnHeight,
-        z: notch.maxZ + halfDepth + wallBuffer
-      },
-      rotation: getObjectRotationForWall('Bath', 'south', orientation),
-      priority: 5
-    });
+    const notchSouthLength = interior.maxX - notch.minX;
+    const notchWestLength = notch.maxZ - interior.minZ;
+    cornerConfigs.push(createCornerConfig('notch-interior', 'notch-interior', 'south', notchSouthLength, 'west', notchWestLength, getCornerPriority('notch-interior')));
   }
 
-  // Sort by priority
+  // Sort by priority (back wall corners first, then clockwise)
   cornerConfigs.sort((a, b) => a.priority - b.priority);
+
+  console.log('🛁 Freestanding bath corner priority:', cornerConfigs.map(c => `${c.name}(${c.priority})`).join(' -> '));
 
   // Try each corner
   for (const config of cornerConfigs) {
@@ -819,7 +952,7 @@ export const positionShower = (
   showerVariant: any,
   scale: number = 1.0
 ): AutoPositionResult | null => {
-  const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems, cameraPosition } = context;
+  const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems, cameraPosition, cameraTarget } = context;
   const orientation = showerVariant?.orientation || DEFAULT_ORIENTATION;
   const movement = showerVariant?.movement;
   const spawnHeight = showerVariant?.spawnHeight || 0;
@@ -827,23 +960,28 @@ export const positionShower = (
   // Get all available corners
   const corners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
-  // If camera position is available, sort corners by distance to camera focus
+  // Sort corners by distance to camera's focus point (cameraTarget, not cameraPosition)
+  // This places the shower in the corner nearest to where the user is looking
   let sortedCorners = [...corners];
-  if (cameraPosition) {
+  const focusPoint = cameraTarget || cameraPosition;
+
+  if (focusPoint) {
     sortedCorners.sort((a, b) => {
       const distA = Math.sqrt(
-        Math.pow(a.position.x - cameraPosition.x, 2) +
-        Math.pow(a.position.z - cameraPosition.z, 2)
+        Math.pow(a.position.x - focusPoint.x, 2) +
+        Math.pow(a.position.z - focusPoint.z, 2)
       );
       const distB = Math.sqrt(
-        Math.pow(b.position.x - cameraPosition.x, 2) +
-        Math.pow(b.position.z - cameraPosition.z, 2)
+        Math.pow(b.position.x - focusPoint.x, 2) +
+        Math.pow(b.position.z - focusPoint.z, 2)
       );
-      return distA - distB; // Nearest first
+      return distA - distB; // Nearest to focus point first
     });
+    console.log('🚿 Shower corner priority (nearest to camera focus):', sortedCorners.map(c => c.type).join(' -> '));
   }
 
-  // Try each corner using constrainToCorner for proper positioning
+  // Use constrainToCorner for positioning (tested/working logic)
+  // This handles the complex positioning math for each corner type
   for (const corner of sortedCorners) {
     const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
       type: 'Shower',
@@ -856,6 +994,8 @@ export const positionShower = (
     });
 
     const position = { ...result.position, y: spawnHeight };
+
+    console.log(`🚿 Trying ${corner.type} corner: position=(${position.x.toFixed(1)}, ${position.z.toFixed(1)}), rotation=${(result.rotation * 180 / Math.PI).toFixed(0)}°`);
 
     if (hasSpaceAtPosition(
       position,
