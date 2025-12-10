@@ -19,7 +19,8 @@ import {
   getInteriorBoundaries,
   getRoomCorners,
   wouldCollideWithExisting,
-  constrainToCorner
+  constrainToCorner,
+  checkWallCollision
 } from './constraints';
 import { getObjectRotationForWall } from './models';
 import { DEFAULT_ORIENTATION, type OrientationConfig } from '../constants/models';
@@ -153,7 +154,8 @@ const getWallFacingCamera = (
 };
 
 /**
- * Check if a position has enough space (no collision)
+ * Check if a position has enough space (no collision with walls or existing items)
+ * This is a critical function that validates placement positions
  */
 const hasSpaceAtPosition = (
   position: Position,
@@ -167,6 +169,40 @@ const hasSpaceAtPosition = (
   notchWidth?: number,
   notchHeight?: number
 ): boolean => {
+  // First check: Wall boundaries
+  // If roomWidth/roomHeight not provided, skip wall check
+  if (roomWidth && roomHeight) {
+    const tempItem: BathroomItem = {
+      id: excludeItemId,
+      type: objectType,
+      position: [position.x, position.y, position.z],
+      scale,
+      sku
+    };
+
+    // Check if position would collide with walls (including L-shape notch)
+    const wallCollision = checkWallCollision(
+      position,
+      objectType,
+      scale,
+      roomWidth,
+      roomHeight,
+      tempItem,
+      undefined, // rotation
+      notchWidth,
+      notchHeight
+    );
+
+    if (wallCollision) {
+      console.log(`🚫 Wall collision detected for ${objectType} at`, {
+        x: position.x.toFixed(1),
+        z: position.z.toFixed(1)
+      });
+      return false;
+    }
+  }
+
+  // Second check: Collision with existing items
   const tempItem: BathroomItem = {
     id: excludeItemId,
     type: objectType,
@@ -175,7 +211,7 @@ const hasSpaceAtPosition = (
     sku
   };
 
-  return !wouldCollideWithExisting(
+  const itemCollision = wouldCollideWithExisting(
     position,
     objectType,
     scale,
@@ -187,6 +223,16 @@ const hasSpaceAtPosition = (
     notchWidth,
     notchHeight
   );
+
+  if (itemCollision) {
+    console.log(`🚫 Item collision detected for ${objectType} at`, {
+      x: position.x.toFixed(1),
+      z: position.z.toFixed(1)
+    });
+    return false;
+  }
+
+  return true;
 };
 
 /**
@@ -569,6 +615,8 @@ export const positionToilet = (
  * Position a bath in the best corner
  * Primary: Back wall corner (opposite entry)
  * Secondary: Cycle clockwise through corners
+ *
+ * For corner-install baths, uses constrainToCorner for proper flush placement
  */
 export const positionBath = (
   context: AutoPositionContext,
@@ -576,12 +624,73 @@ export const positionBath = (
   scale: number = 1.0
 ): AutoPositionResult | null => {
   const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems } = context;
-  const bathDimensions = bathVariant?.dimensions || getDimensions('Bath', bathVariant?.sku) || { width: 170, height: 55, depth: 75 };
   const orientation = bathVariant?.orientation || DEFAULT_ORIENTATION;
+  const movement = bathVariant?.movement;
   const spawnHeight = bathVariant?.spawnHeight || 0;
+
+  // Check if this is a corner-install bath
+  const isCornerInstall = movement?.cornerInstallOnly?.enabled === true;
+
+  // Get all available corners, prioritized by back wall (south) first
+  const allCorners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
+
+  // Prioritize corners: south corners first (back wall), then north corners
+  const priorityOrder: CornerType[] = ['south-east', 'south-west', 'north-east', 'north-west', 'notch-interior', 'notch-east-north'];
+  const sortedCorners = [...allCorners].sort((a, b) => {
+    const priorityA = priorityOrder.indexOf(a.type);
+    const priorityB = priorityOrder.indexOf(b.type);
+    return (priorityA === -1 ? 999 : priorityA) - (priorityB === -1 ? 999 : priorityB);
+  });
+
+  // For corner-install baths, use constrainToCorner for proper placement
+  if (isCornerInstall) {
+    console.log('🛁 Bath is corner-install, using constrainToCorner for placement');
+
+    for (const corner of sortedCorners) {
+      // Use constrainToCorner which properly calculates flush corner positioning
+      const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
+        type: 'Bath',
+        scale,
+        orientation,
+        movement,
+        sku: bathVariant?.sku,
+        notchWidth,
+        notchHeight
+      });
+
+      const position = { ...result.position, y: spawnHeight };
+
+      // Check if this position is valid (no collisions)
+      if (hasSpaceAtPosition(
+        position,
+        'Bath',
+        scale,
+        existingItems,
+        -1,
+        bathVariant?.sku,
+        roomWidth,
+        roomHeight,
+        notchWidth,
+        notchHeight
+      )) {
+        console.log('🛁 Auto-position: Corner-install bath placed in', corner.type, 'corner');
+        return {
+          position,
+          rotation: result.rotation,
+          placementMethod: 'corner'
+        };
+      }
+    }
+
+    // No free corner found for corner-install bath
+    console.log('🛁 No free corner available for corner-install bath');
+    return null;
+  }
+
+  // For non-corner-install baths (freestanding), use manual corner positioning
+  const bathDimensions = bathVariant?.dimensions || getDimensions('Bath', bathVariant?.sku) || { width: 170, height: 55, depth: 75 };
   const { wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
-  // For baths, we want to place them length-wise against a wall in a corner
   const bathHalfWidth = bathDimensions.width * scale / 2;
   const halfDepth = bathDimensions.depth * scale / 2;
   const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
@@ -941,80 +1050,316 @@ export const positionTowelRail = (
 
   // Primary: Find bath and place at foot end
   const baths = findBaths(existingItems);
+  console.log('🔥 Looking for baths to place towel rail near. Found:', baths.length);
 
   for (const bath of baths) {
     const bathDimensions = getItemDimensions(bath);
-    const bathWall = detectWallFromItem(bath, roomWidth, roomHeight, notchWidth, notchHeight);
+    const bathRotation = bath.rotation || 0;
 
-    // Calculate foot end position (opposite end from fixtures)
-    // Bath is typically length-wise along a wall
-    let footEndPosition: Position;
-    let rotation: number;
+    // Normalize rotation to determine bath orientation
+    const normalizedRotation = ((bathRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
 
-    if (bathWall === 'north' || bathWall === 'south') {
-      // Bath on north/south wall - foot end is on east or west wall
-      // Determine which end based on bath position
-      const distToEast = wallFaces.east - (bath.position[0] + bathDimensions.width / 2);
-      const distToWest = (bath.position[0] - bathDimensions.width / 2) - wallFaces.west;
+    // Determine bath orientation based on rotation
+    // 0 or PI = bath length along X axis (facing north or south)
+    // PI/2 or 3PI/2 = bath length along Z axis (facing east or west)
+    const isBathAlongX = Math.abs(normalizedRotation) < 0.3 || Math.abs(normalizedRotation - Math.PI) < 0.3;
 
-      if (distToEast < distToWest) {
-        // Closer to east wall - foot end is east
-        footEndPosition = {
-          x: wallFaces.east - halfDepth - wallBuffer,
-          y: spawnHeight,
-          z: bath.position[2]
-        };
-        rotation = getObjectRotationForWall('Radiator', 'east', orientation);
-      } else {
-        // Closer to west wall - foot end is west
-        footEndPosition = {
-          x: wallFaces.west + halfDepth + wallBuffer,
-          y: spawnHeight,
-          z: bath.position[2]
-        };
-        rotation = getObjectRotationForWall('Radiator', 'west', orientation);
+    console.log('🛁 Bath analysis:', {
+      position: bath.position,
+      rotation: bathRotation.toFixed(2),
+      normalizedRotation: normalizedRotation.toFixed(2),
+      isBathAlongX,
+      dimensions: bathDimensions
+    });
+
+    // For corner baths, determine which corner they're in
+    const bathX = bath.position[0];
+    const bathZ = bath.position[2];
+
+    // Check distances to all walls
+    const distToEast = wallFaces.east - bathX;
+    const distToWest = bathX - wallFaces.west;
+    const distToSouth = wallFaces.south - bathZ;
+    const distToNorth = bathZ - wallFaces.north;
+
+    console.log('🛁 Bath distances to walls:', {
+      east: distToEast.toFixed(1),
+      west: distToWest.toFixed(1),
+      south: distToSouth.toFixed(1),
+      north: distToNorth.toFixed(1)
+    });
+
+    // STRATEGY: Place towel rail on a wall that the bath is AGAINST (or near),
+    // positioned at the FOOT END of the bath (the end sticking into the room).
+    //
+    // For a corner bath in SE corner (against south and east walls):
+    // - The foot end is toward the west/north (into the room)
+    // - Place towel rail on SOUTH wall at the western end of the bath
+    // - OR on EAST wall at the northern end of the bath
+
+    const bathLength = isBathAlongX ? (bathDimensions?.width || 170) : (bathDimensions?.depth || 70);
+    const bathWidth = isBathAlongX ? (bathDimensions?.depth || 70) : (bathDimensions?.width || 170);
+    const bathHalfLength = bathLength / 2;
+    const bathHalfWidth = bathWidth / 2;
+
+    // Calculate actual edge distances (not center distances)
+    // For bath along X: length is along X, width is along Z
+    // For bath along Z: length is along Z, width is along X
+    const xHalfExtent = isBathAlongX ? bathHalfLength : bathHalfWidth;
+    const zHalfExtent = isBathAlongX ? bathHalfWidth : bathHalfLength;
+
+    const eastEdgeDist = wallFaces.east - (bathX + xHalfExtent);
+    const westEdgeDist = (bathX - xHalfExtent) - wallFaces.west;
+    const southEdgeDist = wallFaces.south - (bathZ + zHalfExtent);
+    const northEdgeDist = (bathZ - zHalfExtent) - wallFaces.north;
+
+    console.log('🛁 Bath edge distances to walls:', {
+      eastEdge: eastEdgeDist.toFixed(1),
+      westEdge: westEdgeDist.toFixed(1),
+      southEdge: southEdgeDist.toFixed(1),
+      northEdge: northEdgeDist.toFixed(1)
+    });
+
+    // Determine which walls the bath is AGAINST (edge within 20cm of wall)
+    const bathAgainstNorth = northEdgeDist < 20;
+    const bathAgainstSouth = southEdgeDist < 20;
+    const bathAgainstEast = eastEdgeDist < 20;
+    const bathAgainstWest = westEdgeDist < 20;
+
+    console.log('🛁 Bath wall proximity:', {
+      againstNorth: bathAgainstNorth,
+      againstSouth: bathAgainstSouth,
+      againstEast: bathAgainstEast,
+      againstWest: bathAgainstWest
+    });
+
+    const footEndCandidates: Array<{ position: Position; rotation: number; wall: string; priority: number }> = [];
+
+    // Calculate foot end position - the end of the bath furthest from the corner/wall
+    // For bath along X: foot end is at the X position furthest from the nearest X-wall
+    // For bath along Z: foot end is at the Z position furthest from the nearest Z-wall
+
+    if (isBathAlongX) {
+      // Bath length is along X axis
+      // Foot end X is the end of bath furthest from east/west walls
+      const bathEastEdge = bathX + bathHalfLength;
+      const bathWestEdge = bathX - bathHalfLength;
+
+      // The foot end is whichever edge is further from its respective wall
+      const eastEdgeDistToWall = wallFaces.east - bathEastEdge;
+      const westEdgeDistToWall = bathWestEdge - wallFaces.west;
+
+      // Foot end is the edge that's further from wall (sticking into room)
+      const footEndX = eastEdgeDistToWall > westEdgeDistToWall ? bathEastEdge : bathWestEdge;
+      const footEndIsEast = eastEdgeDistToWall > westEdgeDistToWall;
+
+      console.log('🛁 Bath foot end (along X):', {
+        bathEastEdge: bathEastEdge.toFixed(1),
+        bathWestEdge: bathWestEdge.toFixed(1),
+        eastEdgeDistToWall: eastEdgeDistToWall.toFixed(1),
+        westEdgeDistToWall: westEdgeDistToWall.toFixed(1),
+        footEndX: footEndX.toFixed(1),
+        footEndIsEast
+      });
+
+      // PRIMARY: Place on the wall the bath is against, at the foot end position
+      // If bath is against south wall, place towel rail on south wall at footEndX
+      if (bathAgainstSouth) {
+        const railX = footEndX + (footEndIsEast ? 30 : -30); // Offset 30cm from foot end
+        footEndCandidates.push({
+          position: {
+            x: railX,
+            y: spawnHeight,
+            z: wallFaces.south - halfDepth - wallBuffer
+          },
+          rotation: getObjectRotationForWall('Radiator', 'south', orientation),
+          wall: 'south',
+          priority: 1
+        });
+      }
+
+      if (bathAgainstNorth) {
+        const railX = footEndX + (footEndIsEast ? 30 : -30);
+        footEndCandidates.push({
+          position: {
+            x: railX,
+            y: spawnHeight,
+            z: wallFaces.north + halfDepth + wallBuffer
+          },
+          rotation: getObjectRotationForWall('Radiator', 'north', orientation),
+          wall: 'north',
+          priority: 1
+        });
+      }
+
+      // SECONDARY: Place on perpendicular wall (east/west) if bath is against it
+      // Position at the bath's Z level (along the bath's length)
+      if (bathAgainstEast && !footEndIsEast) {
+        // Bath is against east wall and foot end is toward west
+        // Place on east wall, toward the foot end (north or south of bath center)
+        footEndCandidates.push({
+          position: {
+            x: wallFaces.east - halfDepth - wallBuffer,
+            y: spawnHeight,
+            z: bathZ + (bathAgainstSouth ? -bathHalfWidth - 30 : bathHalfWidth + 30)
+          },
+          rotation: getObjectRotationForWall('Radiator', 'east', orientation),
+          wall: 'east',
+          priority: 2
+        });
+      }
+
+      if (bathAgainstWest && footEndIsEast) {
+        footEndCandidates.push({
+          position: {
+            x: wallFaces.west + halfDepth + wallBuffer,
+            y: spawnHeight,
+            z: bathZ + (bathAgainstSouth ? -bathHalfWidth - 30 : bathHalfWidth + 30)
+          },
+          rotation: getObjectRotationForWall('Radiator', 'west', orientation),
+          wall: 'west',
+          priority: 2
+        });
       }
     } else {
-      // Bath on east/west wall - foot end is on north or south wall
-      const distToSouth = wallFaces.south - (bath.position[2] + bathDimensions.width / 2);
-      const distToNorth = (bath.position[2] - bathDimensions.width / 2) - wallFaces.north;
+      // Bath length is along Z axis
+      const bathSouthEdge = bathZ + bathHalfLength;
+      const bathNorthEdge = bathZ - bathHalfLength;
 
-      if (distToSouth < distToNorth) {
-        footEndPosition = {
-          x: bath.position[0],
-          y: spawnHeight,
-          z: wallFaces.south - halfDepth - wallBuffer
-        };
-        rotation = getObjectRotationForWall('Radiator', 'south', orientation);
-      } else {
-        footEndPosition = {
-          x: bath.position[0],
-          y: spawnHeight,
-          z: wallFaces.north + halfDepth + wallBuffer
-        };
-        rotation = getObjectRotationForWall('Radiator', 'north', orientation);
+      const southEdgeDistToWall = wallFaces.south - bathSouthEdge;
+      const northEdgeDistToWall = bathNorthEdge - wallFaces.north;
+
+      const footEndZ = southEdgeDistToWall > northEdgeDistToWall ? bathSouthEdge : bathNorthEdge;
+      const footEndIsSouth = southEdgeDistToWall > northEdgeDistToWall;
+
+      console.log('🛁 Bath foot end (along Z):', {
+        bathSouthEdge: bathSouthEdge.toFixed(1),
+        bathNorthEdge: bathNorthEdge.toFixed(1),
+        southEdgeDistToWall: southEdgeDistToWall.toFixed(1),
+        northEdgeDistToWall: northEdgeDistToWall.toFixed(1),
+        footEndZ: footEndZ.toFixed(1),
+        footEndIsSouth
+      });
+
+      // PRIMARY: Place on the wall the bath is against
+      if (bathAgainstEast) {
+        const railZ = footEndZ + (footEndIsSouth ? 30 : -30);
+        footEndCandidates.push({
+          position: {
+            x: wallFaces.east - halfDepth - wallBuffer,
+            y: spawnHeight,
+            z: railZ
+          },
+          rotation: getObjectRotationForWall('Radiator', 'east', orientation),
+          wall: 'east',
+          priority: 1
+        });
+      }
+
+      if (bathAgainstWest) {
+        const railZ = footEndZ + (footEndIsSouth ? 30 : -30);
+        footEndCandidates.push({
+          position: {
+            x: wallFaces.west + halfDepth + wallBuffer,
+            y: spawnHeight,
+            z: railZ
+          },
+          rotation: getObjectRotationForWall('Radiator', 'west', orientation),
+          wall: 'west',
+          priority: 1
+        });
+      }
+
+      // SECONDARY: Place on perpendicular wall
+      if (bathAgainstSouth && !footEndIsSouth) {
+        footEndCandidates.push({
+          position: {
+            x: bathX + (bathAgainstEast ? -bathHalfWidth - 30 : bathHalfWidth + 30),
+            y: spawnHeight,
+            z: wallFaces.south - halfDepth - wallBuffer
+          },
+          rotation: getObjectRotationForWall('Radiator', 'south', orientation),
+          wall: 'south',
+          priority: 2
+        });
+      }
+
+      if (bathAgainstNorth && footEndIsSouth) {
+        footEndCandidates.push({
+          position: {
+            x: bathX + (bathAgainstEast ? -bathHalfWidth - 30 : bathHalfWidth + 30),
+            y: spawnHeight,
+            z: wallFaces.north + halfDepth + wallBuffer
+          },
+          rotation: getObjectRotationForWall('Radiator', 'north', orientation),
+          wall: 'north',
+          priority: 2
+        });
       }
     }
 
-    if (hasSpaceAtPosition(
-      footEndPosition,
-      'Radiator',
-      scale,
-      existingItems,
-      -1,
-      radiatorVariant?.sku,
-      roomWidth,
-      roomHeight,
-      notchWidth,
-      notchHeight
-    )) {
-      console.log('🔥 Auto-position: Towel rail placed at bath foot end');
-      return {
-        position: footEndPosition,
-        rotation,
-        anchorItem: bath,
-        placementMethod: 'anchor'
-      };
+    // FALLBACK: If bath isn't against any wall (freestanding in middle),
+    // try placing on nearest wall at the foot end position
+    if (footEndCandidates.length === 0) {
+      console.log('🛁 Bath not against any wall, using fallback placement');
+
+      // Find the nearest wall and place there
+      const wallDistances = [
+        { wall: 'north', dist: distToNorth, z: wallFaces.north + halfDepth + wallBuffer, x: bathX },
+        { wall: 'south', dist: distToSouth, z: wallFaces.south - halfDepth - wallBuffer, x: bathX },
+        { wall: 'east', dist: distToEast, x: wallFaces.east - halfDepth - wallBuffer, z: bathZ },
+        { wall: 'west', dist: distToWest, x: wallFaces.west + halfDepth + wallBuffer, z: bathZ }
+      ];
+
+      wallDistances.sort((a, b) => a.dist - b.dist);
+
+      for (const wd of wallDistances) {
+        if (wd.dist > 60) { // Only if there's space
+          footEndCandidates.push({
+            position: {
+              x: wd.x,
+              y: spawnHeight,
+              z: wd.z
+            },
+            rotation: getObjectRotationForWall('Radiator', wd.wall as any, orientation),
+            wall: wd.wall,
+            priority: 3
+          });
+        }
+      }
+    }
+
+    // Sort candidates by priority (lower is better)
+    footEndCandidates.sort((a, b) => a.priority - b.priority);
+
+    console.log('🔥 Towel rail foot end candidates:', footEndCandidates.length);
+
+    // Try each candidate position
+    for (const candidate of footEndCandidates) {
+      console.log('🔥 Trying towel rail position on', candidate.wall, 'wall:', candidate.position);
+
+      if (hasSpaceAtPosition(
+        candidate.position,
+        'Radiator',
+        scale,
+        existingItems,
+        -1,
+        radiatorVariant?.sku,
+        roomWidth,
+        roomHeight,
+        notchWidth,
+        notchHeight
+      )) {
+        console.log('🔥 Auto-position: Towel rail placed at bath foot end on', candidate.wall, 'wall');
+        return {
+          position: candidate.position,
+          rotation: candidate.rotation,
+          anchorItem: bath,
+          placementMethod: 'anchor'
+        };
+      } else {
+        console.log('🔥 Position blocked, trying next candidate');
+      }
     }
   }
 
@@ -1163,7 +1508,8 @@ export const autoPositionItem = (
     case 'Furniture': // Vanity units
       return positionVanity(context, variant, scale);
 
-    case 'Radiator': // Heated towel rails
+    case 'Radiator': // Radiator panels
+    case 'TowelRails' as any: // Heated towel rails (sidebar uses 'TowelRails' type)
       return positionTowelRail(context, variant, scale);
 
     case 'Sink':
