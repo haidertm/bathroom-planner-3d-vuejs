@@ -1892,14 +1892,8 @@ const loadTemplateData = async (template) => {
       await Promise.all(loadPromises)
     }
 
-    // Apply custom camera position or preset if defined for this template
-    if (template.customCamera && sceneManagerRef.value) {
-      console.log('📷 Applying custom camera position:', template.customCamera)
-      sceneManagerRef.value.setCustomCameraPosition(template.customCamera)
-    } else if (template.cameraPreset && sceneManagerRef.value) {
-      console.log('📷 Applying camera preset:', template.cameraPreset)
-      sceneManagerRef.value.setCameraPreset(template.cameraPreset)
-    }
+    // Note: Camera position is now applied earlier in onMounted (before animation starts)
+    // to prevent visual jump from default position to template camera position
 
     // Save initial state to history
     setTimeout(() => {
@@ -2016,7 +2010,10 @@ onMounted(async () => {
   const templateId = localStorage.getItem('selected-template')
   const hasDesignToLoad = localStorage.getItem('design-to-load')
 
-  // Pre-set room dimensions from template if one is selected
+  // Pre-set room dimensions and camera from template if one is selected
+  let pendingCameraPosition = null
+  let pendingCameraPreset = null
+
   if (templateId) {
     const template = getTemplateById(templateId)
     if (template) {
@@ -2025,6 +2022,15 @@ onMounted(async () => {
       roomWidthRef.value = template.roomWidth
       roomHeightRef.value = template.roomHeight
       console.log('📐 Pre-setting template room dimensions:', template.roomWidth, 'x', template.roomHeight)
+
+      // Store camera settings to apply after scene init
+      if (template.customCamera) {
+        pendingCameraPosition = template.customCamera
+        console.log('📷 Pre-setting template custom camera:', template.customCamera)
+      } else if (template.cameraPreset) {
+        pendingCameraPreset = template.cameraPreset
+        console.log('📷 Pre-setting template camera preset:', template.cameraPreset)
+      }
     }
   } else if (!hasDesignToLoad) {
     // No template or design, load saved room dimensions
@@ -2076,6 +2082,15 @@ onMounted(async () => {
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
+
+  // Apply pending camera position BEFORE rendering starts (to avoid visual jump)
+  if (pendingCameraPosition) {
+    console.log('📷 Applying custom camera position immediately:', pendingCameraPosition)
+    sceneManagerRef.value.setCustomCameraPosition(pendingCameraPosition)
+  } else if (pendingCameraPreset) {
+    console.log('📷 Applying camera preset immediately:', pendingCameraPreset)
+    sceneManagerRef.value.setCameraPreset(pendingCameraPreset)
+  }
 
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
