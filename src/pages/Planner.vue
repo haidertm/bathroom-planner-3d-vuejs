@@ -1892,6 +1892,15 @@ const loadTemplateData = async (template) => {
       await Promise.all(loadPromises)
     }
 
+    // Apply custom camera position or preset if defined for this template
+    if (template.customCamera && sceneManagerRef.value) {
+      console.log('📷 Applying custom camera position:', template.customCamera)
+      sceneManagerRef.value.setCustomCameraPosition(template.customCamera)
+    } else if (template.cameraPreset && sceneManagerRef.value) {
+      console.log('📷 Applying camera preset:', template.cameraPreset)
+      sceneManagerRef.value.setCameraPreset(template.cameraPreset)
+    }
+
     // Save initial state to history
     setTimeout(() => {
       saveToHistory({
@@ -2340,6 +2349,7 @@ const handleSmartUpdate = async (newItems, updateSource) => {
       case 'scale':
       case 'roomSize':
       case 'constrain':
+      case 'notchSize':
         // Use incremental update for these operations
         console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
@@ -2354,10 +2364,20 @@ const handleSmartUpdate = async (newItems, updateSource) => {
         console.log('✅ Variant swap scene already updated directly')
         break
 
+      case 'initial':
+        // Skip - initial load is handled separately
+        console.log('⏭️ Skipping initial source - handled elsewhere')
+        break
+
+      case 'drag':
+        // Skip - drag operations should not trigger scene updates
+        console.log('⏭️ Skipping drag source in handleSmartUpdate')
+        break
+
       default:
-        // Fallback to incremental update
-        console.log('🔄 Default incremental update')
-        await sceneManagerRef.value.updateBathroomItems(newItems)
+        // Log unexpected source but skip to avoid duplication
+        console.warn(`⚠️ Unexpected update source: ${updateSource} - skipping scene update to prevent duplication`)
+        break
     }
 
     // Update the previous items reference

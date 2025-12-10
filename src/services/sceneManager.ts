@@ -191,6 +191,23 @@ export class SceneManager {
       presetConfig.lookAt.y,
       presetConfig.lookAt.z
     );
+
+    // Sync with EventHandlers target position to prevent animation loop from resetting
+    if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
+      this.eventHandlers.syncTargetCameraPosition();
+    }
+  }
+
+  setCustomCameraPosition (position: { x: number; y: number; z: number }): void {
+    if (!this.camera) return;
+
+    this.camera.position.set(position.x, position.y, position.z);
+    this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
+
+    // Sync with EventHandlers target position to prevent animation loop from resetting
+    if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
+      this.eventHandlers.syncTargetCameraPosition();
+    }
   }
 
   // ADD: Method to get camera info for debugging

@@ -386,6 +386,11 @@ export class EventHandlers {
     animate();
   }
 
+  // Sync target camera position with current camera position (call after setCameraPreset)
+  public syncTargetCameraPosition (): void {
+    this.targetCameraPosition.copy(this.camera.position);
+  }
+
   // Method to get current items for collision detection
   private getCurrentItems (): BathroomItem[] {
     return this.getItems();
@@ -600,11 +605,11 @@ export class EventHandlers {
     if (intersected) {
         console.log('>>> item id', intersected)
       const itemId = intersected.object.userData.itemId;
-      this.selectedObject = intersected.object;
+      const previouslySelectedId = this.selectedObject?.userData?.itemId;
 
         // Update rotation arrows when object is selected
-
-        if (!this.selectedObject || this.selectedObject.userData.itemId !== itemId) {
+        // Only call selectObject if selecting a different object
+        if (!previouslySelectedId || previouslySelectedId !== itemId) {
             this.selectObject(intersected.object);
 
             // EMIT selection event for variant configuration
@@ -612,6 +617,8 @@ export class EventHandlers {
                 this.onItemSelected(itemId.toString());
             }
         }
+
+      this.selectedObject = intersected.object;
 
 
       console.log('selectedObject >>>', this.selectedObject);

@@ -31,6 +31,8 @@ export interface TemplateConfig {
   roomHeight: number // in cm (depth)
   roomShape: 'square' | 'rectangular' | 'l-shape'
   items: TemplateItem[]
+  cameraPreset?: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW' // Initial camera view when loading template
+  customCamera?: { x: number; y: number; z: number } // Custom camera position (overrides preset)
 }
 
 export const TEMPLATES: Record<string, TemplateConfig> = {
@@ -46,7 +48,7 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
   'standard-family': {
     id: 'standard-family',
     name: 'Standard Family Bathroom',
-    description: 'Bath along back wall, vanity and toilet on right wall',
+    description: 'Bath along back wall, toilet and vanity on right wall',
     roomWidth: 240,
     roomHeight: 200,
     roomShape: 'rectangular',
@@ -59,18 +61,18 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
         description: 'Standard Bath along back wall'
       },
       {
-        type: 'Furniture',
-        sku: 'C76237', // Corsica 600mm Floor Standing Vanity
-        wall: 'east',
-        wallPosition: 0.25, // Towards back of right wall
-        description: 'Floor Standing Vanity 600mm on right wall'
-      },
-      {
         type: 'Toilet',
         sku: 'C66183', // Portland Close Coupled Toilet
         wall: 'east',
-        wallPosition: 0.65, // Towards front, next to vanity
-        description: 'Close Coupled Toilet on right wall'
+        wallPosition: 0.5, // Clear of bath, towards back of right wall
+        description: 'Close Coupled Toilet on right wall next to bath'
+      },
+      {
+        type: 'Furniture',
+        sku: 'C76237', // Corsica 600mm Floor Standing Vanity
+        wall: 'east',
+        wallPosition: 1, // Towards front of right wall, more accessible
+        description: 'Floor Standing Vanity 600mm on right wall'
       }
     ]
   },
@@ -99,19 +101,19 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
         description: 'Quadrant Shower 900x900 in back-left corner'
       },
       {
-        type: 'Furniture',
-        sku: 'C77113', // Avon 450mm Basin Vanity
-        wall: 'east',
-        wallPosition: 0.2, // Towards back of right wall
-        description: 'Wall Hung Basin 450mm on right wall'
-      },
-      {
         type: 'Toilet',
         sku: 'C66183', // Portland Close Coupled Toilet
         wall: 'east',
-        wallPosition: 0.6, // Towards front, next to basin
+        wallPosition: 0.2, // Towards front, next to basin
         description: 'Toilet on right wall next to basin'
-      }
+      },
+        {
+            type: 'Furniture',
+            sku: 'C77113', // Avon 450mm Basin Vanity
+            wall: 'east',
+            wallPosition: 0.7, // Towards back of right wall
+            description: 'Wall Hung Basin 450mm on right wall'
+        },
     ]
   },
 
@@ -131,6 +133,7 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
     roomWidth: 90,
     roomHeight: 160,
     roomShape: 'rectangular',
+    customCamera: { x: 500, y: 300, z: 0 }, // Full left side view of the room
     items: [
       {
         type: 'Toilet',
@@ -162,13 +165,13 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
    *
    * Layout:
    * - P-Shape Shower Bath (L-shaped 1700x850): Along BACK wall - flush against wall
-   * - Vanity (600mm): On RIGHT wall (east) - towards back
-   * - Toilet: On RIGHT wall (east) - towards front (next to vanity)
+   * - Toilet: On RIGHT wall (east) - towards back, next to bath
+   * - Vanity (600mm): On RIGHT wall (east) - towards front, more accessible
    */
   'shower-bath-upgrade': {
     id: 'shower-bath-upgrade',
     name: 'Shower-Bath Upgrade',
-    description: 'P-shape shower bath, vanity and toilet',
+    description: 'P-shape shower bath, toilet and vanity',
     roomWidth: 240,
     roomHeight: 200,
     roomShape: 'rectangular',
@@ -180,18 +183,18 @@ export const TEMPLATES: Record<string, TemplateConfig> = {
         description: 'P-Shape Shower Bath along back wall'
       },
       {
-        type: 'Furniture',
-        sku: 'C76237', // Corsica 600mm Floor Standing Vanity
-        wall: 'east',
-        wallPosition: 0.2, // Towards back of right wall
-        description: 'Vanity 600mm on right wall'
-      },
-      {
         type: 'Toilet',
         sku: 'C66183', // Portland Close Coupled Toilet
         wall: 'east',
-        wallPosition: 0.6, // Towards front of right wall, next to vanity
-        description: 'Toilet on right wall'
+        wallPosition: 0.5, // Clear of bath, towards back of right wall
+        description: 'Toilet on right wall next to bath'
+      },
+      {
+        type: 'Furniture',
+        sku: 'C76237', // Corsica 600mm Floor Standing Vanity
+        wall: 'east',
+          wallPosition: 1, // Towards front of right wall, more accessible
+        description: 'Vanity 600mm on right wall'
       }
     ]
   }
