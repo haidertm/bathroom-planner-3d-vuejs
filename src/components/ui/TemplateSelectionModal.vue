@@ -100,9 +100,9 @@
                 <!-- Corner shower (back-left) -->
                 <rect x="15" y="10" width="35" height="35" fill="#4a90d9" opacity="0.3" stroke="#29275B" stroke-width="1" stroke-dasharray="3,2"/>
                 <!-- Basin on right wall -->
-                <rect x="87" y="25" width="16" height="22" fill="#29275B" opacity="0.6" rx="2"/>
+                <rect x="89" y="25" width="16" height="22" fill="#29275B" opacity="0.6" rx="2"/>
                 <!-- Toilet on right wall -->
-                <rect x="87" y="55" width="16" height="22" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="89" y="55" width="16" height="22" fill="#29275B" opacity="0.6" rx="3"/>
               </svg>
             </div>
             <span class="template-name">Compact En-Suite</span>
@@ -142,7 +142,7 @@
                 <!-- Room outline (2400x2000) -->
                 <rect x="10" y="10" width="100" height="80" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
                 <!-- L-shaped shower bath (back-left) -->
-                <path d="M12 12 L12 50 L45 50 L45 35 L60 35 L60 12 Z" fill="#29275B" opacity="0.6"/>
+                <path d="M10 10 L10 50 L45 50 L45 35 L60 35 L60 10 Z" fill="#29275B" opacity="0.6"/>
                 <!-- Shower screen indicator -->
                 <line x1="45" y1="12" x2="45" y2="50" stroke="#4a90d9" stroke-width="2"/>
                 <!-- Vanity on right wall -->
