@@ -77,11 +77,11 @@
                 <!-- Room outline (2400x2000) -->
                 <rect x="10" y="10" width="100" height="80" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
                 <!-- Bath along back wall -->
-                <rect x="20" y="12" width="60" height="22" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="10" y="10" width="60" height="22" fill="#29275B" opacity="0.6" rx="3"/>
                 <!-- Vanity on right wall -->
-                <rect x="88" y="25" width="18" height="25" fill="#29275B" opacity="0.6" rx="2"/>
+                <rect x="92" y="25" width="18" height="25" fill="#29275B" opacity="0.6" rx="2"/>
                 <!-- Toilet on right wall -->
-                <rect x="88" y="55" width="18" height="22" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="92" y="60" width="18" height="22" fill="#29275B" opacity="0.6" rx="3"/>
               </svg>
             </div>
             <span class="template-name">Standard Family Bathroom</span>
@@ -119,9 +119,9 @@
                 <!-- Room outline (900x1600 narrow) -->
                 <rect x="35" y="10" width="50" height="80" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
                 <!-- Toilet centered on back wall -->
-                <rect x="48" y="12" width="22" height="25" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="48" y="10" width="22" height="25" fill="#29275B" opacity="0.6" rx="3"/>
                 <!-- Basin on left wall -->
-                <rect x="37" y="50" width="14" height="20" fill="#29275B" opacity="0.6" rx="2"/>
+                <rect x="35" y="50" width="14" height="20" fill="#29275B" opacity="0.6" rx="2"/>
                 <!-- Door on front wall (south) - centered -->
                 <rect x="50" y="85" width="20" height="5" fill="#29275B" opacity="0.6" rx="1"/>
                 <!-- Door swing arc indicator -->
@@ -146,9 +146,9 @@
                 <!-- Shower screen indicator -->
                 <line x1="45" y1="12" x2="45" y2="50" stroke="#4a90d9" stroke-width="2"/>
                 <!-- Vanity on right wall -->
-                <rect x="88" y="25" width="18" height="25" fill="#29275B" opacity="0.6" rx="2"/>
+                <rect x="92" y="25" width="18" height="25" fill="#29275B" opacity="0.6" rx="2"/>
                 <!-- Toilet on right wall -->
-                <rect x="88" y="55" width="18" height="22" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="92" y="60" width="18" height="22" fill="#29275B" opacity="0.6" rx="3"/>
               </svg>
             </div>
             <span class="template-name">Shower-Bath Upgrade</span>
