@@ -50,8 +50,6 @@ export interface AutoPositionResult {
 // CONSTANTS
 // ============================================================================
 
-const MIRROR_HEIGHT_ABOVE_VANITY = 20;  // 20cm above vanity top
-const EYE_LEVEL_HEIGHT = 160;           // 160cm from floor for fallback mirror placement
 const TOILET_GAP_FROM_VANITY = 15;      // 15cm gap between toilet and vanity
 const TOWEL_RAIL_HEIGHT = 60;           // 60cm from floor (UK electrical zone standard)
 
@@ -254,15 +252,6 @@ const getItemDimensions = (item: BathroomItem) => {
 };
 
 /**
- * Calculate the top Y position of an item
- */
-const getItemTopY = (item: BathroomItem): number => {
-  const dimensions = getItemDimensions(item);
-  const floorOffset = item.model?.floorOffset || 0;
-  return item.position[1] + floorOffset + dimensions.height;
-};
-
-/**
  * Find longest empty wall segment
  */
 const findLongestEmptyWallSegment = (
@@ -397,7 +386,6 @@ export const positionMirror = (
 
   // Primary: Find vanity without a mirror above it
   for (const vanity of vanities) {
-    const vanityTop = getItemTopY(vanity);
     const vanityDimensions = getItemDimensions(vanity);
 
     // Check if this vanity already has a mirror
@@ -411,9 +399,10 @@ export const positionMirror = (
     if (hasMirror) continue;
 
     // Position mirror centered above vanity
+    // ✅ FIX: Use spawnHeight directly - Planner.vue overrides Y with selectedVariant?.spawnHeight
     const mirrorPosition: Position = {
       x: vanity.position[0],
-      y: vanityTop + MIRROR_HEIGHT_ABOVE_VANITY + spawnHeight,
+      y: spawnHeight,
       z: vanity.position[2]
     };
 
@@ -449,6 +438,10 @@ export const positionMirror = (
   const northWallMinX = notch ? notch.maxX : interior.minX;
   const westWallMaxZ = notch ? notch.maxZ : interior.maxZ;
 
+  // ✅ FIX: Use spawnHeight directly - this is the actual Y position where the mirror will be placed
+  // The Planner.vue addItem function uses selectedVariant?.spawnHeight for the Y position
+  const mirrorY = spawnHeight;
+
   let fallbackPosition: Position;
   let fallbackRotation: number;
 
@@ -457,7 +450,7 @@ export const positionMirror = (
       fallbackPosition = {
         // ✅ FIX: Use northWallMinX for L-shaped rooms
         x: (northWallMinX + interior.maxX) / 2,
-        y: EYE_LEVEL_HEIGHT + spawnHeight,
+        y: mirrorY,
         z: wallFaces.north
       };
       fallbackRotation = getObjectRotationForWall('Mirror', 'north', orientation);
@@ -465,7 +458,7 @@ export const positionMirror = (
     case 'south':
       fallbackPosition = {
         x: (interior.minX + interior.maxX) / 2,
-        y: EYE_LEVEL_HEIGHT + spawnHeight,
+        y: mirrorY,
         z: wallFaces.south
       };
       fallbackRotation = getObjectRotationForWall('Mirror', 'south', orientation);
@@ -473,7 +466,7 @@ export const positionMirror = (
     case 'east':
       fallbackPosition = {
         x: wallFaces.east,
-        y: EYE_LEVEL_HEIGHT + spawnHeight,
+        y: mirrorY,
         z: (interior.minZ + interior.maxZ) / 2
       };
       fallbackRotation = getObjectRotationForWall('Mirror', 'east', orientation);
@@ -482,7 +475,7 @@ export const positionMirror = (
     default:
       fallbackPosition = {
         x: wallFaces.west,
-        y: EYE_LEVEL_HEIGHT + spawnHeight,
+        y: mirrorY,
         // ✅ FIX: Use westWallMaxZ for L-shaped rooms
         z: (interior.minZ + westWallMaxZ) / 2
       };
