@@ -273,7 +273,7 @@ const findLongestEmptyWallSegment = (
   sku?: string
 ): { wall: WallType; position: Position; rotation: number; length: number } | null => {
   const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems } = context;
-  const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
   const dimensions = getDimensions(objectType, sku);
 
   if (!dimensions) return null;
@@ -283,6 +283,12 @@ const findLongestEmptyWallSegment = (
   const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
   const isFlushMounted = wallBuffer === 0;
 
+  // ✅ FIX: For L-shaped rooms, adjust north wall start and west wall end to avoid notch area
+  const northWallMinX = notch ? notch.maxX : interior.minX;
+  const northWallLength = interior.maxX - northWallMinX;
+  const westWallMaxZ = notch ? notch.maxZ : interior.maxZ;
+  const westWallLength = westWallMaxZ - interior.minZ;
+
   const walls: Array<{
     name: WallType;
     length: number;
@@ -291,9 +297,11 @@ const findLongestEmptyWallSegment = (
   }> = [
     {
       name: 'north',
-      length: interior.maxX - interior.minX,
+      // ✅ FIX: Use adjusted length for L-shaped rooms
+      length: northWallLength,
       getPosition: (t) => ({
-        x: interior.minX + segmentHalfWidth + t * (interior.maxX - interior.minX - dimensions.width * scale),
+        // ✅ FIX: Start from notch.maxX for L-shaped rooms
+        x: northWallMinX + segmentHalfWidth + t * (northWallLength - dimensions.width * scale),
         y: 0,
         z: isFlushMounted ? wallFaces.north : wallFaces.north + halfDepth + wallBuffer
       }),
@@ -321,11 +329,13 @@ const findLongestEmptyWallSegment = (
     },
     {
       name: 'west',
-      length: interior.maxZ - interior.minZ,
+      // ✅ FIX: Use adjusted length for L-shaped rooms
+      length: westWallLength,
       getPosition: (t) => ({
         x: isFlushMounted ? wallFaces.west : wallFaces.west + halfDepth + wallBuffer,
         y: 0,
-        z: interior.minZ + segmentHalfWidth + t * (interior.maxZ - interior.minZ - dimensions.width * scale)
+        // ✅ FIX: End at notch.maxZ for L-shaped rooms
+        z: interior.minZ + segmentHalfWidth + t * (westWallLength - dimensions.width * scale)
       }),
       rotation: getObjectRotationForWall(objectType, 'west', orientation)
     }
@@ -432,8 +442,12 @@ export const positionMirror = (
 
   // Fallback: Wall facing camera at eye level
   const targetWall = getWallFacingCamera(cameraPosition, cameraTarget);
-  const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
   const orientation = mirrorVariant?.orientation || DEFAULT_ORIENTATION;
+
+  // ✅ FIX: For L-shaped rooms, adjust wall boundaries to avoid notch area
+  const northWallMinX = notch ? notch.maxX : interior.minX;
+  const westWallMaxZ = notch ? notch.maxZ : interior.maxZ;
 
   let fallbackPosition: Position;
   let fallbackRotation: number;
@@ -441,7 +455,8 @@ export const positionMirror = (
   switch (targetWall) {
     case 'north':
       fallbackPosition = {
-        x: (interior.minX + interior.maxX) / 2,
+        // ✅ FIX: Use northWallMinX for L-shaped rooms
+        x: (northWallMinX + interior.maxX) / 2,
         y: EYE_LEVEL_HEIGHT + spawnHeight,
         z: wallFaces.north
       };
@@ -468,7 +483,8 @@ export const positionMirror = (
       fallbackPosition = {
         x: wallFaces.west,
         y: EYE_LEVEL_HEIGHT + spawnHeight,
-        z: (interior.minZ + interior.maxZ) / 2
+        // ✅ FIX: Use westWallMaxZ for L-shaped rooms
+        z: (interior.minZ + westWallMaxZ) / 2
       };
       fallbackRotation = getObjectRotationForWall('Mirror', 'west', orientation);
       break;
@@ -770,8 +786,9 @@ export const positionBath = (
   const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
 
   // Calculate wall lengths
+  // ✅ FIX: For L-shaped rooms, north wall starts at notch.maxX (not notch.minX)
   const southWallLength = interior.maxX - interior.minX; // Full width of room
-  const northWallLength = notch ? (interior.maxX - notch.minX) : (interior.maxX - interior.minX);
+  const northWallLength = notch ? (interior.maxX - notch.maxX) : (interior.maxX - interior.minX);
   const eastWallLength = interior.maxZ - interior.minZ;  // Full height of room
   const westWallLength = notch ? (notch.maxZ - interior.minZ) : (interior.maxZ - interior.minZ);
 
@@ -902,7 +919,8 @@ export const positionBath = (
 
   // For L-shaped rooms, add notch corners
   if (notch) {
-    const notchSouthLength = interior.maxX - notch.minX;
+    // ✅ FIX: notch-south wall length is from notch.minX to notch.maxX
+    const notchSouthLength = notch.maxX - notch.minX;
     const notchWestLength = notch.maxZ - interior.minZ;
     cornerConfigs.push(createCornerConfig('notch-interior', 'notch-interior', 'south', notchSouthLength, 'west', notchWestLength, getCornerPriority('notch-interior')));
   }
@@ -1039,12 +1057,16 @@ export const positionVanity = (
   const vanityDimensions = vanityVariant?.dimensions || getDimensions('Furniture', vanityVariant?.sku) || { width: 60, height: 55, depth: 40 };
   const orientation = vanityVariant?.orientation || DEFAULT_ORIENTATION;
   const spawnHeight = vanityVariant?.spawnHeight || 0;
-  const { wallFaces, interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
   const vanityHalfWidth = vanityDimensions.width * scale / 2;
   const halfDepth = vanityDimensions.depth * scale / 2;
   const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
   const isFlushMounted = wallBuffer === 0;
+
+  // ✅ FIX: For L-shaped rooms, adjust wall boundaries to avoid notch area
+  const northWallMinX = notch ? notch.maxX : interior.minX;
+  const westWallMaxZ = notch ? notch.maxZ : interior.maxZ;
 
   // Determine which wall to place on based on camera
   const targetWall = getWallFacingCamera(cameraPosition, cameraTarget);
@@ -1055,7 +1077,8 @@ export const positionVanity = (
   switch (targetWall) {
     case 'north':
       position = {
-        x: (interior.minX + interior.maxX) / 2,
+        // ✅ FIX: Use northWallMinX for L-shaped rooms
+        x: (northWallMinX + interior.maxX) / 2,
         y: spawnHeight,
         z: isFlushMounted ? wallFaces.north : wallFaces.north + halfDepth + wallBuffer
       };
@@ -1082,7 +1105,8 @@ export const positionVanity = (
       position = {
         x: isFlushMounted ? wallFaces.west : wallFaces.west + halfDepth + wallBuffer,
         y: spawnHeight,
-        z: (interior.minZ + interior.maxZ) / 2
+        // ✅ FIX: Use westWallMaxZ for L-shaped rooms
+        z: (interior.minZ + westWallMaxZ) / 2
       };
       rotation = getObjectRotationForWall('Furniture', 'west', orientation);
       break;
@@ -1115,12 +1139,27 @@ export const positionVanity = (
   for (const offset of offsetPositions) {
     let offsetPosition: Position;
 
-    if (targetWall === 'north' || targetWall === 'south') {
+    if (targetWall === 'north') {
+      // ✅ FIX: Use northWallMinX for L-shaped rooms on north wall
+      const northWallLength = interior.maxX - northWallMinX;
+      offsetPosition = {
+        ...position,
+        x: northWallMinX + vanityHalfWidth + offset * (northWallLength - vanityDimensions.width * scale)
+      };
+    } else if (targetWall === 'south') {
       offsetPosition = {
         ...position,
         x: interior.minX + vanityHalfWidth + offset * (interior.maxX - interior.minX - vanityDimensions.width * scale)
       };
+    } else if (targetWall === 'west') {
+      // ✅ FIX: Use westWallMaxZ for L-shaped rooms on west wall
+      const westWallLength = westWallMaxZ - interior.minZ;
+      offsetPosition = {
+        ...position,
+        z: interior.minZ + vanityHalfWidth + offset * (westWallLength - vanityDimensions.width * scale)
+      };
     } else {
+      // east wall
       offsetPosition = {
         ...position,
         z: interior.minZ + vanityHalfWidth + offset * (interior.maxZ - interior.minZ - vanityDimensions.width * scale)
