@@ -206,9 +206,14 @@
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
                 class="variant-button"
+                :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
             >
               <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
                 <span>{{ variant.name }}</span>
+                <!-- Show too large badge for variants that don't fit -->
+                <span v-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
+                  ⚠ Too Large
+                </span>
               </span>
             </button>
           </div>
@@ -300,6 +305,7 @@ import {
   isVariantModelLoadedWithCache,
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
+import { checkVariantFitsAtPosition } from '../../utils/constraints'
 
 // Props
 const props = defineProps({
@@ -353,6 +359,31 @@ const props = defineProps({
   searchTriggered: {
     type: Number,
     default: 0
+  },
+  // Constraint checking props
+  currentItem: {
+    type: Object,
+    default: null
+  },
+  existingItems: {
+    type: Array,
+    default: () => []
+  },
+  roomWidth: {
+    type: Number,
+    default: 300
+  },
+  roomHeight: {
+    type: Number,
+    default: 250
+  },
+  notchWidth: {
+    type: Number,
+    default: 0
+  },
+  notchHeight: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -404,6 +435,108 @@ const toggleShowAllVariants = () => {
 watch(() => selectedProduct.value, () => {
   showAllVariants.value = false
 })
+
+// Constraint checking functions
+
+// Find an existing item of the same category to check constraints against
+const findExistingItemOfSameCategory = () => {
+  if (!props.existingItems || props.existingItems.length === 0) return null
+  if (!selectedProduct.value) return null
+
+  // Get the category from multiple sources
+  let category = selectedProduct.value.category ||
+                 selectedProduct.value.searchContext?.category ||
+                 props.selectedCategory
+
+  // Capitalize first letter to match item.type format (e.g., "bath" -> "Bath")
+  if (category && typeof category === 'string') {
+    category = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()
+  }
+
+  if (!category || category === 'Search') return null
+
+  // Find first existing item of the same category (case-insensitive comparison)
+  return props.existingItems.find(item =>
+    item.type?.toLowerCase() === category?.toLowerCase()
+  ) || null
+}
+
+const getVariantFitInfo = (variant) => {
+  if (!variant?.dimensions) {
+    return { fits: true, availableWidth: Infinity, requiredWidth: 0 }
+  }
+
+  const variantWidth = variant.dimensions.width || 0
+  const variantDepth = variant.dimensions.depth || 0
+
+  // First check: Does it fit in the room at all?
+  const maxVariantDim = Math.max(variantWidth, variantDepth)
+
+  // Get available wall lengths (accounting for notch if present)
+  const availableWidth = props.roomWidth - (props.notchWidth || 0)
+  const availableHeight = props.roomHeight - (props.notchHeight || 0)
+  const maxWallLength = Math.max(availableWidth, availableHeight, props.roomWidth, props.roomHeight)
+
+  // If the variant's largest dimension is bigger than the largest wall, it won't fit anywhere
+  if (maxVariantDim > maxWallLength) {
+    return {
+      fits: false,
+      availableWidth: maxWallLength,
+      requiredWidth: maxVariantDim
+    }
+  }
+
+  // Second check: If there's an existing item of same category, check that position
+  const itemToCheck = props.currentItem || findExistingItemOfSameCategory()
+
+  if (!itemToCheck) {
+    return { fits: true, availableWidth: maxWallLength, requiredWidth: maxVariantDim }
+  }
+
+  // Filter out the item we're checking against from existingItems
+  const otherItems = props.existingItems.filter(item => item.id !== itemToCheck.id)
+
+  return checkVariantFitsAtPosition(
+    variant.dimensions,
+    itemToCheck,
+    otherItems,
+    props.roomWidth,
+    props.roomHeight,
+    props.notchWidth,
+    props.notchHeight
+  )
+}
+
+const isVariantTooLarge = (variant) => {
+  // Check if variant has dimensions
+  if (!variant?.dimensions) return false
+
+  // Get fit info - this now checks room dimensions first
+  const fitInfo = getVariantFitInfo(variant)
+
+  // If it doesn't fit in the room at all, it's too large
+  if (!fitInfo.fits) return true
+
+  // Get item to check against for position-based checking
+  const itemToCheck = props.currentItem || findExistingItemOfSameCategory()
+
+  // If no existing item, rely on room dimension check (already passed above)
+  if (!itemToCheck) return false
+
+  // Current variant of existing item always fits (it's already placed)
+  if (itemToCheck.variant?.sku === variant?.sku) return false
+
+  return !fitInfo.fits
+}
+
+const getTooLargeTooltip = (variant) => {
+  const fitInfo = getVariantFitInfo(variant)
+  if (fitInfo.fits) return ''
+
+  const requiredMm = Math.round(fitInfo.requiredWidth * 10)
+  const availableMm = Math.round(fitInfo.availableWidth * 10)
+  return `Item exceeds available space (Requires ${requiredMm}mm, Available ${availableMm}mm).`
+}
 
 watch(() => props.searchTriggered, (newValue, oldValue) => {
   if (newValue > oldValue && newValue > 0) {
@@ -815,6 +948,12 @@ const goBackToProductList = () => {
 }
 
 const selectVariant = async (variant) => {
+  // Don't allow selection of variants that are too large
+  if (isVariantTooLarge(variant)) {
+    console.log('⚠️ Cannot select variant - too large for available space')
+    return
+  }
+
   const variantKey = variant.id || variant.sku || variant.name
   console.log('🔄 Selecting variant...', variant.name || variant.sku)
 
@@ -1079,10 +1218,48 @@ const seeMoreButtonStyle = {
   justifyContent: 'center'
 }
 
+// Style for variants that are too large to fit
+const tooLargeBadgeStyle = computed(() => ({
+  fontSize: '11px',
+  fontWeight: '600',
+  color: '#dc2626',
+  backgroundColor: '#fef2f2',
+  padding: '2px 8px',
+  borderRadius: '4px',
+  border: '1px solid #fecaca'
+}))
+
 // Dynamic styles methods for variants
 const getVariantButtonStyle = (variant) => {
   const isSelected = selectedVariant.value === variant
   const isCached = isModelCached(variant)
+  const isTooLarge = isVariantTooLarge(variant)
+
+  // Disabled style for variants that are too large
+  if (isTooLarge) {
+    return {
+      padding: '12px 16px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '6px',
+      backgroundColor: '#f3f4f6',
+      color: '#9ca3af',
+      fontSize: '14px',
+      fontWeight: '400',
+      transition: 'all 0.2s ease',
+      position: 'relative',
+      overflow: 'hidden',
+      fontFamily: 'Arial, sans-serif',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: '44px',
+      minWidth: '60px',
+      boxShadow: 'none',
+      transform: 'none',
+      cursor: 'not-allowed',
+      opacity: '0.7'
+    }
+  }
 
   return {
     padding: '12px 16px',
@@ -1605,6 +1782,15 @@ const searchVariantStyle = computed(() => ({
   border-color: #29275B !important;
   background-color: #29275B !important;
   color: #ffffff !important;
+}
+
+/* Prevent hover effects on disabled (too large) variants */
+.variant-button[style*="not-allowed"]:hover {
+  border-color: #e5e7eb !important;
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .color-swatch:hover {

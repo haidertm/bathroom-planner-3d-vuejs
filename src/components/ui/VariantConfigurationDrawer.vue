@@ -70,6 +70,7 @@
               :style="getOptionItemStyle(variant)"
               @click="selectVariant(variant)"
               class="size-option"
+              :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
           >
             <span :style="optionTextStyle">
               {{ formatVariantSize(variant) }}
@@ -78,6 +79,11 @@
             <!-- Show current badge on the variant list -->
             <span v-if="isCurrentVariant(variant)" :style="currentVariantBadgeStyle">
               ✓ Current
+            </span>
+
+            <!-- Show too large badge for variants that don't fit -->
+            <span v-else-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
+              ⚠ Too Large
             </span>
 
             <!-- Show cached/ready indicator for preloaded variants -->
@@ -111,6 +117,7 @@ import {
   isVariantModelLoaded,
   isModelCached,
 } from '../../utils/modelLoader'
+import { checkVariantFitsAtPosition } from '../../utils/constraints'
 
 const isMobileDevice = computed(() => isMobile())
 
@@ -130,6 +137,30 @@ const props = defineProps({
   itemId: {
     type: [String, Number],
     default: null
+  },
+  currentItem: {
+    type: Object,
+    default: null
+  },
+  existingItems: {
+    type: Array,
+    default: () => []
+  },
+  roomWidth: {
+    type: Number,
+    default: 300
+  },
+  roomHeight: {
+    type: Number,
+    default: 250
+  },
+  notchWidth: {
+    type: Number,
+    default: 0
+  },
+  notchHeight: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -167,8 +198,49 @@ const isVariantCached = (variant) => {
   return isModelCached(variant)
 }
 
+// Check if variant fits at current position
+const getVariantFitInfo = (variant) => {
+  if (!props.currentItem || !variant?.dimensions) {
+    return { fits: true, availableWidth: Infinity, requiredWidth: 0 }
+  }
+
+  return checkVariantFitsAtPosition(
+    variant.dimensions,
+    props.currentItem,
+    props.existingItems,
+    props.roomWidth,
+    props.roomHeight,
+    props.notchWidth,
+    props.notchHeight
+  )
+}
+
+// Check if a variant is too large to fit
+const isVariantTooLarge = (variant) => {
+  // Current variant always fits (it's already placed)
+  if (isCurrentVariant(variant)) return false
+
+  const fitInfo = getVariantFitInfo(variant)
+  return !fitInfo.fits
+}
+
+// Get tooltip message for too-large variants
+const getTooLargeTooltip = (variant) => {
+  const fitInfo = getVariantFitInfo(variant)
+  if (fitInfo.fits) return ''
+
+  const requiredMm = Math.round(fitInfo.requiredWidth * 10)
+  const availableMm = Math.round(fitInfo.availableWidth * 10)
+  return `Item exceeds available space (Requires ${requiredMm}mm, Available ${availableMm}mm).`
+}
+
 // Methods
 const selectVariant = async (variant) => {
+  // Don't allow selection of variants that are too large
+  if (isVariantTooLarge(variant)) {
+    console.log('⚠️ Cannot select variant - too large for available space')
+    return
+  }
   const variantKey = variant.id || variant.sku || variant.name
   console.log('🔄 Variant clicked:', variant.name || variant.sku)
 
@@ -459,6 +531,27 @@ const getOptionItemStyle = (variant) => {
   const isSelected = selectedVariant.value?.sku === variant.sku
   const isCurrent = isCurrentVariant(variant)
   const isCached = isVariantCached(variant)
+  const isTooLarge = isVariantTooLarge(variant)
+
+  // Disabled style for variants that are too large
+  if (isTooLarge) {
+    return {
+      backgroundColor: '#f3f4f6',
+      color: '#9ca3af',
+      padding: '16px',
+      borderRadius: '8px',
+      cursor: 'not-allowed',
+      transition: 'all 0.2s ease',
+      border: '1px solid #e5e7eb',
+      boxShadow: 'none',
+      fontWeight: '400',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      position: 'relative',
+      opacity: '0.7'
+    }
+  }
 
   return {
     backgroundColor: isCurrent ? '#29275B' : (isSelected ? '#e0e7ff' : 'white'),
@@ -497,6 +590,17 @@ const cachedVariantBadgeStyle = computed(() => ({
   borderRadius: '4px'
 }))
 
+// Style for variants that are too large to fit
+const tooLargeBadgeStyle = computed(() => ({
+  fontSize: '11px',
+  fontWeight: '600',
+  color: '#dc2626',
+  backgroundColor: '#fef2f2',
+  padding: '2px 8px',
+  borderRadius: '4px',
+  border: '1px solid #fecaca'
+}))
+
 const footerStyle = computed(() => ({
   padding: '16px',
   backgroundColor: '#f5f5f5',
@@ -526,6 +630,12 @@ const addToRoomButtonStyle = computed(() => {
 .size-option:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Prevent hover effects on disabled (too large) variants */
+.size-option[style*="not-allowed"]:hover {
+  transform: none;
+  box-shadow: none !important;
 }
 
 button[style*="rgba(255, 255, 255, 0.2)"]:hover {
