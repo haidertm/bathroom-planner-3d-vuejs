@@ -756,6 +756,9 @@ const handleSaveDesign = () => {
 
 // Room size change handler
 const handleRoomSizeChange = (newWidth, newHeight) => {
+  const oldWidth = roomWidth.value
+  const oldHeight = roomHeight.value
+
   roomWidth.value = newWidth
   roomHeight.value = newHeight
 
@@ -767,7 +770,18 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
   saveRoomDimensionsToStorage(newWidth, newHeight)
 
   // Constrain objects and update scene
-  const constrainedItems = constrainAllObjectsToRoom(items.value, newWidth, newHeight, notchWidth.value, notchHeight.value)
+  // Pass old dimensions to ensure items stick to their walls
+  const constrainedItems = constrainAllObjectsToRoom(
+    items.value, 
+    newWidth, 
+    newHeight, 
+    notchWidth.value, 
+    notchHeight.value,
+    oldWidth,
+    oldHeight,
+    notchWidth.value,
+    notchHeight.value
+  )
   items.value = constrainedItems
   lastUpdateSource.value = 'roomSize'
 
@@ -785,6 +799,9 @@ const handleRoomSizeChange = (newWidth, newHeight) => {
 
 // Notch size change handler (for L-shaped rooms)
 const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
+  const oldNotchWidth = notchWidth.value
+  const oldNotchHeight = notchHeight.value
+
   notchWidth.value = newNotchWidth
   notchHeight.value = newNotchHeight
 
@@ -792,7 +809,18 @@ const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
   saveRoomDimensionsToStorage(roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
 
   // Constrain objects and update scene
-  const constrainedItems = constrainAllObjectsToRoom(items.value, roomWidth.value, roomHeight.value, newNotchWidth, newNotchHeight)
+  // Pass old dimensions to ensure items stick to their walls
+  const constrainedItems = constrainAllObjectsToRoom(
+    items.value, 
+    roomWidth.value, 
+    roomHeight.value, 
+    newNotchWidth, 
+    newNotchHeight,
+    roomWidth.value,
+    roomHeight.value,
+    oldNotchWidth,
+    oldNotchHeight
+  )
   items.value = constrainedItems
   lastUpdateSource.value = 'notchSize'
 
@@ -1864,6 +1892,9 @@ const loadTemplateData = async (template) => {
       await Promise.all(loadPromises)
     }
 
+    // Note: Camera position is now applied earlier in onMounted (before animation starts)
+    // to prevent visual jump from default position to template camera position
+
     // Save initial state to history
     setTimeout(() => {
       saveToHistory({
@@ -1979,7 +2010,10 @@ onMounted(async () => {
   const templateId = localStorage.getItem('selected-template')
   const hasDesignToLoad = localStorage.getItem('design-to-load')
 
-  // Pre-set room dimensions from template if one is selected
+  // Pre-set room dimensions and camera from template if one is selected
+  let pendingCameraPosition = null
+  let pendingCameraPreset = null
+
   if (templateId) {
     const template = getTemplateById(templateId)
     if (template) {
@@ -1988,6 +2022,15 @@ onMounted(async () => {
       roomWidthRef.value = template.roomWidth
       roomHeightRef.value = template.roomHeight
       console.log('📐 Pre-setting template room dimensions:', template.roomWidth, 'x', template.roomHeight)
+
+      // Store camera settings to apply after scene init
+      if (template.customCamera) {
+        pendingCameraPosition = template.customCamera
+        console.log('📷 Pre-setting template custom camera:', template.customCamera)
+      } else if (template.cameraPreset) {
+        pendingCameraPreset = template.cameraPreset
+        console.log('📷 Pre-setting template camera preset:', template.cameraPreset)
+      }
     }
   } else if (!hasDesignToLoad) {
     // No template or design, load saved room dimensions
@@ -2039,6 +2082,15 @@ onMounted(async () => {
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
+
+  // Apply pending camera position BEFORE rendering starts (to avoid visual jump)
+  if (pendingCameraPosition) {
+    console.log('📷 Applying custom camera position immediately:', pendingCameraPosition)
+    sceneManagerRef.value.setCustomCameraPosition(pendingCameraPosition)
+  } else if (pendingCameraPreset) {
+    console.log('📷 Applying camera preset immediately:', pendingCameraPreset)
+    sceneManagerRef.value.setCameraPreset(pendingCameraPreset)
+  }
 
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
@@ -2312,6 +2364,7 @@ const handleSmartUpdate = async (newItems, updateSource) => {
       case 'scale':
       case 'roomSize':
       case 'constrain':
+      case 'notchSize':
         // Use incremental update for these operations
         console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
@@ -2326,10 +2379,20 @@ const handleSmartUpdate = async (newItems, updateSource) => {
         console.log('✅ Variant swap scene already updated directly')
         break
 
+      case 'initial':
+        // Skip - initial load is handled separately
+        console.log('⏭️ Skipping initial source - handled elsewhere')
+        break
+
+      case 'drag':
+        // Skip - drag operations should not trigger scene updates
+        console.log('⏭️ Skipping drag source in handleSmartUpdate')
+        break
+
       default:
-        // Fallback to incremental update
-        console.log('🔄 Default incremental update')
-        await sceneManagerRef.value.updateBathroomItems(newItems)
+        // Log unexpected source but skip to avoid duplication
+        console.warn(`⚠️ Unexpected update source: ${updateSource} - skipping scene update to prevent duplication`)
+        break
     }
 
     // Update the previous items reference
