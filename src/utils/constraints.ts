@@ -883,11 +883,51 @@ export const checkCollision = (
 
   // ✅ CRITICAL: Calculate actual 3D bounding boxes accounting for floorOffset AND rotation
 
-  // Determine which wall each object is on (for rotation calculation)
-  const getObjectWall = (pos: Position, item?: BathroomItem): 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south' | null => {
-    if (!item) return null;
+  // Determine if the object should have its dimensions swapped (rotated 90°)
+  // This handles both wall-snapped items and corner-install items
+  const shouldSwapDimensions = (pos: Position, item?: BathroomItem): boolean => {
+    if (!item) return false;
     const movementConfig = getMovementConfig(item.type, item);
-    if (!movementConfig.snapToWall) return null;
+
+    // For corner-install items, determine rotation based on nearest corner
+    if (movementConfig.cornerInstallOnly &&
+        typeof movementConfig.cornerInstallOnly === 'object' &&
+        movementConfig.cornerInstallOnly.enabled) {
+      // Find nearest corner to determine rotation
+      const corners = getRoomCorners(roomWidth || 300, roomHeight || 300, notchWidth, notchHeight);
+      let nearestCorner: CornerInfo | null = null;
+      let minDistance = Infinity;
+
+      for (const corner of corners) {
+        const distance = Math.sqrt(
+          Math.pow(pos.x - corner.position.x, 2) +
+          Math.pow(pos.z - corner.position.z, 2)
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestCorner = corner;
+        }
+      }
+
+      // NE and SW corners have 90° rotation, so dimensions should be swapped
+      // NW and SE corners have 0° or 180° rotation, so no swap needed
+      if (nearestCorner) {
+        const cornerType = nearestCorner.type;
+        // north-east: -90° (or 270°), south-west: 90° - these need swap
+        // north-west: 0°, south-east: 180° - these don't need swap
+        // notch-east-north: similar to NE (-90°) - needs swap
+        // notch-interior: similar to NW (0°) - no swap
+        const needsSwap = cornerType === 'north-east' ||
+                          cornerType === 'south-west' ||
+                          cornerType === 'notch-east-north';
+        console.log(`🔧 Corner-install collision check: corner=${cornerType}, needsSwap=${needsSwap}`);
+        return needsSwap;
+      }
+      return false;
+    }
+
+    // For wall-snapped items, use the existing wall-based logic
+    if (!movementConfig.snapToWall) return false;
 
     // Calculate distances to each wall face (using actual room dimensions)
     const roomHalfWidth = roomWidth ? roomWidth / 2 : 300; // Use actual room width or fallback to 300cm
@@ -902,35 +942,18 @@ export const checkCollision = (
     // Check for notch walls first (if notch exists)
     if (notchWidth && notchHeight) {
       const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
-      const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
-      const notchMinX = -roomHalfWidth + wallThickness;
       const notchMinZ = -roomHalfHeight + wallThickness;
 
       const tolerance = 30; // 30cm tolerance for notch wall detection
 
-      // Check if on notch-east wall (vertical edge of notch)
+      // Check if on notch-east wall (vertical edge of notch) - needs dimension swap
       if (Math.abs(pos.x - notchMaxX) < tolerance &&
           pos.z >= notchMinZ &&
           pos.z <= roomHalfHeight - wallThickness) {
-        console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall', {
-          position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
-          notchMaxX: notchMaxX.toFixed(1),
-          distance: Math.abs(pos.x - notchMaxX).toFixed(1)
-        });
-        return 'notch-east';
+        return true; // notch-east is rotated 90°, needs swap
       }
 
-      // Check if on notch-south wall (horizontal edge of notch)
-      if (Math.abs(pos.z - notchMaxZ) < tolerance &&
-          pos.x >= notchMinX &&
-          pos.x <= roomHalfWidth - wallThickness) {
-        console.log('🔧 checkCollision: Item detected on NOTCH-SOUTH wall', {
-          position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
-          notchMaxZ: notchMaxZ.toFixed(1),
-          distance: Math.abs(pos.z - notchMaxZ).toFixed(1)
-        });
-        return 'notch-south';
-      }
+      // notch-south wall doesn't need dimension swap (same as north/south)
     }
 
     const distToNorth = Math.abs(pos.z - northWall);
@@ -939,14 +962,12 @@ export const checkCollision = (
     const distToWest = Math.abs(pos.x - westWall);
 
     const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
-    if (minDist === distToNorth) return 'north';
-    if (minDist === distToSouth) return 'south';
-    if (minDist === distToEast) return 'east';
-    return 'west';
+    // East and West walls are rotated 90°, so dimensions should be swapped
+    return minDist === distToEast || minDist === distToWest;
   };
 
-  const obj1Wall = getObjectWall(pos1, item1);
-  const obj2Wall = getObjectWall(pos2, item2);
+  const obj1NeedsSwap = shouldSwapDimensions(pos1, item1);
+  const obj2NeedsSwap = shouldSwapDimensions(pos2, item2);
 
   // Object 1 bounding box (scaled dimensions, accounting for rotation)
   const obj1BaseWidth = dims1.width * scale1;
@@ -954,9 +975,9 @@ export const checkCollision = (
   const obj1Height = dims1.height * scale1;
   const obj1FloorOffset = dims1.floorOffset * scale1;
 
-  // Swap width/depth if object is rotated 90° (on east/west/notch-east walls)
+  // Swap width/depth if object is rotated 90°
   let obj1Width: number, obj1Depth: number;
-  if (obj1Wall === 'east' || obj1Wall === 'west' || obj1Wall === 'notch-east') {
+  if (obj1NeedsSwap) {
     obj1Width = obj1BaseDepth; // Rotated: depth becomes width
     obj1Depth = obj1BaseWidth; // Rotated: width becomes depth
   } else {
@@ -970,9 +991,9 @@ export const checkCollision = (
   const obj2Height = dims2.height * scale2;
   const obj2FloorOffset = dims2.floorOffset * scale2;
 
-  // Swap width/depth if object is rotated 90° (on east/west/notch-east walls)
+  // Swap width/depth if object is rotated 90°
   let obj2Width: number, obj2Depth: number;
-  if (obj2Wall === 'east' || obj2Wall === 'west' || obj2Wall === 'notch-east') {
+  if (obj2NeedsSwap) {
     obj2Width = obj2BaseDepth; // Rotated: depth becomes width
     obj2Depth = obj2BaseWidth; // Rotated: width becomes depth
   } else {
