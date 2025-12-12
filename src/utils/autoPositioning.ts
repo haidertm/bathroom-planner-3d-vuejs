@@ -399,10 +399,27 @@ export const positionMirror = (
     if (hasMirror) continue;
 
     // Position mirror centered above vanity
-    // ✅ FIX: Use spawnHeight directly - Planner.vue overrides Y with selectedVariant?.spawnHeight
+    // Mirror.x = Vanity.x
+    // Mirror.y = Vanity.top + 200mm (20cm gap above vanity)
+    //
+    // IMPORTANT: When placing above vanity, ignore the mirror's floorOffset.
+    // floorOffset is for standalone wall placement (visual bottom = position.y + floorOffset)
+    // For anchor-based placement, we want the visual bottom at vanityTop + gap,
+    // so we need: position.y = vanityTop + gap - floorOffset
+    const MIRROR_GAP_ABOVE_VANITY = 20; // 20cm (200mm) gap above vanity top
+    const vanityTopY = (vanity.position[1] || 0) + vanityDimensions.height;
+
+    // Get mirror's floorOffset to compensate for it
+    // Visual bottom should be at vanityTopY + gap
+    // Since visual bottom = position.y + floorOffset
+    // We need: position.y = (vanityTopY + gap) - floorOffset
+    const mirrorFloorOffset = mirrorVariant?.floorOffset || 0;
+    const desiredVisualBottom = vanityTopY + MIRROR_GAP_ABOVE_VANITY;
+    const mirrorY = desiredVisualBottom - mirrorFloorOffset;
+
     const mirrorPosition: Position = {
       x: vanity.position[0],
-      y: spawnHeight,
+      y: mirrorY,
       z: vanity.position[2]
     };
 
@@ -419,7 +436,14 @@ export const positionMirror = (
       notchWidth,
       notchHeight
     )) {
-      console.log('🪞 Auto-position: Mirror placed above vanity');
+      console.log('🪞 Auto-position: Mirror placed above vanity', {
+        vanityTopY,
+        mirrorFloorOffset,
+        desiredVisualBottom,
+        mirrorSceneY: mirrorY,
+        actualVisualBottom: mirrorY + mirrorFloorOffset,
+        note: 'Mirror floorOffset is subtracted so visual bottom aligns with vanityTop + 20cm gap'
+      });
       return {
         position: mirrorPosition,
         rotation: vanity.rotation || 0,
