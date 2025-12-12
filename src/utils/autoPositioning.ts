@@ -37,6 +37,7 @@ export interface AutoPositionContext {
   existingItems: BathroomItem[];
   cameraPosition?: { x: number; y: number; z: number };
   cameraTarget?: { x: number; y: number; z: number };
+  selectedItemId?: string;  // Currently selected item ID (for prioritizing anchor placement)
 }
 
 export interface AutoPositionResult {
@@ -436,12 +437,40 @@ export const positionMirror = (
   mirrorVariant: any,
   scale: number = 1.0
 ): AutoPositionResult | null => {
-  const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems, cameraPosition, cameraTarget } = context;
+  const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems, cameraPosition, cameraTarget, selectedItemId } = context;
   const vanities = findVanityUnits(existingItems);
   const spawnHeight = mirrorVariant?.spawnHeight || 0;
 
+  // Secondary Rule: If multiple vanities exist, prioritize:
+  // 1. Currently selected vanity (if it's a vanity)
+  // 2. Last added vanity (reverse order since items are added chronologically)
+  let sortedVanities = [...vanities];
+
+  // Check if selected item is a vanity - move it to front
+  let selectedVanityFound = false;
+  if (selectedItemId) {
+    const selectedVanityIndex = sortedVanities.findIndex(v => String(v.id) === selectedItemId);
+    if (selectedVanityIndex >= 0) {
+      selectedVanityFound = true;
+      if (selectedVanityIndex > 0) {
+        // Move selected vanity to front
+        const [selectedVanity] = sortedVanities.splice(selectedVanityIndex, 1);
+        sortedVanities.unshift(selectedVanity);
+      }
+      console.log('🪞 Prioritizing selected vanity for mirror placement:', selectedItemId);
+    }
+  }
+
+  // If no vanity is selected, reverse to prioritize last added
+  if (!selectedVanityFound) {
+    sortedVanities.reverse();
+    console.log('🪞 Prioritizing last added vanity for mirror placement (reversed order)');
+  }
+
+  console.log('🪞 Vanity order for mirror placement:', sortedVanities.map(v => v.id));
+
   // Primary: Find vanity without a mirror above it
-  for (const vanity of vanities) {
+  for (const vanity of sortedVanities) {
     const vanityDimensions = getItemDimensions(vanity);
 
     // Check if this vanity already has a mirror

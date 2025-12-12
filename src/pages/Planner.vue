@@ -929,7 +929,8 @@ const addItem = async (type, productData = null) => {
     cameraPosition: sceneManagerRef.value?.camera?.position
       ? { x: sceneManagerRef.value.camera.position.x, y: sceneManagerRef.value.camera.position.y, z: sceneManagerRef.value.camera.position.z }
       : undefined,
-    cameraTarget: { x: 0, y: 0, z: 0 } // Default look-at point (room center)
+    cameraTarget: { x: 0, y: 0, z: 0 }, // Default look-at point (room center)
+    selectedItemId: selectedItemId.value ? String(selectedItemId.value) : undefined // For prioritizing anchor placement
   }
 
   // Try smart auto-positioning first
