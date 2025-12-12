@@ -1992,14 +1992,19 @@ export const findFreeCornerPosition = (
       sku: sku
     };
 
-    // Check if this corner position would collide with existing items
-    const wouldCollide = wouldCollideWithExisting(
+    // Check if this corner position would collide with existing items OR walls/notch
+    const wouldCollide = wouldCollideWithExistingOrWalls(
       result.position,
       objectType,
       scale,
       -1, // New item, no ID yet
       existingItems,
-      tempItem // Pass temporary item for proper dimension lookup
+      roomWidth,
+      roomHeight,
+      tempItem, // Pass temporary item for proper dimension lookup
+      result.rotation,
+      notchWidth,
+      notchHeight
     );
 
     console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
