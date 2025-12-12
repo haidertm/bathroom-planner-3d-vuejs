@@ -1304,7 +1304,7 @@ export const positionTowelRail = (
   // Calculate spawn height so visual bottom is at 60cm from floor
   const spawnHeight = calculateTowelRailY(radiatorVariant);
 
-  const { wallFaces } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  const { wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
   // Check for existing towel rails to prevent stacking
   const existingTowelRails = findTowelRails(existingItems);
@@ -1375,16 +1375,22 @@ export const positionTowelRail = (
     // - Place towel rail on SOUTH wall at the western end of the bath
     // - OR on EAST wall at the northern end of the bath
 
-    const bathLength = isBathAlongX ? (bathDimensions?.width || 170) : (bathDimensions?.depth || 70);
-    const bathWidth = isBathAlongX ? (bathDimensions?.depth || 70) : (bathDimensions?.width || 170);
-    const bathHalfLength = bathLength / 2;
-    const bathHalfWidth = bathWidth / 2;
+    // Bath dimensions: width = long side (170cm typically), depth = short side (70cm typically)
+    // These are the PHYSICAL dimensions, regardless of rotation
+    const bathLongSide = bathDimensions?.width || 170;   // The long dimension of the bath
+    const bathShortSide = bathDimensions?.depth || 70;   // The short dimension of the bath
+    const bathHalfLong = bathLongSide / 2;
+    const bathHalfShort = bathShortSide / 2;
 
     // Calculate actual edge distances (not center distances)
-    // For bath along X: length is along X, width is along Z
-    // For bath along Z: length is along Z, width is along X
-    const xHalfExtent = isBathAlongX ? bathHalfLength : bathHalfWidth;
-    const zHalfExtent = isBathAlongX ? bathHalfWidth : bathHalfLength;
+    // For bath along X: long side is along X, short side is along Z
+    // For bath along Z: long side is along Z, short side is along X
+    const xHalfExtent = isBathAlongX ? bathHalfLong : bathHalfShort;
+    const zHalfExtent = isBathAlongX ? bathHalfShort : bathHalfLong;
+
+    // For backward compatibility with existing code that uses bathHalfLength/bathHalfWidth
+    const bathHalfLength = bathHalfLong;  // Always the long dimension
+    const bathHalfWidth = bathHalfShort;  // Always the short dimension
 
     const eastEdgeDist = wallFaces.east - (bathX + xHalfExtent);
     const westEdgeDist = (bathX - xHalfExtent) - wallFaces.west;
@@ -1404,11 +1410,51 @@ export const positionTowelRail = (
     const bathAgainstEast = eastEdgeDist < 20;
     const bathAgainstWest = westEdgeDist < 20;
 
+    // For L-shaped rooms, also check notch walls
+    let bathAgainstNotchEast = false;
+    let bathAgainstNotchSouth = false;
+    let notchEastWall = 0;
+    let notchSouthWall = 0;
+
+    if (notch) {
+      notchEastWall = notch.maxX;
+      notchSouthWall = notch.maxZ;
+
+      // Check distance to notch-east wall (vertical edge of notch)
+      // Bath's western edge should be close to notch-east wall
+      // And bath should overlap with the notch-east wall's Z range (from north wall to notch-south)
+      const notchEastEdgeDist = Math.abs((bathX - xHalfExtent) - notchEastWall);
+      const bathNorthEdge = bathZ - zHalfExtent;
+      const bathOverlapsNotchEastZ = bathNorthEdge <= notchSouthWall; // Bath's north edge is at or north of notch-south
+      bathAgainstNotchEast = notchEastEdgeDist < 20 && bathOverlapsNotchEastZ;
+
+      // Check distance to notch-south wall (horizontal edge of notch)
+      // Bath's northern edge should be close to notch-south wall
+      // And bath should overlap with the notch-south wall's X range (from west wall to notch-east)
+      const notchSouthEdgeDist = Math.abs((bathZ - zHalfExtent) - notchSouthWall);
+      const bathWestEdgeX = bathX - xHalfExtent;
+      const bathOverlapsNotchSouthX = bathWestEdgeX <= notchEastWall; // Bath's west edge is at or west of notch-east
+      bathAgainstNotchSouth = notchSouthEdgeDist < 20 && bathOverlapsNotchSouthX;
+
+      console.log('🛁 Notch detection:', {
+        notchEastWall: notchEastWall.toFixed(1),
+        notchSouthWall: notchSouthWall.toFixed(1),
+        notchEastEdgeDist: notchEastEdgeDist.toFixed(1),
+        notchSouthEdgeDist: notchSouthEdgeDist.toFixed(1),
+        bathNorthEdge: bathNorthEdge.toFixed(1),
+        bathWestEdgeX: bathWestEdgeX.toFixed(1),
+        bathOverlapsNotchEastZ,
+        bathOverlapsNotchSouthX
+      });
+    }
+
     console.log('🛁 Bath wall proximity:', {
       againstNorth: bathAgainstNorth,
       againstSouth: bathAgainstSouth,
       againstEast: bathAgainstEast,
-      againstWest: bathAgainstWest
+      againstWest: bathAgainstWest,
+      againstNotchEast: bathAgainstNotchEast,
+      againstNotchSouth: bathAgainstNotchSouth
     });
 
     const footEndCandidates: Array<{ position: Position; rotation: number; wall: string; priority: number }> = [];
@@ -1419,13 +1465,22 @@ export const positionTowelRail = (
 
     if (isBathAlongX) {
       // Bath length is along X axis (bath's long side is horizontal)
-      // Foot end X is the end of bath furthest from east/west walls
+      // Foot end X is the end of bath furthest from east/west walls (including notch walls)
       const bathEastEdge = bathX + bathHalfLength;
       const bathWestEdge = bathX - bathHalfLength;
 
       // The foot end is whichever edge is further from its respective wall
+      // For L-shaped rooms, also consider notch-east wall for the west edge
       const eastEdgeDistToWall = wallFaces.east - bathEastEdge;
-      const westEdgeDistToWall = bathWestEdge - wallFaces.west;
+      let westEdgeDistToWall = bathWestEdge - wallFaces.west;
+
+      // If bath is against notch-east wall, its west edge distance should be 0 (not distance to main west wall)
+      if (bathAgainstNotchEast && notch) {
+        const westEdgeDistToNotchEast = Math.abs(bathWestEdge - notchEastWall);
+        if (westEdgeDistToNotchEast < 30) {
+          westEdgeDistToWall = westEdgeDistToNotchEast; // Use distance to notch wall instead
+        }
+      }
 
       // Foot end is the edge that's further from wall (sticking into room)
       const footEndX = eastEdgeDistToWall > westEdgeDistToWall ? bathEastEdge : bathWestEdge;
@@ -1437,7 +1492,8 @@ export const positionTowelRail = (
         eastEdgeDistToWall: eastEdgeDistToWall.toFixed(1),
         westEdgeDistToWall: westEdgeDistToWall.toFixed(1),
         footEndX: footEndX.toFixed(1),
-        footEndIsEast
+        footEndIsEast,
+        bathAgainstNotchEast
       });
 
       // For bath along X axis:
@@ -1473,11 +1529,19 @@ export const positionTowelRail = (
       }
 
       if (bathAgainstNorth) {
-        const railX = bathAgainstEast
-          ? bathX - bathHalfLength - offsetX  // NE corner: place west of bath
-          : bathAgainstWest
-            ? bathX + bathHalfLength + offsetX  // NW corner: place east of bath
-            : footEndX + (footEndIsEast ? offsetX : -offsetX); // Not in corner, use foot end
+        // Determine rail X position based on which corner the bath is in
+        let railX: number;
+        if (bathAgainstEast) {
+          railX = bathX - bathHalfLength - offsetX;  // NE corner: place west of bath (foot end)
+        } else if (bathAgainstWest) {
+          railX = bathX + bathHalfLength + offsetX;  // NW corner: place east of bath (foot end)
+        } else if (bathAgainstNotchEast) {
+          // notch-east-north corner: bath is against notch-east wall, foot end is EAST
+          railX = bathX + bathHalfLength + offsetX;  // Place east of bath (foot end)
+          console.log('🔥 North wall towel rail for notch-east-north corner - placing at EAST (foot end)');
+        } else {
+          railX = footEndX + (footEndIsEast ? offsetX : -offsetX); // Not in corner, use foot end
+        }
 
         footEndCandidates.push({
           position: {
@@ -1525,6 +1589,55 @@ export const positionTowelRail = (
           priority: 2  // Lower priority - not at foot end
         });
       }
+
+      // NOTCH WALLS for L-shaped rooms (bath along X)
+      if (bathAgainstNotchSouth && notch) {
+        // Bath against notch-south wall (horizontal edge) - like north/south walls
+        const railX = bathAgainstNotchEast
+          ? bathX + bathHalfLength + offsetX  // Bath in notch-interior corner: place east of bath
+          : bathAgainstWest
+            ? bathX + bathHalfLength + offsetX  // Bath against west and notch-south: place east
+            : footEndX + (footEndIsEast ? offsetX : -offsetX);
+
+        console.log('🔥 Notch-south wall towel rail (bath along X):', {
+          bathX: bathX.toFixed(1),
+          notchSouthWall: notchSouthWall.toFixed(1),
+          calculatedRailX: railX.toFixed(1)
+        });
+
+        footEndCandidates.push({
+          position: {
+            x: railX,
+            y: spawnHeight,
+            z: notchSouthWall + halfDepth + wallBuffer
+          },
+          rotation: getObjectRotationForWall('Radiator', 'north', orientation), // Same as north (facing into room)
+          wall: 'notch-south',
+          priority: 1  // HIGH priority for foot end wall
+        });
+      }
+
+      if (bathAgainstNotchEast && notch) {
+        // Bath against notch-east wall (vertical edge) - like east/west walls
+        const railZ = bathZ + (bathAgainstNotchSouth ? (bathHalfWidth + railGap + halfWidth) : -(bathHalfWidth + railGap + halfWidth));
+
+        console.log('🔥 Notch-east wall towel rail (bath along X):', {
+          bathZ: bathZ.toFixed(1),
+          notchEastWall: notchEastWall.toFixed(1),
+          calculatedRailZ: railZ.toFixed(1)
+        });
+
+        footEndCandidates.push({
+          position: {
+            x: notchEastWall + halfDepth + wallBuffer,
+            y: spawnHeight,
+            z: railZ
+          },
+          rotation: getObjectRotationForWall('Radiator', 'west', orientation), // Same as west (facing into room)
+          wall: 'notch-east',
+          priority: 2  // Lower priority - not at foot end
+        });
+      }
     } else {
       // Bath length is along Z axis
       const bathSouthEdge = bathZ + bathHalfLength;
@@ -1553,15 +1666,61 @@ export const positionTowelRail = (
       const railGap = 15; // 15cm gap between bath and towel rail
       const perpOffset = bathHalfWidth + railGap + halfWidth;
 
-      // PRIMARY: Place on south/north wall (where bath is against)
-      // For corner baths, this puts the towel rail on the same wall, past the bath
+      // For bath along Z axis, the FOOT END is in the Z direction
+      // So east/west wall candidates (at foot end Z) should have HIGHER priority
+      // North/south wall candidates are beside the bath, not at foot end
+
+      // PRIMARY: Place on east/west wall at foot end Z position (THIS IS THE ACTUAL FOOT END)
+      const offset = railGap + halfWidth;
+
+      if (bathAgainstEast) {
+        const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
+        console.log('🔥 East wall towel rail (bath along Z) - FOOT END:', {
+          bathZ: bathZ.toFixed(1),
+          footEndZ: footEndZ.toFixed(1),
+          footEndIsSouth,
+          calculatedRailZ: railZ.toFixed(1)
+        });
+        footEndCandidates.push({
+          position: {
+            x: wallFaces.east - halfDepth - wallBuffer,
+            y: spawnHeight,
+            z: railZ
+          },
+          rotation: getObjectRotationForWall('Radiator', 'east', orientation),
+          wall: 'east',
+          priority: 1  // HIGH priority - at foot end
+        });
+      }
+
+      if (bathAgainstWest) {
+        const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
+        console.log('🔥 West wall towel rail (bath along Z) - FOOT END:', {
+          bathZ: bathZ.toFixed(1),
+          footEndZ: footEndZ.toFixed(1),
+          footEndIsSouth,
+          calculatedRailZ: railZ.toFixed(1)
+        });
+        footEndCandidates.push({
+          position: {
+            x: wallFaces.west + halfDepth + wallBuffer,
+            y: spawnHeight,
+            z: railZ
+          },
+          rotation: getObjectRotationForWall('Radiator', 'west', orientation),
+          wall: 'west',
+          priority: 1  // HIGH priority - at foot end
+        });
+      }
+
+      // SECONDARY: Place on south/north wall (beside the bath, not at foot end)
       if (bathAgainstSouth) {
         // Place on south wall, offset in X direction away from the corner
         const railX = bathAgainstEast
           ? bathX - perpOffset  // SE corner: place west of bath
           : bathX + perpOffset; // SW corner: place east of bath
 
-        console.log('🔥 South wall towel rail (bath along Z in corner):', {
+        console.log('🔥 South wall towel rail (bath along Z) - beside bath:', {
           bathX: bathX.toFixed(1),
           perpOffset: perpOffset.toFixed(1),
           bathAgainstEast,
@@ -1576,7 +1735,7 @@ export const positionTowelRail = (
           },
           rotation: getObjectRotationForWall('Radiator', 'south', orientation),
           wall: 'south',
-          priority: 1  // HIGH priority - same wall as bath
+          priority: 2  // Lower priority - not at foot end
         });
       }
 
@@ -1593,43 +1752,56 @@ export const positionTowelRail = (
           },
           rotation: getObjectRotationForWall('Radiator', 'north', orientation),
           wall: 'north',
-          priority: 1  // HIGH priority - same wall as bath
+          priority: 2  // Lower priority - not at foot end
         });
       }
 
-      // SECONDARY: Place on east/west wall at foot end Z position
-      const offset = railGap + halfWidth;
+      // NOTCH WALLS for L-shaped rooms (bath along Z)
+      if (bathAgainstNotchSouth && notch) {
+        // Bath against notch-south wall (horizontal edge)
+        // Place towel rail offset from bath in X direction
+        const railX = bathAgainstNotchEast
+          ? bathX + perpOffset  // Bath in notch corner: place east of bath
+          : bathAgainstWest
+            ? bathX + perpOffset  // Bath against west: place east of bath
+            : bathX + perpOffset; // Default: place east of bath
 
-      if (bathAgainstEast) {
+        console.log('🔥 Notch-south wall towel rail (bath along Z):', {
+          bathX: bathX.toFixed(1),
+          notchSouthWall: notchSouthWall.toFixed(1),
+          calculatedRailX: railX.toFixed(1)
+        });
+
+        footEndCandidates.push({
+          position: {
+            x: railX,
+            y: spawnHeight,
+            z: notchSouthWall + halfDepth + wallBuffer
+          },
+          rotation: getObjectRotationForWall('Radiator', 'north', orientation), // Same as north
+          wall: 'notch-south',
+          priority: 1  // HIGH priority
+        });
+      }
+
+      if (bathAgainstNotchEast && notch) {
+        // Bath against notch-east wall (vertical edge)
         const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
-        console.log('🔥 East wall towel rail (bath along Z):', {
+
+        console.log('🔥 Notch-east wall towel rail (bath along Z):', {
           bathZ: bathZ.toFixed(1),
-          footEndZ: footEndZ.toFixed(1),
-          footEndIsSouth,
+          notchEastWall: notchEastWall.toFixed(1),
           calculatedRailZ: railZ.toFixed(1)
         });
-        footEndCandidates.push({
-          position: {
-            x: wallFaces.east - halfDepth - wallBuffer,
-            y: spawnHeight,
-            z: railZ
-          },
-          rotation: getObjectRotationForWall('Radiator', 'east', orientation),
-          wall: 'east',
-          priority: 2  // Lower priority
-        });
-      }
 
-      if (bathAgainstWest) {
-        const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
         footEndCandidates.push({
           position: {
-            x: wallFaces.west + halfDepth + wallBuffer,
+            x: notchEastWall + halfDepth + wallBuffer,
             y: spawnHeight,
             z: railZ
           },
-          rotation: getObjectRotationForWall('Radiator', 'west', orientation),
-          wall: 'west',
+          rotation: getObjectRotationForWall('Radiator', 'west', orientation), // Same as west
+          wall: 'notch-east',
           priority: 2  // Lower priority
         });
       }
