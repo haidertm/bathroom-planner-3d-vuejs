@@ -16,7 +16,8 @@
           Access all your saved bathroom designs in one place. Load previous projects,
           create variations, or start fresh with new ideas to bring your vision to life.
         </p>
-        <button type="button" class="cta-button" @click="showTemplateModal = true">
+        <!-- Modal commented out - navigating directly to room selection -->
+        <button type="button" class="cta-button" @click="handleStartFromScratch">
           + Create New Design
         </button>
       </div>
@@ -36,7 +37,8 @@
 
       <div class="designs-grid">
         <!-- New Design Card -->
-        <div class="card-link" @click="showTemplateModal = true" role="button" tabindex="0" aria-label="Create a new design" @keydown.enter="showTemplateModal = true">
+        <!-- Modal commented out - navigating directly to room selection -->
+        <div class="card-link" @click="handleStartFromScratch" role="button" tabindex="0" aria-label="Create a new design" @keydown.enter="handleStartFromScratch">
         <div class="design-card new-design-card">
           <div class="new-design-content">
             <div class="plus-icon">+</div>
@@ -96,7 +98,8 @@
           <div class="empty-icon">🎨</div>
           <h3>No designs saved yet</h3>
           <p>Start creating your first bathroom design and save it to access later</p>
-          <button type="button" class="cta-button" @click="showTemplateModal = true">Begin Designing</button>
+          <!-- Modal commented out - navigating directly to room selection -->
+          <button type="button" class="cta-button" @click="handleStartFromScratch">Begin Designing</button>
         </div>
       </div>
     </div>

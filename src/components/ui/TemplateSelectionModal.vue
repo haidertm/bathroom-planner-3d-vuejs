@@ -66,7 +66,7 @@
             </svg>
           </div>
           <h3>Select a Template</h3>
-          <p>Start with a pre-designed layout and customize it to match your needs</p>
+          <p>Start with a pre-designed layout and customise it to match your needs</p>
         </div>
       </div>
 
