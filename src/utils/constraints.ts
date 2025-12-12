@@ -352,9 +352,10 @@ export const constrainToCorner = (
       break;
 
     case 'notch-east-north':
-      // Similar to NE
-      constrainedPosition.x = nearestCorner.position.x - wallBuffer;
-      constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
+      // Similar to NW (notch-east wall acts as west wall at this corner)
+      // Object should be EAST of notch-east wall (into room), against north wall
+      constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + wallBuffer;
       console.log(`🔧 notch-east-north: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
       break;
   }
@@ -915,11 +916,10 @@ export const checkCollision = (
         const cornerType = nearestCorner.type;
         // north-east: -90° (or 270°), south-west: 90° - these need swap
         // north-west: 0°, south-east: 180° - these don't need swap
-        // notch-east-north: similar to NE (-90°) - needs swap
+        // notch-east-north: similar to NW (0°) - no swap
         // notch-interior: similar to NW (0°) - no swap
         const needsSwap = cornerType === 'north-east' ||
-                          cornerType === 'south-west' ||
-                          cornerType === 'notch-east-north';
+                          cornerType === 'south-west';
         console.log(`🔧 Corner-install collision check: corner=${cornerType}, needsSwap=${needsSwap}`);
         return needsSwap;
       }
