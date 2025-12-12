@@ -1072,7 +1072,7 @@ export const positionShower = (
   showerVariant: any,
   scale: number = 1.0
 ): AutoPositionResult | null => {
-  const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems, cameraPosition, cameraTarget } = context;
+  const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems, cameraPosition } = context;
   const orientation = showerVariant?.orientation || DEFAULT_ORIENTATION;
   const movement = showerVariant?.movement;
   const spawnHeight = showerVariant?.spawnHeight || 0;
@@ -1080,24 +1080,24 @@ export const positionShower = (
   // Get all available corners
   const corners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
-  // Sort corners by distance to camera's focus point (cameraTarget, not cameraPosition)
-  // This places the shower in the corner nearest to where the user is looking
+  // Sort corners by distance from camera position (furthest first)
+  // The camera looks at room center, so corners furthest from camera are the ones
+  // the user is looking at (in the camera's field of view)
   let sortedCorners = [...corners];
-  const focusPoint = cameraTarget || cameraPosition;
 
-  if (focusPoint) {
+  if (cameraPosition) {
     sortedCorners.sort((a, b) => {
       const distA = Math.sqrt(
-        Math.pow(a.position.x - focusPoint.x, 2) +
-        Math.pow(a.position.z - focusPoint.z, 2)
+        Math.pow(a.position.x - cameraPosition.x, 2) +
+        Math.pow(a.position.z - cameraPosition.z, 2)
       );
       const distB = Math.sqrt(
-        Math.pow(b.position.x - focusPoint.x, 2) +
-        Math.pow(b.position.z - focusPoint.z, 2)
+        Math.pow(b.position.x - cameraPosition.x, 2) +
+        Math.pow(b.position.z - cameraPosition.z, 2)
       );
-      return distA - distB; // Nearest to focus point first
+      return distB - distA; // Furthest from camera first (= in camera's view)
     });
-    console.log('🚿 Shower corner priority (nearest to camera focus):', sortedCorners.map(c => c.type).join(' -> '));
+    console.log('🚿 Shower corner priority (furthest from camera = in view):', sortedCorners.map(c => c.type).join(' -> '));
   }
 
   // Use constrainToCorner for positioning (tested/working logic)

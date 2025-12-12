@@ -147,6 +147,7 @@ import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
 import { CONSTRAINTS, ROOM_DEFAULTS, WALL_SETTINGS } from '../constants/dimensions.js'
 import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures'
 import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
+import { LOOK_AT } from '../constants/camera'
 import { getTemplateById } from '../constants/templates'
 
 // Services
@@ -929,7 +930,7 @@ const addItem = async (type, productData = null) => {
     cameraPosition: sceneManagerRef.value?.camera?.position
       ? { x: sceneManagerRef.value.camera.position.x, y: sceneManagerRef.value.camera.position.y, z: sceneManagerRef.value.camera.position.z }
       : undefined,
-    cameraTarget: { x: 0, y: 0, z: 0 }, // Default look-at point (room center)
+    cameraTarget: { x: LOOK_AT.x, y: LOOK_AT.y, z: LOOK_AT.z }, // Use actual camera look-at point
     selectedItemId: selectedItemId.value ? String(selectedItemId.value) : undefined // For prioritizing anchor placement
   }
 
