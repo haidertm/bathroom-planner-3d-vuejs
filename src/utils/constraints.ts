@@ -520,16 +520,16 @@ export const checkWallCollision = (
       // Check if object is on notch-east wall (vertical edge)
       // ✅ CRITICAL FIX: Restrict Z range to notch area only, not entire room
       if (Math.abs(position.x - notch.maxX) < tolerance &&
-          position.z >= notch.minZ &&
-          position.z <= notch.maxZ + tolerance) {
+        position.z >= notch.minZ &&
+        position.z <= notch.maxZ + tolerance) {
         nearestWall = 'notch-east';
         console.log('🔧 checkWallCollision: Object detected on notch-east wall for bounding box');
       }
       // Check if object is on notch-south wall (horizontal edge)
       // ✅ CRITICAL FIX: Restrict X range to notch area only, not entire room
       else if (Math.abs(position.z - notch.maxZ) < tolerance &&
-               position.x >= notch.minX &&
-               position.x <= notch.maxX + tolerance) {
+        position.x >= notch.minX &&
+        position.x <= notch.maxX + tolerance) {
         nearestWall = 'notch-south';
         console.log('🔧 checkWallCollision: Object detected on notch-south wall for bounding box');
       }
@@ -629,8 +629,8 @@ export const checkWallCollision = (
     const dragBuffer = 20;
     // CRITICAL FIX: Object must be at or beyond notchMaxX (not inside notch)
     if (distToNotchEast <= notchWallTolerance &&
-        position.x >= notchMaxX &&  // ✅ Must be at or beyond the wall, NOT inside notch
-        position.z >= notchMinZ - dragBuffer && position.z <= interior.maxZ + dragBuffer) {
+      position.x >= notchMaxX &&  // ✅ Must be at or beyond the wall, NOT inside notch
+      position.z >= notchMinZ - dragBuffer && position.z <= interior.maxZ + dragBuffer) {
       console.log('✅ Object on notch-east wall - no red outline (returning false)', {
         distToNotchEast: distToNotchEast.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
@@ -648,8 +648,8 @@ export const checkWallCollision = (
     // Object must be OUTSIDE the notch area (z >= notchMaxZ) and close to the wall
     // CRITICAL FIX: Object must be at or beyond notchMaxZ (not inside notch)
     if (distToNotchSouth <= notchWallTolerance &&
-        position.z >= notchMaxZ &&  // ✅ Must be at or beyond the wall, NOT inside notch
-        position.x >= notchMinX - dragBuffer && position.x <= interior.maxX + dragBuffer) {
+      position.z >= notchMaxZ &&  // ✅ Must be at or beyond the wall, NOT inside notch
+      position.x >= notchMinX - dragBuffer && position.x <= interior.maxX + dragBuffer) {
       console.log('✅ Object on notch-south wall - no red outline (returning false)', {
         distToNotchSouth: distToNotchSouth.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
@@ -791,8 +791,8 @@ export const checkWallCollision = (
     // Object should be: east of notch edge AND within valid Z range (actually on the notch wall, not across the room)
     // ✅ CRITICAL FIX: Restrict Z range to notch area only, not entire room
     if (distToNotchEast <= notchWallTolerance &&
-        position.x >= notchMaxX &&
-        position.z >= notchMinZ && position.z <= notchMaxZ + dragBuffer) {
+      position.x >= notchMaxX &&
+      position.z >= notchMinZ && position.z <= notchMaxZ + dragBuffer) {
       console.log('✅ Object on notch-east wall - no red outline (returning false)', {
         distToNotchEast: distToNotchEast.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
@@ -808,8 +808,8 @@ export const checkWallCollision = (
     // Object should be: south of notch edge AND within valid X range (actually on the notch wall, not across the room)
     // ✅ CRITICAL FIX: Restrict X range to notch area only, not entire room
     if (distToNotchSouth <= notchWallTolerance &&
-        position.z >= notchMaxZ &&
-        position.x >= notchMinX && position.x <= notchMaxX + dragBuffer) {
+      position.z >= notchMaxZ &&
+      position.x >= notchMinX && position.x <= notchMaxX + dragBuffer) {
       console.log('✅ Object on notch-south wall - no red outline (returning false)', {
         distToNotchSouth: distToNotchSouth.toFixed(1),
         tolerance: notchWallTolerance.toFixed(1),
@@ -943,17 +943,34 @@ export const checkCollision = (
     if (notchWidth && notchHeight) {
       const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
       const notchMinZ = -roomHalfHeight + wallThickness;
+      const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
+      const notchMinX = -roomHalfWidth + wallThickness;
 
       const tolerance = 30; // 30cm tolerance for notch wall detection
 
-      // Check if on notch-east wall (vertical edge of notch) - needs dimension swap
+      // Check if on notch-east wall (vertical edge of notch) - needs dimension swap (like east/west walls)
       if (Math.abs(pos.x - notchMaxX) < tolerance &&
-          pos.z >= notchMinZ &&
-          pos.z <= roomHalfHeight - wallThickness) {
-        return true; // notch-east is rotated 90°, needs swap
+        pos.z >= notchMinZ &&
+        pos.z <= roomHalfHeight - wallThickness) {
+        console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall (needs swap)', {
+          position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
+          notchMaxX: notchMaxX.toFixed(1),
+          distance: Math.abs(pos.x - notchMaxX).toFixed(1)
+        });
+        return true; // Notch-east is vertical like east/west walls, needs swap
       }
 
-      // notch-south wall doesn't need dimension swap (same as north/south)
+      // Check if on notch-south wall (horizontal edge of notch) - no swap needed (like north/south walls)
+      if (Math.abs(pos.z - notchMaxZ) < tolerance &&
+        pos.x >= notchMinX &&
+        pos.x <= notchMaxX) {
+        console.log('🔧 checkCollision: Item detected on NOTCH-SOUTH wall (no swap)', {
+          position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
+          notchMaxZ: notchMaxZ.toFixed(1),
+          distance: Math.abs(pos.z - notchMaxZ).toFixed(1)
+        });
+        return false; // Notch-south is horizontal like north/south walls, no swap
+      }
     }
 
     const distToNorth = Math.abs(pos.z - northWall);
@@ -1389,7 +1406,8 @@ export const constrainToWalls = (
     item?: BathroomItem;
     notchWidth?: number;
     notchHeight?: number;
-  }
+  },
+  targetWall?: WallType // ✅ NEW: Optional target wall to force snap to
 ): { position: Position; rotation: number } => {
 
   if (!objectType) return { position, rotation: 0 };
@@ -1448,7 +1466,12 @@ export const constrainToWalls = (
     wallDistances['notch-south'] = Math.abs(position.z - notch.maxZ);
   }
 
-  const nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+  // Validate targetWall - if it refers to a notch wall that no longer exists, ignore it
+  let validTargetWall = targetWall;
+  if (targetWall === 'notch-east' && !notch) validTargetWall = undefined;
+  if (targetWall === 'notch-south' && !notch) validTargetWall = undefined;
+
+  const nearestWall = validTargetWall || Object.entries(wallDistances).reduce((a, b) =>
     wallDistances[a[0]] < wallDistances[b[0]] ? a : b
   )[0] as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
@@ -1469,15 +1492,18 @@ export const constrainToWalls = (
       console.log(' :::: constrainedPosition.z>>>>>', constrainedPosition.z, constrainedPosition);
 
       // ✅ CRITICAL FIX: Only constrain X if object would actually extend beyond room bounds
-      const wouldExtendWest = position.x - halfWidth < interior.minX;
+      // AND respect notch boundaries if present
+      const northMinX = notch ? notch.maxX : interior.minX;
+
+      const wouldExtendWest = position.x - halfWidth < northMinX;
       const wouldExtendEast = position.x + halfWidth > interior.maxX;
 
       if (wouldExtendWest || wouldExtendEast) {
         constrainedPosition.x = Math.max(
-          interior.minX + halfWidth,
+          northMinX + halfWidth,
           Math.min(interior.maxX - halfWidth, position.x)
         );
-        console.log(`🔧 :::: X constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
+        console.log(`🔧 :::: X constrained due to room bounds (North): ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
       } else {
         // ✅ PRESERVE original X coordinate
         constrainedPosition.x = position.x;
@@ -1548,15 +1574,18 @@ export const constrainToWalls = (
       }
 
       // ✅ Only constrain Z if object would actually extend beyond room bounds
-      const wouldExtendNorthWest = position.z - halfWidth < interior.minZ;
+      // AND respect notch boundaries if present
+      const westMinZ = notch ? notch.maxZ : interior.minZ;
+
+      const wouldExtendNorthWest = position.z - halfWidth < westMinZ;
       const wouldExtendSouthWest = position.z + halfWidth > interior.maxZ;
 
       if (wouldExtendNorthWest || wouldExtendSouthWest) {
         constrainedPosition.z = Math.max(
-          interior.minZ + halfWidth,
+          westMinZ + halfWidth,
           Math.min(interior.maxZ - halfWidth, position.z)
         );
-        console.log(`🔧 :::: Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
+        console.log(`🔧 :::: Z constrained due to room bounds (West): ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
       } else {
         constrainedPosition.z = position.z;
         console.log(`🎯 :::: Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
@@ -1577,14 +1606,14 @@ export const constrainToWalls = (
       }
 
       // ✅ Allow Z to slide freely along the notch wall within valid range
-      // Only constrain if object would extend beyond room bounds
+      // Only constrain if object would extend beyond room bounds OR notch bounds
       const wouldExtendNotchNorth = position.z - halfWidth < notch.minZ;
-      const wouldExtendNotchSouth = position.z + halfWidth > interior.maxZ;
+      const wouldExtendNotchSouth = position.z + halfWidth > notch.maxZ; // Corrected from interior.maxZ
 
       if (wouldExtendNotchNorth || wouldExtendNotchSouth) {
         constrainedPosition.z = Math.max(
           notch.minZ + halfWidth,
-          Math.min(interior.maxZ - halfWidth, position.z)
+          Math.min(notch.maxZ - halfWidth, position.z) // Corrected from interior.maxZ
         );
         console.log(`🔧 NOTCH-EAST: Z constrained: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
       } else {
@@ -1608,14 +1637,14 @@ export const constrainToWalls = (
       }
 
       // ✅ Allow X to slide freely along the notch wall within valid range
-      // Only constrain if object would extend beyond room bounds
+      // Only constrain if object would extend beyond room bounds OR notch bounds
       const wouldExtendNotchWest = position.x - halfWidth < notch.minX;
-      const wouldExtendNotchEast = position.x + halfWidth > interior.maxX;
+      const wouldExtendNotchEast = position.x + halfWidth > notch.maxX; // Corrected from interior.maxX
 
       if (wouldExtendNotchWest || wouldExtendNotchEast) {
         constrainedPosition.x = Math.max(
           notch.minX + halfWidth,
-          Math.min(interior.maxX - halfWidth, position.x)
+          Math.min(notch.maxX - halfWidth, position.x) // Corrected from interior.maxX
         );
         console.log(`🔧 NOTCH-SOUTH: X constrained: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
       } else {
@@ -2186,25 +2215,71 @@ export const constrainAllObjectsToRoom = (
   roomWidth: number,
   roomHeight: number,
   notchWidth?: number,
-  notchHeight?: number
+  notchHeight?: number,
+  oldRoomWidth?: number,
+  oldRoomHeight?: number,
+  oldNotchWidth?: number,
+  oldNotchHeight?: number
 ): BathroomItem[] => {
-  return items.map(item => {
+  // ✅ STEP 1: Pre-calculate target walls and sort items
+  // Sorting is crucial for collision resolution to work by "stacking" items correctly
+  const itemsWithMetadata = items.map(item => {
     const position = { x: item.position[0], y: item.position[1], z: item.position[2] };
     const movementConfig = getMovementConfig(item.type, item);
+    let targetWall: WallType | undefined;
 
+    if (movementConfig.snapToWall && oldRoomWidth && oldRoomHeight) {
+      targetWall = getNearestWall(
+        position,
+        oldRoomWidth,
+        oldRoomHeight,
+        oldNotchWidth,
+        oldNotchHeight
+      );
+    }
+
+    return { item, targetWall, position, movementConfig };
+  });
+
+  // Sort items to process them in a logical spatial order (e.g., left-to-right, top-to-bottom)
+  // This prevents items from "jumping" over each other during resize
+  itemsWithMetadata.sort((a, b) => {
+    // Primary sort: Wall
+    if (a.targetWall !== b.targetWall) {
+      return (a.targetWall || '').localeCompare(b.targetWall || '');
+    }
+
+    // Secondary sort: Position along the wall
+    if (a.targetWall === 'north' || a.targetWall === 'south' || a.targetWall === 'notch-south') {
+      return a.position.x - b.position.x; // Sort by X for horizontal walls
+    } else {
+      return a.position.z - b.position.z; // Sort by Z for vertical walls (and default)
+    }
+  });
+
+  const processedItems: BathroomItem[] = [];
+
+  // ✅ STEP 2: Process sorted items
+  for (const { item, targetWall, position, movementConfig } of itemsWithMetadata) {
     let constrainedPosition: Position;
     let constrainedRotation: number;
 
     if (movementConfig.snapToWall) {
       // Wall-snapped objects - constrain to interior walls
-      const result = constrainToWalls(position, roomWidth, roomHeight, {
-        type: item.type,
-        scale: item.scale,
-        orientation: item.model?.orientation,
-        item,
-        notchWidth,
-        notchHeight
-      });
+      const result = constrainToWalls(
+        position,
+        roomWidth,
+        roomHeight,
+        {
+          type: item.type,
+          scale: item.scale,
+          orientation: item.model?.orientation,
+          item,
+          notchWidth,
+          notchHeight
+        },
+        targetWall // Pass the sticky wall
+      );
       constrainedPosition = result.position;
       constrainedRotation = result.rotation;
     } else {
@@ -2221,10 +2296,199 @@ export const constrainAllObjectsToRoom = (
       constrainedRotation = item.rotation || 0;
     }
 
-    return {
+    // ✅ NEW: Collision Resolution
+    // Check if the constrained position collides with any ALREADY PROCESSED items
+    let hasCollision = wouldCollideWithExisting(
+      constrainedPosition,
+      item.type,
+      item.scale || 1, // Fix: Ensure scale is a number
+      item.id,
+      processedItems, // Only check against items we've already placed in this pass
+      item,
+      roomWidth,
+      roomHeight,
+      notchWidth,
+      notchHeight
+    );
+
+    if (hasCollision) {
+      console.log(`⚠️ Collision detected for ${item.type} (id: ${item.id}) after resize. Attempting to resolve...`);
+      const originalConstrainedPos = { ...constrainedPosition };
+
+      // Expanded search pattern to handle larger items
+      const offsets = [
+        30, -30,
+        60, -60,
+        90, -90,
+        120, -120,
+        150, -150,
+        180, -180,
+        210, -210
+      ];
+
+      let resolved = false;
+
+      // Determine primary axis for shifting based on wall
+      let axis: 'x' | 'z' = 'x';
+      if (targetWall) {
+        if (['east', 'west', 'notch-east'].includes(targetWall)) axis = 'z';
+      } else {
+        // For free-standing, try X first
+        axis = 'x';
+      }
+
+      for (const offset of offsets) {
+        const testPos = { ...originalConstrainedPos };
+        testPos[axis] += offset;
+
+        // Re-constrain to ensure we stay on wall/in room
+        let reConstrained: { position: Position; rotation: number };
+
+        if (movementConfig.snapToWall) {
+          reConstrained = constrainToWalls(
+            testPos,
+            roomWidth,
+            roomHeight,
+            {
+              type: item.type,
+              scale: item.scale,
+              orientation: item.model?.orientation,
+              item,
+              notchWidth,
+              notchHeight
+            },
+            targetWall
+          );
+        } else {
+          reConstrained = constrainToRoom(testPos, roomWidth, roomHeight, {
+            type: item.type,
+            scale: item.scale,
+            orientation: item.model?.orientation,
+            item,
+            notchWidth,
+            notchHeight
+          });
+        }
+
+        // Check collision again
+        if (!wouldCollideWithExisting(
+          reConstrained.position,
+          item.type,
+          item.scale || 1, // Fix: Ensure scale is a number
+          item.id,
+          processedItems,
+          item,
+          roomWidth,
+          roomHeight,
+          notchWidth,
+          notchHeight
+        )) {
+          constrainedPosition = reConstrained.position;
+          constrainedRotation = reConstrained.rotation;
+          resolved = true;
+          console.log(`✅ Collision resolved for ${item.type} with offset ${offset} on ${axis} axis`);
+          break;
+        }
+      }
+
+      if (!resolved) {
+        console.warn(`❌ Could not resolve collision for ${item.type} on ${targetWall || 'current wall'}. Trying other walls...`);
+
+        // If we couldn't find a spot on the current wall, try to find a free spot on ANY wall
+        // using the existing findFreeWallPosition logic (but simplified here for direct use)
+
+        const otherWalls: WallType[] = ['north', 'south', 'east', 'west'];
+        if (notchWidth && notchHeight) {
+          otherWalls.push('notch-east', 'notch-south');
+        }
+
+        // Filter out the current targetWall to avoid retrying it immediately (though it might be valid with a full search)
+        const candidateWalls = otherWalls.filter(w => w !== targetWall);
+
+        for (const wall of candidateWalls) {
+          // Try to place on this wall
+          const reConstrained = constrainToWalls(
+            originalConstrainedPos, // Start from original position (will be snapped to new wall)
+            roomWidth,
+            roomHeight,
+            {
+              type: item.type,
+              scale: item.scale,
+              orientation: item.model?.orientation,
+              item,
+              notchWidth,
+              notchHeight
+            },
+            wall // Force snap to this candidate wall
+          );
+
+          // Check collision on this new wall
+          if (!wouldCollideWithExisting(
+            reConstrained.position,
+            item.type,
+            item.scale || 1,
+            item.id,
+            processedItems,
+            item,
+            roomWidth,
+            roomHeight,
+            notchWidth,
+            notchHeight
+          )) {
+            constrainedPosition = reConstrained.position;
+            constrainedRotation = reConstrained.rotation;
+            resolved = true;
+            console.log(`✅ Moved ${item.type} to ${wall} wall to avoid collision.`);
+            break;
+          }
+
+          // If direct snap failed, maybe try offsets on this new wall too? 
+          // For now, let's keep it simple. If the direct snap to another wall works, great.
+          // If not, we could try offsets here too, but that might be overkill for this step.
+        }
+      }
+
+      if (!resolved) {
+        console.warn(`❌ Could not resolve collision for ${item.type} on any wall.`);
+        // Fallback: Keep original constrained position (overlap is better than disappearing)
+      }
+    }
+
+    processedItems.push({
       ...item,
       position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z] as [number, number, number],
       rotation: constrainedRotation
-    };
-  });
+    });
+  }
+
+  return processedItems;
+};
+
+/**
+ * Helper to determine the nearest wall for a position
+ */
+export const getNearestWall = (
+  position: Position,
+  roomWidth: number,
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
+): WallType => {
+  const { wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+
+  const wallDistances: Record<string, number> = {
+    north: Math.abs(position.z - wallFaces.north),
+    south: Math.abs(position.z - wallFaces.south),
+    east: Math.abs(position.x - wallFaces.east),
+    west: Math.abs(position.x - wallFaces.west)
+  };
+
+  if (notch) {
+    wallDistances['notch-east'] = Math.abs(position.x - notch.maxX);
+    wallDistances['notch-south'] = Math.abs(position.z - notch.maxZ);
+  }
+
+  return Object.entries(wallDistances).reduce((a, b) =>
+    wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+  )[0] as WallType;
 };

@@ -1,5 +1,13 @@
 <template>
   <div v-if="isVisible" class="modal-overlay" @click.self="handleClose">
+    <!-- Custom Tooltip -->
+    <div
+      v-if="tooltip.visible"
+      class="custom-tooltip"
+      :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }"
+    >
+      {{ tooltip.text }}
+    </div>
     <div
       class="modal-container"
       role="dialog"
@@ -73,15 +81,28 @@
             @click="selectTemplate('standard-family')"
           >
             <div class="template-thumbnail">
-              <svg width="120" height="100" viewBox="0 0 120 100">
+              <svg width="140" height="115" viewBox="0 0 140 115">
                 <!-- Room outline (2400x2000) -->
-                <rect x="10" y="10" width="100" height="80" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
-                <!-- Bath along back wall -->
-                <rect x="20" y="12" width="60" height="22" fill="#29275B" opacity="0.6" rx="3"/>
-                <!-- Vanity on right wall -->
-                <rect x="88" y="25" width="18" height="25" fill="#29275B" opacity="0.6" rx="2"/>
-                <!-- Toilet on right wall -->
-                <rect x="88" y="55" width="18" height="22" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="10" y="10" width="90" height="70" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
+                <!-- Bath along back wall - flush against back and left walls -->
+                <rect x="10" y="10" width="54" height="20" fill="#29275B" opacity="0.6" rx="3" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Bath')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
+                <!-- Toilet on right wall - closer to bath -->
+                <rect x="84" y="22" width="14" height="18" fill="#29275B" opacity="0.6" rx="3" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Toilet')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
+                <!-- Vanity on right wall - towards front -->
+                <rect x="84" y="48" width="14" height="22" fill="#29275B" opacity="0.6" rx="2" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Vanity')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
+                <!-- Width dimension (bottom) -->
+                <line x1="10" y1="87" x2="100" y2="87" stroke="#999" stroke-width="0.8"/>
+                <line x1="10" y1="84" x2="10" y2="90" stroke="#999" stroke-width="0.8"/>
+                <line x1="100" y1="84" x2="100" y2="90" stroke="#999" stroke-width="0.8"/>
+                <text x="55" y="100" text-anchor="middle" class="dimension-text">240cm</text>
+                <!-- Height dimension (right side) -->
+                <line x1="107" y1="10" x2="107" y2="80" stroke="#999" stroke-width="0.8"/>
+                <line x1="104" y1="10" x2="110" y2="10" stroke="#999" stroke-width="0.8"/>
+                <line x1="104" y1="80" x2="110" y2="80" stroke="#999" stroke-width="0.8"/>
+                <text x="120" y="50" text-anchor="middle" transform="rotate(-90, 120, 50)" class="dimension-text">200cm</text>
               </svg>
             </div>
             <span class="template-name">Standard Family Bathroom</span>
@@ -94,15 +115,28 @@
             @click="selectTemplate('compact-ensuite')"
           >
             <div class="template-thumbnail">
-              <svg width="120" height="100" viewBox="0 0 120 100">
+              <svg width="140" height="115" viewBox="0 0 140 115">
                 <!-- Room outline (1800x1800 square) -->
-                <rect x="15" y="10" width="90" height="80" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
+                <rect x="10" y="10" width="90" height="70" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
                 <!-- Corner shower (back-left) -->
-                <rect x="15" y="10" width="35" height="35" fill="#4a90d9" opacity="0.3" stroke="#29275B" stroke-width="1" stroke-dasharray="3,2"/>
-                <!-- Basin on right wall -->
-                <rect x="87" y="25" width="16" height="22" fill="#29275B" opacity="0.6" rx="2"/>
+                <rect x="10" y="10" width="32" height="32" fill="#4a90d9" opacity="0.3" stroke="#29275B" stroke-width="1" stroke-dasharray="3,2" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Shower')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
+                <!-- Vanity on right wall -->
+                <rect x="84" y="22" width="14" height="18" fill="#29275B" opacity="0.6" rx="2" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Vanity')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
                 <!-- Toilet on right wall -->
-                <rect x="87" y="55" width="16" height="22" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="84" y="48" width="14" height="18" fill="#29275B" opacity="0.6" rx="3" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Toilet')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
+                <!-- Width dimension (bottom) -->
+                <line x1="10" y1="87" x2="100" y2="87" stroke="#999" stroke-width="0.8"/>
+                <line x1="10" y1="84" x2="10" y2="90" stroke="#999" stroke-width="0.8"/>
+                <line x1="100" y1="84" x2="100" y2="90" stroke="#999" stroke-width="0.8"/>
+                <text x="55" y="100" text-anchor="middle" class="dimension-text">180cm</text>
+                <!-- Height dimension (right side) -->
+                <line x1="107" y1="10" x2="107" y2="80" stroke="#999" stroke-width="0.8"/>
+                <line x1="104" y1="10" x2="110" y2="10" stroke="#999" stroke-width="0.8"/>
+                <line x1="104" y1="80" x2="110" y2="80" stroke="#999" stroke-width="0.8"/>
+                <text x="120" y="50" text-anchor="middle" transform="rotate(-90, 120, 50)" class="dimension-text">180cm</text>
               </svg>
             </div>
             <span class="template-name">Compact En-Suite</span>
@@ -115,17 +149,30 @@
             @click="selectTemplate('cloakroom')"
           >
             <div class="template-thumbnail">
-              <svg width="120" height="100" viewBox="0 0 120 100">
+              <svg width="140" height="115" viewBox="0 0 140 115">
                 <!-- Room outline (900x1600 narrow) -->
-                <rect x="35" y="10" width="50" height="80" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
+                <rect x="35" y="10" width="45" height="70" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
                 <!-- Toilet centered on back wall -->
-                <rect x="48" y="12" width="22" height="25" fill="#29275B" opacity="0.6" rx="3"/>
+                <rect x="46" y="10" width="20" height="22" fill="#29275B" opacity="0.6" rx="3" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Toilet')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
                 <!-- Basin on left wall -->
-                <rect x="37" y="50" width="14" height="20" fill="#29275B" opacity="0.6" rx="2"/>
+                <rect x="35" y="45" width="12" height="18" fill="#29275B" opacity="0.6" rx="2" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Basin')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
                 <!-- Door on front wall (south) - centered -->
-                <rect x="50" y="85" width="20" height="5" fill="#29275B" opacity="0.6" rx="1"/>
+                <rect x="48" y="76" width="18" height="4" fill="#29275B" opacity="0.6" rx="1" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Door')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
                 <!-- Door swing arc indicator -->
-                <path d="M 50 88 Q 40 78 50 68" fill="none" stroke="#29275B" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+                <path d="M 48 78 Q 38 68 48 58" fill="none" stroke="#29275B" stroke-width="1" stroke-dasharray="2,2" opacity="0.5"/>
+                <!-- Width dimension (bottom) -->
+                <line x1="35" y1="87" x2="80" y2="87" stroke="#999" stroke-width="0.8"/>
+                <line x1="35" y1="84" x2="35" y2="90" stroke="#999" stroke-width="0.8"/>
+                <line x1="80" y1="84" x2="80" y2="90" stroke="#999" stroke-width="0.8"/>
+                <text x="57" y="100" text-anchor="middle" class="dimension-text">90cm</text>
+                <!-- Height dimension (right side) -->
+                <line x1="87" y1="10" x2="87" y2="80" stroke="#999" stroke-width="0.8"/>
+                <line x1="84" y1="10" x2="90" y2="10" stroke="#999" stroke-width="0.8"/>
+                <line x1="84" y1="80" x2="90" y2="80" stroke="#999" stroke-width="0.8"/>
+                <text x="100" y="50" text-anchor="middle" transform="rotate(-90, 100, 50)" class="dimension-text">160cm</text>
               </svg>
             </div>
             <span class="template-name">Downstairs toilet / Cloakroom</span>
@@ -138,17 +185,30 @@
             @click="selectTemplate('shower-bath-upgrade')"
           >
             <div class="template-thumbnail">
-              <svg width="120" height="100" viewBox="0 0 120 100">
+              <svg width="140" height="115" viewBox="0 0 140 115">
                 <!-- Room outline (2400x2000) -->
-                <rect x="10" y="10" width="100" height="80" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
-                <!-- L-shaped shower bath (back-left) -->
-                <path d="M12 12 L12 50 L45 50 L45 35 L60 35 L60 12 Z" fill="#29275B" opacity="0.6"/>
+                <rect x="10" y="10" width="90" height="70" fill="#f8f9fa" stroke="#29275B" stroke-width="2" rx="2"/>
+                <!-- L-shaped shower bath (back-left) - flush against walls -->
+                <path d="M10 10 L10 42 L38 42 L38 30 L52 30 L52 10 Z" fill="#29275B" opacity="0.6" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Shower Bath')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
                 <!-- Shower screen indicator -->
-                <line x1="45" y1="12" x2="45" y2="50" stroke="#4a90d9" stroke-width="2"/>
-                <!-- Vanity on right wall -->
-                <rect x="88" y="25" width="18" height="25" fill="#29275B" opacity="0.6" rx="2"/>
-                <!-- Toilet on right wall -->
-                <rect x="88" y="55" width="18" height="22" fill="#29275B" opacity="0.6" rx="3"/>
+                <line x1="38" y1="12" x2="38" y2="42" stroke="#4a90d9" stroke-width="2"/>
+                <!-- Toilet on right wall - closer to bath -->
+                <rect x="84" y="22" width="14" height="18" fill="#29275B" opacity="0.6" rx="3" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Toilet')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
+                <!-- Vanity on right wall - towards front -->
+                <rect x="84" y="48" width="14" height="22" fill="#29275B" opacity="0.6" rx="2" class="fixture-hover"
+                  @mouseenter="showTooltip($event, 'Vanity')" @mouseleave="hideTooltip" @mousemove="moveTooltip"/>
+                <!-- Width dimension (bottom) -->
+                <line x1="10" y1="87" x2="100" y2="87" stroke="#999" stroke-width="0.8"/>
+                <line x1="10" y1="84" x2="10" y2="90" stroke="#999" stroke-width="0.8"/>
+                <line x1="100" y1="84" x2="100" y2="90" stroke="#999" stroke-width="0.8"/>
+                <text x="55" y="100" text-anchor="middle" class="dimension-text">240cm</text>
+                <!-- Height dimension (right side) -->
+                <line x1="107" y1="10" x2="107" y2="80" stroke="#999" stroke-width="0.8"/>
+                <line x1="104" y1="10" x2="110" y2="10" stroke="#999" stroke-width="0.8"/>
+                <line x1="104" y1="80" x2="110" y2="80" stroke="#999" stroke-width="0.8"/>
+                <text x="120" y="50" text-anchor="middle" transform="rotate(-90, 120, 50)" class="dimension-text">200cm</text>
               </svg>
             </div>
             <span class="template-name">Shower-Bath Upgrade</span>
@@ -172,7 +232,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 const props = defineProps({
   isVisible: {
@@ -185,6 +245,30 @@ const emit = defineEmits(['close', 'select-scratch', 'select-template'])
 
 const selectedOption = ref(null)
 const selectedTemplate = ref(null)
+
+// Tooltip state
+const tooltip = reactive({
+  visible: false,
+  text: '',
+  x: 0,
+  y: 0
+})
+
+const showTooltip = (event, text) => {
+  tooltip.text = text
+  tooltip.x = event.clientX + 10
+  tooltip.y = event.clientY - 25
+  tooltip.visible = true
+}
+
+const moveTooltip = (event) => {
+  tooltip.x = event.clientX + 10
+  tooltip.y = event.clientY - 25
+}
+
+const hideTooltip = () => {
+  tooltip.visible = false
+}
 
 const canContinue = computed(() => {
   if (selectedOption.value === 'scratch') return true
@@ -220,6 +304,20 @@ const handleContinue = () => {
 </script>
 
 <style scoped>
+.custom-tooltip {
+  position: fixed;
+  background: #29275B;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 10001;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -369,6 +467,23 @@ const handleContinue = () => {
   justify-content: center;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.template-thumbnail .fixture-hover {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.template-thumbnail .fixture-hover:hover {
+  opacity: 0.9 !important;
+  filter: brightness(1.2);
+}
+
+.template-thumbnail .dimension-text {
+  font-size: 10px;
+  font-weight: 600;
+  fill: #666;
+  font-family: 'Arial', sans-serif;
 }
 
 .template-name {
