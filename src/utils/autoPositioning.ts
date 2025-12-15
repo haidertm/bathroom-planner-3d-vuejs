@@ -1333,15 +1333,99 @@ export const positionTowelRail = (
   const orientation = radiatorVariant?.orientation || DEFAULT_ORIENTATION;
 
   // Calculate spawn height so visual bottom is at 60cm from floor
-  const spawnHeight = calculateTowelRailY(radiatorVariant);
+  let spawnHeight = calculateTowelRailY(radiatorVariant);
 
-  const { wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  // Clamp spawnHeight to movement config limits
+  const tempItem = {
+    type: itemType,
+    sku: radiatorVariant?.sku,
+    model: radiatorVariant
+  } as unknown as BathroomItem;
+  const movementConfig = getMovementConfig(itemType, tempItem);
+  const minHeight = movementConfig.minHeight ?? 0;
+  const maxHeight = movementConfig.maxHeight ?? spawnHeight;
+  spawnHeight = Math.min(Math.max(spawnHeight, minHeight), maxHeight);
+
+  const { wallFaces, notch, interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+
+  // Helper: Check if wall segment at position has sufficient continuous space
+  // Returns true if there's at least MIN_WALL_SPACE_FOR_TOWEL_RAIL cm of free wall
+  const hasMinWallSpace = (
+    candidateX: number,
+    candidateZ: number,
+    wall: string,
+    railWidth: number
+  ): boolean => {
+    // Calculate wall length based on wall type
+    let wallStart: number;
+    let wallEnd: number;
+    let candidatePos: number;
+
+    // For L-shaped rooms, adjust boundaries
+    const northWallMinX = notch ? notch.maxX : interior.minX;
+    const westWallMaxZ = notch ? notch.maxZ : interior.maxZ;
+
+    switch (wall) {
+      case 'north':
+        wallStart = northWallMinX;
+        wallEnd = interior.maxX;
+        candidatePos = candidateX;
+        break;
+      case 'south':
+        wallStart = interior.minX;
+        wallEnd = interior.maxX;
+        candidatePos = candidateX;
+        break;
+      case 'east':
+        wallStart = interior.minZ;
+        wallEnd = interior.maxZ;
+        candidatePos = candidateZ;
+        break;
+      case 'west':
+        wallStart = interior.minZ;
+        wallEnd = westWallMaxZ;
+        candidatePos = candidateZ;
+        break;
+      case 'notch-south':
+        if (!notch) return false;
+        wallStart = interior.minX;
+        wallEnd = notch.maxX;
+        candidatePos = candidateX;
+        break;
+      case 'notch-east':
+        if (!notch) return false;
+        wallStart = interior.minZ;
+        wallEnd = notch.maxZ;
+        candidatePos = candidateZ;
+        break;
+      default:
+        return true; // Unknown wall, allow
+    }
+
+    // Check if the rail (candidatePos ± railWidth/2) fits within wall bounds
+    // with at least MIN_WALL_SPACE_FOR_TOWEL_RAIL total wall length
+    const wallLength = wallEnd - wallStart;
+    if (wallLength < MIN_WALL_SPACE_FOR_TOWEL_RAIL) {
+      console.log(`🔥 Wall ${wall} too short: ${wallLength.toFixed(1)}cm < ${MIN_WALL_SPACE_FOR_TOWEL_RAIL}cm`);
+      return false;
+    }
+
+    // Check if candidate position is within wall bounds (with rail width margin)
+    const railHalf = railWidth / 2;
+    if (candidatePos - railHalf < wallStart || candidatePos + railHalf > wallEnd) {
+      console.log(`🔥 Candidate position ${candidatePos.toFixed(1)} out of wall bounds [${wallStart.toFixed(1)}, ${wallEnd.toFixed(1)}]`);
+      return false;
+    }
+
+    return true;
+  };
 
   // Check for existing towel rails to prevent stacking
   const existingTowelRails = findTowelRails(existingItems);
 
   console.log('🔥 Towel Rail Auto-Position: Starting...', {
     spawnHeight,
+    spawnHeightClamped: { min: minHeight, max: maxHeight },
     floorOffset: radiatorVariant?.floorOffset || 0,
     visualBottom: spawnHeight + (radiatorVariant?.floorOffset || 0),
     dimensions: radiatorDimensions,
@@ -1547,16 +1631,15 @@ export const positionTowelRail = (
             ? bathX + bathHalfLength + offsetX  // SW corner: place east of bath
             : footEndX + (footEndIsEast ? offsetX : -offsetX); // Not in corner, use foot end
 
-        footEndCandidates.push({
-          position: {
-            x: railX,
-            y: spawnHeight,
-            z: wallFaces.south - halfDepth - wallBuffer
-          },
-          rotation: getObjectRotationForWall('Radiator', 'south', orientation),
-          wall: 'south',
-          priority: 1  // HIGH priority for foot end wall
-        });
+        const railZ = wallFaces.south - halfDepth - wallBuffer;
+        if (hasMinWallSpace(railX, railZ, 'south', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'south', orientation),
+            wall: 'south',
+            priority: 1  // HIGH priority for foot end wall
+          });
+        }
       }
 
       if (bathAgainstNorth) {
@@ -1574,51 +1657,48 @@ export const positionTowelRail = (
           railX = footEndX + (footEndIsEast ? offsetX : -offsetX); // Not in corner, use foot end
         }
 
-        footEndCandidates.push({
-          position: {
-            x: railX,
-            y: spawnHeight,
-            z: wallFaces.north + halfDepth + wallBuffer
-          },
-          rotation: getObjectRotationForWall('Radiator', 'north', orientation),
-          wall: 'north',
-          priority: 1  // HIGH priority for foot end wall
-        });
+        const railZ = wallFaces.north + halfDepth + wallBuffer;
+        if (hasMinWallSpace(railX, railZ, 'north', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'north', orientation),
+            wall: 'north',
+            priority: 1  // HIGH priority for foot end wall
+          });
+        }
       }
 
       // SECONDARY: Place on east/west wall (along the length of the bath)
       if (bathAgainstEast) {
         const railZ = bathZ + (bathAgainstSouth ? -(bathHalfWidth + railGap + halfWidth) : (bathHalfWidth + railGap + halfWidth));
+        const railX = wallFaces.east - halfDepth - wallBuffer;
         console.log('🔥 East wall towel rail (bath along X):', {
           bathZ: bathZ.toFixed(1),
           bathHalfWidth: bathHalfWidth.toFixed(1),
           bathAgainstSouth,
           calculatedRailZ: railZ.toFixed(1)
         });
-        footEndCandidates.push({
-          position: {
-            x: wallFaces.east - halfDepth - wallBuffer,
-            y: spawnHeight,
-            z: railZ
-          },
-          rotation: getObjectRotationForWall('Radiator', 'east', orientation),
-          wall: 'east',
-          priority: 2  // Lower priority - not at foot end
-        });
+        if (hasMinWallSpace(railX, railZ, 'east', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'east', orientation),
+            wall: 'east',
+            priority: 2  // Lower priority - not at foot end
+          });
+        }
       }
 
       if (bathAgainstWest) {
         const railZ = bathZ + (bathAgainstSouth ? -(bathHalfWidth + railGap + halfWidth) : (bathHalfWidth + railGap + halfWidth));
-        footEndCandidates.push({
-          position: {
-            x: wallFaces.west + halfDepth + wallBuffer,
-            y: spawnHeight,
-            z: railZ
-          },
-          rotation: getObjectRotationForWall('Radiator', 'west', orientation),
-          wall: 'west',
-          priority: 2  // Lower priority - not at foot end
-        });
+        const railX = wallFaces.west + halfDepth + wallBuffer;
+        if (hasMinWallSpace(railX, railZ, 'west', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'west', orientation),
+            wall: 'west',
+            priority: 2  // Lower priority - not at foot end
+          });
+        }
       }
 
       // NOTCH WALLS for L-shaped rooms (bath along X)
@@ -1630,27 +1710,27 @@ export const positionTowelRail = (
             ? bathX + bathHalfLength + offsetX  // Bath against west and notch-south: place east
             : footEndX + (footEndIsEast ? offsetX : -offsetX);
 
+        const railZ = notchSouthWall + halfDepth + wallBuffer;
         console.log('🔥 Notch-south wall towel rail (bath along X):', {
           bathX: bathX.toFixed(1),
           notchSouthWall: notchSouthWall.toFixed(1),
           calculatedRailX: railX.toFixed(1)
         });
 
-        footEndCandidates.push({
-          position: {
-            x: railX,
-            y: spawnHeight,
-            z: notchSouthWall + halfDepth + wallBuffer
-          },
-          rotation: getObjectRotationForWall('Radiator', 'north', orientation), // Same as north (facing into room)
-          wall: 'notch-south',
-          priority: 1  // HIGH priority for foot end wall
-        });
+        if (hasMinWallSpace(railX, railZ, 'notch-south', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'north', orientation), // Same as north (facing into room)
+            wall: 'notch-south',
+            priority: 1  // HIGH priority for foot end wall
+          });
+        }
       }
 
       if (bathAgainstNotchEast && notch) {
         // Bath against notch-east wall (vertical edge) - like east/west walls
         const railZ = bathZ + (bathAgainstNotchSouth ? (bathHalfWidth + railGap + halfWidth) : -(bathHalfWidth + railGap + halfWidth));
+        const railX = notchEastWall + halfDepth + wallBuffer;
 
         console.log('🔥 Notch-east wall towel rail (bath along X):', {
           bathZ: bathZ.toFixed(1),
@@ -1658,16 +1738,14 @@ export const positionTowelRail = (
           calculatedRailZ: railZ.toFixed(1)
         });
 
-        footEndCandidates.push({
-          position: {
-            x: notchEastWall + halfDepth + wallBuffer,
-            y: spawnHeight,
-            z: railZ
-          },
-          rotation: getObjectRotationForWall('Radiator', 'west', orientation), // Same as west (facing into room)
-          wall: 'notch-east',
-          priority: 2  // Lower priority - not at foot end
-        });
+        if (hasMinWallSpace(railX, railZ, 'notch-east', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'west', orientation), // Same as west (facing into room)
+            wall: 'notch-east',
+            priority: 2  // Lower priority - not at foot end
+          });
+        }
       }
     } else {
       // Bath length is along Z axis
@@ -1706,42 +1784,40 @@ export const positionTowelRail = (
 
       if (bathAgainstEast) {
         const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
+        const railX = wallFaces.east - halfDepth - wallBuffer;
         console.log('🔥 East wall towel rail (bath along Z) - FOOT END:', {
           bathZ: bathZ.toFixed(1),
           footEndZ: footEndZ.toFixed(1),
           footEndIsSouth,
           calculatedRailZ: railZ.toFixed(1)
         });
-        footEndCandidates.push({
-          position: {
-            x: wallFaces.east - halfDepth - wallBuffer,
-            y: spawnHeight,
-            z: railZ
-          },
-          rotation: getObjectRotationForWall('Radiator', 'east', orientation),
-          wall: 'east',
-          priority: 1  // HIGH priority - at foot end
-        });
+        if (hasMinWallSpace(railX, railZ, 'east', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'east', orientation),
+            wall: 'east',
+            priority: 1  // HIGH priority - at foot end
+          });
+        }
       }
 
       if (bathAgainstWest) {
         const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
+        const railX = wallFaces.west + halfDepth + wallBuffer;
         console.log('🔥 West wall towel rail (bath along Z) - FOOT END:', {
           bathZ: bathZ.toFixed(1),
           footEndZ: footEndZ.toFixed(1),
           footEndIsSouth,
           calculatedRailZ: railZ.toFixed(1)
         });
-        footEndCandidates.push({
-          position: {
-            x: wallFaces.west + halfDepth + wallBuffer,
-            y: spawnHeight,
-            z: railZ
-          },
-          rotation: getObjectRotationForWall('Radiator', 'west', orientation),
-          wall: 'west',
-          priority: 1  // HIGH priority - at foot end
-        });
+        if (hasMinWallSpace(railX, railZ, 'west', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'west', orientation),
+            wall: 'west',
+            priority: 1  // HIGH priority - at foot end
+          });
+        }
       }
 
       // SECONDARY: Place on south/north wall (beside the bath, not at foot end)
@@ -1750,6 +1826,7 @@ export const positionTowelRail = (
         const railX = bathAgainstEast
           ? bathX - perpOffset  // SE corner: place west of bath
           : bathX + perpOffset; // SW corner: place east of bath
+        const railZ = wallFaces.south - halfDepth - wallBuffer;
 
         console.log('🔥 South wall towel rail (bath along Z) - beside bath:', {
           bathX: bathX.toFixed(1),
@@ -1758,33 +1835,30 @@ export const positionTowelRail = (
           calculatedRailX: railX.toFixed(1)
         });
 
-        footEndCandidates.push({
-          position: {
-            x: railX,
-            y: spawnHeight,
-            z: wallFaces.south - halfDepth - wallBuffer
-          },
-          rotation: getObjectRotationForWall('Radiator', 'south', orientation),
-          wall: 'south',
-          priority: 2  // Lower priority - not at foot end
-        });
+        if (hasMinWallSpace(railX, railZ, 'south', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'south', orientation),
+            wall: 'south',
+            priority: 2  // Lower priority - not at foot end
+          });
+        }
       }
 
       if (bathAgainstNorth) {
         const railX = bathAgainstEast
           ? bathX - perpOffset  // NE corner: place west of bath
           : bathX + perpOffset; // NW corner: place east of bath
+        const railZ = wallFaces.north + halfDepth + wallBuffer;
 
-        footEndCandidates.push({
-          position: {
-            x: railX,
-            y: spawnHeight,
-            z: wallFaces.north + halfDepth + wallBuffer
-          },
-          rotation: getObjectRotationForWall('Radiator', 'north', orientation),
-          wall: 'north',
-          priority: 2  // Lower priority - not at foot end
-        });
+        if (hasMinWallSpace(railX, railZ, 'north', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'north', orientation),
+            wall: 'north',
+            priority: 2  // Lower priority - not at foot end
+          });
+        }
       }
 
       // NOTCH WALLS for L-shaped rooms (bath along Z)
@@ -1796,6 +1870,7 @@ export const positionTowelRail = (
           : bathAgainstWest
             ? bathX + perpOffset  // Bath against west: place east of bath
             : bathX + perpOffset; // Default: place east of bath
+        const railZ = notchSouthWall + halfDepth + wallBuffer;
 
         console.log('🔥 Notch-south wall towel rail (bath along Z):', {
           bathX: bathX.toFixed(1),
@@ -1803,21 +1878,20 @@ export const positionTowelRail = (
           calculatedRailX: railX.toFixed(1)
         });
 
-        footEndCandidates.push({
-          position: {
-            x: railX,
-            y: spawnHeight,
-            z: notchSouthWall + halfDepth + wallBuffer
-          },
-          rotation: getObjectRotationForWall('Radiator', 'north', orientation), // Same as north
-          wall: 'notch-south',
-          priority: 1  // HIGH priority
-        });
+        if (hasMinWallSpace(railX, railZ, 'notch-south', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'north', orientation), // Same as north
+            wall: 'notch-south',
+            priority: 1  // HIGH priority
+          });
+        }
       }
 
       if (bathAgainstNotchEast && notch) {
         // Bath against notch-east wall (vertical edge)
         const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
+        const railX = notchEastWall + halfDepth + wallBuffer;
 
         console.log('🔥 Notch-east wall towel rail (bath along Z):', {
           bathZ: bathZ.toFixed(1),
@@ -1825,16 +1899,14 @@ export const positionTowelRail = (
           calculatedRailZ: railZ.toFixed(1)
         });
 
-        footEndCandidates.push({
-          position: {
-            x: notchEastWall + halfDepth + wallBuffer,
-            y: spawnHeight,
-            z: railZ
-          },
-          rotation: getObjectRotationForWall('Radiator', 'west', orientation), // Same as west
-          wall: 'notch-east',
-          priority: 2  // Lower priority
-        });
+        if (hasMinWallSpace(railX, railZ, 'notch-east', radiatorDimensions.width * scale)) {
+          footEndCandidates.push({
+            position: { x: railX, y: spawnHeight, z: railZ },
+            rotation: getObjectRotationForWall('Radiator', 'west', orientation), // Same as west
+            wall: 'notch-east',
+            priority: 2  // Lower priority
+          });
+        }
       }
     }
 
@@ -1854,13 +1926,11 @@ export const positionTowelRail = (
       wallDistances.sort((a, b) => a.dist - b.dist);
 
       for (const wd of wallDistances) {
-        if (wd.dist > MIN_WALL_SPACE_FOR_TOWEL_RAIL) { // Only if there's >60cm space
+        // Check both distance to bath AND minimum wall space
+        if (wd.dist > MIN_WALL_SPACE_FOR_TOWEL_RAIL &&
+            hasMinWallSpace(wd.x, wd.z, wd.wall, radiatorDimensions.width * scale)) {
           footEndCandidates.push({
-            position: {
-              x: wd.x,
-              y: spawnHeight,
-              z: wd.z
-            },
+            position: { x: wd.x, y: spawnHeight, z: wd.z },
             rotation: getObjectRotationForWall('Radiator', wd.wall as any, orientation),
             wall: wd.wall,
             priority: 3
