@@ -310,14 +310,14 @@ const overlayStyle = computed(() => ({
 
 const drawerStyle = computed(() => ({
   position: 'fixed',
-  top: isMobileDevice.value ? '70px' : '136px',
+  top: isMobileDevice.value ? '70px' : '60px',
   left: '0',
-  maxHeight: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 136px)',
-  height: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 136px)',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 60px)',
+  height: isMobileDevice.value ? 'calc(100vh - 70px)' : 'calc(100vh - 60px)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: '100vw',
   backgroundColor: '#f5f5f5',
-  zIndex: '9999',
+  zIndex: '10000000',
   display: 'flex',
   flexDirection: 'column',
   transform: props.isOpen ? 'translateX(0)' : 'translateX(-100%)',
