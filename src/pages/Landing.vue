@@ -91,7 +91,7 @@
 
         <div class="template-card" @click="selectTemplate('cloak-room')">
           <div class="template-image">
-            <img src="/assets/modern-shower-room.webp" alt="Cloakroom" />
+            <img src="/assets/cloakroom.webp" alt="Cloakroom" />
           </div>
           <div class="template-info">
             <h3>Cloakroom</h3>
