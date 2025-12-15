@@ -101,9 +101,9 @@
           class="swap-button"
           @click="confirmSwap"
           :style="addToRoomButtonStyle"
-          :disabled="!selectedVariant || isCurrentVariant(selectedVariant)"
+          :disabled="!selectedVariant || isCurrentVariant(selectedVariant) || isVariantTooLarge(selectedVariant)"
       >
-        {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : 'SWAP VARIANT' }}
+        {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : (isVariantTooLarge(selectedVariant) ? 'TOO LARGE' : 'SWAP VARIANT') }}
       </button>
     </div>
   </div>
@@ -286,6 +286,12 @@ const selectVariant = async (variant) => {
 
 const confirmSwap = async () => {
   if (!selectedVariant.value || isCurrentVariant(selectedVariant.value)) return
+
+  // AC4: Hard stop - prevent swap if variant is too large
+  if (isVariantTooLarge(selectedVariant.value)) {
+    console.log('⚠️ Cannot swap - variant too large for available space')
+    return
+  }
 
   const variant = selectedVariant.value
   const variantKey = variant.id || variant.sku || variant.name

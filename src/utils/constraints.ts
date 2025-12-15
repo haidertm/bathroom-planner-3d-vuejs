@@ -128,31 +128,22 @@ export const getRoomCorners = (
     }
   ];
 
-  // ✅ For L-shaped rooms, exclude the northwest corner (which is in the notch)
-  // and add two notch corners: notch-interior and notch-corner
+  // For L-shaped rooms, exclude the northwest corner and add notch corners
   if (notch) {
-    console.log('🔍 getRoomCorners: L-shaped room detected - excluding north-west, adding notch corners');
     const validCorners: CornerInfo[] = allCorners.filter(corner => corner.type !== 'north-west');
 
-    // Add the notch-interior corner (where west wall meets notch-south wall)
     validCorners.push({
       type: 'notch-interior' as CornerType,
       position: { x: notch.minX, y: 0, z: notch.maxZ },
       walls: ['west', 'notch-south'] as [WallType, WallType]
     });
 
-    // Removed notch-corner (where notch-east wall meets notch-south wall)
-    // User requested to disable corner install placement at this corner
-
-    // Add the notch-east-north corner (where notch-east wall meets north wall)
     validCorners.push({
       type: 'notch-east-north' as CornerType,
       position: { x: notch.maxX, y: 0, z: notch.minZ },
       walls: ['notch-east', 'north'] as [WallType, WallType]
     });
 
-    console.log('✅ Added notch-interior corner at:', { x: notch.minX.toFixed(1), z: notch.maxZ.toFixed(1) });
-    console.log('✅ Added notch-east-north corner at:', { x: notch.maxX.toFixed(1), z: notch.minZ.toFixed(1) });
     return validCorners;
   }
 
@@ -247,86 +238,57 @@ export const constrainToCorner = (
 
   const dimensions = getDimensions(objectType, item?.sku ?? sku, item?.model);
   if (!dimensions) {
-    console.warn(`>>>111 No dimensions found for ${objectType}`);
     return { position, rotation: 0 };
   }
 
   const nearestCorner = getNearestCorner(position, roomWidth, roomHeight, notchWidth, notchHeight);
   const movementConfig = movement ?? getMovementConfig(objectType, item);
 
-  console.log('>>>111 constrainging To Corner for movement', movementConfig);
-
   // Get the wall buffer (usually 0 for flush-mounted items)
   const wallBuffer = (orientation?.wallBuffer !== undefined) ?
     orientation.wallBuffer * scale : 0;
 
   // For corner items, we position them flush in the corner
-  // The object's center should be at half its dimensions from each wall
   const halfWidth = (dimensions.width * scale) / 2;
-  // Note: halfDepth not needed for current corner positioning logic
+  const halfDepth = (dimensions.depth * scale) / 2;
 
   let constrainedPosition = { ...nearestCorner.position };
   let rotation = 0;
 
-  console.log('>>>111 halfWidth');
-
-  // cornerInstallOnly is either false or an object
+  // Get rotation for this corner
   if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
     rotation = movementConfig.cornerInstallOnly?.rotation?.[nearestCorner.type] ?? DefaultCornerObjectRotation[nearestCorner.type];
   } else {
-    console.error(`>>>111 No corner rotation defined for ${objectType} in ${nearestCorner.type}`);
     return { position, rotation: 0 };
   }
 
-  // Position object flush in corner
-  // The object center is positioned at half-width/half-depth from the corner walls
+  // At 90° or -90°, width and depth are swapped on the X/Z axes
+  const isRotated90 = Math.abs(Math.abs(rotation) - Math.PI / 2) < 0.01;
+  const halfX = isRotated90 ? halfDepth : halfWidth;
+  const halfZ = isRotated90 ? halfWidth : halfDepth;
+
+  // Position object flush in corner based on corner type
   switch (nearestCorner.type) {
     case 'north-west':
-      // Corner is at (west wall, north wall)
-
-      constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-      constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-      // rotation = Math.PI / 2; // Facing into room from north-west corner
+      constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
       break;
-
     case 'north-east':
-      // For a corner shower that opens toward the room center
-      constrainedPosition.x = nearestCorner.position.x - wallBuffer;
-      constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
-      // rotation = 0; // No rotation, faces south
+      constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
       break;
-
     case 'south-east':
-      // Same X as north-east
-      constrainedPosition.x = nearestCorner.position.x - halfWidth - wallBuffer;
-      constrainedPosition.z = nearestCorner.position.z - wallBuffer;
-      // rotation = -Math.PI/2; // 180 degrees to face north
+      constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
       break;
-
     case 'south-west':
-      // Use same pattern as north-west but inverted for south
-      constrainedPosition.x = nearestCorner.position.x + wallBuffer; // Just wallBuffer like north-west
-      constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer; // halfWidth like north-west
-      // rotation = Math.PI; // 180 degrees
+      constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
       break;
-
     case 'notch-interior':
-      // Corner where west wall meets notch-south wall
-      // Object should be flush against both walls, opening toward the room
-      // Same pattern as north-west: only X gets halfWidth, Z gets just wallBuffer
-      constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-      constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-      console.log(`✅ Positioning at notch-interior corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
-      break;
-
-    // Removed notch-corner case - corner install placement disabled at user's request
-
     case 'notch-east-north':
-      // Corner where notch-east wall meets north wall
-      // Same pattern as notch-interior: halfWidth for X, wallBuffer for Z
-      constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-      constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-      console.log(`✅ Positioning at notch-east-north corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
+      constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
       break;
   }
 
@@ -432,7 +394,7 @@ const getOrientationFromProductData = (sku?: string, objectType?: ComponentType)
 };
 
 /**
- * Enhanced wall collision detection that accounts for flush-mounted objects and L-shaped rooms
+ * Wall collision detection for objects in room
  */
 export const checkWallCollision = (
   position: Position,
@@ -445,34 +407,12 @@ export const checkWallCollision = (
   notchWidth?: number,
   notchHeight?: number
 ): boolean => {
-
-  // 🔍 DETAILED DEBUG LOG: Show position for every object
-  console.log('🔍🔍🔍 checkWallCollision called:', {
-    objectType,
-    position: { x: position.x.toFixed(1), y: position.y.toFixed(1), z: position.z.toFixed(1) },
-    roomDimensions: { width: roomWidth, height: roomHeight },
-    notchDimensions: notchWidth && notchHeight ? { width: notchWidth, height: notchHeight } : 'none'
-  });
-
-  // 🔍 DEBUG: Log notch dimensions to verify they're being passed
-  if (notchWidth && notchHeight) {
-    console.log('🔍 checkWallCollision received notch dimensions:', {
-      notchWidth,
-      notchHeight,
-      objectType,
-      position: { x: position.x.toFixed(1), z: position.z.toFixed(1) }
-    });
-  }
-
   const dimensions = getDimensions(objectType, item?.sku, item?.model);
   if (!dimensions) return false;
 
-  // Get orientation config to check if object is flush-mounted
   const orientationConfig = item?.model?.orientation || getOrientationFromProductData(item?.sku, objectType) || DEFAULT_ORIENTATION;
   const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
-  const isFlushMounted = wallBuffer === 0;
 
-  // Room interior boundaries (where objects can be placed)
   const { interior, wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
   // For wall-snapped objects, determine which wall they're on to account for rotation
@@ -480,78 +420,55 @@ export const checkWallCollision = (
   let nearestWall: 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south' = 'north';
 
   if (movementConfig.snapToWall) {
-    // ✅ CRITICAL FIX: Check notch walls FIRST for L-shaped rooms
+    // Check notch walls FIRST for L-shaped rooms
     if (notch) {
-      const tolerance = 30; // 30cm tolerance for wall detection
-
-      // Check if object is on notch-east wall (vertical edge)
-      // ✅ CRITICAL FIX: Restrict Z range to notch area only, not entire room
+      const tolerance = 30;
       if (Math.abs(position.x - notch.maxX) < tolerance &&
-        position.z >= notch.minZ &&
-        position.z <= notch.maxZ + tolerance) {
+        position.z >= notch.minZ && position.z <= notch.maxZ + tolerance) {
         nearestWall = 'notch-east';
-        console.log('🔧 checkWallCollision: Object detected on notch-east wall for bounding box');
-      }
-      // Check if object is on notch-south wall (horizontal edge)
-      // ✅ CRITICAL FIX: Restrict X range to notch area only, not entire room
-      else if (Math.abs(position.z - notch.maxZ) < tolerance &&
-        position.x >= notch.minX &&
-        position.x <= notch.maxX + tolerance) {
+      } else if (Math.abs(position.z - notch.maxZ) < tolerance &&
+        position.x >= notch.minX && position.x <= notch.maxX + tolerance) {
         nearestWall = 'notch-south';
-        console.log('🔧 checkWallCollision: Object detected on notch-south wall for bounding box');
       }
     }
 
-    // If not on notch wall, check main walls
+    // If not on notch wall, find nearest main wall
     if (nearestWall === 'north') {
-      // Calculate distances to each wall face
       const wallDistances = {
         north: Math.abs(position.z - wallFaces.north),
         south: Math.abs(position.z - wallFaces.south),
         east: Math.abs(position.x - wallFaces.east),
         west: Math.abs(position.x - wallFaces.west)
       };
-
-      // Find the nearest wall
       nearestWall = Object.entries(wallDistances).reduce((a, b) =>
         wallDistances[a[0]] < wallDistances[b[0]] ? a : b
       )[0] as 'north' | 'south' | 'east' | 'west';
     }
   }
 
-  // Calculate actual object bounds using productData dimensions
-  // ✅ CRITICAL FIX: Account for rotation based on which wall the object is on
+  // Calculate object bounds
   const halfWidth = (dimensions.width * scale) / 2;
   const halfDepth = (dimensions.depth * scale) / 2;
-
   let objectMinX: number, objectMaxX: number, objectMinZ: number, objectMaxZ: number;
 
-  // ✅ NEW: For free-rotation objects, calculate axis-aligned bounding box
-  if (movementConfig.allowFreeRotation && !movementConfig.snapToWall && rotation !== undefined) {
+  // For rotated objects, calculate proper bounding box
+  if (rotation !== undefined && rotation !== 0) {
     const cosAngle = Math.abs(Math.cos(rotation));
     const sinAngle = Math.abs(Math.sin(rotation));
-
-    // Calculate rotated bounding box dimensions
-    const rotatedWidth = (dimensions.width * scale * cosAngle) + (dimensions.depth * scale * sinAngle);
-    const rotatedDepth = (dimensions.width * scale * sinAngle) + (dimensions.depth * scale * cosAngle);
-
-    const halfRotatedWidth = rotatedWidth / 2;
-    const halfRotatedDepth = rotatedDepth / 2;
+    const halfRotatedWidth = ((dimensions.width * scale * cosAngle) + (dimensions.depth * scale * sinAngle)) / 2;
+    const halfRotatedDepth = ((dimensions.width * scale * sinAngle) + (dimensions.depth * scale * cosAngle)) / 2;
 
     objectMinX = position.x - halfRotatedWidth;
     objectMaxX = position.x + halfRotatedWidth;
     objectMinZ = position.z - halfRotatedDepth;
     objectMaxZ = position.z + halfRotatedDepth;
-  }
-  // For objects on east/west walls (including notch-east), dimensions are swapped due to 90° rotation
-  else if (movementConfig.snapToWall && (nearestWall === 'east' || nearestWall === 'west' || nearestWall === 'notch-east')) {
-    // Object is rotated 90°: depth becomes width, width becomes depth
+  } else if (movementConfig.snapToWall && (nearestWall === 'east' || nearestWall === 'west' || nearestWall === 'notch-east')) {
+    // Objects on east/west walls are rotated 90°
     objectMinX = position.x - halfDepth;
     objectMaxX = position.x + halfDepth;
     objectMinZ = position.z - halfWidth;
     objectMaxZ = position.z + halfWidth;
   } else {
-    // Object faces north/south (including notch-south) or is freestanding: use normal dimensions
     objectMinX = position.x - halfWidth;
     objectMaxX = position.x + halfWidth;
     objectMinZ = position.z - halfDepth;
@@ -564,262 +481,44 @@ export const checkWallCollision = (
   const collideNorth = objectMinZ < interior.minZ;
   const collideSouth = objectMaxZ > interior.maxZ;
 
-  // ✅ CRITICAL: Check if object is ON notch walls FIRST (before checking if IN notch)
+  // Check for L-shaped room notch collisions
   if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
     const wallThickness = WALL_SETTINGS.THICKNESS;
     const notchMaxX = -(roomWidth / 2) + notchWidth - wallThickness;
     const notchMaxZ = -(roomHeight / 2) + notchHeight - wallThickness;
     const notchMinX = -(roomWidth / 2) + wallThickness;
     const notchMinZ = -(roomHeight / 2) + wallThickness;
-
-    // ✅ DYNAMIC tolerance: halfDepth + wallBuffer accounts for object positioning
     const notchWallTolerance = halfDepth + wallBuffer + 15;
+    const dragBuffer = 20;
 
-    // Calculate distances to notch edges
     const distToNotchEast = Math.abs(position.x - notchMaxX);
     const distToNotchSouth = Math.abs(position.z - notchMaxZ);
 
-    console.log('🔍 Notch wall check (BEFORE notch area check):', {
-      objectType,
-      posX: position.x.toFixed(1),
-      posZ: position.z.toFixed(1),
-      notchMaxX: notchMaxX.toFixed(1),
-      notchMaxZ: notchMaxZ.toFixed(1),
-      distToNotchEast: distToNotchEast.toFixed(1),
-      distToNotchSouth: distToNotchSouth.toFixed(1),
-      tolerance: notchWallTolerance.toFixed(1),
-      wallBuffer: wallBuffer.toFixed(1)
-    });
-
-    // ✅ Check if object is positioned on notch-east wall FIRST
-    // Object must be OUTSIDE the notch area (x >= notchMaxX) and close to the wall
-    const dragBuffer = 20;
-    // CRITICAL FIX: Object must be at or beyond notchMaxX (not inside notch)
+    // Check if object is on notch-east wall
     if (distToNotchEast <= notchWallTolerance &&
-      position.x >= notchMaxX &&  // ✅ Must be at or beyond the wall, NOT inside notch
+      position.x >= notchMaxX &&
       position.z >= notchMinZ - dragBuffer && position.z <= interior.maxZ + dragBuffer) {
-      console.log('✅ Object on notch-east wall - no red outline (returning false)', {
-        distToNotchEast: distToNotchEast.toFixed(1),
-        tolerance: notchWallTolerance.toFixed(1),
-        posX: position.x.toFixed(1),
-        posZ: position.z.toFixed(1),
-        notchMaxX: notchMaxX.toFixed(1),
-        validRange: `${(notchMinZ - dragBuffer).toFixed(1)} to ${(interior.maxZ + dragBuffer).toFixed(1)}`,
-        collisions: { north: collideNorth, south: collideSouth, east: collideEast }
-      });
-      // Object is properly positioned on notch wall - allow placement
-      return false;
+      return false; // Valid placement on notch wall
     }
 
-    // ✅ Check if object is positioned on notch-south wall FIRST
-    // Object must be OUTSIDE the notch area (z >= notchMaxZ) and close to the wall
-    // CRITICAL FIX: Object must be at or beyond notchMaxZ (not inside notch)
+    // Check if object is on notch-south wall
     if (distToNotchSouth <= notchWallTolerance &&
-      position.z >= notchMaxZ &&  // ✅ Must be at or beyond the wall, NOT inside notch
+      position.z >= notchMaxZ &&
       position.x >= notchMinX - dragBuffer && position.x <= interior.maxX + dragBuffer) {
-      console.log('✅ Object on notch-south wall - no red outline (returning false)', {
-        distToNotchSouth: distToNotchSouth.toFixed(1),
-        tolerance: notchWallTolerance.toFixed(1),
-        posX: position.x.toFixed(1),
-        posZ: position.z.toFixed(1),
-        notchMaxZ: notchMaxZ.toFixed(1),
-        validRange: `${(notchMinX - dragBuffer).toFixed(1)} to ${(interior.maxX + dragBuffer).toFixed(1)}`,
-        collisions: { east: collideEast, west: collideWest, south: collideSouth }
-      });
-      // Object is properly positioned on notch wall - allow placement
-      return false;
+      return false; // Valid placement on notch wall
     }
 
-    // ✅ NOW check if object is IN the notch area (only if NOT on notch wall)
-    // Calculate actual half dimensions based on the rotated bounding box
+    // Check if object is IN the notch area
     const actualHalfWidth = (objectMaxX - objectMinX) / 2;
     const actualHalfDepth = (objectMaxZ - objectMinZ) / 2;
 
-    const isInNotch = isPositionInNotch(
-      position,
-      actualHalfWidth,
-      actualHalfDepth,
-      roomWidth,
-      roomHeight,
-      notchWidth,
-      notchHeight
-    );
-
-    if (isInNotch) {
-      console.log('🔴 NOTCH COLLISION: Object is in L-shape notch area:', {
-        objectType,
-        position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        notchDimensions: `${notchWidth} × ${notchHeight}cm`
-      });
-      return true; // Block placement in notch area immediately
+    if (isPositionInNotch(position, actualHalfWidth, actualHalfDepth, roomWidth, roomHeight, notchWidth, notchHeight)) {
+      return true; // Block placement in notch area
     }
   }
 
-  // ✅ NEW: For flush-mounted objects, check if they are properly positioned against a wall
-  if (isFlushMounted) {
-    // Calculate distances to each wall face (for flush mounting check)
-    const wallDistances = {
-      north: Math.abs(position.z - wallFaces.north),
-      south: Math.abs(position.z - wallFaces.south),
-      east: Math.abs(position.x - wallFaces.east),
-      west: Math.abs(position.x - wallFaces.west)
-    };
-
-    // Tolerance for flush mounting (2cm)
-    const flushTolerance = 2;
-
-    // Check if object is properly flush-mounted to the nearest wall
-    const isProperlyFlushMounted = wallDistances[nearestWall] <= flushTolerance;
-
-    console.log('🔍🔍 FLUSH-MOUNTED CHECK:', {
-      nearestWall,
-      wallFaces: {
-        north: wallFaces.north.toFixed(1),
-        south: wallFaces.south.toFixed(1),
-        east: wallFaces.east.toFixed(1),
-        west: wallFaces.west.toFixed(1)
-      },
-      wallDistances: {
-        north: wallDistances.north.toFixed(1),
-        south: wallDistances.south.toFixed(1),
-        east: wallDistances.east.toFixed(1),
-        west: wallDistances.west.toFixed(1)
-      },
-      distanceToNearestWall: wallDistances[nearestWall]?.toFixed(1) || 'undefined',
-      flushTolerance,
-      isProperlyFlushMounted
-    });
-
-    if (isProperlyFlushMounted) {
-      // For flush-mounted objects positioned correctly, only check collisions on non-wall sides
-      switch (nearestWall) {
-        case 'north':
-          // Object is flush against north wall, only check east/west/south collisions
-          return collideEast || collideWest || collideSouth;
-        case 'south':
-          // Object is flush against south wall, only check east/west/north collisions
-          return collideEast || collideWest || collideNorth;
-        case 'east':
-          // Object is flush against east wall, only check north/south/west collisions
-          return collideNorth || collideSouth || collideWest;
-        case 'west':
-          // Object is flush against west wall, only check north/south/east collisions
-          return collideNorth || collideSouth || collideEast;
-        case 'notch-east':
-          // Object is flush against notch-east wall, allow placement
-          console.log('✅ Flush-mounted object on notch-east wall - no red outline');
-          return false;
-        case 'notch-south':
-          // Object is flush against notch-south wall, allow placement
-          console.log('✅ Flush-mounted object on notch-south wall - no red outline');
-          return false;
-      }
-    }
-  }
-
-  // ✅ CHECK: For objects on notch walls (L-shaped room), allow proper positioning
-  console.log('🎯 Reached notch wall check section', {
-    notchWidth,
-    notchHeight,
-    willCheck: !!(notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0)
-  });
-
-  if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
-    const wallThickness = WALL_SETTINGS.THICKNESS;
-    const notchMaxX = -(roomWidth / 2) + notchWidth - wallThickness;
-    const notchMaxZ = -(roomHeight / 2) + notchHeight - wallThickness;
-    const notchMinX = -(roomWidth / 2) + wallThickness;
-    const notchMinZ = -(roomHeight / 2) + wallThickness;
-
-    // ✅ DYNAMIC tolerance: halfDepth + wallBuffer accounts for object positioning
-    // Add 15cm extra margin for smooth dragging (increased from 10cm)
-    const notchWallTolerance = halfDepth + wallBuffer + 15;
-
-    // Calculate distances to notch edges
-    const distToNotchEast = Math.abs(position.x - notchMaxX);
-    const distToNotchSouth = Math.abs(position.z - notchMaxZ);
-
-    const dragBuffer = 20; // Buffer for smooth dragging near wall edges
-
-    console.log('🔍 Notch wall check:', {
-      objectType,
-      posX: position.x.toFixed(1),
-      posZ: position.z.toFixed(1),
-      notchMaxX: notchMaxX.toFixed(1),
-      notchMaxZ: notchMaxZ.toFixed(1),
-      distToNotchEast: distToNotchEast.toFixed(1),
-      distToNotchSouth: distToNotchSouth.toFixed(1),
-      tolerance: notchWallTolerance.toFixed(1),
-      halfDepth: halfDepth.toFixed(1),
-      wallBuffer: wallBuffer.toFixed(1)
-    });
-
-    // ✅ Check if object is positioned on notch-east wall
-    // Object should be: east of notch edge AND within valid Z range (actually on the notch wall, not across the room)
-    // ✅ CRITICAL FIX: Restrict Z range to notch area only, not entire room
-    if (distToNotchEast <= notchWallTolerance &&
-      position.x >= notchMaxX &&
-      position.z >= notchMinZ && position.z <= notchMaxZ + dragBuffer) {
-      console.log('✅ Object on notch-east wall - no red outline (returning false)', {
-        distToNotchEast: distToNotchEast.toFixed(1),
-        tolerance: notchWallTolerance.toFixed(1),
-        posX: position.x.toFixed(1),
-        posZ: position.z.toFixed(1),
-        zRange: `${notchMinZ.toFixed(1)} to ${(notchMaxZ + dragBuffer).toFixed(1)}`
-      });
-      // Object is properly positioned on notch-east wall - allow placement
-      return false;
-    }
-
-    // ✅ Check if object is positioned on notch-south wall
-    // Object should be: south of notch edge AND within valid X range (actually on the notch wall, not across the room)
-    // ✅ CRITICAL FIX: Restrict X range to notch area only, not entire room
-    if (distToNotchSouth <= notchWallTolerance &&
-      position.z >= notchMaxZ &&
-      position.x >= notchMinX && position.x <= notchMaxX + dragBuffer) {
-      console.log('✅ Object on notch-south wall - no red outline (returning false)', {
-        distToNotchSouth: distToNotchSouth.toFixed(1),
-        tolerance: notchWallTolerance.toFixed(1),
-        posX: position.x.toFixed(1),
-        posZ: position.z.toFixed(1),
-        xRange: `${notchMinX.toFixed(1)} to ${(notchMaxX + dragBuffer).toFixed(1)}`
-      });
-      // Object is properly positioned on notch-south wall - allow placement
-      return false;
-    }
-  }
-
-  // Standard collision detection for non-flush-mounted objects or improperly positioned flush-mounted objects
+  // Standard wall collision detection
   const hasWallCollision = collideWest || collideEast || collideNorth || collideSouth;
-
-  if (hasWallCollision) {
-    console.log('🔴🔴🔴 RED OUTLINE - WALL COLLISION DETECTED:', {
-      objectType,
-      position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-      isFlushMounted,
-      productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
-      scaledSize: `${(dimensions.width * scale).toFixed(1)} × ${(dimensions.depth * scale).toFixed(1)}cm`,
-      collisions: { west: collideWest, east: collideEast, north: collideNorth, south: collideSouth },
-      interior: {
-        minX: interior.minX.toFixed(1),
-        maxX: interior.maxX.toFixed(1),
-        minZ: interior.minZ.toFixed(1),
-        maxZ: interior.maxZ.toFixed(1)
-      },
-      objectBounds: {
-        minX: objectMinX.toFixed(1),
-        maxX: objectMaxX.toFixed(1),
-        minZ: objectMinZ.toFixed(1),
-        maxZ: objectMaxZ.toFixed(1)
-      }
-    });
-  } else {
-    console.log('✅ No collision - object placement is valid at:', {
-      x: position.x.toFixed(1),
-      z: position.z.toFixed(1)
-    });
-  }
-
   return hasWallCollision;
 };
 
@@ -916,17 +615,45 @@ export const checkCollision = (
   const obj1Wall = getObjectWall(pos1, item1);
   const obj2Wall = getObjectWall(pos2, item2);
 
+  // Helper function to compute AABB dimensions for a rotated rectangle
+  // Returns [aabbWidth, aabbDepth] accounting for any rotation angle
+  const getRotatedAABB = (baseWidth: number, baseDepth: number, rotation: number | undefined): [number, number] => {
+    if (rotation === undefined || rotation === 0) {
+      return [baseWidth, baseDepth];
+    }
+    // For any rotation, the AABB is:
+    // width = |baseWidth * cos(θ)| + |baseDepth * sin(θ)|
+    // depth = |baseWidth * sin(θ)| + |baseDepth * cos(θ)|
+    const cosR = Math.abs(Math.cos(rotation));
+    const sinR = Math.abs(Math.sin(rotation));
+    const aabbWidth = baseWidth * cosR + baseDepth * sinR;
+    const aabbDepth = baseWidth * sinR + baseDepth * cosR;
+    return [aabbWidth, aabbDepth];
+  };
+
   // Object 1 bounding box (scaled dimensions, accounting for rotation)
   const obj1BaseWidth = dims1.width * scale1;
   const obj1BaseDepth = dims1.depth * scale1;
   const obj1Height = dims1.height * scale1;
   const obj1FloorOffset = dims1.floorOffset * scale1;
 
-  // Swap width/depth if object is rotated 90° (on east/west/notch-east walls)
+  // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)
   let obj1Width: number, obj1Depth: number;
+  const obj1Movement = item1 ? getMovementConfig(item1.type, item1) : null;
+  const obj1IsFreeRotation = obj1Movement?.allowFreeRotation && !obj1Movement?.snapToWall;
+
   if (obj1Wall === 'east' || obj1Wall === 'west' || obj1Wall === 'notch-east') {
     obj1Width = obj1BaseDepth; // Rotated: depth becomes width
     obj1Depth = obj1BaseWidth; // Rotated: width becomes depth
+  } else if (obj1IsFreeRotation && item1?.rotation !== undefined && item1.rotation !== 0) {
+    // Free-rotation object with any rotation - compute proper AABB
+    [obj1Width, obj1Depth] = getRotatedAABB(obj1BaseWidth, obj1BaseDepth, item1.rotation);
+    console.log('🔄 Computing AABB for free-rotation object 1:', {
+      sku: item1?.sku,
+      rotation: item1?.rotation?.toFixed(2),
+      baseDims: `${obj1BaseWidth.toFixed(1)} × ${obj1BaseDepth.toFixed(1)}`,
+      aabbDims: `${obj1Width.toFixed(1)} × ${obj1Depth.toFixed(1)}`
+    });
   } else {
     obj1Width = obj1BaseWidth;
     obj1Depth = obj1BaseDepth;
@@ -938,11 +665,23 @@ export const checkCollision = (
   const obj2Height = dims2.height * scale2;
   const obj2FloorOffset = dims2.floorOffset * scale2;
 
-  // Swap width/depth if object is rotated 90° (on east/west/notch-east walls)
+  // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)
   let obj2Width: number, obj2Depth: number;
+  const obj2Movement = item2 ? getMovementConfig(item2.type, item2) : null;
+  const obj2IsFreeRotation = obj2Movement?.allowFreeRotation && !obj2Movement?.snapToWall;
+
   if (obj2Wall === 'east' || obj2Wall === 'west' || obj2Wall === 'notch-east') {
     obj2Width = obj2BaseDepth; // Rotated: depth becomes width
     obj2Depth = obj2BaseWidth; // Rotated: width becomes depth
+  } else if (obj2IsFreeRotation && item2?.rotation !== undefined && item2.rotation !== 0) {
+    // Free-rotation object with any rotation - compute proper AABB
+    [obj2Width, obj2Depth] = getRotatedAABB(obj2BaseWidth, obj2BaseDepth, item2.rotation);
+    console.log('🔄 Computing AABB for free-rotation object 2:', {
+      sku: item2?.sku,
+      rotation: item2?.rotation?.toFixed(2),
+      baseDims: `${obj2BaseWidth.toFixed(1)} × ${obj2BaseDepth.toFixed(1)}`,
+      aabbDims: `${obj2Width.toFixed(1)} × ${obj2Depth.toFixed(1)}`
+    });
   } else {
     obj2Width = obj2BaseWidth;
     obj2Depth = obj2BaseDepth;
@@ -970,9 +709,9 @@ export const checkCollision = (
   const obj2MaxZ = pos2.z + obj2Depth / 2;
 
   // Add collision buffers - expand each object's bounding box
-  // Moderate buffers for realistic spacing while preventing false positives
-  const horizontalBuffer = 5; // 5cm horizontal buffer (10cm total gap when near)
-  const verticalBuffer = 2;   // 2cm vertical buffer (4cm total gap when stacked)
+  // Larger buffers to prevent visual overlaps
+  const horizontalBuffer = 15; // 15cm horizontal buffer (30cm total gap when near)
+  const verticalBuffer = 5;    // 5cm vertical buffer (10cm total gap when stacked)
 
   // ✅ FIXED: Expand bounding boxes by buffer amount before checking overlap
   const obj1MinXWithBuffer = obj1MinX - horizontalBuffer;
@@ -1683,8 +1422,6 @@ export const findFreeWallPosition = (
     return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig, sku, notchWidth, notchHeight);
   }
 
-  console.log('>>>111 SKU', sku);
-  // GET OBJECT DIMENSIONS
   const dimensions = getDimensions(objectType, sku);
 
   // ✅ FIX: Add fallback dimensions to prevent placement outside room boundaries
@@ -1915,31 +1652,22 @@ export const findFreeCornerPosition = (
   const dimensions = getDimensions(objectType, sku);
 
   if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
-    console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
-    // Return null if no dimensions found
     return null;
   }
 
   // Try each corner
   for (const corner of corners) {
-
     const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
       type: objectType,
       scale: 1.0,
       orientation,
       movement,
-      sku
+      sku,
+      notchWidth,
+      notchHeight
     });
 
-    console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
-    console.log(`🔍 Existing items count:`, existingItems.length);
-    console.log(`🔍 Existing items:`, existingItems.map(item => ({
-      type: item.type,
-      sku: item.sku,
-      position: item.position
-    })));
-
-    // Create temporary item with SKU for proper collision detection
+    // Create temporary item for collision detection
     const tempItem: BathroomItem = {
       id: -1,
       type: objectType,
@@ -1948,26 +1676,38 @@ export const findFreeCornerPosition = (
       sku: sku
     };
 
-    // Check if this corner position would collide with existing items
+    // Check wall collision - object must fit within room boundaries
+    const wallCollision = checkWallCollision(
+      result.position,
+      objectType,
+      scale,
+      roomWidth,
+      roomHeight,
+      tempItem,
+      result.rotation,
+      notchWidth,
+      notchHeight
+    );
+
+    if (wallCollision) {
+      continue; // Try next corner
+    }
+
+    // Check collision with existing items
     const wouldCollide = wouldCollideWithExisting(
       result.position,
       objectType,
       scale,
-      -1, // New item, no ID yet
+      -1,
       existingItems,
-      tempItem // Pass temporary item for proper dimension lookup
+      tempItem
     );
 
-    console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
-
     if (!wouldCollide) {
-      console.log(`>>>111 ✅ Found free corner: ${corner.type}`);
       return result;
     }
   }
 
-  // If no free corner, return null instead of forcing placement
-  console.warn('⚠️ No free corners available for corner stall shower');
   return null;
 };
 
@@ -2432,7 +2172,6 @@ export const validateObjectFitsInRoom = (
   const availableWallDepth = interior.maxZ - interior.minZ; // North-South walls
 
   const objectWidth = objectDimensions.width;
-  const objectDepth = objectDimensions.depth || objectDimensions.height;
 
   // Check if object is too wide for any wall
   // Object can be placed on North/South walls (uses width) or East/West walls (uses width as well)
@@ -2528,8 +2267,6 @@ export const calculateAvailableSpaceForVariant = (
   }
 
   const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
-  const movementConfig = getMovementConfig(currentItem.type, currentItem);
-
   // Determine which wall the item is on
   let nearestWall: WallType = 'north';
   const tolerance = 50; // 50cm tolerance for wall detection

@@ -787,9 +787,9 @@ const productDrawerProps = computed(() => ({
   searchResults: searchResults,
   searchQuery: searchQuery.value,
   // Constraint checking props
-  existingItems: props.existingItems,
   roomWidth: props.roomWidth,
   roomHeight: props.roomHeight,
+  existingItems: props.existingItems,
   notchWidth: props.notchWidth,
   notchHeight: props.notchHeight
 }))

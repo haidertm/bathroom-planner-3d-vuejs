@@ -285,6 +285,7 @@
               @click="confirmAddToRoom"
               :style="confirmAddButtonStyle"
               class="confirm-add-button"
+              :disabled="isVariantTooLarge(selectedVariant)"
           >
             ADD TO ROOM
           </button>
@@ -305,7 +306,7 @@ import {
   isVariantModelLoadedWithCache,
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
-import { checkVariantFitsAtPosition } from '../../utils/constraints'
+import { findFreeWallPosition } from '../../utils/constraints'
 
 // Props
 const props = defineProps({
@@ -361,14 +362,6 @@ const props = defineProps({
     default: 0
   },
   // Constraint checking props
-  currentItem: {
-    type: Object,
-    default: null
-  },
-  existingItems: {
-    type: Array,
-    default: () => []
-  },
   roomWidth: {
     type: Number,
     default: 300
@@ -376,6 +369,10 @@ const props = defineProps({
   roomHeight: {
     type: Number,
     default: 250
+  },
+  existingItems: {
+    type: Array,
+    default: () => []
   },
   notchWidth: {
     type: Number,
@@ -436,106 +433,84 @@ watch(() => selectedProduct.value, () => {
   showAllVariants.value = false
 })
 
-// Constraint checking functions
-
-// Find an existing item of the same category to check constraints against
-const findExistingItemOfSameCategory = () => {
-  if (!props.existingItems || props.existingItems.length === 0) return null
-  if (!selectedProduct.value) return null
-
-  // Get the category from multiple sources
-  let category = selectedProduct.value.category ||
-                 selectedProduct.value.searchContext?.category ||
-                 props.selectedCategory
-
-  // Capitalize first letter to match item.type format (e.g., "bath" -> "Bath")
-  if (category && typeof category === 'string') {
-    category = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()
-  }
-
-  if (!category || category === 'Search') return null
-
-  // Find first existing item of the same category (case-insensitive comparison)
-  return props.existingItems.find(item =>
-    item.type?.toLowerCase() === category?.toLowerCase()
-  ) || null
-}
-
-const getVariantFitInfo = (variant) => {
-  if (!variant?.dimensions) {
-    return { fits: true, availableWidth: Infinity, requiredWidth: 0 }
-  }
+// Check if variant is too large or would collide with existing items
+const isVariantTooLarge = (variant) => {
+  if (!variant?.dimensions) return false
 
   const variantWidth = variant.dimensions.width || 0
   const variantDepth = variant.dimensions.depth || 0
-
-  // First check: Does it fit in the room at all?
   const maxVariantDim = Math.max(variantWidth, variantDepth)
+  const maxWallLength = Math.max(props.roomWidth, props.roomHeight)
 
-  // Get available wall lengths (accounting for notch if present)
-  const availableWidth = props.roomWidth - (props.notchWidth || 0)
-  const availableHeight = props.roomHeight - (props.notchHeight || 0)
-  const maxWallLength = Math.max(availableWidth, availableHeight, props.roomWidth, props.roomHeight)
+  // First check: Does it fit in room dimensions?
+  if (maxVariantDim > maxWallLength) return true
 
-  // If the variant's largest dimension is bigger than the largest wall, it won't fit anywhere
-  if (maxVariantDim > maxWallLength) {
-    return {
-      fits: false,
-      availableWidth: maxWallLength,
-      requiredWidth: maxVariantDim
+  // Second check: Is there enough floor space considering existing items?
+  if (props.existingItems && props.existingItems.length > 0) {
+    // Calculate total floor area used by existing items (with buffer)
+    const buffer = 20 // 20cm buffer around each item
+    let usedFloorArea = 0
+
+    for (const item of props.existingItems) {
+      if (item.variant?.dimensions) {
+        const itemWidth = (item.variant.dimensions.width || 0) + buffer * 2
+        const itemDepth = (item.variant.dimensions.depth || 0) + buffer * 2
+        usedFloorArea += itemWidth * itemDepth
+      }
     }
+
+    // Calculate available floor area
+    const totalFloorArea = props.roomWidth * props.roomHeight
+    const variantArea = (variantWidth + buffer * 2) * (variantDepth + buffer * 2)
+    const remainingArea = totalFloorArea - usedFloorArea
+
+    // If variant area is larger than remaining area, it won't fit
+    if (variantArea > remainingArea) return true
   }
 
-  // Second check: If there's an existing item of same category, check that position
-  const itemToCheck = props.currentItem || findExistingItemOfSameCategory()
+  // Third check: Can it be placed without collision using findFreeWallPosition?
+  const category = selectedProduct.value?.category ||
+                   selectedProduct.value?.searchContext?.category ||
+                   props.selectedCategory
 
-  if (!itemToCheck) {
-    return { fits: true, availableWidth: maxWallLength, requiredWidth: maxVariantDim }
-  }
+  if (!category || category === 'search') return false
 
-  // Filter out the item we're checking against from existingItems
-  const otherItems = props.existingItems.filter(item => item.id !== itemToCheck.id)
+  // Capitalize category to match ComponentType format
+  const objectType = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()
 
-  return checkVariantFitsAtPosition(
-    variant.dimensions,
-    itemToCheck,
-    otherItems,
+  // Check if a valid position exists using findFreeWallPosition
+  const freePosition = findFreeWallPosition(
     props.roomWidth,
     props.roomHeight,
+    objectType,
+    1.0, // scale
+    props.existingItems,
+    50, // maxAttempts
+    variant.orientation,
+    variant.movement,
+    variant.spawnHeight,
+    variant.floorOffset,
+    variant.sku,
     props.notchWidth,
     props.notchHeight
   )
-}
 
-const isVariantTooLarge = (variant) => {
-  // Check if variant has dimensions
-  if (!variant?.dimensions) return false
-
-  // Get fit info - this now checks room dimensions first
-  const fitInfo = getVariantFitInfo(variant)
-
-  // If it doesn't fit in the room at all, it's too large
-  if (!fitInfo.fits) return true
-
-  // Get item to check against for position-based checking
-  const itemToCheck = props.currentItem || findExistingItemOfSameCategory()
-
-  // If no existing item, rely on room dimension check (already passed above)
-  if (!itemToCheck) return false
-
-  // Current variant of existing item always fits (it's already placed)
-  if (itemToCheck.variant?.sku === variant?.sku) return false
-
-  return !fitInfo.fits
+  // If no valid position found, variant is too large/no space
+  return freePosition === null
 }
 
 const getTooLargeTooltip = (variant) => {
-  const fitInfo = getVariantFitInfo(variant)
-  if (fitInfo.fits) return ''
+  if (!variant?.dimensions) return ''
+  if (!isVariantTooLarge(variant)) return ''
 
-  const requiredMm = Math.round(fitInfo.requiredWidth * 10)
-  const availableMm = Math.round(fitInfo.availableWidth * 10)
-  return `Item exceeds available space (Requires ${requiredMm}mm, Available ${availableMm}mm).`
+  const maxVariantDim = Math.max(variant.dimensions.width || 0, variant.dimensions.depth || 0)
+  const maxWallLength = Math.max(props.roomWidth, props.roomHeight)
+
+  if (maxVariantDim > maxWallLength) {
+    return `Item exceeds room size (Requires ${maxVariantDim * 10}mm, Available ${maxWallLength * 10}mm).`
+  }
+
+  return 'Not enough space - room is too crowded with existing items.'
 }
 
 watch(() => props.searchTriggered, (newValue, oldValue) => {
@@ -1083,6 +1058,12 @@ const calculateTotalPrice = () => {
 const confirmAddToRoom = async () => {
   if (!selectedProduct.value || !selectedVariant.value) {
     console.log('No product or variant selected')
+    return
+  }
+
+  // Hard stop - prevent adding if variant is too large
+  if (isVariantTooLarge(selectedVariant.value)) {
+    console.log('⚠️ Cannot add - variant too large for room')
     return
   }
 
@@ -1712,19 +1693,40 @@ const actionButtonsStyle = computed(() => ({
   flexDirection: isMobileDevice.value ? 'column' : 'row'
 }))
 
-const confirmAddButtonStyle = computed(() => ({
-  backgroundColor: '#29275B',
-  color: 'white',
-  border: 'none',
-  padding: '12px 24px',
-  borderRadius: '6px',
-  fontSize: '14px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s ease',
-  flex: '1',
-  fontFamily: 'Arial, sans-serif'
-}))
+const confirmAddButtonStyle = computed(() => {
+  const isTooLarge = isVariantTooLarge(selectedVariant.value)
+
+  if (isTooLarge) {
+    return {
+      backgroundColor: '#9ca3af',
+      color: 'white',
+      border: 'none',
+      padding: '12px 24px',
+      borderRadius: '6px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'not-allowed',
+      transition: 'background-color 0.2s ease',
+      flex: '1',
+      fontFamily: 'Arial, sans-serif',
+      opacity: '0.7'
+    }
+  }
+
+  return {
+    backgroundColor: '#29275B',
+    color: 'white',
+    border: 'none',
+    padding: '12px 24px',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease',
+    flex: '1',
+    fontFamily: 'Arial, sans-serif'
+  }
+})
 
 const modalOverlayStyle = computed(() => ({
   position: 'fixed',
@@ -1803,8 +1805,14 @@ const searchVariantStyle = computed(() => ({
   color: white !important;
 }
 
-.confirm-add-button:hover {
-  background-color: #29275B !important;
+.confirm-add-button:hover:not(:disabled) {
+  background-color: #1e1a4a !important;
+}
+
+.confirm-add-button:disabled {
+  background-color: #9ca3af !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
 }
 
 
