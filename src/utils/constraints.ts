@@ -2256,3 +2256,269 @@ export const getNearestWall = (
     wallDistances[a[0]] < wallDistances[b[0]] ? a : b
   )[0] as WallType;
 };
+
+/**
+ * Validate if an object fits in the room (checks wall lengths)
+ */
+export const validateObjectFitsInRoom = (
+  objectDimensions: { width: number; height: number; depth?: number },
+  roomWidth: number,
+  roomHeight: number,
+  objectName?: string
+): { isValid: boolean; errorMessage: string | null } => {
+  const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
+
+  // Calculate available wall lengths (account for wall thickness)
+  const availableWallWidth = interior.maxX - interior.minX; // East-West walls
+  const availableWallDepth = interior.maxZ - interior.minZ; // North-South walls
+
+  const objectWidth = objectDimensions.width;
+
+  // Check if object is too wide for any wall
+  // Object can be placed on North/South walls (uses width) or East/West walls (uses width as well)
+  const fitsOnNorthSouthWall = objectWidth <= availableWallWidth;
+  const fitsOnEastWestWall = objectWidth <= availableWallDepth;
+
+  if (!fitsOnNorthSouthWall && !fitsOnEastWestWall) {
+    const itemName = objectName || 'This fixture';
+    return {
+      isValid: false,
+      errorMessage: `${itemName} (${objectWidth}cm wide) is too large to fit on any wall. Available wall lengths: ${availableWallWidth.toFixed(0)}cm and ${availableWallDepth.toFixed(0)}cm.`
+    };
+  }
+
+  return { isValid: true, errorMessage: null };
+};
+
+/**
+ * Validate if an object at a specific position would overlap with existing items
+ * Used for pre-checking template items before loading
+ */
+export const validateNoOverlap = (
+  position: Position,
+  objectType: ComponentType,
+  scale: number,
+  existingItems: BathroomItem[],
+  roomWidth: number,
+  roomHeight: number,
+  sku?: string,
+  notchWidth?: number,
+  notchHeight?: number
+): { isValid: boolean; collidingItem: BathroomItem | null } => {
+  // Create a temporary item for collision checking
+  const tempItem: BathroomItem = {
+    id: -999, // Temporary ID
+    type: objectType,
+    position: [position.x, position.y, position.z],
+    scale,
+    sku
+  };
+
+  for (const item of existingItems) {
+    const itemPosition = { x: item.position[0], y: item.position[1], z: item.position[2] };
+    const itemScale = item.scale || 1.0;
+
+    const hasCollision = checkCollision(
+      position,
+      objectType,
+      scale,
+      itemPosition,
+      item.type,
+      itemScale,
+      tempItem,
+      item,
+      roomWidth,
+      roomHeight,
+      notchWidth,
+      notchHeight
+    );
+
+    if (hasCollision) {
+      return { isValid: false, collidingItem: item };
+    }
+  }
+
+  return { isValid: true, collidingItem: null };
+};
+
+/**
+ * Calculate available space for a variant at the current item's position
+ */
+export const calculateAvailableSpaceForVariant = (
+  currentItem: BathroomItem,
+  existingItems: BathroomItem[],
+  roomWidth: number,
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
+): { availableWidth: number; limitingFactor: 'wall' | 'object' | 'none' } => {
+  const position: Position = {
+    x: currentItem.position[0],
+    y: currentItem.position[1],
+    z: currentItem.position[2]
+  };
+
+  const scale = currentItem.scale || 1.0;
+  const currentDimensions = getDimensions(currentItem.type, currentItem.sku, currentItem.model);
+
+  if (!currentDimensions) {
+    return { availableWidth: Infinity, limitingFactor: 'none' };
+  }
+
+  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  // Determine which wall the item is on
+  let nearestWall: WallType = 'north';
+  const tolerance = 50; // 50cm tolerance for wall detection
+
+  if (notch) {
+    if (Math.abs(position.x - notch.maxX) < tolerance &&
+        position.z >= notch.minZ && position.z <= notch.maxZ + tolerance) {
+      nearestWall = 'notch-east';
+    } else if (Math.abs(position.z - notch.maxZ) < tolerance &&
+               position.x >= notch.minX && position.x <= notch.maxX + tolerance) {
+      nearestWall = 'notch-south';
+    }
+  }
+
+  if (nearestWall === 'north') {
+    const wallDistances = {
+      north: Math.abs(position.z - wallFaces.north),
+      south: Math.abs(position.z - wallFaces.south),
+      east: Math.abs(position.x - wallFaces.east),
+      west: Math.abs(position.x - wallFaces.west)
+    };
+
+    nearestWall = (Object.entries(wallDistances).reduce((a, b) =>
+      wallDistances[a[0] as keyof typeof wallDistances] < wallDistances[b[0] as keyof typeof wallDistances] ? a : b
+    )[0] as WallType);
+  }
+
+  // Calculate available space along the wall
+  let spaceLeft = 0;
+  let spaceRight = 0;
+
+  if (nearestWall === 'north' || nearestWall === 'south') {
+    // Object is on north/south wall - width runs along X axis
+    spaceLeft = position.x - interior.minX;
+    spaceRight = interior.maxX - position.x;
+  } else if (nearestWall === 'east' || nearestWall === 'west') {
+    // Object is on east/west wall - width runs along Z axis
+    spaceLeft = position.z - interior.minZ;
+    spaceRight = interior.maxZ - position.z;
+  } else if (nearestWall === 'notch-east') {
+    // On notch east wall - width runs along Z axis, limited by notch bounds
+    spaceLeft = position.z - (notch?.minZ ?? interior.minZ);
+    spaceRight = (notch?.maxZ ?? interior.maxZ) - position.z;
+  } else if (nearestWall === 'notch-south') {
+    // On notch south wall - width runs along X axis, limited by notch bounds
+    spaceLeft = position.x - (notch?.minX ?? interior.minX);
+    spaceRight = (notch?.maxX ?? interior.maxX) - position.x;
+  }
+
+  // Total wall space available (from both sides of current position)
+  let totalWallSpace = spaceLeft + spaceRight;
+  let limitingFactor: 'wall' | 'object' | 'none' = 'wall';
+
+  // Check for nearby objects that might limit space
+  const currentHalfWidth = (currentDimensions.width * scale) / 2;
+
+  for (const item of existingItems) {
+    if (item.id === currentItem.id) continue; // Skip self
+
+    const itemPos: Position = {
+      x: item.position[0],
+      y: item.position[1],
+      z: item.position[2]
+    };
+
+    const itemDimensions = getDimensions(item.type, item.sku, item.model);
+    if (!itemDimensions) continue;
+
+    const itemScale = item.scale || 1.0;
+    const itemHalfWidth = (itemDimensions.width * itemScale) / 2;
+    const itemHalfDepth = (itemDimensions.depth * itemScale) / 2;
+
+    // Check if item is on the same wall (within tolerance)
+    let isOnSameWall = false;
+    let distanceAlongWall = 0;
+
+    if (nearestWall === 'north' || nearestWall === 'south') {
+      // Check if item is on same horizontal wall
+      const wallZ = nearestWall === 'north' ? wallFaces.north : wallFaces.south;
+      if (Math.abs(itemPos.z - wallZ) < tolerance + itemHalfDepth) {
+        isOnSameWall = true;
+        distanceAlongWall = Math.abs(itemPos.x - position.x);
+      }
+    } else if (nearestWall === 'east' || nearestWall === 'west') {
+      // Check if item is on same vertical wall
+      const wallX = nearestWall === 'east' ? wallFaces.east : wallFaces.west;
+      if (Math.abs(itemPos.x - wallX) < tolerance + itemHalfDepth) {
+        isOnSameWall = true;
+        distanceAlongWall = Math.abs(itemPos.z - position.z);
+      }
+    }
+
+    if (isOnSameWall) {
+      // Calculate the edge-to-edge distance
+      const edgeToEdgeDistance = distanceAlongWall - itemHalfWidth - currentHalfWidth;
+
+      if (edgeToEdgeDistance < totalWallSpace / 2) {
+        // This object is closer than the wall, limits available space
+        if (itemPos.x < position.x || itemPos.z < position.z) {
+          // Object is to the left/above
+          const newSpaceLeft = distanceAlongWall - itemHalfWidth;
+          if (newSpaceLeft < spaceLeft) {
+            spaceLeft = Math.max(0, newSpaceLeft);
+            limitingFactor = 'object';
+          }
+        } else {
+          // Object is to the right/below
+          const newSpaceRight = distanceAlongWall - itemHalfWidth;
+          if (newSpaceRight < spaceRight) {
+            spaceRight = Math.max(0, newSpaceRight);
+            limitingFactor = 'object';
+          }
+        }
+      }
+    }
+  }
+
+  // Total available width for the variant
+  totalWallSpace = spaceLeft + spaceRight;
+
+  return {
+    availableWidth: totalWallSpace,
+    limitingFactor: totalWallSpace === Infinity ? 'none' : limitingFactor
+  };
+};
+
+/**
+ * Check if a specific variant would fit at the current item's position
+ */
+export const checkVariantFitsAtPosition = (
+  variantDimensions: { width: number; height: number; depth?: number },
+  currentItem: BathroomItem,
+  existingItems: BathroomItem[],
+  roomWidth: number,
+  roomHeight: number,
+  notchWidth?: number,
+  notchHeight?: number
+): { fits: boolean; availableWidth: number; requiredWidth: number } => {
+  const { availableWidth } = calculateAvailableSpaceForVariant(
+    currentItem,
+    existingItems,
+    roomWidth,
+    roomHeight,
+    notchWidth,
+    notchHeight
+  );
+
+  const requiredWidth = variantDimensions.width;
+  const fits = requiredWidth <= availableWidth;
+
+  return {
+    fits,
+    availableWidth,
+    requiredWidth
+  };
+};
