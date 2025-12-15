@@ -20,6 +20,7 @@
         :show-grid="showGrid"
         :show-wall-grid="showWallGrid"
         :wall-culling-enabled="wallCullingEnabled"
+        :existing-items="items"
         @room-size-change="handleRoomSizeChange"
         @notch-size-change="handleNotchSizeChange"
         @toggle-grid="setShowGrid"
@@ -46,6 +47,12 @@
         :product="variantConfigProduct"
         :current-variant="variantConfigCurrentVariant"
         :item-id="variantConfigItemId"
+        :current-item="variantConfigCurrentItem"
+        :existing-items="items"
+        :room-width="roomWidth"
+        :room-height="roomHeight"
+        :notch-width="notchWidth"
+        :notch-height="notchHeight"
         @close="handleVariantDrawerClose"
         @swap-variant="handleVariantSwap"
     />
@@ -157,8 +164,8 @@ import { EventHandlers } from '../services/eventHandlers'
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
 
-// Utils - Updated imports to include collision detection
-import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, wouldCollideWithExistingOrWalls, getInteriorBoundaries } from '../utils/constraints.js'
+// Utils - Updated imports to include collision detection and validation
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, wouldCollideWithExistingOrWalls, getInteriorBoundaries, validateObjectFitsInRoom, validateNoOverlap } from '../utils/constraints.js'
 import {highlightObject, isMobile} from '../utils/helpers.ts'
 
 // Composables
@@ -243,6 +250,12 @@ const isVariantDrawerOpen = ref(false)
 const variantConfigProduct = ref(null)
 const variantConfigCurrentVariant = ref(null)
 const variantConfigItemId = ref(null)
+
+// Computed property to get the current item for variant swapping
+const variantConfigCurrentItem = computed(() => {
+  if (!variantConfigItemId.value) return null
+  return items.value.find(item => item.id === variantConfigItemId.value) || null
+})
 
 // 3. Add these event handlers to your existing methods
 const handleItemSelection = (itemId) => {
@@ -946,6 +959,23 @@ const addItem = async (type, productData = null) => {
   const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
   // ============================================================================
+  // PRE-FLIGHT VALIDATION: Check if object fits in room
+  // ============================================================================
+  if (selectedVariant?.dimensions) {
+    const validation = validateObjectFitsInRoom(
+      selectedVariant.dimensions,
+      roomWidth.value,
+      roomHeight.value,
+      selectedVariant.name || type
+    )
+
+    if (!validation.isValid) {
+      alert(validation.errorMessage)
+      return
+    }
+  }
+
+  // ============================================================================
   // SMART AUTO-POSITIONING SYSTEM
   // Uses intelligent placement logic based on item type and existing items:
   // - Mirror: Above vanity, or eye-level on wall facing camera
@@ -1478,6 +1508,12 @@ const loadTemplateData = async (template) => {
 
     console.log('📐 Room dimensions set:', template.roomWidth, 'x', template.roomHeight)
 
+    // ============================================================================
+    // VALIDATION: Check if all template items fit in the room
+    // ============================================================================
+    const skippedItems = []
+    const placedItems = [] // Track already placed items for overlap checking
+
     // Convert template items to planner items
     const plannerItems = template.items.map((templateItem, index) => {
       // Find the product data for this SKU
@@ -1489,6 +1525,26 @@ const loadTemplateData = async (template) => {
       }
 
       const { product, variant, category } = productInfo
+
+      // ✅ VALIDATION: Check if object fits in room dimensions
+      if (variant.dimensions) {
+        const dimensionValidation = validateObjectFitsInRoom(
+          variant.dimensions,
+          template.roomWidth,
+          template.roomHeight,
+          variant.name || templateItem.type
+        )
+
+        if (!dimensionValidation.isValid) {
+          console.warn(`⚠️ Skipping ${templateItem.type} (${templateItem.sku}): ${dimensionValidation.errorMessage}`)
+          skippedItems.push({
+            type: templateItem.type,
+            sku: templateItem.sku,
+            reason: dimensionValidation.errorMessage
+          })
+          return null
+        }
+      }
 
       // Get orientation config from variant
       const productOrientation = variant.orientation || {
@@ -1507,6 +1563,32 @@ const loadTemplateData = async (template) => {
         variant.spawnHeight || 0
       )
 
+      // ✅ VALIDATION: Check if this item overlaps with already placed items
+      // Pass isTemplateValidation=true to skip strict overlap check for pre-designed templates
+      const overlapValidation = validateNoOverlap(
+        position,
+        templateItem.type,
+        1.0, // scale
+        placedItems,
+        template.roomWidth,
+        template.roomHeight,
+        templateItem.sku,
+        undefined, // notchWidth
+        undefined, // notchHeight
+        undefined, // model
+        true // isTemplateValidation - skip strict overlap check for templates
+      )
+
+      if (!overlapValidation.isValid && overlapValidation.collidingItem) {
+        console.warn(`⚠️ Skipping ${templateItem.type} (${templateItem.sku}): overlaps with ${overlapValidation.collidingItem.type}`)
+        skippedItems.push({
+          type: templateItem.type,
+          sku: templateItem.sku,
+          reason: `Overlaps with ${overlapValidation.collidingItem.productName || overlapValidation.collidingItem.type}`
+        })
+        return null
+      }
+
       console.log(`📍 Template item ${templateItem.type} (${templateItem.sku}):`, {
         wall: templateItem.wall,
         wallPosition: templateItem.wallPosition,
@@ -1516,7 +1598,7 @@ const loadTemplateData = async (template) => {
       })
 
       // Create the item in the format expected by the planner
-      return {
+      const newItem = {
         id: generateUniqueId(),
         type: templateItem.type,
         position: [position.x, position.y, position.z],
@@ -1538,7 +1620,18 @@ const loadTemplateData = async (template) => {
         productId: product.id,
         isTemplateItem: true
       }
+
+      // Add to placed items for overlap checking of subsequent items
+      placedItems.push(newItem)
+
+      return newItem
     }).filter(Boolean) // Remove any null items
+
+    // ✅ Notify user if any items were skipped
+    if (skippedItems.length > 0) {
+      const skippedMessage = skippedItems.map(item => `• ${item.type}: ${item.reason}`).join('\n')
+      alert(`Some items could not be placed in this template:\n\n${skippedMessage}`)
+    }
 
     // Set items in Vue state
     items.value = plannerItems
