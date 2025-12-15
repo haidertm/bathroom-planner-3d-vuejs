@@ -44,7 +44,9 @@ export interface AutoPositionResult {
   position: Position;
   rotation: number;
   anchorItem?: BathroomItem;  // The item this was positioned relative to
-  placementMethod: 'anchor' | 'corner' | 'wall' | 'fallback';
+  placementMethod: 'anchor' | 'corner' | 'wall' | 'fallback' | 'none';
+  /** Reason for placement failure (only set when placementMethod is 'none') */
+  reason?: 'no-auto-position-logic' | 'no-space-found' | 'no-anchor-available';
 }
 
 // ============================================================================
@@ -2027,36 +2029,63 @@ export const autoPositionItem = (
   context: AutoPositionContext,
   variant: any,
   scale: number = 1.0
-): AutoPositionResult | null => {
+): AutoPositionResult => {
   console.log(`🎯 Auto-positioning ${itemType}...`);
+
+  let result: AutoPositionResult | null = null;
 
   switch (itemType) {
     case 'Mirror':
-      return positionMirror(context, variant, scale);
+      result = positionMirror(context, variant, scale);
+      break;
 
     case 'Toilet':
-      return positionToilet(context, variant, scale);
+      result = positionToilet(context, variant, scale);
+      break;
 
     case 'Bath':
-      return positionBath(context, variant, scale);
+      result = positionBath(context, variant, scale);
+      break;
 
     case 'Shower':
-      return positionShower(context, variant, scale);
+      result = positionShower(context, variant, scale);
+      break;
 
     case 'Furniture': // Vanity units
-      return positionVanity(context, variant, scale);
+      result = positionVanity(context, variant, scale);
+      break;
 
     case 'Radiator': // Radiator panels
-      return positionTowelRail(context, variant, scale, 'Radiator');
+      result = positionTowelRail(context, variant, scale, 'Radiator');
+      break;
 
     case 'TowelRails': // Heated towel rails
-      return positionTowelRail(context, variant, scale, 'TowelRails');
+      result = positionTowelRail(context, variant, scale, 'TowelRails');
+      break;
 
     case 'Sink':
-      return positionSink(context, variant, scale);
+      result = positionSink(context, variant, scale);
+      break;
 
     default:
       console.log(`⚠️ No auto-position logic for ${itemType}, using default placement`);
-      return null;
+      break;
   }
+
+  // Return structured no-op result if no position was found
+  if (!result) {
+    const spawnHeight = variant?.spawnHeight || 0;
+    return {
+      position: { x: 0, y: spawnHeight, z: 0 },
+      rotation: 0,
+      placementMethod: 'none',
+      reason: itemType === 'Mirror' || itemType === 'Toilet' || itemType === 'Bath' ||
+              itemType === 'Shower' || itemType === 'Furniture' || itemType === 'Radiator' ||
+              itemType === 'TowelRails' || itemType === 'Sink'
+        ? 'no-space-found'
+        : 'no-auto-position-logic'
+    };
+  }
+
+  return result;
 };

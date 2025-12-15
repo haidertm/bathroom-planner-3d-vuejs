@@ -941,12 +941,14 @@ const addItem = async (type, productData = null) => {
   // In this case, we should use the calculated Y position, not the default spawnHeight
   let useAutoPositionedY = false
 
-  if (autoResult) {
+  if (autoResult.placementMethod !== 'none') {
     console.log(`✅ Smart auto-position for ${type}:`, autoResult.placementMethod, autoResult.anchorItem?.type || '')
     freePosition = autoResult.position
     wallRotation = autoResult.rotation
     // Use auto-positioned Y when placement is relative to an anchor item
     useAutoPositionedY = autoResult.placementMethod === 'anchor'
+  } else {
+    console.log(`⚠️ Auto-position returned no-op for ${type}:`, autoResult.reason)
   }
 
   // Final fallback: Generic wall position finding

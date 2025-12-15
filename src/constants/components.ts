@@ -1,6 +1,6 @@
 export type ComponentType = 'Toilet' | 'Sink' | 'Bath' | 'Shower' | 'Radiator' | 'TowelRails' | 'Mirror' | 'Door' | 'Furniture';
 
-export const COMPONENTS: ComponentType[] = ['Toilet', 'Sink', 'Bath', 'Shower', 'Radiator', 'TowelRails', 'Mirror', 'Door'];
+export const COMPONENTS: ComponentType[] = ['Toilet', 'Sink', 'Bath', 'Shower', 'Radiator', 'TowelRails', 'Mirror', 'Door', 'Furniture'];
 
 export interface ComponentDefaults {
   height: number;
