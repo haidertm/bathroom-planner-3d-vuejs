@@ -17,7 +17,7 @@
           create variations, or start fresh with new ideas to bring your vision to life.
         </p>
         <!-- Modal commented out - navigating directly to room selection -->
-        <button type="button" class="cta-button" @click="handleStartFromScratch">
+        <button type="button" class="cta-button" @click="showTemplateModal = true">
           + Create New Design
         </button>
       </div>
@@ -38,7 +38,7 @@
       <div class="designs-grid">
         <!-- New Design Card -->
         <!-- Modal commented out - navigating directly to room selection -->
-        <div class="card-link" @click="handleStartFromScratch" role="button" tabindex="0" aria-label="Create a new design" @keydown.enter="handleStartFromScratch">
+        <div class="card-link" @click="showTemplateModal = true" role="button" tabindex="0" aria-label="Create a new design" @keydown.enter="showTemplateModal = true">
         <div class="design-card new-design-card">
           <div class="new-design-content">
             <div class="plus-icon">+</div>
@@ -99,7 +99,7 @@
           <h3>No designs saved yet</h3>
           <p>Start creating your first bathroom design and save it to access later</p>
           <!-- Modal commented out - navigating directly to room selection -->
-          <button type="button" class="cta-button" @click="handleStartFromScratch">Begin Designing</button>
+          <button type="button" class="cta-button" @click="showTemplateModal = true">Begin Designing</button>
         </div>
       </div>
     </div>
@@ -209,7 +209,7 @@ const deleteDesign = (designId) => {
 // Template selection handlers
 const handleStartFromScratch = () => {
   // Go to room shape selector (home page), then room dimensions
-  router.push('/')
+  router.push('/room-shape')
 }
 
 const handleSelectTemplate = (templateId) => {

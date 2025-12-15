@@ -3218,10 +3218,11 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
+              // Uses DefaultCornerObjectRotation from models.ts
             },
             allowVerticalMovement: false,
             allowFreeRotation: false
@@ -3243,7 +3244,7 @@ const productData: ProductData = {
             description: 'Corner shower installation'
             // rotationOffset: Math.PI // Rotate to face into room
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3267,7 +3268,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3291,7 +3292,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3316,7 +3317,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3340,7 +3341,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -5224,7 +5225,7 @@ const productData: ProductData = {
                       allowVerticalMovement: false,
                       allowFreeRotation: false
                   },
-                  sku: 'C66201',
+                  sku: 'C66036',
                   price: '229.99',
                   title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat'
               },

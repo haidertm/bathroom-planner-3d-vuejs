@@ -1,8 +1,5 @@
 <!-- VariantConfigurationDrawer.vue - Product Drawer Style with Progressive Loading -->
 <template>
-  <!-- Overlay -->
-  <div v-if="isOpen" :style="overlayStyle" @click="closeDrawer"></div>
-
   <!-- Drawer -->
   <div
       ref="drawerRef"
