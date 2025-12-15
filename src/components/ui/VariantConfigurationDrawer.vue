@@ -38,7 +38,7 @@
           <!-- NEW badge if available -->
           <div v-if="product?.isNew" :style="newBadgeStyle">NEW</div>
           <!-- Current variant indicator -->
-          <div v-if="isCurrentVariant(selectedVariant)" :style="currentIndicatorStyle">CURRENT</div>
+          <div v-if="isCurrentVariant(selectedVariant)" :style="currentIndicatorStyle">Selected</div>
         </div>
 
         <!-- Product Details - Shows selected variant data -->
@@ -77,12 +77,7 @@
 
             <!-- Show current badge on the variant list -->
             <span v-if="isCurrentVariant(variant)" :style="currentVariantBadgeStyle">
-              ✓ Current
-            </span>
-
-            <!-- Show cached/ready indicator for preloaded variants -->
-            <span v-else-if="isVariantCached(variant)" :style="cachedVariantBadgeStyle">
-              ✓ Ready
+              ✓ Selected
             </span>
           </div>
         </div>
@@ -467,7 +462,7 @@ const getOptionItemStyle = (variant) => {
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    border: isSelected && !isCurrent ? '2px solid #3b82f6' : (isCached && !isCurrent ? '1px solid #10b981' : 'none'),
+    border: isSelected && !isCurrent ? '2px solid grey' : (isCached && !isCurrent ? '1px solid grey' : 'none'),
     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
     fontWeight: isCurrent ? '600' : '500',
     display: 'flex',
