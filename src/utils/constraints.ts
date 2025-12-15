@@ -539,11 +539,23 @@ export const checkWallCollision = (
     objectMaxZ = position.z + halfDepth;
   }
 
+  // Check if object is flush-mounted (embedded in wall)
+  const isFlushMounted = wallBuffer === 0;
+
   // Check if object extends beyond interior boundaries
-  const collideWest = objectMinX < interior.minX;
-  const collideEast = objectMaxX > interior.maxX;
-  const collideNorth = objectMinZ < interior.minZ;
-  const collideSouth = objectMaxZ > interior.maxZ;
+  // For flush-mounted items, allow them to extend beyond the wall they're mounted on
+  let collideWest = objectMinX < interior.minX;
+  let collideEast = objectMaxX > interior.maxX;
+  let collideNorth = objectMinZ < interior.minZ;
+  let collideSouth = objectMaxZ > interior.maxZ;
+
+  // Flush-mounted items (windows, doors) are allowed to extend into the wall they're mounted on
+  if (isFlushMounted && movementConfig.snapToWall) {
+    if (nearestWall === 'north') collideNorth = false;
+    if (nearestWall === 'south') collideSouth = false;
+    if (nearestWall === 'east') collideEast = false;
+    if (nearestWall === 'west') collideWest = false;
+  }
 
   // Check for L-shaped room notch collisions
   if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {

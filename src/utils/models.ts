@@ -87,6 +87,14 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
     allowFreeRotation: false,
     minHeight: 0,
     maxHeight: 0
+  },
+
+  WindowAndDoor: {
+    snapToWall: true,
+    allowVerticalMovement: true, // Windows can be positioned at different heights
+    allowFreeRotation: false,
+    minHeight: 20,
+    maxHeight: 150
   }
 };
 

@@ -307,6 +307,7 @@ import {
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
 import { findFreeWallPosition } from '../../utils/constraints'
+import { getMovementConfig } from '../../utils/models'
 
 // Props
 const props = defineProps({
@@ -445,17 +446,45 @@ const isVariantTooLarge = (variant) => {
   // First check: Does it fit in room dimensions?
   if (maxVariantDim > maxWallLength) return true
 
+  // Get the category for movement config lookup
+  const category = selectedProduct.value?.category ||
+                   selectedProduct.value?.searchContext?.category ||
+                   props.selectedCategory
+
+  // Get objectType from category - preserve camelCase if already capitalized
+  const objectType = category && category !== 'search'
+    ? (category.charAt(0) === category.charAt(0).toUpperCase()
+        ? category  // Already properly capitalized (e.g., "WindowAndDoor", "TowelRails")
+        : category.charAt(0).toUpperCase() + category.slice(1))  // Capitalize first letter
+    : null
+
+  // Check if the new variant is wall-mounted at height (radiators, mirrors, towel rails)
+  // These items don't occupy floor space and can be placed above floor-level items
+  const variantMovement = variant.movement || (objectType ? getMovementConfig(objectType) : null)
+  const isWallMountedAtHeight = variantMovement?.allowVerticalMovement === true ||
+                                 (variant.spawnHeight && variant.spawnHeight > 50)
+
   // Second check: Is there enough floor space considering existing items?
-  if (props.existingItems && props.existingItems.length > 0) {
+  // Skip this check for wall-mounted items that can be placed at height
+  if (!isWallMountedAtHeight && props.existingItems && props.existingItems.length > 0) {
     // Calculate total floor area used by existing items (with buffer)
+    // Only count floor-mounted items, not wall-mounted items at height
     const buffer = 20 // 20cm buffer around each item
     let usedFloorArea = 0
 
     for (const item of props.existingItems) {
       if (item.variant?.dimensions) {
-        const itemWidth = (item.variant.dimensions.width || 0) + buffer * 2
-        const itemDepth = (item.variant.dimensions.depth || 0) + buffer * 2
-        usedFloorArea += itemWidth * itemDepth
+        // Check if existing item is wall-mounted at height
+        const itemMovement = item.variant?.movement || (item.type ? getMovementConfig(item.type) : null)
+        const itemIsWallMountedAtHeight = itemMovement?.allowVerticalMovement === true ||
+                                           (item.variant?.spawnHeight && item.variant.spawnHeight > 50)
+
+        // Only count floor-mounted items in floor area calculation
+        if (!itemIsWallMountedAtHeight) {
+          const itemWidth = (item.variant.dimensions.width || 0) + buffer * 2
+          const itemDepth = (item.variant.dimensions.depth || 0) + buffer * 2
+          usedFloorArea += itemWidth * itemDepth
+        }
       }
     }
 
@@ -469,14 +498,7 @@ const isVariantTooLarge = (variant) => {
   }
 
   // Third check: Can it be placed without collision using findFreeWallPosition?
-  const category = selectedProduct.value?.category ||
-                   selectedProduct.value?.searchContext?.category ||
-                   props.selectedCategory
-
-  if (!category || category === 'search') return false
-
-  // Capitalize category to match ComponentType format
-  const objectType = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()
+  if (!category || category === 'search' || !objectType) return false
 
   // Check if a valid position exists using findFreeWallPosition
   const freePosition = findFreeWallPosition(
