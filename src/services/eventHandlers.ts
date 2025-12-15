@@ -3301,29 +3301,15 @@ export class EventHandlers {
   }
 
   private updateDragPlane (object: THREE.Object3D): void {
-    const cameraDirection = new THREE.Vector3();
-    this.camera.getWorldDirection(cameraDirection);
-
-    // Check if looking mostly down/up
-    const lookingVertically = Math.abs(cameraDirection.y) > 0.7;
-
-    if (lookingVertically) {
-      // Top-down view: use horizontal plane for intuitive movement
-      const planeHeight = object.position.y;
-      this.dragPlane.setFromNormalAndCoplanarPoint(
-        new THREE.Vector3(0, 1, 0),
-        new THREE.Vector3(object.position.x, planeHeight, object.position.z)
-      );
-      console.log('✅ Top view - horizontal plane');
-    } else {
-      // All other views: use plane perpendicular to camera
-      // This gives smooth movement in screen space
-      this.dragPlane.setFromNormalAndCoplanarPoint(
-        cameraDirection,
-        object.position
-      );
-      console.log('✅ Front/side view - camera-perpendicular plane');
-    }
+    // Always use a horizontal plane (XZ plane) at the object's Y position
+    // This ensures dragging forward/backward moves the object along the floor,
+    // not vertically, regardless of camera angle (top view or side/wall view)
+    const planeHeight = object.position.y;
+    this.dragPlane.setFromNormalAndCoplanarPoint(
+      new THREE.Vector3(0, 1, 0),  // Normal pointing up
+      new THREE.Vector3(object.position.x, planeHeight, object.position.z)
+    );
+    console.log('✅ Using horizontal plane for consistent XZ movement');
 
     // ✅ ADD: Update the visual representation
     this.updateDragPlaneVisualization();
