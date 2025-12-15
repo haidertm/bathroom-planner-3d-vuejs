@@ -55,6 +55,7 @@
         :notch-height="notchHeight"
         @close="handleVariantDrawerClose"
         @swap-variant="handleVariantSwap"
+        @deselect-item="handleDeselectItem"
     />
     <!-- Toggle button for texture panel -->
     <button
@@ -325,6 +326,14 @@ const handleVariantDrawerClose = () => {
   variantConfigProduct.value = null
   variantConfigCurrentVariant.value = null
   variantConfigItemId.value = null
+}
+
+const handleDeselectItem = () => {
+  // Clear 3D selection/outline
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
+  }
+  selectedItemId.value = null
 }
 
 const handleVariantSwap = async (swapConfig) => {
