@@ -206,9 +206,14 @@
                 @click="selectVariant(variant)"
                 :style="getVariantButtonStyle(variant)"
                 class="variant-button"
+                :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
             >
               <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
                 <span>{{ variant.name }}</span>
+                <!-- Show too large badge for variants that don't fit -->
+                <span v-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
+                  ⚠ Too Large
+                </span>
               </span>
             </button>
           </div>
@@ -280,6 +285,7 @@
               @click="confirmAddToRoom"
               :style="confirmAddButtonStyle"
               class="confirm-add-button"
+              :disabled="isVariantTooLarge(selectedVariant)"
           >
             ADD TO ROOM
           </button>
@@ -300,6 +306,8 @@ import {
   isVariantModelLoadedWithCache,
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
+import { findFreeWallPosition } from '../../utils/constraints'
+import { getMovementConfig } from '../../utils/models'
 
 // Props
 const props = defineProps({
@@ -353,6 +361,27 @@ const props = defineProps({
   searchTriggered: {
     type: Number,
     default: 0
+  },
+  // Constraint checking props
+  roomWidth: {
+    type: Number,
+    default: 300
+  },
+  roomHeight: {
+    type: Number,
+    default: 250
+  },
+  existingItems: {
+    type: Array,
+    default: () => []
+  },
+  notchWidth: {
+    type: Number,
+    default: 0
+  },
+  notchHeight: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -404,6 +433,107 @@ const toggleShowAllVariants = () => {
 watch(() => selectedProduct.value, () => {
   showAllVariants.value = false
 })
+
+// Check if variant is too large or would collide with existing items
+const isVariantTooLarge = (variant) => {
+  if (!variant?.dimensions) return false
+
+  const variantWidth = variant.dimensions.width || 0
+  const variantDepth = variant.dimensions.depth || 0
+  const maxVariantDim = Math.max(variantWidth, variantDepth)
+  const maxWallLength = Math.max(props.roomWidth, props.roomHeight)
+
+  // First check: Does it fit in room dimensions?
+  if (maxVariantDim > maxWallLength) return true
+
+  // Get the category for movement config lookup
+  const category = selectedProduct.value?.category ||
+                   selectedProduct.value?.searchContext?.category ||
+                   props.selectedCategory
+
+  // Get objectType from category - preserve camelCase if already capitalized
+  const objectType = category && category !== 'search'
+    ? (category.charAt(0) === category.charAt(0).toUpperCase()
+        ? category  // Already properly capitalized (e.g., "WindowAndDoor", "TowelRails")
+        : category.charAt(0).toUpperCase() + category.slice(1))  // Capitalize first letter
+    : null
+
+  // Check if the new variant is wall-mounted at height (radiators, mirrors, towel rails)
+  // These items don't occupy floor space and can be placed above floor-level items
+  const variantMovement = variant.movement || (objectType ? getMovementConfig(objectType) : null)
+  const isWallMountedAtHeight = variantMovement?.allowVerticalMovement === true ||
+                                 (variant.spawnHeight && variant.spawnHeight > 50)
+
+  // Second check: Is there enough floor space considering existing items?
+  // Skip this check for wall-mounted items that can be placed at height
+  if (!isWallMountedAtHeight && props.existingItems && props.existingItems.length > 0) {
+    // Calculate total floor area used by existing items (with buffer)
+    // Only count floor-mounted items, not wall-mounted items at height
+    const buffer = 20 // 20cm buffer around each item
+    let usedFloorArea = 0
+
+    for (const item of props.existingItems) {
+      if (item.variant?.dimensions) {
+        // Check if existing item is wall-mounted at height
+        const itemMovement = item.variant?.movement || (item.type ? getMovementConfig(item.type) : null)
+        const itemIsWallMountedAtHeight = itemMovement?.allowVerticalMovement === true ||
+                                           (item.variant?.spawnHeight && item.variant.spawnHeight > 50)
+
+        // Only count floor-mounted items in floor area calculation
+        if (!itemIsWallMountedAtHeight) {
+          const itemWidth = (item.variant.dimensions.width || 0) + buffer * 2
+          const itemDepth = (item.variant.dimensions.depth || 0) + buffer * 2
+          usedFloorArea += itemWidth * itemDepth
+        }
+      }
+    }
+
+    // Calculate available floor area
+    const totalFloorArea = props.roomWidth * props.roomHeight
+    const variantArea = (variantWidth + buffer * 2) * (variantDepth + buffer * 2)
+    const remainingArea = totalFloorArea - usedFloorArea
+
+    // If variant area is larger than remaining area, it won't fit
+    if (variantArea > remainingArea) return true
+  }
+
+  // Third check: Can it be placed without collision using findFreeWallPosition?
+  if (!category || category === 'search' || !objectType) return false
+
+  // Check if a valid position exists using findFreeWallPosition
+  const freePosition = findFreeWallPosition(
+    props.roomWidth,
+    props.roomHeight,
+    objectType,
+    1.0, // scale
+    props.existingItems,
+    50, // maxAttempts
+    variant.orientation,
+    variant.movement,
+    variant.spawnHeight,
+    variant.floorOffset,
+    variant.sku,
+    props.notchWidth,
+    props.notchHeight
+  )
+
+  // If no valid position found, variant is too large/no space
+  return freePosition === null
+}
+
+const getTooLargeTooltip = (variant) => {
+  if (!variant?.dimensions) return ''
+  if (!isVariantTooLarge(variant)) return ''
+
+  const maxVariantDim = Math.max(variant.dimensions.width || 0, variant.dimensions.depth || 0)
+  const maxWallLength = Math.max(props.roomWidth, props.roomHeight)
+
+  if (maxVariantDim > maxWallLength) {
+    return `Item exceeds room size (Requires ${maxVariantDim * 10}mm, Available ${maxWallLength * 10}mm).`
+  }
+
+  return 'Not enough space - room is too crowded with existing items.'
+}
 
 watch(() => props.searchTriggered, (newValue, oldValue) => {
   if (newValue > oldValue && newValue > 0) {
@@ -815,6 +945,12 @@ const goBackToProductList = () => {
 }
 
 const selectVariant = async (variant) => {
+  // Don't allow selection of variants that are too large
+  if (isVariantTooLarge(variant)) {
+    console.log('⚠️ Cannot select variant - too large for available space')
+    return
+  }
+
   const variantKey = variant.id || variant.sku || variant.name
   console.log('🔄 Selecting variant...', variant.name || variant.sku)
 
@@ -944,6 +1080,12 @@ const calculateTotalPrice = () => {
 const confirmAddToRoom = async () => {
   if (!selectedProduct.value || !selectedVariant.value) {
     console.log('No product or variant selected')
+    return
+  }
+
+  // Hard stop - prevent adding if variant is too large
+  if (isVariantTooLarge(selectedVariant.value)) {
+    console.log('⚠️ Cannot add - variant too large for room')
     return
   }
 
@@ -1079,10 +1221,48 @@ const seeMoreButtonStyle = {
   justifyContent: 'center'
 }
 
+// Style for variants that are too large to fit
+const tooLargeBadgeStyle = computed(() => ({
+  fontSize: '11px',
+  fontWeight: '600',
+  color: '#dc2626',
+  backgroundColor: '#fef2f2',
+  padding: '2px 8px',
+  borderRadius: '4px',
+  border: '1px solid #fecaca'
+}))
+
 // Dynamic styles methods for variants
 const getVariantButtonStyle = (variant) => {
   const isSelected = selectedVariant.value === variant
   const isCached = isModelCached(variant)
+  const isTooLarge = isVariantTooLarge(variant)
+
+  // Disabled style for variants that are too large
+  if (isTooLarge) {
+    return {
+      padding: '12px 16px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '6px',
+      backgroundColor: '#f3f4f6',
+      color: '#9ca3af',
+      fontSize: '14px',
+      fontWeight: '400',
+      transition: 'all 0.2s ease',
+      position: 'relative',
+      overflow: 'hidden',
+      fontFamily: 'Arial, sans-serif',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: '44px',
+      minWidth: '60px',
+      boxShadow: 'none',
+      transform: 'none',
+      cursor: 'not-allowed',
+      opacity: '0.7'
+    }
+  }
 
   return {
     padding: '12px 16px',
@@ -1535,19 +1715,40 @@ const actionButtonsStyle = computed(() => ({
   flexDirection: isMobileDevice.value ? 'column' : 'row'
 }))
 
-const confirmAddButtonStyle = computed(() => ({
-  backgroundColor: '#29275B',
-  color: 'white',
-  border: 'none',
-  padding: '12px 24px',
-  borderRadius: '6px',
-  fontSize: '14px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s ease',
-  flex: '1',
-  fontFamily: 'Arial, sans-serif'
-}))
+const confirmAddButtonStyle = computed(() => {
+  const isTooLarge = isVariantTooLarge(selectedVariant.value)
+
+  if (isTooLarge) {
+    return {
+      backgroundColor: '#9ca3af',
+      color: 'white',
+      border: 'none',
+      padding: '12px 24px',
+      borderRadius: '6px',
+      fontSize: '14px',
+      fontWeight: '600',
+      cursor: 'not-allowed',
+      transition: 'background-color 0.2s ease',
+      flex: '1',
+      fontFamily: 'Arial, sans-serif',
+      opacity: '0.7'
+    }
+  }
+
+  return {
+    backgroundColor: '#29275B',
+    color: 'white',
+    border: 'none',
+    padding: '12px 24px',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s ease',
+    flex: '1',
+    fontFamily: 'Arial, sans-serif'
+  }
+})
 
 const modalOverlayStyle = computed(() => ({
   position: 'fixed',
@@ -1607,6 +1808,15 @@ const searchVariantStyle = computed(() => ({
   color: #ffffff !important;
 }
 
+/* Prevent hover effects on disabled (too large) variants */
+.variant-button[style*="not-allowed"]:hover {
+  border-color: #e5e7eb !important;
+  background-color: #f3f4f6 !important;
+  color: #9ca3af !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 .color-swatch:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
@@ -1617,8 +1827,14 @@ const searchVariantStyle = computed(() => ({
   color: white !important;
 }
 
-.confirm-add-button:hover {
-  background-color: #29275B !important;
+.confirm-add-button:hover:not(:disabled) {
+  background-color: #1e1a4a !important;
+}
+
+.confirm-add-button:disabled {
+  background-color: #9ca3af !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
 }
 
 

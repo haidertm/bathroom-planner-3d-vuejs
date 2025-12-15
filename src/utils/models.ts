@@ -56,6 +56,14 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
     maxHeight: 150 // 1.5m max
   },
 
+  TowelRails: {
+    snapToWall: true,
+    allowVerticalMovement: true, // Can be positioned at different heights
+    allowFreeRotation: false,
+    minHeight: 0,
+    maxHeight: 150
+  },
+
   // FREE-STANDING OBJECTS (can move anywhere in room)
   Bath: {
     snapToWall: false,
@@ -79,6 +87,14 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
     allowFreeRotation: false,
     minHeight: 0,
     maxHeight: 0
+  },
+
+  WindowAndDoor: {
+    snapToWall: true,
+    allowVerticalMovement: true, // Windows can be positioned at different heights
+    allowFreeRotation: false,
+    minHeight: 20,
+    maxHeight: 150
   }
 };
 

@@ -430,6 +430,10 @@ const props = defineProps({
   measurementEnabled: {
     type: Boolean,
     default: false
+  },
+  existingItems: {
+    type: Array,
+    default: () => []
   }
 })
 // FIXED: Add missing reactive states
@@ -781,7 +785,13 @@ const productDrawerProps = computed(() => ({
   isLoading: isLoading.value,
   loadingError: errorMessage.value,
   searchResults: searchResults,
-  searchQuery: searchQuery.value
+  searchQuery: searchQuery.value,
+  // Constraint checking props
+  roomWidth: props.roomWidth,
+  roomHeight: props.roomHeight,
+  existingItems: props.existingItems,
+  notchWidth: props.notchWidth,
+  notchHeight: props.notchHeight
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):

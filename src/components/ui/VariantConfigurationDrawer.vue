@@ -1,8 +1,5 @@
 <!-- VariantConfigurationDrawer.vue - Product Drawer Style with Progressive Loading -->
 <template>
-  <!-- Overlay -->
-  <div v-if="isOpen" :style="overlayStyle" @click="closeDrawer"></div>
-
   <!-- Drawer -->
   <div
       ref="drawerRef"
@@ -17,6 +14,17 @@
     <!-- Header -->
     <div :style="headerStyle">
       <h1 id="variant-drawer-title" :style="headerTitleStyle" class="swap-button">Swap Variants</h1>
+      <button
+          @click="closeAndDeselect"
+          :style="closeButtonStyle"
+          class="close-button"
+          aria-label="Close drawer"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <!-- Content -->
@@ -70,6 +78,7 @@
               :style="getOptionItemStyle(variant)"
               @click="selectVariant(variant)"
               class="size-option"
+              :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
           >
             <span :style="optionTextStyle">
               {{ formatVariantSize(variant) }}
@@ -78,6 +87,11 @@
             <!-- Show current badge on the variant list -->
             <span v-if="isCurrentVariant(variant)" :style="currentVariantBadgeStyle">
               ✓ Selected
+            </span>
+
+            <!-- Show too large badge for variants that don't fit -->
+            <span v-else-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
+              ⚠ Too Large
             </span>
           </div>
         </div>
@@ -90,9 +104,9 @@
           class="swap-button"
           @click="confirmSwap"
           :style="addToRoomButtonStyle"
-          :disabled="!selectedVariant || isCurrentVariant(selectedVariant)"
+          :disabled="!selectedVariant || isCurrentVariant(selectedVariant) || isVariantTooLarge(selectedVariant)"
       >
-        {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : 'SWAP VARIANT' }}
+        {{ isCurrentVariant(selectedVariant) ? 'CURRENT SELECTION' : (isVariantTooLarge(selectedVariant) ? 'TOO LARGE' : 'SWAP VARIANT') }}
       </button>
     </div>
   </div>
@@ -106,6 +120,7 @@ import {
   isVariantModelLoaded,
   isModelCached,
 } from '../../utils/modelLoader'
+import { checkVariantFitsAtPosition } from '../../utils/constraints'
 
 const isMobileDevice = computed(() => isMobile())
 
@@ -125,10 +140,34 @@ const props = defineProps({
   itemId: {
     type: [String, Number],
     default: null
+  },
+  currentItem: {
+    type: Object,
+    default: null
+  },
+  existingItems: {
+    type: Array,
+    default: () => []
+  },
+  roomWidth: {
+    type: Number,
+    default: 300
+  },
+  roomHeight: {
+    type: Number,
+    default: 250
+  },
+  notchWidth: {
+    type: Number,
+    default: 0
+  },
+  notchHeight: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['close', 'swap-variant'])
+const emit = defineEmits(['close', 'swap-variant', 'deselect-item'])
 
 const drawerRef = ref(null)
 
@@ -162,8 +201,49 @@ const isVariantCached = (variant) => {
   return isModelCached(variant)
 }
 
+// Check if variant fits at current position
+const getVariantFitInfo = (variant) => {
+  if (!props.currentItem || !variant?.dimensions) {
+    return { fits: true, availableWidth: Infinity, requiredWidth: 0 }
+  }
+
+  return checkVariantFitsAtPosition(
+    variant.dimensions,
+    props.currentItem,
+    props.existingItems,
+    props.roomWidth,
+    props.roomHeight,
+    props.notchWidth,
+    props.notchHeight
+  )
+}
+
+// Check if a variant is too large to fit
+const isVariantTooLarge = (variant) => {
+  // Current variant always fits (it's already placed)
+  if (isCurrentVariant(variant)) return false
+
+  const fitInfo = getVariantFitInfo(variant)
+  return !fitInfo.fits
+}
+
+// Get tooltip message for too-large variants
+const getTooLargeTooltip = (variant) => {
+  const fitInfo = getVariantFitInfo(variant)
+  if (fitInfo.fits) return ''
+
+  const requiredMm = Math.round(fitInfo.requiredWidth * 10)
+  const availableMm = Math.round(fitInfo.availableWidth * 10)
+  return `Item exceeds available space (Requires ${requiredMm}mm, Available ${availableMm}mm).`
+}
+
 // Methods
 const selectVariant = async (variant) => {
+  // Don't allow selection of variants that are too large
+  if (isVariantTooLarge(variant)) {
+    console.log('⚠️ Cannot select variant - too large for available space')
+    return
+  }
   const variantKey = variant.id || variant.sku || variant.name
   console.log('🔄 Variant clicked:', variant.name || variant.sku)
 
@@ -209,6 +289,12 @@ const selectVariant = async (variant) => {
 
 const confirmSwap = async () => {
   if (!selectedVariant.value || isCurrentVariant(selectedVariant.value)) return
+
+  // AC4: Hard stop - prevent swap if variant is too large
+  if (isVariantTooLarge(selectedVariant.value)) {
+    console.log('⚠️ Cannot swap - variant too large for available space')
+    return
+  }
 
   const variant = selectedVariant.value
   const variantKey = variant.id || variant.sku || variant.name
@@ -261,6 +347,11 @@ const confirmSwap = async () => {
 
 const closeDrawer = () => {
   emit('close')
+}
+
+const closeAndDeselect = () => {
+  emit('close')
+  emit('deselect-item')
 }
 
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="12">No Image</text></svg>';
@@ -321,7 +412,24 @@ const headerTitleStyle = computed(() => ({
   margin: '0',
   textAlign: 'center',
   flex: '1',
-  padding: '16px 16px'
+  padding: '16px 16px',
+  paddingRight: '0'
+}))
+
+const closeButtonStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '44px',
+  height: '44px',
+  marginRight: '8px',
+  backgroundColor: 'transparent',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  color: 'white',
+  transition: 'background-color 0.2s ease',
+  flexShrink: '0'
 }))
 
 const contentStyle = computed(() => ({
@@ -454,6 +562,27 @@ const getOptionItemStyle = (variant) => {
   const isSelected = selectedVariant.value?.sku === variant.sku
   const isCurrent = isCurrentVariant(variant)
   const isCached = isVariantCached(variant)
+  const isTooLarge = isVariantTooLarge(variant)
+
+  // Disabled style for variants that are too large
+  if (isTooLarge) {
+    return {
+      backgroundColor: '#f3f4f6',
+      color: '#9ca3af',
+      padding: '16px',
+      borderRadius: '8px',
+      cursor: 'not-allowed',
+      transition: 'all 0.2s ease',
+      border: '1px solid #e5e7eb',
+      boxShadow: 'none',
+      fontWeight: '400',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      position: 'relative',
+      opacity: '0.7'
+    }
+  }
 
   return {
     backgroundColor: isCurrent ? '#29275B' : (isSelected ? '#e0e7ff' : 'white'),
@@ -492,6 +621,17 @@ const cachedVariantBadgeStyle = computed(() => ({
   borderRadius: '4px'
 }))
 
+// Style for variants that are too large to fit
+const tooLargeBadgeStyle = computed(() => ({
+  fontSize: '11px',
+  fontWeight: '600',
+  color: '#dc2626',
+  backgroundColor: '#fef2f2',
+  padding: '2px 8px',
+  borderRadius: '4px',
+  border: '1px solid #fecaca'
+}))
+
 const footerStyle = computed(() => ({
   padding: '16px',
   backgroundColor: '#f5f5f5',
@@ -523,6 +663,12 @@ const addToRoomButtonStyle = computed(() => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
+/* Prevent hover effects on disabled (too large) variants */
+.size-option[style*="not-allowed"]:hover {
+  transform: none;
+  box-shadow: none !important;
+}
+
 button[style*="rgba(255, 255, 255, 0.2)"]:hover {
   background-color: rgba(255, 255, 255, 0.3) !important;
 }
@@ -533,5 +679,9 @@ button[style*="rgba(255, 255, 255, 0.2)"]:hover {
 
 .swap-button:hover:not(:disabled) {
   background-color: #1f1e49 !important;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
 }
 </style>
