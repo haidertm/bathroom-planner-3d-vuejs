@@ -263,12 +263,12 @@ export const constrainToCorner = (
   // For corner items, we position them flush in the corner
   // The object's center should be at half its dimensions from each wall
   const halfWidth = (dimensions.width * scale) / 2;
-  // Note: halfDepth not needed for current corner positioning logic
+  const halfDepth = (dimensions.depth * scale) / 2;
 
   let constrainedPosition = { ...nearestCorner.position };
   let rotation = 0;
 
-  console.log('>>>111 halfWidth');
+  console.log(`>>>111 constrainToCorner: dims=${halfWidth.toFixed(1)}x${halfDepth.toFixed(1)}, wallBuffer=${wallBuffer}, corner=${nearestCorner.type}, cornerPos=(${nearestCorner.position.x.toFixed(1)}, ${nearestCorner.position.z.toFixed(1)})`);
 
   // cornerInstallOnly is either false or an object
   if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
@@ -278,55 +278,85 @@ export const constrainToCorner = (
     return { position, rotation: 0 };
   }
 
-  // Position object flush in corner
-  // The object center is positioned at half-width/half-depth from the corner walls
+  // CORNER POSITIONING WITH PIVOT OFFSET COMPENSATION
+  //
+  // Bath models have their pivot at the SOUTH edge of geometry (not center).
+  // When we set position, we're setting the PIVOT position.
+  // The visual geometry extends NORTH from the pivot by fullDepth.
+  //
+  // At different rotations, the "south edge" rotates:
+  // - 0°: pivot at world-south edge (geometry extends north)
+  // - 90°: pivot at world-west edge (geometry extends east)
+  // - 180°: pivot at world-north edge (geometry extends south)
+  // - -90°: pivot at world-east edge (geometry extends west)
+  //
+  // DefaultCornerObjectRotation:
+  // - NW: 0° → pivot at south edge → place pivot at south wall position
+  // - NE: -90° → pivot at east edge → place pivot at east wall position
+  // - SE: 180° → pivot at north edge → place pivot at north wall position
+  // - SW: 90° → pivot at west edge → place pivot at west wall position
+
+  const rotationDeg = Math.round((rotation * 180 / Math.PI));
+
+  // Full dimensions (not half) for pivot offset calculation
+  const fullWidth = dimensions.width * scale;  // Long dimension
+  const fullDepth = dimensions.depth * scale;  // Short dimension
+
+  console.log(`🔧 rotation=${rotationDeg}°, fullWidth=${fullWidth.toFixed(1)}, fullDepth=${fullDepth.toFixed(1)}`);
+
+  // For each corner, place pivot at the appropriate wall face
+  // The geometry will extend INTO the room from the pivot
   switch (nearestCorner.type) {
     case 'north-west':
-      // Corner is at (west wall, north wall)
-
+      // Corner at (west, north) walls. Rotation 0° → pivot at south edge
+      // At rotation 0°, pivot is at south edge but geometry is centered on X
+      // - X: center along X from west wall
+      // - Z: pivot at north wall, geometry extends south (into room)
       constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
       constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-      // rotation = Math.PI / 2; // Facing into room from north-west corner
+      console.log(`🔧 NW corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
       break;
 
     case 'north-east':
-      // For a corner shower that opens toward the room center
+      // Corner at (east, north) walls. Rotation -90° → pivot at east edge
+      // - X: pivot at east wall (geometry extends west)
+      // - Z: pivot at north wall + halfWidth (center along Z since rotated)
       constrainedPosition.x = nearestCorner.position.x - wallBuffer;
       constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
-      // rotation = 0; // No rotation, faces south
+      console.log(`🔧 NE corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
       break;
 
     case 'south-east':
-      // Same X as north-east
+      // Corner at (east, south) walls. Rotation 180° → pivot at north edge
+      // - X: pivot at east wall - halfWidth (center along X)
+      // - Z: pivot at south wall (geometry extends north from pivot)
       constrainedPosition.x = nearestCorner.position.x - halfWidth - wallBuffer;
       constrainedPosition.z = nearestCorner.position.z - wallBuffer;
-      // rotation = -Math.PI/2; // 180 degrees to face north
+      console.log(`🔧 SE corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
       break;
 
     case 'south-west':
-      // Use same pattern as north-west but inverted for south
-      constrainedPosition.x = nearestCorner.position.x + wallBuffer; // Just wallBuffer like north-west
-      constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer; // halfWidth like north-west
-      // rotation = Math.PI; // 180 degrees
+      // Corner at (west, south) walls. Rotation 90° → pivot at west edge
+      // - X: pivot at west wall (geometry extends east)
+      // - Z: pivot at south wall - halfWidth (center along Z since rotated)
+      constrainedPosition.x = nearestCorner.position.x + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer;
+      console.log(`🔧 SW corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
       break;
 
     case 'notch-interior':
-      // Corner where west wall meets notch-south wall
-      // Object should be flush against both walls, opening toward the room
-      // Same pattern as north-west: only X gets halfWidth, Z gets just wallBuffer
+      // Similar to NW
       constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
       constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-      console.log(`✅ Positioning at notch-interior corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
+      console.log(`🔧 notch-interior: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
       break;
 
-    // Removed notch-corner case - corner install placement disabled at user's request
-
     case 'notch-east-north':
-      // Corner where notch-east wall meets north wall
-      // Same pattern as notch-interior: halfWidth for X, wallBuffer for Z
+      // Similar to NW (notch-east wall acts as west wall at this corner)
+      // Object should be EAST of notch-east wall (into room), against north wall
       constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
       constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-      console.log(`✅ Positioning at notch-east-north corner: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
+      console.log(`🔧 notch-east-north: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
       break;
   }
 
@@ -465,6 +495,9 @@ export const checkWallCollision = (
   }
 
   const dimensions = getDimensions(objectType, item?.sku, item?.model);
+
+  // Note: Corner-install items still need wall collision checks during dragging
+  // The bypass for auto-positioning is handled in autoPositioning.ts
   if (!dimensions) return false;
 
   // Get orientation config to check if object is flush-mounted
@@ -851,11 +884,50 @@ export const checkCollision = (
 
   // ✅ CRITICAL: Calculate actual 3D bounding boxes accounting for floorOffset AND rotation
 
-  // Determine which wall each object is on (for rotation calculation)
-  const getObjectWall = (pos: Position, item?: BathroomItem): 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south' | null => {
-    if (!item) return null;
+  // Determine if the object should have its dimensions swapped (rotated 90°)
+  // This handles both wall-snapped items and corner-install items
+  const shouldSwapDimensions = (pos: Position, item?: BathroomItem): boolean => {
+    if (!item) return false;
     const movementConfig = getMovementConfig(item.type, item);
-    if (!movementConfig.snapToWall) return null;
+
+    // For corner-install items, determine rotation based on nearest corner
+    if (movementConfig.cornerInstallOnly &&
+        typeof movementConfig.cornerInstallOnly === 'object' &&
+        movementConfig.cornerInstallOnly.enabled) {
+      // Find nearest corner to determine rotation
+      const corners = getRoomCorners(roomWidth || 300, roomHeight || 300, notchWidth, notchHeight);
+      let nearestCorner: CornerInfo | null = null;
+      let minDistance = Infinity;
+
+      for (const corner of corners) {
+        const distance = Math.sqrt(
+          Math.pow(pos.x - corner.position.x, 2) +
+          Math.pow(pos.z - corner.position.z, 2)
+        );
+        if (distance < minDistance) {
+          minDistance = distance;
+          nearestCorner = corner;
+        }
+      }
+
+      // NE and SW corners have 90° rotation, so dimensions should be swapped
+      // NW and SE corners have 0° or 180° rotation, so no swap needed
+      if (nearestCorner) {
+        const cornerType = nearestCorner.type;
+        // north-east: -90° (or 270°), south-west: 90° - these need swap
+        // north-west: 0°, south-east: 180° - these don't need swap
+        // notch-east-north: similar to NW (0°) - no swap
+        // notch-interior: similar to NW (0°) - no swap
+        const needsSwap = cornerType === 'north-east' ||
+                          cornerType === 'south-west';
+        console.log(`🔧 Corner-install collision check: corner=${cornerType}, needsSwap=${needsSwap}`);
+        return needsSwap;
+      }
+      return false;
+    }
+
+    // For wall-snapped items, use the existing wall-based logic
+    if (!movementConfig.snapToWall) return false;
 
     // Calculate distances to each wall face (using actual room dimensions)
     const roomHalfWidth = roomWidth ? roomWidth / 2 : 300; // Use actual room width or fallback to 300cm
@@ -870,34 +942,34 @@ export const checkCollision = (
     // Check for notch walls first (if notch exists)
     if (notchWidth && notchHeight) {
       const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
+      const notchMinZ = -roomHalfHeight + wallThickness;
       const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
       const notchMinX = -roomHalfWidth + wallThickness;
-      const notchMinZ = -roomHalfHeight + wallThickness;
 
       const tolerance = 30; // 30cm tolerance for notch wall detection
 
-      // Check if on notch-east wall (vertical edge of notch)
+      // Check if on notch-east wall (vertical edge of notch) - needs dimension swap (like east/west walls)
       if (Math.abs(pos.x - notchMaxX) < tolerance &&
         pos.z >= notchMinZ &&
         pos.z <= roomHalfHeight - wallThickness) {
-        console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall', {
+        console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall (needs swap)', {
           position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
           notchMaxX: notchMaxX.toFixed(1),
           distance: Math.abs(pos.x - notchMaxX).toFixed(1)
         });
-        return 'notch-east';
+        return true; // Notch-east is vertical like east/west walls, needs swap
       }
 
-      // Check if on notch-south wall (horizontal edge of notch)
+      // Check if on notch-south wall (horizontal edge of notch) - no swap needed (like north/south walls)
       if (Math.abs(pos.z - notchMaxZ) < tolerance &&
         pos.x >= notchMinX &&
-        pos.x <= roomHalfWidth - wallThickness) {
-        console.log('🔧 checkCollision: Item detected on NOTCH-SOUTH wall', {
+        pos.x <= notchMaxX) {
+        console.log('🔧 checkCollision: Item detected on NOTCH-SOUTH wall (no swap)', {
           position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
           notchMaxZ: notchMaxZ.toFixed(1),
           distance: Math.abs(pos.z - notchMaxZ).toFixed(1)
         });
-        return 'notch-south';
+        return false; // Notch-south is horizontal like north/south walls, no swap
       }
     }
 
@@ -907,14 +979,12 @@ export const checkCollision = (
     const distToWest = Math.abs(pos.x - westWall);
 
     const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
-    if (minDist === distToNorth) return 'north';
-    if (minDist === distToSouth) return 'south';
-    if (minDist === distToEast) return 'east';
-    return 'west';
+    // East and West walls are rotated 90°, so dimensions should be swapped
+    return minDist === distToEast || minDist === distToWest;
   };
 
-  const obj1Wall = getObjectWall(pos1, item1);
-  const obj2Wall = getObjectWall(pos2, item2);
+  const obj1NeedsSwap = shouldSwapDimensions(pos1, item1);
+  const obj2NeedsSwap = shouldSwapDimensions(pos2, item2);
 
   // Object 1 bounding box (scaled dimensions, accounting for rotation)
   const obj1BaseWidth = dims1.width * scale1;
@@ -922,9 +992,9 @@ export const checkCollision = (
   const obj1Height = dims1.height * scale1;
   const obj1FloorOffset = dims1.floorOffset * scale1;
 
-  // Swap width/depth if object is rotated 90° (on east/west/notch-east walls)
+  // Swap width/depth if object is rotated 90°
   let obj1Width: number, obj1Depth: number;
-  if (obj1Wall === 'east' || obj1Wall === 'west' || obj1Wall === 'notch-east') {
+  if (obj1NeedsSwap) {
     obj1Width = obj1BaseDepth; // Rotated: depth becomes width
     obj1Depth = obj1BaseWidth; // Rotated: width becomes depth
   } else {
@@ -938,9 +1008,9 @@ export const checkCollision = (
   const obj2Height = dims2.height * scale2;
   const obj2FloorOffset = dims2.floorOffset * scale2;
 
-  // Swap width/depth if object is rotated 90° (on east/west/notch-east walls)
+  // Swap width/depth if object is rotated 90°
   let obj2Width: number, obj2Depth: number;
-  if (obj2Wall === 'east' || obj2Wall === 'west' || obj2Wall === 'notch-east') {
+  if (obj2NeedsSwap) {
     obj2Width = obj2BaseDepth; // Rotated: depth becomes width
     obj2Depth = obj2BaseWidth; // Rotated: width becomes depth
   } else {
@@ -1708,12 +1778,14 @@ export const findFreeWallPosition = (
   console.log(`🔧 Initial placement flush check: ${isFlushMounted ? 'FLUSH-MOUNTED' : 'OFFSET'} (wallBuffer: ${wallBuffer})`);
 
   // Define walls with proper interior positioning
+  // ✅ FIX: For L-shaped rooms, adjust north wall minX and west wall maxZ to avoid notch area
   const walls = [
     {
       name: 'north',
       getPosition: (t: number) => {
         // Calculate position along wall
-        const minX = interior.minX + halfWidth;  // Don't go past west corner
+        // ✅ FIX: For L-shaped rooms, north wall starts at notch.maxX (not interior.minX)
+        const minX = notch ? (notch.maxX + halfWidth) : (interior.minX + halfWidth);
         const maxX = interior.maxX - halfWidth;  // Don't go past east corner
         return {
           x: minX + t * (maxX - minX),
@@ -1756,7 +1828,8 @@ export const findFreeWallPosition = (
       name: 'west',
       getPosition: (t: number) => {
         const minZ = interior.minZ + halfWidth;
-        const maxZ = interior.maxZ - halfWidth;
+        // ✅ FIX: For L-shaped rooms, west wall ends at notch.maxZ (not interior.maxZ)
+        const maxZ = notch ? (notch.maxZ - halfWidth) : (interior.maxZ - halfWidth);
         return {
           // ✅ FIX: Flush-mounted objects go directly at wall
           x: isFlushMounted ? wallFaces.west : wallFaces.west + halfDepth + wallBuffer,
@@ -1948,14 +2021,19 @@ export const findFreeCornerPosition = (
       sku: sku
     };
 
-    // Check if this corner position would collide with existing items
-    const wouldCollide = wouldCollideWithExisting(
+    // Check if this corner position would collide with existing items OR walls/notch
+    const wouldCollide = wouldCollideWithExistingOrWalls(
       result.position,
       objectType,
       scale,
       -1, // New item, no ID yet
       existingItems,
-      tempItem // Pass temporary item for proper dimension lookup
+      roomWidth,
+      roomHeight,
+      tempItem, // Pass temporary item for proper dimension lookup
+      result.rotation,
+      notchWidth,
+      notchHeight
     );
 
     console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
