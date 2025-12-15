@@ -611,11 +611,11 @@ export class EventHandlers {
         // Only call selectObject if selecting a different object
         if (!previouslySelectedId || previouslySelectedId !== itemId) {
             this.selectObject(intersected.object);
+        }
 
-            // EMIT selection event for variant configuration
-            if (this.onItemSelected && itemId) {
-                this.onItemSelected(itemId.toString());
-            }
+        // EMIT selection event for variant configuration (always emit on click)
+        if (this.onItemSelected && itemId) {
+            this.onItemSelected(itemId.toString());
         }
 
       this.selectedObject = intersected.object;

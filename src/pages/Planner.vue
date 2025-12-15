@@ -245,12 +245,39 @@ const variantConfigItemId = ref(null)
 // 3. Add these event handlers to your existing methods
 const handleItemSelection = (itemId) => {
   console.log('🎯 Item selected:', itemId)
-  selectedItemId.value = Number(itemId)
+  const numericId = Number(itemId)
+  selectedItemId.value = numericId
+
+  // Automatically open variant drawer when item is selected
+  const item = items.value.find(i => i.id === numericId)
+  if (item && item.sku && item.type) {
+    const result = findProductByVariantSku(item.sku, item.type, productData)
+    if (result) {
+      variantConfigProduct.value = result.product
+      variantConfigCurrentVariant.value = result.variant
+      variantConfigItemId.value = numericId
+      isVariantDrawerOpen.value = true
+    }
+  }
 }
+
+// Flag to prevent drawer close during variant swap
+const isSwappingVariant = ref(false)
 
 const handleItemDeselection = () => {
   console.log('🎯 Item deselected')
   selectedItemId.value = null
+
+  // Don't close drawer if we're in the middle of a variant swap
+  if (isSwappingVariant.value) {
+    return
+  }
+
+  // Close variant drawer when item is deselected
+  isVariantDrawerOpen.value = false
+  variantConfigProduct.value = null
+  variantConfigCurrentVariant.value = null
+  variantConfigItemId.value = null
 }
 
 const handleConfigureVariants = (config) => {
@@ -288,12 +315,16 @@ const handleVariantDrawerClose = () => {
 const handleVariantSwap = async (swapConfig) => {
   console.log('🔄 Starting variant swap:', swapConfig)
 
+  // Set flag to prevent drawer from closing during swap
+  isSwappingVariant.value = true
+
   try {
     const { itemId, newVariant, product, useProgressiveLoading = false } = swapConfig
 
     const currentItemIndex = items.value.findIndex(item => item.id === itemId)
     if (currentItemIndex === -1) {
       console.error('❌ Item not found for variant swap:', itemId)
+      isSwappingVariant.value = false
       return
     }
 
@@ -302,6 +333,11 @@ const handleVariantSwap = async (swapConfig) => {
 
     // Create the swapped item
     const swappedItem = swapItemVariant(currentItem, newVariant)
+
+    // Preserve the isTemplateItem flag if it was set
+    if (currentItem.isTemplateItem) {
+      swappedItem.isTemplateItem = true
+    }
 
     console.log('Swapped item created:', swappedItem)
 
@@ -312,6 +348,9 @@ const handleVariantSwap = async (swapConfig) => {
     // Prevent watcher interference during swap
     lastUpdateSource.value = 'variantSwap-processing'
     items.value = newItems
+
+    // Track if we're using the standard loading path (which has async setTimeout)
+    let usedStandardLoadingPath = false
 
     // Handle scene update directly - DON'T let the watcher do it
     if (sceneManagerRef.value) {
@@ -366,12 +405,11 @@ const handleVariantSwap = async (swapConfig) => {
             }
           )
           console.log('✅ Progressive variant swap initiated')
-          return // Early return - callbacks handle the rest
-        }
-
-        // Standard loading path (model is already cached)
-        // Remove old item first
-        await sceneManagerRef.value.removeSingleItem(itemId)
+        } else {
+          // Standard loading path (model is already cached)
+          usedStandardLoadingPath = true
+          // Remove old item first
+          await sceneManagerRef.value.removeSingleItem(itemId)
         console.log('✅ Old item removed')
 
         // Add new variant
@@ -429,9 +467,10 @@ const handleVariantSwap = async (swapConfig) => {
               console.warn('⚠️ Could not find newly added model in scene')
             }
           }
-          // Mark completion for watchers
           lastUpdateSource.value = 'variantSwap-complete'
-        }, 100) // Small delay to ensure scene update is complete
+          isSwappingVariant.value = false
+        }, 100)
+        }
 
       } catch (error) {
         console.error('❌ Error during scene update in variant swap:', error)
@@ -454,12 +493,16 @@ const handleVariantSwap = async (swapConfig) => {
 
     console.log('✅ Variant swap completed successfully')
 
-    // Close the variant drawer
-    handleVariantDrawerClose()
+    // Update the variant drawer with the new current variant
+    variantConfigCurrentVariant.value = newVariant
+
+    if (!usedStandardLoadingPath) {
+      isSwappingVariant.value = false
+    }
   } catch (error) {
     console.error('❌ Variant swap failed:', error)
     alert('Failed to swap variant. Please try again.')
-    handleVariantDrawerClose()
+    isSwappingVariant.value = false
   }
 }
 // Listen for object selection changes
@@ -1856,7 +1899,8 @@ const loadTemplateData = async (template) => {
           spawnHeight: variant.spawnHeight || 0
         },
         price: variant.price,
-        productId: product.id
+        productId: product.id,
+        isTemplateItem: true
       }
     }).filter(Boolean) // Remove any null items
 
