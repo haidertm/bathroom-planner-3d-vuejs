@@ -1,5 +1,13 @@
 <template>
   <div class="landing-container">
+    <!-- Template Selection Modal -->
+    <TemplateSelectionModal
+      :isVisible="showTemplateModal"
+      @close="showTemplateModal = false"
+      @select-scratch="handleStartFromScratch"
+      @select-template="handleSelectTemplate"
+    />
+
     <!-- Hero Section -->
     <section class="hero-section">
       <div class="hero-content">
@@ -7,7 +15,6 @@
           <h1 class="hero-title">Build Your Dream<br>Bathroom in<br>Minutes.</h1>
           <div class="hero-buttons">
             <button class="btn-primary" @click="startNewProject">Start New Project</button>
-            <button class="btn-secondary" @click="watchTutorial">Watch Tutorial</button>
           </div>
         </div>
       </div>
@@ -82,12 +89,12 @@
           </div>
         </div>
 
-        <div class="template-card" @click="selectTemplate('modern-shower')">
+        <div class="template-card" @click="selectTemplate('cloak-room')">
           <div class="template-image">
-            <img src="/assets/modern-shower-room.webp" alt="Modern Shower Room" />
+            <img src="/assets/modern-shower-room.webp" alt="Cloakroom" />
           </div>
           <div class="template-info">
-            <h3>Modern Shower Room</h3>
+            <h3>Cloakroom</h3>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -99,19 +106,24 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import TemplateSelectionModal from '../components/ui/TemplateSelectionModal.vue'
 
 const router = useRouter()
+const showTemplateModal = ref(false)
 
 const startNewProject = () => {
+  showTemplateModal.value = true
+}
+
+const handleStartFromScratch = () => {
   router.push('/room-shape')
 }
 
-const watchTutorial = () => {
-  // TODO: Implement tutorial modal or link to tutorial video
-  console.log('Watch tutorial clicked')
-  // For now, just navigate to room shape selector
-  router.push('/room-shape')
+const handleSelectTemplate = (templateId) => {
+  localStorage.setItem('selected-template', templateId)
+  router.push('/planner')
 }
 
 const selectTemplate = (templateId) => {
@@ -119,7 +131,7 @@ const selectTemplate = (templateId) => {
   const templateMap = {
     'small-ensuite': 'compact-ensuite',
     'family-bathroom': 'standard-family',
-    'modern-shower': 'shower-bath-upgrade'
+    'cloak-room': 'cloakroom'
   }
 
   const actualTemplateId = templateMap[templateId] || templateId
@@ -172,10 +184,6 @@ const selectTemplate = (templateId) => {
 }
 
 .hero-buttons {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  flex-direction: column;
   width: 50%;
 }
 
@@ -188,7 +196,7 @@ const selectTemplate = (templateId) => {
   cursor: pointer;
   transition: all 0.3s ease;
   border: none;
-  min-width: 180px;
+  width: 100%;
 }
 
 .btn-primary {
@@ -368,7 +376,7 @@ const selectTemplate = (templateId) => {
   }
 
   .hero-buttons {
-    width: 70%;
+    width: 80%;
     margin: 0 auto;
   }
 
