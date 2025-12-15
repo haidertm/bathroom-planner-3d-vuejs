@@ -14,6 +14,17 @@
     <!-- Header -->
     <div :style="headerStyle">
       <h1 id="variant-drawer-title" :style="headerTitleStyle" class="swap-button">Swap Variants</h1>
+      <button
+          @click="closeAndDeselect"
+          :style="closeButtonStyle"
+          class="close-button"
+          aria-label="Close drawer"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <!-- Content -->
@@ -130,7 +141,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'swap-variant'])
+const emit = defineEmits(['close', 'swap-variant', 'deselect-item'])
 
 const drawerRef = ref(null)
 
@@ -265,6 +276,11 @@ const closeDrawer = () => {
   emit('close')
 }
 
+const closeAndDeselect = () => {
+  emit('close')
+  emit('deselect-item')
+}
+
 const FALLBACK_IMG = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%239ca3af" font-size="12">No Image</text></svg>';
 
 const handleImageError = (event) => {
@@ -323,7 +339,24 @@ const headerTitleStyle = computed(() => ({
   margin: '0',
   textAlign: 'center',
   flex: '1',
-  padding: '16px 16px'
+  padding: '16px 16px',
+  paddingRight: '0'
+}))
+
+const closeButtonStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '44px',
+  height: '44px',
+  marginRight: '8px',
+  backgroundColor: 'transparent',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  color: 'white',
+  transition: 'background-color 0.2s ease',
+  flexShrink: '0'
 }))
 
 const contentStyle = computed(() => ({
@@ -535,5 +568,9 @@ button[style*="rgba(255, 255, 255, 0.2)"]:hover {
 
 .swap-button:hover:not(:disabled) {
   background-color: #1f1e49 !important;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
 }
 </style>
