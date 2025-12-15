@@ -1564,6 +1564,7 @@ const loadTemplateData = async (template) => {
       )
 
       // ✅ VALIDATION: Check if this item overlaps with already placed items
+      // Pass isTemplateValidation=true to skip strict overlap check for pre-designed templates
       const overlapValidation = validateNoOverlap(
         position,
         templateItem.type,
@@ -1571,7 +1572,11 @@ const loadTemplateData = async (template) => {
         placedItems,
         template.roomWidth,
         template.roomHeight,
-        templateItem.sku
+        templateItem.sku,
+        undefined, // notchWidth
+        undefined, // notchHeight
+        undefined, // model
+        true // isTemplateValidation - skip strict overlap check for templates
       )
 
       if (!overlapValidation.isValid && overlapValidation.collidingItem) {
