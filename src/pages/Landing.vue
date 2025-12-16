@@ -117,8 +117,9 @@ const startNewProject = () => {
   showTemplateModal.value = true
 }
 
-const handleStartFromScratch = () => {
-  router.push('/room-shape')
+const handleStartFromScratch = (shape) => {
+  localStorage.setItem('selected-room-shape', shape)
+  router.push('/room-dimensions')
 }
 
 const handleSelectTemplate = (templateId) => {
@@ -368,6 +369,8 @@ const selectTemplate = (templateId) => {
   .hero-section {
     padding: 0 24px;
     height: 400px;
+    border-radius: 0;
+    top: 60px;
   }
 
   .hero-title {
