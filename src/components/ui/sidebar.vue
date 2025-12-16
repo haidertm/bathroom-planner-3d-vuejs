@@ -817,6 +817,14 @@ const failedProducts = ref(new Set())
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
 
+  // GTM tracking for category selection
+    if (window.dataLayer) {
+       window.dataLayer.push({
+         event: 'category_click',
+         category_name: category
+       })
+    }
+
   // Simply open the product drawer without any progressive loading
   openProductDrawer(category)
 
