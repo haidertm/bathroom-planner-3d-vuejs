@@ -2319,14 +2319,6 @@ export const validateNoOverlap = (
   model?: ObjectModel,
   isTemplateValidation?: boolean
 ): { isValid: boolean; collidingItem: BathroomItem | null } => {
-  // For template validation, skip overlap check as template items are pre-designed
-  // This prevents false positives from collision buffers on items designed to fit together
-  if (isTemplateValidation) {
-    // Only do a minimal overlap check without buffers for templates
-    // Since templates are pre-designed, we trust the item positions
-    return { isValid: true, collidingItem: null };
-  }
-
   // Create a temporary item for collision checking
   const tempItem: BathroomItem = {
     id: -999, // Temporary ID
@@ -2336,6 +2328,30 @@ export const validateNoOverlap = (
     sku,
     model // Include model info for proper height-based collision detection
   };
+
+  // For template validation, skip item-to-item collision check (they're pre-designed)
+  // But still check wall boundaries to ensure items fit in room
+  if (isTemplateValidation) {
+    // Check wall collision - items must still fit within room boundaries
+    const hasWallCollision = checkWallCollision(
+      position,
+      objectType,
+      scale,
+      roomWidth,
+      roomHeight,
+      tempItem,
+      undefined, // rotation
+      notchWidth,
+      notchHeight
+    );
+
+    if (hasWallCollision) {
+      return { isValid: false, collidingItem: null };
+    }
+
+    // Skip item-to-item collision for templates (pre-designed to fit)
+    return { isValid: true, collidingItem: null };
+  }
 
   for (const item of existingItems) {
     const itemPosition = { x: item.position[0], y: item.position[1], z: item.position[2] };
@@ -2517,6 +2533,7 @@ export const calculateAvailableSpaceForVariant = (
 
 /**
  * Check if a specific variant would fit at the current item's position
+ * Allows repositioning along the wall if one side has space and the other is against a wall/object
  */
 export const checkVariantFitsAtPosition = (
   variantDimensions: { width: number; height: number; depth?: number },
@@ -2525,8 +2542,9 @@ export const checkVariantFitsAtPosition = (
   roomWidth: number,
   roomHeight: number,
   notchWidth?: number,
-  notchHeight?: number
-): { fits: boolean; availableWidth: number; requiredWidth: number } => {
+  notchHeight?: number,
+  allowPositionAdjustment: boolean = true
+): { fits: boolean; availableWidth: number; requiredWidth: number; reason?: string } => {
   const { availableWidth } = calculateAvailableSpaceForVariant(
     currentItem,
     existingItems,
@@ -2537,11 +2555,228 @@ export const checkVariantFitsAtPosition = (
   );
 
   const requiredWidth = variantDimensions.width;
-  const fits = requiredWidth <= availableWidth;
+
+  // First check: Does the width fit in available space along the wall?
+  let fits = requiredWidth <= availableWidth;
+  let reason: string | undefined;
+
+  if (!fits) {
+    reason = 'width';
+  }
+
+  // Get current item dimensions to calculate position adjustment
+  const currentDimensions = getDimensions(currentItem.type, currentItem.sku, currentItem.model);
+  const scale = currentItem.scale || 1.0;
+  const currentHalfWidth = currentDimensions ? (currentDimensions.width * scale) / 2 : 0;
+  const newHalfWidth = (variantDimensions.width * scale) / 2;
+  const widthDifference = newHalfWidth - currentHalfWidth;
+
+  // Determine which wall the item is on and calculate potential adjusted positions
+  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+  const currentPosition: Position = {
+    x: currentItem.position[0],
+    y: currentItem.position[1],
+    z: currentItem.position[2]
+  };
+
+  // Detect nearest wall
+  let nearestWall: 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south' = 'north';
+  const tolerance = 50;
+
+  if (notch) {
+    if (Math.abs(currentPosition.x - notch.maxX) < tolerance &&
+        currentPosition.z >= notch.minZ && currentPosition.z <= notch.maxZ + tolerance) {
+      nearestWall = 'notch-east';
+    } else if (Math.abs(currentPosition.z - notch.maxZ) < tolerance &&
+               currentPosition.x >= notch.minX && currentPosition.x <= notch.maxX + tolerance) {
+      nearestWall = 'notch-south';
+    }
+  }
+
+  if (nearestWall === 'north') {
+    const wallDistances = {
+      north: Math.abs(currentPosition.z - wallFaces.north),
+      south: Math.abs(currentPosition.z - wallFaces.south),
+      east: Math.abs(currentPosition.x - wallFaces.east),
+      west: Math.abs(currentPosition.x - wallFaces.west)
+    };
+    nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+      wallDistances[a[0] as keyof typeof wallDistances] < wallDistances[b[0] as keyof typeof wallDistances] ? a : b
+    )[0] as 'north' | 'south' | 'east' | 'west';
+  }
+
+  // Calculate possible adjusted positions (shift towards center to fit larger variant)
+  const getAdjustedPositions = (): Position[] => {
+    const positions: Position[] = [currentPosition]; // Original position first
+
+    if (widthDifference <= 0) return positions; // No adjustment needed for smaller variants
+
+    // Calculate space on each side and possible shifts
+    if (nearestWall === 'north' || nearestWall === 'south' || nearestWall === 'notch-south') {
+      // Width runs along X axis
+      const spaceToWest = currentPosition.x - interior.minX;
+      const spaceToEast = interior.maxX - currentPosition.x;
+
+      // If close to west wall, try shifting east
+      if (spaceToWest < newHalfWidth && spaceToEast > newHalfWidth) {
+        positions.push({
+          ...currentPosition,
+          x: Math.min(interior.maxX - newHalfWidth, currentPosition.x + widthDifference)
+        });
+      }
+      // If close to east wall, try shifting west
+      if (spaceToEast < newHalfWidth && spaceToWest > newHalfWidth) {
+        positions.push({
+          ...currentPosition,
+          x: Math.max(interior.minX + newHalfWidth, currentPosition.x - widthDifference)
+        });
+      }
+      // Also try centered position if there's enough total space
+      if (spaceToWest + spaceToEast >= requiredWidth) {
+        const centeredX = Math.max(
+          interior.minX + newHalfWidth,
+          Math.min(interior.maxX - newHalfWidth, currentPosition.x)
+        );
+        if (centeredX !== currentPosition.x) {
+          positions.push({ ...currentPosition, x: centeredX });
+        }
+      }
+    } else if (nearestWall === 'east' || nearestWall === 'west' || nearestWall === 'notch-east') {
+      // Width runs along Z axis (rotated 90 degrees)
+      const spaceToNorth = currentPosition.z - interior.minZ;
+      const spaceToSouth = interior.maxZ - currentPosition.z;
+
+      // If close to north wall, try shifting south
+      if (spaceToNorth < newHalfWidth && spaceToSouth > newHalfWidth) {
+        positions.push({
+          ...currentPosition,
+          z: Math.min(interior.maxZ - newHalfWidth, currentPosition.z + widthDifference)
+        });
+      }
+      // If close to south wall, try shifting north
+      if (spaceToSouth < newHalfWidth && spaceToNorth > newHalfWidth) {
+        positions.push({
+          ...currentPosition,
+          z: Math.max(interior.minZ + newHalfWidth, currentPosition.z - widthDifference)
+        });
+      }
+      // Also try centered position if there's enough total space
+      if (spaceToNorth + spaceToSouth >= requiredWidth) {
+        const centeredZ = Math.max(
+          interior.minZ + newHalfWidth,
+          Math.min(interior.maxZ - newHalfWidth, currentPosition.z)
+        );
+        if (centeredZ !== currentPosition.z) {
+          positions.push({ ...currentPosition, z: centeredZ });
+        }
+      }
+    }
+
+    return positions;
+  };
+
+  // Only use current position if allowPositionAdjustment is false
+  const adjustedPositions = allowPositionAdjustment ? getAdjustedPositions() : [currentPosition];
+
+  // Second check: Would the new dimensions cause wall collision?
+  // Try all adjusted positions to find one that works (or just current position if adjustment disabled)
+  if (fits && variantDimensions.depth) {
+    let foundValidPosition = false;
+
+    for (const testPosition of adjustedPositions) {
+      // Create a temporary item with the new variant dimensions to check wall collision
+      const tempItem: BathroomItem = {
+        ...currentItem,
+        model: currentItem.model ? {
+          ...currentItem.model,
+          path: currentItem.model.path || '',
+          dimensions: variantDimensions
+        } : undefined
+      };
+
+      const hasWallCollision = checkWallCollision(
+        testPosition,
+        currentItem.type,
+        currentItem.scale || 1.0,
+        roomWidth,
+        roomHeight,
+        tempItem,
+        currentItem.rotation,
+        notchWidth,
+        notchHeight
+      );
+
+      if (!hasWallCollision) {
+        foundValidPosition = true;
+        break;
+      }
+    }
+
+    if (!foundValidPosition) {
+      fits = false;
+      reason = 'wall_collision';
+    }
+  }
+
+  // Third check: Would the new dimensions cause collision with other items?
+  // Try all adjusted positions to find one that works
+  if (fits) {
+    let foundValidPosition = false;
+
+    for (const testPosition of adjustedPositions) {
+      // Create a temporary item with the new variant dimensions
+      const tempItem: BathroomItem = {
+        ...currentItem,
+        model: currentItem.model ? {
+          ...currentItem.model,
+          path: currentItem.model.path || '',
+          dimensions: variantDimensions
+        } : undefined
+      };
+
+      // Check collision with each existing item (except self)
+      let hasAnyCollision = false;
+      for (const item of existingItems) {
+        if (item.id === currentItem.id) continue; // Skip self
+
+        const itemPosition = { x: item.position[0], y: item.position[1], z: item.position[2] };
+        const hasItemCollision = checkCollision(
+          testPosition,
+          currentItem.type,
+          currentItem.scale || 1.0,
+          itemPosition,
+          item.type,
+          item.scale || 1.0,
+          tempItem,
+          item,
+          roomWidth,
+          roomHeight,
+          notchWidth,
+          notchHeight
+        );
+
+        if (hasItemCollision) {
+          hasAnyCollision = true;
+          break;
+        }
+      }
+
+      if (!hasAnyCollision) {
+        foundValidPosition = true;
+        break;
+      }
+    }
+
+    if (!foundValidPosition) {
+      fits = false;
+      reason = 'item_collision';
+    }
+  }
 
   return {
     fits,
     availableWidth,
-    requiredWidth
+    requiredWidth,
+    reason
   };
 };
