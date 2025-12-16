@@ -949,12 +949,14 @@ export const isPositionInNotch = (
   }
 
   const wallThickness = WALL_SETTINGS.THICKNESS;
+  // Tolerance buffer - only block if object is significantly inside the notch
+  const notchTolerance = 5; // 5cm tolerance to avoid false positives at boundary
 
-  // Notch boundaries (top-left corner)
-  const notchMinX = -(roomWidth / 2) + wallThickness;
-  const notchMaxX = -(roomWidth / 2) + notchWidth - wallThickness;
-  const notchMinZ = -(roomHeight / 2) + wallThickness;
-  const notchMaxZ = -(roomHeight / 2) + notchHeight - wallThickness;
+  // Notch boundaries (top-left corner) - shrink by tolerance for less strict checking
+  const notchMinX = -(roomWidth / 2) + wallThickness + notchTolerance;
+  const notchMaxX = -(roomWidth / 2) + notchWidth - wallThickness - notchTolerance;
+  const notchMinZ = -(roomHeight / 2) + wallThickness + notchTolerance;
+  const notchMaxZ = -(roomHeight / 2) + notchHeight - wallThickness - notchTolerance;
 
   // Object boundaries
   const objMinX = position.x - objectHalfWidth;
@@ -962,7 +964,7 @@ export const isPositionInNotch = (
   const objMinZ = position.z - objectHalfDepth;
   const objMaxZ = position.z + objectHalfDepth;
 
-  // Check if object overlaps with notch area
+  // Check if object overlaps with notch area (with tolerance applied)
   const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
   const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
 
@@ -2544,18 +2546,31 @@ export const checkVariantFitsAtPosition = (
   notchHeight?: number,
   allowPositionAdjustment: boolean = true
 ): { fits: boolean; availableWidth: number; requiredWidth: number; reason?: string } => {
-  const { availableWidth } = calculateAvailableSpaceForVariant(
-    currentItem,
-    existingItems,
-    roomWidth,
-    roomHeight,
-    notchWidth,
-    notchHeight
-  );
+  const movementConfig = getMovementConfig(currentItem.type, currentItem);
+  const isFreestanding = !movementConfig.snapToWall;
 
+  let availableWidth: number;
   const requiredWidth = variantDimensions.width;
 
-  // First check: Does the width fit in available space along the wall?
+  if (isFreestanding) {
+    // For freestanding items, use room dimensions as available space
+    // They can be placed anywhere, so we check actual room size
+    const { interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
+    availableWidth = Math.max(interior.maxX - interior.minX, interior.maxZ - interior.minZ);
+  } else {
+    // For wall-snapped items, calculate space along the wall
+    const result = calculateAvailableSpaceForVariant(
+      currentItem,
+      existingItems,
+      roomWidth,
+      roomHeight,
+      notchWidth,
+      notchHeight
+    );
+    availableWidth = result.availableWidth;
+  }
+
+  // First check: Does the width fit in available space?
   let fits = requiredWidth <= availableWidth;
   let reason: string | undefined;
 
@@ -2678,8 +2693,9 @@ export const checkVariantFitsAtPosition = (
   const adjustedPositions = allowPositionAdjustment ? getAdjustedPositions() : [currentPosition];
 
   // Second check: Would the new dimensions cause wall collision?
+  // Skip for freestanding items - they're not bound to walls, just need to fit in room
   // Try all adjusted positions to find one that works (or just current position if adjustment disabled)
-  if (fits && variantDimensions.depth) {
+  if (fits && variantDimensions.depth && !isFreestanding) {
     let foundValidPosition = false;
 
     for (const testPosition of adjustedPositions) {
