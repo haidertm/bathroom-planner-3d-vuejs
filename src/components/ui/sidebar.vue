@@ -1775,7 +1775,6 @@ const getSubCategoryArrowStyle = (isExpanded) => ({
 
 const subCategoriesContainerStyle = computed(() => ({
   marginLeft: '16px',
-  borderLeft: '2px solid #E5E7EB',
   paddingLeft: '8px',
   marginTop: '4px',
   marginBottom: '4px'
@@ -1784,14 +1783,15 @@ const subCategoriesContainerStyle = computed(() => ({
 const getEnhancedSubCategoryItemStyle = (component) => ({
   display: 'flex',
   alignItems: 'center',
-  gap: '10px',
-  padding: '10px 12px',
+  gap: '16px',
+  padding: '16px 20px',
   cursor: 'pointer',
   borderRadius: '8px',
-  backgroundColor: loadingCategories.value.has(component) ? '#F0F9FF' : 'transparent',
+  backgroundColor: loadingCategories.value.has(component) ? '#F0F9FF' : '#ffffff',
   transition: 'all 0.2s ease',
-  border: loadingCategories.value.has(component) ? '1px solid #BAE6FD' : '1px solid transparent',
-  marginBottom: '2px'
+  border: '1px solid #e5e7eb',
+  marginBottom: '8px',
+  fontFamily: 'Arial, sans-serif'
 })
 
 const subCategoryIconStyle = computed(() => ({
