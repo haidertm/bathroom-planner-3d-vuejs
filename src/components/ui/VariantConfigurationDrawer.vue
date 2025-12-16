@@ -201,7 +201,7 @@ const isVariantCached = (variant) => {
   return isModelCached(variant)
 }
 
-// Check if variant fits at current position
+// Check if variant fits at current position (strict check - no position adjustment)
 const getVariantFitInfo = (variant) => {
   if (!props.currentItem || !variant?.dimensions) {
     return { fits: true, availableWidth: Infinity, requiredWidth: 0 }
@@ -214,7 +214,8 @@ const getVariantFitInfo = (variant) => {
     props.roomWidth,
     props.roomHeight,
     props.notchWidth,
-    props.notchHeight
+    props.notchHeight,
+    false // Don't allow position adjustment - check exact current position only
   )
 }
 
@@ -232,6 +233,11 @@ const getTooLargeTooltip = (variant) => {
   const fitInfo = getVariantFitInfo(variant)
   if (fitInfo.fits) return ''
 
+  if (fitInfo.reason === 'item_collision' || fitInfo.reason === 'wall_collision') {
+    return 'Item would collide with nearby items at current position.'
+  }
+
+  // Default: width issue
   const requiredMm = Math.round(fitInfo.requiredWidth * 10)
   const availableMm = Math.round(fitInfo.availableWidth * 10)
   return `Item exceeds available space (Requires ${requiredMm}mm, Available ${availableMm}mm).`
