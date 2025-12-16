@@ -138,7 +138,7 @@
               <div v-else>
                 <!-- Parent category header -->
                 <div
-                    @click.stop="toggleHeatingCategory"
+                    @click.stop="toggleCategory(category.id)"
                     :style="getEnhancedCategoryItemStyle(category.id)"
                     class="category-item"
                 >
@@ -148,11 +148,11 @@
                   <div :style="categoryTextContainerStyle">
                     <span :style="categoryLabelStyle">{{ category.label }}</span>
                   </div>
-                  <span :style="getSubCategoryArrowStyle(expandedHeatingCategory)">▶</span>
+                  <span :style="getSubCategoryArrowStyle(expandedCategories[category.id])">▶</span>
                 </div>
 
                 <!-- Sub-categories -->
-                <div v-if="expandedHeatingCategory" :style="subCategoriesContainerStyle">
+                <div v-if="expandedCategories[category.id]" :style="subCategoriesContainerStyle">
                   <div
                       v-for="child in category.children"
                       :key="child.id"
@@ -510,8 +510,8 @@ const emit = defineEmits([
 ])
 
 // Bathroom categories with icons (matching your design)
-// State for expanded Heating sub-category
-const expandedHeatingCategory = ref(false)
+// State for expanded categories with children (generic map)
+const expandedCategories = ref({})
 
 const bathroomCategories = [
   {
@@ -1030,8 +1030,8 @@ const toggleBathroomItemsSection = () => {
   isBathroomItemsExpanded.value = !isBathroomItemsExpanded.value
 }
 
-const toggleHeatingCategory = () => {
-  expandedHeatingCategory.value = !expandedHeatingCategory.value
+const toggleCategory = (id) => {
+  expandedCategories.value[id] = !expandedCategories.value[id]
 }
 
 const toggleRoomSettingsSection = () => {
