@@ -1,8 +1,10 @@
 <template>
   <header :style="headerStyle">
     <div :style="logoContainerStyle">
-      <img v-if="logo" :src="logo" :alt="logoAlt" :style="logoStyle" />
-      <span v-else :style="titleStyle">{{ title }}</span>
+      <router-link to="/">
+        <img v-if="logo" :src="logo" :alt="logoAlt" :style="logoStyle" />
+        <span v-else :style="titleStyle">{{ title }}</span>
+      </router-link>
     </div>
 
     <div :style="navStyle">
