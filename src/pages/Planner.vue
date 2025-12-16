@@ -55,6 +55,8 @@
         :notch-height="notchHeight"
         @close="handleVariantDrawerClose"
         @swap-variant="handleVariantSwap"
+        @preview-collision="handlePreviewCollision"
+        @clear-collision-preview="handleClearCollisionPreview"
         @deselect-item="handleDeselectItem"
     />
     <!-- Toggle button for texture panel -->
@@ -166,7 +168,7 @@ import { EventHandlers } from '../services/eventHandlers'
 import { createModel } from '../models/bathroomFixtures.ts'
 
 // Utils - Updated imports to include collision detection and validation
-import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, wouldCollideWithExistingOrWalls, getInteriorBoundaries, validateObjectFitsInRoom, validateNoOverlap, checkWallCollision } from '../utils/constraints.js'
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, constrainToRoom, wouldCollideWithExistingOrWalls, getInteriorBoundaries, validateObjectFitsInRoom, validateNoOverlap, checkWallCollision } from '../utils/constraints.js'
 import {highlightObject, isMobile} from '../utils/helpers.ts'
 
 // Composables
@@ -326,6 +328,10 @@ const handleVariantDrawerClose = () => {
   variantConfigProduct.value = null
   variantConfigCurrentVariant.value = null
   variantConfigItemId.value = null
+  // Clear any collision preview when drawer closes
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
 }
 
 const handleDeselectItem = () => {
@@ -336,8 +342,44 @@ const handleDeselectItem = () => {
   selectedItemId.value = null
 }
 
+// Handle collision preview - show red outline for "Too Large" variant
+const handlePreviewCollision = (previewConfig) => {
+  console.log('🔴 Showing collision preview:', previewConfig)
+  const { itemId, variant, currentItem, fitInfo } = previewConfig
+
+  if (!sceneManagerRef.value || !currentItem) {
+    console.warn('Cannot show collision preview: missing scene manager or item')
+    return
+  }
+
+  // Use sceneManager to show collision preview with red outline
+  sceneManagerRef.value.showCollisionPreview({
+    itemId,
+    currentPosition: currentItem.position,
+    currentRotation: currentItem.rotation,
+    newDimensions: variant.dimensions,
+    currentDimensions: currentItem.model?.dimensions,
+    reason: fitInfo?.reason || 'collision',
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value
+  })
+}
+
+// Handle clearing collision preview (e.g., when colliding item is removed)
+const handleClearCollisionPreview = () => {
+  console.log('🔄 Clearing collision preview (items changed)')
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
+}
+
 const handleVariantSwap = async (swapConfig) => {
   console.log('🔄 Starting variant swap:', swapConfig)
+
+  // Clear any collision preview when starting a valid swap
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
 
   // Set flag to prevent drawer from closing during swap
   isSwappingVariant.value = true
@@ -384,32 +426,6 @@ const handleVariantSwap = async (swapConfig) => {
         }
 
         // Create a temporary item with new dimensions to check wall collision
-        const tempItem = {
-          ...currentItem,
-          sku: newVariant.sku,
-          model: {
-            ...currentItem.model,
-            dimensions: newVariant.dimensions
-          }
-        }
-
-        const wallCollision = checkWallCollision(
-          currentPosition,
-          currentItem.type,
-          currentItem.scale || 1.0,
-          roomWidth.value,
-          roomHeight.value,
-          tempItem,
-          currentItem.rotation,
-          notchWidth.value,
-          notchHeight.value
-        )
-
-        if (wallCollision) {
-          alert(`Cannot swap to this variant: The larger size would extend outside the room boundaries. Try repositioning the item first or choose a smaller variant.`)
-          isSwappingVariant.value = false
-          return
-        }
       }
     }
 
@@ -468,6 +484,54 @@ const handleVariantSwap = async (swapConfig) => {
     }
 
     console.log('Swapped item created:', swappedItem)
+
+    // RE-CONSTRAIN: Ensure the new variant fits within walls/room
+    // This fixes the issue where larger variants might clip into walls
+    const movementConfig = getMovementConfig(swappedItem.type, swappedItem)
+
+    if (movementConfig.snapToWall) {
+      const constraintResult = constrainToWalls(
+          { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+          roomWidth.value,
+          roomHeight.value,
+          {
+            type: swappedItem.type,
+            scale: swappedItem.scale || 1.0,
+            orientation: swappedItem.model?.orientation,
+            item: swappedItem,
+            notchWidth: notchWidth.value,
+            notchHeight: notchHeight.value,
+            strictFlushMountCheck: true // ✅ NEW: Enforce strict wall boundaries for swapped items
+          }
+      )
+
+      swappedItem.position = [
+        constraintResult.position.x,
+        constraintResult.position.y,
+        constraintResult.position.z
+      ]
+    } else {
+      // For free-standing items, ensure they stay in room
+      const constraintResult = constrainToRoom(
+          { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+          roomWidth.value,
+          roomHeight.value,
+          {
+            type: swappedItem.type,
+            scale: swappedItem.scale || 1.0,
+            orientation: swappedItem.model?.orientation,
+            item: swappedItem,
+            notchWidth: notchWidth.value,
+            notchHeight: notchHeight.value
+          }
+      )
+
+      swappedItem.position = [
+        constraintResult.position.x,
+        constraintResult.position.y,
+        constraintResult.position.z
+      ]
+    }
 
     // Update items array
     const newItems = [...items.value]
