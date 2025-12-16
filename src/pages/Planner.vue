@@ -371,39 +371,45 @@ const handleVariantSwap = async (swapConfig) => {
       }
 
       // ✅ VALIDATION: Check if the new variant would fit at the current position
-      // Create a temp position to check wall collision with new dimensions
-      const currentPosition = {
-        x: currentItem.position[0],
-        y: currentItem.position[1],
-        z: currentItem.position[2]
-      }
+      // Skip wall collision check for freestanding items - they're not bound to walls
+      const movementConfig = getMovementConfig(currentItem.type, currentItem)
+      const isFreestanding = !movementConfig.snapToWall
 
-      // Create a temporary item with new dimensions to check wall collision
-      const tempItem = {
-        ...currentItem,
-        sku: newVariant.sku,
-        model: {
-          ...currentItem.model,
-          dimensions: newVariant.dimensions
+      if (!isFreestanding) {
+        // Create a temp position to check wall collision with new dimensions
+        const currentPosition = {
+          x: currentItem.position[0],
+          y: currentItem.position[1],
+          z: currentItem.position[2]
         }
-      }
 
-      const wallCollision = checkWallCollision(
-        currentPosition,
-        currentItem.type,
-        currentItem.scale || 1.0,
-        roomWidth.value,
-        roomHeight.value,
-        tempItem,
-        currentItem.rotation,
-        notchWidth.value,
-        notchHeight.value
-      )
+        // Create a temporary item with new dimensions to check wall collision
+        const tempItem = {
+          ...currentItem,
+          sku: newVariant.sku,
+          model: {
+            ...currentItem.model,
+            dimensions: newVariant.dimensions
+          }
+        }
 
-      if (wallCollision) {
-        alert(`Cannot swap to this variant: The larger size would extend outside the room boundaries. Try repositioning the item first or choose a smaller variant.`)
-        isSwappingVariant.value = false
-        return
+        const wallCollision = checkWallCollision(
+          currentPosition,
+          currentItem.type,
+          currentItem.scale || 1.0,
+          roomWidth.value,
+          roomHeight.value,
+          tempItem,
+          currentItem.rotation,
+          notchWidth.value,
+          notchHeight.value
+        )
+
+        if (wallCollision) {
+          alert(`Cannot swap to this variant: The larger size would extend outside the room boundaries. Try repositioning the item first or choose a smaller variant.`)
+          isSwappingVariant.value = false
+          return
+        }
       }
     }
 
