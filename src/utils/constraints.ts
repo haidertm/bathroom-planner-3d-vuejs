@@ -245,8 +245,11 @@ export const constrainToCorner = (
     const movementConfig = movement ?? getMovementConfig(objectType, item);
 
     // Get the wall buffer (usually 0 for flush-mounted items)
-    const wallBuffer = (orientation?.wallBuffer !== undefined) ?
+    // Add a minimum visual buffer (2cm) to prevent model clipping into walls
+    const configuredWallBuffer = (orientation?.wallBuffer !== undefined) ?
         orientation.wallBuffer * scale : 0;
+    const minVisualBuffer = 2; // 2cm minimum to prevent visual wall clipping
+    const wallBuffer = Math.max(configuredWallBuffer, minVisualBuffer);
 
     // For corner items, we position them flush in the corner
     const halfWidth = (dimensions.width * scale) / 2;
@@ -808,22 +811,103 @@ export const checkCollision = (
     const obj1ActualY = pos1.y + obj1FloorOffset;
     const obj2ActualY = pos2.y + obj2FloorOffset;
 
+    // ✅ FIX: Adjust position for wall-mounted items
+    // When items are placed via templates, position is at wall face, not center
+    // We need to offset to get the true center position for collision detection
+    const getAdjustedCenterPosition = (
+        pos: Position,
+        item: BathroomItem | undefined,
+        halfWidth: number,
+        halfDepth: number,
+        needsSwap: boolean
+    ): Position => {
+        if (!item) return pos;
+
+        const movementConfig = getMovementConfig(item.type, item);
+
+        // Only adjust for wall-snapped items (not free-standing)
+        if (!movementConfig.snapToWall) return pos;
+
+        // Calculate wall distances to determine which wall the item is on
+        const rw = roomWidth || 300;
+        const rh = roomHeight || 300;
+        const wallThickness = WALL_SETTINGS.THICKNESS;
+
+        const northWall = -rh / 2 + wallThickness;
+        const southWall = rh / 2 - wallThickness;
+        const eastWall = rw / 2 - wallThickness;
+        const westWall = -rw / 2 + wallThickness;
+
+        const distToNorth = Math.abs(pos.z - northWall);
+        const distToSouth = Math.abs(pos.z - southWall);
+        const distToEast = Math.abs(pos.x - eastWall);
+        const distToWest = Math.abs(pos.x - westWall);
+
+        const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
+        const wallTolerance = 10; // 10cm tolerance for wall detection
+
+        // Only adjust if item is very close to a wall (within tolerance)
+        if (minDist > wallTolerance) return pos;
+
+        // For corner-install items, check if actually in a corner
+        // If in a corner (close to two walls), skip adjustment as position is at corner intersection
+        if (movementConfig.cornerInstallOnly &&
+            typeof movementConfig.cornerInstallOnly === 'object' &&
+            movementConfig.cornerInstallOnly.enabled) {
+            // Check if item is near two walls (in a corner)
+            const closeToNorthOrSouth = distToNorth <= wallTolerance || distToSouth <= wallTolerance;
+            const closeToEastOrWest = distToEast <= wallTolerance || distToWest <= wallTolerance;
+            if (closeToNorthOrSouth && closeToEastOrWest) {
+                // Item is in a corner - position is at corner, extends diagonally into room
+                // Skip adjustment for true corner placements
+                return pos;
+            }
+            // Item has cornerInstallOnly config but is placed on a wall (not corner)
+            // Continue with wall adjustment
+        }
+
+        const adjustedPos = { ...pos };
+
+        // Use depth after potential swap for wall-perpendicular dimension
+        const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
+
+        if (minDist === distToNorth && distToNorth <= wallTolerance) {
+            // On north wall - item extends in +z direction
+            adjustedPos.z = pos.z + effectiveHalfDepth;
+        } else if (minDist === distToSouth && distToSouth <= wallTolerance) {
+            // On south wall - item extends in -z direction
+            adjustedPos.z = pos.z - effectiveHalfDepth;
+        } else if (minDist === distToEast && distToEast <= wallTolerance) {
+            // On east wall - item extends in -x direction
+            adjustedPos.x = pos.x - effectiveHalfDepth;
+        } else if (minDist === distToWest && distToWest <= wallTolerance) {
+            // On west wall - item extends in +x direction
+            adjustedPos.x = pos.x + effectiveHalfDepth;
+        }
+
+        return adjustedPos;
+    };
+
+    // Get adjusted center positions for wall-mounted items
+    const obj1AdjustedPos = getAdjustedCenterPosition(pos1, item1, obj1Width / 2, obj1Depth / 2, obj1NeedsSwap);
+    const obj2AdjustedPos = getAdjustedCenterPosition(pos2, item2, obj2Width / 2, obj2Depth / 2, obj2NeedsSwap);
+
     // ✅ CRITICAL: Calculate bounding box boundaries in 3D space
     const obj1MinY = obj1ActualY;
     const obj1MaxY = obj1ActualY + obj1Height;
     const obj2MinY = obj2ActualY;
     const obj2MaxY = obj2ActualY + obj2Height;
 
-    // Horizontal bounding boxes (now accounting for rotation)
-    const obj1MinX = pos1.x - obj1Width / 2;
-    const obj1MaxX = pos1.x + obj1Width / 2;
-    const obj2MinX = pos2.x - obj2Width / 2;
-    const obj2MaxX = pos2.x + obj2Width / 2;
+    // Horizontal bounding boxes (now accounting for rotation and wall-mounted position adjustment)
+    const obj1MinX = obj1AdjustedPos.x - obj1Width / 2;
+    const obj1MaxX = obj1AdjustedPos.x + obj1Width / 2;
+    const obj2MinX = obj2AdjustedPos.x - obj2Width / 2;
+    const obj2MaxX = obj2AdjustedPos.x + obj2Width / 2;
 
-    const obj1MinZ = pos1.z - obj1Depth / 2;
-    const obj1MaxZ = pos1.z + obj1Depth / 2;
-    const obj2MinZ = pos2.z - obj2Depth / 2;
-    const obj2MaxZ = pos2.z + obj2Depth / 2;
+    const obj1MinZ = obj1AdjustedPos.z - obj1Depth / 2;
+    const obj1MaxZ = obj1AdjustedPos.z + obj1Depth / 2;
+    const obj2MinZ = obj2AdjustedPos.z - obj2Depth / 2;
+    const obj2MaxZ = obj2AdjustedPos.z + obj2Depth / 2;
 
     // Add collision buffers - expand each object's bounding box
     const horizontalBuffer = 2; // 2cm horizontal buffer (4cm total gap when near)
@@ -857,7 +941,8 @@ export const checkCollision = (
             item1: {
                 type: type1,
                 sku: item1?.sku,
-                logicalPos: { x: pos1.x.toFixed(1), y: pos1.y.toFixed(1), z: pos1.z.toFixed(1) },
+                originalPos: { x: pos1.x.toFixed(1), y: pos1.y.toFixed(1), z: pos1.z.toFixed(1) },
+                adjustedPos: { x: obj1AdjustedPos.x.toFixed(1), z: obj1AdjustedPos.z.toFixed(1) },
                 actualYRange: `${obj1MinY.toFixed(1)}cm to ${obj1MaxY.toFixed(1)}cm`,
                 floorOffset: obj1FloorOffset.toFixed(1) + 'cm',
                 dimensions: `${obj1Width.toFixed(1)} × ${obj1Height.toFixed(1)} × ${obj1Depth.toFixed(1)}`
@@ -865,7 +950,8 @@ export const checkCollision = (
             item2: {
                 type: type2,
                 sku: item2?.sku,
-                logicalPos: { x: pos2.x.toFixed(1), y: pos2.y.toFixed(1), z: pos2.z.toFixed(1) },
+                originalPos: { x: pos2.x.toFixed(1), y: pos2.y.toFixed(1), z: pos2.z.toFixed(1) },
+                adjustedPos: { x: obj2AdjustedPos.x.toFixed(1), z: obj2AdjustedPos.z.toFixed(1) },
                 actualYRange: `${obj2MinY.toFixed(1)}cm to ${obj2MaxY.toFixed(1)}cm`,
                 floorOffset: obj2FloorOffset.toFixed(1) + 'cm',
                 dimensions: `${obj2Width.toFixed(1)} × ${obj2Height.toFixed(1)} × ${obj2Depth.toFixed(1)}`
