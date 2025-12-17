@@ -343,51 +343,51 @@ const findLongestEmptyWallSegment = (
     getPosition: (t: number) => Position;
     rotation: number;
   }> = [
-    {
-      name: 'north',
-      // ✅ FIX: Use adjusted length for L-shaped rooms
-      length: northWallLength,
-      getPosition: (t) => ({
-        // ✅ FIX: Start from notch.maxX for L-shaped rooms
-        x: northWallMinX + segmentHalfWidth + t * (northWallLength - dimensions.width * scale),
-        y: 0,
-        z: isFlushMounted ? wallFaces.north : wallFaces.north + halfDepth + wallBuffer
-      }),
-      rotation: getObjectRotationForWall(objectType, 'north', orientation)
-    },
-    {
-      name: 'south',
-      length: interior.maxX - interior.minX,
-      getPosition: (t) => ({
-        x: interior.minX + segmentHalfWidth + t * (interior.maxX - interior.minX - dimensions.width * scale),
-        y: 0,
-        z: isFlushMounted ? wallFaces.south : wallFaces.south - halfDepth - wallBuffer
-      }),
-      rotation: getObjectRotationForWall(objectType, 'south', orientation)
-    },
-    {
-      name: 'east',
-      length: interior.maxZ - interior.minZ,
-      getPosition: (t) => ({
-        x: isFlushMounted ? wallFaces.east : wallFaces.east - halfDepth - wallBuffer,
-        y: 0,
-        z: interior.minZ + segmentHalfWidth + t * (interior.maxZ - interior.minZ - dimensions.width * scale)
-      }),
-      rotation: getObjectRotationForWall(objectType, 'east', orientation)
-    },
-    {
-      name: 'west',
-      // ✅ FIX: Use adjusted length for L-shaped rooms
-      length: westWallLength,
-      getPosition: (t) => ({
-        x: isFlushMounted ? wallFaces.west : wallFaces.west + halfDepth + wallBuffer,
-        y: 0,
-        // ✅ FIX: End at notch.maxZ for L-shaped rooms
-        z: interior.minZ + segmentHalfWidth + t * (westWallLength - dimensions.width * scale)
-      }),
-      rotation: getObjectRotationForWall(objectType, 'west', orientation)
-    }
-  ];
+      {
+        name: 'north',
+        // ✅ FIX: Use adjusted length for L-shaped rooms
+        length: northWallLength,
+        getPosition: (t) => ({
+          // ✅ FIX: Start from notch.maxX for L-shaped rooms
+          x: northWallMinX + segmentHalfWidth + t * (northWallLength - dimensions.width * scale),
+          y: 0,
+          z: isFlushMounted ? wallFaces.north : wallFaces.north + halfDepth + wallBuffer
+        }),
+        rotation: getObjectRotationForWall(objectType, 'north', orientation)
+      },
+      {
+        name: 'south',
+        length: interior.maxX - interior.minX,
+        getPosition: (t) => ({
+          x: interior.minX + segmentHalfWidth + t * (interior.maxX - interior.minX - dimensions.width * scale),
+          y: 0,
+          z: isFlushMounted ? wallFaces.south : wallFaces.south - halfDepth - wallBuffer
+        }),
+        rotation: getObjectRotationForWall(objectType, 'south', orientation)
+      },
+      {
+        name: 'east',
+        length: interior.maxZ - interior.minZ,
+        getPosition: (t) => ({
+          x: isFlushMounted ? wallFaces.east : wallFaces.east - halfDepth - wallBuffer,
+          y: 0,
+          z: interior.minZ + segmentHalfWidth + t * (interior.maxZ - interior.minZ - dimensions.width * scale)
+        }),
+        rotation: getObjectRotationForWall(objectType, 'east', orientation)
+      },
+      {
+        name: 'west',
+        // ✅ FIX: Use adjusted length for L-shaped rooms
+        length: westWallLength,
+        getPosition: (t) => ({
+          x: isFlushMounted ? wallFaces.west : wallFaces.west + halfDepth + wallBuffer,
+          y: 0,
+          // ✅ FIX: End at notch.maxZ for L-shaped rooms
+          z: interior.minZ + segmentHalfWidth + t * (westWallLength - dimensions.width * scale)
+        }),
+        rotation: getObjectRotationForWall(objectType, 'west', orientation)
+      }
+    ];
 
   // Sort walls by length (longest first)
   walls.sort((a, b) => b.length - a.length);
@@ -887,7 +887,10 @@ export const positionBath = (
   const bathWidth = bathDimensions.depth * scale;  // Bath width (the short dimension)
   const bathHalfLength = bathLength / 2;
   const bathHalfWidth = bathWidth / 2;
-  const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
+  // Add 1cm minimum offset to account for model origin variations while still appearing to touch wall
+  const MODEL_ORIGIN_OFFSET = 1;
+  const baseWallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
+  const wallBuffer = baseWallBuffer + MODEL_ORIGIN_OFFSET;
 
   // Calculate wall lengths
   // ✅ FIX: For L-shaped rooms, north wall starts at notch.maxX (not notch.minX)
@@ -1076,7 +1079,7 @@ export const positionShower = (
 ): AutoPositionResult | null => {
   const { roomWidth, roomHeight, notchWidth, notchHeight, existingItems, cameraPosition } = context;
   const orientation = showerVariant?.orientation || DEFAULT_ORIENTATION;
-  const movement = showerVariant?.movement;
+
   const spawnHeight = showerVariant?.spawnHeight || 0;
 
   // Get all available corners
@@ -1109,7 +1112,6 @@ export const positionShower = (
       type: 'Shower',
       scale,
       orientation,
-      movement,
       sku: showerVariant?.sku,
       notchWidth,
       notchHeight
@@ -1928,7 +1930,7 @@ export const positionTowelRail = (
       for (const wd of wallDistances) {
         // Check both distance to bath AND minimum wall space
         if (wd.dist > MIN_WALL_SPACE_FOR_TOWEL_RAIL &&
-            hasMinWallSpace(wd.x, wd.z, wd.wall, radiatorDimensions.width * scale)) {
+          hasMinWallSpace(wd.x, wd.z, wd.wall, radiatorDimensions.width * scale)) {
           footEndCandidates.push({
             position: { x: wd.x, y: spawnHeight, z: wd.z },
             rotation: getObjectRotationForWall('Radiator', wd.wall as any, orientation),
@@ -2150,8 +2152,8 @@ export const autoPositionItem = (
       rotation: 0,
       placementMethod: 'none',
       reason: itemType === 'Mirror' || itemType === 'Toilet' || itemType === 'Bath' ||
-              itemType === 'Shower' || itemType === 'Furniture' || itemType === 'Radiator' ||
-              itemType === 'TowelRails' || itemType === 'Sink'
+        itemType === 'Shower' || itemType === 'Furniture' || itemType === 'Radiator' ||
+        itemType === 'TowelRails' || itemType === 'Sink'
         ? 'no-space-found'
         : 'no-auto-position-logic'
     };

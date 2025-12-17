@@ -39,7 +39,7 @@ export class SceneManager {
   public scene: THREE.Scene | null = null;
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
-    private eventHandlers: any = null;
+  private eventHandlers: any = null;
 
   // Post-processing components
   private composer: EffectComposer | null = null;
@@ -67,7 +67,7 @@ export class SceneManager {
   private axisIndicatorsDebug: AxisIndicatorsDebug | null = null;
   public debugLabelsEnabled: boolean = false; // Set to true for debugging
 
-  constructor () {
+  constructor() {
     this.wallCullingManager = new SimpleWallCulling();
     this.bathroomItemsGroup = new THREE.Group();
     this.bathroomItemsGroup.name = 'bathroomItems';
@@ -76,7 +76,7 @@ export class SceneManager {
     this.debugLabelsEnabled = false; // Debug visuals disabled by default for cleaner initial view
   }
 
-  initializeScene (): SceneComponents {
+  initializeScene(): SceneComponents {
     // Create scene with better background and atmosphere
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0xE6E1DA);
@@ -147,37 +147,37 @@ export class SceneManager {
   }
 
   // Add methods to control measurement system
-  public enableMeasurements (enabled: boolean): void {
+  public enableMeasurements(enabled: boolean): void {
     if (this.measurementSystem) {
       this.measurementSystem.setEnabled(enabled);
     }
   }
 
-  public forceUpdateMeasurements (): void {
+  public forceUpdateMeasurements(): void {
     if (this.measurementSystem) {
       this.measurementSystem.forceUpdateMeasurements();
     }
   }
 
-  public setMeasurementSelectedObject (object: THREE.Object3D | null): void {
+  public setMeasurementSelectedObject(object: THREE.Object3D | null): void {
     if (this.measurementSystem) {
       this.measurementSystem.setSelectedObject(object);
     }
   }
 
-    public setEventHandlers(eventHandlers: any): void {
-        this.eventHandlers = eventHandlers;
-    }
+  public setEventHandlers(eventHandlers: any): void {
+    this.eventHandlers = eventHandlers;
+  }
 
-  public getCurrentMeasurements (): MeasurementData | null {
+  public getCurrentMeasurements(): MeasurementData | null {
     return this.measurementSystem?.getCurrentMeasurements() || null;
   }
 
-  public isMeasurementEnabled (): boolean {
+  public isMeasurementEnabled(): boolean {
     return this.measurementSystem?.isEnabled() || false;
   }
 
-  setCameraPreset (preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
+  setCameraPreset(preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
     if (!this.camera) return;
 
     const presetConfig = CAMERA_PRESETS[preset];
@@ -198,7 +198,7 @@ export class SceneManager {
     }
   }
 
-  setCustomCameraPosition (position: { x: number; y: number; z: number }): void {
+  setCustomCameraPosition(position: { x: number; y: number; z: number }): void {
     if (!this.camera) return;
 
     this.camera.position.set(position.x, position.y, position.z);
@@ -211,7 +211,7 @@ export class SceneManager {
   }
 
   // ADD: Method to get camera info for debugging
-  getCameraInfo (): any {
+  getCameraInfo(): any {
     if (!this.camera) return null;
 
     return {
@@ -223,7 +223,7 @@ export class SceneManager {
     };
   }
 
-  private hasItemChanged (model: THREE.Object3D, item: BathroomItem): boolean {
+  private hasItemChanged(model: THREE.Object3D, item: BathroomItem): boolean {
     const currentPos = model.position;
     const currentRot = model.rotation;
     const currentScale = model.scale;
@@ -241,7 +241,7 @@ export class SceneManager {
   }
 
   // Helper method to update existing model properties
-  private updateExistingModel (model: THREE.Object3D, item: BathroomItem): void {
+  private updateExistingModel(model: THREE.Object3D, item: BathroomItem): void {
     // Update position
     model.position.set(item.position[0], item.position[1], item.position[2]);
 
@@ -275,27 +275,27 @@ export class SceneManager {
     });
   }
 
-    // Helper method to properly dispose of models
-    private disposeModel (model: THREE.Object3D): void {
-        model.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) {
-                    child.geometry.dispose();
-                }
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(material => material.dispose());
-                    } else {
-                        child.material.dispose();
-                    }
-                }
-            }
-        });
-    }
+  // Helper method to properly dispose of models
+  private disposeModel(model: THREE.Object3D): void {
+    model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(material => material.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  }
 
   // Add method to add single item (for real-time adding)
   // Method to add single item (for real-time adding from Planner.vue)
-  async addSingleItem (item: BathroomItem): Promise<void> {
+  async addSingleItem(item: BathroomItem): Promise<void> {
 
     console.log('addSingleItem called with item:', item);
 
@@ -358,8 +358,8 @@ export class SceneManager {
     }
   }
 
-// Method to remove single item (for real-time deletion from Planner.vue)
-  removeSingleItem (itemId: number): void {
+  // Method to remove single item (for real-time deletion from Planner.vue)
+  removeSingleItem(itemId: number): void {
     const existingModel = this.existingItems.get(itemId);
     if (existingModel) {
       console.log(`🗑️ Removing single item ${itemId} from scene`);
@@ -430,14 +430,14 @@ export class SceneManager {
     const defaultDimensions = { width: 50, height: 50, depth: 50 };
     const modelConfig = item.model
       ? {
-          ...item.model,
-          dimensions: item.model.dimensions || defaultDimensions
-        }
+        ...item.model,
+        dimensions: item.model.dimensions || defaultDimensions
+      }
       : {
-          name: sku,
-          path: '',
-          dimensions: defaultDimensions
-        };
+        name: sku,
+        path: '',
+        dimensions: defaultDimensions
+      };
 
     console.log('🔲 SceneManager - Progressive loading config:', {
       dimensions: modelConfig.dimensions,
@@ -600,7 +600,8 @@ export class SceneManager {
       onPlaceholderSwapped?: (placeholder: THREE.Group) => void;
       onFullModelSwapped?: (model: THREE.Group) => void;
       onProgress?: (progress: number) => void;
-    }
+    },
+    newPosition?: { x: number, y: number, z: number }
   ): Promise<THREE.Group | null> {
     const existingModel = this.existingItems.get(itemId);
     if (!existingModel) {
@@ -616,6 +617,10 @@ export class SceneManager {
 
     // Store original transform before swapping
     const originalPosition = existingModel.position.clone();
+    if (newPosition) {
+      console.log('📍 Progressive: Using new position for swap:', newPosition);
+      originalPosition.set(newPosition.x, newPosition.y, newPosition.z);
+    }
     const originalRotation = existingModel.rotation.clone();
     const originalScale = existingModel.scale.clone();
     const originalUserData = { ...existingModel.userData };
@@ -870,8 +875,8 @@ export class SceneManager {
     return model?.userData?.isPlaceholder === true;
   }
 
-// Method to clear all items efficiently
-  clearAllItems (): void {
+  // Method to clear all items efficiently
+  clearAllItems(): void {
     console.log('🧹 Clearing all bathroom items');
 
     // Dispose of all models
@@ -888,7 +893,7 @@ export class SceneManager {
 
 
   // ADD: Temporary debug cube method
-  addDebugCube (position: [number, number, number]): void {
+  addDebugCube(position: [number, number, number]): void {
     if (!this.scene) return;
 
     const geometry = new THREE.BoxGeometry(50, 50, 50); // 50cm cube
@@ -901,7 +906,7 @@ export class SceneManager {
     console.log('🔴 Camera info:', this.getCameraInfo());
   }
 
-  private setupPostProcessing (): void {
+  private setupPostProcessing(): void {
     if (!this.scene || !this.camera || !this.renderer) return;
 
     try {
@@ -972,53 +977,53 @@ export class SceneManager {
     }
   }
 
-    private setupEnhancedLighting(roomWidth?: number): void {
-        if (!this.scene) return;
+  private setupEnhancedLighting(roomWidth?: number): void {
+    if (!this.scene) return;
 
-        // Use current room dimensions or defaults
-        const width = roomWidth ?? 300; // Default fallback
+    // Use current room dimensions or defaults
+    const width = roomWidth ?? 300; // Default fallback
 
-        // Clear existing lights
-        this.lights.forEach(light => this.scene!.remove(light));
-        this.lights = [];
+    // Clear existing lights
+    this.lights.forEach(light => this.scene!.remove(light));
+    this.lights = [];
 
-        // 1. AMBIENT LIGHT - provides base illumination
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
-        this.scene.add(ambientLight);
-        this.lights.push(ambientLight);
+    // 1. AMBIENT LIGHT - provides base illumination
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    this.scene.add(ambientLight);
+    this.lights.push(ambientLight);
 
-        // Calculate safe positions based on room size
-        const safeMargin = 30; // 30cm margin from walls
+    // Calculate safe positions based on room size
+    const safeMargin = 30; // 30cm margin from walls
 
-        // FIXED: Clamp maxX to non-negative to prevent negative positions
-        const maxX = Math.max(0, (width / 2) - safeMargin); // Maximum X position, clamped to 0
+    // FIXED: Clamp maxX to non-negative to prevent negative positions
+    const maxX = Math.max(0, (width / 2) - safeMargin); // Maximum X position, clamped to 0
 
-        // 2. CEILING LIGHTS - positioned relative to room size
+    // 2. CEILING LIGHTS - positioned relative to room size
 
-        // Inner lights - these stay closer to center, using clamped maxX
-        const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
-        const ceilingY = WALL_SETTINGS.HEIGHT;
+    // Inner lights - these stay closer to center, using clamped maxX
+    const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
+    const ceilingY = WALL_SETTINGS.HEIGHT;
 
-        const outerX = Math.max(innerX, Math.min(100, maxX * 0.7));
-        for (const x of [innerX, -innerX, outerX, -outerX]) {
-            const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-            light.position.set(x, ceilingY, 0);
-            this.scene.add(light);
-            this.lights.push(light);
-        }
-
-        // 3. OPTIONAL: Increase renderer exposure for brighter overall scene
-        if (this.renderer) {
-            this.renderer.toneMappingExposure = 1.2;
-        }
+    const outerX = Math.max(innerX, Math.min(100, maxX * 0.7));
+    for (const x of [innerX, -innerX, outerX, -outerX]) {
+      const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
+      light.position.set(x, ceilingY, 0);
+      this.scene.add(light);
+      this.lights.push(light);
     }
 
-   updateFloor (roomWidth: number, roomHeight: number, floorTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
-        if (!this.scene) return;
+    // 3. OPTIONAL: Increase renderer exposure for brighter overall scene
+    if (this.renderer) {
+      this.renderer.toneMappingExposure = 1.2;
+    }
+  }
 
-        if (this.floorRef) {
-            this.scene.remove(this.floorRef);
-        }
+  updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
+    if (!this.scene) return;
+
+    if (this.floorRef) {
+      this.scene.remove(this.floorRef);
+    }
 
     // FIX: Pass room dimensions to material creation
     const floorMaterial = this.createEnhancedFloorMaterial(floorTexture, roomWidth, roomHeight);
@@ -1035,17 +1040,17 @@ export class SceneManager {
 
     this.scene.add(this.floorRef);
 
-        // 🔥 UPDATE: Reposition lights when room dimensions change
-        this.setupEnhancedLighting(roomWidth);
+    // 🔥 UPDATE: Reposition lights when room dimensions change
+    this.setupEnhancedLighting(roomWidth);
     // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
       this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
     }
   }
 
-    private createEnhancedFloorMaterial (floorTexture: TextureConfig, roomWidth: number, roomHeight: number): THREE.MeshStandardMaterial {
-        // FIX: Pass room dimensions to texture manager for proper scaling
-        const material = textureManager.createTexturedMaterial(floorTexture, { width: roomWidth, height: roomHeight });
+  private createEnhancedFloorMaterial(floorTexture: TextureConfig, roomWidth: number, roomHeight: number): THREE.MeshStandardMaterial {
+    // FIX: Pass room dimensions to texture manager for proper scaling
+    const material = textureManager.createTexturedMaterial(floorTexture, { width: roomWidth, height: roomHeight });
 
     // Enhanced floor material properties
     material.roughness = 0;
@@ -1055,14 +1060,14 @@ export class SceneManager {
     return material;
   }
 
-  updateWalls (roomWidth: number, roomHeight: number, wallTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
+  updateWalls(roomWidth: number, roomHeight: number, wallTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
     if (!this.scene) return;
 
-        // Remove existing walls
-        this.wallRefs.forEach(wall => {
-            if (wall.parent) wall.parent.remove(wall);
-        });
-        this.wallRefs = [];
+    // Remove existing walls
+    this.wallRefs.forEach(wall => {
+      if (wall.parent) wall.parent.remove(wall);
+    });
+    this.wallRefs = [];
 
     // Create new walls with enhanced materials
     const wallMaterial = this.createEnhancedWallMaterial(wallTexture);
@@ -1089,8 +1094,8 @@ export class SceneManager {
       this.debugLabelsEnabled
     );
 
-      // 🔥 UPDATE: Reposition lights when room dimensions change
-      this.setupEnhancedLighting(roomWidth);
+    // 🔥 UPDATE: Reposition lights when room dimensions change
+    this.setupEnhancedLighting(roomWidth);
     // Update wall culling manager with new walls and room size (including notch dimensions)
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight, notchWidth, notchHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
@@ -1100,22 +1105,22 @@ export class SceneManager {
     }
   }
 
-  updateLabels (roomWidth: number, roomHeight: number): void {
+  updateLabels(roomWidth: number, roomHeight: number): void {
     this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
   }
 
-  private createEnhancedWallMaterial (wallTexture: TextureConfig): THREE.MeshStandardMaterial {
+  private createEnhancedWallMaterial(wallTexture: TextureConfig): THREE.MeshStandardMaterial {
     const material = textureManager.createTexturedMaterial(wallTexture);
 
     // Enhanced wall material properties
-      material.roughness = 0.6;      // Semi-matte for good light distribution
-      material.metalness = 0.0;      // Non-metallic
-      material.envMapIntensity = 0.1; // Minimal reflections
+    material.roughness = 0.6;      // Semi-matte for good light distribution
+    material.metalness = 0.0;      // Non-metallic
+    material.envMapIntensity = 0.1; // Minimal reflections
 
     return material;
   }
 
-  updateGrid (roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true, notchWidth?: number, notchHeight?: number): void {
+  updateGrid(roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true, notchWidth?: number, notchHeight?: number): void {
     console.log('🔄 SceneManager.updateGrid called with:', {
       roomWidth,
       roomHeight,
@@ -1255,7 +1260,7 @@ export class SceneManager {
   }
 
   // Method to toggle wall grid visibility
-  setWallGridVisible (visible: boolean): void {
+  setWallGridVisible(visible: boolean): void {
     console.log(`🔄 Setting wall grid visibility to: ${visible}`);
 
     this.wallGridVisible = visible;
@@ -1275,11 +1280,11 @@ export class SceneManager {
     }
   }
 
-  getWallGridVisible (): boolean {
+  getWallGridVisible(): boolean {
     return this.wallGridVisible;
   }
 
-  private debugModelVisibility (model: THREE.Object3D, item: any): void {
+  private debugModelVisibility(model: THREE.Object3D, item: any): void {
     console.log('📍📍 selectedModelIs>>>>', model);
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
@@ -1326,7 +1331,7 @@ export class SceneManager {
   }
 
   // Replace the current updateBathroomItems method with this optimized version
-  async updateBathroomItems (items: BathroomItem[]): Promise<void> {
+  async updateBathroomItems(items: BathroomItem[]): Promise<void> {
     if (!this.scene || this.isUpdatingItems) return;
 
     this.isUpdatingItems = true;
@@ -1443,7 +1448,7 @@ export class SceneManager {
     }
   }
 
-  private getModelBoundingBox (model: THREE.Object3D): any {
+  private getModelBoundingBox(model: THREE.Object3D): any {
     const box = new THREE.Box3().setFromObject(model);
     return {
       min: box.min,
@@ -1453,7 +1458,7 @@ export class SceneManager {
     };
   }
 
-  private enhanceModelMaterials (model: THREE.Object3D): void {
+  private enhanceModelMaterials(model: THREE.Object3D): void {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         if (child.material) {
@@ -1477,7 +1482,7 @@ export class SceneManager {
     });
   }
 
-  adjustOutlineForDistance (): void {
+  adjustOutlineForDistance(): void {
     if (!this.outlinePass || !this.camera) return;
 
     // Calculate average distance to selected objects
@@ -1499,7 +1504,7 @@ export class SceneManager {
     this.outlinePass.edgeStrength = Math.min(20, 8 * distanceFactor);
   }
 
-  startAnimationLoop (): void {
+  startAnimationLoop(): void {
     if (!this.renderer || !this.scene || !this.camera) return;
 
     this.isAnimating = true;
@@ -1519,13 +1524,13 @@ export class SceneManager {
       // ADDED: Adjust outline for distance every frame
       this.adjustOutlineForDistance();
 
-        if (this.eventHandlers && typeof this.eventHandlers.update === 'function') {
-            try {
-                this.eventHandlers.update();
-            } catch (err) {
-                console.warn('eventHandlers.update() failed:', err);
-            }
+      if (this.eventHandlers && typeof this.eventHandlers.update === 'function') {
+        try {
+          this.eventHandlers.update();
+        } catch (err) {
+          console.warn('eventHandlers.update() failed:', err);
         }
+      }
 
       // Render
       if (this.composer) {
@@ -1540,7 +1545,7 @@ export class SceneManager {
 
 
   // Method to stop animation loop
-  stopAnimationLoop (): void {
+  stopAnimationLoop(): void {
     this.isAnimating = false;
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
@@ -1549,7 +1554,7 @@ export class SceneManager {
   }
 
   // Update composer size when window resizes
-  updateComposerSize (): void {
+  updateComposerSize(): void {
     if (this.composer) {
       this.composer.setSize(window.innerWidth, window.innerHeight);
 
@@ -1564,16 +1569,16 @@ export class SceneManager {
   }
 
   // Wall culling controls
-  setWallCullingEnabled (enabled: boolean): void {
+  setWallCullingEnabled(enabled: boolean): void {
     this.wallCullingManager.setEnabled(enabled);
   }
 
-  isWallCullingEnabled (): boolean {
+  isWallCullingEnabled(): boolean {
     return this.wallCullingManager.enabled;
   }
 
   // Cleanup method - enhanced
-  dispose (): void {
+  dispose(): void {
     // Clear all items first
     this.clearAllItems();
 
@@ -1621,12 +1626,12 @@ export class SceneManager {
   }
 
   // Utility method to get bathroom items group
-  getBathroomItemsGroup (): THREE.Group {
+  getBathroomItemsGroup(): THREE.Group {
     return this.bathroomItemsGroup;
   }
 
   // Method to adjust lighting intensity
-  adjustLightingIntensity (factor: number): void {
+  adjustLightingIntensity(factor: number): void {
     this.lights.forEach(light => {
       if (light instanceof THREE.DirectionalLight || light instanceof THREE.PointLight) {
         light.intensity *= factor;
@@ -1635,7 +1640,7 @@ export class SceneManager {
   }
 
   // Method to switch lighting presets
-  setLightingPreset (preset: 'natural' | 'warm' | 'cool'): void {
+  setLightingPreset(preset: 'natural' | 'warm' | 'cool'): void {
     this.lights.forEach(light => {
       if (light instanceof THREE.AmbientLight) {
         switch (preset) {
@@ -1671,10 +1676,199 @@ export class SceneManager {
   }
 
   // Method to get current lighting information
-  getLightingInfo (): { lightCount: number; shadowsEnabled: boolean } {
+  getLightingInfo(): { lightCount: number; shadowsEnabled: boolean } {
     return {
       lightCount: this.lights.length,
       shadowsEnabled: this.renderer?.shadowMap.enabled || false
     };
+  }
+
+  // Store reference to collision preview mesh for cleanup
+  private _collisionPreviewMesh: THREE.Mesh | null = null;
+
+  // Show collision preview - red wireframe box showing where item would collide
+  showCollisionPreview(config: {
+    itemId: number | string;
+    currentPosition: [number, number, number];
+    currentRotation?: number;
+    newDimensions: { width: number; height: number; depth: number };
+    currentDimensions?: { width: number; height: number; depth: number };
+    reason: string;
+    roomWidth?: number;
+    roomHeight?: number;
+  }): void {
+    if (!this.scene) return;
+
+    // Remove existing preview mesh if any
+    this.clearCollisionPreview();
+
+    const { itemId, currentPosition, currentRotation, newDimensions } = config;
+
+    // Try to get actual position from Three.js object (more accurate than stored data)
+    let posX = currentPosition[0];
+    let posZ = currentPosition[2];
+    let rotation = currentRotation;
+
+    // Find the actual object in the scene to get its real position
+    const actualObject = this.bathroomItemsGroup.children.find(
+      child => child.userData.itemId === itemId || child.userData.itemId === Number(itemId)
+    );
+
+    if (actualObject) {
+      posX = actualObject.position.x;
+      posZ = actualObject.position.z;
+      rotation = actualObject.rotation.y;
+      console.log('🔴 Using actual 3D object position:', { x: posX, z: posZ, rotation });
+    } else {
+      console.log('🔴 Object not found in scene, using passed position');
+    }
+
+    // Get room dimensions (passed from Planner or use defaults)
+    const roomWidth = config.roomWidth || 300;
+    const roomHeight = config.roomHeight || 250;
+
+    // Calculate half dimensions for the new variant (accounting for rotation)
+    const rot = rotation || 0;
+    const cos = Math.abs(Math.cos(rot));
+    const sin = Math.abs(Math.sin(rot));
+    const rotatedHalfWidth = (newDimensions.width * cos + newDimensions.depth * sin) / 2;
+    const rotatedHalfDepth = (newDimensions.width * sin + newDimensions.depth * cos) / 2;
+
+    // Room boundaries (interior walls) - using WALL_SETTINGS.THICKNESS
+    const wallThickness = WALL_SETTINGS.THICKNESS;
+    const halfRoomWidth = roomWidth / 2;
+    const halfRoomHeight = roomHeight / 2;
+
+    // Calculate interior boundaries (where object center can be placed)
+    const interiorMinX = -halfRoomWidth + wallThickness + rotatedHalfWidth;
+    const interiorMaxX = halfRoomWidth - wallThickness - rotatedHalfWidth;
+    const interiorMinZ = -halfRoomHeight + wallThickness + rotatedHalfDepth;
+    const interiorMaxZ = halfRoomHeight - wallThickness - rotatedHalfDepth;
+
+    // Handle case where object is larger than room - center it
+    let constrainedX = posX;
+    let constrainedZ = posZ;
+
+    if (interiorMinX <= interiorMaxX) {
+      constrainedX = Math.max(interiorMinX, Math.min(interiorMaxX, posX));
+    } else {
+      // Object too wide - center it in room
+      constrainedX = 0;
+    }
+
+    if (interiorMinZ <= interiorMaxZ) {
+      constrainedZ = Math.max(interiorMinZ, Math.min(interiorMaxZ, posZ));
+    } else {
+      // Object too deep - center it in room
+      constrainedZ = 0;
+    }
+
+    posX = constrainedX;
+    posZ = constrainedZ;
+
+    const posY = newDimensions.height / 2;  // Center the box vertically (sitting on floor)
+
+    console.log('🔴 Creating collision preview:', {
+      itemId,
+      itemPosition: currentPosition,
+      constrainedPosition: [posX, posY, posZ],
+      dimensions: newDimensions,
+      rotatedHalfDims: { width: rotatedHalfWidth, depth: rotatedHalfDepth },
+      rotation: rotation,
+      roomSize: { width: roomWidth, height: roomHeight },
+      interiorBounds: { minX: interiorMinX, maxX: interiorMaxX, minZ: interiorMinZ, maxZ: interiorMaxZ }
+    });
+
+    // Create a wireframe box showing the new size
+    const geometry = new THREE.BoxGeometry(
+      newDimensions.width,
+      newDimensions.height,
+      newDimensions.depth
+    );
+
+    // Create red wireframe material
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff0000,  // Bright red
+      wireframe: true,
+      transparent: true,
+      opacity: 0.8
+    });
+
+    // Also create a semi-transparent solid for better visibility
+    const solidMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide
+    });
+
+    // Create wireframe mesh
+    const wireframeMesh = new THREE.Mesh(geometry, material);
+    wireframeMesh.position.set(posX, posY, posZ);
+    if (rotation !== undefined) {
+      wireframeMesh.rotation.y = rotation;
+    }
+    wireframeMesh.name = 'collision-preview-wireframe';
+
+    // Create solid mesh for better visibility
+    const solidGeometry = new THREE.BoxGeometry(
+      newDimensions.width,
+      newDimensions.height,
+      newDimensions.depth
+    );
+    const solidMesh = new THREE.Mesh(solidGeometry, solidMaterial);
+    solidMesh.position.set(posX, posY, posZ);
+    if (rotation !== undefined) {
+      solidMesh.rotation.y = rotation;
+    }
+    solidMesh.name = 'collision-preview-solid';
+
+    // Create a group to hold both meshes
+    const previewGroup = new THREE.Group();
+    previewGroup.name = 'collision-preview';
+    previewGroup.add(wireframeMesh);
+    previewGroup.add(solidMesh);
+
+    // Add edge geometry for clearer outline
+    const edges = new THREE.EdgesGeometry(geometry);
+    const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+    const edgeMesh = new THREE.LineSegments(edges, edgeMaterial);
+    edgeMesh.position.copy(wireframeMesh.position);
+    edgeMesh.rotation.copy(wireframeMesh.rotation);
+    edgeMesh.name = 'collision-preview-edges';
+    previewGroup.add(edgeMesh);
+
+    this.scene.add(previewGroup);
+    this._collisionPreviewMesh = previewGroup as any;
+
+    console.log('🔴 Collision preview shown at position:', [posX, posY, posZ], 'with dimensions:', newDimensions);
+  }
+
+  // Clear collision preview
+  clearCollisionPreview(): void {
+    if (!this.scene) return;
+
+    // Remove by reference if available, or by name
+    const existingPreview = this._collisionPreviewMesh || this.scene.getObjectByName('collision-preview');
+    if (existingPreview) {
+      this.scene.remove(existingPreview);
+      // Dispose geometries and materials
+      existingPreview.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry?.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else {
+            child.material?.dispose();
+          }
+        }
+        if (child instanceof THREE.LineSegments) {
+          child.geometry?.dispose();
+          (child.material as THREE.Material)?.dispose();
+        }
+      });
+    }
+
+    this._collisionPreviewMesh = null;
   }
 }
