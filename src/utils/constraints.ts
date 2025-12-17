@@ -270,24 +270,29 @@ export const constrainToCorner = (
     const halfX = isRotated90 ? halfDepth : halfWidth;
     const halfZ = isRotated90 ? halfWidth : halfDepth;
 
-    // Position object flush in corner based on corner type
-    // CORNER POSITIONING WITH PIVOT OFFSET COMPENSATION
-    //
-    // Bath models have their pivot at the SOUTH edge of geometry (not center).
-    // When we set position, we're setting the PIVOT position.
-    // The visual geometry extends NORTH from the pivot by fullDepth.
-    //
-    // At different rotations, the "south edge" rotates:
-    // - 0°: pivot at world-south edge (geometry extends north)
-    // - 90°: pivot at world-west edge (geometry extends east)
-    // - 180°: pivot at world-north edge (geometry extends south)
-    // - -90°: pivot at world-east edge (geometry extends west)
-    //
-    // DefaultCornerObjectRotation:
-    // - NW: 0° → pivot at south edge → place pivot at south wall position
-    // - NE: -90° → pivot at east edge → place pivot at east wall position
-    // - SE: 180° → pivot at north edge → place pivot at north wall position
-    // - SW: 90° → pivot at west edge → place pivot at west wall position
+  // Check if this is a center-pivot model (freestanding items with snapToWall: false)
+  // Center-pivot models need halfX/halfZ added to positioning to prevent wall clipping
+  const isCenterPivot = movementConfig.snapToWall === false;
+  console.log(`🔧 constrainToCorner: isCenterPivot=${isCenterPivot}, snapToWall=${movementConfig.snapToWall}`);
+
+  // Position object flush in corner based on corner type
+  // CORNER POSITIONING WITH PIVOT OFFSET COMPENSATION
+  //
+  // Bath models have their pivot at the SOUTH edge of geometry (not center).
+  // When we set position, we're setting the PIVOT position.
+  // The visual geometry extends NORTH from the pivot by fullDepth.
+  //
+  // At different rotations, the "south edge" rotates:
+  // - 0°: pivot at world-south edge (geometry extends north)
+  // - 90°: pivot at world-west edge (geometry extends east)
+  // - 180°: pivot at world-north edge (geometry extends south)
+  // - -90°: pivot at world-east edge (geometry extends west)
+  //
+  // DefaultCornerObjectRotation:
+  // - NW: 0° → pivot at south edge → place pivot at south wall position
+  // - NE: -90° → pivot at east edge → place pivot at east wall position
+  // - SE: 180° → pivot at north edge → place pivot at north wall position
+  // - SW: 90° → pivot at west edge → place pivot at west wall position
 
     const rotationDeg = Math.round((rotation * 180 / Math.PI));
 
@@ -297,67 +302,94 @@ export const constrainToCorner = (
 
     console.log(`🔧 rotation=${rotationDeg}°, fullWidth=${fullWidth.toFixed(1)}, fullDepth=${fullDepth.toFixed(1)}`);
 
-    // For each corner, place pivot at the appropriate wall face
-    // The geometry will extend INTO the room from the pivot
-    switch (nearestCorner.type) {
-        case 'north-west':
-            constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
-            // Corner at (west, north) walls. Rotation 0° → pivot at south edge
-            // At rotation 0°, pivot is at south edge but geometry is centered on X
-            // - X: center along X from west wall
-            // - Z: pivot at north wall, geometry extends south (into room)
-            constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-            console.log(`🔧 NW corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
-            break;
-        case 'north-east':
-            constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
-            // Corner at (east, north) walls. Rotation -90° → pivot at east edge
-            // - X: pivot at east wall (geometry extends west)
-            // - Z: pivot at north wall + halfWidth (center along Z since rotated)
-            constrainedPosition.x = nearestCorner.position.x - wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
-            console.log(`🔧 NE corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
-            break;
-        case 'south-east':
-            constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
-            // Corner at (east, south) walls. Rotation 180° → pivot at north edge
-            // - X: pivot at east wall - halfWidth (center along X)
-            // - Z: pivot at south wall (geometry extends north from pivot)
-            constrainedPosition.x = nearestCorner.position.x - halfWidth - wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z - wallBuffer;
-            console.log(`🔧 SE corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
-            break;
-        case 'south-west':
-            constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
-            // Corner at (west, south) walls. Rotation 90° → pivot at west edge
-            // - X: pivot at west wall (geometry extends east)
-            // - Z: pivot at south wall - halfWidth (center along Z since rotated)
-            constrainedPosition.x = nearestCorner.position.x + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer;
-            console.log(`🔧 SW corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
-            break;
-        case 'notch-interior':
-            // Similar to NW
-            constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-            console.log(`🔧 notch-interior: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
-            break;
+  // For each corner, place pivot at the appropriate wall face
+  // The geometry will extend INTO the room from the pivot
+  //
+  // CENTER-PIVOT models (freestanding, snapToWall: false): Use halfX/halfZ to account for geometry centered on pivot
+  // EDGE-PIVOT models (rectangular baths, snapToWall: true): Pivot is at edge, need custom positioning per corner
+  switch (nearestCorner.type) {
+    case 'north-west':
+      // Center-pivot positioning: geometry centered, add half dimensions to each axis
+      constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
 
-        case 'notch-east-north':
-            constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
-            // Similar to NW (notch-east wall acts as west wall at this corner)
-            // Object should be EAST of notch-east wall (into room), against north wall
-            constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-            console.log(`🔧 notch-east-north: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
-            break;
-    }
+      // Edge-pivot override for rectangular baths (pivot at south edge)
+      if (!isCenterPivot) {
+        // - X: center along X from west wall
+        // - Z: pivot at north wall, geometry extends south (into room)
+        constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+        constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+      }
+      console.log(`🔧 NW corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+      break;
+    case 'north-east':
+      // Center-pivot positioning
+      constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
+
+      // Edge-pivot override (pivot at east edge)
+      if (!isCenterPivot) {
+        // - X: pivot at east wall (geometry extends west)
+        // - Z: pivot at north wall + halfWidth (center along Z since rotated)
+        constrainedPosition.x = nearestCorner.position.x - wallBuffer;
+        constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
+      }
+      console.log(`🔧 NE corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+      break;
+    case 'south-east':
+      // Center-pivot positioning
+      constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
+
+      // Edge-pivot override (pivot at north edge)
+      if (!isCenterPivot) {
+        // - X: pivot at east wall - halfWidth (center along X)
+        // - Z: pivot at south wall (geometry extends north from pivot)
+        constrainedPosition.x = nearestCorner.position.x - halfWidth - wallBuffer;
+        constrainedPosition.z = nearestCorner.position.z - wallBuffer;
+      }
+      console.log(`🔧 SE corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+      break;
+    case 'south-west':
+      // Center-pivot positioning
+      constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
+
+      // Edge-pivot override (pivot at west edge)
+      if (!isCenterPivot) {
+        // - X: pivot at west wall (geometry extends east)
+        // - Z: pivot at south wall - halfWidth (center along Z since rotated)
+        constrainedPosition.x = nearestCorner.position.x + wallBuffer;
+        constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer;
+      }
+      console.log(`🔧 SW corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+      break;
+    case 'notch-interior':
+      // Center-pivot positioning
+      constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
+
+      // Edge-pivot override (similar to NW)
+      if (!isCenterPivot) {
+        constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+        constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+      }
+      console.log(`🔧 notch-interior (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+      break;
+
+    case 'notch-east-north':
+      // Center-pivot positioning
+      constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+      constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
+
+      // Edge-pivot override (similar to NW)
+      if (!isCenterPivot) {
+        constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+        constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+      }
+      console.log(`🔧 notch-east-north (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+      break;
+  }
 
     // Handle vertical positioning
     if (movementConfig.allowVerticalMovement) {
@@ -1855,61 +1887,94 @@ export const findFreeCornerPosition = (
 
     const dimensions = getDimensions(objectType, sku);
 
-    if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
-        console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
-        // Return null if no dimensions found
-        return null;
-    }
-
-    // Try each corner
-    for (const corner of corners) {
-
-        const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
-            type: objectType,
-            scale: 1.0,
-            orientation,
-            movement,
-            sku
-        });
-
-        console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
-        console.log(`🔍 Existing items count:`, existingItems.length);
-        console.log(`🔍 Existing items:`, existingItems.map(item => ({
-            type: item.type,
-            sku: item.sku,
-            position: item.position
-        })));
-
-        // Create temporary item with SKU for proper collision detection
-        const tempItem: BathroomItem = {
-            id: -1,
-            type: objectType,
-            position: [result.position.x, result.position.y, result.position.z] as [number, number, number],
-            scale: scale,
-            sku: sku
-        };
-
-        // Check if this corner position would collide with existing items
-        const wouldCollide = wouldCollideWithExisting(
-            result.position,
-            objectType,
-            scale,
-            -1, // New item, no ID yet
-            existingItems,
-            tempItem // Pass temporary item for proper dimension lookup
-        );
-
-        console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
-
-        if (!wouldCollide) {
-            console.log(`>>>111 ✅ Found free corner: ${corner.type}`);
-            return result;
-        }
-    }
-
-    // If no free corner, return null instead of forcing placement
-    console.warn('⚠️ No free corners available for corner stall shower');
+  if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
+    console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
+    // Return null if no dimensions found
     return null;
+  }
+
+  // Check for preferred corner from movement config
+  console.log('🔍 findFreeCornerPosition called with movement:', movement);
+  const preferredCorner = movement?.cornerInstallOnly &&
+    typeof movement.cornerInstallOnly === 'object' ?
+    movement.cornerInstallOnly.preferredCorner : undefined;
+  console.log('🔍 findFreeCornerPosition preferredCorner:', preferredCorner);
+
+  // Reorder corners: preferred corner first, north-east second, then others
+  let cornersToTry = corners;
+  if (preferredCorner) {
+    const preferredCornerObj = corners.find(c => c.type === preferredCorner);
+    const northEastCorner = corners.find(c => c.type === 'north-east');
+
+    if (preferredCornerObj) {
+      // Start with preferred corner
+      const priorityCorners = [preferredCornerObj];
+
+      // Add north-east as second priority (if not already preferred)
+      if (northEastCorner && preferredCorner !== 'north-east') {
+        priorityCorners.push(northEastCorner);
+      }
+
+      // Add remaining corners
+      const remainingCorners = corners.filter(c =>
+        c.type !== preferredCorner && c.type !== 'north-east'
+      );
+      cornersToTry = [...priorityCorners, ...remainingCorners];
+
+      console.log(`🎯 findFreeCornerPosition: Priority order set`);
+    }
+  }
+  console.log('🔍 findFreeCornerPosition corners order:', cornersToTry.map(c => c.type));
+
+  // Try each corner
+  for (const corner of cornersToTry) {
+
+    const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
+      type: objectType,
+      scale: 1.0,
+      orientation,
+      movement,
+      sku
+    });
+
+    console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
+    console.log(`🔍 Existing items count:`, existingItems.length);
+    console.log(`🔍 Existing items:`, existingItems.map(item => ({
+      type: item.type,
+      sku: item.sku,
+      position: item.position
+    })));
+
+    // Create temporary item with SKU for proper collision detection
+    const tempItem: BathroomItem = {
+      id: -1,
+      type: objectType,
+      position: [result.position.x, result.position.y, result.position.z] as [number, number, number],
+      scale: scale,
+      sku: sku
+    };
+
+    // Check if this corner position would collide with existing items
+    const wouldCollide = wouldCollideWithExisting(
+      result.position,
+      objectType,
+      scale,
+      -1, // New item, no ID yet
+      existingItems,
+      tempItem // Pass temporary item for proper dimension lookup
+    );
+
+    console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
+
+    if (!wouldCollide) {
+      console.log(`>>>111 ✅ Found free corner: ${corner.type}`);
+      return result;
+    }
+  }
+
+  // If no free corner, return null instead of forcing placement
+  console.warn('⚠️ No free corners available for corner stall shower');
+  return null;
 };
 
 // Helper function for free-standing objects (updated for interior space)

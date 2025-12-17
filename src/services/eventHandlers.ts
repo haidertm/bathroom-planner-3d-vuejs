@@ -650,8 +650,12 @@ export class EventHandlers {
             }
         }
 
-      // Only do this for wall-bound objects
-      if (movementConfig?.snapToWall) {
+      // Only do this for wall-bound objects (not corner-install items)
+      // Corner-install items have special positioning and should not be auto-moved
+      const isCornerInstall = movementConfig?.cornerInstallOnly &&
+        typeof movementConfig.cornerInstallOnly === 'object' &&
+        movementConfig.cornerInstallOnly.enabled === true;
+      if (movementConfig?.snapToWall && !isCornerInstall) {
         // Check which wall the object is currently on
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
