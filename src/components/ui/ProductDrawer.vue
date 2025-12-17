@@ -613,6 +613,19 @@ const handleDirectAddToRoom = async (product) => {
   emit('close')
 }
 
+// Category display label mapping (component type -> display label)
+const categoryDisplayLabels = {
+  'Bath': 'Baths',
+  'Shower': 'Showers',
+  'Toilet': 'Toilets',
+  'Furniture': 'Vanities & Basins',
+  'Radiator': 'Radiators',
+  'TowelRails': 'Heated Towel Rails',
+  'Mirror': 'Mirrors',
+  'WindowAndDoor': 'Windows & Doors',
+  'Plumbing': 'Soil Pipe'
+}
+
 const drawerTitle = computed(() => {
   if (props.selectedCategory === 'search') {
     const raw = (props && props.searchResults && 'value' in props.searchResults)
@@ -622,8 +635,8 @@ const drawerTitle = computed(() => {
     return `<span style="color:#EC048C">${count} </span> Results Found`
   }
 
-  // Return your existing category title logic
-  return props.selectedCategory || 'Products'
+  // Use display label mapping, fallback to category name
+  return categoryDisplayLabels[props.selectedCategory] || props.selectedCategory || 'Products'
 })
 
 // 4. FIXED search result highlighting that properly handles Vue refs

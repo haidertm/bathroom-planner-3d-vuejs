@@ -106,32 +106,80 @@
         >
           <div :style="categoriesContainerStyle">
             <!-- Category Items -->
-            <div
-                v-for="category in bathroomCategories"
-                :key="category.id"
-                @click.stop="handleCategoryClick(category.component)"
-                :style="getEnhancedCategoryItemStyle(category.component)"
-                class="category-item"
-            >
-              <div :style="categoryIconStyle">
-                <span v-html="category.icon"></span>
-                <!-- Tiny loading spinner in corner (barely visible) -->
+            <template v-for="category in bathroomCategories" :key="category.id">
+              <!-- Regular category (no children) -->
+              <div
+                  v-if="!category.hasChildren"
+                  @click.stop="handleCategoryClick(category.component)"
+                  :style="getEnhancedCategoryItemStyle(category.component)"
+                  class="category-item"
+              >
+                <div :style="categoryIconStyle">
+                  <span v-html="category.icon"></span>
+                  <!-- Tiny loading spinner in corner (barely visible) -->
+                  <div
+                      v-if="isCategoryLoading(category.component)"
+                      :style="tinyLoadingSpinnerStyle"
+                  ></div>
+                </div>
+                <div :style="categoryTextContainerStyle">
+                  <span :style="categoryLabelStyle">{{ category.label }}</span>
+                  <!-- Tiny status text -->
+                  <span
+                      v-if="isCategoryLoading(category.component)"
+                      :style="tinyStatusStyle"
+                  >
+                    Loading...
+                  </span>
+                </div>
+              </div>
+
+              <!-- Category with children (e.g., Heating) -->
+              <div v-else>
+                <!-- Parent category header -->
                 <div
-                    v-if="isCategoryLoading(category.component)"
-                    :style="tinyLoadingSpinnerStyle"
-                ></div>
-              </div>
-              <div :style="categoryTextContainerStyle">
-                <span :style="categoryLabelStyle">{{ category.label }}</span>
-                <!-- Tiny status text -->
-                <span
-                    v-if="isCategoryLoading(category.component)"
-                    :style="tinyStatusStyle"
+                    @click.stop="toggleCategory(category.id)"
+                    :style="getEnhancedCategoryItemStyle(category.id)"
+                    class="category-item"
                 >
-                  Loading...
-                </span>
+                  <div :style="categoryIconStyle">
+                    <span v-html="category.icon"></span>
+                  </div>
+                  <div :style="categoryTextContainerStyle">
+                    <span :style="categoryLabelStyle">{{ category.label }}</span>
+                  </div>
+                  <span :style="getSubCategoryArrowStyle(expandedCategories[category.id])">▶</span>
+                </div>
+
+                <!-- Sub-categories -->
+                <div v-if="expandedCategories[category.id]" :style="subCategoriesContainerStyle">
+                  <div
+                      v-for="child in category.children"
+                      :key="child.id"
+                      @click.stop="handleCategoryClick(child.component)"
+                      :style="getEnhancedSubCategoryItemStyle(child.component)"
+                      class="category-item sub-category"
+                  >
+                    <div :style="subCategoryIconStyle">
+                      <span v-html="child.icon"></span>
+                      <div
+                          v-if="isCategoryLoading(child.component)"
+                          :style="tinyLoadingSpinnerStyle"
+                      ></div>
+                    </div>
+                    <div :style="categoryTextContainerStyle">
+                      <span :style="subCategoryLabelStyle">{{ child.label }}</span>
+                      <span
+                          v-if="isCategoryLoading(child.component)"
+                          :style="tinyStatusStyle"
+                      >
+                        Loading...
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
         </div>
       </div>
@@ -466,6 +514,9 @@ const emit = defineEmits([
 ])
 
 // Bathroom categories with icons (matching your design)
+// State for expanded categories with children (generic map)
+const expandedCategories = ref({})
+
 const bathroomCategories = [
   {
     id: 'baths',
@@ -528,6 +579,95 @@ const bathroomCategories = [
     </svg>`
   },
   {
+    id: 'furniture',
+    label: 'Vanities & Basins',
+    component: 'Furniture',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Vanity cabinet body -->
+      <rect x="3" y="10" width="18" height="8" rx="1"/>
+      <!-- Cabinet doors -->
+      <path d="M12 10v8"/>
+      <circle cx="8" cy="14" r="0.5"/>
+      <circle cx="16" cy="14" r="0.5"/>
+      <!-- Basin/sink on top -->
+      <path d="M5 10V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/>
+      <!-- Faucet -->
+      <path d="M12 8V6"/>
+      <path d="M11 6h2"/>
+      <!-- Legs/support -->
+      <path d="M6 18v2"/>
+      <path d="M18 18v2"/>
+      <!-- Drawer handle -->
+      <circle cx="12" cy="14" r="0.3"/>
+    </svg>`
+  },
+  {
+    id: 'heating',
+    label: 'Heating',
+    hasChildren: true,
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <!-- Radiator/heating element -->
+      <rect x="4" y="8" width="16" height="10" rx="1"/>
+      <!-- Heating fins -->
+      <path d="M7 8v10"/>
+      <path d="M10 8v10"/>
+      <path d="M14 8v10"/>
+      <path d="M17 8v10"/>
+      <!-- Heat waves -->
+      <path d="M6 5c0.5-1 1.5-1 2 0s1.5 1 2 0" stroke-width="1" opacity="0.7"/>
+      <path d="M14 5c0.5-1 1.5-1 2 0s1.5 1 2 0" stroke-width="1" opacity="0.7"/>
+      <!-- Connection pipes -->
+      <path d="M4 12H2"/>
+      <path d="M22 12h-2"/>
+    </svg>`,
+    children: [
+      {
+        id: 'radiator',
+        label: 'Radiators',
+        component: 'Radiator',
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <!-- Radiator panels -->
+          <rect x="4" y="6" width="3" height="12" rx="0.5"/>
+          <rect x="8.5" y="6" width="3" height="12" rx="0.5"/>
+          <rect x="13" y="6" width="3" height="12" rx="0.5"/>
+          <rect x="17.5" y="6" width="2.5" height="12" rx="0.5"/>
+          <!-- Top connection pipe -->
+          <path d="M4 6h16"/>
+          <!-- Bottom connection pipe -->
+          <path d="M4 18h16"/>
+          <!-- Valve -->
+          <circle cx="2" cy="12" r="1"/>
+          <path d="M3 12h1"/>
+          <!-- Heat lines -->
+          <path d="M5.5 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
+          <path d="M10 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
+          <path d="M14.5 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
+        </svg>`
+      },
+      {
+        id: 'heated_towel_rail',
+        label: 'Heated Towel Rails',
+        component: 'TowelRails',
+        icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Left vertical bar -->
+          <rect x="4" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
+          <!-- Right vertical bar -->
+          <rect x="18" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
+          <!-- Top horizontal bar -->
+          <rect x="4" y="5" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+          <!-- Second horizontal bar -->
+          <rect x="4" y="9" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+          <!-- Third horizontal bar -->
+          <rect x="4" y="13" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+          <!-- Bottom horizontal bar -->
+          <rect x="4" y="17" width="16" height="1.5" fill="currentColor" rx="0.5"/>
+          <!-- Heat indicator -->
+          <path d="M8 2.5 C8 2.5 9 1.5 9 3 C9 4 8.5 4.5 8.5 4.5 C8.5 4.5 9.5 4 9.5 5.5 C9.5 6.5 8.5 7 8 7 C7.5 7 6.5 6.5 6.5 5.5 C6.5 4 7.5 4.5 7.5 4.5 C7.5 4.5 7 4 7 3 C7 1.5 8 2.5 8 2.5Z" fill="currentColor" opacity="0.6"/>
+        </svg>`
+      }
+    ]
+  },
+  {
     id: 'mirrors',
     label: 'Mirrors',
     component: 'Mirror',
@@ -547,49 +687,26 @@ const bathroomCategories = [
     </svg>`
   },
   {
-    id: 'radiator',
-    label: 'Radiator',
-    component: 'Radiator',
+    id: 'windows_doors',
+    label: 'Windows & Doors',
+    component: 'WindowAndDoor',
     icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <!-- Radiator panels -->
-      <rect x="4" y="6" width="3" height="12" rx="0.5"/>
-      <rect x="8.5" y="6" width="3" height="12" rx="0.5"/>
-      <rect x="13" y="6" width="3" height="12" rx="0.5"/>
-      <rect x="17.5" y="6" width="2.5" height="12" rx="0.5"/>
-      <!-- Top connection pipe -->
-      <path d="M4 6h16"/>
-      <!-- Bottom connection pipe -->
-      <path d="M4 18h16"/>
-      <!-- Valve -->
-      <circle cx="2" cy="12" r="1"/>
-      <path d="M3 12h1"/>
-      <!-- Heat lines -->
-      <path d="M5.5 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
-      <path d="M10 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
-      <path d="M14.5 9v2m0 2v2" stroke="currentColor" stroke-width="0.5" opacity="0.5"/>
-    </svg>`
-  },
-  {
-    id: 'furniture',
-    label: 'Furniture',
-    component: 'Furniture',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <!-- Vanity cabinet body -->
-      <rect x="3" y="10" width="18" height="8" rx="1"/>
-      <!-- Cabinet doors -->
-      <path d="M12 10v8"/>
-      <circle cx="8" cy="14" r="0.5"/>
-      <circle cx="16" cy="14" r="0.5"/>
-      <!-- Basin/sink on top -->
-      <path d="M5 10V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/>
-      <!-- Faucet -->
-      <path d="M12 8V6"/>
-      <path d="M11 6h2"/>
-      <!-- Legs/support -->
-      <path d="M6 18v2"/>
-      <path d="M18 18v2"/>
-      <!-- Drawer handle -->
-      <circle cx="12" cy="14" r="0.3"/>
+      <!-- Door frame (left side) -->
+      <rect x="3" y="4" width="8" height="16" rx="0.5"/>
+      <!-- Door panel divisions -->
+      <path d="M3 12h8"/>
+      <path d="M7 4v16"/>
+      <!-- Door handle -->
+      <circle cx="9.5" cy="12" r="0.5"/>
+
+      <!-- Window frame (right side) -->
+      <rect x="13" y="6" width="8" height="10" rx="0.5"/>
+      <!-- Window cross -->
+      <path d="M13 11h8"/>
+      <path d="M17 6v10"/>
+      <!-- Window panes detail -->
+      <path d="M15 8.5h4" stroke-width="0.5" opacity="0.5"/>
+      <path d="M15 13.5h4" stroke-width="0.5" opacity="0.5"/>
     </svg>`
   },
   {
@@ -622,56 +739,6 @@ const bathroomCategories = [
                         <!-- Label text -->
                         <text x="40" y="92" text-anchor="middle" font-family="Arial" font-size="10" fill="#666">110mm</text>
                     </svg>`
-  },
-  {
-    id: 'heated_towel_rail',
-    label: 'Heated Towel Rails',
-    component: 'TowelRails',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- Left vertical bar -->
-                <rect x="4" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
-
-                <!-- Right vertical bar -->
-                <rect x="18" y="3" width="2" height="18" fill="currentColor" rx="0.5"/>
-
-                <!-- Top horizontal bar -->
-                <rect x="4" y="5" width="16" height="1.5" fill="currentColor" rx="0.5"/>
-
-                <!-- Second horizontal bar -->
-                <rect x="4" y="9" width="16" height="1.5" fill="currentColor" rx="0.5"/>
-
-                <!-- Third horizontal bar -->
-                <rect x="4" y="13" width="16" height="1.5" fill="currentColor" rx="0.5"/>
-
-                <!-- Bottom horizontal bar -->
-                <rect x="4" y="17" width="16" height="1.5" fill="currentColor" rx="0.5"/>
-
-                <!-- Heat indicator (small flame/heat symbol) -->
-                <path d="M8 2.5 C8 2.5 9 1.5 9 3 C9 4 8.5 4.5 8.5 4.5 C8.5 4.5 9.5 4 9.5 5.5 C9.5 6.5 8.5 7 8 7 C7.5 7 6.5 6.5 6.5 5.5 C6.5 4 7.5 4.5 7.5 4.5 C7.5 4.5 7 4 7 3 C7 1.5 8 2.5 8 2.5Z" fill="currentColor" opacity="0.6"/>
-          </svg>`
-  },
-  {
-    id: 'windows_doors',
-    label: 'Windows & Doors',
-    component: 'WindowAndDoor',
-    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <!-- Door frame (left side) -->
-      <rect x="3" y="4" width="8" height="16" rx="0.5"/>
-      <!-- Door panel divisions -->
-      <path d="M3 12h8"/>
-      <path d="M7 4v16"/>
-      <!-- Door handle -->
-      <circle cx="9.5" cy="12" r="0.5"/>
-
-      <!-- Window frame (right side) -->
-      <rect x="13" y="6" width="8" height="10" rx="0.5"/>
-      <!-- Window cross -->
-      <path d="M13 11h8"/>
-      <path d="M17 6v10"/>
-      <!-- Window panes detail -->
-      <path d="M15 8.5h4" stroke-width="0.5" opacity="0.5"/>
-      <path d="M15 13.5h4" stroke-width="0.5" opacity="0.5"/>
-    </svg>`
   }
 ]
 
@@ -753,6 +820,14 @@ const failedProducts = ref(new Set())
 // NEW: Enhanced category click handler with selective preloading
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
+
+  // GTM tracking for category selection
+    if (window.dataLayer) {
+       window.dataLayer.push({
+         event: 'category_click',
+         category_name: category
+       })
+    }
 
   // Simply open the product drawer without any progressive loading
   openProductDrawer(category)
@@ -963,6 +1038,10 @@ const handleTouchEnd = () => {
 
 const toggleBathroomItemsSection = () => {
   isBathroomItemsExpanded.value = !isBathroomItemsExpanded.value
+}
+
+const toggleCategory = (id) => {
+  expandedCategories.value[id] = !expandedCategories.value[id]
 }
 
 const toggleRoomSettingsSection = () => {
@@ -1694,6 +1773,54 @@ const categoryLabelStyle = computed(() => ({
   color: '#374151',
   fontFamily: 'Arial, sans-serif'
 }))
+
+// Sub-category styles for Heating dropdown
+const getSubCategoryArrowStyle = (isExpanded) => ({
+  marginLeft: 'auto',
+  fontSize: '10px',
+  color: '#9CA3AF',
+  transition: 'transform 0.2s ease',
+  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)'
+})
+
+const subCategoriesContainerStyle = computed(() => ({
+  marginLeft: '16px',
+  paddingLeft: '8px',
+  marginTop: '4px',
+  marginBottom: '4px'
+}))
+
+const getEnhancedSubCategoryItemStyle = (component) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+  padding: '16px 20px',
+  cursor: 'pointer',
+  borderRadius: '8px',
+  backgroundColor: loadingCategories.value.has(component) ? '#F0F9FF' : '#ffffff',
+  transition: 'all 0.2s ease',
+  border: '1px solid #e5e7eb',
+  marginBottom: '8px',
+  fontFamily: 'Arial, sans-serif'
+})
+
+const subCategoryIconStyle = computed(() => ({
+  width: '28px',
+  height: '28px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#6B7280',
+  position: 'relative'
+}))
+
+const subCategoryLabelStyle = computed(() => ({
+  fontSize: '14px',
+  fontWeight: '400',
+  color: '#4B5563',
+  fontFamily: 'Arial, sans-serif'
+}))
+
 // Add these to your existing reactive data
 const searchQuery = ref('')
 const searchFocused = ref(false)

@@ -55,6 +55,9 @@
         :notch-height="notchHeight"
         @close="handleVariantDrawerClose"
         @swap-variant="handleVariantSwap"
+        @preview-collision="handlePreviewCollision"
+        @clear-collision-preview="handleClearCollisionPreview"
+        @deselect-item="handleDeselectItem"
     />
     <!-- Toggle button for texture panel -->
     <button
@@ -165,7 +168,7 @@ import { EventHandlers } from '../services/eventHandlers'
 import { createModel } from '../models/bathroomFixtures.ts'
 
 // Utils - Updated imports to include collision detection and validation
-import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, wouldCollideWithExistingOrWalls, getInteriorBoundaries, validateObjectFitsInRoom, validateNoOverlap } from '../utils/constraints.js'
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, constrainToRoom, wouldCollideWithExistingOrWalls, getInteriorBoundaries, validateObjectFitsInRoom, validateNoOverlap, checkWallCollision } from '../utils/constraints.js'
 import {highlightObject, isMobile} from '../utils/helpers.ts'
 
 // Composables
@@ -325,10 +328,58 @@ const handleVariantDrawerClose = () => {
   variantConfigProduct.value = null
   variantConfigCurrentVariant.value = null
   variantConfigItemId.value = null
+  // Clear any collision preview when drawer closes
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
+}
+
+const handleDeselectItem = () => {
+  // Clear 3D selection/outline
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
+  }
+  selectedItemId.value = null
+}
+
+// Handle collision preview - show red outline for "Too Large" variant
+const handlePreviewCollision = (previewConfig) => {
+  console.log('🔴 Showing collision preview:', previewConfig)
+  const { itemId, variant, currentItem, fitInfo } = previewConfig
+
+  if (!sceneManagerRef.value || !currentItem) {
+    console.warn('Cannot show collision preview: missing scene manager or item')
+    return
+  }
+
+  // Use sceneManager to show collision preview with red outline
+  sceneManagerRef.value.showCollisionPreview({
+    itemId,
+    currentPosition: currentItem.position,
+    currentRotation: currentItem.rotation,
+    newDimensions: variant.dimensions,
+    currentDimensions: currentItem.model?.dimensions,
+    reason: fitInfo?.reason || 'collision',
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value
+  })
+}
+
+// Handle clearing collision preview (e.g., when colliding item is removed)
+const handleClearCollisionPreview = () => {
+  console.log('🔄 Clearing collision preview (items changed)')
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
 }
 
 const handleVariantSwap = async (swapConfig) => {
   console.log('🔄 Starting variant swap:', swapConfig)
+
+  // Clear any collision preview when starting a valid swap
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
 
   // Set flag to prevent drawer from closing during swap
   isSwappingVariant.value = true
@@ -345,6 +396,38 @@ const handleVariantSwap = async (swapConfig) => {
 
     const currentItem = items.value[currentItemIndex]
     console.log('Current item found:', currentItem)
+
+    // ✅ VALIDATION: Check if the new variant fits in the room
+    if (newVariant.dimensions) {
+      const validation = validateObjectFitsInRoom(
+        newVariant.dimensions,
+        roomWidth.value,
+        roomHeight.value,
+        newVariant.name || currentItem.type
+      )
+
+      if (!validation.isValid) {
+        alert(`Cannot swap to this variant: ${validation.errorMessage}`)
+        isSwappingVariant.value = false
+        return
+      }
+
+      // ✅ VALIDATION: Check if the new variant would fit at the current position
+      // Skip wall collision check for freestanding items - they're not bound to walls
+      const movementConfig = getMovementConfig(currentItem.type, currentItem)
+      const isFreestanding = !movementConfig.snapToWall
+
+      if (!isFreestanding) {
+        // Create a temp position to check wall collision with new dimensions
+        const currentPosition = {
+          x: currentItem.position[0],
+          y: currentItem.position[1],
+          z: currentItem.position[2]
+        }
+
+        // Create a temporary item with new dimensions to check wall collision
+      }
+    }
 
     // Create the swapped item
     const swappedItem = swapItemVariant(currentItem, newVariant)
@@ -401,6 +484,54 @@ const handleVariantSwap = async (swapConfig) => {
     }
 
     console.log('Swapped item created:', swappedItem)
+
+    // RE-CONSTRAIN: Ensure the new variant fits within walls/room
+    // This fixes the issue where larger variants might clip into walls
+    const movementConfig = getMovementConfig(swappedItem.type, swappedItem)
+
+    if (movementConfig.snapToWall) {
+      const constraintResult = constrainToWalls(
+          { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+          roomWidth.value,
+          roomHeight.value,
+          {
+            type: swappedItem.type,
+            scale: swappedItem.scale || 1.0,
+            orientation: swappedItem.model?.orientation,
+            item: swappedItem,
+            notchWidth: notchWidth.value,
+            notchHeight: notchHeight.value,
+            strictFlushMountCheck: true // ✅ NEW: Enforce strict wall boundaries for swapped items
+          }
+      )
+
+      swappedItem.position = [
+        constraintResult.position.x,
+        constraintResult.position.y,
+        constraintResult.position.z
+      ]
+    } else {
+      // For free-standing items, ensure they stay in room
+      const constraintResult = constrainToRoom(
+          { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+          roomWidth.value,
+          roomHeight.value,
+          {
+            type: swappedItem.type,
+            scale: swappedItem.scale || 1.0,
+            orientation: swappedItem.model?.orientation,
+            item: swappedItem,
+            notchWidth: notchWidth.value,
+            notchHeight: notchHeight.value
+          }
+      )
+
+      swappedItem.position = [
+        constraintResult.position.x,
+        constraintResult.position.y,
+        constraintResult.position.z
+      ]
+    }
 
     // Update items array
     const newItems = [...items.value]
@@ -1563,8 +1694,14 @@ const loadTemplateData = async (template) => {
         variant.spawnHeight || 0
       )
 
-      // ✅ VALIDATION: Check if this item overlaps with already placed items
-      // Pass isTemplateValidation=true to skip strict overlap check for pre-designed templates
+      // ✅ VALIDATION: Check if this item fits within room boundaries
+      // Pass isTemplateValidation=true to skip item-to-item collision but still check walls
+      const templateModel = {
+        dimensions: variant.dimensions,
+        floorOffset: variant.floorOffset || 0,
+        spawnHeight: variant.spawnHeight || 0
+      }
+
       const overlapValidation = validateNoOverlap(
         position,
         templateItem.type,
@@ -1575,16 +1712,19 @@ const loadTemplateData = async (template) => {
         templateItem.sku,
         undefined, // notchWidth
         undefined, // notchHeight
-        undefined, // model
-        true // isTemplateValidation - skip strict overlap check for templates
+        templateModel, // Pass model with dimensions for wall collision check
+        true // isTemplateValidation - skip item-to-item collision but check walls
       )
 
-      if (!overlapValidation.isValid && overlapValidation.collidingItem) {
-        console.warn(`⚠️ Skipping ${templateItem.type} (${templateItem.sku}): overlaps with ${overlapValidation.collidingItem.type}`)
+      if (!overlapValidation.isValid) {
+        const reason = overlapValidation.collidingItem
+          ? `Overlaps with ${overlapValidation.collidingItem.productName || overlapValidation.collidingItem.type}`
+          : 'Extends outside room boundaries'
+        console.warn(`⚠️ Skipping ${templateItem.type} (${templateItem.sku}): ${reason}`)
         skippedItems.push({
           type: templateItem.type,
           sku: templateItem.sku,
-          reason: `Overlaps with ${overlapValidation.collidingItem.productName || overlapValidation.collidingItem.type}`
+          reason
         })
         return null
       }

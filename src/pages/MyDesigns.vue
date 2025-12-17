@@ -207,9 +207,10 @@ const deleteDesign = (designId) => {
 }
 
 // Template selection handlers
-const handleStartFromScratch = () => {
-  // Go to room shape selector (home page), then room dimensions
-  router.push('/room-shape')
+const handleStartFromScratch = (shape) => {
+  // Save the selected shape and go directly to room dimensions
+  localStorage.setItem('selected-room-shape', shape)
+  router.push('/room-dimensions')
 }
 
 const handleSelectTemplate = (templateId) => {
