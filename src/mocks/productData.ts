@@ -5224,7 +5224,7 @@ const productData: ProductData = {
                       allowVerticalMovement: false,
                       allowFreeRotation: false
                   },
-                  sku: 'C66201',
+                  sku: 'C66036',
                   price: '229.99',
                   title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat'
               },
