@@ -176,7 +176,7 @@ const selectTemplate = (templateId) => {
 }
 
 .hero-title {
-  font-size: 42px;
+  font-size: 38px;
   font-weight: 700;
   color: white;
   line-height: 1.1;
@@ -309,7 +309,7 @@ const selectTemplate = (templateId) => {
 
 .template-image {
   width: 100%;
-  height: 160px;
+  height: 190px;
   overflow: hidden;
   position: relative;
 }
@@ -317,7 +317,6 @@ const selectTemplate = (templateId) => {
 .template-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
 .template-placeholder {
