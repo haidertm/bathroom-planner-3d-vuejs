@@ -75,74 +75,74 @@ const productData: ProductData = {
     {
       id: 'furniture_variant_2',
       link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
-      name: 'Bali Gloss White Wall Hung Basin Drawer Vanity',
-      price: '319.00',
+      name: 'Bali Gloss White Basin Drawer Vanity 600mm',
+      price: '399.99',
       image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
       variants: [
         {
           id: 'C77605',
-          name: '600mm Width',
+          name: '600mm Floorstanding',
           image: 'assets/productImages/furniture/C77605-1000-Bali-Gloss-White-Basin-Drawer_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
           path: '../../models/furniture/basin/C77605.glb',
-          dimensions: { width: 61, height: 83, depth: 44 },
+          dimensions: { width: 61, height: 95.6, depth: 44 },
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
           sku: 'C77605',
-          price: '319.00',
-          title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 600mm'
+          price: '399.99',
+          title: 'Bali Gloss White Basin Drawer Vanity 600mm'
         },
         {
           id: 'C77606',
-          name: '800mm Width',
+          name: '800mm Wall Hung',
           sku: 'C77606',
           image: 'assets/productImages/furniture/C77606-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-800mm',
           path: '../../models/furniture/basin/C77606.glb',
-          dimensions: { width: 81.3, height: 53, depth: 44 },
+          dimensions: { width: 81.3, height: 65.4, depth: 44 },
           floorOffset: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '343.00',
+          price: '429.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm'
         },
         {
           id: 'C77607',
-          name: '900mm Width',
+          name: '800mm Floorstanding',
           sku: 'C77607',
           image: 'assets/productImages/furniture/C77607-1000-Bali-Gloss-White-Basin-Drawer-_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-800mm',
           path: '../../models/furniture/basin/C77607.glb',
-          dimensions: { width: 81.3, height: 83.4, depth: 44 },
+          dimensions: { width: 81.3, height: 95.9, depth: 44 },
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '415.99',
-          title: 'Bali Gloss White Basin Drawer Vanity 900mm'
+          price: '415.00',
+          title: 'Bali Gloss White Basin Drawer Vanity 800mm'
         },
         {
           id: 'C77608',
-          name: '1000mm Width',
+          name: '1000mm Wall Hung',
           sku: 'C77608',
           image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-1000mm',
           path: '../../models/furniture/basin/C77608.glb',
-          dimensions: { width: 100.08, height: 53, depth: 43.9 },
+          dimensions: { width: 100.08, height: 63.8, depth: 43.9 },
           floorOffset: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '431.99',
+          price: '431.00',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm'
         }
       ],
