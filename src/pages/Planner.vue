@@ -20,6 +20,7 @@
         :show-grid="showGrid"
         :show-wall-grid="showWallGrid"
         :wall-culling-enabled="wallCullingEnabled"
+        :existing-items="items"
         @room-size-change="handleRoomSizeChange"
         @notch-size-change="handleNotchSizeChange"
         @toggle-grid="setShowGrid"
@@ -46,8 +47,17 @@
         :product="variantConfigProduct"
         :current-variant="variantConfigCurrentVariant"
         :item-id="variantConfigItemId"
+        :current-item="variantConfigCurrentItem"
+        :existing-items="items"
+        :room-width="roomWidth"
+        :room-height="roomHeight"
+        :notch-width="notchWidth"
+        :notch-height="notchHeight"
         @close="handleVariantDrawerClose"
         @swap-variant="handleVariantSwap"
+        @preview-collision="handlePreviewCollision"
+        @clear-collision-preview="handleClearCollisionPreview"
+        @deselect-item="handleDeselectItem"
     />
     <!-- Toggle button for texture panel -->
     <button
@@ -147,6 +157,7 @@ import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
 import { CONSTRAINTS, ROOM_DEFAULTS, WALL_SETTINGS } from '../constants/dimensions.js'
 import { FLOOR_TEXTURES, WALL_TEXTURES, DEFAULT_FLOOR_TEXTURE, DEFAULT_WALL_TEXTURE } from '../constants/textures'
 import { CONFIG, DEFAULT_ORIENTATION } from '../constants/models'
+import { LOOK_AT } from '../constants/camera'
 import { getTemplateById } from '../constants/templates'
 
 // Services
@@ -156,8 +167,8 @@ import { EventHandlers } from '../services/eventHandlers'
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
 
-// Utils - Updated imports to include collision detection
-import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, wouldCollideWithExistingOrWalls, getInteriorBoundaries } from '../utils/constraints.js'
+// Utils - Updated imports to include collision detection and validation
+import { constrainAllObjectsToRoom, findFreeWallPosition, constrainToWalls, constrainToRoom, wouldCollideWithExistingOrWalls, getInteriorBoundaries, validateObjectFitsInRoom, validateNoOverlap, checkWallCollision } from '../utils/constraints.js'
 import {highlightObject, isMobile} from '../utils/helpers.ts'
 
 // Composables
@@ -170,6 +181,7 @@ import Header from '../components/ui/Header.vue';
 import { getScaleForUnits } from '../utils/units.js';
 import {getMovementConfig} from "../utils/models.js";
 import productData from '../mocks/productData'
+import { autoPositionItem } from '../utils/autoPositioning'
 
 // Router
 const router = useRouter()
@@ -242,15 +254,48 @@ const variantConfigProduct = ref(null)
 const variantConfigCurrentVariant = ref(null)
 const variantConfigItemId = ref(null)
 
+// Computed property to get the current item for variant swapping
+const variantConfigCurrentItem = computed(() => {
+  if (!variantConfigItemId.value) return null
+  return items.value.find(item => item.id === variantConfigItemId.value) || null
+})
+
 // 3. Add these event handlers to your existing methods
 const handleItemSelection = (itemId) => {
   console.log('🎯 Item selected:', itemId)
-  selectedItemId.value = Number(itemId)
+  const numericId = Number(itemId)
+  selectedItemId.value = numericId
+
+  // Automatically open variant drawer when item is selected
+  const item = items.value.find(i => i.id === numericId)
+  if (item && item.sku && item.type) {
+    const result = findProductByVariantSku(item.sku, item.type, productData)
+    if (result) {
+      variantConfigProduct.value = result.product
+      variantConfigCurrentVariant.value = result.variant
+      variantConfigItemId.value = numericId
+      isVariantDrawerOpen.value = true
+    }
+  }
 }
+
+// Flag to prevent drawer close during variant swap
+const isSwappingVariant = ref(false)
 
 const handleItemDeselection = () => {
   console.log('🎯 Item deselected')
   selectedItemId.value = null
+
+  // Don't close drawer if we're in the middle of a variant swap
+  if (isSwappingVariant.value) {
+    return
+  }
+
+  // Close variant drawer when item is deselected
+  isVariantDrawerOpen.value = false
+  variantConfigProduct.value = null
+  variantConfigCurrentVariant.value = null
+  variantConfigItemId.value = null
 }
 
 const handleConfigureVariants = (config) => {
@@ -283,10 +328,61 @@ const handleVariantDrawerClose = () => {
   variantConfigProduct.value = null
   variantConfigCurrentVariant.value = null
   variantConfigItemId.value = null
+  // Clear any collision preview when drawer closes
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
+}
+
+const handleDeselectItem = () => {
+  // Clear 3D selection/outline
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
+  }
+  selectedItemId.value = null
+}
+
+// Handle collision preview - show red outline for "Too Large" variant
+const handlePreviewCollision = (previewConfig) => {
+  console.log('🔴 Showing collision preview:', previewConfig)
+  const { itemId, variant, currentItem, fitInfo } = previewConfig
+
+  if (!sceneManagerRef.value || !currentItem) {
+    console.warn('Cannot show collision preview: missing scene manager or item')
+    return
+  }
+
+  // Use sceneManager to show collision preview with red outline
+  sceneManagerRef.value.showCollisionPreview({
+    itemId,
+    currentPosition: currentItem.position,
+    currentRotation: currentItem.rotation,
+    newDimensions: variant.dimensions,
+    currentDimensions: currentItem.model?.dimensions,
+    reason: fitInfo?.reason || 'collision',
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value
+  })
+}
+
+// Handle clearing collision preview (e.g., when colliding item is removed)
+const handleClearCollisionPreview = () => {
+  console.log('🔄 Clearing collision preview (items changed)')
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
 }
 
 const handleVariantSwap = async (swapConfig) => {
   console.log('🔄 Starting variant swap:', swapConfig)
+
+  // Clear any collision preview when starting a valid swap
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.clearCollisionPreview()
+  }
+
+  // Set flag to prevent drawer from closing during swap
+  isSwappingVariant.value = true
 
   try {
     const { itemId, newVariant, product, useProgressiveLoading = false } = swapConfig
@@ -294,16 +390,148 @@ const handleVariantSwap = async (swapConfig) => {
     const currentItemIndex = items.value.findIndex(item => item.id === itemId)
     if (currentItemIndex === -1) {
       console.error('❌ Item not found for variant swap:', itemId)
+      isSwappingVariant.value = false
       return
     }
 
     const currentItem = items.value[currentItemIndex]
     console.log('Current item found:', currentItem)
 
+    // ✅ VALIDATION: Check if the new variant fits in the room
+    if (newVariant.dimensions) {
+      const validation = validateObjectFitsInRoom(
+        newVariant.dimensions,
+        roomWidth.value,
+        roomHeight.value,
+        newVariant.name || currentItem.type
+      )
+
+      if (!validation.isValid) {
+        alert(`Cannot swap to this variant: ${validation.errorMessage}`)
+        isSwappingVariant.value = false
+        return
+      }
+
+      // ✅ VALIDATION: Check if the new variant would fit at the current position
+      // Skip wall collision check for freestanding items - they're not bound to walls
+      const movementConfig = getMovementConfig(currentItem.type, currentItem)
+      const isFreestanding = !movementConfig.snapToWall
+
+      if (!isFreestanding) {
+        // Create a temp position to check wall collision with new dimensions
+        const currentPosition = {
+          x: currentItem.position[0],
+          y: currentItem.position[1],
+          z: currentItem.position[2]
+        }
+
+        // Create a temporary item with new dimensions to check wall collision
+      }
+    }
+
     // Create the swapped item
     const swappedItem = swapItemVariant(currentItem, newVariant)
 
+    // For mirrors: Recalculate Y position to maintain 20cm gap above vanity
+    // When swapping variants with different floorOffsets, we need to adjust Y
+    if (currentItem.type === 'Mirror') {
+      const oldFloorOffset = currentItem.model?.floorOffset || 0
+      const newFloorOffset = newVariant.floorOffset || 0
+
+      // Find vanity below the mirror (same X/Z position, vanity type)
+      const vanityBelow = items.value.find(item => {
+        if (item.type !== 'Furniture') return false
+        const dx = Math.abs(item.position[0] - currentItem.position[0])
+        const dz = Math.abs(item.position[2] - currentItem.position[2])
+        // Check if vanity is horizontally aligned (within 30cm tolerance)
+        return dx < 30 && dz < 30
+      })
+
+      if (vanityBelow) {
+        // Mirror is above vanity - recalculate Y to maintain 20cm gap
+        const MIRROR_GAP_ABOVE_VANITY = 20
+        const vanityDimensions = vanityBelow.model?.dimensions || { height: 55 }
+        const vanityTopY = (vanityBelow.position[1] || 0) + vanityDimensions.height
+        const desiredVisualBottom = vanityTopY + MIRROR_GAP_ABOVE_VANITY
+        const newMirrorY = desiredVisualBottom - newFloorOffset
+
+        swappedItem.position = [swappedItem.position[0], newMirrorY, swappedItem.position[2]]
+        console.log('🪞 Mirror variant swap: Adjusted Y for vanity placement', {
+          vanityTopY,
+          oldFloorOffset,
+          newFloorOffset,
+          desiredVisualBottom,
+          newMirrorY,
+          actualVisualBottom: newMirrorY + newFloorOffset
+        })
+      } else {
+        // No vanity - maintain the same visual bottom position
+        // oldVisualBottom = oldY + oldFloorOffset
+        // newVisualBottom = newY + newFloorOffset = oldVisualBottom
+        // newY = oldVisualBottom - newFloorOffset = oldY + oldFloorOffset - newFloorOffset
+        const oldY = currentItem.position[1]
+        const newMirrorY = oldY + oldFloorOffset - newFloorOffset
+
+        swappedItem.position = [swappedItem.position[0], newMirrorY, swappedItem.position[2]]
+        console.log('🪞 Mirror variant swap: Adjusted Y to maintain visual position', {
+          oldY,
+          oldFloorOffset,
+          newFloorOffset,
+          newMirrorY,
+          visualBottom: newMirrorY + newFloorOffset
+        })
+      }
+    }
+
     console.log('Swapped item created:', swappedItem)
+
+    // RE-CONSTRAIN: Ensure the new variant fits within walls/room
+    // This fixes the issue where larger variants might clip into walls
+    const movementConfig = getMovementConfig(swappedItem.type, swappedItem)
+
+    if (movementConfig.snapToWall) {
+      const constraintResult = constrainToWalls(
+          { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+          roomWidth.value,
+          roomHeight.value,
+          {
+            type: swappedItem.type,
+            scale: swappedItem.scale || 1.0,
+            orientation: swappedItem.model?.orientation,
+            item: swappedItem,
+            notchWidth: notchWidth.value,
+            notchHeight: notchHeight.value,
+            strictFlushMountCheck: true // ✅ NEW: Enforce strict wall boundaries for swapped items
+          }
+      )
+
+      swappedItem.position = [
+        constraintResult.position.x,
+        constraintResult.position.y,
+        constraintResult.position.z
+      ]
+    } else {
+      // For free-standing items, ensure they stay in room
+      const constraintResult = constrainToRoom(
+          { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+          roomWidth.value,
+          roomHeight.value,
+          {
+            type: swappedItem.type,
+            scale: swappedItem.scale || 1.0,
+            orientation: swappedItem.model?.orientation,
+            item: swappedItem,
+            notchWidth: notchWidth.value,
+            notchHeight: notchHeight.value
+          }
+      )
+
+      swappedItem.position = [
+        constraintResult.position.x,
+        constraintResult.position.y,
+        constraintResult.position.z
+      ]
+    }
 
     // Update items array
     const newItems = [...items.value]
@@ -312,6 +540,9 @@ const handleVariantSwap = async (swapConfig) => {
     // Prevent watcher interference during swap
     lastUpdateSource.value = 'variantSwap-processing'
     items.value = newItems
+
+    // Track if we're using the standard loading path (which has async setTimeout)
+    let usedStandardLoadingPath = false
 
     // Handle scene update directly - DON'T let the watcher do it
     if (sceneManagerRef.value) {
@@ -366,12 +597,11 @@ const handleVariantSwap = async (swapConfig) => {
             }
           )
           console.log('✅ Progressive variant swap initiated')
-          return // Early return - callbacks handle the rest
-        }
-
-        // Standard loading path (model is already cached)
-        // Remove old item first
-        await sceneManagerRef.value.removeSingleItem(itemId)
+        } else {
+          // Standard loading path (model is already cached)
+          usedStandardLoadingPath = true
+          // Remove old item first
+          await sceneManagerRef.value.removeSingleItem(itemId)
         console.log('✅ Old item removed')
 
         // Add new variant
@@ -429,9 +659,10 @@ const handleVariantSwap = async (swapConfig) => {
               console.warn('⚠️ Could not find newly added model in scene')
             }
           }
-          // Mark completion for watchers
           lastUpdateSource.value = 'variantSwap-complete'
-        }, 100) // Small delay to ensure scene update is complete
+          isSwappingVariant.value = false
+        }, 100)
+        }
 
       } catch (error) {
         console.error('❌ Error during scene update in variant swap:', error)
@@ -454,12 +685,16 @@ const handleVariantSwap = async (swapConfig) => {
 
     console.log('✅ Variant swap completed successfully')
 
-    // Close the variant drawer
-    handleVariantDrawerClose()
+    // Update the variant drawer with the new current variant
+    variantConfigCurrentVariant.value = newVariant
+
+    if (!usedStandardLoadingPath) {
+      isSwappingVariant.value = false
+    }
   } catch (error) {
     console.error('❌ Variant swap failed:', error)
     alert('Failed to swap variant. Please try again.')
-    handleVariantDrawerClose()
+    isSwappingVariant.value = false
   }
 }
 // Listen for object selection changes
@@ -838,435 +1073,6 @@ const handleNotchSizeChange = (newNotchWidth, newNotchHeight) => {
   }, 100)
 }
 
-// ============================================================================
-// MIRROR PLACEMENT HELPERS - Position mirrors above furniture units
-// ============================================================================
-
-/**
- * Find all furniture units in the scene
- * Returns array of all furniture items
- */
-const findAllFurnitureUnits = () => {
-  return items.value.filter(item => item.type === 'Furniture') || []
-}
-
-/**
- * Check if a furniture item already has a mirror above it
- * Returns true if there's already a mirror above this furniture
- */
-const hasMirrorAbove = (furnitureItem) => {
-  const furniturePos = furnitureItem.position
-  const furnitureDimensions = furnitureItem.model?.dimensions || { width: 60, height: 55, depth: 35 }
-  const furnitureWall = detectWallFromPosition(furniturePos, furnitureItem.rotation || 0)
-
-  // Calculate furniture top Y for vertical overlap check
-  // furniturePos[1] is the model's scene Y position (typically the center or pivot point)
-  // floorOffset indicates how far above Y=0 the model's visual bottom sits
-  const furnitureFloorOffset = furnitureItem.model?.floorOffset ?? 0
-  const furnitureTopY = furniturePos[1] + furnitureFloorOffset + furnitureDimensions.height
-
-  return items.value.some(item => {
-    if (item.type !== 'Mirror') return false
-
-    const mirrorPos = item.position
-    const mirrorWall = detectWallFromPosition(mirrorPos, item.rotation || 0)
-
-    // Must be on the same wall
-    if (mirrorWall !== furnitureWall) return false
-
-    // Check horizontal proximity based on wall orientation
-    // This is the key check - if a mirror is horizontally aligned with the furniture on the same wall,
-    // we consider it "above" since mirrors are always placed at a height above furniture
-    const proximityThreshold = furnitureDimensions.width / 2 + 50 // Half width + 50cm margin
-
-    if (furnitureWall === 'north' || furnitureWall === 'south') {
-      // For north/south walls, check X proximity
-      if (Math.abs(mirrorPos[0] - furniturePos[0]) > proximityThreshold) return false
-    } else {
-      // For east/west walls, check Z proximity
-      if (Math.abs(mirrorPos[2] - furniturePos[2]) > proximityThreshold) return false
-    }
-
-    // Calculate mirror bottom Y to verify it's actually above the furniture
-    // Coordinate convention: mirrorPos[1] is the scene Y position.
-    // - If floorOffset is defined, it indicates the offset from position.y to the visual bottom
-    // - If only dimensions.height is available, treat mirrorPos[1] as model center and compute bottom
-    // - Otherwise, fall back to mirrorPos[1] itself (assumes bottom-aligned or 0 offset)
-    const mirrorHeight = item.model?.dimensions?.height
-    let mirrorBottomY
-
-    if (item.model?.floorOffset !== undefined) {
-      // floorOffset defined: bottom = position.y + floorOffset
-      mirrorBottomY = mirrorPos[1] + item.model.floorOffset
-    } else if (mirrorHeight !== undefined) {
-      // No floorOffset but height is known: assume mirrorPos[1] is center, so bottom = center - height/2
-      mirrorBottomY = mirrorPos[1] - mirrorHeight / 2
-    } else {
-      // Neither available: fall back to position.y as a sensible default (assumes bottom at position)
-      mirrorBottomY = mirrorPos[1]
-    }
-
-    // Mirror must be positioned above the furniture's top (with small tolerance for touching)
-    const verticalTolerance = 5 // 5cm tolerance
-    if (mirrorBottomY < furnitureTopY - verticalTolerance) {
-      // Mirror bottom is below furniture top - not considered "above"
-      return false
-    }
-
-    return true
-  })
-}
-
-/**
- * Check if there is clear space above furniture to place a mirror
- * Returns true if the space above is clear (no radiators, other items overlapping)
- * @param furnitureItem - The furniture item to check above
- * @param mirrorVariant - The mirror variant with dimensions info
- */
-const hasSpaceAboveFurniture = (furnitureItem, mirrorVariant) => {
-  const furniturePos = furnitureItem.position
-  const furnitureDimensions = furnitureItem.model?.dimensions || { width: 60, height: 55, depth: 35 }
-  const furnitureWall = detectWallFromPosition(furniturePos, furnitureItem.rotation || 0)
-
-  // Calculate furniture top Y
-  const furnitureFloorOffset = furnitureItem.model?.floorOffset ?? 0
-  const furnitureTopY = furniturePos[1] + furnitureFloorOffset + furnitureDimensions.height
-
-  // Calculate where the mirror would be placed
-  const mirrorDimensions = mirrorVariant?.dimensions || { width: 60, height: 60, depth: 10 }
-  const spawnHeightOffset = mirrorVariant?.spawnHeight ?? 5
-  const mirrorBottomY = furnitureTopY + spawnHeightOffset
-  const mirrorTopY = mirrorBottomY + mirrorDimensions.height
-
-  // Mirror would be centered on furniture
-  const mirrorX = furniturePos[0]
-  const mirrorZ = furniturePos[2]
-
-  // Check collision buffers
-  const horizontalBuffer = 10 // 10cm horizontal buffer for safety
-  const verticalBuffer = 5   // 5cm vertical buffer
-
-  // Check against ALL items (not just mirrors) for overlapping
-  const hasCollision = items.value.some(item => {
-    // Skip the furniture item itself
-    if (item.id === furnitureItem.id) return false
-
-    // Skip mirrors - they are handled separately by hasMirrorAbove
-    if (item.type === 'Mirror') return false
-
-    const itemPos = item.position
-    // Get dimensions from model or use getDimensions as fallback
-    const itemDimensions = item.model?.dimensions || getDimensions(item.type, item.sku) || { width: 60, height: 60, depth: 35 }
-    const itemFloorOffset = item.model?.floorOffset ?? 0
-
-    // Check if item is on the same wall OR in the same horizontal area above the furniture
-    const itemWall = detectWallFromPosition(item.position, item.rotation || 0)
-
-    // For items like radiators that might be above furniture, check proximity regardless of wall detection
-    // Use position-based proximity check instead of strict wall matching
-    const proximityThreshold = Math.max(furnitureDimensions.width, mirrorDimensions.width) / 2 + 30 // 30cm buffer
-
-    let isInSameArea = false
-    if (furnitureWall === 'north' || furnitureWall === 'south') {
-      // Check if X positions are close enough
-      isInSameArea = Math.abs(itemPos[0] - furniturePos[0]) < proximityThreshold
-    } else {
-      // Check if Z positions are close enough
-      isInSameArea = Math.abs(itemPos[2] - furniturePos[2]) < proximityThreshold
-    }
-
-    // Skip if not on the same wall AND not in the same area
-    if (itemWall !== furnitureWall && !isInSameArea) {
-      return false
-    }
-
-    // Calculate item's Y range
-    const itemBottomY = itemPos[1] + itemFloorOffset
-    const itemTopY = itemBottomY + itemDimensions.height
-
-    // Check vertical overlap (with buffer)
-    const verticalOverlap = !(mirrorTopY + verticalBuffer < itemBottomY || itemTopY + verticalBuffer < mirrorBottomY)
-    if (!verticalOverlap) return false
-
-    // Check horizontal overlap based on wall orientation
-    let horizontalOverlap = false
-
-    if (furnitureWall === 'north' || furnitureWall === 'south') {
-      // For north/south walls, check X overlap
-      const mirrorMinX = mirrorX - mirrorDimensions.width / 2 - horizontalBuffer
-      const mirrorMaxX = mirrorX + mirrorDimensions.width / 2 + horizontalBuffer
-      const itemMinX = itemPos[0] - itemDimensions.width / 2
-      const itemMaxX = itemPos[0] + itemDimensions.width / 2
-
-      horizontalOverlap = !(mirrorMaxX < itemMinX || itemMaxX < mirrorMinX)
-    } else {
-      // For east/west walls, check Z overlap
-      const mirrorMinZ = mirrorZ - mirrorDimensions.width / 2 - horizontalBuffer
-      const mirrorMaxZ = mirrorZ + mirrorDimensions.width / 2 + horizontalBuffer
-      const itemMinZ = itemPos[2] - itemDimensions.width / 2
-      const itemMaxZ = itemPos[2] + itemDimensions.width / 2
-
-      horizontalOverlap = !(mirrorMaxZ < itemMinZ || itemMaxZ < mirrorMinZ)
-    }
-
-    if (horizontalOverlap && verticalOverlap) {
-      return true
-    }
-
-    return false
-  })
-
-  return !hasCollision // Return true if there's NO collision (space is clear)
-}
-
-/**
- * Find a furniture unit that doesn't have a mirror above it yet AND has clear space above
- * Returns the first available furniture, or null if all have mirrors or blocked space
- * @param mirrorVariant - The mirror variant to check space for (dimensions needed for collision check)
- */
-const findAvailableFurnitureForMirror = (mirrorVariant = null) => {
-  const allFurniture = findAllFurnitureUnits()
-
-  // Find any furniture without a mirror above it AND with clear space above
-  // Must check both conditions:
-  // 1. No mirror already above (hasMirrorAbove returns false)
-  // 2. Clear space for the mirror (hasSpaceAboveFurniture returns true)
-  const availableFurniture = allFurniture.find(item =>
-    !hasMirrorAbove(item) && hasSpaceAboveFurniture(item, mirrorVariant)
-  )
-
-  if (availableFurniture) {
-    return availableFurniture
-  }
-
-  return null
-}
-
-/**
- * Detect which wall an item is on based on its position
- * Returns 'north', 'south', 'east', or 'west'
- */
-const detectWallFromPosition = (position, vanityRotation) => {
-  // Use rotation to determine wall - more reliable than position
-  // Rotation 0 = north wall (facing south)
-  // Rotation Math.PI = south wall (facing north)
-  // Rotation -Math.PI/2 = east wall (facing west)
-  // Rotation Math.PI/2 = west wall (facing east)
-  const normalizedRotation = ((vanityRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
-
-  if (Math.abs(normalizedRotation) < 0.1 || Math.abs(normalizedRotation - 2 * Math.PI) < 0.1) {
-    return 'north'
-  } else if (Math.abs(normalizedRotation - Math.PI) < 0.1) {
-    return 'south'
-  } else if (Math.abs(normalizedRotation - Math.PI / 2) < 0.1) {
-    return 'west'
-  } else if (Math.abs(normalizedRotation - 3 * Math.PI / 2) < 0.1 || Math.abs(normalizedRotation + Math.PI / 2) < 0.1) {
-    return 'east'
-  }
-
-  // Fallback: use position to detect wall
-  const { wallFaces } = getInteriorBoundaries(roomWidth.value, roomHeight.value, notchWidth.value, notchHeight.value)
-  const tolerance = 50 // 50cm tolerance
-
-  if (Math.abs(position[2] - wallFaces.north) < tolerance) return 'north'
-  if (Math.abs(position[2] - wallFaces.south) < tolerance) return 'south'
-  if (Math.abs(position[0] - wallFaces.east) < tolerance) return 'east'
-  if (Math.abs(position[0] - wallFaces.west) < tolerance) return 'west'
-
-  return 'north' // Default fallback
-}
-
-
-/**
- * Calculate position for a mirror above a furniture item
- * Places the mirror centered above the furniture unit
- *
- * Mirror Y is computed relative to furniture top:
- * - furnitureTopY = furniturePos[1] + floorOffset + height
- * - mirrorY = furnitureTopY + spawnHeightOffset (gap between furniture top and mirror bottom)
- */
-const calculateMirrorPositionAboveFurniture = (furnitureItem, mirrorVariant) => {
-  const furniturePos = furnitureItem.position
-  const furnitureRotation = furnitureItem.rotation || 0
-
-  // Determine furniture height from available sources (try multiple field paths)
-  const furnitureHeight = furnitureItem.model?.dimensions?.height
-    ?? furnitureItem.dimensions?.height
-    ?? furnitureItem.size?.height
-    ?? furnitureItem.height
-    ?? null
-
-  // Calculate furniture top Y position
-  // floorOffset indicates how far above Y=0 the model's visual bottom sits
-  const furnitureFloorOffset = furnitureItem.model?.floorOffset ?? 0
-  let furnitureTopY
-
-  if (furnitureHeight !== null) {
-    // Furniture top = position Y + floorOffset + height
-    furnitureTopY = furniturePos[1] + furnitureFloorOffset + furnitureHeight
-  } else {
-    // Fallback: use furniture position Y if height is unavailable
-    // This assumes the furniture is floor-standing and we place mirror at a reasonable default
-    furnitureTopY = furniturePos[1]
-  }
-
-  // spawnHeight is treated as an offset above the furniture top (gap between furniture and mirror)
-  // If not specified, default to a small gap (e.g., 5cm) for visual separation
-  const spawnHeightOffset = mirrorVariant?.spawnHeight ?? 5
-
-  // Mirror Y = furniture top + offset gap
-  const mirrorY = furnitureTopY + spawnHeightOffset
-
-  // Mirror position: same X/Z as furniture (centered), Y computed relative to furniture top
-  const position = {
-    x: furniturePos[0],
-    y: mirrorY,
-    z: furniturePos[2]
-  }
-
-  console.log('🪞 Placing mirror centered above furniture', {
-    furnitureTopY,
-    spawnHeightOffset,
-    mirrorY,
-    furnitureHeight: furnitureHeight ?? 'unknown'
-  })
-
-  return {
-    position,
-    rotation: furnitureRotation // Mirror should have same rotation as furniture (same wall)
-  }
-}
-
-/**
- * Find a wall position for a mirror that doesn't collide with existing mirrors
- * Tries each wall systematically with specific positions along the wall
- */
-const findAlternativeWallPositionForMirror = (mirrorVariant) => {
-  const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth.value, roomHeight.value, notchWidth.value, notchHeight.value)
-  const mirrorDimensions = mirrorVariant?.dimensions || { width: 60, height: 60, depth: 10 }
-  const mirrorSpawnHeight = mirrorVariant?.spawnHeight || 120
-  const halfWidth = mirrorDimensions.width / 2
-
-  // Get existing mirrors to avoid collision
-  const existingMirrors = items.value.filter(item => item.type === 'Mirror')
-
-  // ✅ FIX: For L-shaped rooms, north and west walls start AFTER the notch area + wall thickness
-  const wallThickness = WALL_SETTINGS.THICKNESS
-  const northWallMinX = notch ? Math.max(notch.maxX + wallThickness + halfWidth, interior.minX + halfWidth) : interior.minX + halfWidth
-  const westWallMinZ = notch ? Math.max(notch.maxZ + wallThickness + halfWidth, interior.minZ + halfWidth) : interior.minZ + halfWidth
-
-  // Define wall configurations with rotation
-  const walls = [
-    { name: 'north', z: wallFaces.north, rotation: 0, getX: (t) => northWallMinX + t * (interior.maxX - halfWidth - northWallMinX) },
-    { name: 'south', z: wallFaces.south, rotation: Math.PI, getX: (t) => interior.minX + halfWidth + t * (interior.maxX - interior.minX - mirrorDimensions.width) },
-    { name: 'east', x: wallFaces.east, rotation: -Math.PI / 2, getZ: (t) => interior.minZ + halfWidth + t * (interior.maxZ - interior.minZ - mirrorDimensions.width) },
-    { name: 'west', x: wallFaces.west, rotation: Math.PI / 2, getZ: (t) => westWallMinZ + t * (interior.maxZ - halfWidth - westWallMinZ) }
-  ]
-
-  // Try positions along each wall (0%, 25%, 50%, 75%, 100%)
-  const positions = [0, 0.25, 0.5, 0.75, 1.0]
-
-  for (const wall of walls) {
-    for (const t of positions) {
-      let testPosition
-      if (wall.name === 'north' || wall.name === 'south') {
-        testPosition = { x: wall.getX(t), y: mirrorSpawnHeight, z: wall.z }
-      } else {
-        testPosition = { x: wall.x, y: mirrorSpawnHeight, z: wall.getZ(t) }
-      }
-
-      // Check if this position collides with any existing mirror
-      let hasCollision = false
-      for (const existingMirror of existingMirrors) {
-        const existingPos = existingMirror.position
-        const existingDim = existingMirror.model?.dimensions || { width: 60, height: 60 }
-
-        // Simple distance-based collision check
-        const dx = Math.abs(testPosition.x - existingPos[0])
-        const dz = Math.abs(testPosition.z - existingPos[2])
-        const minDistX = (mirrorDimensions.width + existingDim.width) / 2 + 10 // 10cm buffer
-        const minDistZ = (mirrorDimensions.depth + (existingDim.depth || 10)) / 2 + 10
-
-        // For items on same wall (same axis), check the other axis distance
-        if (wall.name === 'north' || wall.name === 'south') {
-          // Same Z (same wall), check X distance
-          if (Math.abs(testPosition.z - existingPos[2]) < 20 && dx < minDistX) {
-            hasCollision = true
-            break
-          }
-        } else {
-          // Same X (same wall), check Z distance
-          if (Math.abs(testPosition.x - existingPos[0]) < 20 && dz < minDistX) {
-            hasCollision = true
-            break
-          }
-        }
-      }
-
-      // Also check collision with furniture
-      const furniture = items.value.filter(item => item.type === 'Furniture')
-      for (const furn of furniture) {
-        const furnPos = furn.position
-        const furnDim = furn.model?.dimensions || { width: 60, height: 55, depth: 35 }
-
-        const dx = Math.abs(testPosition.x - furnPos[0])
-        const dz = Math.abs(testPosition.z - furnPos[2])
-
-        // Only check X/Z collision, mirrors are above furniture in Y
-        if (wall.name === 'north' || wall.name === 'south') {
-          if (Math.abs(testPosition.z - furnPos[2]) < furnDim.depth && dx < (mirrorDimensions.width + furnDim.width) / 2) {
-            hasCollision = true
-            break
-          }
-        } else {
-          if (Math.abs(testPosition.x - furnPos[0]) < furnDim.depth && dz < (mirrorDimensions.width + furnDim.width) / 2) {
-            hasCollision = true
-            break
-          }
-        }
-      }
-
-      // Also check collision with radiators and other wall-mounted items
-      if (!hasCollision) {
-        const wallMountedItems = items.value.filter(item =>
-          item.type === 'Radiator' || item.type === 'Sink' || item.type === 'Toilet'
-        )
-
-        for (const wallItem of wallMountedItems) {
-          const itemPos = wallItem.position
-          const itemDim = wallItem.model?.dimensions || getDimensions(wallItem.type, wallItem.sku) || { width: 60, height: 60, depth: 35 }
-
-          // Check horizontal overlap based on wall (skip vertical check to avoid visual conflict)
-          const dx = Math.abs(testPosition.x - itemPos[0])
-          const dz = Math.abs(testPosition.z - itemPos[2])
-          const minDistX = (mirrorDimensions.width + itemDim.width) / 2 + 10
-          const minDistZ = (mirrorDimensions.width + itemDim.width) / 2 + 10
-
-          if (wall.name === 'north' || wall.name === 'south') {
-            // Same wall (close Z), check X distance
-            if (Math.abs(testPosition.z - itemPos[2]) < 30 && dx < minDistX) {
-              hasCollision = true
-              break
-            }
-          } else {
-            // Same wall (close X), check Z distance
-            if (Math.abs(testPosition.x - itemPos[0]) < 30 && dz < minDistZ) {
-              hasCollision = true
-              break
-            }
-          }
-        }
-      }
-
-      if (!hasCollision) {
-        return { position: testPosition, rotation: wall.rotation }
-      }
-    }
-  }
-
-  return null
-}
-
 // 6. Update your Home.vue addItem function to handle product data:
 const addItem = async (type, productData = null) => {
   hasUnsavedChanges.value = true
@@ -1284,38 +1090,67 @@ const addItem = async (type, productData = null) => {
   const productOrientation = selectedVariant?.orientation || DEFAULT_ORIENTATION;
 
   // ============================================================================
-  // MIRROR ABOVE FURNITURE LOGIC
-  // If adding a mirror and furniture exists without a mirror, position above it
-  // Only ONE mirror per furniture item - subsequent mirrors go on other walls
+  // PRE-FLIGHT VALIDATION: Check if object fits in room
+  // ============================================================================
+  if (selectedVariant?.dimensions) {
+    const validation = validateObjectFitsInRoom(
+      selectedVariant.dimensions,
+      roomWidth.value,
+      roomHeight.value,
+      selectedVariant.name || type
+    )
+
+    if (!validation.isValid) {
+      alert(validation.errorMessage)
+      return
+    }
+  }
+
+  // ============================================================================
+  // SMART AUTO-POSITIONING SYSTEM
+  // Uses intelligent placement logic based on item type and existing items:
+  // - Mirror: Above vanity, or eye-level on wall facing camera
+  // - Toilet: "Sidekick" to vanity (15cm to right/left)
+  // - Bath: Best corner (prioritize back wall)
+  // - Shower: Corner-bound, nearest to camera focus
+  // - Vanity/Furniture: Wall facing camera, centered
+  // - Towel Rail/Radiator: Near bath foot end or vanity side
   // ============================================================================
   let freePosition = null
   let wallRotation = 0
 
-  if (type === 'Mirror') {
-    // Find a furniture item that doesn't have a mirror above it yet AND has clear space
-    const availableFurniture = findAvailableFurnitureForMirror(selectedVariant)
-
-    if (availableFurniture) {
-      // Calculate position for the new mirror (centered above the furniture)
-      const mirrorPlacement = calculateMirrorPositionAboveFurniture(
-        availableFurniture,
-        selectedVariant
-      )
-
-      freePosition = mirrorPlacement.position
-      wallRotation = mirrorPlacement.rotation
-    } else {
-      // Use our smart alternative positioning for mirrors
-      const alternativePosition = findAlternativeWallPositionForMirror(selectedVariant)
-
-      if (alternativePosition) {
-        freePosition = alternativePosition.position
-        wallRotation = alternativePosition.rotation
-      }
-    }
+  // Build context for smart positioning
+  const autoPositionContext = {
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value,
+    notchWidth: notchWidth.value,
+    notchHeight: notchHeight.value,
+    existingItems: items.value,
+    cameraPosition: sceneManagerRef.value?.camera?.position
+      ? { x: sceneManagerRef.value.camera.position.x, y: sceneManagerRef.value.camera.position.y, z: sceneManagerRef.value.camera.position.z }
+      : undefined,
+    cameraTarget: { x: LOOK_AT.x, y: LOOK_AT.y, z: LOOK_AT.z }, // Use actual camera look-at point
+    selectedItemId: selectedItemId.value ? String(selectedItemId.value) : undefined // For prioritizing anchor placement
   }
 
-  // If no furniture-relative position was calculated, use default positioning
+  // Try smart auto-positioning first
+  const autoResult = autoPositionItem(type, autoPositionContext, selectedVariant, defaults.scale)
+
+  // Track if position was calculated relative to an anchor item (e.g., mirror above vanity)
+  // In this case, we should use the calculated Y position, not the default spawnHeight
+  let useAutoPositionedY = false
+
+  if (autoResult.placementMethod !== 'none') {
+    console.log(`✅ Smart auto-position for ${type}:`, autoResult.placementMethod, autoResult.anchorItem?.type || '')
+    freePosition = autoResult.position
+    wallRotation = autoResult.rotation
+    // Use auto-positioned Y when placement is relative to an anchor item
+    useAutoPositionedY = autoResult.placementMethod === 'anchor'
+  } else {
+    console.log(`⚠️ Auto-position returned no-op for ${type}:`, autoResult.reason)
+  }
+
+  // Final fallback: Generic wall position finding
   if (!freePosition) {
     // Find a free position on any wall
     const positionResult = findFreeWallPosition(
@@ -1329,7 +1164,7 @@ const addItem = async (type, productData = null) => {
         selectedVariant?.movement,
         selectedVariant?.spawnHeight,
         selectedVariant?.floorOffset || 0,
-        selectedVariant.sku,
+        selectedVariant?.sku,
         notchWidth.value,
         notchHeight.value
     )
@@ -1344,10 +1179,15 @@ const addItem = async (type, productData = null) => {
     wallRotation = positionResult.rotation
   }
 
+  // Determine Y position:
+  // - If anchor-based auto-positioning (e.g., mirror above vanity), use calculated Y
+  // - Otherwise, use variant's spawnHeight or fallback to freePosition.y
+  const itemY = useAutoPositionedY ? freePosition.y : (selectedVariant?.spawnHeight ?? freePosition.y)
+
   const newItem = {
     id: generateUniqueId(),
     type,
-    position: [freePosition.x, selectedVariant?.spawnHeight ?? freePosition.y, freePosition.z],
+    position: [freePosition.x, itemY, freePosition.z],
     rotation: wallRotation,
     scale: 1.0,
     // FIXED: Only add product data if both productData and selectedVariant exist
@@ -1799,6 +1639,12 @@ const loadTemplateData = async (template) => {
 
     console.log('📐 Room dimensions set:', template.roomWidth, 'x', template.roomHeight)
 
+    // ============================================================================
+    // VALIDATION: Check if all template items fit in the room
+    // ============================================================================
+    const skippedItems = []
+    const placedItems = [] // Track already placed items for overlap checking
+
     // Convert template items to planner items
     const plannerItems = template.items.map((templateItem, index) => {
       // Find the product data for this SKU
@@ -1810,6 +1656,26 @@ const loadTemplateData = async (template) => {
       }
 
       const { product, variant, category } = productInfo
+
+      // ✅ VALIDATION: Check if object fits in room dimensions
+      if (variant.dimensions) {
+        const dimensionValidation = validateObjectFitsInRoom(
+          variant.dimensions,
+          template.roomWidth,
+          template.roomHeight,
+          variant.name || templateItem.type
+        )
+
+        if (!dimensionValidation.isValid) {
+          console.warn(`⚠️ Skipping ${templateItem.type} (${templateItem.sku}): ${dimensionValidation.errorMessage}`)
+          skippedItems.push({
+            type: templateItem.type,
+            sku: templateItem.sku,
+            reason: dimensionValidation.errorMessage
+          })
+          return null
+        }
+      }
 
       // Get orientation config from variant
       const productOrientation = variant.orientation || {
@@ -1828,6 +1694,41 @@ const loadTemplateData = async (template) => {
         variant.spawnHeight || 0
       )
 
+      // ✅ VALIDATION: Check if this item fits within room boundaries
+      // Pass isTemplateValidation=true to skip item-to-item collision but still check walls
+      const templateModel = {
+        dimensions: variant.dimensions,
+        floorOffset: variant.floorOffset || 0,
+        spawnHeight: variant.spawnHeight || 0
+      }
+
+      const overlapValidation = validateNoOverlap(
+        position,
+        templateItem.type,
+        1.0, // scale
+        placedItems,
+        template.roomWidth,
+        template.roomHeight,
+        templateItem.sku,
+        undefined, // notchWidth
+        undefined, // notchHeight
+        templateModel, // Pass model with dimensions for wall collision check
+        true // isTemplateValidation - skip item-to-item collision but check walls
+      )
+
+      if (!overlapValidation.isValid) {
+        const reason = overlapValidation.collidingItem
+          ? `Overlaps with ${overlapValidation.collidingItem.productName || overlapValidation.collidingItem.type}`
+          : 'Extends outside room boundaries'
+        console.warn(`⚠️ Skipping ${templateItem.type} (${templateItem.sku}): ${reason}`)
+        skippedItems.push({
+          type: templateItem.type,
+          sku: templateItem.sku,
+          reason
+        })
+        return null
+      }
+
       console.log(`📍 Template item ${templateItem.type} (${templateItem.sku}):`, {
         wall: templateItem.wall,
         wallPosition: templateItem.wallPosition,
@@ -1837,7 +1738,7 @@ const loadTemplateData = async (template) => {
       })
 
       // Create the item in the format expected by the planner
-      return {
+      const newItem = {
         id: generateUniqueId(),
         type: templateItem.type,
         position: [position.x, position.y, position.z],
@@ -1856,9 +1757,21 @@ const loadTemplateData = async (template) => {
           spawnHeight: variant.spawnHeight || 0
         },
         price: variant.price,
-        productId: product.id
+        productId: product.id,
+        isTemplateItem: true
       }
+
+      // Add to placed items for overlap checking of subsequent items
+      placedItems.push(newItem)
+
+      return newItem
     }).filter(Boolean) // Remove any null items
+
+    // ✅ Notify user if any items were skipped
+    if (skippedItems.length > 0) {
+      const skippedMessage = skippedItems.map(item => `• ${item.type}: ${item.reason}`).join('\n')
+      alert(`Some items could not be placed in this template:\n\n${skippedMessage}`)
+    }
 
     // Set items in Vue state
     items.value = plannerItems

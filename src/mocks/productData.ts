@@ -75,74 +75,74 @@ const productData: ProductData = {
     {
       id: 'furniture_variant_2',
       link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
-      name: 'Bali Gloss White Wall Hung Basin Drawer Vanity',
-      price: '319.00',
+      name: 'Bali Gloss White Basin Drawer Vanity 600mm',
+      price: '399.99',
       image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
       variants: [
         {
           id: 'C77605',
-          name: '600mm Width',
+          name: '600mm Floorstanding',
           image: 'assets/productImages/furniture/C77605-1000-Bali-Gloss-White-Basin-Drawer_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
           path: '../../models/furniture/basin/C77605.glb',
-          dimensions: { width: 61, height: 83, depth: 44 },
+          dimensions: { width: 61, height: 95.6, depth: 44 },
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
           sku: 'C77605',
-          price: '319.00',
-          title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 600mm'
+          price: '399.99',
+          title: 'Bali Gloss White Basin Drawer Vanity 600mm'
         },
         {
           id: 'C77606',
-          name: '800mm Width',
+          name: '800mm Wall Hung',
           sku: 'C77606',
           image: 'assets/productImages/furniture/C77606-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-800mm',
           path: '../../models/furniture/basin/C77606.glb',
-          dimensions: { width: 81.3, height: 53, depth: 44 },
+          dimensions: { width: 81.3, height: 65.4, depth: 44 },
           floorOffset: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '343.00',
+          price: '429.99',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm'
         },
         {
           id: 'C77607',
-          name: '900mm Width',
+          name: '800mm Floorstanding',
           sku: 'C77607',
           image: 'assets/productImages/furniture/C77607-1000-Bali-Gloss-White-Basin-Drawer-_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-800mm',
           path: '../../models/furniture/basin/C77607.glb',
-          dimensions: { width: 81.3, height: 83.4, depth: 44 },
+          dimensions: { width: 81.3, height: 95.9, depth: 44 },
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '415.99',
-          title: 'Bali Gloss White Basin Drawer Vanity 900mm'
+          price: '415.00',
+          title: 'Bali Gloss White Basin Drawer Vanity 800mm'
         },
         {
           id: 'C77608',
-          name: '1000mm Width',
+          name: '1000mm Wall Hung',
           sku: 'C77608',
           image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
           link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-1000mm',
           path: '../../models/furniture/basin/C77608.glb',
-          dimensions: { width: 100.08, height: 53, depth: 43.9 },
+          dimensions: { width: 100.08, height: 63.8, depth: 43.9 },
           floorOffset: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Item is part of wall opening'
           },
-          price: '431.99',
+          price: '431.00',
           title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm'
         }
       ],
@@ -3218,10 +3218,11 @@ const productData: ProductData = {
             wallBuffer: 0, // Flush with wall - no gap
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
+              // Uses DefaultCornerObjectRotation from models.ts
             },
             allowVerticalMovement: false,
             allowFreeRotation: false
@@ -3243,7 +3244,7 @@ const productData: ProductData = {
             description: 'Corner shower installation'
             // rotationOffset: Math.PI // Rotate to face into room
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3267,7 +3268,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3291,7 +3292,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3316,7 +3317,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3340,7 +3341,7 @@ const productData: ProductData = {
             wallBuffer: 0,
             description: 'Corner shower installation'
           },
-          movement: { // NEW: Sink movement configuration
+          movement: {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true
@@ -3500,140 +3501,140 @@ const productData: ProductData = {
       variantType: 'Size Options',
       features: ['Thermostatic Control', 'Dual Outlet', 'Chrome Finish']
     },
-    {
-      id: 'shower_variant_2',
-      link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
-      name: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower',
-      price: '199.00',
-      image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-      variants: [
-        {
-          id: 'C27067',
-          name: '300mm + Hand Shower',
-          image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-          link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
-          path: '../../models/shower/C27067.glb',
-          dimensions: { width: 44.2, height: 122.2, depth: 56.3 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C27067',
-          price: '199.00',
-          title: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower'
-        },
-      ],
-      variantType: 'Size Options',
-      features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-    },
-    {
-      id: 'shower_variant_3',
-      link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
-      name: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower',
-      price: '259.00',
-      image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
-      variants: [
-        {
-          id: 'C27059',
-          name: '300mm + Hand Shower',
-          image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
-          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
-          path: '../../models/shower/C27059.glb',
-          dimensions: { width: 45.6, height: 162.8, depth: 52.2 },
-          floorOffset: 21.5,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C27059',
-          price: '259.00',
-          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower'
-        },
-        {
-          id: 'C27054',
-          name: '200mm',
-          image: 'assets/productImages/shower/C27054-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
-          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-c27054',
-          path: '../../models/shower/C27054.glb',
-          dimensions: { width: 20, height: 85.7, depth: 48.1 },
-          floorOffset: 98.6,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C27054',
-          price: '199.99',
-          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head'
-        },
-        {
-          id: 'C27058',
-          name: '200mm + Hand Shower',
-          image: 'assets/productImages/shower/C27058-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
-          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-hand-shower-c27058',
-          path: '../../models/shower/C27058.glb',
-          dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
-          floorOffset: 40.5,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C27058',
-          price: '179.00',
-          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head & Hand Shower'
-        },
-        {
-          id: 'C27055',
-          name: '300mm + Hand Shower',
-          image: 'assets/productImages/shower/C27055-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
-          link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-c27055',
-          path: '../../models/shower/C27055.glb',
-          dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
-          floorOffset: 98.6,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C27055',
-          price: '219.99',
-          title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head'
-        },
-      ],
-      variantType: 'Size Options',
-      features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-    },
+    // {
+    //   id: 'shower_variant_2',
+    //   link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
+    //   name: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower',
+    //   price: '199.00',
+    //   image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //   variants: [
+    //     {
+    //       id: 'C27067',
+    //       name: '300mm + Hand Shower',
+    //       image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //       link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
+    //       path: '../../models/shower/C27067.glb',
+    //       dimensions: { width: 44.2, height: 122.2, depth: 56.3 },
+    //       orientation: {
+    //         type: 'face_into_room',
+    //         wallBuffer: 0, // Flush with wall - no gap
+    //         description: 'Corner shower installation'
+    //       },
+    //       movement: { // NEW: Sink movement configuration
+    //         snapToWall: true,
+    //         cornerInstallOnly: {
+    //           enabled: true
+    //         },
+    //         allowVerticalMovement: false,
+    //         allowFreeRotation: false
+    //       },
+    //       sku: 'C27067',
+    //       price: '199.00',
+    //       title: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower'
+    //     },
+    //   ],
+    //   variantType: 'Size Options',
+    //   features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
+    // },
+    // {
+    //   id: 'shower_variant_3',
+    //   link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
+    //   name: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower',
+    //   price: '259.00',
+    //   image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //   variants: [
+    //     {
+    //       id: 'C27059',
+    //       name: '300mm + Hand Shower',
+    //       image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
+    //       path: '../../models/shower/C27059.glb',
+    //       dimensions: { width: 45.6, height: 162.8, depth: 52.2 },
+    //       floorOffset: 21.5,
+    //       orientation: {
+    //         type: 'face_into_room',
+    //         wallBuffer: 0, // Flush with wall - no gap
+    //         description: 'Corner shower installation'
+    //       },
+    //       movement: { // NEW: Sink movement configuration
+    //         snapToWall: true,
+    //         allowVerticalMovement: false,
+    //         allowFreeRotation: false
+    //       },
+    //       sku: 'C27059',
+    //       price: '259.00',
+    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower'
+    //     },
+    //     {
+    //       id: 'C27054',
+    //       name: '200mm',
+    //       image: 'assets/productImages/shower/C27054-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
+    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-c27054',
+    //       path: '../../models/shower/C27054.glb',
+    //       dimensions: { width: 20, height: 85.7, depth: 48.1 },
+    //       floorOffset: 98.6,
+    //       orientation: {
+    //         type: 'face_into_room',
+    //         wallBuffer: 0, // Flush with wall - no gap
+    //         description: 'Corner shower installation'
+    //       },
+    //       movement: { // NEW: Sink movement configuration
+    //         snapToWall: true,
+    //         allowVerticalMovement: false,
+    //         allowFreeRotation: false
+    //       },
+    //       sku: 'C27054',
+    //       price: '199.99',
+    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head'
+    //     },
+    //     {
+    //       id: 'C27058',
+    //       name: '200mm + Hand Shower',
+    //       image: 'assets/productImages/shower/C27058-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
+    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-hand-shower-c27058',
+    //       path: '../../models/shower/C27058.glb',
+    //       dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+    //       floorOffset: 40.5,
+    //       orientation: {
+    //         type: 'face_into_room',
+    //         wallBuffer: 0, // Flush with wall - no gap
+    //         description: 'Corner shower installation'
+    //       },
+    //       movement: { // NEW: Sink movement configuration
+    //         snapToWall: true,
+    //         allowVerticalMovement: false,
+    //         allowFreeRotation: false
+    //       },
+    //       sku: 'C27058',
+    //       price: '179.00',
+    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head & Hand Shower'
+    //     },
+    //     {
+    //       id: 'C27055',
+    //       name: '300mm + Hand Shower',
+    //       image: 'assets/productImages/shower/C27055-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-c27055',
+    //       path: '../../models/shower/C27055.glb',
+    //       dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+    //       floorOffset: 98.6,
+    //       orientation: {
+    //         type: 'face_into_room',
+    //         wallBuffer: 0, // Flush with wall - no gap
+    //         description: 'Corner shower installation'
+    //       },
+    //       movement: { // NEW: Sink movement configuration
+    //         snapToWall: true,
+    //         allowVerticalMovement: false,
+    //         allowFreeRotation: false
+    //       },
+    //       sku: 'C27055',
+    //       price: '219.99',
+    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head'
+    //     },
+    //   ],
+    //   variantType: 'Size Options',
+    //   features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
+    // },
     {
           id: 'shower_variant_4',
           link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x800mm-c46004',
@@ -3910,127 +3911,127 @@ const productData: ProductData = {
           variantType: 'Size Options',
           features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
       },
-    {
-          id: 'shower_variant_5',
-          link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
-          name: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower',
-          price: '199.99',
-          image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-          variants: [
-              {
-                  id: 'C27038',
-                  name: '300mm + Hand Shower',
-                  image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
-                  path: '../../models/shower/C27038.glb',
-                  dimensions: { width: 54, height: 152.9, depth: 53.3 },
-                  floorOffset: 32,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C27038',
-                  price: '199.99',
-                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower'
-              },
-              {
-                  id: 'C27032',
-                  name: '200mm',
-                  image: 'assets/productImages/shower/C27032-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-c27032',
-                  path: '../../models/shower/C27032.glb',
-                  dimensions: { width: 20, height: 86.4, depth: 47.5 },
-                  floorOffset: 98.6,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C27032',
-                  price: '149.99',
-                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head'
-              },
-              {
-                  id: 'C27036',
-                  name: '200mm + Hand Shower',
-                  image: 'assets/productImages/shower/C27036-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-hand-shower-c27036',
-                  path: '../../models/shower/C27036.glb',
-                  dimensions: { width: 38.4, height: 153, depth: 47.5 },
-                  floorOffset: 32,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C27036',
-                  price: '145.00',
-                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Hand Shower'
-              },
-              {
-                  id: 'C27037',
-                  name: '200mm + Slider Shower',
-                  image: 'assets/productImages/shower/27037-1000-chrome-square-thermostatic-shower-set-200mm-head.webp',
-                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-slider-hand-shower-c27037',
-                  path: '../../models/shower/C27037.glb',
-                  dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
-                  floorOffset: 98.6,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C27037',
-                  price: '199.99',
-                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Slider Hand Shower'
-              },
-              {
-                  id: 'C27033',
-                  name: '300mm',
-                  image: 'assets/productImages/shower/C27033-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-c27033',
-                  path: '../../models/shower/C27033.glb',
-                  dimensions: { width: 30, height: 86.4, depth: 52.5 },
-                  floorOffset: 98.6,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C27033',
-                  price: '179.99',
-                  title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head'
-              },
-          ],
-          variantType: 'Size Options',
-          features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-      },
+    // {
+    //       id: 'shower_variant_5',
+    //       link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
+    //       name: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower',
+    //       price: '199.99',
+    //       image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //       variants: [
+    //           {
+    //               id: 'C27038',
+    //               name: '300mm + Hand Shower',
+    //               image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
+    //               path: '../../models/shower/C27038.glb',
+    //               dimensions: { width: 54, height: 152.9, depth: 53.3 },
+    //               floorOffset: 32,
+    //               orientation: {
+    //                   type: 'face_into_room',
+    //                   wallBuffer: 0, // Flush with wall - no gap
+    //                   description: 'Corner shower installation'
+    //               },
+    //               movement: { // NEW: Sink movement configuration
+    //                   snapToWall: true,
+    //                   allowVerticalMovement: false,
+    //                   allowFreeRotation: false
+    //               },
+    //               sku: 'C27038',
+    //               price: '199.99',
+    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower'
+    //           },
+    //           {
+    //               id: 'C27032',
+    //               name: '200mm',
+    //               image: 'assets/productImages/shower/C27032-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
+    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-c27032',
+    //               path: '../../models/shower/C27032.glb',
+    //               dimensions: { width: 20, height: 86.4, depth: 47.5 },
+    //               floorOffset: 98.6,
+    //               orientation: {
+    //                   type: 'face_into_room',
+    //                   wallBuffer: 0, // Flush with wall - no gap
+    //                   description: 'Corner shower installation'
+    //               },
+    //               movement: { // NEW: Sink movement configuration
+    //                   snapToWall: true,
+    //                   allowVerticalMovement: false,
+    //                   allowFreeRotation: false
+    //               },
+    //               sku: 'C27032',
+    //               price: '149.99',
+    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head'
+    //           },
+    //           {
+    //               id: 'C27036',
+    //               name: '200mm + Hand Shower',
+    //               image: 'assets/productImages/shower/C27036-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
+    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-hand-shower-c27036',
+    //               path: '../../models/shower/C27036.glb',
+    //               dimensions: { width: 38.4, height: 153, depth: 47.5 },
+    //               floorOffset: 32,
+    //               orientation: {
+    //                   type: 'face_into_room',
+    //                   wallBuffer: 0, // Flush with wall - no gap
+    //                   description: 'Corner shower installation'
+    //               },
+    //               movement: { // NEW: Sink movement configuration
+    //                   snapToWall: true,
+    //                   allowVerticalMovement: false,
+    //                   allowFreeRotation: false
+    //               },
+    //               sku: 'C27036',
+    //               price: '145.00',
+    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Hand Shower'
+    //           },
+    //           {
+    //               id: 'C27037',
+    //               name: '200mm + Slider Shower',
+    //               image: 'assets/productImages/shower/27037-1000-chrome-square-thermostatic-shower-set-200mm-head.webp',
+    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-slider-hand-shower-c27037',
+    //               path: '../../models/shower/C27037.glb',
+    //               dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+    //               floorOffset: 98.6,
+    //               orientation: {
+    //                   type: 'face_into_room',
+    //                   wallBuffer: 0, // Flush with wall - no gap
+    //                   description: 'Corner shower installation'
+    //               },
+    //               movement: { // NEW: Sink movement configuration
+    //                   snapToWall: true,
+    //                   allowVerticalMovement: false,
+    //                   allowFreeRotation: false
+    //               },
+    //               sku: 'C27037',
+    //               price: '199.99',
+    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Slider Hand Shower'
+    //           },
+    //           {
+    //               id: 'C27033',
+    //               name: '300mm',
+    //               image: 'assets/productImages/shower/C27033-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-c27033',
+    //               path: '../../models/shower/C27033.glb',
+    //               dimensions: { width: 30, height: 86.4, depth: 52.5 },
+    //               floorOffset: 98.6,
+    //               orientation: {
+    //                   type: 'face_into_room',
+    //                   wallBuffer: 0, // Flush with wall - no gap
+    //                   description: 'Corner shower installation'
+    //               },
+    //               movement: { // NEW: Sink movement configuration
+    //                   snapToWall: true,
+    //                   allowVerticalMovement: false,
+    //                   allowFreeRotation: false
+    //               },
+    //               sku: 'C27033',
+    //               price: '179.99',
+    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head'
+    //           },
+    //       ],
+    //       variantType: 'Size Options',
+    //       features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
+    //   },
       {
           id: 'shower_variant_6',
           link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-760x760mm-c46011',
@@ -5224,7 +5225,7 @@ const productData: ProductData = {
                       allowVerticalMovement: false,
                       allowFreeRotation: false
                   },
-                  sku: 'C66201',
+                  sku: 'C66036',
                   price: '229.99',
                   title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat'
               },

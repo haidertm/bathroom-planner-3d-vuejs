@@ -1,8 +1,10 @@
 <template>
   <header :style="headerStyle">
     <div :style="logoContainerStyle">
-      <img v-if="logo" :src="logo" :alt="logoAlt" :style="logoStyle" />
-      <span v-else :style="titleStyle">{{ title }}</span>
+      <router-link to="/" @click="trackLogoClick">
+        <img v-if="logo" :src="logo" :alt="logoAlt" :style="logoStyle" />
+        <span v-else :style="titleStyle">{{ title }}</span>
+      </router-link>
     </div>
 
     <div :style="navStyle">
@@ -163,6 +165,17 @@ const closeMenu = () => {
 const handleSaveDesign = () => {
   emit('save-design')
   closeMenu()
+}
+
+// GTM tracking for logo click
+const trackLogoClick = () => {
+  if (window.dataLayer) {
+    window.dataLayer.push({
+      event: 'navigation',
+      navigation_type: 'logo_click',
+      destination: 'homepage'
+    })
+  }
 }
 
 // Close menu when clicking outside

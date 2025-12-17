@@ -66,7 +66,55 @@
             </svg>
           </div>
           <h3>Select a Template</h3>
-          <p>Start with a pre-designed layout and customize it to match your needs</p>
+          <p>Start with a pre-designed layout and customise it to match your needs</p>
+        </div>
+      </div>
+
+      <!-- Shape Selection (shown when scratch option is selected) -->
+      <div v-if="selectedOption === 'scratch'" class="shapes-section">
+        <h3 class="shapes-title">Choose a Shape</h3>
+        <div class="shapes-grid">
+          <!-- Square Shape -->
+          <div
+            class="shape-card"
+            :class="{ active: selectedShape === 'square' }"
+            @click="selectShape('square')"
+          >
+            <div class="shape-thumbnail">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <rect x="10" y="10" width="60" height="60" fill="#f8f9fa" stroke="#29275B" stroke-width="3"/>
+              </svg>
+            </div>
+            <span class="shape-name">Square</span>
+          </div>
+
+          <!-- Rectangular Shape -->
+          <div
+            class="shape-card"
+            :class="{ active: selectedShape === 'rectangular' }"
+            @click="selectShape('rectangular')"
+          >
+            <div class="shape-thumbnail">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <rect x="10" y="20" width="60" height="40" fill="#f8f9fa" stroke="#29275B" stroke-width="3"/>
+              </svg>
+            </div>
+            <span class="shape-name">Rectangular</span>
+          </div>
+
+          <!-- L-Shape -->
+          <div
+            class="shape-card"
+            :class="{ active: selectedShape === 'l-shape' }"
+            @click="selectShape('l-shape')"
+          >
+            <div class="shape-thumbnail">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <path d="M10 10 L10 70 L40 70 L40 40 L70 40 L70 10 Z" fill="#f8f9fa" stroke="#29275B" stroke-width="3" transform="rotate(180 40 40)"/>
+              </svg>
+            </div>
+            <span class="shape-name">L-Shape</span>
+          </div>
         </div>
       </div>
 
@@ -245,6 +293,7 @@ const emit = defineEmits(['close', 'select-scratch', 'select-template'])
 
 const selectedOption = ref(null)
 const selectedTemplate = ref(null)
+const selectedShape = ref(null)
 
 // Tooltip state
 const tooltip = reactive({
@@ -271,7 +320,7 @@ const hideTooltip = () => {
 }
 
 const canContinue = computed(() => {
-  if (selectedOption.value === 'scratch') return true
+  if (selectedOption.value === 'scratch' && selectedShape.value) return true
   if (selectedOption.value === 'template' && selectedTemplate.value) return true
   return false
 })
@@ -280,6 +329,8 @@ const selectOption = (option) => {
   selectedOption.value = option
   if (option === 'scratch') {
     selectedTemplate.value = null
+  } else if (option === 'template') {
+    selectedShape.value = null
   }
 }
 
@@ -287,15 +338,20 @@ const selectTemplate = (template) => {
   selectedTemplate.value = template
 }
 
+const selectShape = (shape) => {
+  selectedShape.value = shape
+}
+
 const handleClose = () => {
   selectedOption.value = null
   selectedTemplate.value = null
+  selectedShape.value = null
   emit('close')
 }
 
 const handleContinue = () => {
-  if (selectedOption.value === 'scratch') {
-    emit('select-scratch')
+  if (selectedOption.value === 'scratch' && selectedShape.value) {
+    emit('select-scratch', selectedShape.value)
   } else if (selectedOption.value === 'template' && selectedTemplate.value) {
     emit('select-template', selectedTemplate.value)
   }
@@ -421,6 +477,63 @@ const handleContinue = () => {
   line-height: 1.5;
 }
 
+/* Shapes Section (Start from Scratch) */
+.shapes-section {
+  padding: 0 32px 24px;
+  border-top: 1px solid #e9ecef;
+  margin-top: -8px;
+  padding-top: 24px;
+}
+
+.shapes-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #29275B;
+  margin: 0 0 16px 0;
+}
+
+.shapes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.shape-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shape-card:hover {
+  border-color: #29275B;
+  box-shadow: 0 4px 12px rgba(41, 39, 91, 0.1);
+}
+
+.shape-card.active {
+  border-color: #29275B;
+  background: #f8f9ff;
+  box-shadow: 0 4px 12px rgba(41, 39, 91, 0.15);
+}
+
+.shape-thumbnail {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.shape-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #29275B;
+  display: block;
+}
+
+/* Templates Section */
 .templates-section {
   padding: 0 32px 24px;
   border-top: 1px solid #e9ecef;
@@ -578,6 +691,16 @@ const handleContinue = () => {
     gap: 12px;
   }
 
+  .shapes-section {
+    padding: 0 24px 20px;
+    padding-top: 20px;
+  }
+
+  .shapes-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
   .modal-actions {
     padding: 16px 24px;
   }
@@ -585,6 +708,10 @@ const handleContinue = () => {
 
 @media (max-width: 480px) {
   .templates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shapes-grid {
     grid-template-columns: 1fr;
   }
 }
