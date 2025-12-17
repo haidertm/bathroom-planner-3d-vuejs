@@ -485,6 +485,8 @@ const handleVariantSwap = async (swapConfig) => {
         console.error('❌ Error during scene update in variant swap:', error)
         // Fallback: let the watcher handle the update
         lastUpdateSource.value = 'variantSwap-fallback'
+        // Reset flag on inner error to prevent drawer from staying stuck open
+        isSwappingVariant.value = false
       }
     }
 
