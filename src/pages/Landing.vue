@@ -109,6 +109,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import TemplateSelectionModal from '../components/ui/TemplateSelectionModal.vue'
+import { setSelectedRoomShape } from '../utils/roomShape'
 
 const router = useRouter()
 const showTemplateModal = ref(false)
@@ -118,14 +119,7 @@ const startNewProject = () => {
 }
 
 const handleStartFromScratch = (selection) => {
-  // Handle both simple shape string and L-shape object with corner
-  if (typeof selection === 'object' && selection.shape === 'l-shape') {
-    localStorage.setItem('selected-room-shape', 'l-shape')
-    localStorage.setItem('l-shape-corner', selection.corner)
-  } else {
-    localStorage.setItem('selected-room-shape', selection)
-    localStorage.removeItem('l-shape-corner') // Clear any previous corner selection
-  }
+  setSelectedRoomShape(selection)
   router.push('/room-dimensions')
 }
 
