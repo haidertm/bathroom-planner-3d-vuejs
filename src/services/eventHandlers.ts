@@ -2421,7 +2421,11 @@ export class EventHandlers {
         objectScale,
         itemId,
         currentItems,
-        currentItem
+        currentItem,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       // Check if collision prevention is enabled and object is colliding
@@ -2881,7 +2885,11 @@ export class EventHandlers {
         objectScale,
         itemId,
         currentItems,
-        currentItem
+        currentItem,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       console.log('🎯 Touch final position collision check:', {
