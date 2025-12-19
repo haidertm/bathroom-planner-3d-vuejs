@@ -109,8 +109,11 @@
 <script setup>
 import {ref, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
+import { useGtm } from '@gtm-support/vue-gtm'
 import TemplateSelectionModal from '../components/ui/TemplateSelectionModal.vue'
 import { setSelectedRoomShape } from '../utils/roomShape'
+
+const gtm = useGtm()
 
 const router = useRouter()
 const activeMenu = ref(null)
@@ -210,6 +213,18 @@ const deleteDesign = (designId) => {
 // Template selection handlers
 const handleStartFromScratch = (selection) => {
   setSelectedRoomShape(selection)
+
+  // Track room shape selection
+  if (gtm?.enabled()) {
+    const isLShape = selection && typeof selection === 'object' && selection.shape === 'l-shape'
+    gtm.trackEvent({
+      event: 'room_shape_selected',
+      category: 'Room Configuration',
+      action: 'Select Shape',
+      label: isLShape ? `l-shape-${selection.corner || 'unknown'}` : selection,
+    })
+  }
+
   router.push('/room-dimensions')
 }
 
