@@ -207,9 +207,15 @@ const deleteDesign = (designId) => {
 }
 
 // Template selection handlers
-const handleStartFromScratch = (shape) => {
-  // Save the selected shape and go directly to room dimensions
-  localStorage.setItem('selected-room-shape', shape)
+const handleStartFromScratch = (selection) => {
+  // Handle both simple shape string and L-shape object with corner
+  if (typeof selection === 'object' && selection.shape === 'l-shape') {
+    localStorage.setItem('selected-room-shape', 'l-shape')
+    localStorage.setItem('l-shape-corner', selection.corner)
+  } else {
+    localStorage.setItem('selected-room-shape', selection)
+    localStorage.removeItem('l-shape-corner') // Clear any previous corner selection
+  }
   router.push('/room-dimensions')
 }
 
