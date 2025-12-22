@@ -70,6 +70,17 @@
     >
       🎨 Textures
     </button>
+    
+    <!-- 2D/3D Toggle Button -->
+    <button
+        @click="handleToggle2DMode"
+        :style="{ ...toggleButtonStyle, bottom: '80px' }" 
+        :title="is2DMode ? 'Switch to 3D View' : 'Switch to 2D Plan'"
+        @mouseenter="e => e.target.style.backgroundColor = '#e0e0e0'"
+        @mouseleave="e => e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.95)'"
+    >
+      {{ is2DMode ? '🧊 3D View' : '📐 2D Plan' }}
+    </button>
     <UndoRedoPanel
         :can-undo="canUndo"
         :can-redo="canRedo"
@@ -281,6 +292,18 @@ const handleItemSelection = (itemId) => {
 
 // Flag to prevent drawer close during variant swap
 const isSwappingVariant = ref(false)
+const is2DMode = ref(false) // NEW: 2D mode state
+
+const handleToggle2DMode = () => {
+    console.log('🖱️ 2D Mode Toggle Clicked! Current state:', is2DMode.value);
+    is2DMode.value = !is2DMode.value;
+    if (sceneManagerRef.value) {
+        console.log('Calling sceneManager.toggle2DMode with:', is2DMode.value);
+        sceneManagerRef.value.toggle2DMode(is2DMode.value);
+    } else {
+        console.error('❌ sceneManagerRef is null!');
+    }
+}
 
 const handleItemDeselection = () => {
   console.log('🎯 Item deselected')

@@ -38,8 +38,13 @@ interface SceneComponents {
 export class SceneManager {
   public scene: THREE.Scene | null = null;
   public camera: THREE.PerspectiveCamera | null = null;
+  public orthographicCamera: THREE.OrthographicCamera | null = null; // NEW: Orthographic camera
   public renderer: THREE.WebGLRenderer | null = null;
   private eventHandlers: any = null;
+  public is2DMode: boolean = false; // NEW: Track 2D mode state
+  private saved3DCameraState: { position: THREE.Vector3; rotation: THREE.Euler } | null = null; // NEW: Save 3D state
+  private currentRoomDimensions: { width: number; height: number; notchWidth?: number; notchHeight?: number } | null = null; // NEW: Track room size for 2D fit
+  private showGridState: boolean = true; // NEW: Track user grid preference
 
   // Post-processing components
   private composer: EffectComposer | null = null;
@@ -53,6 +58,7 @@ export class SceneManager {
   private wallRefs: THREE.Mesh[] = [];
   private gridRef: THREE.Group | null = null;
   private wallCullingManager: SimpleWallCulling;
+  private lastDebugLog: number = 0;
   private bathroomItemsGroup: THREE.Group;
   private isUpdatingItems = false;
   private wallGridGroup: THREE.Group | null = null; // NEW: Group for wall grid lines
@@ -86,6 +92,22 @@ export class SceneManager {
     this.camera = new THREE.PerspectiveCamera(CAMERA_SETTINGS.FOV, window.innerWidth / window.innerHeight, CAMERA_SETTINGS.NEAR, CAMERA_SETTINGS.FAR);
     this.camera.position.set(CAMERA_SETTINGS.INITIAL_POSITION.x, CAMERA_SETTINGS.INITIAL_POSITION.y, CAMERA_SETTINGS.INITIAL_POSITION.z);
     this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
+
+    // NEW: Initialize Orthographic Camera for 2D view
+    const frustumSize = 500; // View size in world units (cm)
+    const aspect = window.innerWidth / window.innerHeight;
+    this.orthographicCamera = new THREE.OrthographicCamera(
+      frustumSize * aspect / -2,
+      frustumSize * aspect / 2,
+      frustumSize / 2,
+      frustumSize / -2,
+      0.1,
+      2000
+    );
+    // Initial position for 2D view (top-down)
+    this.orthographicCamera.position.set(0, 1000, 0); // High up
+    this.orthographicCamera.lookAt(0, 0, 0); // Looking at center
+    this.orthographicCamera.zoom = 1;
 
     // Create renderer with enhanced settings
     this.renderer = new THREE.WebGLRenderer({
@@ -137,47 +159,190 @@ export class SceneManager {
 
     return {
       scene: this.scene,
-      camera: this.camera,
+      camera: this.camera, // Initial return is PerspectiveCamera
       renderer: this.renderer
     };
-  }
-
-  get wallCulling(): SimpleWallCulling {
-    return this.wallCullingManager;
-  }
-
-  // Add methods to control measurement system
-  public enableMeasurements(enabled: boolean): void {
-    if (this.measurementSystem) {
-      this.measurementSystem.setEnabled(enabled);
-    }
-  }
-
-  public forceUpdateMeasurements(): void {
-    if (this.measurementSystem) {
-      this.measurementSystem.forceUpdateMeasurements();
-    }
-  }
-
-  public setMeasurementSelectedObject(object: THREE.Object3D | null): void {
-    if (this.measurementSystem) {
-      this.measurementSystem.setSelectedObject(object);
-    }
   }
 
   public setEventHandlers(eventHandlers: any): void {
     this.eventHandlers = eventHandlers;
   }
 
-  public getCurrentMeasurements(): MeasurementData | null {
-    return this.measurementSystem?.getCurrentMeasurements() || null;
+  // NEW: Toggle 2D/3D Mode
+  public toggle2DMode(enabled: boolean): void {
+    if (this.is2DMode === enabled) return;
+    this.is2DMode = enabled;
+
+    console.log(`🔄 Toggling 2D Mode: ${enabled}`);
+
+    if (enabled) {
+      // Switch to 2D
+      if (this.camera) {
+        this.saved3DCameraState = {
+          position: this.camera.position.clone(),
+          rotation: this.camera.rotation.clone()
+        };
+      }
+
+      // Update renderer camera reference is not enough, event handler needs to know
+      if (this.eventHandlers) {
+        this.eventHandlers.setCamera(this.orthographicCamera);
+        this.eventHandlers.setIs2DMode(true);
+      }
+      if (this.measurementSystem) {
+        this.measurementSystem.setCamera(this.orthographicCamera!);
+      }
+
+      // Update grid for 2D visibility
+      this.updateGridFor2DMode(true);
+
+      // Disable wall culling to ensure all walls are visible in top-down view
+      this.wallCullingManager.setEnabled(false);
+
+      // Force top-down view
+      this.forceTopDownView();
+
+    } else {
+      // Switch back to 3D
+      if (this.saved3DCameraState && this.camera) {
+        this.camera.position.copy(this.saved3DCameraState.position);
+        this.camera.rotation.copy(this.saved3DCameraState.rotation);
+      }
+
+      if (this.eventHandlers) {
+        this.eventHandlers.setCamera(this.camera);
+        this.eventHandlers.setIs2DMode(false);
+      }
+      if (this.measurementSystem) {
+        this.measurementSystem.setCamera(this.camera!);
+      }
+      // Restore grid
+      this.updateGridFor2DMode(false);
+
+      // Re-enable wall culling for 3D view
+      this.wallCullingManager.setEnabled(true);
+    }
+
+    // Update composer pass
+    if (this.composer) {
+      // Update RenderPass camera
+      const activeCamera = this.getActiveCamera();
+      // Iterate all passes and update camera if the property exists
+      this.composer.passes.forEach(pass => {
+        // Check if pass has a camera property (RenderPass, OutlinePass, etc.)
+        if ((pass as any).camera) {
+          (pass as any).camera = activeCamera;
+          console.log('🔄 Updated camera for pass:', pass.constructor.name);
+        }
+
+        // Double check OutlinePass specifically
+        if (pass === this.outlinePass) {
+          this.outlinePass.renderCamera = activeCamera;
+        }
+      });
+    }
   }
 
-  public isMeasurementEnabled(): boolean {
-    return this.measurementSystem?.isEnabled() || false;
+  // NEW: Force top-down view for 2D mode
+  private forceTopDownView() {
+    if (!this.orthographicCamera) return;
+
+    // CRITICAL: When looking down Y axis, default up (0,1,0) is invalid
+    // Set up vector to -Z (North) so North is "Up" on the screen
+    this.orthographicCamera.up.set(0, 0, -1);
+
+    this.orthographicCamera.position.set(0, 1000, 0);
+    this.orthographicCamera.lookAt(0, 0, 0);
+
+    // Reset rotation z to ensure alignment (lookAt modifies quaternion, this might be redundant but safe)
+
+    // Ensure camera frustum depth is sufficient
+    this.orthographicCamera.near = -2000;
+    this.orthographicCamera.far = 2000;
+
+    // Auto-fit to room
+    let calculatedZoom = 1;
+    if (this.currentRoomDimensions) {
+      const padding = 1.5;
+      // Handle L-shapes by checking notch dimensions too
+      const maxDimWidth = Math.max(this.currentRoomDimensions.width, this.currentRoomDimensions.notchWidth || 0);
+      const maxDimHeight = Math.max(this.currentRoomDimensions.height, this.currentRoomDimensions.notchHeight || 0);
+
+      const baseFrustum = 500;
+
+      // Calculate zoom to fit
+      const zoomVertical = baseFrustum / (maxDimHeight * padding);
+      const aspect = window.innerWidth / window.innerHeight;
+      const zoomHorizontal = (baseFrustum * aspect) / (maxDimWidth * padding);
+
+      calculatedZoom = Math.min(zoomVertical, zoomHorizontal);
+
+      console.log('📐 2D Auto-Fit Calc:', {
+        roomDims: this.currentRoomDimensions,
+        zoomVertical,
+        zoomHorizontal,
+        calculatedZoom
+      });
+    }
+
+    // Clamp zoom to prevent errors
+    this.orthographicCamera.zoom = Math.max(0.1, Math.min(calculatedZoom, 5));
+    this.orthographicCamera.updateProjectionMatrix();
+
+    console.log('📐 Forced top-down view. Zoom set to:', this.orthographicCamera.zoom);
   }
 
+
+
+  // NEW: Update grid visibility for 2D mode
+  private updateGridFor2DMode(is2D: boolean): void {
+    if (this.gridRef) {
+      if (is2D) {
+        // In 2D mode, ALWAYS show the grid for measurements
+        this.gridRef.visible = true;
+      } else {
+        // When returning to 3D, restore based on saved user preference
+        this.gridRef.visible = this.showGridState;
+      }
+    }
+  }
+
+  // NEW: Get current camera
+  public getActiveCamera(): THREE.Camera {
+    return this.is2DMode ? this.orthographicCamera! : this.camera!;
+  }
+
+  // Update render loop to use active camera
+  private renderScene(): void {
+    if (this.is2DMode && this.orthographicCamera) {
+      const now = Date.now();
+      if (!this.lastDebugLog || now - this.lastDebugLog > 2000) {
+        console.log('📷 2D Camera State:', {
+          pos: this.orthographicCamera.position.clone(),
+          rot: this.orthographicCamera.rotation.clone(),
+          zoom: this.orthographicCamera.zoom,
+          up: this.orthographicCamera.up.clone()
+        });
+        this.lastDebugLog = now;
+      }
+    }
+    const activeCamera = this.getActiveCamera();
+    if (this.composer) {
+      this.composer.render(); // Composer needs to be updated with active camera?
+      // Actually, composer passes usually hold a reference to the camera. 
+      // We need to update that reference in toggle2DMode.
+    } else if (this.renderer && this.scene) {
+      this.renderer.render(this.scene, activeCamera);
+    }
+  }
+
+  // NOTE: animate() method loop will call this.render(), need to ensure render uses correct camera.
+  // We need to find the animate loop. Assuming it's calling renderScene equivalent.
+  // Checking `animate` method... (not shown in view_file, assumed to exist or be implemented)
+
+  // Let's modify setCameraPreset and setCustomCameraPosition to ignore or adapt if in 2D mode
   setCameraPreset(preset: 'OVERVIEW' | 'CLOSE_UP' | 'CORNER_VIEW' | 'SIDE_VIEW'): void {
+    if (this.is2DMode) return; // Ignore presets in 2D mode
     if (!this.camera) return;
 
     const presetConfig = CAMERA_PRESETS[preset];
@@ -199,6 +364,7 @@ export class SceneManager {
   }
 
   setCustomCameraPosition(position: { x: number; y: number; z: number }): void {
+    if (this.is2DMode) return; // Ignore in 2D mode
     if (!this.camera) return;
 
     this.camera.position.set(position.x, position.y, position.z);
@@ -1005,7 +1171,7 @@ export class SceneManager {
     const ceilingY = WALL_SETTINGS.HEIGHT;
 
     const outerX = Math.max(innerX, Math.min(100, maxX * 0.7));
-    for (const x of [innerX, -innerX, outerX, -outerX]) {
+    for (const x of [innerX, - innerX, outerX, -outerX]) {
       const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
       light.position.set(x, ceilingY, 0);
       this.scene.add(light);
@@ -1020,6 +1186,9 @@ export class SceneManager {
 
   updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
     if (!this.scene) return;
+
+    // NEW: Save dimensions for 2D view fitting
+    this.currentRoomDimensions = { width: roomWidth, height: roomHeight, notchWidth, notchHeight };
 
     if (this.floorRef) {
       this.scene.remove(this.floorRef);
@@ -1085,8 +1254,8 @@ export class SceneManager {
     this.wallRefs.forEach(wall => this.scene!.add(wall));
     this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
     // NEW: Add axis indicators with notch support for L-shaped rooms
-    this.axisIndicatorsDebug.createAxisIndicators(
-      this.scene,
+    this.axisIndicatorsDebug?.createAxisIndicators(
+      this.scene!,
       roomWidth,
       roomHeight,
       notchWidth || 0,
@@ -1106,7 +1275,9 @@ export class SceneManager {
   }
 
   updateLabels(roomWidth: number, roomHeight: number): void {
-    this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+    if (this.scene) {
+      this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+    }
   }
 
   private createEnhancedWallMaterial(wallTexture: TextureConfig): THREE.MeshStandardMaterial {
@@ -1536,7 +1707,21 @@ export class SceneManager {
       if (this.composer) {
         this.composer.render();
       } else {
-        this.renderer.render(this.scene, this.camera);
+        const activeCamera = this.getActiveCamera();
+        if (activeCamera) {
+          this.renderer.render(this.scene, activeCamera);
+        }
+      }
+
+      // DEBUG: Log active camera type occasionally
+      if (Math.random() < 0.01) {
+        const cam = this.getActiveCamera();
+        console.log('📸 Render Loop Camera:', {
+          type: cam.type,
+          position: cam.position,
+          uuid: cam.uuid,
+          is2D: this.is2DMode
+        });
       }
     };
     animate();

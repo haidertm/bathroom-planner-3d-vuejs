@@ -1548,7 +1548,7 @@ export const constrainToWalls = (
             x: position.x !== constrainedPosition.x ? `${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}` : 'preserved',
             z: position.z !== constrainedPosition.z ? `${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}` : 'preserved'
         },
-        wallFacePosition: wallFaces[nearestWall].toFixed(1) + 'cm',
+        wallFacePosition: (nearestWall in wallFaces ? wallFaces[nearestWall as keyof typeof wallFaces].toFixed(1) : 'Notch') + 'cm',
         backEdgePosition: nearestWall === 'north' || nearestWall === 'south' ?
             (nearestWall === 'north' ? (constrainedPosition.z - halfDepth).toFixed(1) : (constrainedPosition.z + halfDepth).toFixed(1)) + 'cm' :
             (nearestWall === 'east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
