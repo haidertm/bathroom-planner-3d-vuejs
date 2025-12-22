@@ -70,7 +70,7 @@ export const highlightObject = (obj: THREE.Object3D | null, highlight: boolean):
 };
 
 // NEW: Function to change outline color based on collision state
-export const setOutlineColor = (isColliding: boolean): void => {
+export const setOutlineColor = (isColliding: boolean, isMultiSelect: boolean = false): void => {
   if (!outlinePassRef) {
     console.warn('OutlinePass not initialized. Cannot set outline color.');
     return;
@@ -81,6 +81,11 @@ export const setOutlineColor = (isColliding: boolean): void => {
     outlinePassRef.visibleEdgeColor.set('#ff0000');
     outlinePassRef.hiddenEdgeColor.set('#cc0000'); // Brighter dark red
     console.log('🔴 Outline color set to RED (collision detected)');
+  } else if (isMultiSelect) {
+    // Purple outline for multi-select mode (no collision)
+    outlinePassRef.visibleEdgeColor.set('#9b59b6'); // Purple
+    outlinePassRef.hiddenEdgeColor.set('#8e44ad'); // Darker purple
+    console.log('🟣 Outline color set to PURPLE (multi-select, no collision)');
   } else {
     // Bright cyan/turquoise outline for normal selection - much more visible
     outlinePassRef.visibleEdgeColor.set('#00ffff'); // Brighter cyan
@@ -107,4 +112,37 @@ export const testBrightOutline = (): void => {
   outlinePassRef.visibleEdgeColor.set('#ffffff'); // Pure white
   outlinePassRef.hiddenEdgeColor.set('#888888'); // Gray
   console.log('🧪 TEST: Set outline to bright white for visibility test');
+};
+
+// NEW: Function to highlight multiple objects for multi-select mode
+export const highlightMultipleObjects = (objects: Set<THREE.Object3D>): void => {
+  if (!outlinePassRef) {
+    console.warn('OutlinePass not initialized. Cannot highlight multiple objects.');
+    return;
+  }
+
+  if (objects.size > 0) {
+    // Collect all meshes from all selected objects
+    const allMeshes: THREE.Mesh[] = [];
+    objects.forEach(obj => {
+      obj.traverse((child) => {
+        if (isMesh(child)) {
+          allMeshes.push(child);
+        }
+      });
+    });
+
+    // Set all meshes as selected
+    outlinePassRef.selectedObjects = allMeshes;
+    
+    // Use purple color for multi-select
+    outlinePassRef.visibleEdgeColor.set('#9b59b6'); // Purple
+    outlinePassRef.hiddenEdgeColor.set('#8e44ad'); // Darker purple
+    
+    console.log(`🔲 Multi-select: Highlighted ${objects.size} objects (${allMeshes.length} meshes)`);
+  } else {
+    // Clear selection
+    outlinePassRef.selectedObjects = [];
+    console.log('⭕ Multi-select: Cleared all highlights');
+  }
 };

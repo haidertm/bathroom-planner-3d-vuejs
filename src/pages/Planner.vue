@@ -97,6 +97,13 @@
         size="large"
     />
 
+    <!-- Multi-Select Toggle button -->
+    <MultiSelectToggle
+        v-model="multiSelectEnabled"
+        :selected-count="multiSelectedCount"
+        @toggle="handleMultiSelectToggle"
+    />
+
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
       <div :style="popupContentStyle" @click.stop>
@@ -152,6 +159,7 @@ import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
 import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
+import MultiSelectToggle from '../components/ui/MultiSelectToggle.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS, WALL_SETTINGS } from '../constants/dimensions.js'
@@ -789,6 +797,10 @@ const preventCollisionPlacement = ref(true)
 //For Measurement
 const measurementEnabled = ref(false)
 const currentMeasurements = ref(null)
+
+// Multi-select mode state
+const multiSelectEnabled = ref(false)
+const multiSelectedCount = ref(0)
 // Add method to handle measurement toggle
 const handleToggleMeasurements = () => {
   measurementEnabled.value = !measurementEnabled.value
@@ -797,6 +809,28 @@ const handleToggleMeasurements = () => {
     sceneManagerRef.value.enableMeasurements(measurementEnabled.value)
   }
 }
+
+// Handle multi-select toggle
+const handleMultiSelectToggle = (enabled) => {
+  console.log('🔲 Multi-select mode toggled:', enabled)
+  multiSelectEnabled.value = enabled
+  
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.setMultiSelectMode(enabled)
+    
+    // Set up listener for multi-select changes
+    if (enabled) {
+      eventHandlersRef.value.onMultiSelectChange = (selectedIds) => {
+        multiSelectedCount.value = selectedIds.length
+        console.log('📊 Multi-selected items:', selectedIds.length)
+      }
+    } else {
+      multiSelectedCount.value = 0
+      eventHandlersRef.value.onMultiSelectChange = undefined
+    }
+  }
+}
+
 
 // Update your App.vue canvasContainerStyle computed property:
 const canvasContainerStyle = computed(() => {
