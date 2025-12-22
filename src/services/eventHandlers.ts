@@ -573,6 +573,13 @@ export class EventHandlers {
   private handleMouseDown (event: MouseEvent): void {
     event.preventDefault();
 
+    // ✅ FIX: If we're already dragging, ignore any mousedown events (especially right-click)
+    // This prevents right-click from deselecting the object or interfering with the drag
+    if (this.isDragging || this.isDragOperation) {
+      console.log('🚫 Ignoring mousedown during active drag operation');
+      return;
+    }
+
     // Store initial mouse position to track movement
     this.mouseDownPosition.set(event.clientX, event.clientY);
     this.hasMouseMoved = false;
