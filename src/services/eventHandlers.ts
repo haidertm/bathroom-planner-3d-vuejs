@@ -573,6 +573,13 @@ export class EventHandlers {
   private handleMouseDown (event: MouseEvent): void {
     event.preventDefault();
 
+    // ✅ FIX: If we're already dragging, ignore any mousedown events (especially right-click)
+    // This prevents right-click from deselecting the object or interfering with the drag
+    if (this.isDragging || this.isDragOperation) {
+      console.log('🚫 Ignoring mousedown during active drag operation');
+      return;
+    }
+
     // Store initial mouse position to track movement
     this.mouseDownPosition.set(event.clientX, event.clientY);
     this.hasMouseMoved = false;
@@ -650,11 +657,11 @@ export class EventHandlers {
             }
         }
 
-      // Only do this for wall-bound objects (not corner-install items)
-      // Corner-install items have special positioning and should not be auto-moved
+      // Only do this for wall-bound objects that are NOT corner-install (bathtubs, showers, etc.)
+      // Corner-install objects should stay in their corners, not move to opposite walls
       const isCornerInstall = movementConfig?.cornerInstallOnly &&
-        typeof movementConfig.cornerInstallOnly === 'object' &&
-        movementConfig.cornerInstallOnly.enabled === true;
+        (typeof movementConfig.cornerInstallOnly === 'boolean' || movementConfig.cornerInstallOnly.enabled);
+
       if (movementConfig?.snapToWall && !isCornerInstall) {
         // Check which wall the object is currently on
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
