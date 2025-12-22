@@ -31,6 +31,7 @@ const productData: ProductData = {
           path: '../../models/furniture/basin/C76236.glb',
           dimensions: { width: 60.4, height: 55, depth: 34.7 },
           floorOffset: 0,
+          spawnHeight: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -165,6 +166,7 @@ const productData: ProductData = {
           path: '../../models/furniture/basin/C76234.glb',
           dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
           floorOffset: 0,
+          spawnHeight: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -1451,6 +1453,7 @@ const productData: ProductData = {
                       description: 'Item is part of wall opening'
                   },
                   sku: 'C77065',
+                  spawnHeight: 32,
                   price: '269.99',
                   title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm'
               },
@@ -1467,6 +1470,7 @@ const productData: ProductData = {
                       description: 'Item is part of wall opening'
                   },
                   sku: 'C77064',
+                  spawnHeight: 32,
                   price: '185.00',
                   title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm'
               },
@@ -1483,6 +1487,7 @@ const productData: ProductData = {
                       description: 'Item is part of wall opening'
                   },
                   sku: 'C77066',
+                  spawnHeight: 32,
                   price: '263.00',
                   title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 800mm'
               },
@@ -4230,8 +4235,22 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/newham-1370mm-freestanding-bath-c51096',
           path: '../../models/bath/C51096.glb',
           dimensions: { width: 136.9, height: 55, depth: 72.9 },
-          movement: { // NEW: Sink movement configuration
+          orientation: {
+            type: 'face_into_room',
+            description: 'Freestanding bath with buffer from wall'
+          },
+          movement: {
             snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
+            },
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -4246,8 +4265,22 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/newham-v2-1500mm-freestanding-bath-c51092',
           path: '../../models/bath/C51092.glb',
           dimensions: { width: 151.7, height: 57.9, depth: 74.8 },
-          movement: { // NEW: Sink movement configuration
+          orientation: {
+            type: 'face_into_room',
+            description: 'Freestanding bath with buffer from wall'
+          },
+          movement: {
             snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
+            },
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -4262,8 +4295,22 @@ const productData: ProductData = {
           link: 'https://www.bathroommountain.co.uk/newham-v2-1700mm-freestanding-bath-c51093',
           path: '../../models/bath/C51093.glb',
           dimensions: { width: 169.7, height: 58, depth: 77.8 },
-          movement: { // NEW: Sink movement configuration
+          orientation: {
+            type: 'face_into_room',
+            description: 'Freestanding bath with buffer from wall'
+          },
+          movement: {
             snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
+            },
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -4300,6 +4347,7 @@ const productData: ProductData = {
             snapToWall: true,
             cornerInstallOnly: {
               enabled: true,
+              preferredCorner: 'north-west', // Default spawn corner for this right-handed bath
               rotation: {
                 'north-west': 0,
                 'north-east': -Math.PI / 2,
@@ -4335,14 +4383,23 @@ const productData: ProductData = {
           dimensions: { width: 170, height: 67, depth: 73 },
           orientation: {
             type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
+            description: 'Freestanding bath with buffer from wall'
           },
-          movement: { // NEW: Sink movement configuration
-                snapToWall: false,
-                allowVerticalMovement: false,
-                allowFreeRotation: true
+          movement: {
+            snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
             },
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51089',
           price: '599.99',
           title: 'Kensington 1700mm Freestanding Slipper Bath'
@@ -4356,14 +4413,23 @@ const productData: ProductData = {
           dimensions: { width: 137.2, height: 67, depth: 71.7 },
           orientation: {
             type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
+            description: 'Freestanding bath with buffer from wall'
           },
-          movement: { // NEW: Sink movement configuration
-                snapToWall: false,
-                allowVerticalMovement: false,
-                allowFreeRotation: true
+          movement: {
+            snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
             },
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51098',
           price: '579.99',
           title: 'Kensington 1370mm Freestanding Slipper Bath'
@@ -4377,14 +4443,23 @@ const productData: ProductData = {
           dimensions: { width: 152.2, height: 67, depth: 73.1 },
           orientation: {
             type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
+            description: 'Freestanding bath with buffer from wall'
           },
-          movement: { // NEW: Sink movement configuration
-                snapToWall: false,
-                allowVerticalMovement: false,
-                allowFreeRotation: true
+          movement: {
+            snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
             },
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
           sku: 'C51088',
           price: '589.99',
           title: 'Kensington 1500mm Freestanding Slipper Bath'
@@ -4417,6 +4492,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4441,6 +4523,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4465,6 +4554,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4489,6 +4585,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4524,6 +4627,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4548,6 +4658,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4572,6 +4689,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4596,6 +4720,13 @@ const productData: ProductData = {
                       snapToWall: true,
                       cornerInstallOnly: {
                           enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
                       },
                       allowVerticalMovement: false,
                       allowFreeRotation: false
@@ -4624,11 +4755,20 @@ const productData: ProductData = {
                   dimensions: { width: 149.7, height: 66.8, depth: 71.2 },
                   orientation: {
                       type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
+                      description: 'Freestanding bath with buffer from wall'
                   },
                   movement: {
                       snapToWall: false,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
                       allowVerticalMovement: false,
                       allowFreeRotation: true
                   },
@@ -4645,11 +4785,20 @@ const productData: ProductData = {
                   dimensions: { width: 136.7, height: 66.8, depth: 71.2 },
                   orientation: {
                       type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
+                      description: 'Freestanding bath with buffer from wall'
                   },
                   movement: {
                       snapToWall: false,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
                       allowVerticalMovement: false,
                       allowFreeRotation: true
                   },
@@ -4666,11 +4815,20 @@ const productData: ProductData = {
                   dimensions: { width: 170, height: 66.9, depth: 73.1 },
                   orientation: {
                       type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
+                      description: 'Freestanding bath with buffer from wall'
                   },
                   movement: {
                       snapToWall: false,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
                       allowVerticalMovement: false,
                       allowFreeRotation: true
                   },
