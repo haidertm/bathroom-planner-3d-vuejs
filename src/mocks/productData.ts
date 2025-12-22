@@ -1453,6 +1453,7 @@ const productData: ProductData = {
                       description: 'Item is part of wall opening'
                   },
                   sku: 'C77065',
+                  spawnHeight: 32,
                   price: '269.99',
                   title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm'
               },
@@ -1469,6 +1470,7 @@ const productData: ProductData = {
                       description: 'Item is part of wall opening'
                   },
                   sku: 'C77064',
+                  spawnHeight: 32,
                   price: '185.00',
                   title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm'
               },
@@ -1485,6 +1487,7 @@ const productData: ProductData = {
                       description: 'Item is part of wall opening'
                   },
                   sku: 'C77066',
+                  spawnHeight: 32,
                   price: '263.00',
                   title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 800mm'
               },
