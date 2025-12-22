@@ -31,6 +31,7 @@ const productData: ProductData = {
           path: '../../models/furniture/basin/C76236.glb',
           dimensions: { width: 60.4, height: 55, depth: 34.7 },
           floorOffset: 0,
+          spawnHeight: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
@@ -165,6 +166,7 @@ const productData: ProductData = {
           path: '../../models/furniture/basin/C76234.glb',
           dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
           floorOffset: 0,
+          spawnHeight: 32,
           orientation: {
             type: 'face_into_room',
             wallBuffer: 0, // Flush with wall - no gap
