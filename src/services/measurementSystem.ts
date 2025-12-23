@@ -103,6 +103,10 @@ export class MeasurementSystem {
     if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
     }
+    // Update wall dimension labels if they're visible (2D mode)
+    if (this.wallLabelsVisible) {
+      this.createWallDimensionLabels();
+    }
   }
 
   public updateExistingItems (items: BathroomItem[]): void {
