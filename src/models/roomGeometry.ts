@@ -90,6 +90,67 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
 };
 
 /**
+ * BLUEPRINT GRID for 2D mode - 10cm (100mm) spacing for precise measurements
+ * Creates a more detailed grid than the standard 15cm grid
+ */
+export const createBlueprintGrid = (width: number, height: number): THREE.Group => {
+  console.log('📐 Creating blueprint grid (10cm spacing) with dimensions:', { width, height });
+
+  const blueprintGridGroup = new THREE.Group();
+  const BLUEPRINT_GRID_SPACING = 10; // 10cm = 100mm spacing
+
+  // Create blueprint-specific material - lighter gray, more visible for 2D mode
+  const blueprintGridMaterial = new THREE.LineBasicMaterial({
+    color: 0x999999, // Lighter gray for blueprint aesthetic
+    opacity: 0.5,
+    transparent: true
+  });
+
+  // Create major grid material (every 50cm or 100cm)
+  const majorGridMaterial = new THREE.LineBasicMaterial({
+    color: 0x666666, // Darker for major lines
+    opacity: 0.7,
+    transparent: true,
+    linewidth: 2
+  });
+
+  // BLUEPRINT GRID - Create vertical lines (parallel to Z-axis)
+  for (let x = -width / 2; x <= width / 2; x += BLUEPRINT_GRID_SPACING) {
+    const isMajorLine = Math.abs(x) % 50 < 0.1 || Math.abs(x) % 50 > 49.9; // Every 50cm
+    const points: THREE.Vector3[] = [
+      new THREE.Vector3(x, 0.5, -height / 2), // Slightly above floor to avoid z-fighting
+      new THREE.Vector3(x, 0.5, height / 2)
+    ];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+    blueprintGridGroup.add(line);
+  }
+
+  // BLUEPRINT GRID - Create horizontal lines (parallel to X-axis)
+  for (let z = -height / 2; z <= height / 2; z += BLUEPRINT_GRID_SPACING) {
+    const isMajorLine = Math.abs(z) % 50 < 0.1 || Math.abs(z) % 50 > 49.9; // Every 50cm
+    const points: THREE.Vector3[] = [
+      new THREE.Vector3(-width / 2, 0.5, z),
+      new THREE.Vector3(width / 2, 0.5, z)
+    ];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+    blueprintGridGroup.add(line);
+  }
+
+  blueprintGridGroup.position.y = 0;
+  blueprintGridGroup.name = 'BlueprintGrid';
+  blueprintGridGroup.visible = false; // Hidden by default, shown in 2D mode
+
+  console.log('✅ Blueprint grid created (10cm spacing):', {
+    lineCount: blueprintGridGroup.children.length,
+    spacing: BLUEPRINT_GRID_SPACING
+  });
+
+  return blueprintGridGroup;
+};
+
+/**
  * WALL GRID for interior walls (supports regular and L-shaped rooms)
  */
 export const createWallGridLines = (

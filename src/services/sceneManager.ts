@@ -12,14 +12,15 @@ import {
   createLShapeFloor,
   createLShapeWalls,
   createCustomGrid,
-  createWallGridLines
+  createWallGridLines,
+  createBlueprintGrid
 } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
 import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
-import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS } from '../constants/camera';
+import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -35,11 +36,26 @@ interface SceneComponents {
   renderer: THREE.WebGLRenderer;
 }
 
+// Stored camera state for 3D/2D view switching
+interface Stored3DState {
+  position: THREE.Vector3;
+  target: THREE.Vector3;
+}
+
 export class SceneManager {
   public scene: THREE.Scene | null = null;
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
   private eventHandlers: any = null;
+
+  // 2D Blueprint View - Orthographic camera and view mode
+  public orthographicCamera: THREE.OrthographicCamera | null = null;
+  public viewMode: ViewMode = '3d';
+  private stored3DState: Stored3DState | null = null;
+  private roomWidth: number = 300;  // Default room width in cm
+  private roomHeight: number = 250; // Default room height/depth in cm
+  // Blueprint grid reference will be added in Story 2 implementation
+  public blueprintGridRef: THREE.Group | null = null; // 10cm grid for 2D mode
 
   // Post-processing components
   private composer: EffectComposer | null = null;
@@ -86,6 +102,9 @@ export class SceneManager {
     this.camera = new THREE.PerspectiveCamera(CAMERA_SETTINGS.FOV, window.innerWidth / window.innerHeight, CAMERA_SETTINGS.NEAR, CAMERA_SETTINGS.FAR);
     this.camera.position.set(CAMERA_SETTINGS.INITIAL_POSITION.x, CAMERA_SETTINGS.INITIAL_POSITION.y, CAMERA_SETTINGS.INITIAL_POSITION.z);
     this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
+
+    // Initialize orthographic camera for 2D Blueprint view
+    this.initializeOrthographicCamera();
 
     // Create renderer with enhanced settings
     this.renderer = new THREE.WebGLRenderer({
@@ -222,6 +241,340 @@ export class SceneManager {
       far: this.camera.far
     };
   }
+
+  // ============================================================================
+  // 2D BLUEPRINT VIEW METHODS
+  // ============================================================================
+
+  /**
+   * Initialize the orthographic camera for 2D Blueprint view
+   * Called during scene initialization
+   */
+  private initializeOrthographicCamera(): void {
+    const aspect = window.innerWidth / window.innerHeight;
+    const frustumSize = Math.max(this.roomWidth, this.roomHeight) * ORTHOGRAPHIC_SETTINGS.FRUSTUM_PADDING;
+
+    this.orthographicCamera = new THREE.OrthographicCamera(
+      frustumSize * aspect / -2,
+      frustumSize * aspect / 2,
+      frustumSize / 2,
+      frustumSize / -2,
+      ORTHOGRAPHIC_SETTINGS.NEAR,
+      ORTHOGRAPHIC_SETTINGS.FAR
+    );
+
+    // Position directly above room center, looking down
+    this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
+    this.orthographicCamera.lookAt(0, 0, 0);
+    // Set up vector for proper top-down orientation (North at top of screen)
+    this.orthographicCamera.up.set(0, 0, -1);
+    this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
+    this.orthographicCamera.updateProjectionMatrix();
+
+    console.log('✅ Orthographic camera initialized for 2D Blueprint view');
+  }
+
+  /**
+   * Update orthographic camera frustum when room dimensions change
+   */
+  public updateOrthographicFrustum(): void {
+    if (!this.orthographicCamera) return;
+
+    const aspect = window.innerWidth / window.innerHeight;
+    const frustumSize = Math.max(this.roomWidth, this.roomHeight) * ORTHOGRAPHIC_SETTINGS.FRUSTUM_PADDING;
+
+    this.orthographicCamera.left = frustumSize * aspect / -2;
+    this.orthographicCamera.right = frustumSize * aspect / 2;
+    this.orthographicCamera.top = frustumSize / 2;
+    this.orthographicCamera.bottom = frustumSize / -2;
+    this.orthographicCamera.updateProjectionMatrix();
+  }
+
+  /**
+   * Switch to 2D Blueprint view (orthographic top-down)
+   */
+  public switchTo2D(): void {
+    if (this.viewMode === '2d' || !this.camera || !this.orthographicCamera) return;
+
+    console.log('🔄 Switching to 2D Blueprint view...');
+
+    // Store current 3D camera state for restoration
+    this.stored3DState = {
+      position: this.camera.position.clone(),
+      target: new THREE.Vector3(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z)
+    };
+
+    // Update orthographic frustum to current room size
+    this.updateOrthographicFrustum();
+
+    // Update view mode
+    this.viewMode = '2d';
+
+    // Update post-processing to use orthographic camera
+    this.updatePostProcessingCamera();
+
+    // Disable fog in 2D mode for cleaner view
+    if (this.scene) {
+      this.scene.fog = null;
+    }
+
+    // Disable wall culling in 2D mode (we want to see all walls from above)
+    this.wallCullingManager.setEnabled(false);
+
+    // Show blueprint grid, hide regular grid
+    if (this.blueprintGridRef) {
+      this.blueprintGridRef.visible = true;
+    }
+    if (this.gridRef) {
+      this.gridRef.visible = false;
+    }
+    // Hide wall grid in 2D mode for cleaner view
+    if (this.wallGridGroup) {
+      this.wallGridGroup.visible = false;
+    }
+
+    // Notify event handlers of mode change and pass orthographic camera
+    if (this.eventHandlers) {
+      if (typeof this.eventHandlers.setViewMode === 'function') {
+        this.eventHandlers.setViewMode('2d');
+      }
+      if (typeof this.eventHandlers.setOrthographicCamera === 'function' && this.orthographicCamera) {
+        this.eventHandlers.setOrthographicCamera(this.orthographicCamera);
+      }
+    }
+
+    // Apply transparency to tall objects to prevent obscuring shorter items
+    this.adjustTallObjectsForBlueprintView();
+
+    // Show wall dimension labels in 2D mode
+    if (this.measurementSystem) {
+      this.measurementSystem.setWallLabelsVisible(true);
+    }
+
+    console.log('✅ Switched to 2D Blueprint view');
+  }
+
+  /**
+   * Switch to 3D perspective view
+   */
+  public switchTo3D(): void {
+    if (this.viewMode === '3d' || !this.camera) return;
+
+    console.log('🔄 Switching to 3D view...');
+
+    // Restore 3D camera state if available
+    if (this.stored3DState) {
+      this.camera.position.copy(this.stored3DState.position);
+      this.camera.lookAt(
+        this.stored3DState.target.x,
+        this.stored3DState.target.y,
+        this.stored3DState.target.z
+      );
+
+      // Sync with EventHandlers target position
+      if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
+        this.eventHandlers.syncTargetCameraPosition();
+      }
+    }
+
+    // Update view mode
+    this.viewMode = '3d';
+
+    // Update post-processing to use perspective camera
+    this.updatePostProcessingCamera();
+
+    // Re-enable fog in 3D mode
+    if (this.scene) {
+      this.scene.fog = new THREE.Fog(0xE6E1DA, 1000, 5000);
+    }
+
+    // Re-enable wall culling in 3D mode
+    this.wallCullingManager.setEnabled(true);
+
+    // Hide blueprint grid, show regular grid
+    if (this.blueprintGridRef) {
+      this.blueprintGridRef.visible = false;
+    }
+    if (this.gridRef) {
+      this.gridRef.visible = true;
+    }
+    // Restore wall grid visibility based on previous state
+    if (this.wallGridGroup) {
+      this.wallGridGroup.visible = this.wallGridVisible;
+    }
+
+    // Notify event handlers of mode change
+    if (this.eventHandlers && typeof this.eventHandlers.setViewMode === 'function') {
+      this.eventHandlers.setViewMode('3d');
+    }
+
+    // Restore full opacity to tall objects
+    this.restoreTallObjectsOpacity();
+
+    // Hide wall dimension labels in 3D mode
+    if (this.measurementSystem) {
+      this.measurementSystem.setWallLabelsVisible(false);
+    }
+
+    console.log('✅ Switched to 3D view');
+  }
+
+  /**
+   * Get the currently active camera (perspective or orthographic)
+   */
+  public getActiveCamera(): THREE.Camera | null {
+    if (this.viewMode === '2d') {
+      return this.orthographicCamera;
+    }
+    return this.camera;
+  }
+
+  /**
+   * Update post-processing passes to use the active camera
+   */
+  private updatePostProcessingCamera(): void {
+    const activeCamera = this.getActiveCamera();
+    if (!activeCamera || !this.scene) return;
+
+    // Recreate composer with new camera
+    // The RenderPass and OutlinePass need to be recreated with the new camera
+    // since they store camera reference internally
+    this.setupPostProcessing();
+
+    // Update measurement system camera
+    if (this.measurementSystem) {
+      this.measurementSystem.updateCamera(activeCamera);
+    }
+  }
+
+  /**
+   * Set room dimensions (called from Planner when room size changes)
+   * Updates orthographic frustum accordingly
+   */
+  public setRoomDimensions(width: number, height: number): void {
+    this.roomWidth = width;
+    this.roomHeight = height;
+
+    // Update orthographic camera frustum if in 2D mode
+    if (this.viewMode === '2d') {
+      this.updateOrthographicFrustum();
+    }
+  }
+
+  /**
+   * Get current view mode
+   */
+  public getViewMode(): ViewMode {
+    return this.viewMode;
+  }
+
+  /**
+   * Zoom in 2D mode (adjusts orthographic camera zoom)
+   */
+  public zoom2D(delta: number): void {
+    if (!this.orthographicCamera || this.viewMode !== '2d') return;
+
+    const newZoom = this.orthographicCamera.zoom * (1 + delta);
+    this.orthographicCamera.zoom = Math.max(
+      ORTHOGRAPHIC_SETTINGS.MIN_ZOOM,
+      Math.min(ORTHOGRAPHIC_SETTINGS.MAX_ZOOM, newZoom)
+    );
+    this.orthographicCamera.updateProjectionMatrix();
+  }
+
+  /**
+   * Pan in 2D mode (moves orthographic camera position)
+   */
+  public pan2D(deltaX: number, deltaZ: number): void {
+    if (!this.orthographicCamera || this.viewMode !== '2d') return;
+
+    // Scale pan amount by zoom level for consistent feel
+    const panScale = ORTHOGRAPHIC_SETTINGS.PAN_SPEED / this.orthographicCamera.zoom;
+    this.orthographicCamera.position.x += deltaX * panScale;
+    this.orthographicCamera.position.z += deltaZ * panScale;
+  }
+
+  /**
+   * Reset 2D view to center on room
+   */
+  public reset2DView(): void {
+    if (!this.orthographicCamera || this.viewMode !== '2d') return;
+
+    this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
+    this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
+    this.orthographicCamera.updateProjectionMatrix();
+  }
+
+  // Threshold height for tall objects (in cm) - objects taller than this get transparency in 2D mode
+  private static readonly TALL_OBJECT_HEIGHT_THRESHOLD = 180;
+  // Transparency level for tall objects in 2D mode (0.5 = 50% transparent)
+  private static readonly TALL_OBJECT_2D_OPACITY = 0.5;
+  // Store original material states for restoration
+  private originalMaterialStates: Map<THREE.Material, { opacity: number; transparent: boolean }> = new Map();
+
+  /**
+   * Apply transparency to tall objects (height > 180cm) in 2D Blueprint view
+   * This prevents tall objects like shower screens from obscuring shorter floor items
+   */
+  private adjustTallObjectsForBlueprintView(): void {
+    console.log('📐 Adjusting tall objects for 2D Blueprint view...');
+
+    this.existingItems.forEach((model, itemId) => {
+      const dimensions = model.userData.dimensions;
+      if (!dimensions) return;
+
+      // Check if object is taller than threshold
+      const objectHeight = dimensions.height * (model.scale.y || 1);
+      if (objectHeight > SceneManager.TALL_OBJECT_HEIGHT_THRESHOLD) {
+        console.log(`  🔍 Tall object found: Item ${itemId} (height: ${objectHeight.toFixed(0)}cm)`);
+
+        // Traverse all meshes in the model and apply transparency
+        model.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.material) {
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+            materials.forEach((material) => {
+              if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshBasicMaterial) {
+                // Store original state if not already stored
+                if (!this.originalMaterialStates.has(material)) {
+                  this.originalMaterialStates.set(material, {
+                    opacity: material.opacity,
+                    transparent: material.transparent
+                  });
+                }
+
+                // Apply transparency
+                material.transparent = true;
+                material.opacity = SceneManager.TALL_OBJECT_2D_OPACITY;
+                material.needsUpdate = true;
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Restore full opacity to all objects when returning to 3D view
+   */
+  private restoreTallObjectsOpacity(): void {
+    console.log('🔄 Restoring tall objects opacity for 3D view...');
+
+    // Restore all materials to their original states
+    this.originalMaterialStates.forEach((originalState, material) => {
+      material.opacity = originalState.opacity;
+      material.transparent = originalState.transparent;
+      material.needsUpdate = true;
+    });
+
+    // Clear stored states
+    this.originalMaterialStates.clear();
+  }
+
+  // ============================================================================
+  // END 2D BLUEPRINT VIEW METHODS
+  // ============================================================================
 
   private hasItemChanged(model: THREE.Object3D, item: BathroomItem): boolean {
     const currentPos = model.position;
@@ -909,6 +1262,9 @@ export class SceneManager {
   private setupPostProcessing(): void {
     if (!this.scene || !this.camera || !this.renderer) return;
 
+    // Get active camera (perspective or orthographic based on view mode)
+    const activeCamera = this.getActiveCamera() || this.camera;
+
     try {
       const pixelRatio = Math.min(window.devicePixelRatio, 2);
       // Create render target with higher precision for better outline rendering
@@ -932,15 +1288,15 @@ export class SceneManager {
 
       this.composer = new EffectComposer(this.renderer, renderTarget);
 
-      // Add render pass
-      const renderPass = new RenderPass(this.scene, this.camera);
+      // Add render pass with active camera
+      const renderPass = new RenderPass(this.scene, activeCamera);
       this.composer.addPass(renderPass);
 
       // Enhanced outline pass with distance-optimized settings
       this.outlinePass = new OutlinePass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
         this.scene,
-        this.camera
+        activeCamera
       );
 
       // IMPROVED: Distance-optimized outline settings
@@ -1179,6 +1535,16 @@ export class SceneManager {
       }
     } else {
       console.log('⏭️ Skipping floor grid creation (showGrid = false)');
+    }
+
+    // Create blueprint grid for 2D mode (10cm spacing)
+    try {
+      this.blueprintGridRef = createBlueprintGrid(roomWidth, roomHeight);
+      this.blueprintGridRef.visible = false; // Hidden by default, shown in 2D mode
+      this.scene.add(this.blueprintGridRef);
+      console.log('✅ Blueprint grid created (hidden by default)');
+    } catch (error) {
+      console.error('❌ Error creating blueprint grid:', error);
     }
 
     // Create wall grid group and lines
@@ -1516,8 +1882,12 @@ export class SceneManager {
         return;
       }
 
-      // Update wall culling
-      if (this.wallCullingManager) {
+      // Get active camera (perspective or orthographic based on view mode)
+      const activeCamera = this.getActiveCamera();
+      if (!activeCamera) return;
+
+      // Update wall culling (only in 3D mode)
+      if (this.wallCullingManager && this.viewMode === '3d') {
         this.wallCullingManager.updateWallVisibility();
       }
 
@@ -1532,11 +1902,11 @@ export class SceneManager {
         }
       }
 
-      // Render
+      // Render using active camera
       if (this.composer) {
         this.composer.render();
       } else {
-        this.renderer.render(this.scene, this.camera);
+        this.renderer.render(this.scene, activeCamera);
       }
     };
     animate();
@@ -1565,6 +1935,11 @@ export class SceneManager {
           window.innerHeight * 2
         );
       }
+    }
+
+    // Update orthographic camera frustum on resize
+    if (this.orthographicCamera) {
+      this.updateOrthographicFrustum();
     }
   }
 
