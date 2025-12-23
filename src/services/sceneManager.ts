@@ -321,9 +321,9 @@ export class SceneManager {
     // Disable wall culling in 2D mode (we want to see all walls from above)
     this.wallCullingManager.setEnabled(false);
 
-    // Show blueprint grid, hide regular grid
+    // Hide all grids in 2D mode for cleaner blueprint view
     if (this.blueprintGridRef) {
-      this.blueprintGridRef.visible = true;
+      this.blueprintGridRef.visible = false;
     }
     if (this.gridRef) {
       this.gridRef.visible = false;

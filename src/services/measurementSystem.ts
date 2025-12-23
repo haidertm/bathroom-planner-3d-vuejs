@@ -1715,23 +1715,25 @@ export class MeasurementSystem {
     );
 
     // Notch-east wall (vertical part of notch) - notch height
+    // Position label OUTSIDE (in the notch cutout area, to the LEFT of the wall)
     this.createWallDimensionLabel(
       `${this.notchHeight.toFixed(0)} cm`,
-      new THREE.Vector3(notchMaxX + wallThickness + labelOffset * 0.7, labelY, notchMinZ + this.notchHeight / 2),
+      new THREE.Vector3(notchMaxX - labelOffset, labelY, notchMinZ + this.notchHeight / 2),
       this.notchHeight,
       'vertical',
-      new THREE.Vector3(notchMaxX + wallThickness + labelOffset * 0.7, labelY, notchMinZ),
-      new THREE.Vector3(notchMaxX + wallThickness + labelOffset * 0.7, labelY, notchMaxZ)
+      new THREE.Vector3(notchMaxX - labelOffset, labelY, notchMinZ),
+      new THREE.Vector3(notchMaxX - labelOffset, labelY, notchMaxZ)
     );
 
     // Notch-south wall (horizontal part of notch) - notch width
+    // Position label OUTSIDE (in the notch cutout area, ABOVE the wall)
     this.createWallDimensionLabel(
       `${this.notchWidth.toFixed(0)} cm`,
-      new THREE.Vector3(notchMinX + this.notchWidth / 2, labelY, notchMaxZ + wallThickness + labelOffset * 0.7),
+      new THREE.Vector3(notchMinX + this.notchWidth / 2, labelY, notchMaxZ - labelOffset),
       this.notchWidth,
       'horizontal',
-      new THREE.Vector3(notchMinX, labelY, notchMaxZ + wallThickness + labelOffset * 0.7),
-      new THREE.Vector3(notchMaxX, labelY, notchMaxZ + wallThickness + labelOffset * 0.7)
+      new THREE.Vector3(notchMinX, labelY, notchMaxZ - labelOffset),
+      new THREE.Vector3(notchMaxX, labelY, notchMaxZ - labelOffset)
     );
   }
 
