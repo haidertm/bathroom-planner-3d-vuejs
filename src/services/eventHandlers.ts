@@ -1834,23 +1834,47 @@ export class EventHandlers {
 
             // Check notch walls if they exist
             if (notch) {
-              // Check if cursor is in the notch area
-              const isInNotchXRange = targetX >= notch.minX && targetX <= notch.maxX;
-              const isInNotchZRange = targetZ >= notch.minZ && targetZ <= notch.maxZ;
+              // Extended ranges to handle corner transitions between notch walls
+              // Add buffer zone beyond notch boundaries to allow smooth wall switching at corner
+              const cornerBuffer = 30; // 30cm buffer for corner detection
 
-              if (isInNotchXRange) {
-                const distToNotchSouth = Math.abs(targetZ - (notch.maxZ + WALL_SETTINGS.THICKNESS));
-                if (distToNotchSouth < minDist && targetZ > notch.maxZ) {
+              // For notch-south: extend X range to include corner area
+              const isInNotchXRangeExtended = targetX >= notch.minX && targetX <= notch.maxX + cornerBuffer;
+              // For notch-east: extend Z range to include corner area
+              const isInNotchZRangeExtended = targetZ >= notch.minZ && targetZ <= notch.maxZ + cornerBuffer;
+
+              // Calculate distances to notch walls
+              const notchSouthWallZ = notch.maxZ + WALL_SETTINGS.THICKNESS;
+              const notchEastWallX = notch.maxX + WALL_SETTINGS.THICKNESS;
+              const distToNotchSouth = Math.abs(targetZ - notchSouthWallZ);
+              const distToNotchEast = Math.abs(targetX - notchEastWallX);
+
+              // Check notch-south wall (cursor must be south of notch interior)
+              if (isInNotchXRangeExtended && targetZ > notch.maxZ) {
+                if (distToNotchSouth < minDist) {
                   minDist = distToNotchSouth;
                   targetWall = 'notch-south';
                 }
               }
 
-              if (isInNotchZRange) {
-                const distToNotchEast = Math.abs(targetX - (notch.maxX + WALL_SETTINGS.THICKNESS));
-                if (distToNotchEast < minDist && targetX > notch.maxX) {
+              // Check notch-east wall (cursor must be east of notch interior)
+              if (isInNotchZRangeExtended && targetX > notch.maxX) {
+                if (distToNotchEast < minDist) {
                   minDist = distToNotchEast;
                   targetWall = 'notch-east';
+                }
+              }
+
+              // Special corner handling: when at the corner where both notch walls meet
+              // Pick the wall the cursor is closer to
+              const isNearCorner = targetX > notch.maxX && targetX < notch.maxX + cornerBuffer &&
+                                   targetZ > notch.maxZ && targetZ < notch.maxZ + cornerBuffer;
+              if (isNearCorner) {
+                // At corner - choose based on which wall is closer
+                if (distToNotchEast < distToNotchSouth) {
+                  targetWall = 'notch-east';
+                } else {
+                  targetWall = 'notch-south';
                 }
               }
             }
@@ -1890,16 +1914,18 @@ export class EventHandlers {
                 break;
               case 'notch-south':
                 if (notch) {
-                  newZ = notch.maxZ + WALL_SETTINGS.THICKNESS + wallBuffer;
+                  // Position object INSIDE the room (south of notch wall)
+                  newZ = notch.maxZ + wallBuffer + 5;
                   newX = Math.max(notch.minX + halfObjectWidth, Math.min(notch.maxX - halfObjectWidth, newX));
-                  constrainedRotation = Math.PI;
+                  constrainedRotation = 0;  // Face away from notch (toward south, into room)
                 }
                 break;
               case 'notch-east':
                 if (notch) {
-                  newX = notch.maxX + WALL_SETTINGS.THICKNESS + wallBuffer;
+                  // Position object INSIDE the room (east of notch wall)
+                  newX = notch.maxX + wallBuffer + 5;
                   newZ = Math.max(notch.minZ + halfObjectWidth, Math.min(notch.maxZ - halfObjectWidth, newZ));
-                  constrainedRotation = -Math.PI / 2;
+                  constrainedRotation = Math.PI / 2;  // Face away from notch (toward east, into room)
                 }
                 break;
             }
