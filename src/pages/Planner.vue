@@ -31,7 +31,7 @@
     <ItemConfigurationOverlay
         :selected-item="selectedBathroomItem"
         :scene="sceneManagerRef?.scene || null"
-        :camera="sceneManagerRef?.camera || null"
+        :camera="sceneManagerRef?.getActiveCamera() || null"
         :renderer="sceneManagerRef?.renderer || null"
         :rotation-enabled="rotationArrowsEnabled"
         :is-dragging="isDraggingObject"
@@ -97,6 +97,13 @@
         size="large"
     />
 
+    <!--    2D/3D View Mode Toggle -->
+    <ViewModeToggle
+        :style="viewModeToggleStyle"
+        v-model="viewMode"
+        @mode-change="handleViewModeChange"
+    />
+
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
       <div :style="popupContentStyle" @click.stop>
@@ -152,6 +159,7 @@ import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
 import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
+import ViewModeToggle from '../components/ui/ViewModeToggle.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS, WALL_SETTINGS } from '../constants/dimensions.js'
@@ -789,6 +797,9 @@ const preventCollisionPlacement = ref(true)
 //For Measurement
 const measurementEnabled = ref(false)
 const currentMeasurements = ref(null)
+
+// For 2D/3D View Mode Toggle
+const viewMode = ref('3d') // '2d' or '3d'
 // Add method to handle measurement toggle
 const handleToggleMeasurements = () => {
   measurementEnabled.value = !measurementEnabled.value
@@ -867,6 +878,14 @@ const toggleMeasurementStyle = computed(() => ({
   fontSize: isMobileDevice.value ? '16px' : '20px',
   maxWidth: isMobileDevice.value ? '280px' : '320px',
   lineHeight: '1.2'
+}))
+
+// Style for 2D/3D View Mode Toggle - positioned at bottom right, above UndoRedoPanel
+const viewModeToggleStyle = computed(() => ({
+  position: 'absolute',
+  right: isMobileDevice.value ? '10px' : '50px',
+  bottom: isMobileDevice.value ? '80px' : '80px', // Above the UndoRedoPanel (which is at bottom: 20px)
+  zIndex: 100
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -1417,6 +1436,29 @@ const handleMeasurementUpdate = () => {
 const handleMeasurementToggle = () => {
   handleToggleMeasurements()
 }
+
+// Handle 2D/3D View Mode Change
+const handleViewModeChange = (mode) => {
+  console.log('🔄 View mode changing to:', mode)
+  viewMode.value = mode
+
+  if (!sceneManagerRef.value) {
+    console.warn('SceneManager not initialized yet')
+    return
+  }
+
+  // Update EventHandlers view mode for proper 2D interaction behavior
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.setViewMode(mode)
+  }
+
+  if (mode === '2d') {
+    sceneManagerRef.value.switchTo2D()
+  } else {
+    sceneManagerRef.value.switchTo3D()
+  }
+}
+
 // Add this function to load saved room dimensions
 const loadSavedRoomDimensions = () => {
   const dimensions = loadRoomDimensionsFromStorage()
@@ -2020,6 +2062,7 @@ onMounted(async () => {
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
+  eventHandlersRef.value.setSceneManager(sceneManagerRef.value);
 
   // Apply pending camera position BEFORE rendering starts (to avoid visual jump)
   if (pendingCameraPosition) {

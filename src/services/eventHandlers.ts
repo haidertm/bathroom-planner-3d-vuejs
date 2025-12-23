@@ -20,7 +20,7 @@ import {
 } from '../utils/constraints';
 import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
-import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
+import { CAMERA_CONTROLS, LOOK_AT, type ViewMode } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
 import { MeasurementSystem } from './measurementSystem.ts';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
@@ -124,6 +124,11 @@ export class EventHandlers {
   public onItemDeselected?: () => void;
   public onDragStart?: () => void;
   public onDragEnd?: () => void;
+
+  // 2D/3D View Mode
+  private viewMode: ViewMode = '3d';
+  public orthographicCamera: THREE.OrthographicCamera | null = null; // Public for SceneManager access
+  private sceneManager: any = null; // Reference to SceneManager for 2D zoom
 
   constructor (
     scene: THREE.Scene,
@@ -366,6 +371,57 @@ export class EventHandlers {
     this.wallCulling = wallCulling;
   }
 
+  /**
+   * Set the current view mode (2D or 3D)
+   * Called by SceneManager when switching views
+   */
+  public setViewMode(mode: ViewMode): void {
+    console.log('📐 EventHandlers: View mode set to', mode);
+    this.viewMode = mode;
+  }
+
+  /**
+   * Get current view mode
+   */
+  public getViewMode(): ViewMode {
+    return this.viewMode;
+  }
+
+  /**
+   * Set reference to SceneManager for 2D zoom control
+   */
+  public setSceneManager(sceneManager: any): void {
+    this.sceneManager = sceneManager;
+    if (sceneManager?.orthographicCamera) {
+      this.orthographicCamera = sceneManager.orthographicCamera;
+    }
+  }
+
+  /**
+   * Set orthographic camera reference
+   */
+  public setOrthographicCamera(camera: THREE.OrthographicCamera): void {
+    this.orthographicCamera = camera;
+  }
+
+  /**
+   * Check if height adjustment is allowed (disabled in 2D mode)
+   */
+  private canAdjustHeight(): boolean {
+    return this.viewMode === '3d';
+  }
+
+  /**
+   * Get the active camera based on current view mode
+   * Returns orthographic camera in 2D mode, perspective camera in 3D mode
+   */
+  private getActiveCamera(): THREE.Camera {
+    if (this.viewMode === '2d' && this.orthographicCamera) {
+      return this.orthographicCamera;
+    }
+    return this.camera;
+  }
+
     public update(): void {
         // Update rotation arrows
         if (this.rotationArrows) {
@@ -457,7 +513,7 @@ export class EventHandlers {
   }
 
   private getIntersectedObject (mouse: THREE.Vector2): IntersectionResult | null {
-    this.raycaster.setFromCamera(mouse, this.camera);
+    this.raycaster.setFromCamera(mouse, this.getActiveCamera());
 
     // Raycast against all objects, but filter results by visibility
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
@@ -780,47 +836,62 @@ export class EventHandlers {
 
         // ✅ FIX: For wall-mounted objects, calculate dragOffset using the wall plane
         if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
-          // Determine which wall the object is on
-          const currentWall = this.determineCurrentWall(this.selectedObject.position);
-          const roomHalfWidth = this.roomWidthRef.value / 2;
-          const roomHalfHeight = this.roomHeightRef.value / 2;
+          // 📐 2D MODE: Use floor plane for dragOffset calculation (matches drag handling)
+          if (this.viewMode === '2d') {
+            const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(floorPlane, intersectPoint);
+            // For 2D mode, only use X and Z offset (Y is locked)
+            this.dragOffset.set(
+              this.selectedObject.position.x - intersectPoint.x,
+              0,
+              this.selectedObject.position.z - intersectPoint.z
+            );
+          } else {
+            // 3D MODE: Use wall plane intersection
+            // Determine which wall the object is on
+            const currentWall = this.determineCurrentWall(this.selectedObject.position);
+            const roomHalfWidth = this.roomWidthRef.value / 2;
+            const roomHalfHeight = this.roomHeightRef.value / 2;
 
-          // ✅ Get notch boundaries for L-shaped rooms
-          const { notch } = getInteriorBoundaries(
-            this.roomWidthRef.value,
-            this.roomHeightRef.value,
-            this.notchWidthRef.value,
-            this.notchHeightRef.value
-          );
+            // ✅ Get notch boundaries for L-shaped rooms
+            const { notch } = getInteriorBoundaries(
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              this.notchWidthRef.value,
+              this.notchHeightRef.value
+            );
 
-          // Create the wall planes
-          const wallPlanes: { [key: string]: THREE.Plane } = {
-            north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
-            south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
-            east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
-            west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
-          };
+            // Create the wall planes
+            const wallPlanes: { [key: string]: THREE.Plane } = {
+              north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
+              south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
+              east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
+              west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
+            };
 
-          // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
-          if (notch) {
-            wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
-            wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+            // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
+            if (notch) {
+              wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
+              wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+            }
+
+            const wallPlane = wallPlanes[currentWall];
+
+            // Calculate intersection with wall plane
+            this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(wallPlane, intersectPoint);
+
+            // Calculate dragOffset from wall plane intersection
+            this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
           }
-
-          const wallPlane = wallPlanes[currentWall];
-
-          // Calculate intersection with wall plane
-          this.raycaster.setFromCamera(this.mouse, this.camera);
-          const intersectPoint = new THREE.Vector3();
-          this.raycaster.ray.intersectPlane(wallPlane, intersectPoint);
-
-          // Calculate dragOffset from wall plane intersection
-          this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
         } else {
           // For non-wall objects, use the standard drag plane
           this.updateDragPlane(this.selectedObject);
 
-          this.raycaster.setFromCamera(this.mouse, this.camera);
+          this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
           const intersectPoint = new THREE.Vector3();
           this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
           this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
@@ -1521,6 +1592,12 @@ export class EventHandlers {
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = this.getCurrentItemData(itemId);
 
+      // 📐 2D MODE: Disable height adjustment in 2D mode
+      if (!this.canAdjustHeight()) {
+        console.log('📐 Height adjustment disabled in 2D mode');
+        return;
+      }
+
       // Check if vertical movement is allowed
       if (!canMoveVertically(objectType, currentItem)) {
         console.log('⚠️ Vertical movement not allowed for', objectType);
@@ -1592,7 +1669,7 @@ export class EventHandlers {
         if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
 
             // Get cursor position on the existing drag plane and include initial offset
-            this.raycaster.setFromCamera(this.mouse, this.camera);
+            this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
             const intersectPoint = new THREE.Vector3();
             this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
             const followPoint = intersectPoint.add(this.dragOffset);
@@ -1716,7 +1793,181 @@ export class EventHandlers {
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
         // ✅ FIX: Project cursor onto ALL wall planes and use the closest intersection
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+
+        // 📐 2D MODE: Use floor plane intersection instead of wall plane intersection
+        // In 2D mode, the camera looks straight down so vertical wall planes won't intersect
+        if (this.viewMode === '2d') {
+          const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+          const floorIntersect = new THREE.Vector3();
+
+          if (this.raycaster.ray.intersectPlane(floorPlane, floorIntersect)) {
+            // Get interior boundaries for wall constraints
+            const { interior, wallFaces, notch } = getInteriorBoundaries(
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              this.notchWidthRef.value,
+              this.notchHeightRef.value
+            );
+
+            // Apply drag offset to get target position
+            const targetX = floorIntersect.x + this.dragOffset.x;
+            const targetZ = floorIntersect.z + this.dragOffset.z;
+            const newY = this.selectedObject.position.y; // Keep Y locked in 2D mode
+
+            // Calculate object dimensions for boundary constraints
+            const objectWidth = dimensions && dimensions.width ? dimensions.width * objectScale : 0;
+            const halfObjectWidth = objectWidth / 2;
+
+            // 📐 2D MODE: Determine closest wall based on cursor position
+            // Calculate distances to each wall from cursor position
+            const distToNorth = Math.abs(targetZ - wallFaces.north);
+            const distToSouth = Math.abs(targetZ - wallFaces.south);
+            const distToEast = Math.abs(targetX - wallFaces.east);
+            const distToWest = Math.abs(targetX - wallFaces.west);
+
+            // Find minimum distance to determine target wall
+            let targetWall: string = 'north';
+            let minDist = distToNorth;
+
+            if (distToSouth < minDist) {
+              minDist = distToSouth;
+              targetWall = 'south';
+            }
+            if (distToEast < minDist) {
+              minDist = distToEast;
+              targetWall = 'east';
+            }
+            if (distToWest < minDist) {
+              minDist = distToWest;
+              targetWall = 'west';
+            }
+
+            // Check notch walls if they exist
+            if (notch) {
+              // Extended ranges to handle corner transitions between notch walls
+              // Add buffer zone beyond notch boundaries to allow smooth wall switching at corner
+              const cornerBuffer = 30; // 30cm buffer for corner detection
+
+              // For notch-south: extend X range to include corner area
+              const isInNotchXRangeExtended = targetX >= notch.minX && targetX <= notch.maxX + cornerBuffer;
+              // For notch-east: extend Z range to include corner area
+              const isInNotchZRangeExtended = targetZ >= notch.minZ && targetZ <= notch.maxZ + cornerBuffer;
+
+              // Calculate distances to notch walls
+              const notchSouthWallZ = notch.maxZ + WALL_SETTINGS.THICKNESS;
+              const notchEastWallX = notch.maxX + WALL_SETTINGS.THICKNESS;
+              const distToNotchSouth = Math.abs(targetZ - notchSouthWallZ);
+              const distToNotchEast = Math.abs(targetX - notchEastWallX);
+
+              // Check notch-south wall (cursor must be south of notch interior)
+              if (isInNotchXRangeExtended && targetZ > notch.maxZ) {
+                if (distToNotchSouth < minDist) {
+                  minDist = distToNotchSouth;
+                  targetWall = 'notch-south';
+                }
+              }
+
+              // Check notch-east wall (cursor must be east of notch interior)
+              if (isInNotchZRangeExtended && targetX > notch.maxX) {
+                if (distToNotchEast < minDist) {
+                  minDist = distToNotchEast;
+                  targetWall = 'notch-east';
+                }
+              }
+
+              // Special corner handling: when at the corner where both notch walls meet
+              // Pick the wall the cursor is closer to
+              const isNearCorner = targetX > notch.maxX && targetX < notch.maxX + cornerBuffer &&
+                                   targetZ > notch.maxZ && targetZ < notch.maxZ + cornerBuffer;
+              if (isNearCorner) {
+                // At corner - choose based on which wall is closer
+                if (distToNotchEast < distToNotchSouth) {
+                  targetWall = 'notch-east';
+                } else {
+                  targetWall = 'notch-south';
+                }
+              }
+            }
+
+            // Apply position constraints based on target wall
+            let newX = targetX;
+            let newZ = targetZ;
+
+            switch (targetWall) {
+              case 'north':
+                newZ = wallFaces.north + wallBuffer;
+                newX = Math.max(interior.minX + halfObjectWidth, Math.min(interior.maxX - halfObjectWidth, newX));
+                // For L-shaped rooms, don't allow placement in the notch area on north wall
+                if (notch && newX < notch.maxX + halfObjectWidth) {
+                  newX = notch.maxX + WALL_SETTINGS.THICKNESS + halfObjectWidth;
+                }
+                constrainedRotation = 0;
+                break;
+              case 'south':
+                newZ = wallFaces.south - wallBuffer;
+                newX = Math.max(interior.minX + halfObjectWidth, Math.min(interior.maxX - halfObjectWidth, newX));
+                constrainedRotation = Math.PI;
+                break;
+              case 'east':
+                newX = wallFaces.east - wallBuffer;
+                newZ = Math.max(interior.minZ + halfObjectWidth, Math.min(interior.maxZ - halfObjectWidth, newZ));
+                constrainedRotation = -Math.PI / 2;
+                break;
+              case 'west':
+                newX = wallFaces.west + wallBuffer;
+                newZ = Math.max(interior.minZ + halfObjectWidth, Math.min(interior.maxZ - halfObjectWidth, newZ));
+                // For L-shaped rooms, don't allow placement in the notch area on west wall
+                if (notch && newZ < notch.maxZ + halfObjectWidth) {
+                  newZ = notch.maxZ + WALL_SETTINGS.THICKNESS + halfObjectWidth;
+                }
+                constrainedRotation = Math.PI / 2;
+                break;
+              case 'notch-south':
+                if (notch) {
+                  // Position object INSIDE the room (south of notch wall)
+                  newZ = notch.maxZ + wallBuffer + 5;
+                  newX = Math.max(notch.minX + halfObjectWidth, Math.min(notch.maxX - halfObjectWidth, newX));
+                  constrainedRotation = 0;  // Face away from notch (toward south, into room)
+                }
+                break;
+              case 'notch-east':
+                if (notch) {
+                  // Position object INSIDE the room (east of notch wall)
+                  newX = notch.maxX + wallBuffer + 5;
+                  newZ = Math.max(notch.minZ + halfObjectWidth, Math.min(notch.maxZ - halfObjectWidth, newZ));
+                  constrainedRotation = Math.PI / 2;  // Face away from notch (toward east, into room)
+                }
+                break;
+            }
+
+            // Apply constrained position
+            constrainedPosition = { x: newX, y: newY, z: newZ };
+
+            // Check for collisions
+            const isColliding = this.checkCollisionState(
+              constrainedPosition,
+              objectType,
+              objectScale,
+              itemId,
+              currentItem,
+              constrainedRotation
+            );
+            setOutlineColor(isColliding);
+
+            // Apply position to object
+            this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
+            this.selectedObject.rotation.y = constrainedRotation;
+
+            // Queue update
+            this.queueUpdate(itemId, {
+              position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z],
+              rotation: constrainedRotation
+            });
+
+            return; // Exit early - 2D mode handling complete
+          }
+        }
 
         // ✅ GET NOTCH BOUNDARIES FIRST for L-shaped room support
         const { interior, wallFaces, notch } = getInteriorBoundaries(
@@ -2041,7 +2292,10 @@ export class EventHandlers {
           let newY;
 
           // ✅ Adjust Y position
-          if (movementConfig.allowVerticalMovement) {
+          // 📐 In 2D mode, always lock Y to current position (no vertical movement)
+          if (this.viewMode === '2d') {
+            newY = this.selectedObject.position.y;
+          } else if (movementConfig.allowVerticalMovement) {
             // For wall-mounted objects, apply dragOffset to maintain where user clicked
             newY = closestPoint.y + this.dragOffset.y;
           } else {
@@ -2175,7 +2429,7 @@ export class EventHandlers {
           -this.selectedObject.position.y
         );
 
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const cursorWorldPos = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(heightPlane, cursorWorldPos);
 
@@ -2202,7 +2456,7 @@ export class EventHandlers {
 
       } else {
         // Free movement objects - use traditional drag with offset
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
@@ -2268,7 +2522,23 @@ export class EventHandlers {
       this.queueUpdate(itemId, updateData);
 
     } else if (this.isRotating) {
-      // Camera rotation logic (unchanged)
+      // 📐 2D MODE: Convert camera orbit to panning
+      if (this.viewMode === '2d') {
+        const deltaX = event.clientX - this.mouseX;
+        const deltaY = event.clientY - this.mouseY;
+
+        // Pan the orthographic camera
+        if (this.sceneManager) {
+          // Invert deltaY because screen Y is opposite to world Z in top-down view
+          this.sceneManager.pan2D(-deltaX, -deltaY);
+        }
+
+        this.mouseX = event.clientX;
+        this.mouseY = event.clientY;
+        return;
+      }
+
+      // 3D MODE: Camera rotation logic
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
 
@@ -2516,6 +2786,17 @@ export class EventHandlers {
   private handleWheel (event: WheelEvent): void {
     event.preventDefault();
 
+    // 📐 2D MODE: Use orthographic zoom
+    if (this.viewMode === '2d') {
+      if (this.sceneManager) {
+        const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
+        this.sceneManager.zoom2D(zoomDelta);
+        console.log('📐 2D zoom applied');
+      }
+      return;
+    }
+
+    // 3D MODE: Original perspective zoom behavior
     console.log('🎯 Directional zoom started');
 
     // Simple zoom: move 30cm forward or backward along viewing direction
@@ -2611,7 +2892,7 @@ export class EventHandlers {
         this.originalDragPosition.copy(this.selectedObject.position);
         this.originalDragRotation = this.selectedObject.rotation.y;
 
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
         this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
@@ -2673,7 +2954,7 @@ export class EventHandlers {
         const currentItem = this.getCurrentItemData(itemId);
         const movementConfig = getMovementConfig(objectType, currentItem);
 
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
         const newPosition = intersectPoint.add(this.dragOffset);
