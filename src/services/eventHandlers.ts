@@ -825,42 +825,57 @@ export class EventHandlers {
 
         // ✅ FIX: For wall-mounted objects, calculate dragOffset using the wall plane
         if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
-          // Determine which wall the object is on
-          const currentWall = this.determineCurrentWall(this.selectedObject.position);
-          const roomHalfWidth = this.roomWidthRef.value / 2;
-          const roomHalfHeight = this.roomHeightRef.value / 2;
+          // 📐 2D MODE: Use floor plane for dragOffset calculation (matches drag handling)
+          if (this.viewMode === '2d') {
+            const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(floorPlane, intersectPoint);
+            // For 2D mode, only use X and Z offset (Y is locked)
+            this.dragOffset.set(
+              this.selectedObject.position.x - intersectPoint.x,
+              0,
+              this.selectedObject.position.z - intersectPoint.z
+            );
+          } else {
+            // 3D MODE: Use wall plane intersection
+            // Determine which wall the object is on
+            const currentWall = this.determineCurrentWall(this.selectedObject.position);
+            const roomHalfWidth = this.roomWidthRef.value / 2;
+            const roomHalfHeight = this.roomHeightRef.value / 2;
 
-          // ✅ Get notch boundaries for L-shaped rooms
-          const { notch } = getInteriorBoundaries(
-            this.roomWidthRef.value,
-            this.roomHeightRef.value,
-            this.notchWidthRef.value,
-            this.notchHeightRef.value
-          );
+            // ✅ Get notch boundaries for L-shaped rooms
+            const { notch } = getInteriorBoundaries(
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              this.notchWidthRef.value,
+              this.notchHeightRef.value
+            );
 
-          // Create the wall planes
-          const wallPlanes: { [key: string]: THREE.Plane } = {
-            north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
-            south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
-            east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
-            west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
-          };
+            // Create the wall planes
+            const wallPlanes: { [key: string]: THREE.Plane } = {
+              north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
+              south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
+              east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
+              west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
+            };
 
-          // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
-          if (notch) {
-            wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
-            wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+            // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
+            if (notch) {
+              wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
+              wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+            }
+
+            const wallPlane = wallPlanes[currentWall];
+
+            // Calculate intersection with wall plane
+            this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(wallPlane, intersectPoint);
+
+            // Calculate dragOffset from wall plane intersection
+            this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
           }
-
-          const wallPlane = wallPlanes[currentWall];
-
-          // Calculate intersection with wall plane
-          this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
-          const intersectPoint = new THREE.Vector3();
-          this.raycaster.ray.intersectPlane(wallPlane, intersectPoint);
-
-          // Calculate dragOffset from wall plane intersection
-          this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
         } else {
           // For non-wall objects, use the standard drag plane
           this.updateDragPlane(this.selectedObject);
