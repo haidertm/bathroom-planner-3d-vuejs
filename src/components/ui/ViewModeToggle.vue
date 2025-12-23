@@ -62,9 +62,9 @@ const buttonRef = ref<HTMLButtonElement | null>(null)
 const isMobileDevice = computed(() => isMobile())
 
 const buttonStyle = computed(() => ({
-  width: isMobileDevice.value ? '70px' : '90px',
-  height: isMobileDevice.value ? '32px' : '40px',
-  borderRadius: '20px',
+  width: isMobileDevice.value ? '40px' : '50px',
+  height: isMobileDevice.value ? '70px' : '90px',
+  borderRadius: '25px',
   backgroundColor: '#f0f0f0',
   border: '1px solid #d0d0d0',
   cursor: props.disabled ? 'not-allowed' : 'pointer',
@@ -83,10 +83,11 @@ const toggleContentStyle = computed(() => ({
   width: '100%',
   height: '100%',
   display: 'flex',
+  flexDirection: 'column' as const,
   alignItems: 'center',
   justifyContent: 'space-between',
   position: 'relative' as const,
-  borderRadius: '17px',
+  borderRadius: '22px',
   overflow: 'hidden'
 }))
 
@@ -105,13 +106,13 @@ const labelStyle = (mode: ViewMode) => computed(() => ({
 
 const sliderStyle = computed(() => ({
   position: 'absolute' as const,
-  top: '0',
-  left: props.modelValue === '2d' ? '0' : '50%',
-  width: '50%',
-  height: '100%',
+  left: '0',
+  top: props.modelValue === '2d' ? '0' : '50%',
+  width: '100%',
+  height: '50%',
   backgroundColor: '#29275B',
   borderRadius: '17px',
-  transition: 'left 0.25s ease',
+  transition: 'top 0.25s ease',
   zIndex: 1
 }))
 

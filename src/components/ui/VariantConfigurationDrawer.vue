@@ -51,7 +51,7 @@
 
         <!-- Product Details - Shows selected variant data -->
         <div :style="productDetailsStyle">
-          <h2 :style="productTitleStyle">{{ product?.name }}</h2>
+          <h2 :style="productTitleStyle">{{ selectedVariant?.title ?? product?.name }}</h2>
           <div :style="productSkuStyle">SKU: {{ selectedVariant?.sku ?? '—' }}</div>
           <div :style="productPriceStyle">£{{ selectedVariant?.price ?? product?.price }}</div>
           <a

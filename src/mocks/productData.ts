@@ -4475,7 +4475,7 @@ const productData: ProductData = {
               },
               {
                   id: 'C53016',
-                  name: '1700 X 700mm',
+                  name: '1600 X 700mm',
                   image: 'assets/productImages/bath/C53016-1000-1600x700-Round-Single-Ended-Bath.webp',
                   link: 'https://www.bathroommountain.co.uk/stafford-1600x700-round-single-ended-bath-c53016',
                   path: '../../models/bath/C53016.glb',

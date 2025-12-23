@@ -880,12 +880,11 @@ const toggleMeasurementStyle = computed(() => ({
   lineHeight: '1.2'
 }))
 
-// Style for 2D/3D View Mode Toggle - positioned next to measurement toggle
+// Style for 2D/3D View Mode Toggle - positioned at bottom right, above UndoRedoPanel
 const viewModeToggleStyle = computed(() => ({
   position: 'absolute',
-  left: isMobileDevice.value ? '' : '32%',
-  right: isMobileDevice.value ? '22%' : '',
-  bottom: isMobileDevice.value ? '10%' : '30px',
+  right: isMobileDevice.value ? '10px' : '50px',
+  bottom: isMobileDevice.value ? '80px' : '80px', // Above the UndoRedoPanel (which is at bottom: 20px)
   zIndex: 100
 }))
 
