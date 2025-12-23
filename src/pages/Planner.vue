@@ -867,26 +867,31 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
-const toggleMeasurementStyle = computed(() => ({
-  position: 'absolute',
-  left: isMobileDevice.value ? '' : '28%', // Changed from left to right
-  right: isMobileDevice.value ? '12%' : '',
-  bottom: isMobileDevice.value ? '10%' : '30px',
-  color: 'white',
-  padding: '5px 10px',
-  borderRadius: '4px',
-  fontSize: isMobileDevice.value ? '16px' : '20px',
-  maxWidth: isMobileDevice.value ? '280px' : '320px',
-  lineHeight: '1.2'
-}))
+// Style for 2D/3D View Mode Toggle - positioned ABOVE MeasurementToggle, next to main sidebar
+const viewModeToggleStyle = computed(() => {
+  // Main sidebar is 480px wide, add extra space for tooltips to be visible
+  const sidebarOffset = showTexturePanel.value ? '540px' : '20px'
+  return {
+    position: 'fixed',
+    left: isMobileDevice.value ? '' : sidebarOffset,
+    right: isMobileDevice.value ? '10px' : '',
+    bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
+    zIndex: 100
+  }
+})
 
-// Style for 2D/3D View Mode Toggle - positioned at bottom right, above UndoRedoPanel
-const viewModeToggleStyle = computed(() => ({
-  position: 'absolute',
-  right: isMobileDevice.value ? '10px' : '50px',
-  bottom: isMobileDevice.value ? '80px' : '80px', // Above the UndoRedoPanel (which is at bottom: 20px)
-  zIndex: 100
-}))
+// Style for MeasurementToggle - positioned next to main sidebar, BELOW ViewModeToggle
+const toggleMeasurementStyle = computed(() => {
+  // Main sidebar is 480px wide, add extra space for tooltips to be visible
+  const sidebarOffset = showTexturePanel.value ? '540px' : '20px'
+  return {
+    position: 'fixed',
+    left: isMobileDevice.value ? '' : sidebarOffset,
+    right: isMobileDevice.value ? '10px' : '',
+    bottom: isMobileDevice.value ? '80px' : '30px',
+    zIndex: 100
+  }
+})
 
 const popupOverlayStyle = computed(() => ({
   position: 'fixed',
