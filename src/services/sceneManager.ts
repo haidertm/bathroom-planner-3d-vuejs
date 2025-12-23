@@ -21,6 +21,7 @@ import { setOutlinePass } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
+import { CameraTransition, Easing } from './cameraTransition';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -64,6 +65,10 @@ export class SceneManager {
   // Animation loop management
   private animationId: number | null = null;
   private isAnimating: boolean = false;
+
+  // Camera transition manager for smooth 3D/2D view switching
+  private cameraTransition: CameraTransition = new CameraTransition();
+  private isViewTransitioning: boolean = false;
 
   private floorRef: THREE.Mesh | null = null;
   private wallRefs: THREE.Mesh[] = [];
@@ -292,11 +297,14 @@ export class SceneManager {
 
   /**
    * Switch to 2D Blueprint view (orthographic top-down)
+   * Features smooth camera flyover animation for immersive transition
    */
-  public switchTo2D(): void {
+  public async switchTo2D(): Promise<void> {
     if (this.viewMode === '2d' || !this.camera || !this.orthographicCamera) return;
+    if (this.isViewTransitioning) return; // Prevent double-clicks during animation
 
-    console.log('🔄 Switching to 2D Blueprint view...');
+    console.log('🔄 Starting animated transition to 2D Blueprint view...');
+    this.isViewTransitioning = true;
 
     // Store current 3D camera state for restoration
     this.stored3DState = {
@@ -304,8 +312,35 @@ export class SceneManager {
       target: new THREE.Vector3(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z)
     };
 
+    // Calculate room center for camera target
+    const roomCenter = new THREE.Vector3(0, 0, 0);
+
+    // Animate the perspective camera to top-down view
+    await this.cameraTransition.animateToTopDown(this.camera, roomCenter, {
+      duration: 600,
+      easing: Easing.easeInOutCubic,
+      onUpdate: () => {
+        // Force render during animation
+        if (this.composer) {
+          this.composer.render();
+        } else if (this.renderer && this.scene && this.camera) {
+          this.renderer.render(this.scene, this.camera);
+        }
+      }
+    });
+
+    // Now switch to orthographic camera and apply 2D settings
+    console.log('🔄 Camera flyover complete, switching to orthographic...');
+
     // Update orthographic frustum to current room size
     this.updateOrthographicFrustum();
+
+    // Reset orthographic camera zoom and position to show full room with labels
+    if (this.orthographicCamera) {
+      this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
+      this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
+      this.orthographicCamera.updateProjectionMatrix();
+    }
 
     // Update view mode
     this.viewMode = '2d';
@@ -351,33 +386,42 @@ export class SceneManager {
       this.measurementSystem.setWallLabelsVisible(true);
     }
 
-    console.log('✅ Switched to 2D Blueprint view');
+    this.isViewTransitioning = false;
+    console.log('✅ Animated transition to 2D Blueprint view complete');
   }
 
   /**
    * Switch to 3D perspective view
+   * Features smooth camera descent animation for immersive transition
    */
-  public switchTo3D(): void {
+  public async switchTo3D(): Promise<void> {
     if (this.viewMode === '3d' || !this.camera) return;
+    if (this.isViewTransitioning) return; // Prevent double-clicks during animation
 
-    console.log('🔄 Switching to 3D view...');
+    console.log('🔄 Starting animated transition to 3D view...');
+    this.isViewTransitioning = true;
 
-    // Restore 3D camera state if available
-    if (this.stored3DState) {
-      this.camera.position.copy(this.stored3DState.position);
-      this.camera.lookAt(
-        this.stored3DState.target.x,
-        this.stored3DState.target.y,
-        this.stored3DState.target.z
-      );
+    // Calculate room center
+    const roomCenter = new THREE.Vector3(0, 0, 0);
 
-      // Sync with EventHandlers target position
-      if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
-        this.eventHandlers.syncTargetCameraPosition();
-      }
-    }
+    // Determine target camera state (restored position or default)
+    const targetState = {
+      position: this.stored3DState?.position.clone() || new THREE.Vector3(
+        CAMERA_SETTINGS.INITIAL_POSITION.x,
+        CAMERA_SETTINGS.INITIAL_POSITION.y,
+        CAMERA_SETTINGS.INITIAL_POSITION.z
+      ),
+      lookAt: this.stored3DState?.target.clone() || new THREE.Vector3(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z),
+      up: new THREE.Vector3(0, 1, 0) // Standard up vector for 3D
+    };
 
-    // Update view mode
+    // First, switch to perspective camera at top-down position
+    // This creates continuity from the orthographic view
+    this.camera.position.set(roomCenter.x, CameraTransition.TOP_DOWN_HEIGHT, roomCenter.z);
+    this.camera.up.set(0, 0, -1); // Match orthographic orientation
+    this.camera.lookAt(roomCenter);
+
+    // Update view mode immediately so rendering uses perspective camera
     this.viewMode = '3d';
 
     // Update post-processing to use perspective camera
@@ -416,7 +460,32 @@ export class SceneManager {
       this.measurementSystem.setWallLabelsVisible(false);
     }
 
-    console.log('✅ Switched to 3D view');
+    // Now animate the camera from top-down to the target 3D position
+    await this.cameraTransition.animateFromTopDown(
+      this.camera,
+      targetState,
+      roomCenter,
+      {
+        duration: 600,
+        easing: Easing.easeInOutCubic,
+        onUpdate: () => {
+          // Force render during animation
+          if (this.composer) {
+            this.composer.render();
+          } else if (this.renderer && this.scene && this.camera) {
+            this.renderer.render(this.scene, this.camera);
+          }
+        }
+      }
+    );
+
+    // Sync with EventHandlers target position after animation completes
+    if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
+      this.eventHandlers.syncTargetCameraPosition();
+    }
+
+    this.isViewTransitioning = false;
+    console.log('✅ Animated transition to 3D view complete');
   }
 
   /**
@@ -466,6 +535,13 @@ export class SceneManager {
    */
   public getViewMode(): ViewMode {
     return this.viewMode;
+  }
+
+  /**
+   * Check if a view transition animation is currently in progress
+   */
+  public isTransitioning(): boolean {
+    return this.isViewTransitioning;
   }
 
   /**
@@ -1959,6 +2035,11 @@ export class SceneManager {
 
     // Stop animation loop
     this.stopAnimationLoop();
+
+    // Clean up camera transition
+    if (this.cameraTransition) {
+      this.cameraTransition.dispose();
+    }
 
     if (this.wallCullingManager) {
       this.wallCullingManager.dispose();

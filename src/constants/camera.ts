@@ -69,7 +69,7 @@ export const CAMERA_PRESETS = {
 // 2D Blueprint View - Orthographic camera settings
 export const ORTHOGRAPHIC_SETTINGS = {
   // Initial zoom level (1 = 100%, fits room in view)
-  INITIAL_ZOOM: 1,
+  INITIAL_ZOOM: 0.85,  // Slightly zoomed out to show wall labels
 
   // Zoom constraints
   MIN_ZOOM: 0.3,   // Zoomed out - see more area
@@ -82,8 +82,8 @@ export const ORTHOGRAPHIC_SETTINGS = {
   NEAR: 1,
   FAR: 1000,
 
-  // Padding around room (multiplier, 1.2 = 20% extra space)
-  FRUSTUM_PADDING: 1.2,
+  // Padding around room (multiplier, 1.6 = 60% extra space for wall labels)
+  FRUSTUM_PADDING: 1.6,
 
   // Pan speed for 2D navigation
   PAN_SPEED: 1.0,
