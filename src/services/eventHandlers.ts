@@ -378,6 +378,14 @@ export class EventHandlers {
   public setViewMode(mode: ViewMode): void {
     console.log('📐 EventHandlers: View mode set to', mode);
     this.viewMode = mode;
+
+    // Update rotation arrows camera for proper raycasting in 2D/3D mode
+    if (this.rotationArrows) {
+      const activeCamera = mode === '2d' && this.orthographicCamera
+        ? this.orthographicCamera
+        : this.camera;
+      this.rotationArrows.setActiveCamera(activeCamera);
+    }
   }
 
   /**
