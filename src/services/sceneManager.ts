@@ -306,88 +306,94 @@ export class SceneManager {
     console.log('🔄 Starting animated transition to 2D Blueprint view...');
     this.isViewTransitioning = true;
 
-    // Store current 3D camera state for restoration
-    this.stored3DState = {
-      position: this.camera.position.clone(),
-      target: new THREE.Vector3(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z)
-    };
+    try {
+      // Store current 3D camera state for restoration
+      this.stored3DState = {
+        position: this.camera.position.clone(),
+        target: new THREE.Vector3(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z)
+      };
 
-    // Calculate room center for camera target
-    const roomCenter = new THREE.Vector3(0, 0, 0);
+      // Calculate room center for camera target
+      const roomCenter = new THREE.Vector3(0, 0, 0);
 
-    // Animate the perspective camera to top-down view
-    await this.cameraTransition.animateToTopDown(this.camera, roomCenter, {
-      duration: 600,
-      easing: Easing.easeInOutCubic,
-      onUpdate: () => {
-        // Force render during animation
-        if (this.composer) {
-          this.composer.render();
-        } else if (this.renderer && this.scene && this.camera) {
-          this.renderer.render(this.scene, this.camera);
+      // Animate the perspective camera to top-down view
+      await this.cameraTransition.animateToTopDown(this.camera, roomCenter, {
+        duration: 600,
+        easing: Easing.easeInOutCubic,
+        onUpdate: () => {
+          // Force render during animation
+          if (this.composer) {
+            this.composer.render();
+          } else if (this.renderer && this.scene && this.camera) {
+            this.renderer.render(this.scene, this.camera);
+          }
+        }
+      });
+
+      // Now switch to orthographic camera and apply 2D settings
+      console.log('🔄 Camera flyover complete, switching to orthographic...');
+
+      // Update orthographic frustum to current room size
+      this.updateOrthographicFrustum();
+
+      // Reset orthographic camera zoom and position to show full room with labels
+      if (this.orthographicCamera) {
+        this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
+        this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
+        this.orthographicCamera.updateProjectionMatrix();
+      }
+
+      // Update view mode
+      this.viewMode = '2d';
+
+      // Update post-processing to use orthographic camera
+      this.updatePostProcessingCamera();
+
+      // Disable fog in 2D mode for cleaner view
+      if (this.scene) {
+        this.scene.fog = null;
+      }
+
+      // Disable wall culling in 2D mode (we want to see all walls from above)
+      this.wallCullingManager.setEnabled(false);
+
+      // Hide all grids in 2D mode for cleaner blueprint view
+      if (this.blueprintGridRef) {
+        this.blueprintGridRef.visible = false;
+      }
+      if (this.gridRef) {
+        this.gridRef.visible = false;
+      }
+      // Hide wall grid in 2D mode for cleaner view
+      if (this.wallGridGroup) {
+        this.wallGridGroup.visible = false;
+      }
+
+      // Notify event handlers of mode change and pass orthographic camera
+      if (this.eventHandlers) {
+        if (typeof this.eventHandlers.setViewMode === 'function') {
+          this.eventHandlers.setViewMode('2d');
+        }
+        if (typeof this.eventHandlers.setOrthographicCamera === 'function' && this.orthographicCamera) {
+          this.eventHandlers.setOrthographicCamera(this.orthographicCamera);
         }
       }
-    });
 
-    // Now switch to orthographic camera and apply 2D settings
-    console.log('🔄 Camera flyover complete, switching to orthographic...');
+      // Apply transparency to tall objects to prevent obscuring shorter items
+      this.adjustTallObjectsForBlueprintView();
 
-    // Update orthographic frustum to current room size
-    this.updateOrthographicFrustum();
-
-    // Reset orthographic camera zoom and position to show full room with labels
-    if (this.orthographicCamera) {
-      this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
-      this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
-      this.orthographicCamera.updateProjectionMatrix();
-    }
-
-    // Update view mode
-    this.viewMode = '2d';
-
-    // Update post-processing to use orthographic camera
-    this.updatePostProcessingCamera();
-
-    // Disable fog in 2D mode for cleaner view
-    if (this.scene) {
-      this.scene.fog = null;
-    }
-
-    // Disable wall culling in 2D mode (we want to see all walls from above)
-    this.wallCullingManager.setEnabled(false);
-
-    // Hide all grids in 2D mode for cleaner blueprint view
-    if (this.blueprintGridRef) {
-      this.blueprintGridRef.visible = false;
-    }
-    if (this.gridRef) {
-      this.gridRef.visible = false;
-    }
-    // Hide wall grid in 2D mode for cleaner view
-    if (this.wallGridGroup) {
-      this.wallGridGroup.visible = false;
-    }
-
-    // Notify event handlers of mode change and pass orthographic camera
-    if (this.eventHandlers) {
-      if (typeof this.eventHandlers.setViewMode === 'function') {
-        this.eventHandlers.setViewMode('2d');
+      // Show wall dimension labels in 2D mode
+      if (this.measurementSystem) {
+        this.measurementSystem.setWallLabelsVisible(true);
       }
-      if (typeof this.eventHandlers.setOrthographicCamera === 'function' && this.orthographicCamera) {
-        this.eventHandlers.setOrthographicCamera(this.orthographicCamera);
-      }
+
+      console.log('✅ Animated transition to 2D Blueprint view complete');
+    } catch (error) {
+      console.error('❌ Error during 2D view transition:', error);
+      throw error;
+    } finally {
+      this.isViewTransitioning = false;
     }
-
-    // Apply transparency to tall objects to prevent obscuring shorter items
-    this.adjustTallObjectsForBlueprintView();
-
-    // Show wall dimension labels in 2D mode
-    if (this.measurementSystem) {
-      this.measurementSystem.setWallLabelsVisible(true);
-    }
-
-    this.isViewTransitioning = false;
-    console.log('✅ Animated transition to 2D Blueprint view complete');
   }
 
   /**
@@ -401,91 +407,97 @@ export class SceneManager {
     console.log('🔄 Starting animated transition to 3D view...');
     this.isViewTransitioning = true;
 
-    // Calculate room center
-    const roomCenter = new THREE.Vector3(0, 0, 0);
+    try {
+      // Calculate room center
+      const roomCenter = new THREE.Vector3(0, 0, 0);
 
-    // Determine target camera state (restored position or default)
-    const targetState = {
-      position: this.stored3DState?.position.clone() || new THREE.Vector3(
-        CAMERA_SETTINGS.INITIAL_POSITION.x,
-        CAMERA_SETTINGS.INITIAL_POSITION.y,
-        CAMERA_SETTINGS.INITIAL_POSITION.z
-      ),
-      lookAt: this.stored3DState?.target.clone() || new THREE.Vector3(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z),
-      up: new THREE.Vector3(0, 1, 0) // Standard up vector for 3D
-    };
+      // Determine target camera state (restored position or default)
+      const targetState = {
+        position: this.stored3DState?.position.clone() || new THREE.Vector3(
+          CAMERA_SETTINGS.INITIAL_POSITION.x,
+          CAMERA_SETTINGS.INITIAL_POSITION.y,
+          CAMERA_SETTINGS.INITIAL_POSITION.z
+        ),
+        lookAt: this.stored3DState?.target.clone() || new THREE.Vector3(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z),
+        up: new THREE.Vector3(0, 1, 0) // Standard up vector for 3D
+      };
 
-    // First, switch to perspective camera at top-down position
-    // This creates continuity from the orthographic view
-    this.camera.position.set(roomCenter.x, CameraTransition.TOP_DOWN_HEIGHT, roomCenter.z);
-    this.camera.up.set(0, 0, -1); // Match orthographic orientation
-    this.camera.lookAt(roomCenter);
+      // First, switch to perspective camera at top-down position
+      // This creates continuity from the orthographic view
+      this.camera.position.set(roomCenter.x, CameraTransition.TOP_DOWN_HEIGHT, roomCenter.z);
+      this.camera.up.set(0, 0, -1); // Match orthographic orientation
+      this.camera.lookAt(roomCenter);
 
-    // Update view mode immediately so rendering uses perspective camera
-    this.viewMode = '3d';
+      // Update view mode immediately so rendering uses perspective camera
+      this.viewMode = '3d';
 
-    // Update post-processing to use perspective camera
-    this.updatePostProcessingCamera();
+      // Update post-processing to use perspective camera
+      this.updatePostProcessingCamera();
 
-    // Re-enable fog in 3D mode
-    if (this.scene) {
-      this.scene.fog = new THREE.Fog(0xE6E1DA, 1000, 5000);
-    }
+      // Re-enable fog in 3D mode
+      if (this.scene) {
+        this.scene.fog = new THREE.Fog(0xE6E1DA, 1000, 5000);
+      }
 
-    // Re-enable wall culling in 3D mode
-    this.wallCullingManager.setEnabled(true);
+      // Re-enable wall culling in 3D mode
+      this.wallCullingManager.setEnabled(true);
 
-    // Hide blueprint grid, show regular grid
-    if (this.blueprintGridRef) {
-      this.blueprintGridRef.visible = false;
-    }
-    if (this.gridRef) {
-      this.gridRef.visible = true;
-    }
-    // Restore wall grid visibility based on previous state
-    if (this.wallGridGroup) {
-      this.wallGridGroup.visible = this.wallGridVisible;
-    }
+      // Hide blueprint grid, show regular grid
+      if (this.blueprintGridRef) {
+        this.blueprintGridRef.visible = false;
+      }
+      if (this.gridRef) {
+        this.gridRef.visible = true;
+      }
+      // Restore wall grid visibility based on previous state
+      if (this.wallGridGroup) {
+        this.wallGridGroup.visible = this.wallGridVisible;
+      }
 
-    // Notify event handlers of mode change
-    if (this.eventHandlers && typeof this.eventHandlers.setViewMode === 'function') {
-      this.eventHandlers.setViewMode('3d');
-    }
+      // Notify event handlers of mode change
+      if (this.eventHandlers && typeof this.eventHandlers.setViewMode === 'function') {
+        this.eventHandlers.setViewMode('3d');
+      }
 
-    // Restore full opacity to tall objects
-    this.restoreTallObjectsOpacity();
+      // Restore full opacity to tall objects
+      this.restoreTallObjectsOpacity();
 
-    // Hide wall dimension labels in 3D mode
-    if (this.measurementSystem) {
-      this.measurementSystem.setWallLabelsVisible(false);
-    }
+      // Hide wall dimension labels in 3D mode
+      if (this.measurementSystem) {
+        this.measurementSystem.setWallLabelsVisible(false);
+      }
 
-    // Now animate the camera from top-down to the target 3D position
-    await this.cameraTransition.animateFromTopDown(
-      this.camera,
-      targetState,
-      roomCenter,
-      {
-        duration: 600,
-        easing: Easing.easeInOutCubic,
-        onUpdate: () => {
-          // Force render during animation
-          if (this.composer) {
-            this.composer.render();
-          } else if (this.renderer && this.scene && this.camera) {
-            this.renderer.render(this.scene, this.camera);
+      // Now animate the camera from top-down to the target 3D position
+      await this.cameraTransition.animateFromTopDown(
+        this.camera,
+        targetState,
+        roomCenter,
+        {
+          duration: 600,
+          easing: Easing.easeInOutCubic,
+          onUpdate: () => {
+            // Force render during animation
+            if (this.composer) {
+              this.composer.render();
+            } else if (this.renderer && this.scene && this.camera) {
+              this.renderer.render(this.scene, this.camera);
+            }
           }
         }
+      );
+
+      // Sync with EventHandlers target position after animation completes
+      if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
+        this.eventHandlers.syncTargetCameraPosition();
       }
-    );
 
-    // Sync with EventHandlers target position after animation completes
-    if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
-      this.eventHandlers.syncTargetCameraPosition();
+      console.log('✅ Animated transition to 3D view complete');
+    } catch (error) {
+      console.error('❌ Error during 3D view transition:', error);
+      throw error;
+    } finally {
+      this.isViewTransitioning = false;
     }
-
-    this.isViewTransitioning = false;
-    console.log('✅ Animated transition to 3D view complete');
   }
 
   /**
@@ -535,6 +547,21 @@ export class SceneManager {
    */
   public getViewMode(): ViewMode {
     return this.viewMode;
+  }
+
+  /**
+   * Set view mode - single source of truth for view mode changes
+   * This is the primary entry point for changing view modes from external components
+   * Internally calls switchTo2D or switchTo3D and notifies EventHandlers
+   */
+  public async setViewMode(mode: ViewMode): Promise<void> {
+    if (mode === this.viewMode) return;
+
+    if (mode === '2d') {
+      await this.switchTo2D();
+    } else {
+      await this.switchTo3D();
+    }
   }
 
   /**
@@ -1925,7 +1952,8 @@ export class SceneManager {
   }
 
   adjustOutlineForDistance(): void {
-    if (!this.outlinePass || !this.camera) return;
+    const camera = this.getActiveCamera();
+    if (!this.outlinePass || !camera) return;
 
     // Calculate average distance to selected objects
     const selectedObjects = this.outlinePass.selectedObjects;
@@ -1933,7 +1961,7 @@ export class SceneManager {
 
     let totalDistance = 0;
     selectedObjects.forEach(obj => {
-      totalDistance += this.camera!.position.distanceTo(obj.position);
+      totalDistance += camera.position.distanceTo(obj.position);
     });
 
     const averageDistance = totalDistance / selectedObjects.length;
@@ -2030,6 +2058,14 @@ export class SceneManager {
 
   // Cleanup method - enhanced
   dispose(): void {
+    // Restore original material states before clearing (prevents leak if disposed while in 2D mode)
+    this.originalMaterialStates.forEach((originalState, material) => {
+      material.opacity = originalState.opacity;
+      material.transparent = originalState.transparent;
+      material.needsUpdate = true;
+    });
+    this.originalMaterialStates.clear();
+
     // Clear all items first
     this.clearAllItems();
 

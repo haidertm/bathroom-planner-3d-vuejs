@@ -816,7 +816,7 @@ export class EventHandlers {
       // Then set appropriate outline color based on current collision state
       setOutlineColor(isColliding);
 
-       if (event.ctrlKey || event.metaKey) { // Ctrl/Cmd + click for height adjustment
+       if ((event.ctrlKey || event.metaKey) && this.canAdjustHeight()) { // Ctrl/Cmd + click for height adjustment (3D mode only)
         this.isHeightAdjusting = true;
         this.isDragOperation = true; // Mark as drag operation
         this.heightStartY = this.selectedObject.position.y;
@@ -3133,6 +3133,18 @@ export class EventHandlers {
       const scale = distance / this.lastTouchDistance;
 
       if (scale > 1.02 || scale < 0.98) {
+        // 📐 2D MODE: Use orthographic zoom (same as wheel zoom)
+        if (this.viewMode === '2d') {
+          if (this.sceneManager) {
+            const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
+            this.sceneManager.zoom2D(zoomDelta);
+            console.log('📐 2D pinch zoom applied');
+          }
+          this.lastTouchDistance = distance;
+          return;
+        }
+
+        // 3D MODE: Move camera along viewing direction
         // Touch zoom: move 20cm forward or backward along viewing direction
         const zoomStep = scale > 1.02 ? -20 : 20; // pinch in = zoom in (negative)
 

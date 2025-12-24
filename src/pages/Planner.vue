@@ -172,6 +172,9 @@ import { getTemplateById } from '../constants/templates'
 import { SceneManager } from '../services/sceneManager'
 import { EventHandlers } from '../services/eventHandlers'
 
+// Analytics
+import { useGtm } from '@gtm-support/vue-gtm'
+
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
 
@@ -193,6 +196,9 @@ import { autoPositionItem } from '../utils/autoPositioning'
 
 // Router
 const router = useRouter()
+
+// Analytics
+const gtm = useGtm()
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -867,31 +873,27 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
+// Single source of truth for sidebar offset calculation
+// Main sidebar is 480px wide, add extra space (540px) for tooltips to be visible
+const sidebarOffset = computed(() => showTexturePanel.value ? '540px' : '20px')
+
 // Style for 2D/3D View Mode Toggle - positioned ABOVE MeasurementToggle, next to main sidebar
-const viewModeToggleStyle = computed(() => {
-  // Main sidebar is 480px wide, add extra space for tooltips to be visible
-  const sidebarOffset = showTexturePanel.value ? '540px' : '20px'
-  return {
-    position: 'fixed',
-    left: isMobileDevice.value ? '' : sidebarOffset,
-    right: isMobileDevice.value ? '10px' : '',
-    bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
-    zIndex: 100
-  }
-})
+const viewModeToggleStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
+  zIndex: 100
+}))
 
 // Style for MeasurementToggle - positioned next to main sidebar, BELOW ViewModeToggle
-const toggleMeasurementStyle = computed(() => {
-  // Main sidebar is 480px wide, add extra space for tooltips to be visible
-  const sidebarOffset = showTexturePanel.value ? '540px' : '20px'
-  return {
-    position: 'fixed',
-    left: isMobileDevice.value ? '' : sidebarOffset,
-    right: isMobileDevice.value ? '10px' : '',
-    bottom: isMobileDevice.value ? '80px' : '30px',
-    zIndex: 100
-  }
-})
+const toggleMeasurementStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '80px' : '30px',
+  zIndex: 100
+}))
 
 const popupOverlayStyle = computed(() => ({
   position: 'fixed',
@@ -1443,7 +1445,7 @@ const handleMeasurementToggle = () => {
 }
 
 // Handle 2D/3D View Mode Change
-const handleViewModeChange = (mode) => {
+const handleViewModeChange = async (mode) => {
   console.log('🔄 View mode changing to:', mode)
   viewMode.value = mode
 
@@ -1452,15 +1454,19 @@ const handleViewModeChange = (mode) => {
     return
   }
 
-  // Update EventHandlers view mode for proper 2D interaction behavior
-  if (eventHandlersRef.value) {
-    eventHandlersRef.value.setViewMode(mode)
-  }
+  // Use SceneManager as single source of truth for view mode
+  // SceneManager.setViewMode internally updates EventHandlers
+  await sceneManagerRef.value.setViewMode(mode)
 
-  if (mode === '2d') {
-    sceneManagerRef.value.switchTo2D()
-  } else {
-    sceneManagerRef.value.switchTo3D()
+  // Track view mode change in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'view_mode_change',
+      category: 'Bathroom Planner',
+      action: 'Switch View Mode',
+      label: mode === '2d' ? '2D Blueprint' : '3D Perspective',
+      viewMode: mode
+    })
   }
 }
 
@@ -2174,6 +2180,9 @@ onMounted(async () => {
 // Watch for room geometry changes
 watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], () => {
   if (!sceneManagerRef.value) return
+
+  // Update internal dimensions first so orthographic frustum is recalculated
+  sceneManagerRef.value.setRoomDimensions(roomWidth.value, roomHeight.value)
 
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)

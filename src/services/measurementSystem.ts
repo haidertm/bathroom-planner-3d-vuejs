@@ -1575,12 +1575,24 @@ export class MeasurementSystem {
 
   /**
    * Update the camera reference (for 2D/3D view switching)
-   * Currently a placeholder - the measurement system doesn't use camera directly
-   * but this allows future enhancements like camera-facing labels
+   *
+   * @param _camera - The active camera (perspective or orthographic)
+   *
+   * @remarks
+   * **Intentionally a no-op placeholder.** This method is part of the public API
+   * and is called by SceneManager.updatePostProcessingCamera() when switching
+   * between 2D/3D views. It exists to support future camera-dependent features.
+   *
+   * @todo Potential future enhancements:
+   * - Billboard labels that always face the camera
+   * - Distance-based label scaling for consistent readability
+   * - Camera frustum culling for off-screen measurement labels
+   * - Different label styles for orthographic vs perspective views
+   *
+   * @see SceneManager.updatePostProcessingCamera - Caller of this method
    */
   public updateCamera(_camera: THREE.Camera): void {
-    // Placeholder for future camera-dependent functionality
-    // e.g., billboard labels that face camera, or distance-based scaling
+    // Intentionally empty - placeholder for future camera-dependent functionality
   }
 
   // ============================================================================
@@ -1601,10 +1613,46 @@ export class MeasurementSystem {
   }
 
   /**
+   * Dispose all resources (textures, materials, geometries) in wall dimension groups
+   * Must be called before clearing the groups to prevent GPU memory leaks
+   */
+  private disposeWallDimensionResources(): void {
+    // Dispose label sprites (textures and materials)
+    this.wallDimensionLabels.children.forEach((child) => {
+      if (child instanceof THREE.Sprite) {
+        const material = child.material as THREE.SpriteMaterial;
+        if (material.map) {
+          material.map.dispose();
+        }
+        material.dispose();
+      }
+    });
+
+    // Dispose line geometries and materials
+    this.wallDimensionLines.children.forEach((child) => {
+      if (child instanceof THREE.Line) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => mat.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  }
+
+  /**
    * Create wall dimension labels positioned outside the room boundary
    * Displays room measurements in traditional blueprint style
    */
   private createWallDimensionLabels(): void {
+    // Dispose existing resources before clearing
+    this.disposeWallDimensionResources();
+
     // Clear existing wall labels
     this.wallDimensionLabels.clear();
     this.wallDimensionLines.clear();
@@ -1875,10 +1923,14 @@ export class MeasurementSystem {
     }
   }
 
-  public dispose (): void {
+  public dispose(): void {
     this.clearMeasurements();
+
+    // Dispose wall dimension resources before clearing
+    this.disposeWallDimensionResources();
     this.wallDimensionLabels.clear();
     this.wallDimensionLines.clear();
+
     this.scene.remove(this.measurementLabels);
     this.scene.remove(this.measurementLines);
     this.scene.remove(this.wallDimensionLabels);
