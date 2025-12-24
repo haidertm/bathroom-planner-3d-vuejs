@@ -1,6 +1,7 @@
 // src/services/cameraTransition.ts
 
 import * as THREE from 'three';
+import { ORTHOGRAPHIC_SETTINGS } from '../constants/camera';
 
 /**
  * Easing functions for smooth camera animations
@@ -61,8 +62,8 @@ export class CameraTransition {
   // Default transition duration (ms)
   public static readonly DEFAULT_DURATION = 800;
 
-  // Height for the top-down position (matches ORTHOGRAPHIC_SETTINGS.HEIGHT)
-  public static readonly TOP_DOWN_HEIGHT = 500;
+  // Height for the top-down position (single source of truth from camera constants)
+  public static readonly TOP_DOWN_HEIGHT = ORTHOGRAPHIC_SETTINGS.HEIGHT;
 
   /**
    * Check if a transition is currently in progress

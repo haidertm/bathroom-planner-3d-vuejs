@@ -1601,10 +1601,46 @@ export class MeasurementSystem {
   }
 
   /**
+   * Dispose all resources (textures, materials, geometries) in wall dimension groups
+   * Must be called before clearing the groups to prevent GPU memory leaks
+   */
+  private disposeWallDimensionResources(): void {
+    // Dispose label sprites (textures and materials)
+    this.wallDimensionLabels.children.forEach((child) => {
+      if (child instanceof THREE.Sprite) {
+        const material = child.material as THREE.SpriteMaterial;
+        if (material.map) {
+          material.map.dispose();
+        }
+        material.dispose();
+      }
+    });
+
+    // Dispose line geometries and materials
+    this.wallDimensionLines.children.forEach((child) => {
+      if (child instanceof THREE.Line) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => mat.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  }
+
+  /**
    * Create wall dimension labels positioned outside the room boundary
    * Displays room measurements in traditional blueprint style
    */
   private createWallDimensionLabels(): void {
+    // Dispose existing resources before clearing
+    this.disposeWallDimensionResources();
+
     // Clear existing wall labels
     this.wallDimensionLabels.clear();
     this.wallDimensionLines.clear();
@@ -1875,10 +1911,14 @@ export class MeasurementSystem {
     }
   }
 
-  public dispose (): void {
+  public dispose(): void {
     this.clearMeasurements();
+
+    // Dispose wall dimension resources before clearing
+    this.disposeWallDimensionResources();
     this.wallDimensionLabels.clear();
     this.wallDimensionLines.clear();
+
     this.scene.remove(this.measurementLabels);
     this.scene.remove(this.measurementLines);
     this.scene.remove(this.wallDimensionLabels);

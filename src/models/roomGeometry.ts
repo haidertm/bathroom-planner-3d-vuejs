@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { WALL_SETTINGS, CONSTRAINTS } from '../constants/dimensions';
 import { getInteriorBoundaries } from '../utils/constraints';
 
+// Debug flag - set to false for production builds
+const DEBUG = import.meta.env.DEV;
+
 // Type definitions for internal use
 interface WallConfig {
   geometry: THREE.BoxGeometry;
@@ -94,7 +97,7 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
  * Creates a more detailed grid than the standard 15cm grid
  */
 export const createBlueprintGrid = (width: number, height: number): THREE.Group => {
-  console.log('📐 Creating blueprint grid (10cm spacing) with dimensions:', { width, height });
+  if (DEBUG) console.log('📐 Creating blueprint grid (10cm spacing) with dimensions:', { width, height });
 
   const blueprintGridGroup = new THREE.Group();
   const BLUEPRINT_GRID_SPACING = 10; // 10cm = 100mm spacing
@@ -142,7 +145,7 @@ export const createBlueprintGrid = (width: number, height: number): THREE.Group 
   blueprintGridGroup.name = 'BlueprintGrid';
   blueprintGridGroup.visible = false; // Hidden by default, shown in 2D mode
 
-  console.log('✅ Blueprint grid created (10cm spacing):', {
+  if (DEBUG) console.log('✅ Blueprint grid created (10cm spacing):', {
     lineCount: blueprintGridGroup.children.length,
     spacing: BLUEPRINT_GRID_SPACING
   });

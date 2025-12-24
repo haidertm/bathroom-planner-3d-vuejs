@@ -538,6 +538,21 @@ export class SceneManager {
   }
 
   /**
+   * Set view mode - single source of truth for view mode changes
+   * This is the primary entry point for changing view modes from external components
+   * Internally calls switchTo2D or switchTo3D and notifies EventHandlers
+   */
+  public async setViewMode(mode: ViewMode): Promise<void> {
+    if (mode === this.viewMode) return;
+
+    if (mode === '2d') {
+      await this.switchTo2D();
+    } else {
+      await this.switchTo3D();
+    }
+  }
+
+  /**
    * Check if a view transition animation is currently in progress
    */
   public isTransitioning(): boolean {
@@ -1925,7 +1940,8 @@ export class SceneManager {
   }
 
   adjustOutlineForDistance(): void {
-    if (!this.outlinePass || !this.camera) return;
+    const camera = this.getActiveCamera();
+    if (!this.outlinePass || !camera) return;
 
     // Calculate average distance to selected objects
     const selectedObjects = this.outlinePass.selectedObjects;
@@ -1933,7 +1949,7 @@ export class SceneManager {
 
     let totalDistance = 0;
     selectedObjects.forEach(obj => {
-      totalDistance += this.camera!.position.distanceTo(obj.position);
+      totalDistance += camera.position.distanceTo(obj.position);
     });
 
     const averageDistance = totalDistance / selectedObjects.length;
@@ -2030,6 +2046,14 @@ export class SceneManager {
 
   // Cleanup method - enhanced
   dispose(): void {
+    // Restore original material states before clearing (prevents leak if disposed while in 2D mode)
+    this.originalMaterialStates.forEach((originalState, material) => {
+      material.opacity = originalState.opacity;
+      material.transparent = originalState.transparent;
+      material.needsUpdate = true;
+    });
+    this.originalMaterialStates.clear();
+
     // Clear all items first
     this.clearAllItems();
 

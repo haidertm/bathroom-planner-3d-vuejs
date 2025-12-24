@@ -172,6 +172,9 @@ import { getTemplateById } from '../constants/templates'
 import { SceneManager } from '../services/sceneManager'
 import { EventHandlers } from '../services/eventHandlers'
 
+// Analytics
+import { useGtm } from '@gtm-support/vue-gtm'
+
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
 
@@ -193,6 +196,9 @@ import { autoPositionItem } from '../utils/autoPositioning'
 
 // Router
 const router = useRouter()
+
+// Analytics
+const gtm = useGtm()
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -1443,7 +1449,7 @@ const handleMeasurementToggle = () => {
 }
 
 // Handle 2D/3D View Mode Change
-const handleViewModeChange = (mode) => {
+const handleViewModeChange = async (mode) => {
   console.log('🔄 View mode changing to:', mode)
   viewMode.value = mode
 
@@ -1452,15 +1458,19 @@ const handleViewModeChange = (mode) => {
     return
   }
 
-  // Update EventHandlers view mode for proper 2D interaction behavior
-  if (eventHandlersRef.value) {
-    eventHandlersRef.value.setViewMode(mode)
-  }
+  // Use SceneManager as single source of truth for view mode
+  // SceneManager.setViewMode internally updates EventHandlers
+  await sceneManagerRef.value.setViewMode(mode)
 
-  if (mode === '2d') {
-    sceneManagerRef.value.switchTo2D()
-  } else {
-    sceneManagerRef.value.switchTo3D()
+  // Track view mode change in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'view_mode_change',
+      category: 'Bathroom Planner',
+      action: 'Switch View Mode',
+      label: mode === '2d' ? '2D Blueprint' : '3D Perspective',
+      viewMode: mode
+    })
   }
 }
 
@@ -2149,6 +2159,9 @@ onMounted(async () => {
 // Watch for room geometry changes
 watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], () => {
   if (!sceneManagerRef.value) return
+
+  // Update internal dimensions first so orthographic frustum is recalculated
+  sceneManagerRef.value.setRoomDimensions(roomWidth.value, roomHeight.value)
 
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)

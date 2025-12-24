@@ -1,7 +1,6 @@
 <template>
   <div class="view-mode-toggle-container">
     <button
-        ref="buttonRef"
         class="view-mode-button"
         :style="buttonStyle"
         @click="toggleViewMode"
@@ -38,9 +37,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { isMobile } from '../../utils/helpers'
-
-// Types
-type ViewMode = '2d' | '3d'
+import type { ViewMode } from '../../constants/camera'
 
 // Define props
 const props = defineProps<{
@@ -56,7 +53,6 @@ const emit = defineEmits<{
 
 // Local state
 const showTooltip = ref(false)
-const buttonRef = ref<HTMLButtonElement | null>(null)
 
 // Computed
 const isMobileDevice = computed(() => isMobile())
