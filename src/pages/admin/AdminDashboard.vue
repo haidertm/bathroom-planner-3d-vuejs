@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck - Disable strict type checking for inline styles
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAdminAuth } from '../../composables/useAdminAuth';
 import { useAdminProducts } from '../../composables/useAdminProducts';
@@ -30,6 +30,26 @@ const {
 // UI State
 const sidebarCollapsed = ref(false);
 const showFilters = ref(true);
+const isMobile = ref(false);
+const showMobileSidebar = ref(false);
+
+// Check if mobile
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+  if (isMobile.value) {
+    sidebarCollapsed.value = true;
+  }
+};
+
+// Toggle mobile sidebar
+const toggleMobileSidebar = () => {
+  showMobileSidebar.value = !showMobileSidebar.value;
+};
+
+// Close mobile sidebar
+const closeMobileSidebar = () => {
+  showMobileSidebar.value = false;
+};
 
 // Product Detail Drawer State
 const selectedProduct = ref<any>(null);
@@ -47,11 +67,17 @@ const closeProductDrawer = () => {
   }, 300); // Wait for animation to complete
 };
 
-// Check authentication
+// Check authentication & initialize mobile detection
 onMounted(() => {
   if (!validateSession()) {
     router.push('/vadmin');
   }
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile);
 });
 
 // Handle logout
@@ -64,6 +90,20 @@ const handleLogout = () => {
 const formatPrice = (price: string | number) => {
   const num = typeof price === 'string' ? parseFloat(price) : price;
   return `£${num.toFixed(2)}`;
+};
+
+// Copy to clipboard
+const copiedSku = ref<string | null>(null);
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    copiedSku.value = text;
+    setTimeout(() => {
+      copiedSku.value = null;
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy:', err);
+  }
 };
 
 // Export to CSV
@@ -121,6 +161,7 @@ const maxCategoryCount = computed(() => {
   return Math.max(...counts, 1);
 });
 
+
 // Pagination helpers
 const pageNumbers = computed(() => {
   const pages: number[] = [];
@@ -146,12 +187,18 @@ const pageNumbers = computed(() => {
 <template>
   <div :style="containerStyle">
     <!-- Sidebar -->
-    <aside :style="sidebarStyle">
+    <aside :style="sidebarStyle" class="admin-sidebar" :class="{ 'mobile-open': showMobileSidebar }">
       <div :style="sidebarHeaderStyle">
         <div :style="logoStyle">
           <img src="/assets/logo.svg" alt="Logo" :style="logoImageStyle" />
         </div>
         <span v-if="!sidebarCollapsed" :style="logoTextStyle">Admin Panel</span>
+        <button v-if="isMobile" @click="closeMobileSidebar" :style="mobileCloseButtonStyle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       <nav :style="navStyle">
@@ -179,32 +226,39 @@ const pageNumbers = computed(() => {
       </div>
     </aside>
 
+    <!-- Mobile Sidebar Overlay -->
+    <div
+      v-if="showMobileSidebar"
+      class="mobile-overlay"
+      @click="closeMobileSidebar"
+    ></div>
+
     <!-- Main Content -->
-    <main :style="mainStyle">
+    <main :style="mainStyle" class="admin-main">
       <!-- Header -->
-      <header :style="headerStyle">
+      <header :style="headerStyle" class="admin-header">
         <div :style="headerLeftStyle">
-          <button @click="sidebarCollapsed = !sidebarCollapsed" :style="menuButtonStyle">
+          <button @click="isMobile ? toggleMobileSidebar() : sidebarCollapsed = !sidebarCollapsed" :style="menuButtonStyle">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="3" y1="12" x2="21" y2="12"/>
               <line x1="3" y1="6" x2="21" y2="6"/>
               <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
-          <h1 :style="pageTitleStyle">Products</h1>
+          <h1 :style="pageTitleStyle" class="page-title">Products</h1>
         </div>
-        <router-link to="/planner" :style="viewSiteLinkStyle">
+        <router-link to="/planner" :style="viewSiteLinkStyle" title="View Site">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
             <polyline points="15 3 21 3 21 9"/>
             <line x1="10" y1="14" x2="21" y2="3"/>
           </svg>
-          View Site
+          <span class="view-site-text">View Site</span>
         </router-link>
       </header>
 
       <!-- Stats Cards -->
-      <div :style="statsGridStyle">
+      <div :style="statsGridStyle" class="stats-grid">
         <div :style="statCardStyle">
           <div :style="statIconStyle('#3b82f6')">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -243,37 +297,11 @@ const pageNumbers = computed(() => {
         </div>
       </div>
 
-      <!-- Category Distribution Chart -->
-      <div v-if="stats && stats.categoryCounts" :style="chartContainerStyle">
-        <div :style="chartHeaderStyle">
-          <h3 :style="chartTitleStyle">Products by Category</h3>
-          <span :style="chartSubtitleStyle">Distribution of {{ stats.totalProducts }} products</span>
-        </div>
-        <div :style="chartBodyStyle">
-          <div
-            v-for="category in filteredCategories"
-            :key="category"
-            :style="chartRowStyle"
-          >
-            <div :style="chartLabelStyle">
-              <span :style="chartCategoryDotStyle(category)"></span>
-              {{ category }}
-            </div>
-            <div :style="chartBarContainerStyle">
-              <div
-                :style="chartBarStyle(category, stats.categoryCounts[category] || 0, maxCategoryCount)"
-              ></div>
-            </div>
-            <div :style="chartCountStyle">{{ stats.categoryCounts[category] || 0 }}</div>
-          </div>
-        </div>
-      </div>
-
       <!-- Product List View -->
-      <div :style="contentStyle">
+      <div :style="contentStyle" class="admin-content">
         <!-- Filters Section -->
         <div :style="filtersContainerStyle">
-          <div :style="filterHeaderStyle">
+          <div :style="filterHeaderStyle" class="filter-header">
             <button @click="showFilters = !showFilters" :style="filterToggleStyle">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -299,7 +327,7 @@ const pageNumbers = computed(() => {
             </button>
           </div>
 
-          <div v-if="showFilters" :style="filtersGridStyle">
+          <div v-if="showFilters" :style="filtersGridStyle" class="filters-grid">
             <!-- Search -->
             <div :style="filterGroupStyle">
               <label :style="filterLabelStyle">Search</label>
@@ -405,7 +433,7 @@ const pageNumbers = computed(() => {
         </div>
 
         <!-- Products Table -->
-        <div :style="tableContainerStyle">
+        <div :style="tableContainerStyle" class="table-container">
           <table :style="tableStyle">
             <thead>
               <tr>
@@ -470,8 +498,8 @@ const pageNumbers = computed(() => {
         </div>
 
         <!-- Pagination -->
-        <div v-if="totalPages > 1" :style="paginationStyle">
-          <div :style="paginationInfoStyle">
+        <div v-if="totalPages > 1" :style="paginationStyle" class="pagination">
+          <div :style="paginationInfoStyle" class="pagination-info">
             Showing {{ ((pagination.currentPage - 1) * pagination.itemsPerPage) + 1 }}
             to {{ Math.min(pagination.currentPage * pagination.itemsPerPage, filteredProducts.length) }}
             of {{ filteredProducts.length }}
@@ -481,6 +509,7 @@ const pageNumbers = computed(() => {
               @click="setPage(pagination.currentPage - 1)"
               :disabled="pagination.currentPage === 1"
               :style="paginationButtonStyle"
+              class="pagination-btn"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15 18 9 12 15 6"/>
@@ -492,6 +521,7 @@ const pageNumbers = computed(() => {
                 v-else
                 @click="setPage(page)"
                 :style="[paginationButtonStyle, page === pagination.currentPage && paginationButtonActiveStyle]"
+                class="pagination-btn"
               >
                 {{ page }}
               </button>
@@ -500,6 +530,7 @@ const pageNumbers = computed(() => {
               @click="setPage(pagination.currentPage + 1)"
               :disabled="pagination.currentPage === totalPages"
               :style="paginationButtonStyle"
+              class="pagination-btn"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9 18 15 12 9 6"/>
@@ -521,8 +552,8 @@ const pageNumbers = computed(() => {
 
     <!-- Product Detail Drawer -->
     <div v-if="showProductDrawer" :style="drawerOverlayStyle" @click="closeProductDrawer"></div>
-    <div :style="drawerStyle" :class="{ 'drawer-open': showProductDrawer }">
-      <div v-if="selectedProduct" :style="drawerContentStyle">
+    <div :style="drawerStyle" :class="{ 'drawer-open': showProductDrawer }" class="product-drawer">
+      <div v-if="selectedProduct" :style="drawerContentStyle" class="drawer-content">
         <!-- Drawer Header -->
         <div :style="drawerHeaderStyle">
           <h2 :style="drawerTitleStyle">Product Details</h2>
@@ -535,11 +566,26 @@ const pageNumbers = computed(() => {
         </div>
 
         <!-- Product Image & Basic Info -->
-        <div :style="drawerProductHeaderStyle">
+        <div :style="drawerProductHeaderStyle" class="drawer-product-header">
           <img :src="getImageUrl(selectedProduct.image)" :alt="selectedProduct.name" :style="drawerProductImageStyle" />
-          <div :style="drawerProductInfoStyle">
+          <div :style="drawerProductInfoStyle" class="drawer-product-info">
             <h3 :style="drawerProductNameStyle">{{ selectedProduct.name }}</h3>
-            <p :style="drawerProductIdStyle">ID: {{ selectedProduct.id }}</p>
+            <div :style="skuCopyContainerStyle">
+              <span :style="drawerProductIdStyle">SKU: {{ selectedProduct.variants?.[0]?.sku || selectedProduct.id }}</span>
+              <button
+                @click.stop="copyToClipboard(selectedProduct.variants?.[0]?.sku || selectedProduct.id)"
+                :style="copyButtonStyle"
+                :title="copiedSku === (selectedProduct.variants?.[0]?.sku || selectedProduct.id) ? 'Copied!' : 'Copy SKU'"
+              >
+                <svg v-if="copiedSku !== (selectedProduct.variants?.[0]?.sku || selectedProduct.id)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </button>
+            </div>
             <span :style="categoryBadgeStyle(selectedProduct.category)">{{ selectedProduct.category }}</span>
             <p :style="drawerProductPriceStyle">{{ formatPrice(selectedProduct.price) }}</p>
           </div>
@@ -696,6 +742,21 @@ export default {
         fontSize: '16px',
         fontWeight: '600',
         whiteSpace: 'nowrap',
+        flex: 1,
+      };
+    },
+    mobileCloseButtonStyle() {
+      return {
+        background: 'none',
+        border: 'none',
+        color: '#ffffff',
+        cursor: 'pointer',
+        padding: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '4px',
+        marginLeft: 'auto',
       };
     },
     navStyle() {
@@ -802,6 +863,7 @@ export default {
         position: 'sticky',
         top: 0,
         zIndex: 50,
+        gap: '12px',
       };
     },
     headerLeftStyle() {
@@ -844,6 +906,7 @@ export default {
         fontSize: '14px',
         textDecoration: 'none',
         transition: 'background-color 0.2s ease',
+        flexShrink: 0,
       };
     },
     statsGridStyle() {
@@ -893,13 +956,120 @@ export default {
         margin: 0,
       };
     },
+    // Health Panel styles
+    healthPanelStyle() {
+      return {
+        backgroundColor: '#ffffff',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        margin: '0 24px 20px',
+        overflow: 'hidden',
+      };
+    },
+    healthPanelHeaderStyle() {
+      return {
+        padding: '16px 24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s ease',
+      };
+    },
+    healthPanelTitleContainerStyle() {
+      return {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+      };
+    },
+    healthPanelTitleStyle() {
+      return {
+        fontSize: '16px',
+        fontWeight: '600',
+        color: textColor,
+        margin: 0,
+      };
+    },
+    healthBadgeStyle() {
+      return (count: number) => ({
+        padding: '4px 10px',
+        borderRadius: '12px',
+        fontSize: '12px',
+        fontWeight: '500',
+        backgroundColor: count === 0 ? '#dcfce7' : '#fef3c7',
+        color: count === 0 ? '#166534' : '#92400e',
+      });
+    },
+    healthPanelBodyStyle() {
+      return {
+        padding: '0 24px 20px',
+        borderTop: `1px solid ${borderColor}`,
+        paddingTop: '20px',
+      };
+    },
+    healthGridStyle() {
+      return {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '16px',
+      };
+    },
+    healthItemStyle() {
+      return {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '12px',
+        backgroundColor: '#f8fafc',
+        borderRadius: '8px',
+      };
+    },
+    healthItemIconStyle() {
+      return (count: number) => ({
+        width: '40px',
+        height: '40px',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: count === 0 ? '#dcfce7' : '#fef3c7',
+        color: count === 0 ? '#166534' : '#92400e',
+      });
+    },
+    healthItemLabelStyle() {
+      return {
+        fontSize: '13px',
+        color: mutedColor,
+        margin: '0 0 2px',
+      };
+    },
+    healthItemCountStyle() {
+      return (count: number) => ({
+        fontSize: '16px',
+        fontWeight: '600',
+        color: count === 0 ? '#166534' : '#92400e',
+        margin: 0,
+      });
+    },
+    healthSuccessStyle() {
+      return {
+        textAlign: 'center',
+        padding: '16px',
+        color: '#166534',
+        fontSize: '14px',
+        margin: '16px 0 0',
+        backgroundColor: '#dcfce7',
+        borderRadius: '8px',
+      };
+    },
     // Chart styles
     chartContainerStyle() {
       return {
         backgroundColor: '#ffffff',
         borderRadius: '12px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        marginBottom: '20px',
+        margin: '0 24px 20px',
         overflow: 'hidden',
       };
     },
@@ -1012,6 +1182,7 @@ export default {
         justifyContent: 'space-between',
         padding: '16px 20px',
         borderBottom: this.showFilters ? `1px solid ${borderColor}` : 'none',
+        gap: '10px',
       };
     },
     filterToggleStyle() {
@@ -1358,6 +1529,7 @@ export default {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: '12px',
         marginTop: '16px',
         padding: '16px 20px',
         backgroundColor: '#ffffff',
@@ -1518,6 +1690,27 @@ export default {
         color: textColor,
         margin: 0,
         lineHeight: '1.3',
+      };
+    },
+    skuCopyContainerStyle() {
+      return {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+      };
+    },
+    copyButtonStyle() {
+      return {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '4px',
+        border: `1px solid ${borderColor}`,
+        borderRadius: '4px',
+        backgroundColor: '#ffffff',
+        color: mutedColor,
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
       };
     },
     drawerProductIdStyle() {
@@ -1740,5 +1933,129 @@ a:hover {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* ==================== MOBILE RESPONSIVE STYLES ==================== */
+@media (max-width: 767px) {
+  /* Hide sidebar on mobile by default */
+  .admin-sidebar {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    width: 260px !important;
+    z-index: 1000 !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3) !important;
+  }
+
+  .admin-sidebar.mobile-open {
+    display: flex !important;
+  }
+
+  /* Mobile sidebar overlay */
+  .mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  /* Main content full width on mobile */
+  .admin-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Header mobile */
+  .admin-header {
+    padding: 12px 16px !important;
+  }
+
+  .admin-header .page-title {
+    font-size: 16px !important;
+  }
+
+  .admin-header .view-site-text {
+    display: none !important;
+  }
+
+  /* Stats grid - single column */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+
+  /* Content area */
+  .admin-content {
+    padding: 0 16px 16px !important;
+  }
+
+  /* Filter header */
+  .filter-header {
+    padding: 12px 16px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Filters grid - single column */
+  .filters-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 16px !important;
+  }
+
+  /* Table container - horizontal scroll */
+  .table-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-container table {
+    min-width: 700px !important;
+  }
+
+  /* Pagination */
+  .pagination {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .pagination-info {
+    display: none !important;
+  }
+
+  .pagination-btn {
+    min-width: 32px !important;
+    height: 32px !important;
+    padding: 0 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* Product drawer - full width */
+  .product-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .drawer-content {
+    padding: 16px !important;
+  }
+
+  .drawer-product-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  .drawer-product-info {
+    align-items: center !important;
+  }
 }
 </style>

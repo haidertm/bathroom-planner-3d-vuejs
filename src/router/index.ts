@@ -6,6 +6,7 @@ import MyDesigns from '../pages/MyDesigns.vue'
 import RoomDimensions from '../pages/RoomDimensions.vue'
 import AdminLogin from '../pages/admin/AdminLogin.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
+import NotFound from '../pages/NotFound.vue'
 
 const routes = [
     {
@@ -44,6 +45,12 @@ const routes = [
         name: 'AdminDashboard',
         component: AdminDashboard,
         meta: { requiresAuth: true }
+    },
+    // 404 - Catch all unmatched routes
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: NotFound
     }
 ]
 
