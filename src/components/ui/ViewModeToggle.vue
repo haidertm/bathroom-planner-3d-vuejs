@@ -3,6 +3,7 @@
     <button
         class="view-mode-button"
         :style="buttonStyle"
+        :disabled="disabled"
         @click="toggleViewMode"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -27,7 +28,7 @@
           :style="sliderStyle"
         />
       </div>
-      <div v-if="showTooltip" class="tooltip" :style="tooltipStyle">
+      <div v-if="showTooltip" class="tooltip">
         {{ modelValue === '2d' ? 'Switch to 3D view' : 'Switch to 2D Blueprint view' }}
       </div>
     </button>
@@ -87,18 +88,21 @@ const toggleContentStyle = computed(() => ({
   overflow: 'hidden'
 }))
 
-const labelStyle = (mode: ViewMode) => computed(() => ({
-  flex: '1',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: isMobileDevice.value ? '11px' : '13px',
-  fontWeight: '600',
-  color: props.modelValue === mode ? '#fff' : '#666',
-  zIndex: 2,
-  transition: 'color 0.2s ease',
-  userSelect: 'none' as const
-})).value
+// Plain function to avoid creating computed instances on each call
+function labelStyle(mode: ViewMode) {
+  return {
+    flex: '1',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: isMobileDevice.value ? '11px' : '13px',
+    fontWeight: '600',
+    color: props.modelValue === mode ? '#fff' : '#666',
+    zIndex: 2,
+    transition: 'color 0.2s ease',
+    userSelect: 'none' as const
+  }
+}
 
 const sliderStyle = computed(() => ({
   position: 'absolute' as const,
@@ -112,22 +116,7 @@ const sliderStyle = computed(() => ({
   zIndex: 1
 }))
 
-const tooltipStyle = computed(() => ({
-  position: 'absolute' as const,
-  bottom: '100%',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  color: 'white',
-  padding: '6px 10px',
-  borderRadius: '4px',
-  fontSize: '12px',
-  whiteSpace: 'nowrap' as const,
-  pointerEvents: 'none' as const,
-  marginBottom: '8px',
-  zIndex: 1000,
-  animation: 'tooltipFadeIn 0.2s ease-out'
-}))
+// tooltipStyle removed - using scoped .tooltip CSS class instead
 
 // Methods
 const toggleViewMode = () => {

@@ -40,9 +40,13 @@ export interface WallPlanes {
   'notch-south'?: THREE.Plane;
 }
 
+// Cache for room boundaries to avoid recalculation during drag operations
+const roomBoundariesCache = new Map<string, RoomBoundaries>();
+
 /**
- * Get room boundaries with caching support
+ * Get room boundaries with memoization
  * Single source of truth for interior boundaries calculation
+ * Results are cached by room dimensions to avoid repeated calculations during drag
  */
 export function getRoomBoundaries(
   roomWidth: number,
@@ -50,6 +54,13 @@ export function getRoomBoundaries(
   notchWidth: number,
   notchHeight: number
 ): RoomBoundaries {
+  const cacheKey = `${roomWidth},${roomHeight},${notchWidth},${notchHeight}`;
+
+  const cached = roomBoundariesCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const { interior, wallFaces, notch } = getInteriorBoundaries(
     roomWidth,
     roomHeight,
@@ -57,13 +68,23 @@ export function getRoomBoundaries(
     notchHeight
   );
 
-  return {
+  const boundaries: RoomBoundaries = {
     roomHalfWidth: roomWidth / 2,
     roomHalfHeight: roomHeight / 2,
     interior,
     wallFaces,
     notch
   };
+
+  roomBoundariesCache.set(cacheKey, boundaries);
+  return boundaries;
+}
+
+/**
+ * Clear the room boundaries cache (call when room dimensions change)
+ */
+export function clearRoomBoundariesCache(): void {
+  roomBoundariesCache.clear();
 }
 
 /**

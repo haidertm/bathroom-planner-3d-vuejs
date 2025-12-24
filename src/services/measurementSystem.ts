@@ -1575,12 +1575,24 @@ export class MeasurementSystem {
 
   /**
    * Update the camera reference (for 2D/3D view switching)
-   * Currently a placeholder - the measurement system doesn't use camera directly
-   * but this allows future enhancements like camera-facing labels
+   *
+   * @param _camera - The active camera (perspective or orthographic)
+   *
+   * @remarks
+   * **Intentionally a no-op placeholder.** This method is part of the public API
+   * and is called by SceneManager.updatePostProcessingCamera() when switching
+   * between 2D/3D views. It exists to support future camera-dependent features.
+   *
+   * @todo Potential future enhancements:
+   * - Billboard labels that always face the camera
+   * - Distance-based label scaling for consistent readability
+   * - Camera frustum culling for off-screen measurement labels
+   * - Different label styles for orthographic vs perspective views
+   *
+   * @see SceneManager.updatePostProcessingCamera - Caller of this method
    */
   public updateCamera(_camera: THREE.Camera): void {
-    // Placeholder for future camera-dependent functionality
-    // e.g., billboard labels that face camera, or distance-based scaling
+    // Intentionally empty - placeholder for future camera-dependent functionality
   }
 
   // ============================================================================

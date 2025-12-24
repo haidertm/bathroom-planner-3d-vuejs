@@ -873,31 +873,27 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
+// Single source of truth for sidebar offset calculation
+// Main sidebar is 480px wide, add extra space (540px) for tooltips to be visible
+const sidebarOffset = computed(() => showTexturePanel.value ? '540px' : '20px')
+
 // Style for 2D/3D View Mode Toggle - positioned ABOVE MeasurementToggle, next to main sidebar
-const viewModeToggleStyle = computed(() => {
-  // Main sidebar is 480px wide, add extra space for tooltips to be visible
-  const sidebarOffset = showTexturePanel.value ? '540px' : '20px'
-  return {
-    position: 'fixed',
-    left: isMobileDevice.value ? '' : sidebarOffset,
-    right: isMobileDevice.value ? '10px' : '',
-    bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
-    zIndex: 100
-  }
-})
+const viewModeToggleStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
+  zIndex: 100
+}))
 
 // Style for MeasurementToggle - positioned next to main sidebar, BELOW ViewModeToggle
-const toggleMeasurementStyle = computed(() => {
-  // Main sidebar is 480px wide, add extra space for tooltips to be visible
-  const sidebarOffset = showTexturePanel.value ? '540px' : '20px'
-  return {
-    position: 'fixed',
-    left: isMobileDevice.value ? '' : sidebarOffset,
-    right: isMobileDevice.value ? '10px' : '',
-    bottom: isMobileDevice.value ? '80px' : '30px',
-    zIndex: 100
-  }
-})
+const toggleMeasurementStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '80px' : '30px',
+  zIndex: 100
+}))
 
 const popupOverlayStyle = computed(() => ({
   position: 'fixed',

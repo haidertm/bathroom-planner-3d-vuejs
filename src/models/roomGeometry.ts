@@ -118,8 +118,12 @@ export const createBlueprintGrid = (width: number, height: number): THREE.Group 
   });
 
   // BLUEPRINT GRID - Create vertical lines (parallel to Z-axis)
+  // Major lines every 5th grid line (every 50cm when spacing is 10cm)
+  const MAJOR_LINE_INTERVAL = 5;
+
   for (let x = -width / 2; x <= width / 2; x += BLUEPRINT_GRID_SPACING) {
-    const isMajorLine = Math.abs(x) % 50 < 0.1 || Math.abs(x) % 50 > 49.9; // Every 50cm
+    const gridIndex = Math.round(Math.abs(x) / BLUEPRINT_GRID_SPACING);
+    const isMajorLine = gridIndex % MAJOR_LINE_INTERVAL === 0;
     const points: THREE.Vector3[] = [
       new THREE.Vector3(x, 0.5, -height / 2), // Slightly above floor to avoid z-fighting
       new THREE.Vector3(x, 0.5, height / 2)
@@ -131,7 +135,8 @@ export const createBlueprintGrid = (width: number, height: number): THREE.Group 
 
   // BLUEPRINT GRID - Create horizontal lines (parallel to X-axis)
   for (let z = -height / 2; z <= height / 2; z += BLUEPRINT_GRID_SPACING) {
-    const isMajorLine = Math.abs(z) % 50 < 0.1 || Math.abs(z) % 50 > 49.9; // Every 50cm
+    const gridIndex = Math.round(Math.abs(z) / BLUEPRINT_GRID_SPACING);
+    const isMajorLine = gridIndex % MAJOR_LINE_INTERVAL === 0;
     const points: THREE.Vector3[] = [
       new THREE.Vector3(-width / 2, 0.5, z),
       new THREE.Vector3(width / 2, 0.5, z)
