@@ -116,6 +116,80 @@
             <span class="shape-name">L-Shape</span>
           </div>
         </div>
+
+        <!-- L-Shape Corner Selection (shown when L-shape is selected) -->
+        <div v-if="selectedShape === 'l-shape'" class="corner-selection">
+          <h4 class="corner-title">Select Cut Corner Position</h4>
+          <div class="corner-grid">
+            <!-- Top-Left (NW) -->
+            <div
+              class="corner-card"
+              :class="{ active: selectedCorner === 'nw' }"
+              @click="selectCorner('nw')"
+            >
+              <div class="corner-thumbnail">
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                  <!-- L-shape with notch at top-left -->
+                  <path d="M25 5 L55 5 L55 55 L5 55 L5 25 L25 25 Z" fill="#f8f9fa" stroke="#29275B" stroke-width="2"/>
+                  <!-- Highlight the cut corner -->
+                  <rect x="5" y="5" width="20" height="20" fill="#ff6b6b" opacity="0.3"/>
+                </svg>
+              </div>
+              <span class="corner-name">Top-Left</span>
+            </div>
+
+            <!-- Top-Right (NE) -->
+            <div
+              class="corner-card"
+              :class="{ active: selectedCorner === 'ne' }"
+              @click="selectCorner('ne')"
+            >
+              <div class="corner-thumbnail">
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                  <!-- L-shape with notch at top-right -->
+                  <path d="M5 5 L35 5 L35 25 L55 25 L55 55 L5 55 Z" fill="#f8f9fa" stroke="#29275B" stroke-width="2"/>
+                  <!-- Highlight the cut corner -->
+                  <rect x="35" y="5" width="20" height="20" fill="#ff6b6b" opacity="0.3"/>
+                </svg>
+              </div>
+              <span class="corner-name">Top-Right</span>
+            </div>
+
+            <!-- Bottom-Left (SW) -->
+            <div
+              class="corner-card"
+              :class="{ active: selectedCorner === 'sw' }"
+              @click="selectCorner('sw')"
+            >
+              <div class="corner-thumbnail">
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                  <!-- L-shape with notch at bottom-left -->
+                  <path d="M5 5 L55 5 L55 55 L25 55 L25 35 L5 35 Z" fill="#f8f9fa" stroke="#29275B" stroke-width="2"/>
+                  <!-- Highlight the cut corner -->
+                  <rect x="5" y="35" width="20" height="20" fill="#ff6b6b" opacity="0.3"/>
+                </svg>
+              </div>
+              <span class="corner-name">Bottom-Left</span>
+            </div>
+
+            <!-- Bottom-Right (SE) -->
+            <div
+              class="corner-card"
+              :class="{ active: selectedCorner === 'se' }"
+              @click="selectCorner('se')"
+            >
+              <div class="corner-thumbnail">
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                  <!-- L-shape with notch at bottom-right -->
+                  <path d="M5 5 L55 5 L55 35 L35 35 L35 55 L5 55 Z" fill="#f8f9fa" stroke="#29275B" stroke-width="2"/>
+                  <!-- Highlight the cut corner -->
+                  <rect x="35" y="35" width="20" height="20" fill="#ff6b6b" opacity="0.3"/>
+                </svg>
+              </div>
+              <span class="corner-name">Bottom-Right</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Template Grid (shown when template option is selected) -->
@@ -294,6 +368,7 @@ const emit = defineEmits(['close', 'select-scratch', 'select-template'])
 const selectedOption = ref(null)
 const selectedTemplate = ref(null)
 const selectedShape = ref(null)
+const selectedCorner = ref(null)
 
 // Tooltip state
 const tooltip = reactive({
@@ -320,7 +395,13 @@ const hideTooltip = () => {
 }
 
 const canContinue = computed(() => {
-  if (selectedOption.value === 'scratch' && selectedShape.value) return true
+  if (selectedOption.value === 'scratch') {
+    if (selectedShape.value === 'l-shape') {
+      // L-shape requires corner selection
+      return selectedCorner.value !== null
+    }
+    return selectedShape.value !== null
+  }
   if (selectedOption.value === 'template' && selectedTemplate.value) return true
   return false
 })
@@ -340,18 +421,32 @@ const selectTemplate = (template) => {
 
 const selectShape = (shape) => {
   selectedShape.value = shape
+  // Reset corner selection when shape changes
+  if (shape !== 'l-shape') {
+    selectedCorner.value = null
+  }
+}
+
+const selectCorner = (corner) => {
+  selectedCorner.value = corner
 }
 
 const handleClose = () => {
   selectedOption.value = null
   selectedTemplate.value = null
   selectedShape.value = null
+  selectedCorner.value = null
   emit('close')
 }
 
 const handleContinue = () => {
   if (selectedOption.value === 'scratch' && selectedShape.value) {
-    emit('select-scratch', selectedShape.value)
+    // For L-shape, emit object with shape and corner; otherwise just the shape
+    if (selectedShape.value === 'l-shape' && selectedCorner.value) {
+      emit('select-scratch', { shape: 'l-shape', corner: selectedCorner.value })
+    } else {
+      emit('select-scratch', selectedShape.value)
+    }
   } else if (selectedOption.value === 'template' && selectedTemplate.value) {
     emit('select-template', selectedTemplate.value)
   }
@@ -439,7 +534,7 @@ const handleContinue = () => {
   background: #f8f9fa;
   border: 2px solid #e9ecef;
   border-radius: 16px;
-  padding: 32px 24px;
+  padding: 20px 24px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -502,7 +597,7 @@ const handleContinue = () => {
   background: white;
   border: 2px solid #e9ecef;
   border-radius: 12px;
-  padding: 20px 12px;
+  padding: 12px 12px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -713,6 +808,71 @@ const handleContinue = () => {
 
   .shapes-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Corner Selection Styles */
+.corner-selection {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f0f0ff;
+  border-radius: 12px;
+  border: 1px solid #e0e0ff;
+}
+
+.corner-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #29275B;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.corner-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.corner-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.corner-card:hover {
+  border-color: #29275B;
+  box-shadow: 0 2px 8px rgba(41, 39, 91, 0.1);
+}
+
+.corner-card.active {
+  border-color: #29275B;
+  background: #f8f9ff;
+  box-shadow: 0 2px 8px rgba(41, 39, 91, 0.15);
+}
+
+.corner-thumbnail {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.corner-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: #29275B;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .corner-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 }
 </style>
