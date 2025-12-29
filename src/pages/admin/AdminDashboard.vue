@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAdminAuth } from '../../composables/useAdminAuth';
 import { useAdminProducts } from '../../composables/useAdminProducts';
 import { useUrlFilters } from '../../composables/useUrlFilters';
+import { useToast } from '../../composables/useToast';
 import { COMPONENTS, type ComponentType } from '../../constants/components';
 import type { AdminProduct, ProductFilters } from '../../types/admin';
 
@@ -15,6 +16,7 @@ import ProductFiltersComponent from './components/ProductFilters.vue';
 import ProductTable from './components/ProductTable.vue';
 import Pagination from './components/Pagination.vue';
 import ProductDrawer from './components/ProductDrawer.vue';
+import ToastContainer from '../../components/ui/ToastContainer.vue';
 
 // Filter out Sink and Door from category filters
 const filteredCategories = COMPONENTS.filter(
@@ -43,6 +45,8 @@ const {
   updateUrl,
   clearUrlFilters,
 } = useUrlFilters();
+
+const toast = useToast();
 
 // UI State
 const sidebarCollapsed = ref(false);
@@ -99,6 +103,11 @@ const handleLogout = () => {
 const exportToCSV = () => {
   const products = filteredProducts.value;
 
+  if (products.length === 0) {
+    toast.warning('No products to export');
+    return;
+  }
+
   const headers = ['ID', 'Name', 'Category', 'Price', 'SKU', 'Variants Count', 'Features', 'Link'];
 
   const rows = products.map(product => [
@@ -126,6 +135,8 @@ const exportToCSV = () => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+
+  toast.success(`Exported ${products.length} products to CSV`);
 };
 
 // Filter handlers
@@ -158,6 +169,7 @@ const handleClearFilters = () => {
   simulateLoading();
   clearFilters();
   clearUrlFilters();
+  toast.info('Filters cleared');
 };
 
 // Pagination handlers
@@ -321,6 +333,9 @@ const mainContentStyle = computed(() => ({
       :is-open="showProductDrawer"
       @close="closeProductDrawer"
     />
+
+    <!-- Toast Notifications -->
+    <ToastContainer />
   </div>
 </template>
 

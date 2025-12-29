@@ -10,7 +10,6 @@ const { login, isLoading, error, clearError, validateSession } = useAdminAuth();
 const username = ref('');
 const password = ref('');
 const showPassword = ref(false);
-const showCredentialsHint = ref(false);
 
 // Redirect if already authenticated
 onMounted(() => {
@@ -125,27 +124,6 @@ const togglePasswordVisibility = () => {
           <span v-else>Sign In</span>
         </button>
       </form>
-
-      <!-- Credentials Hint -->
-      <div :style="hintContainerStyle">
-        <button
-          type="button"
-          @click="showCredentialsHint = !showCredentialsHint"
-          :style="hintToggleStyle"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <span>Need help signing in?</span>
-        </button>
-        <div v-if="showCredentialsHint" :style="hintBoxStyle">
-          <p><strong>Default credentials:</strong></p>
-          <p>Username: <code>admin</code></p>
-          <p>Password: <code>admin123</code></p>
-        </div>
-      </div>
 
       <!-- Back to Home -->
       <router-link to="/" :style="backLinkStyle">
@@ -334,39 +312,6 @@ export default {
         animation: 'spin 0.8s linear infinite',
       };
     },
-    hintContainerStyle() {
-      return {
-        marginTop: '24px',
-        textAlign: 'center',
-      };
-    },
-    hintToggleStyle() {
-      return {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '8px 12px',
-        fontSize: '13px',
-        color: mutedColor,
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        borderRadius: '6px',
-        transition: 'all 0.2s ease',
-      };
-    },
-    hintBoxStyle() {
-      return {
-        marginTop: '12px',
-        padding: '16px',
-        backgroundColor: '#f8fafc',
-        borderRadius: '8px',
-        fontSize: '13px',
-        color: textColor,
-        textAlign: 'left',
-        lineHeight: '1.8',
-      };
-    },
     backLinkStyle() {
       return {
         display: 'inline-flex',
@@ -417,11 +362,4 @@ button[type="submit"]:disabled {
   cursor: not-allowed;
 }
 
-code {
-  background-color: #e2e8f0;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 12px;
-}
 </style>

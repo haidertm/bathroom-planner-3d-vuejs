@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import type { AdminProduct } from '../../../types/admin';
+import { useToast } from '../../../composables/useToast';
+
+const toast = useToast();
 
 const props = defineProps<{
   product: AdminProduct | null;
@@ -46,11 +49,13 @@ const copyToClipboard = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
     copiedSku.value = text;
+    toast.success('SKU copied to clipboard');
     setTimeout(() => {
       copiedSku.value = null;
     }, 2000);
   } catch (err) {
     console.error('Failed to copy:', err);
+    toast.error('Failed to copy to clipboard');
   }
 };
 
