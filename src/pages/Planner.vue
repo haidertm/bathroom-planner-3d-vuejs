@@ -2034,7 +2034,10 @@ onMounted(async () => {
       pendingCameraPosition = cornerCameraPositions[lShapeCorner] || cornerCameraPositions['nw']
       console.log('📷 L-shape corner camera position:', lShapeCorner, pendingCameraPosition)
 
-      // Clean up the corner selection from localStorage after using it
+      // Persist corner for 2D/3D view transitions (sceneManager needs this)
+      localStorage.setItem('l-shape-corner-active', lShapeCorner)
+
+      // Clean up the initial corner selection from localStorage after using it
       localStorage.removeItem('l-shape-corner')
     }
   }
