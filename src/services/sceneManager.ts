@@ -1630,6 +1630,11 @@ export class SceneManager {
       model.userData.model = item.model;
     }
 
+    // Update schematic position if in 2D mode
+    if (this.viewMode === '2d') {
+      this.updateSchematicPosition(item.id);
+    }
+
     console.log(`✅ Updated item ${item.id} properties with preserved orientation:`, {
       position: model.position,
       rotation: model.rotation.y,
