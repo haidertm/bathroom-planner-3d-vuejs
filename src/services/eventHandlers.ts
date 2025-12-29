@@ -540,6 +540,15 @@ export class EventHandlers {
         return null; // Camera rotation
       }
 
+      // Check if clicked on a 2D schematic overlay - return the linked bathroom object
+      let schematicParent = obj;
+      while (schematicParent.parent && !schematicParent.userData.isSchematic2D) {
+        schematicParent = schematicParent.parent;
+      }
+      if (schematicParent.userData.isSchematic2D && schematicParent.userData.linkedModel) {
+        return { object: schematicParent.userData.linkedModel, point: intersect.point };
+      }
+
       // If it's a bathroom object, check if it's the parent or find the parent
       let bathroomObj = obj;
       while (bathroomObj.parent && !bathroomObj.userData.isBathroomItem) {
@@ -770,6 +779,11 @@ export class EventHandlers {
               // Apply the correct rotation for the new wall
               if (!movementConfig.allowFreeRotation) {
                 this.selectedObject.rotation.y = newPosition.rotation;
+              }
+
+              // Update schematic overlay position in 2D mode
+              if (this.sceneManager?.updateSchematicPosition) {
+                this.sceneManager.updateSchematicPosition(itemId);
               }
 
               // Update the item data and save to history using queueUpdate
@@ -1753,6 +1767,11 @@ export class EventHandlers {
                 // Set position
                 this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
 
+                // Update schematic overlay position in 2D mode
+                if (this.sceneManager?.updateSchematicPosition) {
+                  this.sceneManager.updateSchematicPosition(itemId);
+                }
+
                 // Update data model
                 this.queueUpdate(this.selectedObject.userData.itemId as number, {
                     position: [constrainedX, this.selectedObject.position.y, constrainedZ],
@@ -1955,6 +1974,11 @@ export class EventHandlers {
             // Apply position to object
             this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
             this.selectedObject.rotation.y = constrainedRotation;
+
+            // Update schematic overlay position in 2D mode
+            if (this.sceneManager?.updateSchematicPosition) {
+              this.sceneManager.updateSchematicPosition(itemId);
+            }
 
             // Queue update
             this.queueUpdate(itemId, {
@@ -2505,6 +2529,11 @@ export class EventHandlers {
 
       if (rotationChanged) {
         this.selectedObject.rotation.y = constrainedRotation;
+      }
+
+      // Update schematic overlay position in 2D mode
+      if (this.sceneManager?.updateSchematicPosition) {
+        this.sceneManager.updateSchematicPosition(itemId);
       }
 
       // Queue update
@@ -3062,6 +3091,11 @@ export class EventHandlers {
 
         if (rotationChanged) {
           this.selectedObject.rotation.y = constrainedRotation;
+        }
+
+        // Update schematic overlay position in 2D mode
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(itemId);
         }
 
         const updateData: UpdateData = {
