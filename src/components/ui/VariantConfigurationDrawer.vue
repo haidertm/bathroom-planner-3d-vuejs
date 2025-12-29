@@ -89,9 +89,9 @@
               ✓ Selected
             </span>
 
-            <!-- Show too large badge for variants that don't fit -->
+            <!-- Show collision/fit issue badge for variants that don't fit -->
             <span v-else-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
-              ⚠ Too Large
+              ⚠ {{ getCollisionBadgeText(variant) }}
             </span>
           </div>
         </div>
@@ -334,7 +334,24 @@ const isVariantTooLarge = (variant) => {
   return !fitInfo.fits
 }
 
-// Get tooltip message for too-large variants
+// Get badge text for collision/fit issues - more specific than generic "Too Large"
+const getCollisionBadgeText = (variant) => {
+  const fitInfo = getVariantFitInfo(variant)
+  if (fitInfo.fits) return ''
+
+  switch (fitInfo.reason) {
+    case 'wall_collision':
+      return 'Exceeds Room'
+    case 'item_collision':
+      return 'Collision'
+    case 'room_size':
+      return 'Too Large'
+    default:
+      return 'Won\'t Fit'
+  }
+}
+
+// Get tooltip message for collision/fit issues
 const getTooLargeTooltip = (variant) => {
   const fitInfo = getVariantFitInfo(variant)
   if (fitInfo.fits) return ''
@@ -344,11 +361,11 @@ const getTooLargeTooltip = (variant) => {
   }
 
   if (fitInfo.reason === 'item_collision') {
-    return 'Item would collide with nearby items at current position.'
+    return 'Item would collide with nearby items at current position. Remove the blocking item or reposition first.'
   }
 
   if (fitInfo.reason === 'room_size') {
-    return 'Item is too large for this room.'
+    return 'Item dimensions exceed the available room space.'
   }
 
   // Default: width issue
@@ -478,7 +495,15 @@ const confirmSwap = async () => {
 const getButtonText = () => {
   if (!selectedVariant.value) return 'SELECT A VARIANT'
   if (isCurrentVariant(selectedVariant.value)) return 'CURRENT SELECTION'
-  if (isVariantTooLarge(selectedVariant.value)) return '⚠️ SHOWING COLLISION'
+  if (isVariantTooLarge(selectedVariant.value)) {
+    const fitInfo = getVariantFitInfo(selectedVariant.value)
+    if (fitInfo.reason === 'item_collision') {
+      return '⚠️ COLLISION DETECTED'
+    } else if (fitInfo.reason === 'wall_collision') {
+      return '⚠️ EXCEEDS ROOM BOUNDS'
+    }
+    return '⚠️ WON\'T FIT'
+  }
   return 'SWAP VARIANT'
 }
 

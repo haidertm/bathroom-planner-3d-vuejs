@@ -1800,14 +1800,18 @@ export class MeasurementSystem {
     lineStart: THREE.Vector3,
     lineEnd: THREE.Vector3
   ): void {
-    // Create label sprite
+    // Create label sprite with high resolution for crisp text
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    const fontSize = 16;
-    const padding = 6;
+    // Use higher resolution for sharper text (3x scale)
+    const pixelRatio = 3;
+    const fontSize = 16 * pixelRatio;
+    const padding = 6 * pixelRatio;
+    const borderRadius = 4 * pixelRatio;
     const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+
     context.font = `600 ${fontSize}px ${fontFamily}`;
     const textWidth = context.measureText(text).width;
     canvas.width = textWidth + padding * 2;
@@ -1817,7 +1821,7 @@ export class MeasurementSystem {
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = 'rgba(255, 255, 255, 0.95)';
     if (context.roundRect) {
-      context.roundRect(0, 0, canvas.width, canvas.height, 3);
+      context.roundRect(0, 0, canvas.width, canvas.height, borderRadius);
     } else {
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -1825,7 +1829,7 @@ export class MeasurementSystem {
 
     // Draw border
     context.strokeStyle = '#333333';
-    context.lineWidth = 1;
+    context.lineWidth = 2 * pixelRatio;
     context.stroke();
 
     // Draw text
@@ -1836,6 +1840,10 @@ export class MeasurementSystem {
     context.fillText(text, canvas.width / 2, canvas.height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
@@ -1849,7 +1857,8 @@ export class MeasurementSystem {
     sprite.position.copy(labelPosition);
     sprite.renderOrder = 1001;
 
-    const scale = 1.0;
+    // Scale back down to maintain same visual size
+    const scale = 1.0 / pixelRatio;
     const scaleX = canvas.width * scale;
     const scaleY = canvas.height * scale;
     sprite.scale.set(scaleX, scaleY, 1);

@@ -83,6 +83,11 @@ export class SceneManager {
 
   // Enhanced lighting management
   private lights: THREE.Light[] = [];
+  // Store original shadow states for 2D mode
+  private shadowsEnabled: boolean = true;
+  private originalAmbientIntensity: number = 0.9;
+  // 2D schematic overlays for thin objects
+  private schematic2DOverlays: Map<number, THREE.Group> = new Map();
 
   private wallLabelsDebug: WallLabelsDebug | null = null;
   private axisIndicatorsDebug: AxisIndicatorsDebug | null = null;
@@ -379,17 +384,23 @@ export class SceneManager {
       // Disable wall culling in 2D mode (we want to see all walls from above)
       this.wallCullingManager.setEnabled(false);
 
-      // Hide all grids in 2D mode for cleaner blueprint view
+      // Show blueprint grid (10cm spacing) in 2D mode for plan view
       if (this.blueprintGridRef) {
-        this.blueprintGridRef.visible = false;
+        this.blueprintGridRef.visible = true; // SHOW the blueprint grid in 2D mode
       }
       if (this.gridRef) {
-        this.gridRef.visible = false;
+        this.gridRef.visible = false; // Hide the regular 15cm grid
       }
       // Hide wall grid in 2D mode for cleaner view
       if (this.wallGridGroup) {
         this.wallGridGroup.visible = false;
       }
+
+      // Switch to flat 2D lighting (no shadows, even illumination)
+      this.switchTo2DLighting();
+
+      // Create 2D schematic overlays for thin objects (shower screens, mirrors)
+      this.create2DSchematicOverlays();
 
       // Notify event handlers of mode change and pass orthographic camera
       if (this.eventHandlers) {
@@ -488,6 +499,12 @@ export class SceneManager {
 
       // Restore full opacity to tall objects
       this.restoreTallObjectsOpacity();
+
+      // Restore 3D lighting with shadows
+      this.switchTo3DLighting();
+
+      // Remove 2D schematic overlays
+      this.remove2DSchematicOverlays();
 
       // Hide wall dimension labels in 3D mode
       if (this.measurementSystem) {
@@ -742,6 +759,829 @@ export class SceneManager {
     this.originalMaterialStates.clear();
   }
 
+  /**
+   * Switch lighting to flat 2D mode - disables shadows and increases ambient light
+   * This makes the plan view cleaner and edges easier to see
+   */
+  private switchTo2DLighting(): void {
+    console.log('💡 Switching to flat 2D lighting mode...');
+
+    // Disable shadow rendering for clean 2D view
+    if (this.renderer) {
+      this.shadowsEnabled = this.renderer.shadowMap.enabled;
+      this.renderer.shadowMap.enabled = false;
+      // Balanced tone mapping exposure
+      this.renderer.toneMappingExposure = 1.2;
+    }
+
+    // Adjust ambient light for even illumination
+    this.lights.forEach(light => {
+      if (light instanceof THREE.AmbientLight) {
+        this.originalAmbientIntensity = light.intensity;
+        light.intensity = 1.5; // Balanced even lighting
+      }
+      // Disable point lights for flat appearance
+      if (light instanceof THREE.PointLight) {
+        light.visible = false;
+      }
+    });
+
+    // Disable shadows on floor and walls
+    if (this.floorRef) {
+      this.floorRef.receiveShadow = false;
+    }
+    this.wallRefs.forEach(wall => {
+      wall.receiveShadow = false;
+    });
+
+    console.log('✅ 2D lighting mode enabled - shadows disabled, ambient light increased');
+  }
+
+  /**
+   * Restore 3D lighting with shadows
+   */
+  private switchTo3DLighting(): void {
+    console.log('💡 Restoring 3D lighting mode...');
+
+    // Re-enable shadow rendering
+    if (this.renderer) {
+      this.renderer.shadowMap.enabled = this.shadowsEnabled;
+      this.renderer.toneMappingExposure = 1.2;
+    }
+
+    // Restore ambient light intensity
+    this.lights.forEach(light => {
+      if (light instanceof THREE.AmbientLight) {
+        light.intensity = this.originalAmbientIntensity;
+      }
+      // Re-enable point lights
+      if (light instanceof THREE.PointLight) {
+        light.visible = true;
+      }
+    });
+
+    // Re-enable shadows on floor and walls
+    if (this.floorRef) {
+      this.floorRef.receiveShadow = true;
+    }
+    this.wallRefs.forEach(wall => {
+      wall.receiveShadow = true;
+    });
+
+    console.log('✅ 3D lighting mode restored');
+  }
+
+  /**
+   * Get the schematic type for an object in 2D view
+   * All objects get a schematic representation for visibility
+   */
+  private getSchematicType(model: THREE.Object3D): 'shower' | 'mirror' | 'bath' | 'toilet' | 'sink' | 'radiator' | 'furniture' | 'generic' {
+    const itemType = model.userData.type || ''; // ComponentType like 'Shower', 'Mirror', 'Bath'
+    const sku = (model.userData.sku || '').toLowerCase();
+
+    // Check exact ComponentType match (these are exact strings like 'Shower', 'Mirror', 'Bath')
+    if (itemType === 'Shower') {
+      return 'shower';
+    }
+
+    if (itemType === 'Mirror') {
+      return 'mirror';
+    }
+
+    if (itemType === 'Bath') {
+      return 'bath';
+    }
+
+    if (itemType === 'Toilet') {
+      return 'toilet';
+    }
+
+    if (itemType === 'Sink') {
+      return 'sink';
+    }
+
+    if (itemType === 'Radiator' || itemType === 'TowelRails') {
+      return 'radiator';
+    }
+
+    if (itemType === 'Furniture') {
+      return 'furniture';
+    }
+
+    // Fallback: check SKU patterns
+    if (sku.includes('c46')) {
+      return 'shower';
+    }
+
+    if (sku.startsWith('73')) {
+      return 'mirror';
+    }
+
+    if (sku.includes('c51')) {
+      return 'bath';
+    }
+
+    // All other objects get a generic schematic
+    return 'generic';
+  }
+
+  /**
+   * Get dimensions for a model from various sources
+   */
+  private getModelDimensions(model: THREE.Object3D): { width: number; height: number; depth: number } | null {
+    // Try userData.dimensions first
+    if (model.userData.dimensions) {
+      return model.userData.dimensions;
+    }
+
+    // Try userData.model.dimensions
+    if (model.userData.model?.dimensions) {
+      return model.userData.model.dimensions;
+    }
+
+    // Try to calculate from bounding box
+    const box = new THREE.Box3().setFromObject(model);
+    if (!box.isEmpty()) {
+      const size = box.getSize(new THREE.Vector3());
+      // Size is in world units, return as dimensions
+      return {
+        width: size.x,
+        height: size.y,
+        depth: size.z
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Create 2D schematic overlays for objects that are hard to see from top-down view
+   * These are architectural-style floor plan symbols
+   */
+  private create2DSchematicOverlays(): void {
+    console.log('📐 Creating 2D schematic overlays...');
+    console.log(`📐 Total items in existingItems: ${this.existingItems.size}`);
+
+    this.existingItems.forEach((model, itemId) => {
+      const dimensions = this.getModelDimensions(model);
+
+      console.log(`📐 Processing Item ${itemId}:`, {
+        type: model.userData.type,
+        sku: model.userData.sku,
+        hasDimensions: !!dimensions,
+        dimensions: dimensions,
+        position: model.position.toArray()
+      });
+
+      if (!dimensions) {
+        console.log(`  ⚠️ Item ${itemId} has no dimensions, skipping`);
+        return;
+      }
+
+      const schematicType = this.getSchematicType(model);
+      console.log(`  🔍 Item ${itemId} schematic type: ${schematicType}`);
+
+      // Get the bounding box center for positioning
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+
+      // Use the MODEL's original dimensions (not bounding box) so rotation works correctly
+      // The schematic will be created with these dimensions and then rotated to match the model
+      const width = dimensions.width;
+      const depth = dimensions.depth;
+      const schematicHeight = 50; // Height above floor for visibility
+
+      console.log(`  📐 Creating ${schematicType} schematic for Item ${itemId}`, {
+        originalDimensions: dimensions,
+        center: { x: center.x, z: center.z },
+        rotation: model.rotation.y,
+        type: model.userData.type,
+        sku: model.userData.sku
+      });
+
+      // Create a schematic overlay group
+      const schematicGroup = new THREE.Group();
+      schematicGroup.name = `Schematic2D_${itemId}`;
+
+      // Different schematic styles based on object type
+      switch (schematicType) {
+        case 'shower':
+          this.createShowerSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+        case 'mirror':
+          this.createMirrorSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+        case 'bath':
+          this.createBathSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+        case 'toilet':
+          this.createToiletSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+        case 'sink':
+          this.createSinkSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+        case 'radiator':
+          this.createRadiatorSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+        case 'furniture':
+          this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+        case 'generic':
+        default:
+          this.createGenericSchematic(schematicGroup, width, depth, schematicHeight);
+          break;
+      }
+
+      // Position the schematic at the object's actual center (from bounding box)
+      schematicGroup.position.set(center.x, 0, center.z); // At floor level, centered on object
+
+      // Apply the model's rotation so the schematic matches the object's orientation
+      schematicGroup.rotation.y = model.rotation.y;
+
+      // Add userData to link schematic to its bathroom item for raycasting/selection
+      schematicGroup.userData.isSchematic2D = true;
+      schematicGroup.userData.linkedItemId = itemId;
+      schematicGroup.userData.linkedModel = model;
+
+      // Add to scene
+      if (this.scene) {
+        this.scene.add(schematicGroup);
+        this.schematic2DOverlays.set(itemId, schematicGroup);
+        console.log(`  ✅ Schematic added for Item ${itemId}`);
+      }
+    });
+
+    console.log(`📐 Total schematics created: ${this.schematic2DOverlays.size}`);
+  }
+
+  /**
+   * Create a schematic for a single item (used when adding items while in 2D mode)
+   */
+  public createSchematicForItem(itemId: number): void {
+    if (this.viewMode !== '2d') return;
+
+    // Don't create duplicate schematics
+    if (this.schematic2DOverlays.has(itemId)) return;
+
+    const model = this.existingItems.get(itemId);
+    if (!model) return;
+
+    const dimensions = this.getModelDimensions(model);
+    if (!dimensions) return;
+
+    const schematicType = this.getSchematicType(model);
+
+    // Get the bounding box center for positioning
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+
+    const width = dimensions.width;
+    const depth = dimensions.depth;
+    const schematicHeight = 50;
+
+    // Create a schematic overlay group
+    const schematicGroup = new THREE.Group();
+    schematicGroup.name = `Schematic2D_${itemId}`;
+
+    // Different schematic styles based on object type
+    switch (schematicType) {
+      case 'shower':
+        this.createShowerSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'mirror':
+        this.createMirrorSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'bath':
+        this.createBathSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'toilet':
+        this.createToiletSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'sink':
+        this.createSinkSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'radiator':
+        this.createRadiatorSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'furniture':
+        this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'generic':
+      default:
+        this.createGenericSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+    }
+
+    // Position and rotate
+    schematicGroup.position.set(center.x, 0, center.z);
+    schematicGroup.rotation.y = model.rotation.y;
+
+    // Add userData to link schematic to its bathroom item
+    schematicGroup.userData.isSchematic2D = true;
+    schematicGroup.userData.linkedItemId = itemId;
+    schematicGroup.userData.linkedModel = model;
+
+    // Add to scene
+    if (this.scene) {
+      this.scene.add(schematicGroup);
+      this.schematic2DOverlays.set(itemId, schematicGroup);
+      console.log(`📐 Created schematic for newly added Item ${itemId}`);
+    }
+  }
+
+  /**
+   * Remove schematic for a single item (used when removing items while in 2D mode)
+   */
+  public removeSchematicForItem(itemId: number): void {
+    const schematic = this.schematic2DOverlays.get(itemId);
+    if (schematic && this.scene) {
+      this.scene.remove(schematic);
+      schematic.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry?.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => m.dispose());
+            } else {
+              child.material.dispose();
+            }
+          }
+        }
+      });
+      this.schematic2DOverlays.delete(itemId);
+      console.log(`🗑️ Removed schematic for Item ${itemId}`);
+    }
+  }
+
+  /**
+   * Create shower enclosure schematic - rectangle with diagonal cross (glass symbol)
+   */
+  private createShowerSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    const halfWidth = width / 2;
+    const halfDepth = depth / 2;
+    const borderThickness = 5; // Thick border to represent glass panels
+
+    // Solid filled background (bright cyan for glass/water - very visible)
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00bfff, // Bright cyan
+      opacity: 0.7,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false, // Always render on top
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999; // Render on top
+    group.add(fillMesh);
+
+    // Thick border (dark blue)
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0x0000ff, // Pure blue
+      linewidth: 3,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+
+    // Diagonal cross (X pattern - architectural symbol for glass)
+    const crossGeometry = new THREE.BufferGeometry();
+    const crossVertices = new Float32Array([
+      -halfWidth + borderThickness, height + 2, -halfDepth + borderThickness,
+      halfWidth - borderThickness, height + 2, halfDepth - borderThickness,
+      -halfWidth + borderThickness, height + 2, halfDepth - borderThickness,
+      halfWidth - borderThickness, height + 2, -halfDepth + borderThickness,
+    ]);
+    crossGeometry.setAttribute('position', new THREE.BufferAttribute(crossVertices, 3));
+    const crossMaterial = new THREE.LineBasicMaterial({
+      color: 0x0000ff,
+      linewidth: 2,
+      depthTest: false,
+    });
+    const crossLines = new THREE.LineSegments(crossGeometry, crossMaterial);
+    crossLines.renderOrder = 1001;
+    group.add(crossLines);
+
+    // Add "SHOWER" text indicator with a small icon
+    this.addSchematicLabel(group, '🚿', width, depth, height);
+  }
+
+  /**
+   * Create mirror schematic - rectangle with reflection pattern
+   */
+  private createMirrorSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    // Solid filled background (bright silver for mirror - very visible)
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: 0xe0e0e0, // Bright silver
+      opacity: 0.8,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999;
+    group.add(fillMesh);
+
+    // Border (dark gray)
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0x333333,
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+
+    // Add mirror icon
+    this.addSchematicLabel(group, '🪞', width, depth, height);
+  }
+
+  /**
+   * Create bath schematic - oval/rounded rectangle shape
+   */
+  private createBathSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    // Create an oval-ish shape for the bath
+    const shape = new THREE.Shape();
+    const halfWidth = width / 2;
+    const halfDepth = depth / 2;
+    const cornerRadius = Math.min(halfWidth, halfDepth) * 0.3;
+
+    // Rounded rectangle path
+    shape.moveTo(-halfWidth + cornerRadius, -halfDepth);
+    shape.lineTo(halfWidth - cornerRadius, -halfDepth);
+    shape.quadraticCurveTo(halfWidth, -halfDepth, halfWidth, -halfDepth + cornerRadius);
+    shape.lineTo(halfWidth, halfDepth - cornerRadius);
+    shape.quadraticCurveTo(halfWidth, halfDepth, halfWidth - cornerRadius, halfDepth);
+    shape.lineTo(-halfWidth + cornerRadius, halfDepth);
+    shape.quadraticCurveTo(-halfWidth, halfDepth, -halfWidth, halfDepth - cornerRadius);
+    shape.lineTo(-halfWidth, -halfDepth + cornerRadius);
+    shape.quadraticCurveTo(-halfWidth, -halfDepth, -halfWidth + cornerRadius, -halfDepth);
+
+    const bathGeometry = new THREE.ShapeGeometry(shape);
+    const bathMaterial = new THREE.MeshBasicMaterial({
+      color: 0x40e0d0, // Turquoise - very visible
+      opacity: 0.7,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const bathMesh = new THREE.Mesh(bathGeometry, bathMaterial);
+    bathMesh.rotation.x = -Math.PI / 2;
+    bathMesh.position.y = height;
+    bathMesh.renderOrder = 999;
+    group.add(bathMesh);
+
+    // Border
+    const borderPoints = shape.getPoints(32);
+    const borderGeometry = new THREE.BufferGeometry().setFromPoints(
+      borderPoints.map(p => new THREE.Vector3(p.x, height + 1, p.y))
+    );
+    // Close the loop
+    const firstPoint = borderPoints[0];
+    const positions = borderGeometry.attributes.position.array as Float32Array;
+    const newPositions = new Float32Array(positions.length + 3);
+    newPositions.set(positions);
+    newPositions[positions.length] = firstPoint.x;
+    newPositions[positions.length + 1] = height + 1;
+    newPositions[positions.length + 2] = firstPoint.y;
+    borderGeometry.setAttribute('position', new THREE.BufferAttribute(newPositions, 3));
+
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0x008b8b, // Dark cyan
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLine = new THREE.Line(borderGeometry, borderMaterial);
+    borderLine.renderOrder = 1000;
+    group.add(borderLine);
+
+    // Add bath icon
+    this.addSchematicLabel(group, '🛁', width, depth, height);
+  }
+
+  /**
+   * Create generic schematic for objects
+   */
+  private createGenericSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    // Solid filled background (bright green)
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: 0x32cd32, // Lime green - very visible
+      opacity: 0.6,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999;
+    group.add(fillMesh);
+
+    // Border (dark green)
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0x006400, // Dark green
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+  }
+
+  /**
+   * Create toilet schematic - white/gray rounded rectangle
+   */
+  private createToiletSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    // Solid filled background (white)
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: 0xf5f5f5, // Off-white
+      opacity: 0.8,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999;
+    group.add(fillMesh);
+
+    // Border (dark gray)
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0x333333,
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+
+    // Add toilet icon
+    this.addSchematicLabel(group, '🚽', width, depth, height);
+  }
+
+  /**
+   * Create sink schematic - light blue rectangle
+   */
+  private createSinkSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    // Solid filled background (light blue)
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: 0x87ceeb, // Sky blue
+      opacity: 0.7,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999;
+    group.add(fillMesh);
+
+    // Border (darker blue)
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0x4169e1, // Royal blue
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+
+    // Add sink icon
+    this.addSchematicLabel(group, '🚰', width, depth, height);
+  }
+
+  /**
+   * Create radiator schematic - orange/red rectangle with lines
+   */
+  private createRadiatorSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    // Solid filled background (orange)
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffa500, // Orange
+      opacity: 0.7,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999;
+    group.add(fillMesh);
+
+    // Border (dark orange/red)
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0xcc4400, // Dark orange
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+
+    // Add radiator icon
+    this.addSchematicLabel(group, '♨️', width, depth, height);
+  }
+
+  /**
+   * Create furniture schematic - vanity units (sink with cabinet)
+   */
+  private createFurnitureSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
+    // Solid filled background (light teal - similar to sink but slightly different)
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: 0x5f9ea0, // Cadet blue (teal)
+      opacity: 0.7,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999;
+    group.add(fillMesh);
+
+    // Border (darker teal)
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: 0x2f4f4f, // Dark slate gray
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+
+    // Add sink icon for vanity units
+    this.addSchematicLabel(group, '🚰', width, depth, height);
+  }
+
+  /**
+   * Add a label/icon to the schematic (uses a sprite for visibility)
+   */
+  private addSchematicLabel(group: THREE.Group, icon: string, width: number, depth: number, height: number): void {
+    // Create a canvas for the icon
+    const canvas = document.createElement('canvas');
+    const size = 256; // Larger for better quality
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw dark circle background for better contrast
+    ctx.fillStyle = 'rgba(30, 30, 30, 0.9)';
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size/2 - 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw bright border
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Draw the icon (larger and centered)
+    ctx.font = `${size * 0.55}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, size/2, size/2 + 4);
+
+    // Create sprite from canvas
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.renderOrder = 1002; // Render on top of everything
+
+    // Size and position the sprite - make it larger and higher
+    const spriteSize = Math.max(Math.min(width, depth) * 0.5, 20); // At least 20cm
+    sprite.scale.set(spriteSize, spriteSize, 1);
+    sprite.position.set(0, height + 20, 0); // Well above the schematic
+
+    group.add(sprite);
+  }
+
+  /**
+   * Update schematic overlay position and rotation for a specific item (called when object moves/rotates)
+   */
+  public updateSchematicPosition(itemId: number): void {
+    if (this.viewMode !== '2d') return;
+
+    const schematic = this.schematic2DOverlays.get(itemId);
+    const model = this.existingItems.get(itemId);
+
+    if (schematic && model) {
+      // Recalculate position from bounding box
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      schematic.position.set(center.x, 0, center.z);
+
+      // Sync rotation with the model
+      schematic.rotation.y = model.rotation.y;
+    }
+  }
+
+  /**
+   * Update all schematic overlay positions and rotations (called after any object movement)
+   */
+  public updateAllSchematicPositions(): void {
+    if (this.viewMode !== '2d') return;
+
+    this.schematic2DOverlays.forEach((schematic, itemId) => {
+      const model = this.existingItems.get(itemId);
+      if (model) {
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        schematic.position.set(center.x, 0, center.z);
+
+        // Sync rotation with the model
+        schematic.rotation.y = model.rotation.y;
+      }
+    });
+  }
+
+  /**
+   * Remove all 2D schematic overlays when switching to 3D view
+   */
+  private remove2DSchematicOverlays(): void {
+    console.log('🗑️ Removing 2D schematic overlays...');
+
+    this.schematic2DOverlays.forEach((overlay, _itemId) => {
+      if (this.scene) {
+        this.scene.remove(overlay);
+      }
+      // Dispose of geometries and materials
+      overlay.traverse((child) => {
+        if (child instanceof THREE.Line || child instanceof THREE.LineSegments || child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+        // Also handle sprites
+        if (child instanceof THREE.Sprite) {
+          if (child.material.map) {
+            child.material.map.dispose();
+          }
+          child.material.dispose();
+        }
+      });
+    });
+
+    this.schematic2DOverlays.clear();
+  }
+
   // ============================================================================
   // END 2D BLUEPRINT VIEW METHODS
   // ============================================================================
@@ -874,6 +1714,11 @@ export class SceneManager {
         this.bathroomItemsGroup.add(model);
         this.existingItems.set(item.id, model);
         console.log(`✅ Successfully added item ${item.id}`);
+
+        // Create schematic if in 2D mode
+        if (this.viewMode === '2d') {
+          this.createSchematicForItem(item.id);
+        }
       }
     } catch (error) {
       console.error(`❌ Failed to add single item ${item.id}:`, error);
@@ -886,6 +1731,10 @@ export class SceneManager {
     const existingModel = this.existingItems.get(itemId);
     if (existingModel) {
       console.log(`🗑️ Removing single item ${itemId} from scene`);
+
+      // Remove schematic if it exists
+      this.removeSchematicForItem(itemId);
+
       this.bathroomItemsGroup.remove(existingModel);
       this.existingItems.delete(itemId);
       this.disposeModel(existingModel);
@@ -1090,6 +1939,11 @@ export class SceneManager {
 
             // Enhance materials on the inner model
             this.enhanceModelMaterials(fullModel);
+
+            // Create schematic if in 2D mode
+            if (this.viewMode === '2d') {
+              this.createSchematicForItem(item.id);
+            }
 
             console.log(`✅ Progressive: Full model swapped in for item ${item.id}`);
             callbacks?.onFullModelAdded?.(wrapper);
@@ -1509,12 +2363,16 @@ export class SceneManager {
     // Use current room dimensions or defaults
     const width = roomWidth ?? 300; // Default fallback
 
+    // Check if we're in 2D mode - lights should be configured differently
+    const is2DMode = this.viewMode === '2d';
+
     // Clear existing lights
     this.lights.forEach(light => this.scene!.remove(light));
     this.lights = [];
 
     // 1. AMBIENT LIGHT - provides base illumination
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    // In 2D mode, use balanced ambient light for flat, even illumination
+    const ambientLight = new THREE.AmbientLight(0xffffff, is2DMode ? 1.5 : 0.9);
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
 
@@ -1534,11 +2392,13 @@ export class SceneManager {
     for (const x of [innerX, -innerX, outerX, -outerX]) {
       const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
       light.position.set(x, ceilingY, 0);
+      // Hide point lights in 2D mode for flat appearance (no light spots on floor)
+      light.visible = !is2DMode;
       this.scene.add(light);
       this.lights.push(light);
     }
 
-    // 3. OPTIONAL: Increase renderer exposure for brighter overall scene
+    // 3. Set renderer exposure - same in both modes for consistency
     if (this.renderer) {
       this.renderer.toneMappingExposure = 1.2;
     }
@@ -1668,6 +2528,13 @@ export class SceneManager {
       this.gridRef = null;
     }
 
+    // Remove existing blueprint grid
+    if (this.blueprintGridRef) {
+      console.log('🗑️ Removing existing blueprint grid from scene');
+      this.scene.remove(this.blueprintGridRef);
+      this.blueprintGridRef = null;
+    }
+
     // Remove existing wall grid group
     if (this.wallGridGroup) {
       console.log('🗑️ Removing existing wall grid group from scene');
@@ -1685,11 +2552,14 @@ export class SceneManager {
       try {
         // FIXED: Simplified - createCustomGrid now returns THREE.Group directly
         this.gridRef = createCustomGrid(roomWidth, roomHeight);
+        // Hide regular grid in 2D mode (blueprint grid is used instead)
+        this.gridRef.visible = this.viewMode !== '2d';
 
         console.log('✅ Floor grid created:', {
           children: this.gridRef.children.length,
           position: this.gridRef.position,
-          name: this.gridRef.name
+          name: this.gridRef.name,
+          visible: this.gridRef.visible
         });
 
         this.scene.add(this.gridRef);
@@ -1710,9 +2580,10 @@ export class SceneManager {
     // Create blueprint grid for 2D mode (10cm spacing)
     try {
       this.blueprintGridRef = createBlueprintGrid(roomWidth, roomHeight);
-      this.blueprintGridRef.visible = false; // Hidden by default, shown in 2D mode
+      // Set visibility based on current view mode - visible in 2D mode, hidden in 3D mode
+      this.blueprintGridRef.visible = this.viewMode === '2d';
       this.scene.add(this.blueprintGridRef);
-      console.log('✅ Blueprint grid created (hidden by default)');
+      console.log(`✅ Blueprint grid created (visible: ${this.blueprintGridRef.visible}, viewMode: ${this.viewMode})`);
     } catch (error) {
       console.error('❌ Error creating blueprint grid:', error);
     }
