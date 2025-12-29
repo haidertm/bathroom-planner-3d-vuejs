@@ -296,6 +296,20 @@ export class SceneManager {
   }
 
   /**
+   * Calculate the camera up vector for a given L-shape corner
+   * This rotates the view so the notch appears in the correct visual position
+   */
+  private getUpVectorForCorner(corner: string | null): THREE.Vector3 {
+    switch (corner) {
+      case 'ne': return new THREE.Vector3(-1, 0, 0);  // West is up - rotates view 90° CW
+      case 'se': return new THREE.Vector3(0, 0, 1);   // South is up - rotates view 180°
+      case 'sw': return new THREE.Vector3(1, 0, 0);   // East is up - rotates view 90° CCW
+      case 'nw':
+      default:   return new THREE.Vector3(0, 0, -1);  // North is up - default orientation
+    }
+  }
+
+  /**
    * Switch to 2D Blueprint view (orthographic top-down)
    * Features smooth camera flyover animation for immersive transition
    */
@@ -316,7 +330,12 @@ export class SceneManager {
       // Calculate room center for camera target
       const roomCenter = new THREE.Vector3(0, 0, 0);
 
-      // Animate the perspective camera to top-down view
+      // Get L-shape corner from localStorage to determine camera rotation
+      const lShapeCorner = localStorage.getItem('l-shape-corner-active');
+      const targetUp = this.getUpVectorForCorner(lShapeCorner);
+      console.log('🔄 L-shape corner:', lShapeCorner, '-> Target up vector:', targetUp);
+
+      // Animate the perspective camera to top-down view with correct rotation
       await this.cameraTransition.animateToTopDown(this.camera, roomCenter, {
         duration: 600,
         easing: Easing.easeInOutCubic,
@@ -328,7 +347,7 @@ export class SceneManager {
             this.renderer.render(this.scene, this.camera);
           }
         }
-      });
+      }, targetUp);
 
       // Now switch to orthographic camera and apply 2D settings
       console.log('🔄 Camera flyover complete, switching to orthographic...');
@@ -337,9 +356,12 @@ export class SceneManager {
       this.updateOrthographicFrustum();
 
       // Reset orthographic camera zoom and position to show full room with labels
+      // Apply the same up vector rotation to orthographic camera
       if (this.orthographicCamera) {
         this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
         this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
+        this.orthographicCamera.up.copy(targetUp);
+        this.orthographicCamera.lookAt(0, 0, 0);
         this.orthographicCamera.updateProjectionMatrix();
       }
 
@@ -411,6 +433,11 @@ export class SceneManager {
       // Calculate room center
       const roomCenter = new THREE.Vector3(0, 0, 0);
 
+      // Get L-shape corner to determine starting camera rotation (matches 2D view orientation)
+      const lShapeCorner = localStorage.getItem('l-shape-corner-active');
+      const startUpVector = this.getUpVectorForCorner(lShapeCorner);
+      console.log('🔄 L-shape corner:', lShapeCorner, '-> Start up vector:', startUpVector);
+
       // Determine target camera state (restored position or default)
       const targetState = {
         position: this.stored3DState?.position.clone() || new THREE.Vector3(
@@ -423,9 +450,9 @@ export class SceneManager {
       };
 
       // First, switch to perspective camera at top-down position
-      // This creates continuity from the orthographic view
+      // This creates continuity from the orthographic view (matching its rotation)
       this.camera.position.set(roomCenter.x, CameraTransition.TOP_DOWN_HEIGHT, roomCenter.z);
-      this.camera.up.set(0, 0, -1); // Match orthographic orientation
+      this.camera.up.copy(startUpVector); // Match orthographic orientation for this corner
       this.camera.lookAt(roomCenter);
 
       // Update view mode immediately so rendering uses perspective camera
@@ -468,6 +495,7 @@ export class SceneManager {
       }
 
       // Now animate the camera from top-down to the target 3D position
+      // Pass the startUpVector to ensure smooth transition from rotated 2D view
       await this.cameraTransition.animateFromTopDown(
         this.camera,
         targetState,
@@ -483,7 +511,8 @@ export class SceneManager {
               this.renderer.render(this.scene, this.camera);
             }
           }
-        }
+        },
+        startUpVector
       );
 
       // Sync with EventHandlers target position after animation completes
@@ -587,14 +616,52 @@ export class SceneManager {
 
   /**
    * Pan in 2D mode (moves orthographic camera position)
+   * Accounts for camera rotation (up vector) to ensure pan direction matches screen movement
    */
   public pan2D(deltaX: number, deltaZ: number): void {
     if (!this.orthographicCamera || this.viewMode !== '2d') return;
 
     // Scale pan amount by zoom level for consistent feel
     const panScale = ORTHOGRAPHIC_SETTINGS.PAN_SPEED / this.orthographicCamera.zoom;
-    this.orthographicCamera.position.x += deltaX * panScale;
-    this.orthographicCamera.position.z += deltaZ * panScale;
+
+    // Transform screen deltas to world deltas based on camera's up vector
+    // The up vector determines how screen coordinates map to world coordinates
+    // Note: deltaX/deltaZ come pre-negated from eventHandlers for "grab-and-drag" feel
+    const up = this.orthographicCamera.up;
+
+    let worldDeltaX: number;
+    let worldDeltaZ: number;
+
+    if (Math.abs(up.z) > 0.5) {
+      // Up is along Z axis (default or 180° rotation)
+      if (up.z < 0) {
+        // Default: up = (0, 0, -1) - north at top
+        // Screen right = +X, Screen up = -Z
+        worldDeltaX = deltaX;
+        worldDeltaZ = deltaZ;
+      } else {
+        // 180° rotation: up = (0, 0, 1) - south at top
+        // Screen right = -X, Screen up = +Z
+        worldDeltaX = -deltaX;
+        worldDeltaZ = -deltaZ;
+      }
+    } else {
+      // Up is along X axis (90° rotation)
+      if (up.x < 0) {
+        // 90° CW: up = (-1, 0, 0) - west at top
+        // Screen right = -Z, Screen up = -X
+        worldDeltaX = deltaZ;
+        worldDeltaZ = -deltaX;
+      } else {
+        // 90° CCW: up = (1, 0, 0) - east at top
+        // Screen right = +Z, Screen up = +X
+        worldDeltaX = -deltaZ;
+        worldDeltaZ = deltaX;
+      }
+    }
+
+    this.orthographicCamera.position.x += worldDeltaX * panScale;
+    this.orthographicCamera.position.z += worldDeltaZ * panScale;
   }
 
   /**

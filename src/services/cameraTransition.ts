@@ -86,11 +86,13 @@ export class CameraTransition {
   /**
    * Animate camera from current position to a top-down view (for 3D → 2D transition)
    * The camera rises up and rotates to look straight down at the room center
+   * @param targetUp - Optional target up vector for the final orientation (for L-shape corner rotation)
    */
   public animateToTopDown(
     camera: THREE.PerspectiveCamera,
     roomCenter: THREE.Vector3 = new THREE.Vector3(0, 0, 0),
-    config: Partial<TransitionConfig> = {}
+    config: Partial<TransitionConfig> = {},
+    targetUp?: THREE.Vector3
   ): Promise<void> {
     const {
       duration = CameraTransition.DEFAULT_DURATION,
@@ -123,7 +125,8 @@ export class CameraTransition {
         roomCenter.z
       );
       const endLookAt = roomCenter.clone();
-      const endUp = new THREE.Vector3(0, 0, -1); // North at top of screen
+      // Use provided target up vector or default to north at top of screen
+      const endUp = targetUp ? targetUp.clone() : new THREE.Vector3(0, 0, -1);
 
       const startTime = performance.now();
 
@@ -168,12 +171,14 @@ export class CameraTransition {
   /**
    * Animate camera from top-down view to a 3D perspective position (for 2D → 3D transition)
    * The camera descends and rotates from looking straight down to the target angle
+   * @param startUpVector - Optional starting up vector to match the 2D view orientation (for L-shape corner rotation)
    */
   public animateFromTopDown(
     camera: THREE.PerspectiveCamera,
     targetState: CameraState,
     roomCenter: THREE.Vector3 = new THREE.Vector3(0, 0, 0),
-    config: Partial<TransitionConfig> = {}
+    config: Partial<TransitionConfig> = {},
+    startUpVector?: THREE.Vector3
   ): Promise<void> {
     const {
       duration = CameraTransition.DEFAULT_DURATION,
@@ -196,7 +201,8 @@ export class CameraTransition {
         roomCenter.z
       );
       const startLookAt = roomCenter.clone();
-      const startUp = new THREE.Vector3(0, 0, -1);
+      // Use provided start up vector or default to north at top
+      const startUp = startUpVector ? startUpVector.clone() : new THREE.Vector3(0, 0, -1);
 
       // Set camera to starting position
       camera.position.copy(startPosition);
