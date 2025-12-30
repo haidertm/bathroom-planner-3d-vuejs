@@ -1,6 +1,7 @@
 //src/services/sceneManager.ts
 
 import * as THREE from 'three';
+import { markRaw } from 'vue';
 import { type MeasurementData, MeasurementSystem } from './measurementSystem';
 import { createModel, ModelManager } from '../models/bathroomFixtures';
 import { ProgressiveModelLoader } from './progressiveModelLoader';
@@ -22,6 +23,7 @@ import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
 import { CameraTransition, Easing } from './cameraTransition';
+import { getSchematicTypeFromSku, type SchematicType } from '../constants/schematicPatterns';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -45,11 +47,12 @@ interface Stored3DState {
 
 export class SceneManager {
   public scene: THREE.Scene | null = null;
+  // Cameras are wrapped with markRaw() during initialization to prevent Vue reactivity overhead
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
   private eventHandlers: any = null;
 
-  // 2D Blueprint View - Orthographic camera and view mode
+  // 2D Blueprint View - Orthographic camera (marked raw to prevent Vue reactivity)
   public orthographicCamera: THREE.OrthographicCamera | null = null;
   public viewMode: ViewMode = '3d';
   private stored3DState: Stored3DState | null = null;
@@ -78,6 +81,7 @@ export class SceneManager {
   private isUpdatingItems = false;
   private wallGridGroup: THREE.Group | null = null; // NEW: Group for wall grid lines
   private wallGridVisible: boolean = true; // NEW: Track wall grid visibility state
+  private showGridEnabled: boolean = true; // Track floor grid visibility preference
   private measurementSystem: MeasurementSystem | null = null;
   private existingItems: Map<number, THREE.Object3D> = new Map();
 
@@ -88,6 +92,9 @@ export class SceneManager {
   private originalAmbientIntensity: number = 0.9;
   // 2D schematic overlays for thin objects
   private schematic2DOverlays: Map<number, THREE.Group> = new Map();
+  // Deferred batch updates for schematic positions (performance optimization)
+  private pendingSchematicUpdates: Set<number> = new Set();
+  private schematicUpdateScheduled: boolean = false;
 
   private wallLabelsDebug: WallLabelsDebug | null = null;
   private axisIndicatorsDebug: AxisIndicatorsDebug | null = null;
@@ -109,7 +116,8 @@ export class SceneManager {
     this.scene.fog = new THREE.Fog(0xE6E1DA, 1000, 5000);
 
     // Create camera with better positioning and settings
-    this.camera = new THREE.PerspectiveCamera(CAMERA_SETTINGS.FOV, window.innerWidth / window.innerHeight, CAMERA_SETTINGS.NEAR, CAMERA_SETTINGS.FAR);
+    // Use markRaw to prevent Vue reactivity overhead on Three.js objects
+    this.camera = markRaw(new THREE.PerspectiveCamera(CAMERA_SETTINGS.FOV, window.innerWidth / window.innerHeight, CAMERA_SETTINGS.NEAR, CAMERA_SETTINGS.FAR));
     this.camera.position.set(CAMERA_SETTINGS.INITIAL_POSITION.x, CAMERA_SETTINGS.INITIAL_POSITION.y, CAMERA_SETTINGS.INITIAL_POSITION.z);
     this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
 
@@ -264,14 +272,15 @@ export class SceneManager {
     const aspect = window.innerWidth / window.innerHeight;
     const frustumSize = Math.max(this.roomWidth, this.roomHeight) * ORTHOGRAPHIC_SETTINGS.FRUSTUM_PADDING;
 
-    this.orthographicCamera = new THREE.OrthographicCamera(
+    // Use markRaw to prevent Vue reactivity overhead on Three.js objects
+    this.orthographicCamera = markRaw(new THREE.OrthographicCamera(
       frustumSize * aspect / -2,
       frustumSize * aspect / 2,
       frustumSize / 2,
       frustumSize / -2,
       ORTHOGRAPHIC_SETTINGS.NEAR,
       ORTHOGRAPHIC_SETTINGS.FAR
-    );
+    ));
 
     // Position directly above room center, looking down
     this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
@@ -300,9 +309,31 @@ export class SceneManager {
     this.orthographicCamera.updateProjectionMatrix();
   }
 
+  // Valid L-shape corner values for localStorage validation
+  private static readonly VALID_LSHAPE_CORNERS = ['nw', 'ne', 'se', 'sw'] as const;
+
   /**
-   * Calculate the camera up vector for a given L-shape corner
-   * This rotates the view so the notch appears in the correct visual position
+   * Maps L-shape corner identifiers to camera up vectors for 2D orthographic view rotation.
+   *
+   * **Coordinate System:**
+   * - World X-axis: East (+X) / West (-X)
+   * - World Z-axis: South (+Z) / North (-Z)
+   * - Camera looks down Y-axis (top-down view)
+   *
+   * **Corner-to-Rotation Mapping:**
+   * The corner identifier indicates where the L-shape notch is positioned on screen.
+   * The up vector rotates the view so north/south/east/west align correctly:
+   *
+   * | Corner | Up Vector      | Screen Top | Rotation    |
+   * |--------|----------------|------------|-------------|
+   * | 'nw'   | (0, 0, -1)     | North      | 0° (default)|
+   * | 'ne'   | (-1, 0, 0)     | West       | 90° CW      |
+   * | 'se'   | (0, 0, 1)      | South      | 180°        |
+   * | 'sw'   | (1, 0, 0)      | East       | 90° CCW     |
+   *
+   * @param corner - L-shape corner identifier ('ne', 'se', 'sw', 'nw') or null
+   * @returns THREE.Vector3 - Camera up vector for OrthographicCamera orientation.
+   *          Falls back to northwest (north-up) orientation if corner is null/invalid.
    */
   private getUpVectorForCorner(corner: string | null): THREE.Vector3 {
     switch (corner) {
@@ -312,6 +343,21 @@ export class SceneManager {
       case 'nw':
       default:   return new THREE.Vector3(0, 0, -1);  // North is up - default orientation
     }
+  }
+
+  /**
+   * Safely retrieve and validate the L-shape corner from localStorage
+   * Returns null if value is missing or invalid, triggering default orientation
+   */
+  private getValidatedLShapeCorner(): string | null {
+    const lShapeCorner = localStorage.getItem('l-shape-corner-active');
+    if (lShapeCorner && (SceneManager.VALID_LSHAPE_CORNERS as readonly string[]).includes(lShapeCorner)) {
+      return lShapeCorner;
+    }
+    if (lShapeCorner) {
+      console.warn(`⚠️ Invalid L-shape corner value in localStorage: "${lShapeCorner}", falling back to default (nw)`);
+    }
+    return null;
   }
 
   /**
@@ -335,10 +381,10 @@ export class SceneManager {
       // Calculate room center for camera target
       const roomCenter = new THREE.Vector3(0, 0, 0);
 
-      // Get L-shape corner from localStorage to determine camera rotation
-      const lShapeCorner = localStorage.getItem('l-shape-corner-active');
+      // Get validated L-shape corner from localStorage to determine camera rotation
+      const lShapeCorner = this.getValidatedLShapeCorner();
       const targetUp = this.getUpVectorForCorner(lShapeCorner);
-      console.log('🔄 L-shape corner:', lShapeCorner, '-> Target up vector:', targetUp);
+      console.log('🔄 L-shape corner:', lShapeCorner ?? 'default (nw)', '-> Target up vector:', targetUp);
 
       // Animate the perspective camera to top-down view with correct rotation
       await this.cameraTransition.animateToTopDown(this.camera, roomCenter, {
@@ -384,17 +430,8 @@ export class SceneManager {
       // Disable wall culling in 2D mode (we want to see all walls from above)
       this.wallCullingManager.setEnabled(false);
 
-      // Show blueprint grid (10cm spacing) in 2D mode for plan view
-      if (this.blueprintGridRef) {
-        this.blueprintGridRef.visible = true; // SHOW the blueprint grid in 2D mode
-      }
-      if (this.gridRef) {
-        this.gridRef.visible = false; // Hide the regular 15cm grid
-      }
-      // Hide wall grid in 2D mode for cleaner view
-      if (this.wallGridGroup) {
-        this.wallGridGroup.visible = false;
-      }
+      // Update grid visibility for 2D mode
+      this.updateGridVisibility();
 
       // Switch to flat 2D lighting (no shadows, even illumination)
       this.switchTo2DLighting();
@@ -444,10 +481,10 @@ export class SceneManager {
       // Calculate room center
       const roomCenter = new THREE.Vector3(0, 0, 0);
 
-      // Get L-shape corner to determine starting camera rotation (matches 2D view orientation)
-      const lShapeCorner = localStorage.getItem('l-shape-corner-active');
+      // Get validated L-shape corner to determine starting camera rotation (matches 2D view orientation)
+      const lShapeCorner = this.getValidatedLShapeCorner();
       const startUpVector = this.getUpVectorForCorner(lShapeCorner);
-      console.log('🔄 L-shape corner:', lShapeCorner, '-> Start up vector:', startUpVector);
+      console.log('🔄 L-shape corner:', lShapeCorner ?? 'default (nw)', '-> Start up vector:', startUpVector);
 
       // Determine target camera state (restored position or default)
       const targetState = {
@@ -480,17 +517,8 @@ export class SceneManager {
       // Re-enable wall culling in 3D mode
       this.wallCullingManager.setEnabled(true);
 
-      // Hide blueprint grid, show regular grid
-      if (this.blueprintGridRef) {
-        this.blueprintGridRef.visible = false;
-      }
-      if (this.gridRef) {
-        this.gridRef.visible = true;
-      }
-      // Restore wall grid visibility based on previous state
-      if (this.wallGridGroup) {
-        this.wallGridGroup.visible = this.wallGridVisible;
-      }
+      // Update grid visibility for 3D mode
+      this.updateGridVisibility();
 
       // Notify event handlers of mode change
       if (this.eventHandlers && typeof this.eventHandlers.setViewMode === 'function') {
@@ -557,7 +585,8 @@ export class SceneManager {
   }
 
   /**
-   * Update post-processing passes to use the active camera
+   * Update post-processing passes to use the active camera.
+   * Recreates the composer and passes with the new camera reference.
    */
   private updatePostProcessingCamera(): void {
     const activeCamera = this.getActiveCamera();
@@ -568,10 +597,13 @@ export class SceneManager {
     // since they store camera reference internally
     this.setupPostProcessing();
 
-    // Update measurement system camera
-    if (this.measurementSystem) {
-      this.measurementSystem.updateCamera(activeCamera);
-    }
+    // NOTE: measurementSystem.updateCamera() is currently a no-op placeholder.
+    // When camera-dependent measurement functionality is needed (e.g., frustum
+    // culling for labels, perspective vs orthographic label styles), implement
+    // the logic in MeasurementSystem.updateCamera() and uncomment this call.
+    // if (this.measurementSystem) {
+    //   this.measurementSystem.updateCamera(activeCamera);
+    // }
   }
 
   /**
@@ -632,6 +664,45 @@ export class SceneManager {
   }
 
   /**
+   * Transform screen pan deltas to world coordinate deltas based on camera's up vector.
+   * This is a pure function that handles the coordinate mapping for all camera orientations.
+   *
+   * @param deltaX - Screen X delta (horizontal movement)
+   * @param deltaZ - Screen Z delta (vertical movement, pre-negated for grab-and-drag feel)
+   * @param upVector - Camera's up vector determining orientation
+   * @returns World coordinate deltas { worldDeltaX, worldDeltaZ }
+   */
+  private transformPanDeltasToWorld(
+    deltaX: number,
+    deltaZ: number,
+    upVector: THREE.Vector3
+  ): { worldDeltaX: number; worldDeltaZ: number } {
+    if (Math.abs(upVector.z) > 0.5) {
+      // Up is along Z axis (default or 180° rotation)
+      if (upVector.z < 0) {
+        // Default: up = (0, 0, -1) - north at top
+        // Screen right = +X, Screen up = -Z
+        return { worldDeltaX: deltaX, worldDeltaZ: deltaZ };
+      } else {
+        // 180° rotation: up = (0, 0, 1) - south at top
+        // Screen right = -X, Screen up = +Z
+        return { worldDeltaX: -deltaX, worldDeltaZ: -deltaZ };
+      }
+    } else {
+      // Up is along X axis (90° rotation)
+      if (upVector.x < 0) {
+        // 90° CW: up = (-1, 0, 0) - west at top
+        // Screen right = -Z, Screen up = -X
+        return { worldDeltaX: deltaZ, worldDeltaZ: -deltaX };
+      } else {
+        // 90° CCW: up = (1, 0, 0) - east at top
+        // Screen right = +Z, Screen up = +X
+        return { worldDeltaX: -deltaZ, worldDeltaZ: deltaX };
+      }
+    }
+  }
+
+  /**
    * Pan in 2D mode (moves orthographic camera position)
    * Accounts for camera rotation (up vector) to ensure pan direction matches screen movement
    */
@@ -642,40 +713,11 @@ export class SceneManager {
     const panScale = ORTHOGRAPHIC_SETTINGS.PAN_SPEED / this.orthographicCamera.zoom;
 
     // Transform screen deltas to world deltas based on camera's up vector
-    // The up vector determines how screen coordinates map to world coordinates
-    // Note: deltaX/deltaZ come pre-negated from eventHandlers for "grab-and-drag" feel
-    const up = this.orthographicCamera.up;
-
-    let worldDeltaX: number;
-    let worldDeltaZ: number;
-
-    if (Math.abs(up.z) > 0.5) {
-      // Up is along Z axis (default or 180° rotation)
-      if (up.z < 0) {
-        // Default: up = (0, 0, -1) - north at top
-        // Screen right = +X, Screen up = -Z
-        worldDeltaX = deltaX;
-        worldDeltaZ = deltaZ;
-      } else {
-        // 180° rotation: up = (0, 0, 1) - south at top
-        // Screen right = -X, Screen up = +Z
-        worldDeltaX = -deltaX;
-        worldDeltaZ = -deltaZ;
-      }
-    } else {
-      // Up is along X axis (90° rotation)
-      if (up.x < 0) {
-        // 90° CW: up = (-1, 0, 0) - west at top
-        // Screen right = -Z, Screen up = -X
-        worldDeltaX = deltaZ;
-        worldDeltaZ = -deltaX;
-      } else {
-        // 90° CCW: up = (1, 0, 0) - east at top
-        // Screen right = +Z, Screen up = +X
-        worldDeltaX = -deltaZ;
-        worldDeltaZ = deltaX;
-      }
-    }
+    const { worldDeltaX, worldDeltaZ } = this.transformPanDeltasToWorld(
+      deltaX,
+      deltaZ,
+      this.orthographicCamera.up
+    );
 
     this.orthographicCamera.position.x += worldDeltaX * panScale;
     this.orthographicCamera.position.z += worldDeltaZ * panScale;
@@ -690,6 +732,30 @@ export class SceneManager {
     this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
     this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
     this.orthographicCamera.updateProjectionMatrix();
+  }
+
+  /**
+   * Centralized grid visibility management based on current view mode.
+   * - 2D mode: Show blueprint grid, hide floor grid and wall grid
+   * - 3D mode: Show floor grid (if enabled) and wall grid (if enabled), hide blueprint grid
+   */
+  private updateGridVisibility(): void {
+    const is2D = this.viewMode === '2d';
+
+    // Floor grid (15cm spacing) - visible in 3D mode only, respecting showGridEnabled
+    if (this.gridRef) {
+      this.gridRef.visible = !is2D && this.showGridEnabled;
+    }
+
+    // Blueprint grid (10cm spacing) - visible in 2D mode only
+    if (this.blueprintGridRef) {
+      this.blueprintGridRef.visible = is2D;
+    }
+
+    // Wall grid - visible in 3D mode only, respecting wallGridVisible
+    if (this.wallGridGroup) {
+      this.wallGridGroup.visible = !is2D && this.wallGridVisible;
+    }
   }
 
   // Threshold height for tall objects (in cm) - objects taller than this get transparency in 2D mode
@@ -832,12 +898,19 @@ export class SceneManager {
   }
 
   /**
-   * Get the schematic type for an object in 2D view
-   * All objects get a schematic representation for visibility
+   * Determines the schematic type for an object in 2D view.
+   *
+   * Resolution order:
+   * 1. Exact ComponentType match from model.userData.type
+   * 2. SKU pattern fallback using configurable patterns from schematicPatterns.ts
+   * 3. Default to 'generic' if no match found
+   *
+   * @param model - The Three.js object to get schematic type for
+   * @returns The schematic type for 2D representation
    */
-  private getSchematicType(model: THREE.Object3D): 'shower' | 'mirror' | 'bath' | 'toilet' | 'sink' | 'radiator' | 'furniture' | 'generic' {
+  private getSchematicType(model: THREE.Object3D): SchematicType {
     const itemType = model.userData.type || ''; // ComponentType like 'Shower', 'Mirror', 'Bath'
-    const sku = (model.userData.sku || '').toLowerCase();
+    const sku = model.userData.sku || '';
 
     // Check exact ComponentType match (these are exact strings like 'Shower', 'Mirror', 'Bath')
     if (itemType === 'Shower') {
@@ -868,20 +941,14 @@ export class SceneManager {
       return 'furniture';
     }
 
-    // Fallback: check SKU patterns
-    if (sku.includes('c46')) {
-      return 'shower';
+    // Fallback: check SKU patterns from configuration
+    // Patterns are defined in src/constants/schematicPatterns.ts for maintainability
+    const skuMatch = getSchematicTypeFromSku(sku);
+    if (skuMatch) {
+      return skuMatch;
     }
 
-    if (sku.startsWith('73')) {
-      return 'mirror';
-    }
-
-    if (sku.includes('c51')) {
-      return 'bath';
-    }
-
-    // All other objects get a generic schematic
+    // Default: all other objects get a generic schematic
     return 'generic';
   }
 
@@ -912,6 +979,52 @@ export class SceneManager {
     }
 
     return null;
+  }
+
+  /**
+   * Helper method to create the appropriate schematic based on object type.
+   * Centralizes the switch statement logic for schematic type dispatch.
+   *
+   * @param schematicType - The type of schematic to create (e.g., 'shower', 'toilet', 'generic')
+   * @param schematicGroup - The THREE.Group to add schematic elements to
+   * @param width - Width of the schematic
+   * @param depth - Depth of the schematic
+   * @param schematicHeight - Y position for the schematic
+   */
+  private createSchematicByType(
+    schematicType: string,
+    schematicGroup: THREE.Group,
+    width: number,
+    depth: number,
+    schematicHeight: number
+  ): void {
+    switch (schematicType) {
+      case 'shower':
+        this.createShowerSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'mirror':
+        this.createMirrorSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'bath':
+        this.createBathSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'toilet':
+        this.createToiletSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'sink':
+        this.createSinkSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'radiator':
+        this.createRadiatorSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'furniture':
+        this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+      case 'generic':
+      default:
+        this.createGenericSchematic(schematicGroup, width, depth, schematicHeight);
+        break;
+    }
   }
 
   /**
@@ -963,34 +1076,8 @@ export class SceneManager {
       const schematicGroup = new THREE.Group();
       schematicGroup.name = `Schematic2D_${itemId}`;
 
-      // Different schematic styles based on object type
-      switch (schematicType) {
-        case 'shower':
-          this.createShowerSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-        case 'mirror':
-          this.createMirrorSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-        case 'bath':
-          this.createBathSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-        case 'toilet':
-          this.createToiletSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-        case 'sink':
-          this.createSinkSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-        case 'radiator':
-          this.createRadiatorSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-        case 'furniture':
-          this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-        case 'generic':
-        default:
-          this.createGenericSchematic(schematicGroup, width, depth, schematicHeight);
-          break;
-      }
+      // Create schematic based on object type
+      this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
 
       // Position the schematic at the object's actual center (from bounding box)
       schematicGroup.position.set(center.x, 0, center.z); // At floor level, centered on object
@@ -1043,34 +1130,8 @@ export class SceneManager {
     const schematicGroup = new THREE.Group();
     schematicGroup.name = `Schematic2D_${itemId}`;
 
-    // Different schematic styles based on object type
-    switch (schematicType) {
-      case 'shower':
-        this.createShowerSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'mirror':
-        this.createMirrorSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'bath':
-        this.createBathSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'toilet':
-        this.createToiletSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'sink':
-        this.createSinkSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'radiator':
-        this.createRadiatorSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'furniture':
-        this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'generic':
-      default:
-        this.createGenericSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-    }
+    // Create schematic based on object type
+    this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
 
     // Position and rotate
     schematicGroup.position.set(center.x, 0, center.z);
@@ -1276,190 +1337,97 @@ export class SceneManager {
   }
 
   /**
-   * Create generic schematic for objects
+   * Helper method to create a rectangular schematic with fill plane, border edges, and optional icon.
+   * Centralizes the repeated PlaneGeometry/Material/Edges/LineSegments creation logic.
+   *
+   * @param group - The THREE.Group to add the schematic elements to
+   * @param width - Width of the schematic rectangle
+   * @param depth - Depth of the schematic rectangle
+   * @param height - Y position for the schematic (typically object height)
+   * @param fillColor - Color for the fill plane (hex number)
+   * @param borderColor - Color for the border lines (hex number)
+   * @param fillOpacity - Opacity for the fill plane (0-1)
+   * @param icon - Optional emoji icon to display on the schematic
+   */
+  private createRectangularSchematic(
+    group: THREE.Group,
+    width: number,
+    depth: number,
+    height: number,
+    fillColor: number,
+    borderColor: number,
+    fillOpacity: number,
+    icon?: string
+  ): void {
+    // Solid filled background plane
+    const fillGeometry = new THREE.PlaneGeometry(width, depth);
+    const fillMaterial = new THREE.MeshBasicMaterial({
+      color: fillColor,
+      opacity: fillOpacity,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
+    fillMesh.rotation.x = -Math.PI / 2;
+    fillMesh.position.y = height;
+    fillMesh.renderOrder = 999;
+    group.add(fillMesh);
+
+    // Border edges
+    const borderGeometry = new THREE.PlaneGeometry(width, depth);
+    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
+    const borderMaterial = new THREE.LineBasicMaterial({
+      color: borderColor,
+      linewidth: 2,
+      depthTest: false,
+    });
+    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
+    borderLines.rotation.x = -Math.PI / 2;
+    borderLines.position.y = height + 1;
+    borderLines.renderOrder = 1000;
+    group.add(borderLines);
+
+    // Optional icon label
+    if (icon) {
+      this.addSchematicLabel(group, icon, width, depth, height);
+    }
+  }
+
+  /**
+   * Create generic schematic for objects - lime green
    */
   private createGenericSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
-    // Solid filled background (bright green)
-    const fillGeometry = new THREE.PlaneGeometry(width, depth);
-    const fillMaterial = new THREE.MeshBasicMaterial({
-      color: 0x32cd32, // Lime green - very visible
-      opacity: 0.6,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-    });
-    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
-    fillMesh.rotation.x = -Math.PI / 2;
-    fillMesh.position.y = height;
-    fillMesh.renderOrder = 999;
-    group.add(fillMesh);
-
-    // Border (dark green)
-    const borderGeometry = new THREE.PlaneGeometry(width, depth);
-    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
-    const borderMaterial = new THREE.LineBasicMaterial({
-      color: 0x006400, // Dark green
-      linewidth: 2,
-      depthTest: false,
-    });
-    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
-    borderLines.rotation.x = -Math.PI / 2;
-    borderLines.position.y = height + 1;
-    borderLines.renderOrder = 1000;
-    group.add(borderLines);
+    this.createRectangularSchematic(group, width, depth, height, 0x32cd32, 0x006400, 0.6);
   }
 
   /**
-   * Create toilet schematic - white/gray rounded rectangle
+   * Create toilet schematic - off-white with dark gray border
    */
   private createToiletSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
-    // Solid filled background (white)
-    const fillGeometry = new THREE.PlaneGeometry(width, depth);
-    const fillMaterial = new THREE.MeshBasicMaterial({
-      color: 0xf5f5f5, // Off-white
-      opacity: 0.8,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-    });
-    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
-    fillMesh.rotation.x = -Math.PI / 2;
-    fillMesh.position.y = height;
-    fillMesh.renderOrder = 999;
-    group.add(fillMesh);
-
-    // Border (dark gray)
-    const borderGeometry = new THREE.PlaneGeometry(width, depth);
-    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
-    const borderMaterial = new THREE.LineBasicMaterial({
-      color: 0x333333,
-      linewidth: 2,
-      depthTest: false,
-    });
-    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
-    borderLines.rotation.x = -Math.PI / 2;
-    borderLines.position.y = height + 1;
-    borderLines.renderOrder = 1000;
-    group.add(borderLines);
-
-    // Add toilet icon
-    this.addSchematicLabel(group, '🚽', width, depth, height);
+    this.createRectangularSchematic(group, width, depth, height, 0xf5f5f5, 0x333333, 0.8, '🚽');
   }
 
   /**
-   * Create sink schematic - light blue rectangle
+   * Create sink schematic - sky blue with royal blue border
    */
   private createSinkSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
-    // Solid filled background (light blue)
-    const fillGeometry = new THREE.PlaneGeometry(width, depth);
-    const fillMaterial = new THREE.MeshBasicMaterial({
-      color: 0x87ceeb, // Sky blue
-      opacity: 0.7,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-    });
-    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
-    fillMesh.rotation.x = -Math.PI / 2;
-    fillMesh.position.y = height;
-    fillMesh.renderOrder = 999;
-    group.add(fillMesh);
-
-    // Border (darker blue)
-    const borderGeometry = new THREE.PlaneGeometry(width, depth);
-    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
-    const borderMaterial = new THREE.LineBasicMaterial({
-      color: 0x4169e1, // Royal blue
-      linewidth: 2,
-      depthTest: false,
-    });
-    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
-    borderLines.rotation.x = -Math.PI / 2;
-    borderLines.position.y = height + 1;
-    borderLines.renderOrder = 1000;
-    group.add(borderLines);
-
-    // Add sink icon
-    this.addSchematicLabel(group, '🚰', width, depth, height);
+    this.createRectangularSchematic(group, width, depth, height, 0x87ceeb, 0x4169e1, 0.7, '🚰');
   }
 
   /**
-   * Create radiator schematic - orange/red rectangle with lines
+   * Create radiator schematic - orange with dark orange border
    */
   private createRadiatorSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
-    // Solid filled background (orange)
-    const fillGeometry = new THREE.PlaneGeometry(width, depth);
-    const fillMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffa500, // Orange
-      opacity: 0.7,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-    });
-    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
-    fillMesh.rotation.x = -Math.PI / 2;
-    fillMesh.position.y = height;
-    fillMesh.renderOrder = 999;
-    group.add(fillMesh);
-
-    // Border (dark orange/red)
-    const borderGeometry = new THREE.PlaneGeometry(width, depth);
-    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
-    const borderMaterial = new THREE.LineBasicMaterial({
-      color: 0xcc4400, // Dark orange
-      linewidth: 2,
-      depthTest: false,
-    });
-    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
-    borderLines.rotation.x = -Math.PI / 2;
-    borderLines.position.y = height + 1;
-    borderLines.renderOrder = 1000;
-    group.add(borderLines);
-
-    // Add radiator icon
-    this.addSchematicLabel(group, '♨️', width, depth, height);
+    this.createRectangularSchematic(group, width, depth, height, 0xffa500, 0xcc4400, 0.7, '♨️');
   }
 
   /**
-   * Create furniture schematic - vanity units (sink with cabinet)
+   * Create furniture schematic - cadet blue (teal) with dark slate gray border
    */
   private createFurnitureSchematic(group: THREE.Group, width: number, depth: number, height: number): void {
-    // Solid filled background (light teal - similar to sink but slightly different)
-    const fillGeometry = new THREE.PlaneGeometry(width, depth);
-    const fillMaterial = new THREE.MeshBasicMaterial({
-      color: 0x5f9ea0, // Cadet blue (teal)
-      opacity: 0.7,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-    });
-    const fillMesh = new THREE.Mesh(fillGeometry, fillMaterial);
-    fillMesh.rotation.x = -Math.PI / 2;
-    fillMesh.position.y = height;
-    fillMesh.renderOrder = 999;
-    group.add(fillMesh);
-
-    // Border (darker teal)
-    const borderGeometry = new THREE.PlaneGeometry(width, depth);
-    const borderEdges = new THREE.EdgesGeometry(borderGeometry);
-    const borderMaterial = new THREE.LineBasicMaterial({
-      color: 0x2f4f4f, // Dark slate gray
-      linewidth: 2,
-      depthTest: false,
-    });
-    const borderLines = new THREE.LineSegments(borderEdges, borderMaterial);
-    borderLines.rotation.x = -Math.PI / 2;
-    borderLines.position.y = height + 1;
-    borderLines.renderOrder = 1000;
-    group.add(borderLines);
-
-    // Add sink icon for vanity units
-    this.addSchematicLabel(group, '🚰', width, depth, height);
+    this.createRectangularSchematic(group, width, depth, height, 0x5f9ea0, 0x2f4f4f, 0.7, '🚰');
   }
 
   /**
@@ -1512,41 +1480,67 @@ export class SceneManager {
 
   /**
    * Update schematic overlay position and rotation for a specific item (called when object moves/rotates)
+   * Uses deferred batching to avoid expensive Box3.setFromObject() calls on every drag event
    */
   public updateSchematicPosition(itemId: number): void {
     if (this.viewMode !== '2d') return;
 
-    const schematic = this.schematic2DOverlays.get(itemId);
-    const model = this.existingItems.get(itemId);
+    // Add to pending updates set
+    this.pendingSchematicUpdates.add(itemId);
 
-    if (schematic && model) {
-      // Recalculate position from bounding box
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      schematic.position.set(center.x, 0, center.z);
-
-      // Sync rotation with the model
-      schematic.rotation.y = model.rotation.y;
+    // Schedule a single RAF if not already scheduled
+    if (!this.schematicUpdateScheduled) {
+      this.schematicUpdateScheduled = true;
+      requestAnimationFrame(() => this.flushSchematicUpdates());
     }
   }
 
   /**
    * Update all schematic overlay positions and rotations (called after any object movement)
+   * Uses deferred batching to avoid expensive Box3.setFromObject() calls on every drag event
    */
   public updateAllSchematicPositions(): void {
     if (this.viewMode !== '2d') return;
 
-    this.schematic2DOverlays.forEach((schematic, itemId) => {
+    // Add all items to pending updates
+    this.schematic2DOverlays.forEach((_schematic, itemId) => {
+      this.pendingSchematicUpdates.add(itemId);
+    });
+
+    // Schedule a single RAF if not already scheduled
+    if (!this.schematicUpdateScheduled) {
+      this.schematicUpdateScheduled = true;
+      requestAnimationFrame(() => this.flushSchematicUpdates());
+    }
+  }
+
+  /**
+   * Flush pending schematic updates - performs the actual Box3/position/rotation sync
+   * Called once per animation frame to batch multiple updates together
+   */
+  private flushSchematicUpdates(): void {
+    // Reusable objects to avoid allocations per item
+    const box = new THREE.Box3();
+    const center = new THREE.Vector3();
+
+    this.pendingSchematicUpdates.forEach((itemId) => {
+      const schematic = this.schematic2DOverlays.get(itemId);
       const model = this.existingItems.get(itemId);
-      if (model) {
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
+
+      if (schematic && model) {
+        // Recalculate position from bounding box
+        box.setFromObject(model);
+        box.getCenter(center);
         schematic.position.set(center.x, 0, center.z);
 
         // Sync rotation with the model
         schematic.rotation.y = model.rotation.y;
       }
     });
+
+    // Clear pending updates and reset scheduled flag
+    this.pendingSchematicUpdates.clear();
+    this.schematicUpdateScheduled = false;
   }
 
   /**
@@ -2261,16 +2255,46 @@ export class SceneManager {
   clearAllItems(): void {
     console.log('🧹 Clearing all bathroom items');
 
-    // Dispose of all models
+    // Dispose of all 3D models
     this.existingItems.forEach((model) => {
       this.bathroomItemsGroup.remove(model);
       this.disposeModel(model);
     });
 
-    // Clear tracking
+    // Clear 3D item tracking
     this.existingItems.clear();
 
-    console.log('✅ All items cleared efficiently');
+    // Clear and dispose 2D schematic overlays
+    this.schematic2DOverlays.forEach((overlay) => {
+      if (this.scene) {
+        this.scene.remove(overlay);
+      }
+      // Dispose of geometries and materials
+      overlay.traverse((child) => {
+        if (child instanceof THREE.Line || child instanceof THREE.LineSegments || child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+        // Also handle sprites
+        if (child instanceof THREE.Sprite) {
+          if (child.material.map) {
+            child.material.map.dispose();
+          }
+          child.material.dispose();
+        }
+      });
+    });
+    this.schematic2DOverlays.clear();
+
+    // Clear any pending schematic updates
+    this.pendingSchematicUpdates.clear();
+    this.schematicUpdateScheduled = false;
+
+    console.log('✅ All items cleared efficiently (3D models and 2D schematics)');
   }
 
 
@@ -2526,6 +2550,10 @@ export class SceneManager {
       return;
     }
 
+    // Store grid visibility preferences for centralized visibility management
+    this.showGridEnabled = showGrid;
+    this.wallGridVisible = showWallGrid;
+
     // Remove existing grid
     if (this.gridRef) {
       console.log('🗑️ Removing existing grid from scene');
@@ -2557,8 +2585,7 @@ export class SceneManager {
       try {
         // FIXED: Simplified - createCustomGrid now returns THREE.Group directly
         this.gridRef = createCustomGrid(roomWidth, roomHeight);
-        // Hide regular grid in 2D mode (blueprint grid is used instead)
-        this.gridRef.visible = this.viewMode !== '2d';
+        // Visibility will be set by updateGridVisibility() at the end
 
         console.log('✅ Floor grid created:', {
           children: this.gridRef.children.length,
@@ -2585,10 +2612,9 @@ export class SceneManager {
     // Create blueprint grid for 2D mode (10cm spacing)
     try {
       this.blueprintGridRef = createBlueprintGrid(roomWidth, roomHeight, notchWidth, notchHeight);
-      // Set visibility based on current view mode - visible in 2D mode, hidden in 3D mode
-      this.blueprintGridRef.visible = this.viewMode === '2d';
+      // Visibility will be set by updateGridVisibility() at the end
       this.scene.add(this.blueprintGridRef);
-      console.log(`✅ Blueprint grid created (visible: ${this.blueprintGridRef.visible}, viewMode: ${this.viewMode})`);
+      console.log(`✅ Blueprint grid created (viewMode: ${this.viewMode})`);
     } catch (error) {
       console.error('❌ Error creating blueprint grid:', error);
     }
@@ -2597,7 +2623,7 @@ export class SceneManager {
     console.log('🧱 Creating wall grid group...');
     this.wallGridGroup = new THREE.Group();
     this.wallGridGroup.name = 'WallGridGroup';
-    this.wallGridVisible = showWallGrid;
+    // wallGridVisible already set at the start of the method
 
     if (this.wallRefs.length > 0) {
       // console.log('📊 Available walls:', this.wallRefs.map(wall => ({
@@ -2641,11 +2667,7 @@ export class SceneManager {
 
         console.log(`✅ Total wall grid lines added to group: ${totalWallGridLines}`);
 
-        // Set initial visibility based on showWallGrid
-        this.wallGridGroup.visible = showWallGrid;
-        console.log(`🔍 Wall grid group visibility set to: ${showWallGrid}`);
-
-        // Add the wall grid group to the scene
+        // Add the wall grid group to the scene (visibility set below)
         this.scene.add(this.wallGridGroup);
         console.log('✅ Wall grid group added to scene');
 
@@ -2656,12 +2678,16 @@ export class SceneManager {
       console.log('⏭️ No walls available for wall grid creation');
     }
 
+    // Apply centralized visibility settings based on current view mode
+    this.updateGridVisibility();
+
     // Final scene debugging
     console.log('🎬 Final scene state:', {
       totalChildren: this.scene.children.length,
       gridRef: this.gridRef ? 'present' : 'null',
       wallGridGroup: this.wallGridGroup ? 'present' : 'null',
       wallGridVisible: this.wallGridVisible,
+      showGridEnabled: this.showGridEnabled,
       sceneChildren: this.scene.children.map(child => ({
         name: child.name || 'unnamed',
         type: child.type,

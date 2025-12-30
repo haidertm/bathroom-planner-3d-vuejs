@@ -4,6 +4,17 @@ import * as THREE from 'three';
 import { ORTHOGRAPHIC_SETTINGS } from '../constants/camera';
 
 /**
+ * Error thrown when a camera transition is cancelled before completion.
+ * Callers can check for this error type to distinguish cancellation from other failures.
+ */
+export class TransitionCancelledError extends Error {
+  constructor(message: string = 'Camera transition was cancelled') {
+    super(message);
+    this.name = 'TransitionCancelledError';
+  }
+}
+
+/**
  * Easing functions for smooth camera animations
  */
 export const Easing = {
@@ -59,6 +70,9 @@ export class CameraTransition {
   private isTransitioning: boolean = false;
   private animationId: number | null = null;
 
+  // Stored promise rejection callback for cancellation handling
+  private pendingReject: ((error: TransitionCancelledError) => void) | null = null;
+
   // Default transition duration (ms)
   public static readonly DEFAULT_DURATION = 800;
 
@@ -73,14 +87,30 @@ export class CameraTransition {
   }
 
   /**
-   * Cancel any ongoing transition
+   * Cancel any ongoing transition.
+   * If a transition is in progress, rejects the pending promise with TransitionCancelledError.
    */
   public cancelTransition(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
+
+    // Reject pending promise to prevent callers from hanging
+    if (this.pendingReject) {
+      const reject = this.pendingReject;
+      this.pendingReject = null;
+      reject(new TransitionCancelledError());
+    }
+
     this.isTransitioning = false;
+  }
+
+  /**
+   * Clear stored callbacks (called when animation completes normally)
+   */
+  private clearPendingCallbacks(): void {
+    this.pendingReject = null;
   }
 
   /**
@@ -101,12 +131,14 @@ export class CameraTransition {
       onComplete
     } = config;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (this.isTransitioning) {
         this.cancelTransition();
       }
 
       this.isTransitioning = true;
+      // Store reject callback for cancellation handling
+      this.pendingReject = reject;
 
       // Store starting state
       const startPosition = camera.position.clone();
@@ -158,6 +190,7 @@ export class CameraTransition {
 
           this.isTransitioning = false;
           this.animationId = null;
+          this.clearPendingCallbacks();
 
           onComplete?.();
           resolve();
@@ -187,12 +220,14 @@ export class CameraTransition {
       onComplete
     } = config;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (this.isTransitioning) {
         this.cancelTransition();
       }
 
       this.isTransitioning = true;
+      // Store reject callback for cancellation handling
+      this.pendingReject = reject;
 
       // Start from high top-down position (matching where animateToTopDown ended)
       const startPosition = new THREE.Vector3(
@@ -239,6 +274,7 @@ export class CameraTransition {
 
           this.isTransitioning = false;
           this.animationId = null;
+          this.clearPendingCallbacks();
 
           onComplete?.();
           resolve();
@@ -265,12 +301,14 @@ export class CameraTransition {
       onComplete
     } = config;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (this.isTransitioning) {
         this.cancelTransition();
       }
 
       this.isTransitioning = true;
+      // Store reject callback for cancellation handling
+      this.pendingReject = reject;
 
       // Set starting state
       camera.position.copy(fromState.position);
@@ -303,6 +341,7 @@ export class CameraTransition {
 
           this.isTransitioning = false;
           this.animationId = null;
+          this.clearPendingCallbacks();
 
           onComplete?.();
           resolve();
