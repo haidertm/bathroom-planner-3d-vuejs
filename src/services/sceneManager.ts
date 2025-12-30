@@ -2584,7 +2584,7 @@ export class SceneManager {
 
     // Create blueprint grid for 2D mode (10cm spacing)
     try {
-      this.blueprintGridRef = createBlueprintGrid(roomWidth, roomHeight);
+      this.blueprintGridRef = createBlueprintGrid(roomWidth, roomHeight, notchWidth, notchHeight);
       // Set visibility based on current view mode - visible in 2D mode, hidden in 3D mode
       this.blueprintGridRef.visible = this.viewMode === '2d';
       this.scene.add(this.blueprintGridRef);
