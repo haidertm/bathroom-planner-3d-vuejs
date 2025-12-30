@@ -2754,6 +2754,11 @@ export class EventHandlers {
               this.measurementSystem.forceUpdateMeasurements();
           }
 
+        // Update schematic overlay position after snap-back (for 2D mode)
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(itemId);
+        }
+
         console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
       } else {
         // Normal behavior: set outline color based on final collision state
@@ -3242,6 +3247,12 @@ export class EventHandlers {
 
         // Set outline to normal color since we're back to non-colliding position
         setOutlineColor(false);
+
+        // Update schematic overlay position after snap-back (for 2D mode)
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(itemId);
+        }
+
         console.log('✅ Touch snap back completed - outline set to CYAN');
       } else {
         // Normal behavior: set outline color based on final collision state

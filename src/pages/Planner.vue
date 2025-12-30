@@ -1447,26 +1447,34 @@ const handleMeasurementToggle = () => {
 // Handle 2D/3D View Mode Change
 const handleViewModeChange = async (mode) => {
   console.log('🔄 View mode changing to:', mode)
-  viewMode.value = mode
 
   if (!sceneManagerRef.value) {
     console.warn('SceneManager not initialized yet')
     return
   }
 
-  // Use SceneManager as single source of truth for view mode
-  // SceneManager.setViewMode internally updates EventHandlers
-  await sceneManagerRef.value.setViewMode(mode)
+  try {
+    // Use SceneManager as single source of truth for view mode
+    // SceneManager.setViewMode internally updates EventHandlers
+    // Await the scene change BEFORE updating UI state to keep them consistent
+    await sceneManagerRef.value.setViewMode(mode)
 
-  // Track view mode change in GTM
-  if (gtm?.enabled()) {
-    gtm.trackEvent({
-      event: 'view_mode_change',
-      category: 'Bathroom Planner',
-      action: 'Switch View Mode',
-      label: mode === '2d' ? '2D Blueprint' : '3D Perspective',
-      viewMode: mode
-    })
+    // Only update UI state after scene manager succeeds
+    viewMode.value = mode
+
+    // Track view mode change in GTM
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'view_mode_change',
+        category: 'Bathroom Planner',
+        action: 'Switch View Mode',
+        label: mode === '2d' ? '2D Blueprint' : '3D Perspective',
+        viewMode: mode
+      })
+    }
+  } catch (error) {
+    // Don't change viewMode on error - keep UI consistent with actual scene state
+    console.error('❌ Failed to change view mode:', error)
   }
 }
 
@@ -1900,6 +1908,9 @@ const loadDesignData = (designData) => {
       throw new Error('Invalid design data')
     }
 
+    // Clear stale L-shape corner (saved designs don't support L-shape yet)
+    localStorage.removeItem('l-shape-corner-active')
+
     // Load items (furniture, fixtures, etc.)
     items.value = designData.items || []
 
@@ -1997,6 +2008,11 @@ onMounted(async () => {
         pendingCameraPreset = template.cameraPreset
         console.log('📷 Pre-setting template camera preset:', template.cameraPreset)
       }
+
+      // Clear stale L-shape corner when loading template (templates don't support L-shape yet)
+      if (template.roomShape !== 'l-shape') {
+        localStorage.removeItem('l-shape-corner-active')
+      }
     }
   } else if (!hasDesignToLoad) {
     // No template or design, load saved room dimensions
@@ -2039,6 +2055,9 @@ onMounted(async () => {
 
       // Clean up the initial corner selection from localStorage after using it
       localStorage.removeItem('l-shape-corner')
+    } else {
+      // Clear stale L-shape corner from previous sessions when loading non-L-shaped room
+      localStorage.removeItem('l-shape-corner-active')
     }
   }
 
@@ -2270,6 +2289,9 @@ onUnmounted(() => {
   if (sceneManagerRef.value) {
     sceneManagerRef.value.dispose()
   }
+
+  // Clear session-specific L-shape corner to prevent stale camera angles
+  localStorage.removeItem('l-shape-corner-active')
 })
 
 // NEW: Smart incremental update handler
