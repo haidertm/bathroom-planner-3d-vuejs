@@ -2090,7 +2090,7 @@ onMounted(async () => {
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value, notchWidth.value, notchHeight.value)
   eventHandlersRef.value.setWallCulling(sceneManager.wallCulling)
 
   if (sceneManagerRef.value.debugLabelsEnabled && sceneManagerRef.value.wallLabelsDebug) {
@@ -2189,7 +2189,7 @@ watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], 
 
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value, notchWidth.value, notchHeight.value)
 })
 
 // Watch for texture changes

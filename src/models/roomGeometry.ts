@@ -95,9 +95,15 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
 /**
  * BLUEPRINT GRID for 2D mode - 10cm (100mm) spacing for precise measurements
  * Creates a more detailed grid than the standard 15cm grid
+ * Supports L-shaped rooms by excluding the notch area
  */
-export const createBlueprintGrid = (width: number, height: number): THREE.Group => {
-  if (DEBUG) console.log('📐 Creating blueprint grid (10cm spacing) with dimensions:', { width, height });
+export const createBlueprintGrid = (
+  width: number,
+  height: number,
+  notchWidth?: number,
+  notchHeight?: number
+): THREE.Group => {
+  if (DEBUG) console.log('📐 Creating blueprint grid (10cm spacing) with dimensions:', { width, height, notchWidth, notchHeight });
 
   const blueprintGridGroup = new THREE.Group();
   const BLUEPRINT_GRID_SPACING = 10; // 10cm = 100mm spacing
@@ -121,29 +127,73 @@ export const createBlueprintGrid = (width: number, height: number): THREE.Group 
   // Major lines every 5th grid line (every 50cm when spacing is 10cm)
   const MAJOR_LINE_INTERVAL = 5;
 
-  for (let x = -width / 2; x <= width / 2; x += BLUEPRINT_GRID_SPACING) {
+  const halfWidth = width / 2;
+  const halfHeight = height / 2;
+
+  // Check if this is an L-shaped room
+  const isLShape = notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0;
+
+  // Notch boundaries (NW corner - top-left in world coords)
+  const notchMinX = -halfWidth;
+  const notchMaxX = isLShape ? -halfWidth + notchWidth : -halfWidth;
+  const notchMinZ = -halfHeight;
+  const notchMaxZ = isLShape ? -halfHeight + notchHeight : -halfHeight;
+
+  for (let x = -halfWidth; x <= halfWidth; x += BLUEPRINT_GRID_SPACING) {
     const gridIndex = Math.round(Math.abs(x) / BLUEPRINT_GRID_SPACING);
     const isMajorLine = gridIndex % MAJOR_LINE_INTERVAL === 0;
-    const points: THREE.Vector3[] = [
-      new THREE.Vector3(x, 0.5, -height / 2), // Slightly above floor to avoid z-fighting
-      new THREE.Vector3(x, 0.5, height / 2)
-    ];
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
-    blueprintGridGroup.add(line);
+
+    // Check if this vertical line is in the notch X range
+    const isInNotchXRange = isLShape && x >= notchMinX && x <= notchMaxX;
+
+    if (isInNotchXRange) {
+      // Line is in notch X range - only draw from notchMaxZ to halfHeight (south part)
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(x, 0.5, notchMaxZ),
+        new THREE.Vector3(x, 0.5, halfHeight)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    } else {
+      // Full vertical line
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(x, 0.5, -halfHeight),
+        new THREE.Vector3(x, 0.5, halfHeight)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    }
   }
 
   // BLUEPRINT GRID - Create horizontal lines (parallel to X-axis)
-  for (let z = -height / 2; z <= height / 2; z += BLUEPRINT_GRID_SPACING) {
+  for (let z = -halfHeight; z <= halfHeight; z += BLUEPRINT_GRID_SPACING) {
     const gridIndex = Math.round(Math.abs(z) / BLUEPRINT_GRID_SPACING);
     const isMajorLine = gridIndex % MAJOR_LINE_INTERVAL === 0;
-    const points: THREE.Vector3[] = [
-      new THREE.Vector3(-width / 2, 0.5, z),
-      new THREE.Vector3(width / 2, 0.5, z)
-    ];
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
-    blueprintGridGroup.add(line);
+
+    // Check if this horizontal line is in the notch Z range
+    const isInNotchZRange = isLShape && z >= notchMinZ && z <= notchMaxZ;
+
+    if (isInNotchZRange) {
+      // Line is in notch Z range - only draw from notchMaxX to halfWidth (east part)
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(notchMaxX, 0.5, z),
+        new THREE.Vector3(halfWidth, 0.5, z)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    } else {
+      // Full horizontal line
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(-halfWidth, 0.5, z),
+        new THREE.Vector3(halfWidth, 0.5, z)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    }
   }
 
   blueprintGridGroup.position.y = 0;
@@ -152,7 +202,8 @@ export const createBlueprintGrid = (width: number, height: number): THREE.Group 
 
   if (DEBUG) console.log('✅ Blueprint grid created (10cm spacing):', {
     lineCount: blueprintGridGroup.children.length,
-    spacing: BLUEPRINT_GRID_SPACING
+    spacing: BLUEPRINT_GRID_SPACING,
+    isLShape
   });
 
   return blueprintGridGroup;
