@@ -6,6 +6,7 @@ import MyDesigns from '../pages/MyDesigns.vue'
 import RoomDimensions from '../pages/RoomDimensions.vue'
 import AdminLogin from '../pages/admin/AdminLogin.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
+import ProductEdit from '../pages/admin/ProductEdit.vue'
 import NotFound from '../pages/NotFound.vue'
 
 const routes = [
@@ -44,6 +45,12 @@ const routes = [
         path: '/vadmin/dashboard',
         name: 'AdminDashboard',
         component: AdminDashboard,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/vadmin/products/:id/edit',
+        name: 'ProductEdit',
+        component: ProductEdit,
         meta: { requiresAuth: true }
     },
     // 404 - Catch all unmatched routes

@@ -197,6 +197,25 @@ const validate = (): boolean => {
 };
 
 // Submit form
+// Get the primary SKU from the first variant
+const primarySku = computed(() => {
+  if (formData.value.variants && formData.value.variants.length > 0) {
+    return formData.value.variants[0].sku || 'N/A';
+  }
+  return 'No variants';
+});
+
+// Format image path for preview (add leading slash if needed)
+const formatImagePath = (path: string) => {
+  if (!path) return '';
+  // If it's already an absolute URL or starts with /, return as-is
+  if (path.startsWith('http') || path.startsWith('/')) {
+    return path;
+  }
+  // Add leading slash for relative paths
+  return '/' + path;
+};
+
 const handleSubmit = () => {
   if (!validate()) {
     return;
@@ -265,6 +284,18 @@ const handleCancel = () => {
       <!-- Details Tab -->
       <div v-show="activeTab === 'details'" :style="tabContentStyle">
         <div :style="formGridStyle">
+          <!-- Primary SKU (read-only, from first variant) -->
+          <div v-if="mode === 'edit'" :style="inputGroupStyle">
+            <label :style="labelStyle">Product SKU</label>
+            <input
+              :value="primarySku"
+              type="text"
+              readonly
+              :style="[inputStyle, { backgroundColor: '#f5f5f5', cursor: 'not-allowed' }]"
+            />
+            <span :style="{ fontSize: '11px', color: '#666', marginTop: '4px' }">SKU from first variant (read-only)</span>
+          </div>
+
           <!-- Name -->
           <div :style="inputGroupStyle">
             <label :style="labelStyle">Product Name *</label>
@@ -331,7 +362,7 @@ const handleCancel = () => {
                 :style="imageInputStyle"
               />
               <div v-if="formData.image" :style="imagePreviewStyle">
-                <img :src="formData.image" alt="Preview" :style="previewImageStyle" />
+                <img :src="formatImagePath(formData.image)" alt="Preview" :style="previewImageStyle" />
               </div>
             </div>
           </div>
@@ -475,7 +506,7 @@ const handleCancel = () => {
           >
             <div :style="variantCardHeaderStyle" @click="toggleVariant(variant.id)">
               <div :style="variantInfoStyle">
-                <img v-if="variant.image" :src="variant.image" :alt="variant.name" :style="variantThumbnailStyle" />
+                <img v-if="variant.image" :src="formatImagePath(variant.image)" :alt="variant.name" :style="variantThumbnailStyle" />
                 <div :style="variantPlaceholderStyle" v-else>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
