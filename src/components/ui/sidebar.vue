@@ -423,7 +423,7 @@
 </template>
 
 <script setup>
-import {computed, ref, watch, onBeforeUnmount, nextTick} from 'vue'
+import {computed, ref, watch, onBeforeUnmount, onMounted, nextTick} from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
@@ -431,7 +431,38 @@ import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
 
 // NEW: Import selective preloading functions
-import productData from '../../mocks/productData.js'
+import localProductData from '../../mocks/productData.js'
+
+// Reactive product data - will be loaded from API
+const productData = ref(localProductData)
+const isLoadingProducts = ref(false)
+
+// Fetch products from database API
+const fetchProductsFromAPI = async () => {
+  isLoadingProducts.value = true
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/products/enabled`)
+    if (response.ok) {
+      const data = await response.json()
+      // API already returns data grouped by category
+      productData.value = data
+      console.log('✅ Loaded products from database API:', Object.keys(productData.value))
+    } else {
+      console.warn('⚠️ API returned error, using local product data')
+      productData.value = localProductData
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to fetch from API, using local product data:', error.message)
+    productData.value = localProductData
+  } finally {
+    isLoadingProducts.value = false
+  }
+}
+
+// Load products on mount
+onMounted(() => {
+  fetchProductsFromAPI()
+})
 import { CONFIG } from '../../constants/models'
 import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
 
@@ -764,7 +795,7 @@ const addLoadedProduct = (productId) => {
 
 // FIXED: Add missing helper functions
 const getProductsForCategory = (category) => {
-  return productData[category] || []
+  return productData.value[category] || []
 }
 
 // Product drawer state
@@ -796,8 +827,8 @@ const isLShape = computed(() => {
 const getCategoryModelPaths = (category) => {
   const categoryModels = []
 
-  if (productData[category]) {
-    productData[category].forEach(product => {
+  if (productData.value[category]) {
+    productData.value[category].forEach(product => {
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach(variant => {
           if (variant.path && variant.sku) {
@@ -866,7 +897,9 @@ const productDrawerProps = computed(() => ({
   roomHeight: props.roomHeight,
   existingItems: props.existingItems,
   notchWidth: props.notchWidth,
-  notchHeight: props.notchHeight
+  notchHeight: props.notchHeight,
+  // Pass product data from API
+  productData: productData.value
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):
@@ -1912,7 +1945,7 @@ const performSearch = (query) => {
   // Your existing search logic (exact SKU match first)
   let exactSkuMatch = null;
 
-  Object.entries(productData).forEach(([category, products]) => {
+  Object.entries(productData.value).forEach(([category, products]) => {
     products.forEach((product) => {
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach((variant) => {
@@ -1938,7 +1971,7 @@ const performSearch = (query) => {
   }
 
   // Regular search logic for partial matches
-  Object.entries(productData).forEach(([category, products]) => {
+  Object.entries(productData.value).forEach(([category, products]) => {
     products.forEach((product) => {
       // Search in product name
       const name = (product.name || '').toLowerCase()

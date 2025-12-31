@@ -298,7 +298,7 @@
 <script setup>
 import {ref, computed, watch} from 'vue'
 import { isMobile } from '../../utils/helpers.js'
-import productData from '../../mocks/productData'
+import localProductData from '../../mocks/productData'
 import { ModelManager } from '../../models/bathroomFixtures'
 import {
   isVariantModelLoaded,
@@ -382,6 +382,10 @@ const props = defineProps({
   notchHeight: {
     type: Number,
     default: 0
+  },
+  productData: {
+    type: Object,
+    default: () => localProductData
   }
 })
 
@@ -750,7 +754,7 @@ const isMobileDevice = computed(() => isMobile())
 
 // Methods
 const getProductsForCategory = (category) => {
-  return productData[category] || []
+  return props.productData[category] || []
 }
 
 const readyProducts = computed(() => {
