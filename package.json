@@ -8,7 +8,13 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "glb:scan": "tsx ./scripts/get-glb-dimensions.ts",
-    "structure": "tree -a -I 'node_modules|.git|dist|build|.idea|.vscode|.codesandbox|.devcontainer' > project-structure.txt"
+    "structure": "tree -a -I 'node_modules|.git|dist|build|.idea|.vscode|.codesandbox|.devcontainer' > project-structure.txt",
+    "server": "tsx server/index.ts",
+    "server:dev": "tsx watch server/index.ts",
+    "db:migrate": "tsx server/scripts/migrate.ts",
+    "db:migrate:psql": "tsx server/scripts/migrate-psql.ts",
+    "db:sync": "tsx -e \"import('./server/cron/scheduler').then(m => m.triggerManualSync().then(console.log))\"",
+    "dev:all": "concurrently \"yarn dev\" \"yarn server:dev\""
   },
   "dependencies": {
     "@gtm-support/vue-gtm": "^3.1.0",
@@ -16,14 +22,27 @@
     "@openreplay/tracker-assist": "^11.0.10",
     "@react-three/drei": "^9.82.6",
     "@react-three/fiber": "^8.13.6",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "graphql": "^16.12.0",
+    "graphql-request": "^7.4.0",
+    "node-cron": "^4.2.1",
+    "pg": "^8.16.3",
     "three": "^0.160.0",
     "tsx": "^4.20.3",
     "vue": "^3.5.13",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^24.1.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.16.0",
     "@vitejs/plugin-vue": "^5.2.1",
+    "concurrently": "^9.2.1",
+    "postgres": "^3.4.7",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
     "vue-tsc": "^2.1.10"

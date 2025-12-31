@@ -52,6 +52,7 @@ export interface ProductVariant {
 // Product Group (contains variants)
 export interface AdminProduct {
   id: string;
+  dbId?: number; // Database ID (for API operations)
   category: ComponentType;
   name: string;
   price: string;
@@ -60,8 +61,10 @@ export interface AdminProduct {
   variantType: string;
   features: string[];
   variants: ProductVariant[];
+  enabled: boolean; // Whether product is enabled for planner
   createdAt?: number;
   updatedAt?: number;
+  lastSyncedAt?: number;
 }
 
 // Filter state for product list
@@ -74,6 +77,7 @@ export interface ProductFilters {
   };
   sortBy: 'name' | 'price' | 'category' | 'createdAt';
   sortOrder: 'asc' | 'desc';
+  enabledFilter: 'all' | 'enabled' | 'disabled';
 }
 
 // Pagination state
@@ -101,6 +105,8 @@ export interface Toast {
 // Admin statistics
 export interface AdminStats {
   totalProducts: number;
+  enabledProducts: number;
+  disabledProducts: number;
   categoryCounts: Record<ComponentType, number>;
   totalVariants: number;
   recentlyAdded: number;
@@ -116,6 +122,7 @@ export const DEFAULT_FILTERS: ProductFilters = {
   },
   sortBy: 'name',
   sortOrder: 'asc',
+  enabledFilter: 'all',
 };
 
 // Default pagination

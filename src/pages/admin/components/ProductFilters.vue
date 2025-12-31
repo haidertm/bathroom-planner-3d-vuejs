@@ -15,6 +15,7 @@ const emit = defineEmits<{
   (e: 'update:priceRange', value: { min: number | null; max: number | null }): void;
   (e: 'update:sortBy', value: ProductFilters['sortBy']): void;
   (e: 'update:sortOrder', value: ProductFilters['sortOrder']): void;
+  (e: 'update:enabledFilter', value: ProductFilters['enabledFilter']): void;
   (e: 'clear-filters'): void;
   (e: 'export-csv'): void;
 }>();
@@ -25,7 +26,8 @@ const hasActiveFilters = computed(() => {
   return props.filters.categories.length > 0 ||
     props.filters.searchQuery ||
     props.filters.priceRange.min !== null ||
-    props.filters.priceRange.max !== null;
+    props.filters.priceRange.max !== null ||
+    props.filters.enabledFilter !== 'all';
 });
 
 const getCategoryColor = (category: string): string => {
@@ -72,6 +74,11 @@ const handleSortByChange = (event: Event) => {
 
 const toggleSortOrder = () => {
   emit('update:sortOrder', props.filters.sortOrder === 'asc' ? 'desc' : 'asc');
+};
+
+const handleEnabledFilterChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  emit('update:enabledFilter', target.value as ProductFilters['enabledFilter']);
 };
 </script>
 
@@ -174,6 +181,20 @@ const toggleSortOrder = () => {
             />
           </div>
         </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="filter-group">
+        <label class="filter-label">Status</label>
+        <select
+          :value="filters.enabledFilter"
+          @change="handleEnabledFilterChange"
+          class="sort-select"
+        >
+          <option value="all">All Products</option>
+          <option value="enabled">Enabled Only</option>
+          <option value="disabled">Disabled Only</option>
+        </select>
       </div>
 
       <!-- Sort -->

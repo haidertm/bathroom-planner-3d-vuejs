@@ -32,11 +32,14 @@ const {
   paginatedProducts,
   totalPages,
   stats,
+  isLoading: productsLoading,
+  useLocalFallback,
   toggleCategoryFilter,
   setFilter,
   clearFilters,
   setPage,
   setItemsPerPage,
+  toggleProductEnabled,
 } = useAdminProducts();
 
 const {
@@ -97,6 +100,21 @@ const closeProductDrawer = () => {
 const handleLogout = () => {
   logout();
   router.push('/vadmin');
+};
+
+// Handle product toggle
+const handleToggleEnabled = async (product: AdminProduct) => {
+  const success = await toggleProductEnabled(product);
+  if (success) {
+    toast.success(`Product ${product.enabled ? 'disabled' : 'enabled'} successfully`);
+  } else {
+    toast.error('Failed to update product status');
+  }
+};
+
+// Handle product edit - navigate to edit page
+const handleEditProduct = (product: AdminProduct) => {
+  router.push(`/vadmin/products/${product.dbId || product.id}/edit`);
 };
 
 // Export to CSV
@@ -163,6 +181,11 @@ const handleSortByUpdate = (value: ProductFilters['sortBy']) => {
 const handleSortOrderUpdate = (value: ProductFilters['sortOrder']) => {
   simulateLoading();
   setFilter('sortOrder', value);
+};
+
+const handleEnabledFilterUpdate = (value: ProductFilters['enabledFilter']) => {
+  simulateLoading();
+  setFilter('enabledFilter', value);
 };
 
 const handleClearFilters = () => {
@@ -304,6 +327,7 @@ const mainContentStyle = computed(() => ({
           @update:price-range="handlePriceRangeUpdate"
           @update:sort-by="handleSortByUpdate"
           @update:sort-order="handleSortOrderUpdate"
+          @update:enabled-filter="handleEnabledFilterUpdate"
           @clear-filters="handleClearFilters"
           @export-csv="exportToCSV"
         />
@@ -311,8 +335,11 @@ const mainContentStyle = computed(() => ({
         <!-- Products Table -->
         <ProductTable
           :products="paginatedProducts"
-          :is-loading="isLoading"
+          :is-loading="isLoading || productsLoading"
+          :use-local-fallback="useLocalFallback"
           @select-product="openProductDrawer"
+          @toggle-enabled="handleToggleEnabled"
+          @edit-product="handleEditProduct"
         />
 
         <!-- Pagination -->
