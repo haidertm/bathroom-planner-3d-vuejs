@@ -90,6 +90,8 @@ export class SceneManager {
   // Store original shadow states for 2D mode
   private shadowsEnabled: boolean = true;
   private originalAmbientIntensity: number = 0.9;
+  // Store original floor material for 2D/3D mode switching
+  private originalFloorMaterial: THREE.Material | null = null;
   // 2D schematic overlays for thin objects
   private schematic2DOverlays: Map<number, THREE.Group> = new Map();
   // Deferred batch updates for schematic positions (performance optimization)
@@ -309,6 +311,57 @@ export class SceneManager {
     this.orthographicCamera.updateProjectionMatrix();
   }
 
+  /**
+   * Calculate the optimal zoom level for the orthographic camera to fit the room
+   * nicely in the viewport with appropriate margins for dimension labels.
+   * This ensures consistent presentation regardless of room size.
+   */
+  private calculateOptimalZoomForRoom(): number {
+    if (!this.orthographicCamera) return ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Account for the sidebar (approximately 400px on desktop)
+    const sidebarWidth = viewportWidth > 768 ? 400 : 0;
+    const availableWidth = viewportWidth - sidebarWidth;
+    const effectiveAspect = availableWidth / viewportHeight;
+
+    // The frustum is based on the max room dimension * padding
+    const frustumSize = Math.max(this.roomWidth, this.roomHeight) * ORTHOGRAPHIC_SETTINGS.FRUSTUM_PADDING;
+
+    // Calculate how much of the frustum width/height the room occupies
+    const roomAspect = this.roomWidth / this.roomHeight;
+
+    // Calculate the zoom needed to fit the room with margins
+    // We want the room to fill about 50-55% of the available viewport
+    // This leaves ample space for dimension labels (width/height) around the room
+    const targetFillRatio = 0.52;
+
+    let optimalZoom: number;
+
+    if (effectiveAspect > roomAspect) {
+      // Viewport is wider than room - height is the limiting factor
+      // Room height should fill targetFillRatio of viewport height
+      const visibleHeight = frustumSize; // At zoom 1, this is visible
+      const desiredVisibleHeight = this.roomHeight / targetFillRatio;
+      optimalZoom = visibleHeight / desiredVisibleHeight;
+    } else {
+      // Viewport is taller than room - width is the limiting factor
+      // Room width should fill targetFillRatio of viewport width
+      const visibleWidth = frustumSize * effectiveAspect;
+      const desiredVisibleWidth = this.roomWidth / targetFillRatio;
+      optimalZoom = visibleWidth / desiredVisibleWidth;
+    }
+
+    // Clamp to valid zoom range
+    optimalZoom = Math.max(ORTHOGRAPHIC_SETTINGS.MIN_ZOOM, Math.min(optimalZoom, ORTHOGRAPHIC_SETTINGS.MAX_ZOOM));
+
+    console.log(`📐 Calculated optimal 2D zoom: ${optimalZoom.toFixed(3)} for room ${this.roomWidth}x${this.roomHeight}cm`);
+
+    return optimalZoom;
+  }
+
   // Valid L-shape corner values for localStorage validation
   private static readonly VALID_LSHAPE_CORNERS = ['nw', 'ne', 'se', 'sw'] as const;
 
@@ -409,7 +462,8 @@ export class SceneManager {
       // Reset orthographic camera zoom and position to show full room with labels
       // Apply the same up vector rotation to orthographic camera
       if (this.orthographicCamera) {
-        this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
+        // Calculate optimal zoom to fit room nicely in viewport
+        this.orthographicCamera.zoom = this.calculateOptimalZoomForRoom();
         this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
         this.orthographicCamera.up.copy(targetUp);
         this.orthographicCamera.lookAt(0, 0, 0);
@@ -435,6 +489,9 @@ export class SceneManager {
 
       // Switch to flat 2D lighting (no shadows, even illumination)
       this.switchTo2DLighting();
+
+      // Switch floor to dark blueprint appearance
+      this.switchTo2DFloor();
 
       // Create 2D schematic overlays for thin objects (shower screens, mirrors)
       this.create2DSchematicOverlays();
@@ -530,6 +587,9 @@ export class SceneManager {
 
       // Restore 3D lighting with shadows
       this.switchTo3DLighting();
+
+      // Restore floor to 3D textured appearance
+      this.switchTo3DFloor();
 
       // Remove 2D schematic overlays
       this.remove2DSchematicOverlays();
@@ -724,13 +784,14 @@ export class SceneManager {
   }
 
   /**
-   * Reset 2D view to center on room
+   * Reset 2D view to center on room with optimal zoom
    */
   public reset2DView(): void {
     if (!this.orthographicCamera || this.viewMode !== '2d') return;
 
     this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
-    this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
+    // Use calculated optimal zoom for consistent fit
+    this.orthographicCamera.zoom = this.calculateOptimalZoomForRoom();
     this.orthographicCamera.updateProjectionMatrix();
   }
 
@@ -836,15 +897,15 @@ export class SceneManager {
     if (this.renderer) {
       this.shadowsEnabled = this.renderer.shadowMap.enabled;
       this.renderer.shadowMap.enabled = false;
-      // Balanced tone mapping exposure
-      this.renderer.toneMappingExposure = 1.2;
+      // Lower tone mapping exposure for darker blueprint appearance
+      this.renderer.toneMappingExposure = 0.8;
     }
 
-    // Adjust ambient light for even illumination
+    // Adjust ambient light for even but subdued illumination
     this.lights.forEach(light => {
       if (light instanceof THREE.AmbientLight) {
         this.originalAmbientIntensity = light.intensity;
-        light.intensity = 1.5; // Balanced even lighting
+        light.intensity = 1.0; // Lower ambient for darker floor appearance
       }
       // Disable point lights for flat appearance
       if (light instanceof THREE.PointLight) {
@@ -895,6 +956,45 @@ export class SceneManager {
     });
 
     console.log('✅ 3D lighting mode restored');
+  }
+
+  /**
+   * Switch floor to 2D blueprint appearance - solid dark color for better contrast
+   * The blueprint grid overlay provides the tile effect
+   */
+  private switchTo2DFloor(): void {
+    if (!this.floorRef) return;
+
+    // Store original material for restoration
+    if (!this.originalFloorMaterial) {
+      this.originalFloorMaterial = this.floorRef.material as THREE.Material;
+    }
+
+    // Create blueprint floor material - dark gray like the reference image
+    const blueprintFloorMaterial = new THREE.MeshBasicMaterial({
+      color: 0x454545, // Dark gray matching reference blueprint style
+      side: THREE.DoubleSide,
+    });
+
+    this.floorRef.material = blueprintFloorMaterial;
+    console.log('✅ 2D floor appearance applied - dark blueprint style');
+  }
+
+  /**
+   * Restore floor to 3D textured appearance
+   */
+  private switchTo3DFloor(): void {
+    if (!this.floorRef || !this.originalFloorMaterial) return;
+
+    // Dispose the temporary 2D material
+    const currentMaterial = this.floorRef.material as THREE.Material;
+    if (currentMaterial !== this.originalFloorMaterial) {
+      currentMaterial.dispose();
+    }
+
+    // Restore original material
+    this.floorRef.material = this.originalFloorMaterial;
+    console.log('✅ 3D floor appearance restored');
   }
 
   /**

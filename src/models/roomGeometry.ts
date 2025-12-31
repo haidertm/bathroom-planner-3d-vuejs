@@ -20,9 +20,10 @@ interface WallConfig {
 // FIXED: Single material creation section - no duplicates
 const createGridMaterials = () => {
   const floorGridMaterial = new THREE.LineBasicMaterial({
-    color: 0x888888,
-    opacity: 0.3,
-    transparent: true
+    color: 0x444444, // Darker color for better visibility on floors
+    opacity: 0.6,    // Increased opacity for clearer tile lines
+    transparent: true,
+    depthWrite: false // Prevent z-fighting
   });
 
   const wallGridMaterial = new THREE.LineBasicMaterial({
@@ -54,11 +55,14 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
 
   let lineCount = 0;
 
+  // Grid Y position - slightly above floor to prevent z-fighting
+  const gridY = 0.5;
+
   // FLOOR GRID - Create vertical lines (parallel to Z-axis)
   for (let x = -width / 2; x <= width / 2; x += GRID_SPACING) {
     const points: THREE.Vector3[] = [
-      new THREE.Vector3(x, 0, -height / 2),
-      new THREE.Vector3(x, 0, height / 2)
+      new THREE.Vector3(x, gridY, -height / 2),
+      new THREE.Vector3(x, gridY, height / 2)
     ];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const line = new THREE.Line(geometry, floorGridMaterial);
@@ -69,8 +73,8 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
   // FLOOR GRID - Create horizontal lines (parallel to X-axis)
   for (let z = -height / 2; z <= height / 2; z += GRID_SPACING) {
     const points: THREE.Vector3[] = [
-      new THREE.Vector3(-width / 2, 0, z),
-      new THREE.Vector3(width / 2, 0, z)
+      new THREE.Vector3(-width / 2, gridY, z),
+      new THREE.Vector3(width / 2, gridY, z)
     ];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const line = new THREE.Line(geometry, floorGridMaterial);

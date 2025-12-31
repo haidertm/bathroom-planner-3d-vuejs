@@ -263,6 +263,11 @@ export class EventHandlers {
 
               // Update arrow positions to follow the object
               this.rotationArrows?.updateArrowPositions();
+
+              // Update schematic overlay rotation in 2D mode
+              if (this.sceneManager?.updateSchematicPosition) {
+                this.sceneManager.updateSchematicPosition(itemId);
+              }
           }
       });
 
