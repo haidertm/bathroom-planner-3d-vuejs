@@ -213,6 +213,11 @@ export class RotationArrows {
         return this.enabled;
     }
 
+    // Method to update the active camera (for 2D/3D view switching)
+    public setActiveCamera(camera: THREE.Camera): void {
+        this.camera = camera;
+    }
+
     private showArrows(): void {
         this.arrowGroup.visible = true;
     }

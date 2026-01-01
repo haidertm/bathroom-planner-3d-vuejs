@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
     "glb:scan": "tsx ./scripts/get-glb-dimensions.ts",
     "structure": "tree -a -I 'node_modules|.git|dist|build|.idea|.vscode|.codesandbox|.devcontainer' > project-structure.txt",
     "server": "tsx server/index.ts",
@@ -20,8 +22,6 @@
     "@gtm-support/vue-gtm": "^3.1.0",
     "@openreplay/tracker": "^17.0.0",
     "@openreplay/tracker-assist": "^11.0.10",
-    "@react-three/drei": "^9.82.6",
-    "@react-three/fiber": "^8.13.6",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
@@ -42,9 +42,11 @@
     "@types/pg": "^8.16.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "concurrently": "^9.2.1",
+    "jsdom": "^25.0.1",
     "postgres": "^3.4.7",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
+    "vitest": "^2.1.8",
     "vue-tsc": "^2.1.10"
   }
 }
