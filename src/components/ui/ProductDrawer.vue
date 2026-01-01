@@ -564,6 +564,39 @@ watch(() => props.isOpen, (isOpen) => {
   }
 });
 
+// Update selectedProduct when productData changes (e.g., after refresh)
+watch(() => props.productData, (newProductData) => {
+  if (selectedProduct.value && newProductData) {
+    const productId = selectedProduct.value.id;
+    let updatedProduct = null;
+
+    // Search through all categories to find the updated product
+    for (const category of Object.keys(newProductData)) {
+      const categoryProducts = newProductData[category] || [];
+      updatedProduct = categoryProducts.find(p => p.id === productId);
+      if (updatedProduct) break;
+    }
+
+    if (updatedProduct) {
+      console.log('🔄 Updating selectedProduct with fresh data:', updatedProduct.name);
+      // Update selectedProduct with fresh data
+      selectedProduct.value = updatedProduct;
+      // Also update selectedVariant if it exists
+      if (selectedVariant.value && updatedProduct.variants) {
+        const variantSku = selectedVariant.value.sku;
+        const variantId = selectedVariant.value.id;
+        const updatedVariant = updatedProduct.variants.find(
+          v => v.sku === variantSku || v.id === variantId
+        );
+        if (updatedVariant) {
+          console.log('🔄 Updating selectedVariant with fresh data:', updatedVariant.name);
+          selectedVariant.value = updatedVariant;
+        }
+      }
+    }
+  }
+}, { deep: true });
+
 const formatDimensions = (d = {}) => {
   const parts = []
   if (d.width != null) parts.push(`${d.width}cm`)

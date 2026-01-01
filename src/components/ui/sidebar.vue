@@ -98,6 +98,17 @@
             :style="mainAccordionHeaderStyle"
         >
           <h4 :style="accordionTitleStyle">Bathroom Items</h4>
+          <button
+            @click.stop="fetchProductsFromAPI"
+            :style="refreshButtonStyle"
+            :disabled="isLoadingProducts"
+            title="Refresh products from database"
+          >
+            <svg :style="{ animation: isLoadingProducts ? 'spin 1s linear infinite' : 'none' }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+            </svg>
+          </button>
           <span :style="getArrowStyle(isBathroomItemsExpanded)">▼</span>
         </div>
         <div
@@ -1523,6 +1534,21 @@ const accordionTitleStyle = computed(() => ({
   fontWeight: 'bold',
   color: '#ffffff',
   fontFamily: 'Arial, sans-serif'
+}))
+
+const refreshButtonStyle = computed(() => ({
+  marginLeft: 'auto',
+  marginRight: '10px',
+  padding: '4px 8px',
+  border: 'none',
+  borderRadius: '4px',
+  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  color: '#ffffff',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'all 0.2s ease',
 }))
 
 // Room Settings styles
