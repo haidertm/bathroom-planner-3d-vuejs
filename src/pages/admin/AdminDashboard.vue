@@ -114,7 +114,12 @@ const handleToggleEnabled = async (product: AdminProduct) => {
 
 // Handle product edit - navigate to edit page
 const handleEditProduct = (product: AdminProduct) => {
-  router.push(`/vadmin/products/${product.dbId || product.id}/edit`);
+  // Only allow editing products that exist in the database
+  if (!product.dbId) {
+    toast.warning('This product is from local data and cannot be edited. Sync with database first.');
+    return;
+  }
+  router.push(`/vadmin/products/${product.dbId}/edit`);
 };
 
 // Export to CSV
