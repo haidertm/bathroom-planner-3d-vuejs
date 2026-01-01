@@ -186,15 +186,21 @@ const handleEnabledFilterChange = (event: Event) => {
       <!-- Status Filter -->
       <div class="filter-group">
         <label class="filter-label">Status</label>
-        <select
-          :value="filters.enabledFilter"
-          @change="handleEnabledFilterChange"
-          class="sort-select"
-        >
-          <option value="all">All Products</option>
-          <option value="enabled">Enabled Only</option>
-          <option value="disabled">Disabled Only</option>
-        </select>
+        <div class="status-select-wrapper">
+          <div class="status-indicator" :class="filters.enabledFilter"></div>
+          <select
+            :value="filters.enabledFilter"
+            @change="handleEnabledFilterChange"
+            class="status-select"
+          >
+            <option value="all">All Products</option>
+            <option value="enabled">Enabled Only</option>
+            <option value="disabled">Disabled Only</option>
+          </select>
+          <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
       </div>
 
       <!-- Sort -->
@@ -446,6 +452,70 @@ const handleEnabledFilterChange = (event: Event) => {
 .sort-select:focus {
   border-color: var(--primary-color, #29275B);
   box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
+}
+
+/* Status Select Styles */
+.status-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.status-indicator {
+  position: absolute;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6b7280;
+  z-index: 1;
+  pointer-events: none;
+  transition: background-color 0.2s ease;
+}
+
+.status-indicator.all {
+  background-color: #6b7280;
+}
+
+.status-indicator.enabled {
+  background-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+.status-indicator.disabled {
+  background-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.status-select {
+  width: 100%;
+  padding: 10px 36px 10px 32px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background-color: #ffffff;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.status-select:focus {
+  border-color: var(--primary-color, #29275B);
+  box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
+}
+
+.status-select:hover {
+  border-color: #cbd5e1;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 12px;
+  color: var(--muted-color, #6b7280);
+  pointer-events: none;
 }
 
 .sort-order-btn {
