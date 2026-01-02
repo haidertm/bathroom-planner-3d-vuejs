@@ -63,7 +63,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 <template>
   <div
-    v-if="totalPages > 1"
+    v-if="totalPages > 1 && totalItems > 0"
     class="pagination"
     role="navigation"
     aria-label="Pagination"
