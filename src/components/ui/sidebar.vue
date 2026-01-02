@@ -432,6 +432,7 @@ import ProductDrawer from './ProductDrawer.vue'
 
 // NEW: Import selective preloading functions
 import localProductData from '../../mocks/productData.js'
+import { productApi } from '../../services/api'
 
 // Reactive product data - will be loaded from API
 const productData = ref(localProductData)
@@ -441,16 +442,11 @@ const isLoadingProducts = ref(false)
 const fetchProductsFromAPI = async () => {
   isLoadingProducts.value = true
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/products/enabled`)
-    if (response.ok) {
-      const data = await response.json()
-      // API already returns data grouped by category
-      productData.value = data
-      console.log('✅ Loaded products from database API:', Object.keys(productData.value))
-    } else {
-      console.warn('⚠️ API returned error, using local product data')
-      productData.value = localProductData
-    }
+    // Use the productApi service for consistency with admin dashboard
+    const data = await productApi.getEnabledProducts()
+    // API already returns data grouped by category
+    productData.value = data
+    console.log('✅ Loaded products from database API:', Object.keys(productData.value))
   } catch (error) {
     console.warn('⚠️ Failed to fetch from API, using local product data:', error.message)
     productData.value = localProductData

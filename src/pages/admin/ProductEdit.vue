@@ -61,11 +61,11 @@ const fetchProduct = async () => {
   }
 };
 
-const handleSave = async (updatedProduct: AdminProduct) => {
+const handleSave = async (updatedProduct: AdminProduct | Omit<AdminProduct, 'id' | 'createdAt' | 'updatedAt'>) => {
   try {
     const productId = route.params.id as string;
 
-    await productApi.updateProduct(Number(productId), updatedProduct);
+    await productApi.updateProduct(Number(productId), updatedProduct as AdminProduct);
 
     // Go back to dashboard
     router.push('/vadmin/dashboard');

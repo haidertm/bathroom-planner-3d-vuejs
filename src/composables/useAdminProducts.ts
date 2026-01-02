@@ -108,10 +108,10 @@ const fetchProducts = async (): Promise<void> => {
     console.warn('API not available, falling back to local data:', err);
     useLocalFallback.value = true;
 
-    // Fallback to local data
+    // Fallback to local data - store unfiltered products
+    // Filtering will be applied via the filteredProducts computed property
     const localProducts = await loadLocalProducts();
-    products.value = applyLocalFilters(localProducts);
-    pagination.value.totalItems = localProducts.length;
+    products.value = localProducts;
     error.value = 'Using local data (API unavailable)';
   } finally {
     isLoading.value = false;
@@ -234,10 +234,13 @@ export function useAdminProducts() {
     return products.value;
   });
 
-  // Total pages
-  const totalPages = computed(() =>
-    Math.ceil(pagination.value.totalItems / pagination.value.itemsPerPage)
-  );
+  // Total pages - use filteredProducts length in local fallback mode
+  const totalPages = computed(() => {
+    const totalItems = useLocalFallback.value
+      ? filteredProducts.value.length
+      : pagination.value.totalItems;
+    return Math.ceil(totalItems / pagination.value.itemsPerPage);
+  });
 
   // Watch filters and refetch when they change
   watch(

@@ -221,8 +221,21 @@ const handleSubmit = () => {
     return;
   }
 
+  // Sync the first variant's title with the product name
+  // This ensures consistency between product name and variant title
+  const updatedVariants = formData.value.variants.map((variant, index) => {
+    if (index === 0) {
+      return {
+        ...variant,
+        title: formData.value.name, // Sync first variant title with product name
+      };
+    }
+    return variant;
+  });
+
   const productData = {
     ...formData.value,
+    variants: updatedVariants,
   };
 
   if (props.mode === 'edit' && props.product) {
@@ -506,7 +519,7 @@ const handleCancel = () => {
           >
             <div :style="variantCardHeaderStyle" @click="toggleVariant(variant.id)">
               <div :style="variantInfoStyle">
-                <img v-if="variant.image" :src="formatImagePath(variant.image)" :alt="variant.name" :style="variantThumbnailStyle" />
+                <img v-if="variant.image" :src="formatImagePath(variant.image)" :alt="variant.title || variant.name" :style="variantThumbnailStyle" />
                 <div :style="variantPlaceholderStyle" v-else>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -515,7 +528,7 @@ const handleCancel = () => {
                   </svg>
                 </div>
                 <div>
-                  <p :style="variantNameStyle">{{ variant.name }}</p>
+                  <p :style="variantNameStyle">{{ index === 0 ? formData.name : (variant.title || variant.name) }}</p>
                   <p :style="variantSkuStyle">SKU: {{ variant.sku }} | £{{ variant.price }}</p>
                 </div>
               </div>
