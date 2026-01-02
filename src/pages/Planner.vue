@@ -97,6 +97,24 @@
         size="large"
     />
 
+    <!-- Multi-select Toggle -->
+    <div :style="multiSelectContainerStyle">
+      <button 
+        @click="toggleMultiSelect"
+        :style="multiSelectButtonStyle"
+        :title="isMultiSelectMode ? 'Disable Multi-select' : 'Enable Multi-select'"
+      >
+        {{ isMultiSelectMode ? '✅ Multi-select' : '🖱️ Multi-select' }}
+      </button>
+      <button 
+        v-if="isMultiSelectMode"
+        @click="selectAllItems"
+        :style="selectAllButtonStyle"
+      >
+        Select All
+      </button>
+    </div>
+
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
       <div :style="popupContentStyle" @click.stop>
@@ -218,6 +236,20 @@ const selectedBathroomItem = computed(() => {
 
 // Track dragging state to hide overlay during drag
 const isDraggingObject = ref(false)
+const isMultiSelectMode = ref(false)
+
+const toggleMultiSelect = () => {
+  isMultiSelectMode.value = !isMultiSelectMode.value
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.setMultiSelectMode(isMultiSelectMode.value)
+  }
+}
+
+const selectAllItems = () => {
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.selectAllItems()
+  }
+}
 
 // Handlers for drag state changes
 const handleDragStart = () => {
@@ -867,6 +899,46 @@ const toggleMeasurementStyle = computed(() => ({
   fontSize: isMobileDevice.value ? '16px' : '20px',
   maxWidth: isMobileDevice.value ? '280px' : '320px',
   lineHeight: '1.2'
+}))
+
+const multiSelectContainerStyle = computed(() => ({
+  position: 'absolute',
+  bottom: isMobileDevice.value ? '18%' : '100px',
+  right: isMobileDevice.value ? '12%' : '20px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  zIndex: 1000
+}))
+
+const multiSelectButtonStyle = computed(() => ({
+  padding: '12px 20px',
+  backgroundColor: isMultiSelectMode.value ? '#4CAF50' : 'rgba(255, 255, 255, 0.95)',
+  color: isMultiSelectMode.value ? 'white' : '#333',
+  border: 'none',
+  borderRadius: '8px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  cursor: 'pointer',
+  fontWeight: '600',
+  fontSize: '14px',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: '140px'
+}))
+
+const selectAllButtonStyle = computed(() => ({
+  padding: '10px 15px',
+  backgroundColor: '#2196F3',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  cursor: 'pointer',
+  fontWeight: '600',
+  fontSize: '13px',
+  transition: 'all 0.2s ease'
 }))
 
 const popupOverlayStyle = computed(() => ({

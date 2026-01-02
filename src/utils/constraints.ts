@@ -1344,9 +1344,28 @@ export const constrainToWalls = (
     if (targetWall === 'notch-east' && !notch) validTargetWall = undefined;
     if (targetWall === 'notch-south' && !notch) validTargetWall = undefined;
 
-    const nearestWall = validTargetWall || Object.entries(wallDistances).reduce((a, b) =>
-        wallDistances[a[0]] < wallDistances[b[0]] ? a : b
-    )[0] as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
+    // ✅ NEW: Implement stickiness logic within constrainToWalls
+    const STICKINESS_THRESHOLD = 40; // 40cm stickiness
+    let nearestWall: 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
+
+    if (validTargetWall && wallDistances[validTargetWall] !== undefined) {
+        // Find the absolute closest wall
+        const absoluteClosest = Object.entries(wallDistances).reduce((a, b) =>
+            wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+        )[0] as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
+
+        // Prefer targetWall if it's within the stickiness threshold of the absolute closest
+        if (wallDistances[validTargetWall] < wallDistances[absoluteClosest] + STICKINESS_THRESHOLD) {
+            nearestWall = validTargetWall as any;
+        } else {
+            nearestWall = absoluteClosest;
+        }
+    } else {
+        // Standard nearest wall calculation
+        nearestWall = Object.entries(wallDistances).reduce((a, b) =>
+            wallDistances[a[0]] < wallDistances[b[0]] ? a : b
+        )[0] as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
+    }
 
     let constrainedPosition = { ...position }; // ✅ Start with original position
     let wallRotation = 0;
