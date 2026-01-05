@@ -114,9 +114,8 @@ const handleToggleEnabled = async (product: AdminProduct) => {
 
 // Handle product edit - navigate to edit page
 const handleEditProduct = (product: AdminProduct) => {
-  // Only allow editing products that exist in the database
   if (!product.dbId) {
-    toast.warning('This product is from local data and cannot be edited. Sync with database first.');
+    toast.warning('This product cannot be edited in local fallback mode.');
     return;
   }
   router.push(`/vadmin/products/${product.dbId}/edit`);
@@ -156,8 +155,12 @@ const exportToCSV = () => {
   link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    link.click();
+  } finally {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Revoke the object URL
+  }
 
   toast.success(`Exported ${products.length} products to CSV`);
 };

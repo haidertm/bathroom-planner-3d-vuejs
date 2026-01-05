@@ -824,7 +824,7 @@ const readyProducts = computed(() => {
       if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
         return {
           id: matchingVariant.id || matchingVariant.sku,
-          name: matchingVariant.title || matchingVariant.name || product.name,
+          name: product.name || matchingVariant.title || matchingVariant.name,
           price: matchingVariant.price || product.price,
           image: matchingVariant.image || product.image,
           link: matchingVariant.link || product.link,
@@ -1069,13 +1069,19 @@ const getDisplayImage = () => {
 }
 
 const getDisplayName = () => {
+  // Always prioritize product.name for consistency with dashboard
+  // This ensures the name from the database is shown, not the variant title
+  if (selectedProduct.value?.name) {
+    return selectedProduct.value.name
+  }
+  // Fallback to variant title/name if product name not available
   if (selectedVariant.value && selectedVariant.value.title) {
     return selectedVariant.value.title
   }
   if (selectedVariant.value && selectedVariant.value.name) {
-    return `${selectedProduct.value?.name} - ${selectedVariant.value.name}`
+    return selectedVariant.value.name
   }
-  return selectedProduct.value?.name || ''
+  return ''
 }
 
 const getDisplaySku = () => {

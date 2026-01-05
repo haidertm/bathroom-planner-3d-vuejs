@@ -45,8 +45,8 @@ const initializeDefaultAdmin = (): void => {
   }
 };
 
-// Load session from storage
-const loadSession = (): AdminSession | null => {
+// Load session from storage (exported for use in router guard)
+export const loadSession = (): AdminSession | null => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;

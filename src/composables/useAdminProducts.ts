@@ -1,5 +1,5 @@
 // Admin Products Management Composable - API Version
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onScopeDispose } from 'vue';
 import type { ComponentType } from '../constants/components';
 import { COMPONENTS } from '../constants/components';
 import type {
@@ -8,23 +8,43 @@ import type {
   PaginationState,
   AdminStats,
 } from '../types/admin';
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_PAGINATION,
+} from '../types/admin';
 import { productApi } from '../services/api';
+
+// Debounce utility function
+function debounce<T extends (...args: any[]) => any>(
+  fn: T,
+  delay: number
+): T & { cancel: () => void } {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const debounced = ((...args: Parameters<T>) => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      fn(...args);
+      timeoutId = null;
+    }, delay);
+  }) as T & { cancel: () => void };
+
+  debounced.cancel = () => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  return debounced;
+}
 
 // Reactive state
 const products = ref<AdminProduct[]>([]);
-const filters = ref<ProductFilters>({
-  categories: [],
-  searchQuery: '',
-  priceRange: { min: null, max: null },
-  sortBy: 'name',
-  sortOrder: 'asc',
-  enabledFilter: 'all',
-});
-const pagination = ref<PaginationState>({
-  currentPage: 1,
-  itemsPerPage: 12,
-  totalItems: 0,
-});
+const filters = ref<ProductFilters>({ ...DEFAULT_FILTERS });
+const pagination = ref<PaginationState>({ ...DEFAULT_PAGINATION });
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
@@ -39,6 +59,9 @@ const stats = ref<AdminStats>({
 
 // Flag to track if we're using API or fallback
 const useLocalFallback = ref(false);
+
+// Flag to prevent duplicate API calls during initialization
+const isInitialLoad = ref(true);
 
 // Import local product data for fallback
 let localProductData: any = null;
@@ -142,10 +165,22 @@ const applyLocalFilters = (allProducts: AdminProduct[]): AdminProduct[] => {
 
   // Filter by price range
   if (filters.value.priceRange.min !== null) {
-    result = result.filter(p => parseFloat(p.price) >= filters.value.priceRange.min!);
+    const minPrice = filters.value.priceRange.min;
+    result = result.filter(p => {
+      const price = parseFloat(p.price);
+      // Exclude products with non-finite prices when filtering by min price
+      if (!Number.isFinite(price)) return false;
+      return price >= minPrice;
+    });
   }
   if (filters.value.priceRange.max !== null) {
-    result = result.filter(p => parseFloat(p.price) <= filters.value.priceRange.max!);
+    const maxPrice = filters.value.priceRange.max;
+    result = result.filter(p => {
+      const price = parseFloat(p.price);
+      // Exclude products with non-finite prices when filtering by max price
+      if (!Number.isFinite(price)) return false;
+      return price <= maxPrice;
+    });
   }
 
   // Filter by enabled status
@@ -161,9 +196,18 @@ const applyLocalFilters = (allProducts: AdminProduct[]): AdminProduct[] => {
       case 'name':
         comparison = a.name.localeCompare(b.name);
         break;
-      case 'price':
-        comparison = parseFloat(a.price) - parseFloat(b.price);
+      case 'price': {
+        const priceA = parseFloat(a.price);
+        const priceB = parseFloat(b.price);
+        const validA = Number.isFinite(priceA);
+        const validB = Number.isFinite(priceB);
+        // Sort invalid prices to the end
+        if (!validA && !validB) comparison = 0;
+        else if (!validA) comparison = 1;
+        else if (!validB) comparison = -1;
+        else comparison = priceA - priceB;
         break;
+      }
       case 'category':
         comparison = a.category.localeCompare(b.category);
         break;
@@ -210,9 +254,14 @@ const fetchStats = async (): Promise<void> => {
 
 export function useAdminProducts() {
   // Initialize products on first use
-  if (products.value.length === 0) {
-    fetchProducts();
-    fetchStats();
+  if (isInitialLoad.value && products.value.length === 0) {
+    // Fetch initial data and mark initialization complete
+    Promise.all([fetchProducts(), fetchStats()]).finally(() => {
+      isInitialLoad.value = false;
+    });
+  } else {
+    // If products are already loaded, just ensure the flag is reset
+    isInitialLoad.value = false;
   }
 
   // Filtered products (for local mode - in API mode, filtering is done server-side)
@@ -242,21 +291,35 @@ export function useAdminProducts() {
     return Math.ceil(totalItems / pagination.value.itemsPerPage);
   });
 
-  // Watch filters and refetch when they change
+  // Debounced fetch to prevent excessive API calls on rapid changes (e.g., keystrokes)
+  const debouncedFetchProducts = debounce(() => {
+    fetchProducts();
+  }, 300);
+
+  // Clean up debounced function on scope disposal to prevent memory leaks
+  onScopeDispose(() => {
+    debouncedFetchProducts.cancel();
+  });
+
+  // Watch filters and refetch when they change (debounced)
   watch(
     filters,
     () => {
+      // Skip during initial load to prevent duplicate API calls
+      if (isInitialLoad.value) return;
       pagination.value.currentPage = 1;
-      fetchProducts();
+      debouncedFetchProducts();
     },
     { deep: true }
   );
 
-  // Watch pagination changes
+  // Watch pagination changes (debounced)
   watch(
     () => [pagination.value.currentPage, pagination.value.itemsPerPage],
     () => {
-      fetchProducts();
+      // Skip during initial load to prevent duplicate API calls
+      if (isInitialLoad.value) return;
+      debouncedFetchProducts();
     }
   );
 
@@ -351,6 +414,8 @@ export function useAdminProducts() {
     try {
       const created = await productApi.createProduct(product);
       products.value.push(created);
+      // Update pagination total (totalPages computed property will update automatically)
+      pagination.value.totalItems = (pagination.value.totalItems ?? 0) + 1;
       fetchStats();
       return created;
     } catch (err) {
@@ -370,6 +435,8 @@ export function useAdminProducts() {
       await productApi.deleteProduct(product.dbId);
       // Remove from local state
       products.value = products.value.filter(p => p.id !== product.id);
+      // Update pagination total (totalPages computed property will update automatically)
+      pagination.value.totalItems = Math.max(0, (pagination.value.totalItems ?? 0) - 1);
       fetchStats();
       return true;
     } catch (err) {

@@ -1,13 +1,44 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
+import { onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 
 const router = useRouter();
+const route = useRoute();
+
+// Safe GTM dataLayer push helper
+const pushToDataLayer = (event: Record<string, unknown>) => {
+  if (typeof window !== 'undefined' && window.dataLayer) {
+    window.dataLayer.push(event);
+  }
+};
+
+// Track 404 page view on mount
+onMounted(() => {
+  pushToDataLayer({
+    event: '404_view',
+    page: 'NotFound',
+    path: route.fullPath,
+    timestamp: new Date().toISOString(),
+  });
+});
 
 const goHome = () => {
+  pushToDataLayer({
+    event: 'notfound_navigate',
+    action: 'home',
+    label: 'Go Home button clicked',
+    timestamp: new Date().toISOString(),
+  });
   router.push('/');
 };
 
 const goBack = () => {
+  pushToDataLayer({
+    event: 'notfound_navigate',
+    action: 'back',
+    label: 'Go Back button clicked',
+    timestamp: new Date().toISOString(),
+  });
   router.back();
 };
 </script>

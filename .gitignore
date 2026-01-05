@@ -33,3 +33,13 @@ dist-ssr
 *.sw?
 
 .env
+
+# Database scripts with credentials (keep local only)
+test-pg.sh
+run-migration.sh
+run-migration2.sh
+*.sql
+
+# Auto Claude data directory
+.auto-claude/
+GEMINI.md

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// @ts-nocheck - Disable strict type checking for inline styles
 import { ref, computed, watch, onMounted } from 'vue';
 import { COMPONENTS, type ComponentType } from '../../constants/components';
 import type { AdminProduct, ProductVariant, ValidationErrors } from '../../types/admin';
+
+type ProductFormData = Omit<AdminProduct, 'dbId' | 'createdAt' | 'updatedAt' | 'lastSyncedAt'>;
 
 const props = defineProps<{
   product: AdminProduct | null;
@@ -15,7 +16,7 @@ const emit = defineEmits<{
 }>();
 
 // Form state
-const formData = ref({
+const formData = ref<ProductFormData>({
   id: '',
   category: 'Furniture' as ComponentType,
   name: '',
@@ -23,8 +24,9 @@ const formData = ref({
   link: '',
   image: '',
   variantType: 'Default',
-  features: [] as string[],
-  variants: [] as ProductVariant[],
+  features: [],
+  variants: [],
+  enabled: true,
 });
 
 const newFeature = ref('');
@@ -68,6 +70,7 @@ onMounted(() => {
       variantType: props.product.variantType,
       features: [...props.product.features],
       variants: JSON.parse(JSON.stringify(props.product.variants)),
+      enabled: props.product.enabled,
     };
   }
 });
@@ -85,6 +88,7 @@ watch(() => props.product, (newProduct) => {
       variantType: newProduct.variantType,
       features: [...newProduct.features],
       variants: JSON.parse(JSON.stringify(newProduct.variants)),
+      enabled: newProduct.enabled,
     };
   } else {
     resetForm();
@@ -103,6 +107,7 @@ const resetForm = () => {
     variantType: 'Default',
     features: [],
     variants: [],
+    enabled: true,
   };
   errors.value = {};
 };
@@ -122,7 +127,7 @@ const removeFeature = (index: number) => {
 
 // Generate variant ID
 const generateVariantId = () => {
-  return `var_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  return `var_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 };
 
 // Reset new variant form
@@ -221,8 +226,21 @@ const handleSubmit = () => {
     return;
   }
 
+  // Sync the first variant's title with the product name
+  // This ensures consistency between product name and variant title
+  const updatedVariants = formData.value.variants.map((variant, index) => {
+    if (index === 0) {
+      return {
+        ...variant,
+        title: formData.value.name, // Sync first variant title with product name
+      };
+    }
+    return variant;
+  });
+
   const productData = {
     ...formData.value,
+    variants: updatedVariants,
   };
 
   if (props.mode === 'edit' && props.product) {
@@ -244,17 +262,17 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <div :style="formContainerStyle">
-    <div :style="formHeaderStyle">
-      <h2 :style="formTitleStyle">{{ mode === 'add' ? 'Add New Product' : 'Edit Product' }}</h2>
-      <p :style="formSubtitleStyle">{{ mode === 'add' ? 'Create a new product with variants' : 'Update product details and variants' }}</p>
+  <div class="form-container">
+    <div class="form-header">
+      <h2 class="form-title">{{ mode === 'add' ? 'Add New Product' : 'Edit Product' }}</h2>
+      <p class="form-subtitle">{{ mode === 'add' ? 'Create a new product with variants' : 'Update product details and variants' }}</p>
     </div>
 
     <!-- Tabs -->
-    <div :style="tabsStyle">
+    <div class="tabs">
       <button
         @click="activeTab = 'details'"
-        :style="[tabStyle, activeTab === 'details' && tabActiveStyle]"
+        :class="['tab', { 'tab-active': activeTab === 'details' }]"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -267,7 +285,7 @@ const handleCancel = () => {
       </button>
       <button
         @click="activeTab = 'variants'"
-        :style="[tabStyle, activeTab === 'variants' && tabActiveStyle]"
+        :class="['tab', { 'tab-active': activeTab === 'variants' }]"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"/>
@@ -276,123 +294,123 @@ const handleCancel = () => {
           <rect x="3" y="14" width="7" height="7"/>
         </svg>
         Variants ({{ formData.variants.length }})
-        <span v-if="errors.variants" :style="tabErrorStyle">!</span>
+        <span v-if="errors.variants" class="tab-error">!</span>
       </button>
     </div>
 
-    <form @submit.prevent="handleSubmit" :style="formStyle">
+    <form @submit.prevent="handleSubmit" class="form">
       <!-- Details Tab -->
-      <div v-show="activeTab === 'details'" :style="tabContentStyle">
-        <div :style="formGridStyle">
+      <div v-show="activeTab === 'details'" class="tab-content">
+        <div class="form-grid">
           <!-- Primary SKU (read-only, from first variant) -->
-          <div v-if="mode === 'edit'" :style="inputGroupStyle">
-            <label :style="labelStyle">Product SKU</label>
+          <div v-if="mode === 'edit'" class="input-group">
+            <label class="label">Product SKU</label>
             <input
               :value="primarySku"
               type="text"
               readonly
-              :style="[inputStyle, { backgroundColor: '#f5f5f5', cursor: 'not-allowed' }]"
+              class="input input-readonly"
             />
-            <span :style="{ fontSize: '11px', color: '#666', marginTop: '4px' }">SKU from first variant (read-only)</span>
+            <span class="sku-hint">SKU from first variant (read-only)</span>
           </div>
 
           <!-- Name -->
-          <div :style="inputGroupStyle">
-            <label :style="labelStyle">Product Name *</label>
+          <div class="input-group">
+            <label class="label">Product Name *</label>
             <input
               v-model="formData.name"
               type="text"
               placeholder="Enter product name"
-              :style="[inputStyle, errors.name && inputErrorStyle]"
+              :class="['input', { 'input-error': errors.name }]"
             />
-            <span v-if="errors.name" :style="errorTextStyle">{{ errors.name }}</span>
+            <span v-if="errors.name" class="error-text">{{ errors.name }}</span>
           </div>
 
           <!-- Category -->
-          <div :style="inputGroupStyle">
-            <label :style="labelStyle">Category *</label>
-            <select v-model="formData.category" :style="[selectStyle, errors.category && inputErrorStyle]">
+          <div class="input-group">
+            <label class="label">Category *</label>
+            <select v-model="formData.category" :class="['select', { 'input-error': errors.category }]">
               <option v-for="cat in COMPONENTS" :key="cat" :value="cat">{{ cat }}</option>
             </select>
-            <span v-if="errors.category" :style="errorTextStyle">{{ errors.category }}</span>
+            <span v-if="errors.category" class="error-text">{{ errors.category }}</span>
           </div>
 
           <!-- Price -->
-          <div :style="inputGroupStyle">
-            <label :style="labelStyle">Price (£) *</label>
+          <div class="input-group">
+            <label class="label">Price (£) *</label>
             <input
               v-model="formData.price"
               type="text"
               placeholder="0.00"
-              :style="[inputStyle, errors.price && inputErrorStyle]"
+              :class="['input', { 'input-error': errors.price }]"
             />
-            <span v-if="errors.price" :style="errorTextStyle">{{ errors.price }}</span>
+            <span v-if="errors.price" class="error-text">{{ errors.price }}</span>
           </div>
 
           <!-- Variant Type -->
-          <div :style="inputGroupStyle">
-            <label :style="labelStyle">Variant Type</label>
+          <div class="input-group">
+            <label class="label">Variant Type</label>
             <input
               v-model="formData.variantType"
               type="text"
               placeholder="e.g., Size Options, Color Options"
-              :style="inputStyle"
+              class="input"
             />
           </div>
 
           <!-- Link -->
-          <div :style="[inputGroupStyle, { gridColumn: '1 / -1' }]">
-            <label :style="labelStyle">Product Link</label>
+          <div class="input-group full-width">
+            <label class="label">Product Link</label>
             <input
               v-model="formData.link"
               type="url"
               placeholder="https://example.com/product"
-              :style="inputStyle"
+              class="input"
             />
           </div>
 
           <!-- Image URL -->
-          <div :style="[inputGroupStyle, { gridColumn: '1 / -1' }]">
-            <label :style="labelStyle">Image URL</label>
-            <div :style="imageInputWrapperStyle">
+          <div class="input-group full-width">
+            <label class="label">Image URL</label>
+            <div class="image-input-wrapper">
               <input
                 v-model="formData.image"
                 type="text"
                 placeholder="assets/productImages/category/image.webp"
-                :style="imageInputStyle"
+                class="input image-input"
               />
-              <div v-if="formData.image" :style="imagePreviewStyle">
-                <img :src="formatImagePath(formData.image)" alt="Preview" :style="previewImageStyle" />
+              <div v-if="formData.image" class="image-preview">
+                <img :src="formatImagePath(formData.image)" alt="Preview" class="preview-image" />
               </div>
             </div>
           </div>
 
           <!-- Features -->
-          <div :style="[inputGroupStyle, { gridColumn: '1 / -1' }]">
-            <label :style="labelStyle">Features</label>
-            <div :style="featureInputWrapperStyle">
+          <div class="input-group full-width">
+            <label class="label">Features</label>
+            <div class="feature-input-wrapper">
               <input
                 v-model="newFeature"
                 type="text"
                 placeholder="Add a feature..."
                 @keyup.enter="addFeature"
-                :style="featureInputStyle"
+                class="input feature-input"
               />
-              <button type="button" @click="addFeature" :style="addFeatureButtonStyle">
+              <button type="button" @click="addFeature" class="add-feature-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <line x1="12" y1="5" x2="12" y2="19"/>
                   <line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
               </button>
             </div>
-            <div v-if="formData.features.length > 0" :style="featuresListStyle">
+            <div v-if="formData.features.length > 0" class="features-list">
               <span
                 v-for="(feature, index) in formData.features"
                 :key="index"
-                :style="featureTagStyle"
+                class="feature-tag"
               >
                 {{ feature }}
-                <button type="button" @click="removeFeature(index)" :style="removeFeatureButtonStyle">×</button>
+                <button type="button" @click="removeFeature(index)" class="remove-feature-btn">×</button>
               </span>
             </div>
           </div>
@@ -400,8 +418,8 @@ const handleCancel = () => {
       </div>
 
       <!-- Variants Tab -->
-      <div v-show="activeTab === 'variants'" :style="tabContentStyle">
-        <div v-if="errors.variants" :style="variantErrorStyle">
+      <div v-show="activeTab === 'variants'" class="tab-content">
+        <div v-if="errors.variants" class="variant-error">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
             <line x1="12" y1="8" x2="12" y2="12"/>
@@ -411,7 +429,7 @@ const handleCancel = () => {
         </div>
 
         <!-- Add Variant Button -->
-        <button type="button" @click="showAddVariant = true" :style="addVariantButtonStyle">
+        <button type="button" @click="showAddVariant = true" class="add-variant-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
@@ -420,94 +438,94 @@ const handleCancel = () => {
         </button>
 
         <!-- Add Variant Form -->
-        <div v-if="showAddVariant" :style="variantFormStyle">
-          <div :style="variantFormHeaderStyle">
-            <h4 :style="variantFormTitleStyle">New Variant</h4>
-            <button type="button" @click="showAddVariant = false" :style="closeVariantFormStyle">×</button>
+        <div v-if="showAddVariant" class="variant-form">
+          <div class="variant-form-header">
+            <h4 class="variant-form-title">New Variant</h4>
+            <button type="button" @click="showAddVariant = false" class="close-variant-form">×</button>
           </div>
 
-          <div :style="variantFormGridStyle">
-            <div :style="inputGroupStyle">
-              <label :style="smallLabelStyle">Variant Name *</label>
-              <input v-model="newVariant.name" type="text" placeholder="e.g., 600mm Width" :style="smallInputStyle" />
+          <div class="variant-form-grid">
+            <div class="input-group">
+              <label class="small-label">Variant Name *</label>
+              <input v-model="newVariant.name" type="text" placeholder="e.g., 600mm Width" class="small-input" />
             </div>
-            <div :style="inputGroupStyle">
-              <label :style="smallLabelStyle">SKU *</label>
-              <input v-model="newVariant.sku" type="text" placeholder="e.g., C76236" :style="smallInputStyle" />
+            <div class="input-group">
+              <label class="small-label">SKU *</label>
+              <input v-model="newVariant.sku" type="text" placeholder="e.g., C76236" class="small-input" />
             </div>
-            <div :style="inputGroupStyle">
-              <label :style="smallLabelStyle">Price (£)</label>
-              <input v-model="newVariant.price" type="text" placeholder="0.00" :style="smallInputStyle" />
+            <div class="input-group">
+              <label class="small-label">Price (£)</label>
+              <input v-model="newVariant.price" type="text" placeholder="0.00" class="small-input" />
             </div>
-            <div :style="inputGroupStyle">
-              <label :style="smallLabelStyle">GLB Model Path</label>
-              <input v-model="newVariant.path" type="text" placeholder="../../models/category/model.glb" :style="smallInputStyle" />
+            <div class="input-group">
+              <label class="small-label">GLB Model Path</label>
+              <input v-model="newVariant.path" type="text" placeholder="../../models/category/model.glb" class="small-input" />
             </div>
-            <div :style="inputGroupStyle">
-              <label :style="smallLabelStyle">Image URL</label>
-              <input v-model="newVariant.image" type="text" placeholder="assets/productImages/..." :style="smallInputStyle" />
+            <div class="input-group">
+              <label class="small-label">Image URL</label>
+              <input v-model="newVariant.image" type="text" placeholder="assets/productImages/..." class="small-input" />
             </div>
-            <div :style="inputGroupStyle">
-              <label :style="smallLabelStyle">Product Link</label>
-              <input v-model="newVariant.link" type="url" placeholder="https://..." :style="smallInputStyle" />
+            <div class="input-group">
+              <label class="small-label">Product Link</label>
+              <input v-model="newVariant.link" type="url" placeholder="https://..." class="small-input" />
             </div>
           </div>
 
           <!-- Dimensions -->
-          <div :style="dimensionsSectionStyle">
-            <label :style="smallLabelStyle">Dimensions (cm)</label>
-            <div :style="dimensionsGridStyle">
-              <div :style="dimensionInputGroupStyle">
+          <div class="dimensions-section">
+            <label class="small-label">Dimensions (cm)</label>
+            <div class="dimensions-grid">
+              <div class="dimension-input-group">
                 <span>Width</span>
-                <input v-model.number="newVariant.dimensions.width" type="number" step="0.1" :style="dimensionInputStyle" />
+                <input v-model.number="newVariant.dimensions.width" type="number" step="0.1" min="0" class="dimension-input" />
               </div>
-              <div :style="dimensionInputGroupStyle">
+              <div class="dimension-input-group">
                 <span>Height</span>
-                <input v-model.number="newVariant.dimensions.height" type="number" step="0.1" :style="dimensionInputStyle" />
+                <input v-model.number="newVariant.dimensions.height" type="number" step="0.1" min="0" class="dimension-input" />
               </div>
-              <div :style="dimensionInputGroupStyle">
+              <div class="dimension-input-group">
                 <span>Depth</span>
-                <input v-model.number="newVariant.dimensions.depth" type="number" step="0.1" :style="dimensionInputStyle" />
+                <input v-model.number="newVariant.dimensions.depth" type="number" step="0.1" min="0" class="dimension-input" />
               </div>
             </div>
           </div>
 
           <!-- Movement Options -->
-          <div :style="movementSectionStyle">
-            <label :style="smallLabelStyle">Movement Options</label>
-            <div :style="checkboxGroupStyle">
-              <label :style="checkboxLabelStyle">
-                <input type="checkbox" v-model="newVariant.movement!.snapToWall" :style="checkboxInputStyle" />
+          <div class="movement-section">
+            <label class="small-label">Movement Options</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="newVariant.movement!.snapToWall" class="checkbox-input" />
                 Snap to Wall
               </label>
-              <label :style="checkboxLabelStyle">
-                <input type="checkbox" v-model="newVariant.movement!.allowVerticalMovement" :style="checkboxInputStyle" />
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="newVariant.movement!.allowVerticalMovement" class="checkbox-input" />
                 Allow Vertical Movement
               </label>
-              <label :style="checkboxLabelStyle">
-                <input type="checkbox" v-model="newVariant.movement!.allowFreeRotation" :style="checkboxInputStyle" />
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="newVariant.movement!.allowFreeRotation" class="checkbox-input" />
                 Allow Free Rotation
               </label>
             </div>
           </div>
 
-          <div :style="variantFormActionsStyle">
-            <button type="button" @click="showAddVariant = false" :style="variantCancelButtonStyle">Cancel</button>
-            <button type="button" @click="addVariant" :style="variantSaveButtonStyle">Add Variant</button>
+          <div class="variant-form-actions">
+            <button type="button" @click="showAddVariant = false" class="variant-cancel-btn">Cancel</button>
+            <button type="button" @click="addVariant" class="variant-save-btn">Add Variant</button>
           </div>
         </div>
 
         <!-- Existing Variants -->
-        <div :style="variantsListStyle">
+        <div class="variants-list">
           <div
             v-for="(variant, index) in formData.variants"
             :key="variant.id || index"
-            :style="variantCardStyle"
+            class="variant-card"
           >
-            <div :style="variantCardHeaderStyle" @click="toggleVariant(variant.id)">
-              <div :style="variantInfoStyle">
-                <img v-if="variant.image" :src="formatImagePath(variant.image)" :alt="variant.name" :style="variantThumbnailStyle" />
-                <div :style="variantPlaceholderStyle" v-else>
+            <div class="variant-card-header" @click="toggleVariant(variant.id)">
+              <div class="variant-info">
+                <img v-if="variant.image" :src="formatImagePath(variant.image)" :alt="variant.title || variant.name" class="variant-thumbnail" />
+                <div class="variant-placeholder" v-else>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                     <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -515,19 +533,19 @@ const handleCancel = () => {
                   </svg>
                 </div>
                 <div>
-                  <p :style="variantNameStyle">{{ variant.name }}</p>
-                  <p :style="variantSkuStyle">SKU: {{ variant.sku }} | £{{ variant.price }}</p>
+                  <p class="variant-name">{{ index === 0 ? formData.name : (variant.title || variant.name) }}</p>
+                  <p class="variant-sku">SKU: {{ variant.sku }} | £{{ variant.price }}</p>
                 </div>
               </div>
-              <div :style="variantActionsStyle">
-                <button type="button" @click.stop="removeVariant(index)" :style="removeVariantButtonStyle">
+              <div class="variant-actions">
+                <button type="button" @click.stop="removeVariant(index)" class="remove-variant-btn">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                   </svg>
                 </button>
                 <svg
-                  :style="{ transform: expandedVariant === variant.id ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }"
+                  :class="['expand-icon', { 'expand-icon-rotated': expandedVariant === variant.id }]"
                   width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 >
                   <polyline points="6 9 12 15 18 9"/>
@@ -536,46 +554,46 @@ const handleCancel = () => {
             </div>
 
             <!-- Expanded Variant Details -->
-            <div v-if="expandedVariant === variant.id" :style="variantDetailsStyle">
-              <div :style="variantFormGridStyle">
-                <div :style="inputGroupStyle">
-                  <label :style="smallLabelStyle">Name</label>
-                  <input v-model="variant.name" type="text" :style="smallInputStyle" />
+            <div v-if="expandedVariant === variant.id" class="variant-details">
+              <div class="variant-form-grid">
+                <div class="input-group">
+                  <label class="small-label">Name</label>
+                  <input v-model="variant.name" type="text" class="small-input" />
                 </div>
-                <div :style="inputGroupStyle">
-                  <label :style="smallLabelStyle">SKU</label>
-                  <input v-model="variant.sku" type="text" :style="smallInputStyle" />
+                <div class="input-group">
+                  <label class="small-label">SKU</label>
+                  <input v-model="variant.sku" type="text" class="small-input" />
                 </div>
-                <div :style="inputGroupStyle">
-                  <label :style="smallLabelStyle">Price</label>
-                  <input v-model="variant.price" type="text" :style="smallInputStyle" />
+                <div class="input-group">
+                  <label class="small-label">Price</label>
+                  <input v-model="variant.price" type="text" class="small-input" />
                 </div>
-                <div :style="inputGroupStyle">
-                  <label :style="smallLabelStyle">Model Path</label>
-                  <input v-model="variant.path" type="text" :style="smallInputStyle" />
+                <div class="input-group">
+                  <label class="small-label">Model Path</label>
+                  <input v-model="variant.path" type="text" class="small-input" />
                 </div>
               </div>
-              <div :style="dimensionsSectionStyle">
-                <label :style="smallLabelStyle">Dimensions (cm)</label>
-                <div :style="dimensionsGridStyle">
-                  <div :style="dimensionInputGroupStyle">
+              <div class="dimensions-section">
+                <label class="small-label">Dimensions (cm)</label>
+                <div class="dimensions-grid">
+                  <div class="dimension-input-group">
                     <span>W</span>
-                    <input v-model.number="variant.dimensions.width" type="number" step="0.1" :style="dimensionInputStyle" />
+                    <input v-model.number="variant.dimensions.width" type="number" step="0.1" min="0" class="dimension-input" />
                   </div>
-                  <div :style="dimensionInputGroupStyle">
+                  <div class="dimension-input-group">
                     <span>H</span>
-                    <input v-model.number="variant.dimensions.height" type="number" step="0.1" :style="dimensionInputStyle" />
+                    <input v-model.number="variant.dimensions.height" type="number" step="0.1" min="0" class="dimension-input" />
                   </div>
-                  <div :style="dimensionInputGroupStyle">
+                  <div class="dimension-input-group">
                     <span>D</span>
-                    <input v-model.number="variant.dimensions.depth" type="number" step="0.1" :style="dimensionInputStyle" />
+                    <input v-model.number="variant.dimensions.depth" type="number" step="0.1" min="0" class="dimension-input" />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div v-if="formData.variants.length === 0 && !showAddVariant" :style="emptyVariantsStyle">
+          <div v-if="formData.variants.length === 0 && !showAddVariant" class="empty-variants">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="3" y="3" width="7" height="7"/>
               <rect x="14" y="3" width="7" height="7"/>
@@ -583,17 +601,17 @@ const handleCancel = () => {
               <rect x="3" y="14" width="7" height="7"/>
             </svg>
             <p>No variants added yet</p>
-            <p :style="emptySubtextStyle">Click "Add Variant" to create product variants</p>
+            <p class="empty-subtext">Click "Add Variant" to create product variants</p>
           </div>
         </div>
       </div>
 
       <!-- Form Actions -->
-      <div :style="formActionsStyle">
-        <button type="button" @click="handleCancel" :style="cancelButtonStyle">
+      <div class="form-actions">
+        <button type="button" @click="handleCancel" class="cancel-btn">
           Cancel
         </button>
-        <button type="submit" :style="submitButtonStyle">
+        <button type="submit" class="submit-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
             <polyline points="17 21 17 13 7 13 7 21"/>
@@ -606,589 +624,562 @@ const handleCancel = () => {
   </div>
 </template>
 
-<script lang="ts">
-// @ts-nocheck - Disable strict type checking for inline styles
-const primaryColor = '#29275B';
-const borderColor = '#e2e8f0';
-const textColor = '#2d3748';
-const mutedColor = '#6b7280';
-const errorColor = '#dc2626';
-
-export default {
-  computed: {
-    formContainerStyle() {
-      return {
-        backgroundColor: '#ffffff',
-        borderRadius: '12px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        overflow: 'hidden',
-      };
-    },
-    formHeaderStyle() {
-      return {
-        padding: '24px 24px 0',
-      };
-    },
-    formTitleStyle() {
-      return {
-        fontSize: '20px',
-        fontWeight: '600',
-        color: textColor,
-        margin: '0 0 4px',
-      };
-    },
-    formSubtitleStyle() {
-      return {
-        fontSize: '14px',
-        color: mutedColor,
-        margin: 0,
-      };
-    },
-    tabsStyle() {
-      return {
-        display: 'flex',
-        gap: '4px',
-        padding: '20px 24px 0',
-        borderBottom: `1px solid ${borderColor}`,
-      };
-    },
-    tabStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '12px 20px',
-        border: 'none',
-        borderBottom: '2px solid transparent',
-        backgroundColor: 'transparent',
-        fontSize: '14px',
-        fontWeight: '500',
-        color: mutedColor,
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        marginBottom: '-1px',
-        position: 'relative',
-      };
-    },
-    tabActiveStyle() {
-      return {
-        color: primaryColor,
-        borderBottomColor: primaryColor,
-      };
-    },
-    tabErrorStyle() {
-      return {
-        width: '18px',
-        height: '18px',
-        borderRadius: '50%',
-        backgroundColor: errorColor,
-        color: '#ffffff',
-        fontSize: '12px',
-        fontWeight: '600',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      };
-    },
-    formStyle() {
-      return {
-        display: 'flex',
-        flexDirection: 'column',
-      };
-    },
-    tabContentStyle() {
-      return {
-        padding: '24px',
-      };
-    },
-    formGridStyle() {
-      return {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '20px',
-      };
-    },
-    inputGroupStyle() {
-      return {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-      };
-    },
-    labelStyle() {
-      return {
-        fontSize: '14px',
-        fontWeight: '500',
-        color: textColor,
-      };
-    },
-    smallLabelStyle() {
-      return {
-        fontSize: '12px',
-        fontWeight: '500',
-        color: mutedColor,
-      };
-    },
-    inputStyle() {
-      return {
-        padding: '12px 14px',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '8px',
-        fontSize: '14px',
-        outline: 'none',
-        transition: 'all 0.2s ease',
-      };
-    },
-    smallInputStyle() {
-      return {
-        padding: '8px 10px',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '6px',
-        fontSize: '13px',
-        outline: 'none',
-        width: '100%',
-        boxSizing: 'border-box',
-      };
-    },
-    inputErrorStyle() {
-      return {
-        borderColor: errorColor,
-      };
-    },
-    selectStyle() {
-      return {
-        padding: '12px 14px',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '8px',
-        fontSize: '14px',
-        outline: 'none',
-        backgroundColor: '#ffffff',
-        cursor: 'pointer',
-      };
-    },
-    errorTextStyle() {
-      return {
-        fontSize: '12px',
-        color: errorColor,
-      };
-    },
-    imageInputWrapperStyle() {
-      return {
-        display: 'flex',
-        gap: '12px',
-        alignItems: 'flex-start',
-      };
-    },
-    imageInputStyle() {
-      return {
-        ...this.inputStyle,
-        flex: 1,
-      };
-    },
-    imagePreviewStyle() {
-      return {
-        width: '80px',
-        height: '80px',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        border: `1px solid ${borderColor}`,
-        backgroundColor: '#f8fafc',
-        flexShrink: 0,
-      };
-    },
-    previewImageStyle() {
-      return {
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-      };
-    },
-    featureInputWrapperStyle() {
-      return {
-        display: 'flex',
-        gap: '8px',
-      };
-    },
-    featureInputStyle() {
-      return {
-        ...this.inputStyle,
-        flex: 1,
-      };
-    },
-    addFeatureButtonStyle() {
-      return {
-        padding: '12px',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '8px',
-        backgroundColor: '#f8fafc',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: textColor,
-      };
-    },
-    featuresListStyle() {
-      return {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '8px',
-        marginTop: '8px',
-      };
-    },
-    featureTagStyle() {
-      return {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 12px',
-        backgroundColor: '#f1f5f9',
-        borderRadius: '16px',
-        fontSize: '13px',
-        color: textColor,
-      };
-    },
-    removeFeatureButtonStyle() {
-      return {
-        padding: '0',
-        border: 'none',
-        background: 'none',
-        cursor: 'pointer',
-        fontSize: '16px',
-        color: mutedColor,
-        lineHeight: 1,
-      };
-    },
-    variantErrorStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '12px 16px',
-        backgroundColor: '#fef2f2',
-        border: `1px solid ${errorColor}`,
-        borderRadius: '8px',
-        color: errorColor,
-        fontSize: '14px',
-        marginBottom: '16px',
-      };
-    },
-    addVariantButtonStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        width: '100%',
-        padding: '14px',
-        border: `2px dashed ${borderColor}`,
-        borderRadius: '10px',
-        backgroundColor: '#f8fafc',
-        fontSize: '14px',
-        fontWeight: '500',
-        color: primaryColor,
-        cursor: 'pointer',
-        marginBottom: '16px',
-        transition: 'all 0.2s ease',
-      };
-    },
-    variantFormStyle() {
-      return {
-        padding: '20px',
-        backgroundColor: '#f8fafc',
-        borderRadius: '10px',
-        marginBottom: '16px',
-        border: `1px solid ${borderColor}`,
-      };
-    },
-    variantFormHeaderStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '16px',
-      };
-    },
-    variantFormTitleStyle() {
-      return {
-        fontSize: '16px',
-        fontWeight: '600',
-        color: textColor,
-        margin: 0,
-      };
-    },
-    closeVariantFormStyle() {
-      return {
-        padding: '4px 8px',
-        border: 'none',
-        background: 'none',
-        fontSize: '20px',
-        cursor: 'pointer',
-        color: mutedColor,
-      };
-    },
-    variantFormGridStyle() {
-      return {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: '12px',
-        marginBottom: '16px',
-      };
-    },
-    dimensionsSectionStyle() {
-      return {
-        marginBottom: '16px',
-      };
-    },
-    dimensionsGridStyle() {
-      return {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '12px',
-        marginTop: '8px',
-      };
-    },
-    dimensionInputGroupStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontSize: '13px',
-        color: mutedColor,
-      };
-    },
-    dimensionInputStyle() {
-      return {
-        flex: 1,
-        padding: '8px 10px',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '6px',
-        fontSize: '13px',
-        outline: 'none',
-        width: '100%',
-      };
-    },
-    movementSectionStyle() {
-      return {
-        marginBottom: '16px',
-      };
-    },
-    checkboxGroupStyle() {
-      return {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '16px',
-        marginTop: '8px',
-      };
-    },
-    checkboxLabelStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontSize: '13px',
-        color: textColor,
-        cursor: 'pointer',
-      };
-    },
-    checkboxInputStyle() {
-      return {
-        width: '16px',
-        height: '16px',
-        accentColor: primaryColor,
-      };
-    },
-    variantFormActionsStyle() {
-      return {
-        display: 'flex',
-        justifyContent: 'flex-end',
-        gap: '12px',
-      };
-    },
-    variantCancelButtonStyle() {
-      return {
-        padding: '10px 16px',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '8px',
-        backgroundColor: '#ffffff',
-        fontSize: '13px',
-        cursor: 'pointer',
-        color: textColor,
-      };
-    },
-    variantSaveButtonStyle() {
-      return {
-        padding: '10px 16px',
-        border: 'none',
-        borderRadius: '8px',
-        backgroundColor: primaryColor,
-        color: '#ffffff',
-        fontSize: '13px',
-        fontWeight: '500',
-        cursor: 'pointer',
-      };
-    },
-    variantsListStyle() {
-      return {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      };
-    },
-    variantCardStyle() {
-      return {
-        border: `1px solid ${borderColor}`,
-        borderRadius: '10px',
-        overflow: 'hidden',
-        backgroundColor: '#ffffff',
-      };
-    },
-    variantCardHeaderStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '14px 16px',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s ease',
-      };
-    },
-    variantInfoStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-      };
-    },
-    variantThumbnailStyle() {
-      return {
-        width: '44px',
-        height: '44px',
-        borderRadius: '8px',
-        objectFit: 'cover',
-        backgroundColor: '#f1f5f9',
-      };
-    },
-    variantPlaceholderStyle() {
-      return {
-        width: '44px',
-        height: '44px',
-        borderRadius: '8px',
-        backgroundColor: '#f1f5f9',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: mutedColor,
-      };
-    },
-    variantNameStyle() {
-      return {
-        fontSize: '14px',
-        fontWeight: '500',
-        color: textColor,
-        margin: '0 0 2px',
-      };
-    },
-    variantSkuStyle() {
-      return {
-        fontSize: '12px',
-        color: mutedColor,
-        margin: 0,
-      };
-    },
-    variantActionsStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        color: mutedColor,
-      };
-    },
-    removeVariantButtonStyle() {
-      return {
-        padding: '6px',
-        border: 'none',
-        borderRadius: '6px',
-        backgroundColor: '#fef2f2',
-        color: '#dc2626',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      };
-    },
-    variantDetailsStyle() {
-      return {
-        padding: '16px',
-        backgroundColor: '#f8fafc',
-        borderTop: `1px solid ${borderColor}`,
-      };
-    },
-    emptyVariantsStyle() {
-      return {
-        textAlign: 'center',
-        padding: '48px 20px',
-        color: mutedColor,
-      };
-    },
-    emptySubtextStyle() {
-      return {
-        fontSize: '13px',
-        marginTop: '4px',
-      };
-    },
-    formActionsStyle() {
-      return {
-        display: 'flex',
-        justifyContent: 'flex-end',
-        gap: '12px',
-        padding: '20px 24px',
-        borderTop: `1px solid ${borderColor}`,
-        backgroundColor: '#f8fafc',
-      };
-    },
-    cancelButtonStyle() {
-      return {
-        padding: '12px 24px',
-        border: `1px solid ${borderColor}`,
-        borderRadius: '8px',
-        backgroundColor: '#ffffff',
-        fontSize: '14px',
-        fontWeight: '500',
-        cursor: 'pointer',
-        color: textColor,
-      };
-    },
-    submitButtonStyle() {
-      return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '12px 24px',
-        border: 'none',
-        borderRadius: '8px',
-        backgroundColor: primaryColor,
-        color: '#ffffff',
-        fontSize: '14px',
-        fontWeight: '500',
-        cursor: 'pointer',
-      };
-    },
-  },
-};
-</script>
-
 <style scoped>
-input:focus, select:focus {
-  border-color: #29275B !important;
-  box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
+/* CSS Variables */
+:root {
+  --primary-color: #29275B;
+  --border-color: #e2e8f0;
+  --text-color: #2d3748;
+  --muted-color: #6b7280;
+  --error-color: #dc2626;
 }
 
-button:hover {
-  opacity: 0.9;
+/* Form Container */
+.form-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.form-header {
+  padding: 24px 24px 0;
+}
+
+.form-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 4px;
+}
+
+.form-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 20px 24px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background-color: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: -1px;
+  position: relative;
+}
+
+.tab-active {
+  color: #29275B;
+  border-bottom-color: #29275B;
+}
+
+.tab-error {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #dc2626;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content {
+  padding: 24px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+/* Input Group */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.small-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.input {
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-readonly {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.sku-hint {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.small-input {
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-error {
+  border-color: #dc2626;
+}
+
+.select {
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #dc2626;
+}
+
+/* Image Input */
+.image-input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.image-input {
+  flex: 1;
+}
+
+.image-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  flex-shrink: 0;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Feature Input */
+.feature-input-wrapper {
+  display: flex;
+  gap: 8px;
+}
+
+.feature-input {
+  flex: 1;
+}
+
+.add-feature-btn {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2d3748;
+}
+
+.features-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.feature-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #f1f5f9;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #2d3748;
+}
+
+.remove-feature-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1;
+}
+
+/* Variant Error */
+.variant-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #fef2f2;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* Add Variant Button */
+.add-variant-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: 2px dashed #e2e8f0;
+  border-radius: 10px;
+  background-color: #f8fafc;
+  font-size: 14px;
+  font-weight: 500;
+  color: #29275B;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+/* Variant Form */
+.variant-form {
+  padding: 20px;
+  background-color: #f8fafc;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.variant-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.variant-form-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+}
+
+.close-variant-form {
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.variant-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Dimensions */
+.dimensions-section {
+  margin-bottom: 16px;
+}
+
+.dimensions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.dimension-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.dimension-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+}
+
+/* Movement Section */
+.movement-section {
+  margin-bottom: 16px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #2d3748;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  width: 16px;
+  height: 16px;
+  accent-color: #29275B;
+}
+
+/* Variant Form Actions */
+.variant-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.variant-cancel-btn {
+  padding: 10px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  font-size: 13px;
+  cursor: pointer;
+  color: #2d3748;
+}
+
+.variant-save-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: #29275B;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Variants List */
+.variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.variant-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.variant-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .variant-card-header:hover {
   background-color: #f8fafc;
+}
+
+.variant-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.variant-thumbnail {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: #f1f5f9;
+}
+
+.variant-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.variant-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2d3748;
+  margin: 0 0 2px;
+}
+
+.variant-sku {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.variant-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6b7280;
+}
+
+.remove-variant-btn {
+  padding: 6px;
+  border: none;
+  border-radius: 6px;
+  background-color: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-icon {
+  transition: transform 0.2s;
+}
+
+.expand-icon-rotated {
+  transform: rotate(180deg);
+}
+
+.variant-details {
+  padding: 16px;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Empty Variants */
+.empty-variants {
+  text-align: center;
+  padding: 48px 20px;
+  color: #6b7280;
+}
+
+.empty-subtext {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.cancel-btn {
+  padding: 12px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #2d3748;
+}
+
+.submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background-color: #29275B;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Focus States */
+.input:focus,
+.select:focus,
+.small-input:focus,
+.dimension-input:focus {
+  border-color: #29275B;
+  box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
+}
+
+/* Hover States */
+button:hover {
+  opacity: 0.9;
 }
 </style>

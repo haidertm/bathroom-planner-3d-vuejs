@@ -8,6 +8,7 @@ import AdminLogin from '../pages/admin/AdminLogin.vue'
 import AdminDashboard from '../pages/admin/AdminDashboard.vue'
 import ProductEdit from '../pages/admin/ProductEdit.vue'
 import NotFound from '../pages/NotFound.vue'
+import { loadSession } from '../composables/useAdminAuth'
 
 const routes = [
     {
@@ -69,22 +70,13 @@ const router = createRouter({
 // Navigation guard for admin routes
 router.beforeEach((to, _from, next) => {
     if (to.meta.requiresAuth) {
-        // Check if admin is authenticated
-        const sessionData = localStorage.getItem('admin_session')
-        if (sessionData) {
-            try {
-                const session = JSON.parse(sessionData)
-                if (session.expiresAt > Date.now()) {
-                    // Session is valid
-                    next()
-                    return
-                }
-            } catch {
-                // Invalid session data
-            }
+        // Use shared session validation from useAdminAuth
+        const session = loadSession()
+        if (session) {
+            next()
+        } else {
+            next('/vadmin')
         }
-        // Not authenticated, redirect to admin login
-        next('/vadmin')
     } else {
         next()
     }

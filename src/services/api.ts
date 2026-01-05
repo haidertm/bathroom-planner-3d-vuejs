@@ -42,11 +42,31 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Get token from localStorage
+  const session = localStorage.getItem('admin_session');
+  if (session) {
+    try {
+      const sessionData = JSON.parse(session);
+      if (sessionData && sessionData.token) {
+        headers['Authorization'] = `Bearer ${sessionData.token}`;
+      }
+    } catch (e) {
+      console.error('Failed to parse admin session:', e);
+    }
+  }
 
   const config: RequestInit = {
     ...options,
+    signal: controller.signal,
     headers: {
-      'Content-Type': 'application/json',
+      ...headers,
       ...options.headers,
     },
   };
@@ -60,12 +80,17 @@ async function fetchApi<T>(
     }
 
     return response.json();
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new ApiError(0, 'Request timed out');
+    }
     if (error instanceof ApiError) throw error;
 
     // Network or other errors
     console.error('API request failed:', error);
     throw new ApiError(0, 'Network error - please check if the server is running');
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
