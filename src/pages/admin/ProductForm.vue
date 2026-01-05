@@ -3,6 +3,8 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { COMPONENTS, type ComponentType } from '../../constants/components';
 import type { AdminProduct, ProductVariant, ValidationErrors } from '../../types/admin';
 
+type ProductFormData = Omit<AdminProduct, 'dbId' | 'createdAt' | 'updatedAt' | 'lastSyncedAt'>;
+
 const props = defineProps<{
   product: AdminProduct | null;
   mode: 'add' | 'edit';
@@ -14,7 +16,7 @@ const emit = defineEmits<{
 }>();
 
 // Form state
-const formData = ref({
+const formData = ref<ProductFormData>({
   id: '',
   category: 'Furniture' as ComponentType,
   name: '',
@@ -22,8 +24,9 @@ const formData = ref({
   link: '',
   image: '',
   variantType: 'Default',
-  features: [] as string[],
-  variants: [] as ProductVariant[],
+  features: [],
+  variants: [],
+  enabled: true,
 });
 
 const newFeature = ref('');
@@ -67,6 +70,7 @@ onMounted(() => {
       variantType: props.product.variantType,
       features: [...props.product.features],
       variants: JSON.parse(JSON.stringify(props.product.variants)),
+      enabled: props.product.enabled,
     };
   }
 });
@@ -84,6 +88,7 @@ watch(() => props.product, (newProduct) => {
       variantType: newProduct.variantType,
       features: [...newProduct.features],
       variants: JSON.parse(JSON.stringify(newProduct.variants)),
+      enabled: newProduct.enabled,
     };
   } else {
     resetForm();
@@ -102,6 +107,7 @@ const resetForm = () => {
     variantType: 'Default',
     features: [],
     variants: [],
+    enabled: true,
   };
   errors.value = {};
 };
@@ -471,15 +477,15 @@ const handleCancel = () => {
             <div class="dimensions-grid">
               <div class="dimension-input-group">
                 <span>Width</span>
-                <input v-model.number="newVariant.dimensions.width" type="number" step="0.1" class="dimension-input" />
+                <input v-model.number="newVariant.dimensions.width" type="number" step="0.1" min="0" class="dimension-input" />
               </div>
               <div class="dimension-input-group">
                 <span>Height</span>
-                <input v-model.number="newVariant.dimensions.height" type="number" step="0.1" class="dimension-input" />
+                <input v-model.number="newVariant.dimensions.height" type="number" step="0.1" min="0" class="dimension-input" />
               </div>
               <div class="dimension-input-group">
                 <span>Depth</span>
-                <input v-model.number="newVariant.dimensions.depth" type="number" step="0.1" class="dimension-input" />
+                <input v-model.number="newVariant.dimensions.depth" type="number" step="0.1" min="0" class="dimension-input" />
               </div>
             </div>
           </div>
@@ -489,15 +495,15 @@ const handleCancel = () => {
             <label class="small-label">Movement Options</label>
             <div class="checkbox-group">
               <label class="checkbox-label">
-                <input type="checkbox" v-model="newVariant.movement.snapToWall" class="checkbox-input" />
+                <input type="checkbox" v-model="newVariant.movement!.snapToWall" class="checkbox-input" />
                 Snap to Wall
               </label>
               <label class="checkbox-label">
-                <input type="checkbox" v-model="newVariant.movement.allowVerticalMovement" class="checkbox-input" />
+                <input type="checkbox" v-model="newVariant.movement!.allowVerticalMovement" class="checkbox-input" />
                 Allow Vertical Movement
               </label>
               <label class="checkbox-label">
-                <input type="checkbox" v-model="newVariant.movement.allowFreeRotation" class="checkbox-input" />
+                <input type="checkbox" v-model="newVariant.movement!.allowFreeRotation" class="checkbox-input" />
                 Allow Free Rotation
               </label>
             </div>
@@ -572,15 +578,15 @@ const handleCancel = () => {
                 <div class="dimensions-grid">
                   <div class="dimension-input-group">
                     <span>W</span>
-                    <input v-model.number="variant.dimensions.width" type="number" step="0.1" class="dimension-input" />
+                    <input v-model.number="variant.dimensions.width" type="number" step="0.1" min="0" class="dimension-input" />
                   </div>
                   <div class="dimension-input-group">
                     <span>H</span>
-                    <input v-model.number="variant.dimensions.height" type="number" step="0.1" class="dimension-input" />
+                    <input v-model.number="variant.dimensions.height" type="number" step="0.1" min="0" class="dimension-input" />
                   </div>
                   <div class="dimension-input-group">
                     <span>D</span>
-                    <input v-model.number="variant.dimensions.depth" type="number" step="0.1" class="dimension-input" />
+                    <input v-model.number="variant.dimensions.depth" type="number" step="0.1" min="0" class="dimension-input" />
                   </div>
                 </div>
               </div>
