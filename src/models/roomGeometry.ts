@@ -112,24 +112,13 @@ export const createBlueprintGrid = (
   const blueprintGridGroup = new THREE.Group();
   const BLUEPRINT_GRID_SPACING = 10; // 10cm = 100mm spacing
 
-  // Create blueprint-specific material - lighter gray, more visible for 2D mode
+  // Create blueprint-specific material - uniform light grey lines on white background
+  // Clean, consistent grid appearance without major/minor distinction
   const blueprintGridMaterial = new THREE.LineBasicMaterial({
-    color: 0x999999, // Lighter gray for blueprint aesthetic
-    opacity: 0.5,
+    color: 0xE0E0E0, // Light grey - subtle grid lines on white background
+    opacity: 0.8,
     transparent: true
   });
-
-  // Create major grid material (every 50cm or 100cm)
-  const majorGridMaterial = new THREE.LineBasicMaterial({
-    color: 0x666666, // Darker for major lines
-    opacity: 0.7,
-    transparent: true,
-    linewidth: 2
-  });
-
-  // BLUEPRINT GRID - Create vertical lines (parallel to Z-axis)
-  // Major lines every 5th grid line (every 50cm when spacing is 10cm)
-  const MAJOR_LINE_INTERVAL = 5;
 
   const halfWidth = width / 2;
   const halfHeight = height / 2;
@@ -143,10 +132,8 @@ export const createBlueprintGrid = (
   const notchMinZ = -halfHeight;
   const notchMaxZ = isLShape ? -halfHeight + notchHeight : -halfHeight;
 
+  // BLUEPRINT GRID - Create vertical lines (parallel to Z-axis)
   for (let x = -halfWidth; x <= halfWidth; x += BLUEPRINT_GRID_SPACING) {
-    const gridIndex = Math.round(Math.abs(x) / BLUEPRINT_GRID_SPACING);
-    const isMajorLine = gridIndex % MAJOR_LINE_INTERVAL === 0;
-
     // Check if this vertical line is in the notch X range
     const isInNotchXRange = isLShape && x >= notchMinX && x <= notchMaxX;
 
@@ -157,7 +144,7 @@ export const createBlueprintGrid = (
         new THREE.Vector3(x, 0.5, halfHeight)
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
       blueprintGridGroup.add(line);
     } else {
       // Full vertical line
@@ -166,16 +153,13 @@ export const createBlueprintGrid = (
         new THREE.Vector3(x, 0.5, halfHeight)
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
       blueprintGridGroup.add(line);
     }
   }
 
   // BLUEPRINT GRID - Create horizontal lines (parallel to X-axis)
   for (let z = -halfHeight; z <= halfHeight; z += BLUEPRINT_GRID_SPACING) {
-    const gridIndex = Math.round(Math.abs(z) / BLUEPRINT_GRID_SPACING);
-    const isMajorLine = gridIndex % MAJOR_LINE_INTERVAL === 0;
-
     // Check if this horizontal line is in the notch Z range
     const isInNotchZRange = isLShape && z >= notchMinZ && z <= notchMaxZ;
 
@@ -186,7 +170,7 @@ export const createBlueprintGrid = (
         new THREE.Vector3(halfWidth, 0.5, z)
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
       blueprintGridGroup.add(line);
     } else {
       // Full horizontal line
@@ -195,7 +179,7 @@ export const createBlueprintGrid = (
         new THREE.Vector3(halfWidth, 0.5, z)
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const line = new THREE.Line(geometry, isMajorLine ? majorGridMaterial : blueprintGridMaterial);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
       blueprintGridGroup.add(line);
     }
   }
