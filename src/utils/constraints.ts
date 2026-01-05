@@ -545,12 +545,15 @@ export const checkWallCollision = (
     // Check if object is flush-mounted (embedded in wall)
     const isFlushMounted = wallBuffer === 0;
 
+    // Small tolerance to prevent false collision during drag (floating-point precision)
+    const dragTolerance = 2; // 2cm tolerance
+
     // Check if object extends beyond interior boundaries
     // For flush-mounted items, allow them to extend beyond the wall they're mounted on
-    let collideWest = objectMinX < interior.minX;
-    let collideEast = objectMaxX > interior.maxX;
-    let collideNorth = objectMinZ < interior.minZ;
-    let collideSouth = objectMaxZ > interior.maxZ;
+    let collideWest = objectMinX < interior.minX - dragTolerance;
+    let collideEast = objectMaxX > interior.maxX + dragTolerance;
+    let collideNorth = objectMinZ < interior.minZ - dragTolerance;
+    let collideSouth = objectMaxZ > interior.maxZ + dragTolerance;
 
     // Flush-mounted items (windows, doors) are allowed to extend into the wall they're mounted on
     if (isFlushMounted && movementConfig.snapToWall) {

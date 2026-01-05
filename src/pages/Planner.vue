@@ -35,6 +35,7 @@
         :renderer="sceneManagerRef?.renderer || null"
         :rotation-enabled="rotationArrowsEnabled"
         :is-dragging="isDraggingObject"
+        :is-multi-select-mode="isMultiSelectMode"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
@@ -98,22 +99,48 @@
     />
 
     <!-- Multi-select Toggle -->
-    <div :style="multiSelectContainerStyle">
-      <button 
-        @click="toggleMultiSelect"
-        :style="multiSelectButtonStyle"
-        :title="isMultiSelectMode ? 'Disable Multi-select' : 'Enable Multi-select'"
+    <button
+      @click="toggleMultiSelect"
+      :style="multiSelectButtonStyle"
+      :title="isMultiSelectMode ? 'Disable Multi-select' : 'Enable Multi-select'"
+    >
+      <!-- Multi-select icon: overlapping squares with checkmark when active -->
+      <svg
+        :width="isMobileDevice ? 24 : 28"
+        :height="isMobileDevice ? 24 : 28"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
       >
-        {{ isMultiSelectMode ? '✅ Multi-select' : '🖱️ Multi-select' }}
-      </button>
-      <button 
-        v-if="isMultiSelectMode"
-        @click="selectAllItems"
-        :style="selectAllButtonStyle"
-      >
-        Select All
-      </button>
-    </div>
+        <!-- Back square -->
+        <rect
+          x="6" y="6"
+          width="14" height="14"
+          rx="2"
+          :stroke="isMultiSelectMode ? 'white' : '#555'"
+          stroke-width="2"
+          fill="none"
+        />
+        <!-- Front square -->
+        <rect
+          x="4" y="4"
+          width="12" height="12"
+          rx="2"
+          :stroke="isMultiSelectMode ? 'white' : '#555'"
+          stroke-width="2"
+          :fill="isMultiSelectMode ? '#29275b' : 'white'"
+        />
+        <!-- Checkmark when active -->
+        <path
+          v-if="isMultiSelectMode"
+          d="M7 10L9.5 12.5L13 7"
+          stroke="white"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
 
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
@@ -153,6 +180,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast Notification -->
+    <Transition name="toast">
+      <div v-if="toastMessage" :style="toastStyle">
+        {{ toastMessage }}
+      </div>
+    </Transition>
   </div>
 </template>
 <script setup>
@@ -238,16 +272,29 @@ const selectedBathroomItem = computed(() => {
 const isDraggingObject = ref(false)
 const isMultiSelectMode = ref(false)
 
+// Toast notification state
+const toastMessage = ref('')
+const toastTimeout = ref(null)
+
+const showToast = (message, type = 'info') => {
+  // Clear any existing timeout
+  if (toastTimeout.value) {
+    clearTimeout(toastTimeout.value)
+  }
+
+  toastMessage.value = message
+
+  // Auto-hide after 3 seconds
+  toastTimeout.value = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimeout.value = null
+  }, 3000)
+}
+
 const toggleMultiSelect = () => {
   isMultiSelectMode.value = !isMultiSelectMode.value
   if (eventHandlersRef.value) {
     eventHandlersRef.value.setMultiSelectMode(isMultiSelectMode.value)
-  }
-}
-
-const selectAllItems = () => {
-  if (eventHandlersRef.value) {
-    eventHandlersRef.value.selectAllItems()
   }
 }
 
@@ -901,44 +948,26 @@ const toggleMeasurementStyle = computed(() => ({
   lineHeight: '1.2'
 }))
 
-const multiSelectContainerStyle = computed(() => ({
-  position: 'absolute',
-  bottom: isMobileDevice.value ? '18%' : '100px',
-  right: isMobileDevice.value ? '12%' : '20px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px',
-  zIndex: 1000
-}))
-
 const multiSelectButtonStyle = computed(() => ({
-  padding: '12px 20px',
-  backgroundColor: isMultiSelectMode.value ? '#4CAF50' : 'rgba(255, 255, 255, 0.95)',
+  position: 'absolute',
+  right: isMobileDevice.value ? '12%' : '20px',
+  bottom: isMobileDevice.value ? '18%' : '100px',
+  width: isMobileDevice.value ? '48px' : '56px',
+  height: isMobileDevice.value ? '48px' : '56px',
+  padding: '0',
+  backgroundColor: isMultiSelectMode.value ? '#29275b' : 'rgba(255, 255, 255, 0.95)',
   color: isMultiSelectMode.value ? 'white' : '#333',
   border: 'none',
-  borderRadius: '8px',
+  borderRadius: '50%',
   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
   cursor: 'pointer',
   fontWeight: '600',
-  fontSize: '14px',
+  fontSize: isMobileDevice.value ? '20px' : '24px',
   transition: 'all 0.2s ease',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  minWidth: '140px'
-}))
-
-const selectAllButtonStyle = computed(() => ({
-  padding: '10px 15px',
-  backgroundColor: '#2196F3',
-  color: 'white',
-  border: 'none',
-  borderRadius: '8px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  cursor: 'pointer',
-  fontWeight: '600',
-  fontSize: '13px',
-  transition: 'all 0.2s ease'
+  zIndex: 1000
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -1004,6 +1033,24 @@ const sectionHeaderStyle = computed(() => ({
   fontSize: '18px',
   marginBottom: '12px',
   fontWeight: '600'
+}))
+
+const toastStyle = computed(() => ({
+  position: 'fixed',
+  bottom: '120px',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  backgroundColor: 'rgba(41, 39, 91, 0.95)',
+  color: 'white',
+  padding: '12px 24px',
+  borderRadius: '8px',
+  fontSize: isMobileDevice.value ? '14px' : '16px',
+  fontWeight: '500',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+  zIndex: 10001,
+  maxWidth: '90vw',
+  textAlign: 'center',
+  backdropFilter: 'blur(8px)'
 }))
 
 // Watch for room size changes to update refs
@@ -2064,6 +2111,8 @@ onMounted(async () => {
     // Connect drag state handlers
     eventHandlersRef.value.onDragStart = handleDragStart
     eventHandlersRef.value.onDragEnd = handleDragEnd
+    // Connect toast notification handler
+    eventHandlersRef.value.onShowToast = showToast
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
@@ -2437,5 +2486,15 @@ const handleClearAll = () => {
 
 
 <style scoped>
-/* Add any component-specific styles here */
+/* Toast transition styles */
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
 </style>

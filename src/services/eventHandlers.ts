@@ -134,12 +134,14 @@ export class EventHandlers {
   private multiSelectLocalOffsets: Map<number, THREE.Vector3> = new Map();
   private multiSelectLocalRotations: Map<number, number> = new Map();
   private wasAlreadySelected: boolean = false;
+  private singleItemToastShown: boolean = false; // Flag to prevent showing toast multiple times
 
   /**
    * Toggle multi-selection mode
    */
   public setMultiSelectMode(enabled: boolean): void {
     this.isMultiSelectMode = enabled;
+    this.singleItemToastShown = false; // Reset toast flag when mode changes
     console.log('🔄 Multi-select mode:', enabled ? 'ENABLED' : 'DISABLED');
 
     // If disabling multi-select and we have multiple items, keep only the last one selected
@@ -511,7 +513,11 @@ export class EventHandlers {
     currentItem?: BathroomItem,
     rotation?: number
   ): boolean {
-    const currentItems = this.getVirtualItems();
+    // When multi-select is active with multiple items, exclude other selected items
+    // to prevent false collision detection with their old positions
+    const currentItems = this.selectedObjects.size > 1
+      ? this.getVirtualItemsExcludingSelected()
+      : this.getVirtualItems();
 
     // 🔧 Use collision detection that includes walls, L-shape notch, and supports rotation-aware bounds
     return wouldCollideWithExistingOrWalls(
@@ -640,6 +646,38 @@ export class EventHandlers {
       }
       return item;
     });
+  }
+
+  /**
+   * Get items excluding the currently selected group (for multi-select collision detection)
+   * This prevents false collision detection between items in the same selection group
+   */
+  private getVirtualItemsExcludingSelected(): BathroomItem[] {
+    const items = this.getVirtualItems();
+    if (this.selectedObjects.size <= 1) return items;
+
+    // Filter out items that are in the selected group
+    const selectedIds = new Set(this.selectedObjects.keys());
+    return items.filter(item => !selectedIds.has(item.id));
+  }
+
+  /**
+   * Callback for showing toast notifications
+   */
+  public onShowToast: ((message: string, type?: 'info' | 'warning' | 'error') => void) | null = null;
+
+  /**
+   * Show a toast notification
+   */
+  private showToast(message: string, type: 'info' | 'warning' | 'error' = 'info'): void {
+    if (this.onShowToast) {
+      this.onShowToast(message, type);
+    } else {
+      // Fallback: dispatch a custom event that can be listened to by the UI
+      window.dispatchEvent(new CustomEvent('show-toast', {
+        detail: { message, type }
+      }));
+    }
   }
 
   private queueUpdate(itemId: number, updateData: UpdateData): void {
@@ -1604,8 +1642,15 @@ export class EventHandlers {
   /**
    * Apply movement to all selected objects based on the primary object's movement
    */
-  private applyBulkMove(primaryObject: THREE.Object3D, unconstrainedPrimaryPos?: THREE.Vector3, idealRot?: number): void {
-    if (this.selectedObjects.size <= 1) return;
+  private applyBulkMove(primaryObject: THREE.Object3D, _unconstrainedPrimaryPos?: THREE.Vector3, _idealRot?: number): void {
+    if (this.selectedObjects.size <= 1) {
+      // Show toast notification when multi-select mode is enabled but only 1 item is selected
+      if (this.isMultiSelectMode && !this.singleItemToastShown) {
+        this.showToast('Please select more than one item to move together', 'info');
+        this.singleItemToastShown = true; // Prevent showing multiple times during drag
+      }
+      return;
+    }
 
     const primaryId = primaryObject.userData.itemId;
     // Use the CURRENT position and rotation of the primary object as the base for the group
@@ -1692,13 +1737,13 @@ export class EventHandlers {
         obj.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
         obj.rotation.y = constrainedRotation;
 
-        // Check collision for this object
+        // Check collision for this object - exclude other selected items to prevent false positives
         const isColliding = wouldCollideWithExisting(
           { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
           itemType,
           itemScale,
           id,
-          this.getVirtualItems(),
+          this.getVirtualItemsExcludingSelected(), // Use filtered list to exclude selected group
           itemData,
           this.roomWidthRef.value,
           this.roomHeightRef.value,
@@ -1981,6 +2026,48 @@ export class EventHandlers {
           this.notchHeightRef.value
         );
 
+        // ✅ NEW: Helper to calculate group bounds for a given rotation
+        const calculateGroupBounds = (rotation: number) => {
+          let minX = 0, maxX = 0, minZ = 0, maxZ = 0;
+          if (this.selectedObjects.size <= 1) {
+            const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+            const hW = dims ? (dims.width * objectScale) / 2 : 0;
+            return { minX: -hW, maxX: hW, minZ: -hW, maxZ: hW };
+          }
+
+          this.selectedObjects.forEach((obj, id) => {
+            const localOffset = this.multiSelectLocalOffsets.get(id);
+            if (localOffset) {
+              const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
+              const itemType = obj.userData.type as ComponentType;
+              const itemScale = obj.scale.x;
+              const itemData = this.getCurrentItemData(id);
+              const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
+
+              if (dims) {
+                const hW = (dims.width * itemScale) / 2;
+                minX = Math.min(minX, worldOffset.x - hW);
+                maxX = Math.max(maxX, worldOffset.x + hW);
+                minZ = Math.min(minZ, worldOffset.z - hW);
+                maxZ = Math.max(maxZ, worldOffset.z + hW);
+              } else {
+                minX = Math.min(minX, worldOffset.x);
+                maxX = Math.max(maxX, worldOffset.x);
+                minZ = Math.min(minZ, worldOffset.z);
+                maxZ = Math.max(maxZ, worldOffset.z);
+              }
+            }
+          });
+          return { minX, maxX, minZ, maxZ };
+        };
+
+        // Calculate current group bounds for stickiness logic
+        const currentGroupBounds = calculateGroupBounds(this.selectedObject.rotation.y);
+        const groupMinX = currentGroupBounds.minX;
+        const groupMaxX = currentGroupBounds.maxX;
+        const groupMinZ = currentGroupBounds.minZ;
+        const groupMaxZ = currentGroupBounds.maxZ;
+
         // ✅ FIX: Use wall culling to determine which walls are visible for SWITCHING
         // But always allow staying on the current wall (even if hidden)
         let visibleWalls: Set<string>;
@@ -2086,12 +2173,46 @@ export class EventHandlers {
             }
 
             if (isValidIntersection) {
-              // ✅ FIX: Use RAY DISTANCE (camera to intersection) as the metric
-              // The wall where the ray hits first (shortest distance) is where cursor points most directly
-              // Add stickiness bonus to current wall to prevent flickering
               const rayDistance = this.camera.position.distanceTo(intersectPoint);
               const STICKINESS_BONUS = 40; // Reduced from 200cm to 40cm for better responsiveness
-              currentWallDistance = rayDistance - STICKINESS_BONUS; // Make current wall "closer"
+              let effectiveStickiness = STICKINESS_BONUS;
+
+              // ✅ GROUP-AWARE WALL SWITCHING:
+              // If any item in the group is "pressing" against a corner, reduce stickiness
+              // to allow easier switching to the adjacent wall.
+              if (this.selectedObjects.size > 1) {
+                let isPressing = false;
+                const buffer = 10; // 10cm buffer
+
+                if (currentWall === 'north' || currentWall === 'south') {
+                  if (intersectPoint.x + groupMinX < -roomHalfWidth + buffer ||
+                    intersectPoint.x + groupMaxX > roomHalfWidth - buffer) {
+                    isPressing = true;
+                  }
+                } else if (currentWall === 'east' || currentWall === 'west') {
+                  if (intersectPoint.z + groupMinZ < -roomHalfHeight + buffer ||
+                    intersectPoint.z + groupMaxZ > roomHalfHeight - buffer) {
+                    isPressing = true;
+                  }
+                } else if (currentWall === 'notch-east' && notch) {
+                  if (intersectPoint.z + groupMinZ < notch.minZ + buffer ||
+                    intersectPoint.z + groupMaxZ > notch.maxZ - buffer) {
+                    isPressing = true;
+                  }
+                } else if (currentWall === 'notch-south' && notch) {
+                  if (intersectPoint.x + groupMinX < notch.minX + buffer ||
+                    intersectPoint.x + groupMaxX > notch.maxX - buffer) {
+                    isPressing = true;
+                  }
+                }
+
+                if (isPressing) {
+                  effectiveStickiness = -20; // Penalty to encourage switching
+                  console.log(`🚀 Group pressing against ${currentWall} corner, reducing stickiness`);
+                }
+              }
+
+              currentWallDistance = rayDistance - effectiveStickiness; // Make current wall "closer"
 
               currentWallPoint.copy(intersectPoint);
               foundValidIntersection = true;
@@ -2301,9 +2422,10 @@ export class EventHandlers {
           }
 
           // Calculate object width and depth for boundary constraints
-          const objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
+          // Note: These variables are kept for potential future use but currently unused
+          const _objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
           // const objectDepth = dimensions && dimensions.depth ? dimensions?.depth * objectScale : 0;
-          const halfObjectWidth = objectWidth / 2;
+          // const _halfObjectWidth = _objectWidth / 2;
           // const halfObjectDepth = objectDepth / 2;
 
           // ✅ NOTCH HANDLING: Use notch boundaries for L-shaped rooms
@@ -2329,74 +2451,74 @@ export class EventHandlers {
           // Adjust position based on which wall and apply constraints
           switch (closestWall) {
             case 'north':
+              constrainedRotation = 0;
+              const nBounds = calculateGroupBounds(constrainedRotation);
               // Keep object flush to north wall
               newZ = wallFaces.north + wallBuffer;
-              // FIXED: Prevent object from extending beyond interior boundaries (including notch)
+              // FIXED: Prevent group from extending beyond interior boundaries (including notch)
               newX = Math.max(
-                effectiveMinX + halfObjectWidth,  // Don't go into west wall or notch
-                Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall, use newX with offset
+                effectiveMinX - nBounds.minX,  // Don't go into west wall or notch
+                Math.min(interior.maxX - nBounds.maxX, newX)  // Don't go into east wall
               );
-              constrainedRotation = 0;
               break;
 
             case 'south':
+              constrainedRotation = Math.PI;
+              const sBounds = calculateGroupBounds(constrainedRotation);
               // Keep object flush to south wall
               newZ = wallFaces.south - wallBuffer;
               // ✅ CRITICAL FIX: South wall is opposite to notch - don't apply notch constraint!
-              // The notch is on the NORTH side, so south wall should use full room X-range
               newX = Math.max(
-                interior.minX + halfObjectWidth,  // Use actual west boundary, NOT notch boundary
-                Math.min(interior.maxX - halfObjectWidth, newX)  // Don't go into east wall
+                interior.minX - sBounds.minX,  // Use actual west boundary
+                Math.min(interior.maxX - sBounds.maxX, newX)  // Don't go into east wall
               );
-              constrainedRotation = Math.PI;
               break;
 
             case 'east':
+              constrainedRotation = -Math.PI / 2;
+              const eBounds = calculateGroupBounds(constrainedRotation);
               // Keep object flush to east wall
               newX = wallFaces.east - wallBuffer;
               // ✅ CRITICAL FIX: East wall is opposite to notch - don't apply notch constraint!
-              // The notch is on the WEST side, so east wall should use full room Z-range
               newZ = Math.max(
-                interior.minZ + halfObjectWidth,  // Use actual north boundary, NOT notch boundary
-                Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall
+                interior.minZ - eBounds.minZ,  // Use actual north boundary
+                Math.min(interior.maxZ - eBounds.maxZ, newZ)  // Don't go into south wall
               );
-              constrainedRotation = -Math.PI / 2;
               break;
 
             case 'west':
+              constrainedRotation = Math.PI / 2;
+              const wBounds = calculateGroupBounds(constrainedRotation);
               // Keep object flush to west wall
               newX = wallFaces.west + wallBuffer;
-              // FIXED: Prevent object from extending beyond interior boundaries (including notch)
+              // FIXED: Prevent group from extending beyond interior boundaries (including notch)
               newZ = Math.max(
-                effectiveMinZ + halfObjectWidth,  // Don't go into north wall or notch (object rotated, so use halfObjectWidth)
-                Math.min(interior.maxZ - halfObjectWidth, newZ)  // Don't go into south wall, use newZ with offset
+                effectiveMinZ - wBounds.minZ,  // Don't go into north wall or notch
+                Math.min(interior.maxZ - wBounds.maxZ, newZ)  // Don't go into south wall
               );
-              constrainedRotation = Math.PI / 2;
               break;
 
             // ✅ NOTCH EDGE WALLS for L-shaped rooms
             case 'notch-east':
+              constrainedRotation = Math.PI / 2; // Faces East, like West wall
+              const neBounds = calculateGroupBounds(constrainedRotation);
               // Vertical notch edge (runs north-south at X = notch.maxX)
-              // Object snaps to this edge and slides along Z axis
-              // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
               newX = notch?.maxX ? notch.maxX + wallBuffer + 5 : 0;
               newZ = Math.max(
-                notch?.minZ ? notch.minZ + halfObjectWidth : 0,  // Don't go past top of notch
-                Math.min(notch?.maxZ ? notch.maxZ - halfObjectWidth : interior.maxZ - halfObjectWidth, newZ)  // ✅ FIX: Stop at corner (notch.maxZ), not interior.maxZ
+                (notch?.minZ ?? interior.minZ) - neBounds.minZ,
+                Math.min((notch?.maxZ ?? interior.maxZ) - neBounds.maxZ, newZ)
               );
-              constrainedRotation = Math.PI / 2;  // Face away from notch (toward east)
               break;
 
             case 'notch-south':
+              constrainedRotation = 0; // Faces South, like North wall
+              const nsBounds = calculateGroupBounds(constrainedRotation);
               // Horizontal notch edge (runs east-west at Z = notch.maxZ)
-              // Object snaps to this edge and slides along X axis
-              // ✅ CRITICAL FIX: Use wallBuffer (like regular walls), not halfObjectDepth
-              newZ = notch?.maxZ ? notch?.maxZ + wallBuffer + 5 : 0;
+              newZ = notch?.maxZ ? notch.maxZ + wallBuffer + 5 : 0;
               newX = Math.max(
-                notch?.minX ? notch?.minX + halfObjectWidth : 0,  // Don't go past left of notch
-                Math.min(notch?.maxX ? notch.maxX - halfObjectWidth : interior.maxX - halfObjectWidth, newX)  // ✅ FIX: Stop at corner (notch.maxX), not interior.maxX
+                (notch?.minX ?? interior.minX) - nsBounds.minX,
+                Math.min((notch?.maxX ?? interior.maxX) - nsBounds.maxX, newX)
               );
-              constrainedRotation = 0;  // Face away from notch (toward south)
               break;
           }
 
@@ -3096,7 +3218,11 @@ export class EventHandlers {
         }
 
         // Check for collisions and update outline color
-        const currentItems = this.getVirtualItems();
+        // When multi-select is active with multiple items, exclude other selected items
+        // to prevent false collision detection with their old positions
+        const currentItems = this.selectedObjects.size > 1
+          ? this.getVirtualItemsExcludingSelected()
+          : this.getVirtualItems();
         const isColliding = wouldCollideWithExisting(
           { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
           objectType,
@@ -3528,6 +3654,36 @@ export class EventHandlers {
       this.notchHeightRef.value
     );
 
+    // ✅ NEW: Calculate group extents for multi-selection to detect corner hits
+    let groupMinX = 0, groupMaxX = 0, groupMinZ = 0, groupMaxZ = 0;
+    if (this.selectedObjects.size > 1 && currentWall) {
+      const primaryRot = this.selectedObject?.rotation.y || 0;
+      this.selectedObjects.forEach((obj, id) => {
+        const localOffset = this.multiSelectLocalOffsets.get(id);
+        if (localOffset) {
+          const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), primaryRot);
+
+          const itemType = obj.userData.type as ComponentType;
+          const itemScale = obj.scale.x;
+          const itemData = this.getCurrentItemData(id);
+          const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
+
+          if (dims) {
+            const hW = (dims.width * itemScale) / 2;
+            groupMinX = Math.min(groupMinX, worldOffset.x - hW);
+            groupMaxX = Math.max(groupMaxX, worldOffset.x + hW);
+            groupMinZ = Math.min(groupMinZ, worldOffset.z - hW);
+            groupMaxZ = Math.max(groupMaxZ, worldOffset.z + hW);
+          } else {
+            groupMinX = Math.min(groupMinX, worldOffset.x);
+            groupMaxX = Math.max(groupMaxX, worldOffset.x);
+            groupMinZ = Math.min(groupMinZ, worldOffset.z);
+            groupMaxZ = Math.max(groupMaxZ, worldOffset.z);
+          }
+        }
+      });
+    }
+
     // Calculate wall distances
     const wallDistances: Record<string, number> = {
       north: Math.abs(mouseWorldPos.z + roomHalfHeight),
@@ -3540,6 +3696,42 @@ export class EventHandlers {
     if (notch) {
       wallDistances['notch-east'] = Math.abs(mouseWorldPos.x - notch.maxX);
       wallDistances['notch-south'] = Math.abs(mouseWorldPos.z - notch.maxZ);
+    }
+
+    // ✅ GROUP-AWARE WALL SWITCHING:
+    // If any item in the group is "pressing" against a corner, adjust distances
+    // to encourage switching to the adjacent wall.
+    if (this.selectedObjects.size > 1 && currentWall) {
+      let isPressing = false;
+      const buffer = 10;
+
+      if (currentWall === 'north' || currentWall === 'south') {
+        if (mouseWorldPos.x + groupMinX < -roomHalfWidth + buffer ||
+          mouseWorldPos.x + groupMaxX > roomHalfWidth - buffer) {
+          isPressing = true;
+        }
+      } else if (currentWall === 'east' || currentWall === 'west') {
+        if (mouseWorldPos.z + groupMinZ < -roomHalfHeight + buffer ||
+          mouseWorldPos.z + groupMaxZ > roomHalfHeight - buffer) {
+          isPressing = true;
+        }
+      } else if (currentWall === 'notch-east' && notch) {
+        if (mouseWorldPos.z + groupMinZ < notch.minZ + buffer ||
+          mouseWorldPos.z + groupMaxZ > notch.maxZ - buffer) {
+          isPressing = true;
+        }
+      } else if (currentWall === 'notch-south' && notch) {
+        if (mouseWorldPos.x + groupMinX < notch.minX + buffer ||
+          mouseWorldPos.x + groupMaxX > notch.maxX - buffer) {
+          isPressing = true;
+        }
+      }
+
+      if (isPressing) {
+        // Make current wall appear "farther" to encourage switching
+        wallDistances[currentWall] += 100;
+        console.log(`🚀 Touch: Group pressing against ${currentWall} corner, encouraging switch`);
+      }
     }
 
     const sortedWalls = Object.entries(wallDistances).sort((a, b) => a[1] - b[1]);
