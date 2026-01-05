@@ -489,15 +489,15 @@ const handleCancel = () => {
             <label class="small-label">Movement Options</label>
             <div class="checkbox-group">
               <label class="checkbox-label">
-                <input type="checkbox" v-model="newVariant.movement!.snapToWall" class="checkbox-input" />
+                <input type="checkbox" v-model="newVariant.movement.snapToWall" class="checkbox-input" />
                 Snap to Wall
               </label>
               <label class="checkbox-label">
-                <input type="checkbox" v-model="newVariant.movement!.allowVerticalMovement" class="checkbox-input" />
+                <input type="checkbox" v-model="newVariant.movement.allowVerticalMovement" class="checkbox-input" />
                 Allow Vertical Movement
               </label>
               <label class="checkbox-label">
-                <input type="checkbox" v-model="newVariant.movement!.allowFreeRotation" class="checkbox-input" />
+                <input type="checkbox" v-model="newVariant.movement.allowFreeRotation" class="checkbox-input" />
                 Allow Free Rotation
               </label>
             </div>

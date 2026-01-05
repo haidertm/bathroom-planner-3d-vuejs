@@ -155,8 +155,12 @@ const exportToCSV = () => {
   link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    link.click();
+  } finally {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url); // Revoke the object URL
+  }
 
   toast.success(`Exported ${products.length} products to CSV`);
 };

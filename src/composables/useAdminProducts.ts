@@ -8,6 +8,10 @@ import type {
   PaginationState,
   AdminStats,
 } from '../types/admin';
+import {
+  DEFAULT_FILTERS,
+  DEFAULT_PAGINATION,
+} from '../types/admin';
 import { productApi } from '../services/api';
 
 // Debounce utility function
@@ -39,19 +43,8 @@ function debounce<T extends (...args: any[]) => any>(
 
 // Reactive state
 const products = ref<AdminProduct[]>([]);
-const filters = ref<ProductFilters>({
-  categories: [],
-  searchQuery: '',
-  priceRange: { min: null, max: null },
-  sortBy: 'name',
-  sortOrder: 'asc',
-  enabledFilter: 'all',
-});
-const pagination = ref<PaginationState>({
-  currentPage: 1,
-  itemsPerPage: 12,
-  totalItems: 0,
-});
+const filters = ref<ProductFilters>({ ...DEFAULT_FILTERS });
+const pagination = ref<PaginationState>({ ...DEFAULT_PAGINATION });
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
@@ -266,6 +259,9 @@ export function useAdminProducts() {
     Promise.all([fetchProducts(), fetchStats()]).finally(() => {
       isInitialLoad.value = false;
     });
+  } else {
+    // If products are already loaded, just ensure the flag is reset
+    isInitialLoad.value = false;
   }
 
   // Filtered products (for local mode - in API mode, filtering is done server-side)
