@@ -970,14 +970,14 @@ export class SceneManager {
       this.originalFloorMaterial = this.floorRef.material as THREE.Material;
     }
 
-    // Create blueprint floor material - dark gray like the reference image
+    // Create blueprint floor material - white background for clean look
     const blueprintFloorMaterial = new THREE.MeshBasicMaterial({
-      color: 0x454545, // Dark gray matching reference blueprint style
+      color: 0xFFFFFF, // White background - clean blueprint style
       side: THREE.DoubleSide,
     });
 
     this.floorRef.material = blueprintFloorMaterial;
-    console.log('✅ 2D floor appearance applied - dark blueprint style');
+    console.log('✅ 2D floor appearance applied - light blueprint style');
   }
 
   /**
