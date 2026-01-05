@@ -109,7 +109,12 @@
 <script setup>
 import {ref, onMounted} from 'vue'
 import {useRouter} from 'vue-router'
+import { useGtm } from '@gtm-support/vue-gtm'
 import TemplateSelectionModal from '../components/ui/TemplateSelectionModal.vue'
+import { setSelectedRoomShape } from '../utils/roomShape'
+import { getTemplateById } from '../constants/templates'
+
+const gtm = useGtm()
 
 const router = useRouter()
 const activeMenu = ref(null)
@@ -207,13 +212,42 @@ const deleteDesign = (designId) => {
 }
 
 // Template selection handlers
-const handleStartFromScratch = (shape) => {
-  // Save the selected shape and go directly to room dimensions
-  localStorage.setItem('selected-room-shape', shape)
+const handleStartFromScratch = (selection) => {
+  setSelectedRoomShape(selection)
+
+  // Track room shape selection
+  if (gtm?.enabled()) {
+    const isLShape = selection && typeof selection === 'object' && selection.shape === 'l-shape'
+    gtm.trackEvent({
+      event: 'room_shape_selected',
+      category: 'Room Configuration',
+      action: 'Select Shape',
+      label: isLShape ? `l-shape-${selection.corner || 'unknown'}` : selection,
+    })
+  }
+
   router.push('/room-dimensions')
 }
 
 const handleSelectTemplate = (templateId) => {
+  // Get template config to extract room shape
+  const templateConfig = getTemplateById(templateId)
+  if (templateConfig) {
+    const roomShape = templateConfig.roomShape
+    setSelectedRoomShape(roomShape)
+
+    // Track room shape selection (same format as handleStartFromScratch)
+    if (gtm?.enabled()) {
+      const isLShape = roomShape === 'l-shape'
+      gtm.trackEvent({
+        event: 'room_shape_selected',
+        category: 'Room Configuration',
+        action: 'Select Shape',
+        label: isLShape ? `l-shape-unknown` : roomShape,
+      })
+    }
+  }
+
   // Store the selected template ID for the planner to use
   localStorage.setItem('selected-template', templateId)
   // Skip room dimensions and go directly to planner

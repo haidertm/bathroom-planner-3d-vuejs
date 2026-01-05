@@ -34,6 +34,7 @@ export const DefaultCornerObjectRotation = {
 
 export type cornerInstallOnly = {
   enabled: boolean;
+  preferredCorner?: 'north-west' | 'north-east' | 'south-west' | 'south-east' | 'notch-interior'; // Optional: default spawn corner
   rotation?: { // Optional, if not provided Default will be used
     'north-west': number,
     'north-east': number,

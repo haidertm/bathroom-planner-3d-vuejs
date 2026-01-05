@@ -21,7 +21,7 @@ import {
 } from '../utils/constraints';
 import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
-import { CAMERA_CONTROLS, LOOK_AT } from '../constants/camera';
+import { CAMERA_CONTROLS, LOOK_AT, type ViewMode } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
 import { MeasurementSystem } from './measurementSystem.ts';
 import { type Position as PositionArrayType } from '../models/bathroomFixtures.ts';
@@ -136,6 +136,11 @@ export class EventHandlers {
   private wasAlreadySelected: boolean = false;
   private singleItemToastShown: boolean = false; // Flag to prevent showing toast multiple times
 
+  // 2D/3D View Mode
+  private viewMode: ViewMode = '3d';
+  public orthographicCamera: THREE.OrthographicCamera | null = null; // Public for SceneManager access
+  private sceneManager: any = null; // Reference to SceneManager for 2D zoom
+
   /**
    * Toggle multi-selection mode
    */
@@ -234,6 +239,7 @@ export class EventHandlers {
   }
 
   constructor(
+
     scene: THREE.Scene,
     camera: THREE.PerspectiveCamera,
     renderer: THREE.WebGLRenderer,
@@ -341,33 +347,40 @@ export class EventHandlers {
         const movementConfig = getMovementConfig(objectType, currentItem);
 
         // Apply rotation-aware positioning for all freestanding objects
-        if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+        if (movementConfig.allowFreeRotation) {
+          if (!movementConfig.snapToWall) {
+            const currentPos = this.selectedObject.position.clone();
+            const correctedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
+            const EPS = 0.1; // cm
 
-          const currentPos = this.selectedObject.position.clone();
-          const correctedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
-          const EPS = 0.1; // cm
+            if (Math.abs(correctedPos.x - currentPos.x) > EPS || Math.abs(correctedPos.z - currentPos.z) > EPS) {
+              this.selectedObject.position.copy(correctedPos);
 
-          if (Math.abs(correctedPos.x - currentPos.x) > EPS || Math.abs(correctedPos.z - currentPos.z) > EPS) {
-            this.selectedObject.position.copy(correctedPos);
-
-            // Update data model with both rotation and corrected position
-            this.queueUpdate(itemId, {
-              rotation: rotation,
-              position: [correctedPos.x, correctedPos.y, correctedPos.z]
-            });
+              // Update data model with both rotation and corrected position
+              this.queueUpdate(itemId, {
+                rotation: rotation,
+                position: [correctedPos.x, correctedPos.y, correctedPos.z]
+              });
+            } else {
+              // Position didn't need adjustment, just update rotation
+              this.queueUpdate(itemId, { rotation });
+            }
           } else {
-            // Position didn't need adjustment, just update rotation
+            // Wall-mounted or non-free-rotation objects - just update rotation
             this.queueUpdate(itemId, { rotation });
           }
-        } else {
-          // Wall-mounted or non-free-rotation objects - just update rotation
-          this.queueUpdate(itemId, { rotation });
-        }
 
-        // Update arrow positions to follow the object
-        this.rotationArrows?.updateArrowPositions();
+          // Update arrow positions to follow the object
+          this.rotationArrows?.updateArrowPositions();
+
+          // Update schematic overlay rotation in 2D mode
+          if (this.sceneManager?.updateSchematicPosition) {
+            this.sceneManager.updateSchematicPosition(itemId);
+          }
+        }
       }
     });
+
 
     this.rotationArrows.setRotationCompleteCallback((rotation: number) => {
       if (this.selectedObject) {
@@ -474,6 +487,65 @@ export class EventHandlers {
     this.wallCulling = wallCulling;
   }
 
+  /**
+   * Set the current view mode (2D or 3D)
+   * Called by SceneManager when switching views
+   */
+  public setViewMode(mode: ViewMode): void {
+    console.log('📐 EventHandlers: View mode set to', mode);
+    this.viewMode = mode;
+
+    // Update rotation arrows camera for proper raycasting in 2D/3D mode
+    if (this.rotationArrows) {
+      const activeCamera = mode === '2d' && this.orthographicCamera
+        ? this.orthographicCamera
+        : this.camera;
+      this.rotationArrows.setActiveCamera(activeCamera);
+    }
+  }
+
+  /**
+   * Get current view mode
+   */
+  public getViewMode(): ViewMode {
+    return this.viewMode;
+  }
+
+  /**
+   * Set reference to SceneManager for 2D zoom control
+   */
+  public setSceneManager(sceneManager: any): void {
+    this.sceneManager = sceneManager;
+    if (sceneManager?.orthographicCamera) {
+      this.orthographicCamera = sceneManager.orthographicCamera;
+    }
+  }
+
+  /**
+   * Set orthographic camera reference
+   */
+  public setOrthographicCamera(camera: THREE.OrthographicCamera): void {
+    this.orthographicCamera = camera;
+  }
+
+  /**
+   * Check if height adjustment is allowed (disabled in 2D mode)
+   */
+  private canAdjustHeight(): boolean {
+    return this.viewMode === '3d';
+  }
+
+  /**
+   * Get the active camera based on current view mode
+   * Returns orthographic camera in 2D mode, perspective camera in 3D mode
+   */
+  private getActiveCamera(): THREE.Camera {
+    if (this.viewMode === '2d' && this.orthographicCamera) {
+      return this.orthographicCamera;
+    }
+    return this.camera;
+  }
+
   public update(): void {
     // Update rotation arrows
     if (this.rotationArrows) {
@@ -569,7 +641,8 @@ export class EventHandlers {
   }
 
   private getIntersectedObject(mouse: THREE.Vector2): IntersectionResult | null {
-    this.raycaster.setFromCamera(mouse, this.camera);
+    this.raycaster.setFromCamera(mouse, this.getActiveCamera());
+
 
     // Raycast against all objects, but filter results by visibility
     const intersects = this.raycaster.intersectObjects(this.scene.children, true);
@@ -586,6 +659,15 @@ export class EventHandlers {
       // If it's a wall, block further object selection
       if (obj.userData.isWall) {
         return null; // Camera rotation
+      }
+
+      // Check if clicked on a 2D schematic overlay - return the linked bathroom object
+      let schematicParent = obj;
+      while (schematicParent.parent && !schematicParent.userData.isSchematic2D) {
+        schematicParent = schematicParent.parent;
+      }
+      if (schematicParent.userData.isSchematic2D && schematicParent.userData.linkedModel) {
+        return { object: schematicParent.userData.linkedModel, point: intersect.point };
       }
 
       // If it's a bathroom object, check if it's the parent or find the parent
@@ -733,6 +815,13 @@ export class EventHandlers {
   private handleMouseDown(event: MouseEvent): void {
     event.preventDefault();
 
+    // ✅ FIX: If we're already dragging, ignore any mousedown events (especially right-click)
+    // This prevents right-click from deselecting the object or interfering with the drag
+    if (this.isDragging || this.isDragOperation) {
+      console.log('🚫 Ignoring mousedown during active drag operation');
+      return;
+    }
+
     // Store initial mouse position to track movement
     this.mouseDownPosition.set(event.clientX, event.clientY);
     this.hasMouseMoved = false;
@@ -805,8 +894,13 @@ export class EventHandlers {
         }
       }
 
-      // Only do this for wall-bound objects and NOT in multi-select mode
-      if (movementConfig?.snapToWall && !this.isMultiSelectMode) {
+      // Only do this for wall-bound objects that are NOT corner-install (bathtubs, showers, etc.)
+      // Corner-install objects should stay in their corners, not move to opposite walls
+      const isCornerInstall = movementConfig?.cornerInstallOnly &&
+        (typeof movementConfig.cornerInstallOnly === 'boolean' || movementConfig.cornerInstallOnly.enabled);
+
+      if (movementConfig?.snapToWall && !isCornerInstall && !this.isMultiSelectMode) {
+
         // Check which wall the object is currently on
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
@@ -863,6 +957,11 @@ export class EventHandlers {
                 this.selectedObject.rotation.y = newPosition.rotation;
               }
 
+              // Update schematic overlay position in 2D mode
+              if (this.sceneManager?.updateSchematicPosition) {
+                this.sceneManager.updateSchematicPosition(itemId);
+              }
+
               // Update the item data and save to history using queueUpdate
               // Since isDragOperation is false at this point, queueUpdate will apply immediately and save to history
               this.queueUpdate(itemId, {
@@ -896,7 +995,8 @@ export class EventHandlers {
       // Then set appropriate outline color based on current collision state
       setOutlineColor(isColliding);
 
-      if (event.ctrlKey || event.metaKey) { // Ctrl/Cmd + click for height adjustment
+      if ((event.ctrlKey || event.metaKey) && this.canAdjustHeight()) { // Ctrl/Cmd + click for height adjustment (3D mode only)
+
         this.isHeightAdjusting = true;
         this.isDragOperation = true; // Mark as drag operation
         this.heightStartY = this.selectedObject.position.y;
@@ -947,47 +1047,62 @@ export class EventHandlers {
 
         // ✅ FIX: For wall-mounted objects, calculate dragOffset using the wall plane
         if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
-          // Determine which wall the object is on
-          const currentWall = this.determineCurrentWall(this.selectedObject.position);
-          const roomHalfWidth = this.roomWidthRef.value / 2;
-          const roomHalfHeight = this.roomHeightRef.value / 2;
+          // 📐 2D MODE: Use floor plane for dragOffset calculation (matches drag handling)
+          if (this.viewMode === '2d') {
+            const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(floorPlane, intersectPoint);
+            // For 2D mode, only use X and Z offset (Y is locked)
+            this.dragOffset.set(
+              this.selectedObject.position.x - intersectPoint.x,
+              0,
+              this.selectedObject.position.z - intersectPoint.z
+            );
+          } else {
+            // 3D MODE: Use wall plane intersection
+            // Determine which wall the object is on
+            const currentWall = this.determineCurrentWall(this.selectedObject.position);
+            const roomHalfWidth = this.roomWidthRef.value / 2;
+            const roomHalfHeight = this.roomHeightRef.value / 2;
 
-          // ✅ Get notch boundaries for L-shaped rooms
-          const { notch } = getInteriorBoundaries(
-            this.roomWidthRef.value,
-            this.roomHeightRef.value,
-            this.notchWidthRef.value,
-            this.notchHeightRef.value
-          );
+            // ✅ Get notch boundaries for L-shaped rooms
+            const { notch } = getInteriorBoundaries(
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              this.notchWidthRef.value,
+              this.notchHeightRef.value
+            );
 
-          // Create the wall planes
-          const wallPlanes: { [key: string]: THREE.Plane } = {
-            north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
-            south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
-            east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
-            west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
-          };
+            // Create the wall planes
+            const wallPlanes: { [key: string]: THREE.Plane } = {
+              north: new THREE.Plane(new THREE.Vector3(0, 0, 1), roomHalfHeight),
+              south: new THREE.Plane(new THREE.Vector3(0, 0, -1), roomHalfHeight),
+              east: new THREE.Plane(new THREE.Vector3(-1, 0, 0), roomHalfWidth),
+              west: new THREE.Plane(new THREE.Vector3(1, 0, 0), roomHalfWidth)
+            };
 
-          // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
-          if (notch) {
-            wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
-            wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+            // ✅ ADD NOTCH WALL PLANES for L-shaped rooms
+            if (notch) {
+              wallPlanes['notch-east'] = new THREE.Plane(new THREE.Vector3(-1, 0, 0), notch.maxX);
+              wallPlanes['notch-south'] = new THREE.Plane(new THREE.Vector3(0, 0, -1), notch.maxZ);
+            }
+
+            const wallPlane = wallPlanes[currentWall];
+
+            // Calculate intersection with wall plane
+            this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+            const intersectPoint = new THREE.Vector3();
+            this.raycaster.ray.intersectPlane(wallPlane, intersectPoint);
+
+            // Calculate dragOffset from wall plane intersection
+            this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
           }
-
-          const wallPlane = wallPlanes[currentWall];
-
-          // Calculate intersection with wall plane
-          this.raycaster.setFromCamera(this.mouse, this.camera);
-          const intersectPoint = new THREE.Vector3();
-          this.raycaster.ray.intersectPlane(wallPlane, intersectPoint);
-
-          // Calculate dragOffset from wall plane intersection
-          this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
         } else {
           // For non-wall objects, use the standard drag plane
           this.updateDragPlane(this.selectedObject);
 
-          this.raycaster.setFromCamera(this.mouse, this.camera);
+          this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
           const intersectPoint = new THREE.Vector3();
           this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
           this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
@@ -1031,6 +1146,12 @@ export class EventHandlers {
     // Set up measurement system
     if (this.measurementSystem) {
       this.measurementSystem.setSelectedObject(object);
+    }
+
+    // 🔧 FIX: Call onItemSelected callback to open variant drawer
+    const itemId = object.userData.itemId;
+    if (this.onItemSelected && itemId !== undefined) {
+      this.onItemSelected(itemId);
     }
 
     console.log('✅ Object selected successfully');
@@ -1757,6 +1878,11 @@ export class EventHandlers {
           position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z],
           rotation: constrainedRotation
         });
+
+        // ✅ Update schematic overlay position in 2D mode for multi-selected objects
+        if (this.viewMode === '2d' && this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(id);
+        }
       }
     });
 
@@ -1814,6 +1940,12 @@ export class EventHandlers {
       const objectType = this.selectedObject.userData.type as ComponentType;
       const itemId = this.selectedObject.userData.itemId as number;
       const currentItem = this.getCurrentItemData(itemId);
+
+      // 📐 2D MODE: Disable height adjustment in 2D mode
+      if (!this.canAdjustHeight()) {
+        console.log('📐 Height adjustment disabled in 2D mode');
+        return;
+      }
 
       // Check if vertical movement is allowed
       if (!canMoveVertically(objectType, currentItem)) {
@@ -1882,120 +2014,61 @@ export class EventHandlers {
       const movementConfig = getMovementConfig(objectType, currentItem);
 
       // ✅ NEW: Calculate stable ideal position for the entire group using the camera-facing plane
-      this.raycaster.setFromCamera(this.mouse, this.camera);
-      const intersectPoint = new THREE.Vector3();
-      this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
-      const idealPosition = intersectPoint.clone().add(this.dragOffset);
+      // 📐 2D MODE: Use floor plane for position calculation
+      let idealPosition: THREE.Vector3;
+      if (this.viewMode === '2d') {
+        const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+        const floorIntersect = new THREE.Vector3();
+        this.raycaster.ray.intersectPlane(floorPlane, floorIntersect);
+        idealPosition = floorIntersect.clone().add(this.dragOffset);
+      } else {
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        const intersectPoint = new THREE.Vector3();
+        this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
+        idealPosition = intersectPoint.clone().add(this.dragOffset);
+        // Update intersection visualization (only in 3D mode)
+        this.updateIntersectionPointVisualization(intersectPoint);
+      }
 
-      // Update intersection visualization
-      this.updateIntersectionPointVisualization(intersectPoint);
+      // Get cursor position on the existing drag plane and include initial offset
+      this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
 
-      // ✅ ROTATION-AWARE FIX for freestanding bathtubs
+
+      // ✅ ROTATION-AWARE FIX for freestanding objects
       if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
-        const followPoint = idealPosition;
+        const currentPos = idealPosition;
+        const constrainedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
 
-        const objectDimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+        // Set position
+        this.selectedObject.position.set(constrainedPos.x, this.selectedObject.position.y, constrainedPos.z);
 
-        if (objectDimensions) {
-          const objectScale = this.selectedObject.scale.x;
-          const objectRotation = this.selectedObject.rotation.y;
+        const objectRotation = this.selectedObject.rotation.y;
 
-          // ✅ CRITICAL: Calculate rotated bounding box
-          const rotatedBounds = this.calculateRotatedBounds(
-            objectDimensions.width * objectScale,
-            objectDimensions.depth * objectScale,
-            objectRotation
-          );
+        // Update data model
+        this.queueUpdate(itemId, {
+          position: [constrainedPos.x, this.selectedObject.position.y, constrainedPos.z],
+          rotation: objectRotation
+        });
 
-          // Room boundaries
-          const roomHalfWidth = this.roomWidthRef.value / 2;
-          const roomHalfHeight = this.roomHeightRef.value / 2;
-          const wallThickness = WALL_SETTINGS.THICKNESS;
+        // Real-time collision feedback
+        const isColliding = this.checkCollisionState(
+          { x: constrainedPos.x, y: this.selectedObject.position.y, z: constrainedPos.z },
+          objectType,
+          objectScale,
+          itemId,
+          currentItem,
+          objectRotation
+        );
+        setOutlineColor(isColliding);
 
-          const wallFaces = {
-            west: -roomHalfWidth + wallThickness,
-            east: roomHalfWidth - wallThickness,
-            north: -roomHalfHeight + wallThickness,
-            south: roomHalfHeight - wallThickness
-          };
-
-          // ✅ USE ROTATED BOUNDS for constraint calculation
-          const halfRotatedWidth = rotatedBounds.width / 2;
-          const halfRotatedHeight = rotatedBounds.height / 2;
-
-          // Calculate safe boundaries using rotated dimensions
-          const safeMinX = wallFaces.west + halfRotatedWidth;
-          const safeMaxX = wallFaces.east - halfRotatedWidth;
-          const safeMinZ = wallFaces.north + halfRotatedHeight;
-          const safeMaxZ = wallFaces.south - halfRotatedHeight;
-
-          // Apply basic room boundary constraints first
-          let constrainedX = Math.max(safeMinX, Math.min(safeMaxX, followPoint.x));
-          let constrainedZ = Math.max(safeMinZ, Math.min(safeMaxZ, followPoint.z));
-
-          // ✅ NOTCH BOUNDARY CHECK: Prevent bathtub from entering notch area
-          const notchWidth = this.notchWidthRef.value;
-          const notchHeight = this.notchHeightRef.value;
-
-          if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
-            // Calculate notch boundaries (top-left corner)
-            const notchMinX = -roomHalfWidth + wallThickness;
-            const notchMaxX = -roomHalfWidth + notchWidth - wallThickness;
-            const notchMinZ = -roomHalfHeight + wallThickness;
-            const notchMaxZ = -roomHalfHeight + notchHeight - wallThickness;
-
-            // Calculate object boundaries at current constrained position
-            const objMinX = constrainedX - halfRotatedWidth;
-            const objMaxX = constrainedX + halfRotatedWidth;
-            const objMinZ = constrainedZ - halfRotatedHeight;
-            const objMaxZ = constrainedZ + halfRotatedHeight;
-
-            // Check if object would overlap with notch area
-            const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
-            const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
-
-            // If overlapping notch, push out to nearest valid position
-            if (xOverlap && zOverlap) {
-              const clearanceBuffer = 5; // 5cm clearance from notch walls
-
-              // Calculate distances to push object out of notch
-              const pushRight = notchMaxX + halfRotatedWidth + clearanceBuffer - constrainedX;
-              const pushDown = notchMaxZ + halfRotatedHeight + clearanceBuffer - constrainedZ;
-
-              // Choose the smaller push distance (nearest edge)
-              if (pushRight < pushDown) {
-                // Push to the right of notch
-                constrainedX = notchMaxX + halfRotatedWidth + clearanceBuffer;
-              } else {
-                // Push below notch
-                constrainedZ = notchMaxZ + halfRotatedHeight + clearanceBuffer;
-              }
-            }
-          }
-
-          // Set position
-          this.selectedObject.position.set(constrainedX, this.selectedObject.position.y, constrainedZ);
-
-          // Update data model
-          this.queueUpdate(this.selectedObject.userData.itemId as number, {
-            position: [constrainedX, this.selectedObject.position.y, constrainedZ],
-            rotation: objectRotation
-          });
-
-          // Real-time collision feedback (parity with other drag paths)
-          const isColliding = this.checkCollisionState(
-            { x: constrainedX, y: this.selectedObject.position.y, z: constrainedZ },
-            objectType,
-            objectScale,
-            itemId,
-            currentItem,
-            objectRotation
-          );
-          setOutlineColor(isColliding);
-
-          // Apply bulk move to other selected objects
-          this.applyBulkMove(this.selectedObject, followPoint, objectRotation);
+        // Update schematic overlay position in 2D mode
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(itemId);
         }
+
+        // Apply bulk move to other selected objects
+        this.applyBulkMove(this.selectedObject, idealPosition, objectRotation);
 
         return; // Exit early
       }
@@ -2009,14 +2082,85 @@ export class EventHandlers {
         // Get room and object dimensions
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
-        const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
         const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
         // ✅ NEW: Track current wall to prevent jumping
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
         // ✅ FIX: Project cursor onto ALL wall planes and use the closest intersection
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
+
+        // 📐 2D MODE: Use floor plane intersection instead of wall plane intersection
+        if (this.viewMode === '2d') {
+          const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+          const floorIntersect = new THREE.Vector3();
+
+          if (this.raycaster.ray.intersectPlane(floorPlane, floorIntersect)) {
+            // Apply drag offset to get target position
+            const targetX = floorIntersect.x + this.dragOffset.x;
+            const targetZ = floorIntersect.z + this.dragOffset.z;
+            const targetY = this.selectedObject.position.y; // Keep Y locked in 2D mode
+
+            // ✅ NEW: Use centralized constrainToWalls for 2D mode
+            // This provides stickiness, notch support, and consistent behavior
+            const currentWall = this.determineCurrentWall(this.selectedObject.position);
+            const result = constrainToWalls(
+              { x: targetX, y: targetY, z: targetZ },
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              {
+                type: objectType,
+                scale: objectScale,
+                orientation: this.selectedObject.userData.orientation,
+                item: currentItem,
+                notchWidth: this.notchWidthRef.value,
+                notchHeight: this.notchHeightRef.value
+              },
+              currentWall // Pass current wall for stickiness
+            );
+
+            constrainedPosition = result.position;
+            constrainedRotation = result.rotation;
+          }
+
+          // Check for collisions
+          const isColliding = this.checkCollisionState(
+            constrainedPosition,
+            objectType,
+            objectScale,
+            itemId,
+            currentItem,
+            constrainedRotation
+          );
+          setOutlineColor(isColliding);
+
+          // Apply position to object
+          this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
+          this.selectedObject.rotation.y = constrainedRotation;
+
+          // Update schematic overlay position in 2D mode
+          if (this.sceneManager?.updateSchematicPosition) {
+            this.sceneManager.updateSchematicPosition(itemId);
+          }
+
+          // Queue update
+          this.queueUpdate(itemId, {
+            position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z],
+            rotation: constrainedRotation
+          });
+
+          // ✅ Apply bulk move to other selected objects in 2D mode
+          // Use the floor intersection point as the ideal position for the group
+          const idealPosition2D = new THREE.Vector3(
+            floorIntersect.x + this.dragOffset.x,
+            constrainedPosition.y,
+            floorIntersect.z + this.dragOffset.z
+          );
+          this.applyBulkMove(this.selectedObject, idealPosition2D, constrainedRotation);
+
+          return; // Exit early - 2D mode handling complete
+        }
+
 
         // ✅ GET NOTCH BOUNDARIES FIRST for L-shaped room support
         const { interior, wallFaces, notch } = getInteriorBoundaries(
@@ -2412,7 +2556,7 @@ export class EventHandlers {
           let newZ = closestPoint.z + this.dragOffset.z;
           let newY;
 
-          // ✅ Adjust Y position
+          // ✅ Adjust Y position (3D mode only - 2D already handled above)
           if (movementConfig.allowVerticalMovement) {
             // For wall-mounted objects, apply dragOffset to maintain where user clicked
             newY = closestPoint.y + this.dragOffset.y;
@@ -2423,9 +2567,9 @@ export class EventHandlers {
 
           // Calculate object width and depth for boundary constraints
           // Note: These variables are kept for potential future use but currently unused
-          const _objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
+          // const objectWidth = dimensions && dimensions.width ? dimensions?.width * objectScale : 0;
           // const objectDepth = dimensions && dimensions.depth ? dimensions?.depth * objectScale : 0;
-          // const _halfObjectWidth = _objectWidth / 2;
+          // const halfObjectWidth = objectWidth / 2;
           // const halfObjectDepth = objectDepth / 2;
 
           // ✅ NOTCH HANDLING: Use notch boundaries for L-shaped rooms
@@ -2548,7 +2692,7 @@ export class EventHandlers {
           -this.selectedObject.position.y
         );
 
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const cursorWorldPos = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(heightPlane, cursorWorldPos);
 
@@ -2575,7 +2719,7 @@ export class EventHandlers {
 
       } else {
         // Free movement objects - use traditional drag with offset
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
 
@@ -2629,6 +2773,11 @@ export class EventHandlers {
         this.selectedObject.rotation.y = constrainedRotation;
       }
 
+      // Update schematic overlay position in 2D mode
+      if (this.sceneManager?.updateSchematicPosition) {
+        this.sceneManager.updateSchematicPosition(itemId);
+      }
+
       // Queue update
       const updateData: UpdateData = {
         position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z]
@@ -2644,7 +2793,23 @@ export class EventHandlers {
       this.applyBulkMove(this.selectedObject, idealPosition, constrainedRotation);
 
     } else if (this.isRotating) {
-      // Camera rotation logic (unchanged)
+      // 📐 2D MODE: Convert camera orbit to panning
+      if (this.viewMode === '2d') {
+        const deltaX = event.clientX - this.mouseX;
+        const deltaY = event.clientY - this.mouseY;
+
+        // Pan the orthographic camera
+        if (this.sceneManager) {
+          // Invert deltaY because screen Y is opposite to world Z in top-down view
+          this.sceneManager.pan2D(-deltaX, -deltaY);
+        }
+
+        this.mouseX = event.clientX;
+        this.mouseY = event.clientY;
+        return;
+      }
+
+      // 3D MODE: Camera rotation logic
       const deltaX = event.clientX - this.mouseX;
       const deltaY = event.clientY - this.mouseY;
 
@@ -2804,7 +2969,11 @@ export class EventHandlers {
         objectScale,
         itemId,
         currentItems,
-        currentItem
+        currentItem,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       // Check if collision prevention is enabled and object is colliding
@@ -2858,6 +3027,11 @@ export class EventHandlers {
           const currentItemsAfterSnap = this.getCurrentItems();
           this.measurementSystem.updateExistingItems(currentItemsAfterSnap);
           this.measurementSystem.forceUpdateMeasurements();
+        }
+
+        // Update schematic overlay position after snap-back (for 2D mode)
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(itemId);
         }
 
         console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
@@ -2924,6 +3098,17 @@ export class EventHandlers {
   private handleWheel(event: WheelEvent): void {
     event.preventDefault();
 
+    // 📐 2D MODE: Use orthographic zoom
+    if (this.viewMode === '2d') {
+      if (this.sceneManager) {
+        const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
+        this.sceneManager.zoom2D(zoomDelta);
+        console.log('📐 2D zoom applied');
+      }
+      return;
+    }
+
+    // 3D MODE: Original perspective zoom behavior
     console.log('🎯 Directional zoom started');
 
     // Simple zoom: move 30cm forward or backward along viewing direction
@@ -3057,7 +3242,7 @@ export class EventHandlers {
         this.originalDragPosition.copy(this.selectedObject.position);
         this.originalDragRotation = this.selectedObject.rotation.y;
 
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
         this.dragOffset.subVectors(this.selectedObject.position, intersectPoint);
@@ -3119,7 +3304,7 @@ export class EventHandlers {
         const currentItem = this.getCurrentItemData(itemId);
         const movementConfig = getMovementConfig(objectType, currentItem);
 
-        this.raycaster.setFromCamera(this.mouse, this.camera);
+        this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
         const intersectPoint = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(this.dragPlane, intersectPoint);
         const newPosition = intersectPoint.add(this.dragOffset);
@@ -3240,6 +3425,11 @@ export class EventHandlers {
           this.selectedObject.rotation.y = constrainedRotation;
         }
 
+        // Update schematic overlay position in 2D mode
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(itemId);
+        }
+
         const updateData: UpdateData = {
           position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z]
         };
@@ -3297,6 +3487,18 @@ export class EventHandlers {
       const scale = distance / this.lastTouchDistance;
 
       if (scale > 1.02 || scale < 0.98) {
+        // 📐 2D MODE: Use orthographic zoom (same as wheel zoom)
+        if (this.viewMode === '2d') {
+          if (this.sceneManager) {
+            const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
+            this.sceneManager.zoom2D(zoomDelta);
+            console.log('📐 2D pinch zoom applied');
+          }
+          this.lastTouchDistance = distance;
+          return;
+        }
+
+        // 3D MODE: Move camera along viewing direction
         // Touch zoom: move 20cm forward or backward along viewing direction
         const zoomStep = scale > 1.02 ? -20 : 20; // pinch in = zoom in (negative)
 
@@ -3345,7 +3547,11 @@ export class EventHandlers {
         objectScale,
         itemId,
         currentItems,
-        currentItem
+        currentItem,
+        this.roomWidthRef.value,
+        this.roomHeightRef.value,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       console.log('🎯 Touch final position collision check:', {
@@ -3401,6 +3607,12 @@ export class EventHandlers {
 
         // Set outline to normal color since we're back to non-colliding position
         setOutlineColor(false);
+
+        // Update schematic overlay position after snap-back (for 2D mode)
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(itemId);
+        }
+
         console.log('✅ Touch snap back completed - outline set to CYAN');
       } else {
         // Normal behavior: set outline color based on final collision state

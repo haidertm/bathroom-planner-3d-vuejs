@@ -494,7 +494,11 @@ export const positionMirror = (
     // For anchor-based placement, we want the visual bottom at vanityTop + gap,
     // so we need: position.y = vanityTop + gap - floorOffset
     const MIRROR_GAP_ABOVE_VANITY = 20; // 20cm (200mm) gap above vanity top
-    const vanityTopY = (vanity.position[1] || 0) + vanityDimensions.height;
+
+    // Calculate vanity's visual top position
+    // Visual top = scene position.y + floorOffset (where model bottom is) + model height
+    const vanityFloorOffset = vanity.model?.floorOffset || 0;
+    const vanityTopY = (vanity.position[1] || 0) + vanityFloorOffset + vanityDimensions.height;
 
     // Get mirror's floorOffset to compensate for it
     // Visual bottom should be at vanityTopY + gap
@@ -759,8 +763,18 @@ export const positionBath = (
   const movement = bathVariant?.movement;
   const spawnHeight = bathVariant?.spawnHeight || 0;
 
+  // Debug logging for bath placement
+  console.log('🛁 positionBath called with:', {
+    sku: bathVariant?.sku,
+    hasMovement: !!movement,
+    movement: movement,
+    cornerInstallOnly: movement?.cornerInstallOnly,
+    preferredCorner: movement?.cornerInstallOnly?.preferredCorner
+  });
+
   // Check if this is a corner-install bath
   const isCornerInstall = movement?.cornerInstallOnly?.enabled === true;
+  console.log('🛁 isCornerInstall:', isCornerInstall);
 
   // Find the door to determine the "back wall" (opposite to door)
   // Note: Doors can be typed as 'Door' or 'WindowAndDoor' depending on source
@@ -837,7 +851,35 @@ export const positionBath = (
   if (isCornerInstall) {
     console.log('🛁 Bath is corner-install, using constrainToCorner for placement');
 
-    for (const corner of sortedCorners) {
+    // Check if there's a preferred corner specified in the product data
+    const preferredCorner = movement?.cornerInstallOnly?.preferredCorner;
+    let cornersToTry = sortedCorners;
+
+    if (preferredCorner) {
+      // Priority order: preferred corner first, then north-east as second choice, then others
+      const preferredCornerObj = allCorners.find(c => c.type === preferredCorner);
+      const northEastCorner = allCorners.find(c => c.type === 'north-east');
+
+      if (preferredCornerObj) {
+        // Start with preferred corner
+        const priorityCorners = [preferredCornerObj];
+
+        // Add north-east as second priority (if not already preferred)
+        if (northEastCorner && preferredCorner !== 'north-east') {
+          priorityCorners.push(northEastCorner);
+        }
+
+        // Add remaining corners
+        const remainingCorners = sortedCorners.filter(c =>
+          c.type !== preferredCorner && c.type !== 'north-east'
+        );
+        cornersToTry = [...priorityCorners, ...remainingCorners];
+
+        console.log('🛁 Corner priority order:', cornersToTry.map(c => c.type).join(' -> '));
+      }
+    }
+
+    for (const corner of cornersToTry) {
       // Use constrainToCorner which properly calculates flush corner positioning
       const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
         type: 'Bath',
@@ -1112,6 +1154,7 @@ export const positionShower = (
       type: 'Shower',
       scale,
       orientation,
+      movement: showerVariant?.movement,  // Pass movement config with cornerInstallOnly
       sku: showerVariant?.sku,
       notchWidth,
       notchHeight

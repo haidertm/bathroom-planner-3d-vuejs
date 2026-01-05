@@ -270,6 +270,11 @@ export const constrainToCorner = (
     const halfX = isRotated90 ? halfDepth : halfWidth;
     const halfZ = isRotated90 ? halfWidth : halfDepth;
 
+    // Check if this is a center-pivot model (freestanding items with snapToWall: false)
+    // Center-pivot models need halfX/halfZ added to positioning to prevent wall clipping
+    const isCenterPivot = movementConfig.snapToWall === false;
+    console.log(`🔧 constrainToCorner: isCenterPivot=${isCenterPivot}, snapToWall=${movementConfig.snapToWall}`);
+
     // Position object flush in corner based on corner type
     // CORNER POSITIONING WITH PIVOT OFFSET COMPENSATION
     //
@@ -299,63 +304,90 @@ export const constrainToCorner = (
 
     // For each corner, place pivot at the appropriate wall face
     // The geometry will extend INTO the room from the pivot
+    //
+    // CENTER-PIVOT models (freestanding, snapToWall: false): Use halfX/halfZ to account for geometry centered on pivot
+    // EDGE-PIVOT models (rectangular baths, snapToWall: true): Pivot is at edge, need custom positioning per corner
     switch (nearestCorner.type) {
         case 'north-west':
+            // Center-pivot positioning: geometry centered, add half dimensions to each axis
             constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
             constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
-            // Corner at (west, north) walls. Rotation 0° → pivot at south edge
-            // At rotation 0°, pivot is at south edge but geometry is centered on X
-            // - X: center along X from west wall
-            // - Z: pivot at north wall, geometry extends south (into room)
-            constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-            console.log(`🔧 NW corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+
+            // Edge-pivot override for rectangular baths (pivot at south edge)
+            if (!isCenterPivot) {
+                // - X: center along X from west wall
+                // - Z: pivot at north wall, geometry extends south (into room)
+                constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+                constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+            }
+            console.log(`🔧 NW corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'north-east':
+            // Center-pivot positioning
             constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
             constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
-            // Corner at (east, north) walls. Rotation -90° → pivot at east edge
-            // - X: pivot at east wall (geometry extends west)
-            // - Z: pivot at north wall + halfWidth (center along Z since rotated)
-            constrainedPosition.x = nearestCorner.position.x - wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
-            console.log(`🔧 NE corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+
+            // Edge-pivot override (pivot at east edge)
+            if (!isCenterPivot) {
+                // - X: pivot at east wall (geometry extends west)
+                // - Z: pivot at north wall + halfWidth (center along Z since rotated)
+                constrainedPosition.x = nearestCorner.position.x - wallBuffer;
+                constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
+            }
+            console.log(`🔧 NE corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'south-east':
+            // Center-pivot positioning
             constrainedPosition.x = nearestCorner.position.x - halfX - wallBuffer;
             constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
-            // Corner at (east, south) walls. Rotation 180° → pivot at north edge
-            // - X: pivot at east wall - halfWidth (center along X)
-            // - Z: pivot at south wall (geometry extends north from pivot)
-            constrainedPosition.x = nearestCorner.position.x - halfWidth - wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z - wallBuffer;
-            console.log(`🔧 SE corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+
+            // Edge-pivot override (pivot at north edge)
+            if (!isCenterPivot) {
+                // - X: pivot at east wall - halfWidth (center along X)
+                // - Z: pivot at south wall (geometry extends north from pivot)
+                constrainedPosition.x = nearestCorner.position.x - halfWidth - wallBuffer;
+                constrainedPosition.z = nearestCorner.position.z - wallBuffer;
+            }
+            console.log(`🔧 SE corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'south-west':
+            // Center-pivot positioning
             constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
             constrainedPosition.z = nearestCorner.position.z - halfZ - wallBuffer;
-            // Corner at (west, south) walls. Rotation 90° → pivot at west edge
-            // - X: pivot at west wall (geometry extends east)
-            // - Z: pivot at south wall - halfWidth (center along Z since rotated)
-            constrainedPosition.x = nearestCorner.position.x + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer;
-            console.log(`🔧 SW corner: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+
+            // Edge-pivot override (pivot at west edge)
+            if (!isCenterPivot) {
+                // - X: pivot at west wall (geometry extends east)
+                // - Z: pivot at south wall - halfWidth (center along Z since rotated)
+                constrainedPosition.x = nearestCorner.position.x + wallBuffer;
+                constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer;
+            }
+            console.log(`🔧 SW corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'notch-interior':
-            // Similar to NW
-            constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-            console.log(`🔧 notch-interior: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+            // Center-pivot positioning
+            constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
+            constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
+
+            // Edge-pivot override (similar to NW)
+            if (!isCenterPivot) {
+                constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+                constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+            }
+            console.log(`🔧 notch-interior (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
 
         case 'notch-east-north':
+            // Center-pivot positioning
             constrainedPosition.x = nearestCorner.position.x + halfX + wallBuffer;
             constrainedPosition.z = nearestCorner.position.z + halfZ + wallBuffer;
-            // Similar to NW (notch-east wall acts as west wall at this corner)
-            // Object should be EAST of notch-east wall (into room), against north wall
-            constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
-            constrainedPosition.z = nearestCorner.position.z + wallBuffer;
-            console.log(`🔧 notch-east-north: pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
+
+            // Edge-pivot override (similar to NW)
+            if (!isCenterPivot) {
+                constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
+                constrainedPosition.z = nearestCorner.position.z + wallBuffer;
+            }
+            console.log(`🔧 notch-east-north (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
     }
 
@@ -1189,55 +1221,45 @@ export const constrainToRoom = (
         isLShape: notchWidth && notchHeight ? true : false
     });
 
-    // ✅ UPDATED: For L-shaped rooms, adjust interior boundaries to exclude notch
-    let effectiveMinX = interior.minX;
-    let effectiveMinZ = interior.minZ;
+    // Calculate initial constrained position within main room boundaries
+    let constrainedX = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, position.x));
+    let constrainedZ = Math.max(interior.minZ + halfDepth, Math.min(interior.maxZ - halfDepth, position.z));
 
+    // ✅ UPDATED: For L-shaped rooms, push object out of notch area if it overlaps
     if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
         const wallThickness = WALL_SETTINGS.THICKNESS;
         const notchMaxX = -(roomWidth / 2) + notchWidth - wallThickness;
         const notchMaxZ = -(roomHeight / 2) + notchHeight - wallThickness;
+        const notchMinX = -(roomWidth / 2) + wallThickness;
+        const notchMinZ = -(roomHeight / 2) + wallThickness;
 
-        console.log('🔧 constrainToRoom: L-shape notch boundary check:', {
-            position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-            halfDims: { width: halfWidth.toFixed(1), depth: halfDepth.toFixed(1) },
-            notchMaxX: notchMaxX.toFixed(1),
-            notchMaxZ: notchMaxZ.toFixed(1),
-            leftEdge: (position.x - halfWidth).toFixed(1),
-            topEdge: (position.z - halfDepth).toFixed(1),
-            wouldEnterNotchX: position.x - halfWidth < notchMaxX,
-            wouldEnterNotchZ: position.z - halfDepth < notchMaxZ
-        });
+        // Object boundaries at current constrained position
+        const objMinX = constrainedX - halfWidth;
+        const objMaxX = constrainedX + halfWidth;
+        const objMinZ = constrainedZ - halfDepth;
+        const objMaxZ = constrainedZ + halfDepth;
 
-        // The notch creates a restricted area in the top-left (northwest) corner
-        // Treat notch boundaries as walls that objects cannot pass through
+        // Check if object overlaps with notch area
+        const xOverlap = objMaxX > notchMinX && objMinX < notchMaxX;
+        const zOverlap = objMaxZ > notchMinZ && objMinZ < notchMaxZ;
 
-        // If object's left edge would be in notch X range, enforce notch boundary
-        if (position.x - halfWidth < notchMaxX) {
-            // Object is in the X range of the notch - set boundary at notch edge
-            effectiveMinX = Math.max(effectiveMinX, notchMaxX);
-            console.log(`🧱 Notch X boundary enforced: effectiveMinX = ${effectiveMinX.toFixed(1)}`);
-        }
+        if (xOverlap && zOverlap) {
+            // Object is in the notch area - push it out to nearest valid position
+            const pushEast = notchMaxX + halfWidth - constrainedX;
+            const pushSouth = notchMaxZ + halfDepth - constrainedZ;
 
-        // If object's top edge would be in notch Z range, enforce notch boundary
-        if (position.z - halfDepth < notchMaxZ) {
-            // Object is in the Z range of the notch - set boundary at notch edge
-            effectiveMinZ = Math.max(effectiveMinZ, notchMaxZ);
-            console.log(`🧱 Notch Z boundary enforced: effectiveMinZ = ${effectiveMinZ.toFixed(1)}`);
+            if (pushEast <= pushSouth) {
+                constrainedX = notchMaxX + halfWidth;
+            } else {
+                constrainedZ = notchMaxZ + halfDepth;
+            }
         }
     }
 
-    // Calculate constrained position using effective boundaries (accounting for notch)
     let constrainedPosition = {
-        x: Math.max(
-            effectiveMinX + halfWidth,
-            Math.min(interior.maxX - halfWidth, position.x)
-        ),
+        x: constrainedX,
         y: Math.max(0, position.y),
-        z: Math.max(
-            effectiveMinZ + halfDepth,
-            Math.min(interior.maxZ - halfDepth, position.z)
-        )
+        z: constrainedZ
     };
 
     // Handle vertical movement
@@ -1493,11 +1515,11 @@ export const constrainToWalls = (
         case 'notch-east':
             if (!notch) break; // Safety check
 
-            // Treat like east wall - snap X coordinate to notch edge
+            // Treat like west wall (faces east) - snap X coordinate to notch edge
             if (isFlushMounted) {
                 constrainedPosition.x = notch.maxX;
             } else {
-                constrainedPosition.x = notch.maxX - halfDepth - wallBuffer;  // Same pattern as regular east wall
+                constrainedPosition.x = notch.maxX + halfDepth + wallBuffer;  // Faces east, so object is to the east (+)
             }
 
             // ✅ Allow Z to slide freely along the notch wall within valid range
@@ -1516,7 +1538,7 @@ export const constrainToWalls = (
                 console.log(`🎯 NOTCH-EAST: Z preserved for smooth sliding: ${position.z.toFixed(1)}`);
             }
 
-            wallRotation = getObjectRotationForWall(objectType, 'east', orientation);
+            wallRotation = getObjectRotationForWall(objectType, 'west', orientation);
             console.log(`✅ NOTCH-EAST wall constraint applied: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
             break;
 
@@ -1524,11 +1546,11 @@ export const constrainToWalls = (
         case 'notch-south':
             if (!notch) break; // Safety check
 
-            // Treat like south wall - snap Z coordinate to notch edge
+            // Treat like north wall (faces south) - snap Z coordinate to notch edge
             if (isFlushMounted) {
                 constrainedPosition.z = notch.maxZ;
             } else {
-                constrainedPosition.z = notch.maxZ - halfDepth - wallBuffer;  // Same pattern as regular south wall
+                constrainedPosition.z = notch.maxZ + halfDepth + wallBuffer;  // Faces south, so object is to the south (+)
             }
 
             // ✅ Allow X to slide freely along the notch wall within valid range
@@ -1547,7 +1569,7 @@ export const constrainToWalls = (
                 console.log(`🎯 NOTCH-SOUTH: X preserved for smooth sliding: ${position.x.toFixed(1)}`);
             }
 
-            wallRotation = getObjectRotationForWall(objectType, 'south', orientation);
+            wallRotation = getObjectRotationForWall(objectType, 'north', orientation);
             console.log(`✅ NOTCH-SOUTH wall constraint applied: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
             break;
     }
@@ -1561,6 +1583,14 @@ export const constrainToWalls = (
         constrainedPosition.y = movementConfig.minHeight || 0;
     }
 
+    // Get wall face position (handle notch walls)
+    const getWallFacePosition = () => {
+        if (nearestWall === 'notch-east' && notch) return notch.maxX;
+        if (nearestWall === 'notch-south' && notch) return notch.maxZ;
+        return wallFaces[nearestWall as keyof typeof wallFaces];
+    };
+    const wallFacePos = getWallFacePosition();
+
     console.log(`🔧 :::: FIXED CONSTRAINT result for ${objectType}:`, {
         nearestWall,
         isFlushMounted,
@@ -1570,10 +1600,10 @@ export const constrainToWalls = (
             x: position.x !== constrainedPosition.x ? `${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}` : 'preserved',
             z: position.z !== constrainedPosition.z ? `${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}` : 'preserved'
         },
-        wallFacePosition: wallFaces[nearestWall].toFixed(1) + 'cm',
-        backEdgePosition: nearestWall === 'north' || nearestWall === 'south' ?
+        wallFacePosition: wallFacePos !== undefined ? wallFacePos.toFixed(1) + 'cm' : 'N/A',
+        backEdgePosition: nearestWall === 'north' || nearestWall === 'south' || nearestWall === 'notch-south' ?
             (nearestWall === 'north' ? (constrainedPosition.z - halfDepth).toFixed(1) : (constrainedPosition.z + halfDepth).toFixed(1)) + 'cm' :
-            (nearestWall === 'east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
+            (nearestWall === 'east' || nearestWall === 'notch-east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
     });
 
     return { position: constrainedPosition, rotation: wallRotation };
@@ -1883,8 +1913,41 @@ export const findFreeCornerPosition = (
         return null;
     }
 
+    // Check for preferred corner from movement config
+    console.log('🔍 findFreeCornerPosition called with movement:', movement);
+    const preferredCorner = movement?.cornerInstallOnly &&
+        typeof movement.cornerInstallOnly === 'object' ?
+        movement.cornerInstallOnly.preferredCorner : undefined;
+    console.log('🔍 findFreeCornerPosition preferredCorner:', preferredCorner);
+
+    // Reorder corners: preferred corner first, north-east second, then others
+    let cornersToTry = corners;
+    if (preferredCorner) {
+        const preferredCornerObj = corners.find(c => c.type === preferredCorner);
+        const northEastCorner = corners.find(c => c.type === 'north-east');
+
+        if (preferredCornerObj) {
+            // Start with preferred corner
+            const priorityCorners = [preferredCornerObj];
+
+            // Add north-east as second priority (if not already preferred)
+            if (northEastCorner && preferredCorner !== 'north-east') {
+                priorityCorners.push(northEastCorner);
+            }
+
+            // Add remaining corners
+            const remainingCorners = corners.filter(c =>
+                c.type !== preferredCorner && c.type !== 'north-east'
+            );
+            cornersToTry = [...priorityCorners, ...remainingCorners];
+
+            console.log(`🎯 findFreeCornerPosition: Priority order set`);
+        }
+    }
+    console.log('🔍 findFreeCornerPosition corners order:', cornersToTry.map(c => c.type));
+
     // Try each corner
-    for (const corner of corners) {
+    for (const corner of cornersToTry) {
 
         const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
             type: objectType,
