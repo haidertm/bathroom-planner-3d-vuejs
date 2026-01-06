@@ -54,7 +54,6 @@ const stats = ref<AdminStats>({
   disabledProducts: 0,
   categoryCounts: {} as Record<ComponentType, number>,
   totalVariants: 0,
-  recentlyAdded: 0,
 });
 
 // Flag to track if we're using API or fallback
@@ -128,14 +127,22 @@ const fetchProducts = async (): Promise<void> => {
     pagination.value.totalItems = response.total;
     useLocalFallback.value = false;
   } catch (err) {
-    console.warn('API not available, falling back to local data:', err);
+    if (import.meta.env.DEV) {
+      console.warn('API not available, falling back to local data:', err);
+    }
     useLocalFallback.value = true;
 
     // Fallback to local data - store unfiltered products
     // Filtering will be applied via the filteredProducts computed property
     const localProducts = await loadLocalProducts();
     products.value = localProducts;
-    error.value = 'Using local data (API unavailable)';
+
+    // Only set error if fallback also failed to provide products
+    if (localProducts.length === 0) {
+      error.value = 'Failed to load products from API and local fallback';
+    } else {
+      error.value = null;
+    }
   } finally {
     isLoading.value = false;
   }
@@ -247,7 +254,6 @@ const fetchStats = async (): Promise<void> => {
       disabledProducts: 0,
       categoryCounts,
       totalVariants,
-      recentlyAdded: 0,
     };
   }
 };
@@ -380,7 +386,7 @@ export function useAdminProducts() {
         products.value[index] = updated;
       }
       // Refresh stats
-      fetchStats();
+      await fetchStats();
       return true;
     } catch (err) {
       console.error('Failed to toggle product status:', err);
@@ -416,7 +422,7 @@ export function useAdminProducts() {
       products.value.push(created);
       // Update pagination total (totalPages computed property will update automatically)
       pagination.value.totalItems = (pagination.value.totalItems ?? 0) + 1;
-      fetchStats();
+      await fetchStats();
       return created;
     } catch (err) {
       console.error('Failed to create product:', err);
@@ -437,7 +443,7 @@ export function useAdminProducts() {
       products.value = products.value.filter(p => p.id !== product.id);
       // Update pagination total (totalPages computed property will update automatically)
       pagination.value.totalItems = Math.max(0, (pagination.value.totalItems ?? 0) - 1);
-      fetchStats();
+      await fetchStats();
       return true;
     } catch (err) {
       console.error('Failed to delete product:', err);

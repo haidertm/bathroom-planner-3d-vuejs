@@ -116,6 +116,12 @@
             ref="bathroomItemsContent"
         >
           <div :style="categoriesContainerStyle">
+            <!-- Loading indicator while fetching products from API -->
+            <div v-if="isLoadingProducts" :style="productsLoadingStyle">
+              <div :style="productsLoadingSpinnerStyle"></div>
+              <span>Loading products...</span>
+            </div>
+
             <!-- Category Items -->
             <template v-for="category in bathroomCategories" :key="category.id">
               <!-- Regular category (no children) -->
@@ -457,9 +463,14 @@ const fetchProductsFromAPI = async () => {
     const data = await productApi.getEnabledProducts()
     // API already returns data grouped by category
     productData.value = data
-    console.log('✅ Loaded products from database API:', Object.keys(productData.value))
+    if (import.meta.env.DEV) {
+      console.log('Loaded products from database API:', Object.keys(productData.value))
+    }
   } catch (error) {
-    console.warn('⚠️ Failed to fetch from API, using local product data:', error.message)
+    if (import.meta.env.DEV) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn('Failed to fetch from API, using local product data:', message)
+    }
     productData.value = localProductData
   } finally {
     isLoadingProducts.value = false
@@ -1331,6 +1342,31 @@ const searchTipsStyle = computed(() => ({
   borderRadius: '6px',
   border: '1px solid #e5e7eb'
 }));
+
+// Products loading indicator styles
+const productsLoadingStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '12px',
+  padding: '20px',
+  color: '#29275B',
+  fontSize: '14px',
+  fontWeight: '500',
+  backgroundColor: '#f8fafc',
+  borderRadius: '8px',
+  marginBottom: '12px',
+  border: '1px solid #e5e7eb'
+}))
+
+const productsLoadingSpinnerStyle = computed(() => ({
+  width: '20px',
+  height: '20px',
+  border: '2px solid #e5e7eb',
+  borderTop: '2px solid #29275B',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
+}))
 
 // NEW: Tiny loading spinner style (barely visible)
 const tinyLoadingSpinnerStyle = {

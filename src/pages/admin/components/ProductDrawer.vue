@@ -16,8 +16,8 @@ const emit = defineEmits<{
 
 const copiedSku = ref<string | null>(null);
 
-const formatPrice = (price: string | number): string => {
-  const num = typeof price === 'string' ? parseFloat(price) : price;
+const formatPrice = (price: string): string => {
+  const num = parseFloat(price);
   return `£${num.toFixed(2)}`;
 };
 
@@ -211,7 +211,7 @@ onUnmounted(() => {
                   </div>
                   <div class="variant-detail-row">
                     <span class="variant-label">Price:</span>
-                    <span class="variant-value">{{ formatPrice(variant.price || 0) }}</span>
+                    <span class="variant-value">{{ formatPrice(variant.price || '0') }}</span>
                   </div>
                   <div v-if="variant.path" class="variant-detail-row">
                     <span class="variant-label">Model:</span>

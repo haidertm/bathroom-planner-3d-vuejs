@@ -385,7 +385,7 @@ const props = defineProps({
   },
   productData: {
     type: Object,
-    default: () => localProductData
+    default: () => JSON.parse(JSON.stringify(localProductData))
   }
 })
 
