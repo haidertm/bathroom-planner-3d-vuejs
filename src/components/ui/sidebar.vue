@@ -450,6 +450,8 @@ import ProductDrawer from './ProductDrawer.vue'
 // NEW: Import selective preloading functions
 import localProductData from '../../mocks/productData.js'
 import { productApi } from '../../services/api'
+import { CONFIG } from '../../constants/models'
+import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
 
 // Reactive product data - will be loaded from API
 const productData = ref(localProductData)
@@ -481,8 +483,6 @@ const fetchProductsFromAPI = async () => {
 onMounted(() => {
   fetchProductsFromAPI()
 })
-import { CONFIG } from '../../constants/models'
-import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
 
 
 

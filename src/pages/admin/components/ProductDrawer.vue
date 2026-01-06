@@ -16,8 +16,14 @@ const emit = defineEmits<{
 
 const copiedSku = ref<string | null>(null);
 
-const formatPrice = (price: string): string => {
-  const num = parseFloat(price);
+const formatPrice = (price: string | null | undefined): string => {
+  if (!price) {
+    return '£0.00';
+  }
+  const num = parseFloat(price.trim());
+  if (!Number.isFinite(num)) {
+    return '£0.00';
+  }
   return `£${num.toFixed(2)}`;
 };
 

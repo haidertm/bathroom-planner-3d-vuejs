@@ -377,6 +377,29 @@ function transformApiProduct(apiProduct: ApiProduct): AdminProduct {
   };
 }
 
+// Transform ProductVariant to ApiProductVariant format
+function transformVariantToApi(variant: ProductVariant): ApiProductVariant {
+  return {
+    id: variant.id,
+    name: variant.name,
+    sku: variant.sku,
+    path: variant.path,
+    image: variant.image,
+    link: variant.link,
+    price: variant.price,
+    title: variant.title,
+    floorOffset: variant.floorOffset,
+    spawnHeight: variant.spawnHeight,
+    dimensions: {
+      width: variant.dimensions.width,
+      height: variant.dimensions.height,
+      depth: variant.dimensions.depth,
+    },
+    orientation: variant.orientation,
+    movement: variant.movement,
+  };
+}
+
 // Transform AdminProduct to API format
 function transformToApiProduct(product: Partial<AdminProduct>): Partial<ApiProduct> {
   const result: Partial<ApiProduct> = {};
@@ -389,7 +412,11 @@ function transformToApiProduct(product: Partial<AdminProduct>): Partial<ApiProdu
   if (product.image !== undefined) result.image = product.image;
   if (product.variantType !== undefined) result.variant_type = product.variantType;
   if (product.features !== undefined) result.features = product.features;
-  if (product.variants !== undefined) result.variants = product.variants as ApiProductVariant[];
+  if (product.variants !== undefined) {
+    result.variants = Array.isArray(product.variants)
+      ? product.variants.map(transformVariantToApi)
+      : [];
+  }
   if (product.enabled !== undefined) result.enabled = product.enabled;
 
   return result;
