@@ -1776,7 +1776,7 @@ export class EventHandlers {
     const primaryId = primaryObject.userData.itemId;
     // Use the CURRENT position and rotation of the primary object as the base for the group
     // This ensures the group moves and rotates as a single rigid unit
-    const primaryPos = primaryObject.position;
+    const primaryPos = primaryObject.position.clone();
     const primaryRot = primaryObject.rotation.y;
 
     let anyColliding = false;
@@ -1801,7 +1801,14 @@ export class EventHandlers {
         let constrainedPosition: { x: number, y: number, z: number };
         let constrainedRotation = primaryRot + localRot;
 
-        if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+        // ✅ FIX: In 2D mode, treat group as RIGID BODY - no individual constraints
+        // The group bounds pre-check already adjusted primary to keep everyone inside room
+        if (this.viewMode === '2d') {
+          // Pure rigid body - maintain exact relative position
+          constrainedPosition = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
+          constrainedRotation = primaryRot + localRot; // Keep rigid body rotation
+        } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+          // 3D MODE: Apply individual wall constraints
           // Get current wall for stickiness
           const currentItemWall = this.determineCurrentWall(obj.position);
 
@@ -2121,6 +2128,92 @@ export class EventHandlers {
 
             constrainedPosition = result.position;
             constrainedRotation = result.rotation;
+
+            // ✅ FIX: Apply group bounds constraint for multi-select in 2D mode
+            // Only constrain the LATERAL axis (along the wall), not the wall-perpendicular axis
+            // because constrainToWalls already handles the wall-perpendicular positioning
+            if (this.selectedObjects.size > 1) {
+              const { interior, notch } = getInteriorBoundaries(
+                this.roomWidthRef.value,
+                this.roomHeightRef.value,
+                this.notchWidthRef.value,
+                this.notchHeightRef.value
+              );
+
+              // Determine which wall the object is on based on rotation
+              // North wall: rotation ~0, slide along X
+              // South wall: rotation ~PI, slide along X
+              // East wall: rotation ~-PI/2, slide along Z
+              // West wall: rotation ~PI/2, slide along Z
+              const isOnNorthSouthWall = Math.abs(Math.cos(constrainedRotation)) > 0.7;
+
+              // Calculate group bounds relative to primary position
+              let groupMinX = 0, groupMaxX = 0, groupMinZ = 0, groupMaxZ = 0;
+
+              this.selectedObjects.forEach((obj, id) => {
+                const localOffset = this.multiSelectLocalOffsets.get(id);
+                if (localOffset) {
+                  // Rotate the offset by the constrained rotation
+                  const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), constrainedRotation);
+                  const itemType = obj.userData.type as ComponentType;
+                  const itemScale = obj.scale.x;
+                  const itemData = this.getCurrentItemData(id);
+                  const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
+
+                  if (dims) {
+                    const hW = (dims.width * itemScale) / 2;
+                    const hD = (dims.depth * itemScale) / 2;
+                    // Use proper dimension for each axis based on wall orientation
+                    // On north/south walls: width runs along X, depth along Z
+                    // On east/west walls: width runs along Z, depth along X
+                    const halfExtentX = isOnNorthSouthWall ? hW : hD;
+                    const halfExtentZ = isOnNorthSouthWall ? hD : hW;
+                    groupMinX = Math.min(groupMinX, worldOffset.x - halfExtentX);
+                    groupMaxX = Math.max(groupMaxX, worldOffset.x + halfExtentX);
+                    groupMinZ = Math.min(groupMinZ, worldOffset.z - halfExtentZ);
+                    groupMaxZ = Math.max(groupMaxZ, worldOffset.z + halfExtentZ);
+                  } else {
+                    groupMinX = Math.min(groupMinX, worldOffset.x);
+                    groupMaxX = Math.max(groupMaxX, worldOffset.x);
+                    groupMinZ = Math.min(groupMinZ, worldOffset.z);
+                    groupMaxZ = Math.max(groupMaxZ, worldOffset.z);
+                  }
+                }
+              });
+
+              // Only apply constraints to the lateral axis (along the wall)
+              if (isOnNorthSouthWall) {
+                // On north/south wall: only constrain X (left/right movement)
+                const effectiveMinX = notch ? Math.max(interior.minX, notch.maxX + WALL_SETTINGS.THICKNESS) : interior.minX;
+
+                // Right boundary: primary.x + groupMaxX <= interior.maxX
+                if (constrainedPosition.x + groupMaxX > interior.maxX) {
+                  constrainedPosition.x = interior.maxX - groupMaxX;
+                }
+                // Left boundary: primary.x + groupMinX >= effectiveMinX
+                if (constrainedPosition.x + groupMinX < effectiveMinX) {
+                  constrainedPosition.x = effectiveMinX - groupMinX;
+                }
+              } else {
+                // On east/west wall: only constrain Z (up/down movement along wall)
+                const effectiveMinZ = notch ? Math.max(interior.minZ, notch.maxZ + WALL_SETTINGS.THICKNESS) : interior.minZ;
+
+                // South boundary: primary.z + groupMaxZ <= interior.maxZ
+                if (constrainedPosition.z + groupMaxZ > interior.maxZ) {
+                  constrainedPosition.z = interior.maxZ - groupMaxZ;
+                }
+                // North boundary: primary.z + groupMinZ >= effectiveMinZ
+                if (constrainedPosition.z + groupMinZ < effectiveMinZ) {
+                  constrainedPosition.z = effectiveMinZ - groupMinZ;
+                }
+              }
+
+              console.log('📐 2D Multi-select group bounds applied:', {
+                wall: isOnNorthSouthWall ? 'north/south' : 'east/west',
+                groupBounds: { minX: groupMinX.toFixed(1), maxX: groupMaxX.toFixed(1), minZ: groupMinZ.toFixed(1), maxZ: groupMaxZ.toFixed(1) },
+                adjustedPosition: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) }
+              });
+            }
           }
 
           // Check for collisions

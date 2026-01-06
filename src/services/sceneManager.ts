@@ -340,7 +340,7 @@ export class SceneManager {
     // Calculate the zoom needed to fit the room with margins
     // We want the room to fill about 40-45% of the available viewport
     // This leaves ample space for dimension labels (width/height) around the room
-    const targetFillRatio = 0.35;
+    const targetFillRatio = 0.45;
 
     let optimalZoom: number;
 
