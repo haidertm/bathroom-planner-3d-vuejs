@@ -3056,15 +3056,17 @@ export class EventHandlers {
       const currentItems = this.getCurrentItems();
       const currentItem = currentItems.find(item => item.id === itemId);
       const finalPosition = this.selectedObject.position;
-      const isColliding = wouldCollideWithExisting(
+      // finalPosition already declared above
+      const isColliding = wouldCollideWithExistingOrWalls(
         { x: finalPosition.x, y: finalPosition.y, z: finalPosition.z },
         objectType,
         objectScale,
         itemId,
         currentItems,
-        currentItem,
         this.roomWidthRef.value,
         this.roomHeightRef.value,
+        currentItem,
+        this.selectedObject.rotation.y,
         this.notchWidthRef.value,
         this.notchHeightRef.value
       );
@@ -3124,7 +3126,12 @@ export class EventHandlers {
 
         // Update schematic overlay position after snap-back (for 2D mode)
         if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
+          // Update for all selected objects (primary + others)
+          this.selectedObjects.forEach((_, id) => {
+            if (this.sceneManager?.updateSchematicPosition) {
+              this.sceneManager.updateSchematicPosition(id);
+            }
+          });
         }
 
         console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
