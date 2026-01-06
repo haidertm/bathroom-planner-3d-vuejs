@@ -1250,8 +1250,12 @@ export const constrainToRoom = (
 
             if (pushEast <= pushSouth) {
                 constrainedX = notchMaxX + halfWidth;
+                // Clamp to room bounds after push
+                constrainedX = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, constrainedX));
             } else {
                 constrainedZ = notchMaxZ + halfDepth;
+                // Clamp to room bounds after push
+                constrainedZ = Math.max(interior.minZ + halfDepth, Math.min(interior.maxZ - halfDepth, constrainedZ));
             }
         }
     }

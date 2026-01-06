@@ -190,7 +190,7 @@
 
     <!-- Toast Notification -->
     <Transition name="toast">
-      <div v-if="toastMessage" :style="toastStyle">
+      <div v-if="toastMessage" class="toast-notification" :style="toastStyle">
         {{ toastMessage }}
       </div>
     </Transition>
@@ -1066,7 +1066,6 @@ const toastStyle = computed(() => ({
   position: 'fixed',
   bottom: '120px',
   left: '50%',
-  transform: 'translateX(-50%)',
   backgroundColor: 'rgba(41, 39, 91, 0.95)',
   color: 'white',
   padding: '12px 24px',
@@ -2587,10 +2586,15 @@ const handleClearAll = () => {
 
 
 <style scoped>
+/* Toast notification base styles */
+.toast-notification {
+  transform: translateX(-50%);
+}
+
 /* Toast transition styles */
 .toast-enter-active,
 .toast-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .toast-enter-from,
