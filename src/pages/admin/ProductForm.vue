@@ -533,7 +533,7 @@ const handleCancel = () => {
                   </svg>
                 </div>
                 <div>
-                  <p class="variant-name">{{ index === 0 ? formData.name : (variant.title || variant.name) }}</p>
+                  <p class="variant-name">{{ variant.title || variant.name || formData.name }}</p>
                   <p class="variant-sku">SKU: {{ variant.sku }} | £{{ variant.price }}</p>
                 </div>
               </div>

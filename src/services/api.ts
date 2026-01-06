@@ -1,10 +1,71 @@
 // API Service - HTTP client for backend API
-import type { AdminProduct, AdminStats, ProductFilters, PaginationState } from '../types/admin';
+import type { AdminProduct, AdminStats, ProductFilters, PaginationState, ProductVariant } from '../types/admin';
+import { COMPONENTS, type ComponentType } from '../constants/components';
 
 // API base URL - defaults to localhost for development
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-// Response types
+// API Product Variant (snake_case as returned from backend)
+export interface ApiProductVariant {
+  id: string;
+  name: string;
+  sku: string;
+  path: string;
+  image: string;
+  link: string;
+  price: string | number;
+  title?: string;
+  floorOffset?: number;
+  spawnHeight?: number;
+  dimensions: {
+    width: number;
+    height: number;
+    depth?: number;
+  };
+  orientation?: {
+    type: 'face_into_room' | 'flush_with_wall' | 'custom';
+    wallBuffer?: number;
+    rotationOffset?: number;
+    description?: string;
+  };
+  movement?: {
+    snapToWall: boolean;
+    cornerInstallOnly?: boolean;
+    allowVerticalMovement?: boolean;
+    allowFreeRotation?: boolean;
+    minHeight?: number;
+    maxHeight?: number;
+  };
+}
+
+// API Product (snake_case as returned from backend)
+export interface ApiProduct {
+  id?: number;
+  product_id: string;
+  category: string;
+  name: string;
+  price: string;
+  link: string;
+  image: string;
+  variant_type: string;
+  features: string[];
+  variants: ApiProductVariant[];
+  enabled: boolean;
+  created_at?: string;
+  updated_at?: string;
+  last_synced_at?: string;
+}
+
+// API Products Response
+export interface ApiProductsResponse {
+  products: ApiProduct[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// Response types (frontend format)
 export interface ProductListResponse {
   products: AdminProduct[];
   total: number;
@@ -57,8 +118,12 @@ async function fetchApi<T>(
       if (sessionData && sessionData.token) {
         headers['Authorization'] = `Bearer ${sessionData.token}`;
       }
-    } catch (e) {
-      console.error('Failed to parse admin session:', e);
+    } catch {
+      // Remove corrupted session data to prevent repeated parse failures
+      localStorage.removeItem('admin_session');
+      if (import.meta.env.DEV) {
+        console.warn('Removed corrupted admin_session from localStorage');
+      }
     }
   }
 
@@ -79,9 +144,30 @@ async function fetchApi<T>(
       throw new ApiError(response.status, error.error || error.message || 'Request failed');
     }
 
-    return response.json();
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
+    // Handle empty/no-content responses (e.g., 204 No Content)
+    if (response.status === 204 || response.status === 205) {
+      return undefined as T;
+    }
+
+    // Check if response has content
+    const contentLength = response.headers.get('content-length');
+    const contentType = response.headers.get('content-type');
+
+    // No content to parse
+    if (contentLength === '0') {
+      return undefined as T;
+    }
+
+    // Only parse JSON if content-type indicates JSON
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    }
+
+    // For non-JSON responses with content, return undefined
+    // (callers expecting specific data should handle this)
+    return undefined as T;
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
       throw new ApiError(0, 'Request timed out');
     }
     if (error instanceof ApiError) throw error;
@@ -134,13 +220,7 @@ export const productApi = {
     const queryString = params.toString();
     const endpoint = `/products${queryString ? `?${queryString}` : ''}`;
 
-    const response = await fetchApi<{
-      products: any[];
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    }>(endpoint);
+    const response = await fetchApi<ApiProductsResponse>(endpoint);
 
     // Transform API response to AdminProduct format
     return {
@@ -151,7 +231,7 @@ export const productApi = {
 
   // Get single product by ID
   async getProduct(id: number): Promise<AdminProduct> {
-    const product = await fetchApi<any>(`/products/${id}`);
+    const product = await fetchApi<ApiProduct>(`/products/${id}`);
     return transformApiProduct(product);
   },
 
@@ -166,7 +246,7 @@ export const productApi = {
       totalProducts: number;
       enabledProducts: number;
       disabledProducts: number;
-      categoryCounts: Record<string, number>;
+      categoryCounts: unknown;
       totalVariants: number;
     }>('/products/stats');
 
@@ -174,16 +254,15 @@ export const productApi = {
       totalProducts: stats.totalProducts,
       enabledProducts: stats.enabledProducts,
       disabledProducts: stats.disabledProducts,
-      categoryCounts: stats.categoryCounts as any,
+      categoryCounts: validateCategoryCounts(stats.categoryCounts),
       totalVariants: stats.totalVariants,
-      recentlyAdded: 0,
     };
   },
 
   // Create a new product
   async createProduct(product: Partial<AdminProduct>): Promise<AdminProduct> {
     const apiProduct = transformToApiProduct(product);
-    const created = await fetchApi<any>('/products', {
+    const created = await fetchApi<ApiProduct>('/products', {
       method: 'POST',
       body: JSON.stringify(apiProduct),
     });
@@ -193,7 +272,7 @@ export const productApi = {
   // Update a product
   async updateProduct(id: number, updates: Partial<AdminProduct>): Promise<AdminProduct> {
     const apiUpdates = transformToApiProduct(updates);
-    const updated = await fetchApi<any>(`/products/${id}`, {
+    const updated = await fetchApi<ApiProduct>(`/products/${id}`, {
       method: 'PUT',
       body: JSON.stringify(apiUpdates),
     });
@@ -202,7 +281,7 @@ export const productApi = {
 
   // Toggle product enabled status
   async toggleEnabled(id: number): Promise<AdminProduct> {
-    const updated = await fetchApi<any>(`/products/${id}/toggle`, {
+    const updated = await fetchApi<ApiProduct>(`/products/${id}/toggle`, {
       method: 'PATCH',
     });
     return transformApiProduct(updated);
@@ -244,19 +323,53 @@ export const syncApi = {
   },
 };
 
+// Validate and transform categoryCounts from API to typed Record<ComponentType, number>
+function validateCategoryCounts(data: unknown): Record<ComponentType, number> {
+  // Initialize with all categories defaulting to 0
+  const result: Record<ComponentType, number> = {} as Record<ComponentType, number>;
+  for (const category of COMPONENTS) {
+    result[category] = 0;
+  }
+
+  // If data is not an object, return defaults
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    return result;
+  }
+
+  const counts = data as Record<string, unknown>;
+
+  // Validate and copy values for known categories
+  for (const category of COMPONENTS) {
+    const value = counts[category];
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+      result[category] = Math.floor(value);
+    }
+  }
+
+  return result;
+}
+
+// Transform API variant to ProductVariant format (ensures price is string)
+function transformApiVariant(apiVariant: ApiProductVariant): ProductVariant {
+  return {
+    ...apiVariant,
+    price: String(apiVariant.price ?? '0'),
+  };
+}
+
 // Transform API product to AdminProduct format
-function transformApiProduct(apiProduct: any): AdminProduct {
+function transformApiProduct(apiProduct: ApiProduct): AdminProduct {
   return {
     id: apiProduct.product_id,
     dbId: apiProduct.id,
-    category: apiProduct.category,
+    category: apiProduct.category as AdminProduct['category'],
     name: apiProduct.name,
     price: apiProduct.price?.toString() || '0',
     link: apiProduct.link || '',
     image: apiProduct.image || '',
     variantType: apiProduct.variant_type || 'Default',
     features: apiProduct.features || [],
-    variants: apiProduct.variants || [],
+    variants: (apiProduct.variants || []).map(transformApiVariant),
     enabled: apiProduct.enabled ?? true,
     createdAt: apiProduct.created_at ? new Date(apiProduct.created_at).getTime() : undefined,
     updatedAt: apiProduct.updated_at ? new Date(apiProduct.updated_at).getTime() : undefined,
@@ -265,8 +378,8 @@ function transformApiProduct(apiProduct: any): AdminProduct {
 }
 
 // Transform AdminProduct to API format
-function transformToApiProduct(product: Partial<AdminProduct>): any {
-  const result: any = {};
+function transformToApiProduct(product: Partial<AdminProduct>): Partial<ApiProduct> {
+  const result: Partial<ApiProduct> = {};
 
   if (product.id !== undefined) result.product_id = product.id;
   if (product.category !== undefined) result.category = product.category;
@@ -276,7 +389,7 @@ function transformToApiProduct(product: Partial<AdminProduct>): any {
   if (product.image !== undefined) result.image = product.image;
   if (product.variantType !== undefined) result.variant_type = product.variantType;
   if (product.features !== undefined) result.features = product.features;
-  if (product.variants !== undefined) result.variants = product.variants;
+  if (product.variants !== undefined) result.variants = product.variants as ApiProductVariant[];
   if (product.enabled !== undefined) result.enabled = product.enabled;
 
   return result;

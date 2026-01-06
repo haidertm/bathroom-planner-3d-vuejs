@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onBeforeUnmount } from 'vue';
 import type { AdminProduct } from '../../../types/admin';
 
 defineProps<{
@@ -15,9 +15,21 @@ const emit = defineEmits<{
 }>();
 
 const togglingProducts = ref<Set<string>>(new Set());
+const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
 
-const formatPrice = (price: string | number): string => {
-  const num = typeof price === 'string' ? parseFloat(price) : price;
+// Clean up pending timeouts on unmount to prevent memory leaks
+onBeforeUnmount(() => {
+  for (const timeoutId of pendingTimeouts) {
+    clearTimeout(timeoutId);
+  }
+  pendingTimeouts.clear();
+});
+
+const formatPrice = (price: string): string => {
+  const num = parseFloat(price?.trim() ?? '');
+  if (!Number.isFinite(num)) {
+    return 'N/A';
+  }
   return `£${num.toFixed(2)}`;
 };
 
@@ -50,9 +62,11 @@ const handleToggle = (e: Event, product: AdminProduct) => {
   togglingProducts.value.add(product.id);
   emit('toggle-enabled', product);
   // Remove from toggling after a delay (actual update happens in parent)
-  setTimeout(() => {
+  const timeoutId = setTimeout(() => {
     togglingProducts.value.delete(product.id);
+    pendingTimeouts.delete(timeoutId);
   }, 1000);
+  pendingTimeouts.add(timeoutId);
 };
 
 const handleEdit = (e: Event, product: AdminProduct) => {

@@ -4,9 +4,6 @@ import RoomShapeSelector from '../pages/RoomShapeSelector.vue'
 import Planner from '../pages/Planner.vue' // Renamed from Home
 import MyDesigns from '../pages/MyDesigns.vue'
 import RoomDimensions from '../pages/RoomDimensions.vue'
-import AdminLogin from '../pages/admin/AdminLogin.vue'
-import AdminDashboard from '../pages/admin/AdminDashboard.vue'
-import ProductEdit from '../pages/admin/ProductEdit.vue'
 import NotFound from '../pages/NotFound.vue'
 import { loadSession } from '../composables/useAdminAuth'
 
@@ -36,22 +33,22 @@ const routes = [
         name: 'MyDesigns',
         component: MyDesigns
     },
-    // Admin Panel Routes
+    // Admin Panel Routes (lazy-loaded)
     {
         path: '/vadmin',
         name: 'AdminLogin',
-        component: AdminLogin
+        component: () => import('../pages/admin/AdminLogin.vue')
     },
     {
         path: '/vadmin/dashboard',
         name: 'AdminDashboard',
-        component: AdminDashboard,
+        component: () => import('../pages/admin/AdminDashboard.vue'),
         meta: { requiresAuth: true }
     },
     {
         path: '/vadmin/products/:id/edit',
         name: 'ProductEdit',
-        component: ProductEdit,
+        component: () => import('../pages/admin/ProductEdit.vue'),
         meta: { requiresAuth: true }
     },
     // 404 - Catch all unmatched routes

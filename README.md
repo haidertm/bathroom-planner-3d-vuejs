@@ -53,9 +53,24 @@ psql -c 'SELECT 1;'
 ```
 
 ### Run Migrations
+
+**Option 1: Using dotenv-cli (Recommended)**
 ```bash
-# Load credentials from .env file
-source <(grep -E '^DB_' .env | sed 's/^DB_HOST/export PGHOST/' | sed 's/^DB_PORT/export PGPORT/' | sed 's/^DB_USER/export PGUSER/' | sed 's/^DB_NAME/export PGDATABASE/' | sed 's/^DB_PASSWORD/export PGPASSWORD/')
+# Install dotenv-cli if not already installed
+npm install -g dotenv-cli
+
+# Run migration with .env variables mapped to PostgreSQL env vars
+dotenv -e .env -- sh -c 'PGHOST=$DB_HOST PGPORT=$DB_PORT PGUSER=$DB_USER PGDATABASE=$DB_NAME PGPASSWORD=$DB_PASSWORD psql -f migration.sql'
+```
+
+**Option 2: Explicit variable extraction (no code execution)**
+```bash
+# Safely extract each variable using grep and cut
+export PGHOST=$(grep '^DB_HOST=' .env | cut -d '=' -f2-)
+export PGPORT=$(grep '^DB_PORT=' .env | cut -d '=' -f2-)
+export PGUSER=$(grep '^DB_USER=' .env | cut -d '=' -f2-)
+export PGDATABASE=$(grep '^DB_NAME=' .env | cut -d '=' -f2-)
+export PGPASSWORD=$(grep '^DB_PASSWORD=' .env | cut -d '=' -f2-)
 
 # Run migration
 psql -f migration.sql

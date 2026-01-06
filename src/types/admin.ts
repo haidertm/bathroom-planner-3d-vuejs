@@ -24,7 +24,7 @@ export interface ProductVariant {
   path: string;
   image: string;
   link: string;
-  price: string | number;
+  price: string;
   title?: string;
   floorOffset?: number;
   spawnHeight?: number;
@@ -109,7 +109,6 @@ export interface AdminStats {
   disabledProducts: number;
   categoryCounts: Record<ComponentType, number>;
   totalVariants: number;
-  recentlyAdded: number;
 }
 
 // Default filter state

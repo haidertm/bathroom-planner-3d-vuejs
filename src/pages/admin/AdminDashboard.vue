@@ -18,10 +18,51 @@ import Pagination from './components/Pagination.vue';
 import ProductDrawer from './components/ProductDrawer.vue';
 import ToastContainer from '../../components/ui/ToastContainer.vue';
 
-// Filter out Sink and Door from category filters
+/**
+ * Category Filter Exclusions
+ *
+ * BUSINESS LOGIC: 'Sink' and 'Door' categories are excluded from the admin
+ * dashboard's filter UI for the following reasons:
+ *
+ * 1. SINK: This category has been deprecated in favor of 'Furniture' which now
+ *    includes vanity units with integrated basins. Existing Sink products in
+ *    the database remain accessible and editable via direct URL or search.
+ *
+ * 2. DOOR: Door products are managed separately as they relate to room structure
+ *    rather than bathroom fixtures. The 'WindowAndDoor' category handles both.
+ *
+ * IMPORTANT NOTES:
+ * - This is a UI-level filter only; products in these categories still exist
+ *   in the database and can be:
+ *   - Edited via direct URL: /vadmin/products/:id/edit
+ *   - Found via search (searchQuery filter)
+ *   - Retrieved via API endpoints
+ * - This exclusion is considered PERMANENT unless business requirements change
+ * - To re-enable, remove the category from the exclusion array below
+ *
+ * @see COMPONENTS in constants/components.ts for all available categories
+ */
+const EXCLUDED_FILTER_CATEGORIES = ['Sink', 'Door'] as const;
 const filteredCategories = COMPONENTS.filter(
-  (category) => !['Sink', 'Door'].includes(category)
+  (category) => !EXCLUDED_FILTER_CATEGORIES.includes(category as typeof EXCLUDED_FILTER_CATEGORIES[number])
 );
+
+/**
+ * GTM Tracking Helper for Admin Dashboard
+ * Pushes events to Google Tag Manager dataLayer for analytics
+ */
+function trackAdminEvent(
+  action: string,
+  details: Record<string, string | number | boolean>
+): void {
+  if (typeof window !== 'undefined' && window.dataLayer) {
+    window.dataLayer.push({
+      event: 'admin_dashboard',
+      admin_action: action,
+      ...details,
+    });
+  }
+}
 
 const router = useRouter();
 const { username, logout, validateSession } = useAdminAuth();
@@ -104,9 +145,16 @@ const handleLogout = () => {
 
 // Handle product toggle
 const handleToggleEnabled = async (product: AdminProduct) => {
+  const newStatus = !product.enabled;
   const success = await toggleProductEnabled(product);
   if (success) {
     toast.success(`Product ${product.enabled ? 'disabled' : 'enabled'} successfully`);
+    trackAdminEvent('product_toggle', {
+      product_id: product.id,
+      product_name: product.name,
+      category: product.category,
+      new_status: newStatus ? 'enabled' : 'disabled',
+    });
   } else {
     toast.error('Failed to update product status');
   }
@@ -118,6 +166,11 @@ const handleEditProduct = (product: AdminProduct) => {
     toast.warning('This product cannot be edited in local fallback mode.');
     return;
   }
+  trackAdminEvent('product_edit_start', {
+    product_id: product.id,
+    product_name: product.name,
+    category: product.category,
+  });
   router.push(`/vadmin/products/${product.dbId}/edit`);
 };
 
@@ -163,37 +216,59 @@ const exportToCSV = () => {
   }
 
   toast.success(`Exported ${products.length} products to CSV`);
+  trackAdminEvent('export_csv', {
+    product_count: products.length,
+    has_filters: filters.value.categories.length > 0 || !!filters.value.searchQuery,
+  });
 };
 
-// Filter handlers
+// Filter handlers with GTM tracking
 const handleSearchUpdate = (value: string) => {
   simulateLoading();
   setFilter('searchQuery', value);
+  if (value.length >= 2) {
+    trackAdminEvent('filter_search', { search_query: value });
+  }
 };
 
 const handleCategoryToggle = (category: ComponentType) => {
   simulateLoading();
+  const isAdding = !filters.value.categories.includes(category);
   toggleCategoryFilter(category);
+  trackAdminEvent('filter_category_toggle', {
+    category,
+    action: isAdding ? 'add' : 'remove',
+    active_categories: isAdding
+      ? [...filters.value.categories, category].join(',')
+      : filters.value.categories.filter(c => c !== category).join(','),
+  });
 };
 
 const handlePriceRangeUpdate = (value: { min: number | null; max: number | null }) => {
   simulateLoading();
   setFilter('priceRange', value);
+  trackAdminEvent('filter_price_range', {
+    min_price: value.min ?? 0,
+    max_price: value.max ?? 0,
+  });
 };
 
 const handleSortByUpdate = (value: ProductFilters['sortBy']) => {
   simulateLoading();
   setFilter('sortBy', value);
+  trackAdminEvent('filter_sort', { sort_by: value, sort_order: filters.value.sortOrder });
 };
 
 const handleSortOrderUpdate = (value: ProductFilters['sortOrder']) => {
   simulateLoading();
   setFilter('sortOrder', value);
+  trackAdminEvent('filter_sort', { sort_by: filters.value.sortBy, sort_order: value });
 };
 
 const handleEnabledFilterUpdate = (value: ProductFilters['enabledFilter']) => {
   simulateLoading();
   setFilter('enabledFilter', value);
+  trackAdminEvent('filter_enabled_status', { enabled_filter: value });
 };
 
 const handleClearFilters = () => {
@@ -201,6 +276,7 @@ const handleClearFilters = () => {
   clearFilters();
   clearUrlFilters();
   toast.info('Filters cleared');
+  trackAdminEvent('filter_clear_all', { cleared: true });
 };
 
 // Pagination handlers
