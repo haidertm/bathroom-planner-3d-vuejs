@@ -295,7 +295,7 @@ const simulateLoading = () => {
   isLoading.value = true;
   setTimeout(() => {
     isLoading.value = false;
-  }, 200);
+  }, 500);
 };
 
 // Watch filters and pagination to update URL
