@@ -2527,9 +2527,9 @@ export class SceneManager {
       this.lights.push(light);
     }
 
-    // 3. Set renderer exposure - same in both modes for consistency
+    // 3. Set renderer exposure - different for 2D mode (darker blueprint look)
     if (this.renderer) {
-      this.renderer.toneMappingExposure = 1.2;
+      this.renderer.toneMappingExposure = is2DMode ? 0.8 : 1.2;
     }
   }
 
@@ -2554,6 +2554,16 @@ export class SceneManager {
     }
 
     this.scene.add(this.floorRef);
+
+    // If we're in 2D mode, store the new textured material and apply 2D appearance
+    if (this.viewMode === '2d') {
+      // Store the new textured material as the original (for when we switch back to 3D)
+      this.originalFloorMaterial = floorMaterial;
+      // Apply the 2D blueprint appearance
+      this.switchTo2DFloor();
+      // Disable shadows on floor for clean 2D view
+      this.floorRef.receiveShadow = false;
+    }
 
     // 🔥 UPDATE: Reposition lights when room dimensions change
     this.setupEnhancedLighting(roomWidth);
@@ -2598,6 +2608,14 @@ export class SceneManager {
     }
 
     this.wallRefs.forEach(wall => this.scene!.add(wall));
+
+    // If we're in 2D mode, disable shadows on walls for clean view
+    if (this.viewMode === '2d') {
+      this.wallRefs.forEach(wall => {
+        wall.receiveShadow = false;
+      });
+    }
+
     this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
     // NEW: Add axis indicators with notch support for L-shaped rooms
     this.axisIndicatorsDebug.createAxisIndicators(
