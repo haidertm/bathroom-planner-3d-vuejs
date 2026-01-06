@@ -1571,6 +1571,14 @@ export const constrainToWalls = (
         constrainedPosition.y = movementConfig.minHeight || 0;
     }
 
+    // Get wall face position (handle notch walls)
+    const getWallFacePosition = () => {
+        if (nearestWall === 'notch-east' && notch) return notch.maxX;
+        if (nearestWall === 'notch-south' && notch) return notch.maxZ;
+        return wallFaces[nearestWall as keyof typeof wallFaces];
+    };
+    const wallFacePos = getWallFacePosition();
+
     console.log(`🔧 :::: FIXED CONSTRAINT result for ${objectType}:`, {
         nearestWall,
         isFlushMounted,
@@ -1580,10 +1588,10 @@ export const constrainToWalls = (
             x: position.x !== constrainedPosition.x ? `${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}` : 'preserved',
             z: position.z !== constrainedPosition.z ? `${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}` : 'preserved'
         },
-        wallFacePosition: wallFaces[nearestWall].toFixed(1) + 'cm',
-        backEdgePosition: nearestWall === 'north' || nearestWall === 'south' ?
+        wallFacePosition: wallFacePos !== undefined ? wallFacePos.toFixed(1) + 'cm' : 'N/A',
+        backEdgePosition: nearestWall === 'north' || nearestWall === 'south' || nearestWall === 'notch-south' ?
             (nearestWall === 'north' ? (constrainedPosition.z - halfDepth).toFixed(1) : (constrainedPosition.z + halfDepth).toFixed(1)) + 'cm' :
-            (nearestWall === 'east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
+            (nearestWall === 'east' || nearestWall === 'notch-east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
     });
 
     return { position: constrainedPosition, rotation: wallRotation };

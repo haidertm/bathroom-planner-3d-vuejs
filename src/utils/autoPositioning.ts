@@ -1150,6 +1150,7 @@ export const positionShower = (
       type: 'Shower',
       scale,
       orientation,
+      movement: showerVariant?.movement,  // Pass movement config with cornerInstallOnly
       sku: showerVariant?.sku,
       notchWidth,
       notchHeight
