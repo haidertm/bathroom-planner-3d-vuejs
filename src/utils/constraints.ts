@@ -2249,16 +2249,17 @@ export const constrainAllObjectsToRoom = (
         }
 
         // ✅ NEW: Collision Resolution
-        // Check if the constrained position collides with any ALREADY PROCESSED items
-        let hasCollision = wouldCollideWithExisting(
+        // Check if the constrained position collides with any ALREADY PROCESSED items OR extends outside room bounds
+        let hasCollision = wouldCollideWithExistingOrWalls(
             constrainedPosition,
             item.type,
             item.scale || 1, // Fix: Ensure scale is a number
             item.id,
             processedItems, // Only check against items we've already placed in this pass
-            item,
             roomWidth,
             roomHeight,
+            item,
+            constrainedRotation,
             notchWidth,
             notchHeight
         );
@@ -2323,15 +2324,16 @@ export const constrainAllObjectsToRoom = (
                 }
 
                 // Check collision again
-                if (!wouldCollideWithExisting(
+                if (!wouldCollideWithExistingOrWalls(
                     reConstrained.position,
                     item.type,
                     item.scale || 1, // Fix: Ensure scale is a number
                     item.id,
                     processedItems,
-                    item,
                     roomWidth,
                     roomHeight,
+                    item,
+                    reConstrained.rotation,
                     notchWidth,
                     notchHeight
                 )) {
@@ -2375,15 +2377,16 @@ export const constrainAllObjectsToRoom = (
                     );
 
                     // Check collision on this new wall
-                    if (!wouldCollideWithExisting(
+                    if (!wouldCollideWithExistingOrWalls(
                         reConstrained.position,
                         item.type,
                         item.scale || 1,
                         item.id,
                         processedItems,
-                        item,
                         roomWidth,
                         roomHeight,
+                        item,
+                        reConstrained.rotation,
                         notchWidth,
                         notchHeight
                     )) {
