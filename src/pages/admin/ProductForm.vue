@@ -243,6 +243,17 @@ const handleSubmit = () => {
     variants: updatedVariants,
   };
 
+  // Track product create/edit event in GTM
+  if (typeof window !== 'undefined' && window.dataLayer) {
+    window.dataLayer.push({
+      event: props.mode === 'edit' ? 'admin_product_updated' : 'admin_product_created',
+      product_name: formData.value.name,
+      product_category: formData.value.category,
+      variant_count: formData.value.variants.length,
+      has_features: formData.value.features.length > 0,
+    });
+  }
+
   if (props.mode === 'edit' && props.product) {
     emit('save', {
       ...productData,
