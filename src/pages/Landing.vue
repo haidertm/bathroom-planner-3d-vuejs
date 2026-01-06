@@ -108,7 +108,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useGtm } from '@gtm-support/vue-gtm'
 import TemplateSelectionModal from '../components/ui/TemplateSelectionModal.vue'
+import { setSelectedRoomShape } from '../utils/roomShape'
+
+const gtm = useGtm()
 
 const router = useRouter()
 const showTemplateModal = ref(false)
@@ -117,8 +121,20 @@ const startNewProject = () => {
   showTemplateModal.value = true
 }
 
-const handleStartFromScratch = (shape) => {
-  localStorage.setItem('selected-room-shape', shape)
+const handleStartFromScratch = (selection) => {
+  setSelectedRoomShape(selection)
+
+  // Track room shape selection
+  if (gtm?.enabled()) {
+    const isLShape = selection && typeof selection === 'object' && selection.shape === 'l-shape'
+    gtm.trackEvent({
+      event: 'room_shape_selected',
+      category: 'Room Configuration',
+      action: 'Select Shape',
+      label: isLShape ? `l-shape-${selection.corner || 'unknown'}` : selection,
+    })
+  }
+
   router.push('/room-dimensions')
 }
 
@@ -153,15 +169,15 @@ const selectTemplate = (templateId) => {
 /* Hero Section */
 .hero-section {
   position: relative;
-  height: 600px;
+  height: 340px;
   background: url('/assets/home-banner.webp') center center / cover no-repeat;
-  border-radius: 30px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 0 80px;
+  padding: 0 60px;
   max-width: 1400px;
-  top: 80px;
+  top: 70px;
   margin: 0 auto;
 }
 
@@ -176,11 +192,11 @@ const selectTemplate = (templateId) => {
 }
 
 .hero-title {
-  font-size: 56px;
+  font-size: 38px;
   font-weight: 700;
   color: white;
   line-height: 1.1;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -226,23 +242,25 @@ const selectTemplate = (templateId) => {
 
 /* How It Works Section */
 .how-it-works {
-  padding: 80px 40px 40px;
+  padding: 30px 40px 20px;
+  margin-top: 50px;
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
   text-align: center;
 }
 
 .section-title {
-  font-size: 36px;
+  font-size: 28px;
   font-weight: 700;
   color: #29275B;
-  margin: 40px 0;
+  margin: 20px 0;
 }
 
 .steps-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 48px;
+  gap: 32px;
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -251,37 +269,41 @@ const selectTemplate = (templateId) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
 }
 
 .step-icon {
-  width: 80px;
-  height: 80px;
+  width: 60px;
+  height: 60px;
   background: #ffffff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 8px;
+}
+
+.step-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .step-number {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #29275B;
 }
 
 /* Templates Section */
 .templates-section {
-  padding: 30px 40px 40px;
+  padding: 10px 40px 30px;
   text-align: center;
 }
 
 .templates-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  gap: 24px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -303,7 +325,7 @@ const selectTemplate = (templateId) => {
 
 .template-image {
   width: 100%;
-  height: 240px;
+  height: 190px;
   overflow: hidden;
   position: relative;
 }
@@ -311,7 +333,6 @@ const selectTemplate = (templateId) => {
 .template-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
 .template-placeholder {
@@ -323,7 +344,7 @@ const selectTemplate = (templateId) => {
 }
 
 .template-info {
-  padding: 20px;
+  padding: 14px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -331,7 +352,7 @@ const selectTemplate = (templateId) => {
 }
 
 .template-info h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #29275B;
   margin: 0;
@@ -351,31 +372,31 @@ const selectTemplate = (templateId) => {
 @media (max-width: 1024px) {
   .hero-section {
     padding: 0 40px;
-    height: 500px;
+    height: 300px;
   }
 
   .hero-title {
-    font-size: 42px;
+    font-size: 36px;
   }
 
   .steps-container,
   .templates-container {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 24px;
   }
 }
 
 @media (max-width: 768px) {
   .hero-section {
     padding: 0 24px;
-    height: 400px;
+    height: 280px;
     border-radius: 0;
     top: 60px;
   }
 
   .hero-title {
-    font-size: 32px;
-    margin-bottom: 24px;
+    font-size: 28px;
+    margin-bottom: 20px;
   }
 
   .hero-buttons {
@@ -389,13 +410,13 @@ const selectTemplate = (templateId) => {
   }
 
   .section-title {
-    font-size: 28px;
-    margin-bottom: 40px;
+    font-size: 24px;
+    margin-bottom: 20px;
   }
 
   .how-it-works,
   .templates-section {
-    padding: 60px 24px;
+    padding: 30px 24px;
   }
 }
 </style>
