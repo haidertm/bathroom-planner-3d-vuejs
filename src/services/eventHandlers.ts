@@ -657,11 +657,11 @@ export class EventHandlers {
             }
         }
 
-      // Only do this for wall-bound objects that are NOT corner-install (bathtubs, showers, etc.)
-      // Corner-install objects should stay in their corners, not move to opposite walls
+      // Only do this for wall-bound objects (not corner-install items)
+      // Corner-install items have special positioning and should not be auto-moved
       const isCornerInstall = movementConfig?.cornerInstallOnly &&
-        (typeof movementConfig.cornerInstallOnly === 'boolean' || movementConfig.cornerInstallOnly.enabled);
-
+        typeof movementConfig.cornerInstallOnly === 'object' &&
+        movementConfig.cornerInstallOnly.enabled === true;
       if (movementConfig?.snapToWall && !isCornerInstall) {
         // Check which wall the object is currently on
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
