@@ -1959,6 +1959,31 @@ onMounted(async () => {
         height: ROOM_DEFAULTS.HEIGHT + 'cm'
       })
     }
+
+    // Check for L-shape corner selection and set camera angle
+    // Detect L-shape by checking if notch dimensions are > 0 (since selected-room-shape was consumed by RoomDimensions)
+    const lShapeCorner = localStorage.getItem('l-shape-corner')
+    const isLShapeRoom = notchWidth.value > 0 && notchHeight.value > 0
+
+    if (isLShapeRoom && lShapeCorner) {
+      // Set camera position based on selected L-shape corner
+      // The notch is always physically at NW, but we rotate camera to make it appear in different corners
+      const cameraDistance = 800
+      const cameraHeight = 150
+
+      const cornerCameraPositions = {
+        'nw': { x: 0, y: cameraHeight, z: cameraDistance },      // From south - notch at top-left
+        'ne': { x: cameraDistance, y: cameraHeight, z: 0 },      // From east - notch at top-right
+        'se': { x: 0, y: cameraHeight, z: -cameraDistance },     // From north - notch at bottom-right
+        'sw': { x: -cameraDistance, y: cameraHeight, z: 0 }      // From west - notch at bottom-left
+      }
+
+      pendingCameraPosition = cornerCameraPositions[lShapeCorner] || cornerCameraPositions['nw']
+      console.log('📷 L-shape corner camera position:', lShapeCorner, pendingCameraPosition)
+
+      // Clean up the corner selection from localStorage after using it
+      localStorage.removeItem('l-shape-corner')
+    }
   }
 
   // Initialize scene manager

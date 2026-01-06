@@ -107,6 +107,7 @@ const canvasWidth = ref(600)
 const canvasHeight = ref(500)
 const scale = ref(1)
 const zoomLevel = ref(isMobile() ? 0.5 : 1)
+const lShapeCorner = ref('nw') // Which corner the notch should appear in
 
 // Canvas drawing
 const ctx = ref(null)
@@ -220,44 +221,89 @@ const handleResize = () => {
 
 const updateHandles = () => {
   const bounds = roomBounds.value
+  const corner = lShapeCorner.value
 
-  // For L-shape, position top and left handles differently
-  const topHandleX = isLShape.value
-    ? bounds.left + (notchPixelWidth.value + roomPixelWidth.value) / 2
-    : bounds.left + roomPixelWidth.value / 2
+  // Calculate handle positions based on corner (which walls are shortened)
+  let topHandleX, leftHandleY, rightHandleY, bottomHandleX
 
-  const leftHandleY = isLShape.value
-    ? bounds.top + (notchPixelHeight.value + roomPixelHeight.value) / 2
-    : bounds.top + roomPixelHeight.value / 2
+  if (isLShape.value) {
+    switch (corner) {
+      case 'nw': // Notch at top-left: top wall shortened on left, left wall shortened on top
+        topHandleX = bounds.left + notchPixelWidth.value + (roomPixelWidth.value - notchPixelWidth.value) / 2
+        leftHandleY = bounds.top + notchPixelHeight.value + (roomPixelHeight.value - notchPixelHeight.value) / 2
+        rightHandleY = bounds.top + roomPixelHeight.value / 2
+        bottomHandleX = bounds.left + roomPixelWidth.value / 2
+        break
+      case 'ne': // Notch at top-right: top wall shortened on right, right wall shortened on top
+        topHandleX = bounds.left + (roomPixelWidth.value - notchPixelWidth.value) / 2
+        leftHandleY = bounds.top + roomPixelHeight.value / 2
+        rightHandleY = bounds.top + notchPixelHeight.value + (roomPixelHeight.value - notchPixelHeight.value) / 2
+        bottomHandleX = bounds.left + roomPixelWidth.value / 2
+        break
+      case 'sw': // Notch at bottom-left: bottom wall shortened on left, left wall shortened on bottom
+        topHandleX = bounds.left + roomPixelWidth.value / 2
+        leftHandleY = bounds.top + (roomPixelHeight.value - notchPixelHeight.value) / 2
+        rightHandleY = bounds.top + roomPixelHeight.value / 2
+        bottomHandleX = bounds.left + notchPixelWidth.value + (roomPixelWidth.value - notchPixelWidth.value) / 2
+        break
+      case 'se': // Notch at bottom-right: bottom wall shortened on right, right wall shortened on bottom
+        topHandleX = bounds.left + roomPixelWidth.value / 2
+        leftHandleY = bounds.top + roomPixelHeight.value / 2
+        rightHandleY = bounds.top + (roomPixelHeight.value - notchPixelHeight.value) / 2
+        bottomHandleX = bounds.left + (roomPixelWidth.value - notchPixelWidth.value) / 2
+        break
+      default:
+        topHandleX = bounds.left + roomPixelWidth.value / 2
+        leftHandleY = bounds.top + roomPixelHeight.value / 2
+        rightHandleY = bounds.top + roomPixelHeight.value / 2
+        bottomHandleX = bounds.left + roomPixelWidth.value / 2
+    }
+  } else {
+    topHandleX = bounds.left + roomPixelWidth.value / 2
+    leftHandleY = bounds.top + roomPixelHeight.value / 2
+    rightHandleY = bounds.top + roomPixelHeight.value / 2
+    bottomHandleX = bounds.left + roomPixelWidth.value / 2
+  }
 
   const baseHandles = [
     // Only edge handles (green resize icons)
     {id: 'top', x: topHandleX, y: bounds.top, type: 'edge', cursor: 'ns-resize'},
-    {id: 'right', x: bounds.right, y: bounds.top + roomPixelHeight.value / 2, type: 'edge', cursor: 'ew-resize'},
-    {id: 'bottom', x: bounds.left + roomPixelWidth.value / 2, y: bounds.bottom, type: 'edge', cursor: 'ns-resize'},
+    {id: 'right', x: bounds.right, y: rightHandleY, type: 'edge', cursor: 'ew-resize'},
+    {id: 'bottom', x: bottomHandleX, y: bounds.bottom, type: 'edge', cursor: 'ns-resize'},
     {id: 'left', x: bounds.left, y: leftHandleY, type: 'edge', cursor: 'ew-resize'}
   ]
 
-  // Add notch handles for L-shape
+  // Add notch handles for L-shape based on corner position
   if (isLShape.value) {
-    const notchHandles = [
-      // Handle for notch width (vertical edge of notch)
-      {
-        id: 'notch-width',
-        x: bounds.left + notchPixelWidth.value,
-        y: bounds.top + notchPixelHeight.value / 2,
-        type: 'notch',
-        cursor: 'ew-resize'
-      },
-      // Handle for notch height (horizontal edge of notch)
-      {
-        id: 'notch-height',
-        x: bounds.left + notchPixelWidth.value / 2,
-        y: bounds.top + notchPixelHeight.value,
-        type: 'notch',
-        cursor: 'ns-resize'
-      }
-    ]
+    const corner = lShapeCorner.value
+    let notchHandles = []
+
+    switch (corner) {
+      case 'nw': // Notch at top-left
+        notchHandles = [
+          { id: 'notch-width', x: bounds.left + notchPixelWidth.value, y: bounds.top + notchPixelHeight.value / 2, type: 'notch', cursor: 'ew-resize' },
+          { id: 'notch-height', x: bounds.left + notchPixelWidth.value / 2, y: bounds.top + notchPixelHeight.value, type: 'notch', cursor: 'ns-resize' }
+        ]
+        break
+      case 'ne': // Notch at top-right
+        notchHandles = [
+          { id: 'notch-width', x: bounds.right - notchPixelWidth.value, y: bounds.top + notchPixelHeight.value / 2, type: 'notch', cursor: 'ew-resize' },
+          { id: 'notch-height', x: bounds.right - notchPixelWidth.value / 2, y: bounds.top + notchPixelHeight.value, type: 'notch', cursor: 'ns-resize' }
+        ]
+        break
+      case 'sw': // Notch at bottom-left
+        notchHandles = [
+          { id: 'notch-width', x: bounds.left + notchPixelWidth.value, y: bounds.bottom - notchPixelHeight.value / 2, type: 'notch', cursor: 'ew-resize' },
+          { id: 'notch-height', x: bounds.left + notchPixelWidth.value / 2, y: bounds.bottom - notchPixelHeight.value, type: 'notch', cursor: 'ns-resize' }
+        ]
+        break
+      case 'se': // Notch at bottom-right
+        notchHandles = [
+          { id: 'notch-width', x: bounds.right - notchPixelWidth.value, y: bounds.bottom - notchPixelHeight.value / 2, type: 'notch', cursor: 'ew-resize' },
+          { id: 'notch-height', x: bounds.right - notchPixelWidth.value / 2, y: bounds.bottom - notchPixelHeight.value, type: 'notch', cursor: 'ns-resize' }
+        ]
+        break
+    }
     handles.value = [...baseHandles, ...notchHandles]
   } else {
     handles.value = baseHandles
@@ -266,21 +312,74 @@ const updateHandles = () => {
 
 const updateDimensionInputs = () => {
   const bounds = roomBounds.value
+  const corner = lShapeCorner.value
 
-  // For L-shape, position top and left labels differently
-  const topLabelX = isLShape.value
-    ? bounds.left + (notchPixelWidth.value + roomPixelWidth.value) / 2 - 40
-    : bounds.left + roomPixelWidth.value / 2 - 40
+  // Calculate label positions and wall dimensions based on corner
+  let topLabelX, leftLabelY, rightLabelY, bottomLabelX
+  let topWallWidth, bottomWallWidth, leftWallHeight, rightWallHeight
 
-  const leftLabelY = isLShape.value
-    ? bounds.top + (notchPixelHeight.value + roomPixelHeight.value) / 2 - 12.5
-    : bounds.top + roomPixelHeight.value / 2 - 12.5
-
-  // Calculate actual wall dimensions for L-shape
-  const topWallWidth = isLShape.value ? roomDimensions.width - roomDimensions.notchWidth : roomDimensions.width
-  const bottomWallWidth = roomDimensions.width
-  const leftWallHeight = isLShape.value ? roomDimensions.height - roomDimensions.notchHeight : roomDimensions.height
-  const rightWallHeight = roomDimensions.height
+  if (isLShape.value) {
+    switch (corner) {
+      case 'nw': // Notch at top-left: top wall and left wall are reduced
+        topLabelX = bounds.left + notchPixelWidth.value + (roomPixelWidth.value - notchPixelWidth.value) / 2 - 40
+        leftLabelY = bounds.top + notchPixelHeight.value + (roomPixelHeight.value - notchPixelHeight.value) / 2 - 12.5
+        rightLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+        bottomLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+        topWallWidth = roomDimensions.width - roomDimensions.notchWidth
+        bottomWallWidth = roomDimensions.width
+        leftWallHeight = roomDimensions.height - roomDimensions.notchHeight
+        rightWallHeight = roomDimensions.height
+        break
+      case 'ne': // Notch at top-right: top wall and right wall are reduced
+        topLabelX = bounds.left + (roomPixelWidth.value - notchPixelWidth.value) / 2 - 40
+        leftLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+        rightLabelY = bounds.top + notchPixelHeight.value + (roomPixelHeight.value - notchPixelHeight.value) / 2 - 12.5
+        bottomLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+        topWallWidth = roomDimensions.width - roomDimensions.notchWidth
+        bottomWallWidth = roomDimensions.width
+        leftWallHeight = roomDimensions.height
+        rightWallHeight = roomDimensions.height - roomDimensions.notchHeight
+        break
+      case 'sw': // Notch at bottom-left: bottom wall and left wall are reduced
+        topLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+        leftLabelY = bounds.top + (roomPixelHeight.value - notchPixelHeight.value) / 2 - 12.5
+        rightLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+        bottomLabelX = bounds.left + notchPixelWidth.value + (roomPixelWidth.value - notchPixelWidth.value) / 2 - 40
+        topWallWidth = roomDimensions.width
+        bottomWallWidth = roomDimensions.width - roomDimensions.notchWidth
+        leftWallHeight = roomDimensions.height - roomDimensions.notchHeight
+        rightWallHeight = roomDimensions.height
+        break
+      case 'se': // Notch at bottom-right: bottom wall and right wall are reduced
+        topLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+        leftLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+        rightLabelY = bounds.top + (roomPixelHeight.value - notchPixelHeight.value) / 2 - 12.5
+        bottomLabelX = bounds.left + (roomPixelWidth.value - notchPixelWidth.value) / 2 - 40
+        topWallWidth = roomDimensions.width
+        bottomWallWidth = roomDimensions.width - roomDimensions.notchWidth
+        leftWallHeight = roomDimensions.height
+        rightWallHeight = roomDimensions.height - roomDimensions.notchHeight
+        break
+      default:
+        topLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+        leftLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+        rightLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+        bottomLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+        topWallWidth = roomDimensions.width
+        bottomWallWidth = roomDimensions.width
+        leftWallHeight = roomDimensions.height
+        rightWallHeight = roomDimensions.height
+    }
+  } else {
+    topLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+    leftLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+    rightLabelY = bounds.top + roomPixelHeight.value / 2 - 12.5
+    bottomLabelX = bounds.left + roomPixelWidth.value / 2 - 40
+    topWallWidth = roomDimensions.width
+    bottomWallWidth = roomDimensions.width
+    leftWallHeight = roomDimensions.height
+    rightWallHeight = roomDimensions.height
+  }
 
   // Compute minimum room dimensions (must leave 50cm gap from notch to prevent walls touching)
   const minWidth = isLShape.value ? Math.max(ROOM_DEFAULTS.MIN_SIZE, roomDimensions.notchWidth + 50) : ROOM_DEFAULTS.MIN_SIZE
@@ -307,7 +406,7 @@ const updateDimensionInputs = () => {
       onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'width-top'))
     },
 
-    // Bottom (full width)
+    // Bottom (may be reduced for SW/SE corners)
     {
       id: 'width-bottom',
       value: bottomWallWidth,
@@ -319,7 +418,7 @@ const updateDimensionInputs = () => {
       editing: false,
       style: {
         position: 'absolute',
-        left: (bounds.left + roomPixelWidth.value / 2 - 40) + 'px',
+        left: bottomLabelX + 'px',
         top: (bounds.bottom + 15) + 'px',
         width: '80px',
         height: '25px'
@@ -347,7 +446,7 @@ const updateDimensionInputs = () => {
       onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'height-left'))
     },
 
-    // Right (full height)
+    // Right (may be reduced for NE/SE corners)
     {
       id: 'height-right',
       value: rightWallHeight,
@@ -360,7 +459,7 @@ const updateDimensionInputs = () => {
       style: {
         position: 'absolute',
         left: (bounds.right + 10) + 'px',
-        top: (bounds.top + roomPixelHeight.value / 2 - 12.5) + 'px',
+        top: rightLabelY + 'px',
         width: '80px',
         height: '25px'
       },
@@ -368,11 +467,71 @@ const updateDimensionInputs = () => {
     }
   ]
 
-  // Add notch dimension inputs for L-shape
+  // Add notch dimension inputs for L-shape based on corner position
   if (isLShape.value) {
+    const corner = lShapeCorner.value
+    let notchWidthStyle, notchHeightStyle
+
+    switch (corner) {
+      case 'nw': // Notch at top-left
+        notchWidthStyle = {
+          position: 'absolute',
+          left: (bounds.left + notchPixelWidth.value / 2 - 40) + 'px',
+          top: (bounds.top + notchPixelHeight.value + 10) + 'px',
+          width: '80px', height: '25px'
+        }
+        notchHeightStyle = {
+          position: 'absolute',
+          left: (bounds.left + notchPixelWidth.value + 10) + 'px',
+          top: (bounds.top + notchPixelHeight.value / 2 - 12.5) + 'px',
+          width: '80px', height: '25px'
+        }
+        break
+      case 'ne': // Notch at top-right
+        notchWidthStyle = {
+          position: 'absolute',
+          left: (bounds.right - notchPixelWidth.value / 2 - 40) + 'px',
+          top: (bounds.top + notchPixelHeight.value + 10) + 'px',
+          width: '80px', height: '25px'
+        }
+        notchHeightStyle = {
+          position: 'absolute',
+          left: (bounds.right - notchPixelWidth.value - 90) + 'px',
+          top: (bounds.top + notchPixelHeight.value / 2 - 12.5) + 'px',
+          width: '80px', height: '25px'
+        }
+        break
+      case 'sw': // Notch at bottom-left
+        notchWidthStyle = {
+          position: 'absolute',
+          left: (bounds.left + notchPixelWidth.value / 2 - 40) + 'px',
+          top: (bounds.bottom - notchPixelHeight.value - 35) + 'px',
+          width: '80px', height: '25px'
+        }
+        notchHeightStyle = {
+          position: 'absolute',
+          left: (bounds.left + notchPixelWidth.value + 10) + 'px',
+          top: (bounds.bottom - notchPixelHeight.value / 2 - 12.5) + 'px',
+          width: '80px', height: '25px'
+        }
+        break
+      case 'se': // Notch at bottom-right
+        notchWidthStyle = {
+          position: 'absolute',
+          left: (bounds.right - notchPixelWidth.value / 2 - 40) + 'px',
+          top: (bounds.bottom - notchPixelHeight.value - 35) + 'px',
+          width: '80px', height: '25px'
+        }
+        notchHeightStyle = {
+          position: 'absolute',
+          left: (bounds.right - notchPixelWidth.value - 90) + 'px',
+          top: (bounds.bottom - notchPixelHeight.value / 2 - 12.5) + 'px',
+          width: '80px', height: '25px'
+        }
+        break
+    }
+
     const notchInputs = [
-      // Notch width input - positioned near the horizontal notch-south wall
-      // (near notch-height green dot, since that wall's length = notchWidth)
       {
         id: 'notch-width',
         value: roomDimensions.notchWidth,
@@ -382,20 +541,9 @@ const updateDimensionInputs = () => {
         min: 50,
         max: Math.min(ROOM_DEFAULTS.MAX_SIZE, roomDimensions.width - 50),
         editing: false,
-        style: {
-          position: 'absolute',
-          // Horizontally centered with the horizontal notch wall (notch-height handle position)
-          left: (bounds.left + notchPixelWidth.value / 2 - 40) + 'px',
-          // Position below the horizontal notch wall
-          top: (bounds.top + notchPixelHeight.value + 10) + 'px',
-          width: '80px',
-          height: '25px'
-        },
+        style: notchWidthStyle,
         onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'notch-width'))
       },
-
-      // Notch height input - positioned near the vertical notch-east wall
-      // (near notch-width green dot, since that wall's length = notchHeight)
       {
         id: 'notch-height',
         value: roomDimensions.notchHeight,
@@ -405,15 +553,7 @@ const updateDimensionInputs = () => {
         min: 50,
         max: Math.min(ROOM_DEFAULTS.MAX_SIZE, roomDimensions.height - 50),
         editing: false,
-        style: {
-          position: 'absolute',
-          // Position to the right of the vertical notch wall (notch-width handle position)
-          left: (bounds.left + notchPixelWidth.value + 10) + 'px',
-          // Vertically centered with the vertical notch wall
-          top: (bounds.top + notchPixelHeight.value / 2 - 12.5) + 'px',
-          width: '80px',
-          height: '25px'
-        },
+        style: notchHeightStyle,
         onClick: () => startEditing(dimensionInputs.value.find(i => i.id === 'notch-height'))
       }
     ]
@@ -577,7 +717,9 @@ const shouldShowLabel = (inputId) => {
     return true
   }
 
-  // Map of which handle affects which labels
+  const corner = lShapeCorner.value
+
+  // Map of which handle affects which labels (corner-aware for notch handles)
   const affectedLabels = {
     // Dragging top/bottom changes height → show height labels
     'top': ['height-left', 'height-right'],
@@ -585,10 +727,16 @@ const shouldShowLabel = (inputId) => {
     // Dragging left/right changes width → show width labels
     'left': ['width-top', 'width-bottom'],
     'right': ['width-top', 'width-bottom'],
-    // Dragging notch-width changes notchWidth → affects notch-width and width-top (topWallWidth = width - notchWidth)
-    'notch-width': ['notch-width', 'width-top'],
-    // Dragging notch-height changes notchHeight → affects notch-height and height-left (leftWallHeight = height - notchHeight)
-    'notch-height': ['notch-height', 'height-left']
+    // Notch-width affects different walls based on corner:
+    // NW/NE: top wall is reduced, SW/SE: bottom wall is reduced
+    'notch-width': corner === 'sw' || corner === 'se'
+      ? ['notch-width', 'width-bottom']
+      : ['notch-width', 'width-top'],
+    // Notch-height affects different walls based on corner:
+    // NW/SW: left wall is reduced, NE/SE: right wall is reduced
+    'notch-height': corner === 'ne' || corner === 'se'
+      ? ['notch-height', 'height-right']
+      : ['notch-height', 'height-left']
   }
 
   const labelsToShow = affectedLabels[isDragging.value]
@@ -978,12 +1126,22 @@ const handleDrag = (currentPos) => {
       newCenterY = startBounds.bottom - (newHeight * effectiveScale.value) / 2
       break
     case 'notch-width':
-      // Adjust notch width (must leave 50cm gap to prevent walls touching)
-      roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)))
+      // Adjust notch width based on corner (must leave 50cm gap to prevent walls touching)
+      // For NW and SW corners, dragging right increases width; for NE and SE, dragging left increases width
+      if (lShapeCorner.value === 'nw' || lShapeCorner.value === 'sw') {
+        roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth + scaledDeltaX)))
+      } else {
+        roomDimensions.notchWidth = Math.round(Math.max(50, Math.min(roomDimensions.width - 50, dragStartDimensions.notchWidth - scaledDeltaX)))
+      }
       break
     case 'notch-height':
-      // Adjust notch height (must leave 50cm gap to prevent walls touching)
-      roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)))
+      // Adjust notch height based on corner (must leave 50cm gap to prevent walls touching)
+      // For NW and NE corners, dragging down increases height; for SW and SE, dragging up increases height
+      if (lShapeCorner.value === 'nw' || lShapeCorner.value === 'ne') {
+        roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight + scaledDeltaY)))
+      } else {
+        roomDimensions.notchHeight = Math.round(Math.max(50, Math.min(roomDimensions.height - 50, dragStartDimensions.notchHeight - scaledDeltaY)))
+      }
       break
   }
 
@@ -1015,7 +1173,9 @@ const getWallColor = (wallId) => {
     return '#2d3748' // Default dark color
   }
 
-  // Map handles to walls whose dimensions change
+  const corner = lShapeCorner.value
+
+  // Map handles to walls whose dimensions change (corner-aware for notch handles)
   const handleToAffectedWalls = {
     // Changing height affects left/right walls (they display the height)
     'top': ['left', 'right'],
@@ -1023,10 +1183,16 @@ const getWallColor = (wallId) => {
     // Changing width affects top/bottom walls (they display the width)
     'left': ['top', 'bottom'],
     'right': ['top', 'bottom'],
-    // Changing notch-width affects notch-south (its length = notchWidth) and top wall (topWallWidth = width - notchWidth)
-    'notch-width': ['notch-south', 'top'],
-    // Changing notch-height affects notch-east (its length = notchHeight) and left wall (leftWallHeight = height - notchHeight)
-    'notch-height': ['notch-east', 'left']
+    // Notch-width affects notch-south and the wall that gets shortened:
+    // NW/NE: top wall is reduced, SW/SE: bottom wall is reduced
+    'notch-width': corner === 'sw' || corner === 'se'
+      ? ['notch-south', 'bottom']
+      : ['notch-south', 'top'],
+    // Notch-height affects notch-east and the wall that gets shortened:
+    // NW/SW: left wall is reduced, NE/SE: right wall is reduced
+    'notch-height': corner === 'ne' || corner === 'se'
+      ? ['notch-east', 'right']
+      : ['notch-east', 'left']
   }
 
   const affectedWalls = handleToAffectedWalls[isDragging.value] || []
@@ -1073,38 +1239,88 @@ const draw = () => {
 
 const drawLShape = (context, bounds) => {
   // L-shape: draw fill first, then individual wall segments
+  // The notch position varies based on lShapeCorner
 
-  // Fill the L-shape
-  context.beginPath()
-  context.moveTo(bounds.left, bounds.bottom)
-  context.lineTo(bounds.left, bounds.top + notchPixelHeight.value)
-  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value)
-  context.lineTo(bounds.left + notchPixelWidth.value, bounds.top)
-  context.lineTo(bounds.right, bounds.top)
-  context.lineTo(bounds.right, bounds.bottom)
-  context.lineTo(bounds.left, bounds.bottom)
-  context.closePath()
+  const corner = lShapeCorner.value
+  const nw = notchPixelWidth.value
+  const nh = notchPixelHeight.value
+
   context.fillStyle = hoveredRoom.value && !isDragging.value ? '#f7fafc' : '#ffffff'
+
+  // Draw different L-shape paths based on corner selection
+  context.beginPath()
+  switch (corner) {
+    case 'nw': // Notch at top-left (default)
+      context.moveTo(bounds.left, bounds.bottom)
+      context.lineTo(bounds.left, bounds.top + nh)
+      context.lineTo(bounds.left + nw, bounds.top + nh)
+      context.lineTo(bounds.left + nw, bounds.top)
+      context.lineTo(bounds.right, bounds.top)
+      context.lineTo(bounds.right, bounds.bottom)
+      break
+    case 'ne': // Notch at top-right
+      context.moveTo(bounds.left, bounds.top)
+      context.lineTo(bounds.right - nw, bounds.top)
+      context.lineTo(bounds.right - nw, bounds.top + nh)
+      context.lineTo(bounds.right, bounds.top + nh)
+      context.lineTo(bounds.right, bounds.bottom)
+      context.lineTo(bounds.left, bounds.bottom)
+      break
+    case 'sw': // Notch at bottom-left
+      context.moveTo(bounds.left + nw, bounds.bottom)
+      context.lineTo(bounds.left + nw, bounds.bottom - nh)
+      context.lineTo(bounds.left, bounds.bottom - nh)
+      context.lineTo(bounds.left, bounds.top)
+      context.lineTo(bounds.right, bounds.top)
+      context.lineTo(bounds.right, bounds.bottom)
+      break
+    case 'se': // Notch at bottom-right
+      context.moveTo(bounds.left, bounds.bottom)
+      context.lineTo(bounds.left, bounds.top)
+      context.lineTo(bounds.right, bounds.top)
+      context.lineTo(bounds.right, bounds.bottom - nh)
+      context.lineTo(bounds.right - nw, bounds.bottom - nh)
+      context.lineTo(bounds.right - nw, bounds.bottom)
+      break
+  }
+  context.closePath()
   context.fill()
 
-  // Draw each wall segment with appropriate color
-  // Left wall (from bottom to notch)
-  drawWall(context, bounds.left, bounds.bottom, bounds.left, bounds.top + notchPixelHeight.value, getWallColor('left'))
-
-  // Notch-south wall (horizontal notch wall)
-  drawWall(context, bounds.left, bounds.top + notchPixelHeight.value, bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value, getWallColor('notch-south'))
-
-  // Notch-east wall (vertical notch wall)
-  drawWall(context, bounds.left + notchPixelWidth.value, bounds.top + notchPixelHeight.value, bounds.left + notchPixelWidth.value, bounds.top, getWallColor('notch-east'))
-
-  // Top wall (from notch to right)
-  drawWall(context, bounds.left + notchPixelWidth.value, bounds.top, bounds.right, bounds.top, getWallColor('top'))
-
-  // Right wall
-  drawWall(context, bounds.right, bounds.top, bounds.right, bounds.bottom, getWallColor('right'))
-
-  // Bottom wall
-  drawWall(context, bounds.right, bounds.bottom, bounds.left, bounds.bottom, getWallColor('bottom'))
+  // Draw wall segments based on corner
+  switch (corner) {
+    case 'nw':
+      drawWall(context, bounds.left, bounds.bottom, bounds.left, bounds.top + nh, getWallColor('left'))
+      drawWall(context, bounds.left, bounds.top + nh, bounds.left + nw, bounds.top + nh, getWallColor('notch-south'))
+      drawWall(context, bounds.left + nw, bounds.top + nh, bounds.left + nw, bounds.top, getWallColor('notch-east'))
+      drawWall(context, bounds.left + nw, bounds.top, bounds.right, bounds.top, getWallColor('top'))
+      drawWall(context, bounds.right, bounds.top, bounds.right, bounds.bottom, getWallColor('right'))
+      drawWall(context, bounds.right, bounds.bottom, bounds.left, bounds.bottom, getWallColor('bottom'))
+      break
+    case 'ne':
+      drawWall(context, bounds.left, bounds.top, bounds.right - nw, bounds.top, getWallColor('top'))
+      drawWall(context, bounds.right - nw, bounds.top, bounds.right - nw, bounds.top + nh, getWallColor('notch-east'))
+      drawWall(context, bounds.right - nw, bounds.top + nh, bounds.right, bounds.top + nh, getWallColor('notch-south'))
+      drawWall(context, bounds.right, bounds.top + nh, bounds.right, bounds.bottom, getWallColor('right'))
+      drawWall(context, bounds.right, bounds.bottom, bounds.left, bounds.bottom, getWallColor('bottom'))
+      drawWall(context, bounds.left, bounds.bottom, bounds.left, bounds.top, getWallColor('left'))
+      break
+    case 'sw':
+      drawWall(context, bounds.left + nw, bounds.bottom, bounds.left + nw, bounds.bottom - nh, getWallColor('notch-east'))
+      drawWall(context, bounds.left + nw, bounds.bottom - nh, bounds.left, bounds.bottom - nh, getWallColor('notch-south'))
+      drawWall(context, bounds.left, bounds.bottom - nh, bounds.left, bounds.top, getWallColor('left'))
+      drawWall(context, bounds.left, bounds.top, bounds.right, bounds.top, getWallColor('top'))
+      drawWall(context, bounds.right, bounds.top, bounds.right, bounds.bottom, getWallColor('right'))
+      drawWall(context, bounds.right, bounds.bottom, bounds.left + nw, bounds.bottom, getWallColor('bottom'))
+      break
+    case 'se':
+      drawWall(context, bounds.left, bounds.bottom, bounds.left, bounds.top, getWallColor('left'))
+      drawWall(context, bounds.left, bounds.top, bounds.right, bounds.top, getWallColor('top'))
+      drawWall(context, bounds.right, bounds.top, bounds.right, bounds.bottom - nh, getWallColor('right'))
+      drawWall(context, bounds.right, bounds.bottom - nh, bounds.right - nw, bounds.bottom - nh, getWallColor('notch-south'))
+      drawWall(context, bounds.right - nw, bounds.bottom - nh, bounds.right - nw, bounds.bottom, getWallColor('notch-east'))
+      drawWall(context, bounds.right - nw, bounds.bottom, bounds.left, bounds.bottom, getWallColor('bottom'))
+      break
+  }
 }
 
 const drawHandles = (context) => {
@@ -1182,6 +1398,13 @@ const setShapeBasedDefaults = () => {
       if (selectedShape === 'l-shape') {
         roomDimensions.notchWidth = shapeDefaults.notchWidth || 150
         roomDimensions.notchHeight = shapeDefaults.notchHeight || 150
+
+        // Read the selected corner for L-shape visualization
+        const savedCorner = localStorage.getItem('l-shape-corner')
+        if (savedCorner && ['nw', 'ne', 'sw', 'se'].includes(savedCorner)) {
+          lShapeCorner.value = savedCorner
+          console.log('📐 L-shape corner loaded:', savedCorner)
+        }
       } else {
         // For square and rectangular, explicitly set notch to 0
         roomDimensions.notchWidth = 0
@@ -1190,6 +1413,7 @@ const setShapeBasedDefaults = () => {
 
       try {
         localStorage.removeItem('selected-room-shape')
+        // Note: l-shape-corner is preserved for Planner.vue to set camera angle
         console.log('✅ Shape selection consumed and removed from localStorage')
       } catch (storageError) {
         console.warn('Failed to remove selected-room-shape from localStorage:', storageError)
