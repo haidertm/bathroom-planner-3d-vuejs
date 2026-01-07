@@ -1,5 +1,5 @@
 <template>
-  <div v-if="selectedItem && screenPosition" ref="overlayRef" :style="overlayStyle">
+  <div v-if="selectedItem && screenPosition && hasVisibleButtons" ref="overlayRef" :style="overlayStyle">
     <div :style="controlsContainerStyle">
       <div :style="buttonsContainerStyle">
         <button
@@ -12,16 +12,8 @@
           🔄 {{ rotationLocal ? 'Rotation On' : 'Rotation Off' }}
         </button>
 
-<!--        <button-->
-<!--            type="button"-->
-<!--            v-if="hasMultipleVariants"-->
-<!--            @click="openVariantConfiguration"-->
-<!--            :style="configureButtonStyle"-->
-<!--        >-->
-<!--          ⚙️ Configure-->
-<!--        </button>-->
-
         <button
+            v-if="!isMultiSelectMode"
             type="button"
             @click="deleteItem"
             :style="deleteButtonStyle"
@@ -64,6 +56,10 @@ const props = defineProps({
     default: null
   },
   isDragging: {
+    type: Boolean,
+    default: false
+  },
+  isMultiSelectMode: {
     type: Boolean,
     default: false
   }
@@ -274,6 +270,12 @@ watch(overlayRef, (newRef) => {
 
 onBeforeUnmount(() => {
   stopAnimationLoop()
+})
+
+// Computed to check if any buttons would be visible (to avoid empty white box)
+const hasVisibleButtons = computed(() => {
+  // Show rotation toggle if available, OR show delete button if not in multi-select mode
+  return props.showRotationToggle || !props.isMultiSelectMode
 })
 
 // Check if the selected item has multiple variants available

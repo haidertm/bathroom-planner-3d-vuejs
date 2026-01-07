@@ -31,10 +31,11 @@
     <ItemConfigurationOverlay
         :selected-item="selectedBathroomItem"
         :scene="sceneManagerRef?.scene || null"
-        :camera="sceneManagerRef?.camera || null"
+        :camera="sceneManagerRef?.getActiveCamera() || null"
         :renderer="sceneManagerRef?.renderer || null"
         :rotation-enabled="rotationArrowsEnabled"
         :is-dragging="isDraggingObject"
+        :is-multi-select-mode="isMultiSelectMode"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
@@ -97,6 +98,57 @@
         size="large"
     />
 
+    <!-- Multi-select Toggle -->
+    <button
+      @click="toggleMultiSelect"
+      :style="multiSelectButtonStyle"
+      :title="isMultiSelectMode ? 'Disable Multi-select' : 'Enable Multi-select'"
+    >
+      <!-- Multi-select icon: overlapping squares with checkmark when active -->
+      <svg
+        :width="isMobileDevice ? 24 : 28"
+        :height="isMobileDevice ? 24 : 28"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <!-- Back square -->
+        <rect
+          x="6" y="6"
+          width="14" height="14"
+          rx="2"
+          :stroke="isMultiSelectMode ? 'white' : '#555'"
+          stroke-width="2"
+          fill="none"
+        />
+        <!-- Front square -->
+        <rect
+          x="4" y="4"
+          width="12" height="12"
+          rx="2"
+          :stroke="isMultiSelectMode ? 'white' : '#555'"
+          stroke-width="2"
+          :fill="isMultiSelectMode ? '#29275b' : 'white'"
+        />
+        <!-- Checkmark when active -->
+        <path
+          v-if="isMultiSelectMode"
+          d="M7 10L9.5 12.5L13 7"
+          stroke="white"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+
+    <!--    2D/3D View Mode Toggle -->
+    <ViewModeToggle
+        :style="viewModeToggleStyle"
+        v-model="viewMode"
+        @mode-change="handleViewModeChange"
+    />
+
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
       <div :style="popupContentStyle" @click.stop>
@@ -135,6 +187,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast Notification -->
+    <Transition name="toast">
+      <div v-if="toastMessage" class="toast-notification" :style="toastStyle">
+        {{ toastMessage }}
+      </div>
+    </Transition>
   </div>
 </template>
 <script setup>
@@ -152,6 +211,7 @@ import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
 import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
+import ViewModeToggle from '../components/ui/ViewModeToggle.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS, WALL_SETTINGS } from '../constants/dimensions.js'
@@ -163,6 +223,9 @@ import { getTemplateById } from '../constants/templates'
 // Services
 import { SceneManager } from '../services/sceneManager'
 import { EventHandlers } from '../services/eventHandlers'
+
+// Analytics
+import { useGtm } from '@gtm-support/vue-gtm'
 
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
@@ -185,6 +248,9 @@ import { autoPositionItem } from '../utils/autoPositioning'
 
 // Router
 const router = useRouter()
+
+// Analytics
+const gtm = useGtm()
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -218,6 +284,33 @@ const selectedBathroomItem = computed(() => {
 
 // Track dragging state to hide overlay during drag
 const isDraggingObject = ref(false)
+const isMultiSelectMode = ref(false)
+
+// Toast notification state
+const toastMessage = ref('')
+const toastTimeout = ref(null)
+
+const showToast = (message, type = 'info') => {
+  // Clear any existing timeout
+  if (toastTimeout.value) {
+    clearTimeout(toastTimeout.value)
+  }
+
+  toastMessage.value = message
+
+  // Auto-hide after 3 seconds
+  toastTimeout.value = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimeout.value = null
+  }, 3000)
+}
+
+const toggleMultiSelect = () => {
+  isMultiSelectMode.value = !isMultiSelectMode.value
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.setMultiSelectMode(isMultiSelectMode.value)
+  }
+}
 
 // Handlers for drag state changes
 const handleDragStart = () => {
@@ -789,6 +882,9 @@ const preventCollisionPlacement = ref(true)
 //For Measurement
 const measurementEnabled = ref(false)
 const currentMeasurements = ref(null)
+
+// For 2D/3D View Mode Toggle
+const viewMode = ref('3d') // '2d' or '3d'
 // Add method to handle measurement toggle
 const handleToggleMeasurements = () => {
   measurementEnabled.value = !measurementEnabled.value
@@ -856,17 +952,49 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
+// Single source of truth for sidebar offset calculation
+// Main sidebar is 480px wide, add extra space (540px) for tooltips to be visible
+const sidebarOffset = computed(() => showTexturePanel.value ? '540px' : '20px')
+
+// Style for 2D/3D View Mode Toggle - positioned ABOVE MeasurementToggle, next to main sidebar
+const viewModeToggleStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
+  zIndex: 100
+}))
+
+// Style for MeasurementToggle - positioned next to main sidebar, BELOW ViewModeToggle
 const toggleMeasurementStyle = computed(() => ({
-  position: 'absolute',
-  left: isMobileDevice.value ? '' : '28%', // Changed from left to right
-  right: isMobileDevice.value ? '12%' : '',
-  bottom: isMobileDevice.value ? '10%' : '30px',
-  color: 'white',
-  padding: '5px 10px',
-  borderRadius: '4px',
-  fontSize: isMobileDevice.value ? '16px' : '20px',
-  maxWidth: isMobileDevice.value ? '280px' : '320px',
-  lineHeight: '1.2'
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '80px' : '30px',
+  zIndex: 100
+}))
+
+const multiSelectButtonStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '280px' : '260px', // Above 2D/3D toggle button (which is at 200px mobile / 130px desktop)
+  width: isMobileDevice.value ? '48px' : '56px',
+  height: isMobileDevice.value ? '48px' : '56px',
+  padding: '0',
+  backgroundColor: isMultiSelectMode.value ? '#29275b' : 'rgba(255, 255, 255, 0.95)',
+  color: isMultiSelectMode.value ? 'white' : '#333',
+  border: 'none',
+  borderRadius: '50%',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  cursor: 'pointer',
+  fontWeight: '600',
+  fontSize: isMobileDevice.value ? '20px' : '24px',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -932,6 +1060,23 @@ const sectionHeaderStyle = computed(() => ({
   fontSize: '18px',
   marginBottom: '12px',
   fontWeight: '600'
+}))
+
+const toastStyle = computed(() => ({
+  position: 'fixed',
+  bottom: '120px',
+  left: '50%',
+  backgroundColor: 'rgba(41, 39, 91, 0.95)',
+  color: 'white',
+  padding: '12px 24px',
+  borderRadius: '8px',
+  fontSize: isMobileDevice.value ? '14px' : '16px',
+  fontWeight: '500',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+  zIndex: 10001,
+  maxWidth: '90vw',
+  textAlign: 'center',
+  backdropFilter: 'blur(8px)'
 }))
 
 // Watch for room size changes to update refs
@@ -1419,6 +1564,41 @@ const handleMeasurementUpdate = () => {
 const handleMeasurementToggle = () => {
   handleToggleMeasurements()
 }
+
+// Handle 2D/3D View Mode Change
+const handleViewModeChange = async (mode) => {
+  console.log('🔄 View mode changing to:', mode)
+
+  if (!sceneManagerRef.value) {
+    console.warn('SceneManager not initialized yet')
+    return
+  }
+
+  try {
+    // Use SceneManager as single source of truth for view mode
+    // SceneManager.setViewMode internally updates EventHandlers
+    // Await the scene change BEFORE updating UI state to keep them consistent
+    await sceneManagerRef.value.setViewMode(mode)
+
+    // Only update UI state after scene manager succeeds
+    viewMode.value = mode
+
+    // Track view mode change in GTM
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'view_mode_change',
+        category: 'Bathroom Planner',
+        action: 'Switch View Mode',
+        label: mode === '2d' ? '2D Blueprint' : '3D Perspective',
+        viewMode: mode
+      })
+    }
+  } catch (error) {
+    // Don't change viewMode on error - keep UI consistent with actual scene state
+    console.error('❌ Failed to change view mode:', error)
+  }
+}
+
 // Add this function to load saved room dimensions
 const loadSavedRoomDimensions = () => {
   const dimensions = loadRoomDimensionsFromStorage()
@@ -1849,6 +2029,9 @@ const loadDesignData = (designData) => {
       throw new Error('Invalid design data')
     }
 
+    // Clear stale L-shape corner (saved designs don't support L-shape yet)
+    localStorage.removeItem('l-shape-corner-active')
+
     // Load items (furniture, fixtures, etc.)
     items.value = designData.items || []
 
@@ -1946,6 +2129,11 @@ onMounted(async () => {
         pendingCameraPreset = template.cameraPreset
         console.log('📷 Pre-setting template camera preset:', template.cameraPreset)
       }
+
+      // Clear stale L-shape corner when loading template (templates don't support L-shape yet)
+      if (template.roomShape !== 'l-shape') {
+        localStorage.removeItem('l-shape-corner-active')
+      }
     }
   } else if (!hasDesignToLoad) {
     // No template or design, load saved room dimensions
@@ -1983,8 +2171,14 @@ onMounted(async () => {
       pendingCameraPosition = cornerCameraPositions[lShapeCorner] || cornerCameraPositions['nw']
       console.log('📷 L-shape corner camera position:', lShapeCorner, pendingCameraPosition)
 
-      // Clean up the corner selection from localStorage after using it
+      // Persist corner for 2D/3D view transitions (sceneManager needs this)
+      localStorage.setItem('l-shape-corner-active', lShapeCorner)
+
+      // Clean up the initial corner selection from localStorage after using it
       localStorage.removeItem('l-shape-corner')
+    } else {
+      // Clear stale L-shape corner from previous sessions when loading non-L-shaped room
+      localStorage.removeItem('l-shape-corner-active')
     }
   }
 
@@ -2019,6 +2213,8 @@ onMounted(async () => {
     // Connect drag state handlers
     eventHandlersRef.value.onDragStart = handleDragStart
     eventHandlersRef.value.onDragEnd = handleDragEnd
+    // Connect toast notification handler
+    eventHandlersRef.value.onShowToast = showToast
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
@@ -2035,7 +2231,7 @@ onMounted(async () => {
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value, notchWidth.value, notchHeight.value)
   eventHandlersRef.value.setWallCulling(sceneManager.wallCulling)
 
   if (sceneManagerRef.value.debugLabelsEnabled && sceneManagerRef.value.wallLabelsDebug) {
@@ -2131,7 +2327,7 @@ watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], 
 
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value, notchWidth.value, notchHeight.value)
 })
 
 // Watch for texture changes
@@ -2392,5 +2588,20 @@ const handleClearAll = () => {
 
 
 <style scoped>
-/* Add any component-specific styles here */
+/* Toast notification base styles */
+.toast-notification {
+  transform: translateX(-50%);
+}
+
+/* Toast transition styles */
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
 </style>

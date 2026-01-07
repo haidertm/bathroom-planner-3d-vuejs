@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { WALL_SETTINGS, CONSTRAINTS } from '../constants/dimensions';
 import { getInteriorBoundaries } from '../utils/constraints';
 
+// Debug flag - set to false for production builds
+const DEBUG = import.meta.env.DEV;
+
 // Type definitions for internal use
 interface WallConfig {
   geometry: THREE.BoxGeometry;
@@ -17,9 +20,10 @@ interface WallConfig {
 // FIXED: Single material creation section - no duplicates
 const createGridMaterials = () => {
   const floorGridMaterial = new THREE.LineBasicMaterial({
-    color: 0x888888,
-    opacity: 0.3,
-    transparent: true
+    color: 0x444444, // Darker color for better visibility on floors
+    opacity: 0.6,    // Increased opacity for clearer tile lines
+    transparent: true,
+    depthWrite: false // Prevent z-fighting
   });
 
   const wallGridMaterial = new THREE.LineBasicMaterial({
@@ -51,11 +55,14 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
 
   let lineCount = 0;
 
+  // Grid Y position - slightly above floor to prevent z-fighting
+  const gridY = 0.5;
+
   // FLOOR GRID - Create vertical lines (parallel to Z-axis)
   for (let x = -width / 2; x <= width / 2; x += GRID_SPACING) {
     const points: THREE.Vector3[] = [
-      new THREE.Vector3(x, 0, -height / 2),
-      new THREE.Vector3(x, 0, height / 2)
+      new THREE.Vector3(x, gridY, -height / 2),
+      new THREE.Vector3(x, gridY, height / 2)
     ];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const line = new THREE.Line(geometry, floorGridMaterial);
@@ -66,8 +73,8 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
   // FLOOR GRID - Create horizontal lines (parallel to X-axis)
   for (let z = -height / 2; z <= height / 2; z += GRID_SPACING) {
     const points: THREE.Vector3[] = [
-      new THREE.Vector3(-width / 2, 0, z),
-      new THREE.Vector3(width / 2, 0, z)
+      new THREE.Vector3(-width / 2, gridY, z),
+      new THREE.Vector3(width / 2, gridY, z)
     ];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
     const line = new THREE.Line(geometry, floorGridMaterial);
@@ -87,6 +94,107 @@ export const createCustomGrid = (width: number, height: number): THREE.Group => 
 
   // FIXED: Return only the floor grid group
   return floorGridGroup;
+};
+
+/**
+ * BLUEPRINT GRID for 2D mode - 10cm (100mm) spacing for precise measurements
+ * Creates a more detailed grid than the standard 15cm grid
+ * Supports L-shaped rooms by excluding the notch area
+ */
+export const createBlueprintGrid = (
+  width: number,
+  height: number,
+  notchWidth?: number,
+  notchHeight?: number
+): THREE.Group => {
+  if (DEBUG) console.log('📐 Creating blueprint grid (10cm spacing) with dimensions:', { width, height, notchWidth, notchHeight });
+
+  const blueprintGridGroup = new THREE.Group();
+  const BLUEPRINT_GRID_SPACING = 10; // 10cm = 100mm spacing
+
+  // Create blueprint-specific material - uniform light grey lines on white background
+  // Clean, consistent grid appearance without major/minor distinction
+  const blueprintGridMaterial = new THREE.LineBasicMaterial({
+    color: 0xE0E0E0, // Light grey - subtle grid lines on white background
+    opacity: 0.8,
+    transparent: true
+  });
+
+  const halfWidth = width / 2;
+  const halfHeight = height / 2;
+
+  // Check if this is an L-shaped room
+  const isLShape = notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0;
+
+  // Notch boundaries (NW corner - top-left in world coords)
+  const notchMinX = -halfWidth;
+  const notchMaxX = isLShape ? -halfWidth + notchWidth : -halfWidth;
+  const notchMinZ = -halfHeight;
+  const notchMaxZ = isLShape ? -halfHeight + notchHeight : -halfHeight;
+
+  // BLUEPRINT GRID - Create vertical lines (parallel to Z-axis)
+  for (let x = -halfWidth; x <= halfWidth; x += BLUEPRINT_GRID_SPACING) {
+    // Check if this vertical line is in the notch X range
+    const isInNotchXRange = isLShape && x >= notchMinX && x <= notchMaxX;
+
+    if (isInNotchXRange) {
+      // Line is in notch X range - only draw from notchMaxZ to halfHeight (south part)
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(x, 0.5, notchMaxZ),
+        new THREE.Vector3(x, 0.5, halfHeight)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    } else {
+      // Full vertical line
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(x, 0.5, -halfHeight),
+        new THREE.Vector3(x, 0.5, halfHeight)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    }
+  }
+
+  // BLUEPRINT GRID - Create horizontal lines (parallel to X-axis)
+  for (let z = -halfHeight; z <= halfHeight; z += BLUEPRINT_GRID_SPACING) {
+    // Check if this horizontal line is in the notch Z range
+    const isInNotchZRange = isLShape && z >= notchMinZ && z <= notchMaxZ;
+
+    if (isInNotchZRange) {
+      // Line is in notch Z range - only draw from notchMaxX to halfWidth (east part)
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(notchMaxX, 0.5, z),
+        new THREE.Vector3(halfWidth, 0.5, z)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    } else {
+      // Full horizontal line
+      const points: THREE.Vector3[] = [
+        new THREE.Vector3(-halfWidth, 0.5, z),
+        new THREE.Vector3(halfWidth, 0.5, z)
+      ];
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, blueprintGridMaterial);
+      blueprintGridGroup.add(line);
+    }
+  }
+
+  blueprintGridGroup.position.y = 0;
+  blueprintGridGroup.name = 'BlueprintGrid';
+  blueprintGridGroup.visible = false; // Hidden by default, shown in 2D mode
+
+  if (DEBUG) console.log('✅ Blueprint grid created (10cm spacing):', {
+    lineCount: blueprintGridGroup.children.length,
+    spacing: BLUEPRINT_GRID_SPACING,
+    isLShape
+  });
+
+  return blueprintGridGroup;
 };
 
 /**

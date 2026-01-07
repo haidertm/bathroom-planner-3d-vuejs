@@ -40,33 +40,36 @@ export const setOutlinePass = (outlinePass: any) => {
 };
 
 // ChatGPT's outline approach - with OutputPass support
-export const highlightObject = (obj: THREE.Object3D | null, highlight: boolean): void => {
+export const highlightObjects = (objects: THREE.Object3D[], highlight: boolean): void => {
   if (!outlinePassRef) {
     console.warn('OutlinePass not initialized. Please call setOutlinePass first.');
     return;
   }
 
-  if (highlight && obj) {
-    // Collect all meshes from the object
-    const meshes: THREE.Mesh[] = [];
-    obj.traverse((child) => {
-      if (isMesh(child)) {
-        meshes.push(child);
-      }
+  if (highlight && objects.length > 0) {
+    // Collect all meshes from all objects
+    const allMeshes: THREE.Mesh[] = [];
+    objects.forEach(obj => {
+      obj.traverse((child) => {
+        if (isMesh(child)) {
+          allMeshes.push(child);
+        }
+      });
     });
 
     // Set selected objects for OutlinePass
-    outlinePassRef.selectedObjects = meshes;
-    console.log('🎯 OutlinePass selected objects:', meshes.length, 'meshes found');
-    console.log('🎯 Current outline colors:', {
-      visible: outlinePassRef.visibleEdgeColor.getHexString(),
-      hidden: outlinePassRef.hiddenEdgeColor.getHexString()
-    });
+    outlinePassRef.selectedObjects = allMeshes;
+    console.log('🎯 OutlinePass selected objects:', allMeshes.length, 'meshes found from', objects.length, 'objects');
   } else {
     // Clear selection
     outlinePassRef.selectedObjects = [];
     console.log('⭕ OutlinePass selection cleared');
   }
+};
+
+// Keep highlightObject for backward compatibility
+export const highlightObject = (obj: THREE.Object3D | null, highlight: boolean): void => {
+  highlightObjects(obj ? [obj] : [], highlight);
 };
 
 // NEW: Function to change outline color based on collision state
