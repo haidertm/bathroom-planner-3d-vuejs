@@ -1153,6 +1153,7 @@ const addItem = async (type, productData = null) => {
   // Final fallback: Generic wall position finding
   if (!freePosition) {
     // Find a free position on any wall
+    // Pass selectedVariant as model for direct dimension lookup (for database products)
     const positionResult = findFreeWallPosition(
         roomWidth.value,
         roomHeight.value,
@@ -1166,7 +1167,8 @@ const addItem = async (type, productData = null) => {
         selectedVariant?.floorOffset || 0,
         selectedVariant?.sku,
         notchWidth.value,
-        notchHeight.value
+        notchHeight.value,
+        selectedVariant // Pass variant as model - it has dimensions property
     )
 
     // Check if no free position was found (all corners occupied for corner items)

@@ -1631,7 +1631,8 @@ export const findFreeWallPosition = (
     _floorOffset?: number,
     sku?: string,
     notchWidth?: number,
-    notchHeight?: number
+    notchHeight?: number,
+    model?: ObjectModel  // NEW: Accept model with dimensions directly (for database products)
 ): { position: Position; rotation: number } | null => {
 
     console.log('🎯 Finding free position on interior walls for:', objectType, movement);
@@ -1650,12 +1651,13 @@ export const findFreeWallPosition = (
             movementConfig,
             sku,
             notchWidth,
-            notchHeight
+            notchHeight,
+            model  // Pass model for direct dimension lookup
         );
 
         // Return null if no free corner is available
+        // Note: findFreeCornerPosition already logs specific warnings (missing dimensions, corners occupied, etc.)
         if (!cornerResult) {
-            console.warn('⚠️ Cannot add corner item - all corners are occupied');
             return null;
         }
 
@@ -1663,10 +1665,10 @@ export const findFreeWallPosition = (
     }
 
     if (!movementConfig.snapToWall) {
-        return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig, sku, notchWidth, notchHeight);
+        return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig, sku, notchWidth, notchHeight, model);
     }
 
-    const dimensions = getDimensions(objectType, sku);
+    const dimensions = getDimensions(objectType, sku, model);
 
     // ✅ FIX: Add fallback dimensions to prevent placement outside room boundaries
     // If dimensions are not available, use a safe minimum size (30cm x 30cm)
@@ -1888,12 +1890,14 @@ export const findFreeCornerPosition = (
     movement?: MovementConfig,
     sku?: string,
     notchWidth?: number,
-    notchHeight?: number
+    notchHeight?: number,
+    model?: ObjectModel  // NEW: Accept model with dimensions directly (for database products)
 ): { position: Position; rotation: number } | null => {
 
     const corners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
-    const dimensions = getDimensions(objectType, sku);
+    // Pass model for direct dimension lookup (priority 1 in getDimensions)
+    const dimensions = getDimensions(objectType, sku, model);
 
   if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
     console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
@@ -1981,7 +1985,7 @@ export const findFreeCornerPosition = (
   }
 
   // If no free corner, return null instead of forcing placement
-  console.warn('⚠️ No free corners available for corner stall shower');
+  console.warn(`⚠️ No free corners available for ${objectType} (SKU: ${sku})`);
   return null;
 };
 
@@ -1996,13 +2000,14 @@ const findFreeStandingPosition = (
     movement?: MovementConfig,
     sku?: string,
     notchWidth?: number,
-    notchHeight?: number
+    notchHeight?: number,
+    model?: ObjectModel  // NEW: Accept model with dimensions directly (for database products)
 ): { position: Position; rotation: number } | null => {
 
     const movementConfig = movement ?? getMovementConfig(objectType);
 
-    // Get actual object dimensions
-    const dimensions = getDimensions(objectType, sku);
+    // Get actual object dimensions - pass model for direct lookup
+    const dimensions = getDimensions(objectType, sku, model);
     if (!dimensions) {
         console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeStandingPosition`);
         // Fallback to center if no dimensions

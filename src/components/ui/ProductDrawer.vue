@@ -505,6 +505,7 @@ const isVariantTooLarge = (variant) => {
   if (!category || category === 'search' || !objectType) return false
 
   // Check if a valid position exists using findFreeWallPosition
+  // Pass variant as model so dimensions can be looked up directly (for database products)
   const freePosition = findFreeWallPosition(
     props.roomWidth,
     props.roomHeight,
@@ -518,7 +519,8 @@ const isVariantTooLarge = (variant) => {
     variant.floorOffset,
     variant.sku,
     props.notchWidth,
-    props.notchHeight
+    props.notchHeight,
+    variant // Pass variant as model - it has dimensions property
   )
 
   // If no valid position found, variant is too large/no space
