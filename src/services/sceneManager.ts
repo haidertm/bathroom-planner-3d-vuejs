@@ -206,6 +206,10 @@ export class SceneManager {
 
   public setEventHandlers(eventHandlers: any): void {
     this.eventHandlers = eventHandlers;
+    // Set the reverse reference so EventHandlers can call SceneManager methods (e.g., updateSchematicPosition)
+    if (eventHandlers?.setSceneManager) {
+      eventHandlers.setSceneManager(this);
+    }
   }
 
   public getCurrentMeasurements(): MeasurementData | null {
@@ -334,9 +338,9 @@ export class SceneManager {
     const roomAspect = this.roomWidth / this.roomHeight;
 
     // Calculate the zoom needed to fit the room with margins
-    // We want the room to fill about 50-55% of the available viewport
+    // We want the room to fill about 40-45% of the available viewport
     // This leaves ample space for dimension labels (width/height) around the room
-    const targetFillRatio = 0.52;
+    const targetFillRatio = 0.45;
 
     let optimalZoom: number;
 
@@ -394,7 +398,7 @@ export class SceneManager {
       case 'se': return new THREE.Vector3(0, 0, 1);   // South is up - rotates view 180°
       case 'sw': return new THREE.Vector3(1, 0, 0);   // East is up - rotates view 90° CCW
       case 'nw':
-      default:   return new THREE.Vector3(0, 0, -1);  // North is up - default orientation
+      default: return new THREE.Vector3(0, 0, -1);  // North is up - default orientation
     }
   }
 
@@ -1545,7 +1549,7 @@ export class SceneManager {
     // Draw dark circle background for better contrast
     ctx.fillStyle = 'rgba(30, 30, 30, 0.9)';
     ctx.beginPath();
-    ctx.arc(size/2, size/2, size/2 - 8, 0, Math.PI * 2);
+    ctx.arc(size / 2, size / 2, size / 2 - 8, 0, Math.PI * 2);
     ctx.fill();
 
     // Draw bright border
@@ -1557,7 +1561,7 @@ export class SceneManager {
     ctx.font = `${size * 0.55}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(icon, size/2, size/2 + 4);
+    ctx.fillText(icon, size / 2, size / 2 + 4);
 
     // Create sprite from canvas
     const texture = new THREE.CanvasTexture(canvas);
@@ -1585,13 +1589,22 @@ export class SceneManager {
   public updateSchematicPosition(itemId: number): void {
     if (this.viewMode !== '2d') return;
 
-    // Add to pending updates set
-    this.pendingSchematicUpdates.add(itemId);
+    const schematic = this.schematic2DOverlays.get(itemId);
+    const model = this.existingItems.get(itemId);
 
-    // Schedule a single RAF if not already scheduled
-    if (!this.schematicUpdateScheduled) {
-      this.schematicUpdateScheduled = true;
-      requestAnimationFrame(() => this.flushSchematicUpdates());
+    if (schematic && model) {
+      // Ensure matrix is up to date
+      model.updateMatrixWorld(true);
+
+      // Recalculate position from bounding box to ensure correct centering
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+
+      // Update position immediately
+      schematic.position.set(center.x, 0, center.z);
+      schematic.rotation.y = model.rotation.y;
+
+      // console.log(`🔄 Updated schematic ${itemId} to (${center.x.toFixed(1)}, ${center.z.toFixed(1)})`);
     }
   }
 
@@ -1628,6 +1641,9 @@ export class SceneManager {
       const model = this.existingItems.get(itemId);
 
       if (schematic && model) {
+        // Ensure model matrix is up to date
+        model.updateMatrixWorld(true);
+
         // Recalculate position from bounding box
         box.setFromObject(model);
         box.getCenter(center);
@@ -1635,6 +1651,8 @@ export class SceneManager {
 
         // Sync rotation with the model
         schematic.rotation.y = model.rotation.y;
+      } else {
+        console.warn(`⚠️ Schematic update failed for item ${itemId}: schematic=${!!schematic}, model=${!!model}`);
       }
     });
 
