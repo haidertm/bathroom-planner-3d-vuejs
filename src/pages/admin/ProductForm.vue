@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, toRaw } from 'vue';
 import { COMPONENTS, type ComponentType } from '../../constants/components';
 import type { AdminProduct, ProductVariant, ValidationErrors } from '../../types/admin';
 
@@ -57,6 +57,19 @@ const newVariant = ref<ProductVariant>({
   },
 });
 
+/**
+ * Deep clone helper that uses structuredClone when available,
+ * falling back to JSON parse/stringify for older environments.
+ * Uses toRaw() to unwrap Vue reactive proxies before cloning.
+ */
+function deepClone<T>(value: T): T {
+  const rawValue = toRaw(value);
+  if (typeof structuredClone === 'function') {
+    return structuredClone(rawValue);
+  }
+  return JSON.parse(JSON.stringify(rawValue));
+}
+
 // Initialize form data from product prop
 onMounted(() => {
   if (props.product) {
@@ -69,7 +82,7 @@ onMounted(() => {
       image: props.product.image,
       variantType: props.product.variantType,
       features: [...props.product.features],
-      variants: JSON.parse(JSON.stringify(props.product.variants)),
+      variants: deepClone(props.product.variants),
       enabled: props.product.enabled,
     };
   }
@@ -87,7 +100,7 @@ watch(() => props.product, (newProduct) => {
       image: newProduct.image,
       variantType: newProduct.variantType,
       features: [...newProduct.features],
-      variants: JSON.parse(JSON.stringify(newProduct.variants)),
+      variants: deepClone(newProduct.variants),
       enabled: newProduct.enabled,
     };
   } else {

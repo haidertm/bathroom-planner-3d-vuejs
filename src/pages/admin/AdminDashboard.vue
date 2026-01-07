@@ -6,7 +6,7 @@ import { useAdminProducts } from '../../composables/useAdminProducts';
 import { useUrlFilters } from '../../composables/useUrlFilters';
 import { useToast } from '../../composables/useToast';
 import { COMPONENTS, type ComponentType } from '../../constants/components';
-import type { AdminProduct, ProductFilters } from '../../types/admin';
+import { DEFAULT_PAGINATION, type AdminProduct, type ProductFilters } from '../../types/admin';
 
 // Components
 import AdminSidebar from './components/AdminSidebar.vue';
@@ -96,7 +96,6 @@ const toast = useToast();
 const sidebarCollapsed = ref(false);
 const isMobile = ref(false);
 const showMobileSidebar = ref(false);
-const isLoading = ref(false);
 
 // Product Detail Drawer State
 const selectedProduct = ref<AdminProduct | null>(null);
@@ -148,7 +147,7 @@ const handleToggleEnabled = async (product: AdminProduct) => {
   const newStatus = !product.enabled;
   const success = await toggleProductEnabled(product);
   if (success) {
-    toast.success(`Product ${product.enabled ? 'disabled' : 'enabled'} successfully`);
+    toast.success(`Product ${newStatus ? 'enabled' : 'disabled'} successfully`);
     trackAdminEvent('product_toggle', {
       product_id: product.id,
       product_name: product.name,
@@ -174,6 +173,18 @@ const handleEditProduct = (product: AdminProduct) => {
   router.push(`/vadmin/products/${product.dbId}/edit`);
 };
 
+/**
+ * Properly escape a CSV field value.
+ * - Replaces double-quotes with two double-quotes
+ * - Wraps in double-quotes if field contains comma, double-quote, or newline
+ */
+const escapeField = (value: string | number): string => {
+  const str = String(value);
+  const needsQuoting = /[",\n\r]/.test(str);
+  const escaped = str.replace(/"/g, '""');
+  return needsQuoting ? `"${escaped}"` : escaped;
+};
+
 // Export to CSV
 const exportToCSV = () => {
   const products = filteredProducts.value;
@@ -186,18 +197,18 @@ const exportToCSV = () => {
   const headers = ['ID', 'Name', 'Category', 'Price', 'SKU', 'Variants Count', 'Features', 'Link'];
 
   const rows = products.map(product => [
-    product.id,
-    `"${product.name.replace(/"/g, '""')}"`,
-    product.category,
-    product.price,
-    product.variants.length > 0 ? product.variants[0].sku : '',
-    product.variants.length,
-    `"${product.features.join(', ').replace(/"/g, '""')}"`,
-    product.link || ''
+    escapeField(product.id),
+    escapeField(product.name),
+    escapeField(product.category),
+    escapeField(product.price),
+    escapeField(product.variants.length > 0 ? product.variants[0].sku : ''),
+    escapeField(product.variants.length),
+    escapeField(product.features.join(', ')),
+    escapeField(product.link || '')
   ]);
 
   const csvContent = [
-    headers.join(','),
+    headers.map(escapeField).join(','),
     ...rows.map(row => row.join(','))
   ].join('\n');
 
@@ -224,7 +235,6 @@ const exportToCSV = () => {
 
 // Filter handlers with GTM tracking
 const handleSearchUpdate = (value: string) => {
-  simulateLoading();
   setFilter('searchQuery', value);
   if (value.length >= 2) {
     trackAdminEvent('filter_search', { search_query: value });
@@ -232,7 +242,6 @@ const handleSearchUpdate = (value: string) => {
 };
 
 const handleCategoryToggle = (category: ComponentType) => {
-  simulateLoading();
   const isAdding = !filters.value.categories.includes(category);
   toggleCategoryFilter(category);
   trackAdminEvent('filter_category_toggle', {
@@ -245,34 +254,31 @@ const handleCategoryToggle = (category: ComponentType) => {
 };
 
 const handlePriceRangeUpdate = (value: { min: number | null; max: number | null }) => {
-  simulateLoading();
   setFilter('priceRange', value);
   trackAdminEvent('filter_price_range', {
     min_price: value.min ?? 0,
     max_price: value.max ?? 0,
+    min_is_set: value.min !== null,
+    max_is_set: value.max !== null,
   });
 };
 
 const handleSortByUpdate = (value: ProductFilters['sortBy']) => {
-  simulateLoading();
   setFilter('sortBy', value);
   trackAdminEvent('filter_sort', { sort_by: value, sort_order: filters.value.sortOrder });
 };
 
 const handleSortOrderUpdate = (value: ProductFilters['sortOrder']) => {
-  simulateLoading();
   setFilter('sortOrder', value);
   trackAdminEvent('filter_sort', { sort_by: filters.value.sortBy, sort_order: value });
 };
 
 const handleEnabledFilterUpdate = (value: ProductFilters['enabledFilter']) => {
-  simulateLoading();
   setFilter('enabledFilter', value);
   trackAdminEvent('filter_enabled_status', { enabled_filter: value });
 };
 
 const handleClearFilters = () => {
-  simulateLoading();
   clearFilters();
   clearUrlFilters();
   toast.info('Filters cleared');
@@ -281,21 +287,11 @@ const handleClearFilters = () => {
 
 // Pagination handlers
 const handlePageUpdate = (page: number) => {
-  simulateLoading();
   setPage(page);
 };
 
 const handleItemsPerPageUpdate = (count: number) => {
-  simulateLoading();
   setItemsPerPage(count);
-};
-
-// Simulate loading for better UX
-const simulateLoading = () => {
-  isLoading.value = true;
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 500);
 };
 
 // Watch filters and pagination to update URL
@@ -348,7 +344,7 @@ onMounted(() => {
 
   if (urlPagination) {
     if (urlPagination.page > 1) setPage(urlPagination.page);
-    if (urlPagination.perPage !== 12) setItemsPerPage(urlPagination.perPage);
+    if (urlPagination.perPage !== DEFAULT_PAGINATION.itemsPerPage) setItemsPerPage(urlPagination.perPage);
   }
 });
 
@@ -419,7 +415,7 @@ const mainContentStyle = computed(() => ({
         <!-- Products Table -->
         <ProductTable
           :products="paginatedProducts"
-          :is-loading="isLoading || productsLoading"
+          :is-loading="productsLoading"
           :use-local-fallback="useLocalFallback"
           @select-product="openProductDrawer"
           @toggle-enabled="handleToggleEnabled"

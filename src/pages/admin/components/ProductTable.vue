@@ -73,6 +73,19 @@ const handleEdit = (e: Event, product: AdminProduct) => {
   e.stopPropagation();
   emit('edit-product', product);
 };
+
+const handleSelectProduct = (product: AdminProduct) => {
+  // GTM Tracking
+  if (typeof window !== 'undefined' && (window as any).dataLayer) {
+    (window as any).dataLayer.push({
+      event: 'admin_product_select',
+      product_id: product.id,
+      product_name: product.name
+    });
+  }
+  
+  emit('select-product', product);
+};
 </script>
 
 <template>
@@ -114,11 +127,11 @@ const handleEdit = (e: Event, product: AdminProduct) => {
           <tr
             v-for="product in products"
             :key="product.id"
-            @click="emit('select-product', product)"
+            @click="handleSelectProduct(product)"
             class="product-row"
             tabindex="0"
-            @keydown.enter="emit('select-product', product)"
-            @keydown.space.prevent="emit('select-product', product)"
+            @keydown.enter="handleSelectProduct(product)"
+            @keydown.space.prevent="handleSelectProduct(product)"
           >
             <td>
               <div class="product-cell">

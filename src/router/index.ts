@@ -66,9 +66,17 @@ const router = createRouter({
 
 // Navigation guard for admin routes
 router.beforeEach((to, _from, next) => {
+    // Check for authenticated user first
+    const session = loadSession()
+
+    // If authenticated user tries to go to login page, redirect to dashboard
+    if (session && (to.path === '/vadmin' || to.name === 'AdminLogin')) {
+        next('/vadmin/dashboard')
+        return
+    }
+
     if (to.meta.requiresAuth) {
         // Use shared session validation from useAdminAuth
-        const session = loadSession()
         if (session) {
             next()
         } else {

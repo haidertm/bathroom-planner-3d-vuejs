@@ -236,8 +236,17 @@ export const productApi = {
   },
 
   // Get all enabled products (for planner frontend)
-  async getEnabledProducts(): Promise<Record<string, any[]>> {
-    return fetchApi('/products/enabled');
+  async getEnabledProducts(): Promise<Record<ComponentType, AdminProduct[]>> {
+    const data = await fetchApi<Record<string, ApiProduct[]>>('/products/enabled');
+    const result = {} as Record<ComponentType, AdminProduct[]>;
+
+    for (const [category, products] of Object.entries(data)) {
+      if (COMPONENTS.includes(category as ComponentType)) {
+        result[category as ComponentType] = products.map(transformApiProduct);
+      }
+    }
+
+    return result;
   },
 
   // Get product statistics
@@ -357,12 +366,23 @@ function transformApiVariant(apiVariant: ApiProductVariant): ProductVariant {
   };
 }
 
+// Default category for invalid or missing API category values
+const DEFAULT_CATEGORY: ComponentType = 'Furniture';
+
+// Validate and return a valid ComponentType, falling back to default
+function validateCategory(category: string | undefined | null): ComponentType {
+  if (category && COMPONENTS.includes(category as ComponentType)) {
+    return category as ComponentType;
+  }
+  return DEFAULT_CATEGORY;
+}
+
 // Transform API product to AdminProduct format
 function transformApiProduct(apiProduct: ApiProduct): AdminProduct {
   return {
     id: apiProduct.product_id,
     dbId: apiProduct.id,
-    category: apiProduct.category as AdminProduct['category'],
+    category: validateCategory(apiProduct.category),
     name: apiProduct.name,
     price: apiProduct.price?.toString() || '0',
     link: apiProduct.link || '',
