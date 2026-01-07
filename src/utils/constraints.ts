@@ -38,7 +38,7 @@ export type ObjectModel = {
     link?: string;
     sku?: string;
     scale?: number;
-    price?: string;
+    price?: number | string;
     rotation?: [number, number, number];
     position?: [number, number, number];
     movement?: MovementConfig;
