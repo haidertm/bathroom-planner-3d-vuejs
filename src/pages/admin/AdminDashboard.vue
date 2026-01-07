@@ -16,6 +16,7 @@ import ProductFiltersComponent from './components/ProductFilters.vue';
 import ProductTable from './components/ProductTable.vue';
 import Pagination from './components/Pagination.vue';
 import ProductDrawer from './components/ProductDrawer.vue';
+import ProductForm from './ProductForm.vue';
 import ToastContainer from '../../components/ui/ToastContainer.vue';
 
 /**
@@ -81,6 +82,8 @@ const {
   setPage,
   setItemsPerPage,
   toggleProductEnabled,
+  createProduct,
+  refreshProducts,
 } = useAdminProducts();
 
 const {
@@ -100,6 +103,10 @@ const showMobileSidebar = ref(false);
 // Product Detail Drawer State
 const selectedProduct = ref<AdminProduct | null>(null);
 const showProductDrawer = ref(false);
+
+// Add Product Modal State
+const showAddProductModal = ref(false);
+const productToDuplicate = ref<AdminProduct | null>(null);
 
 // Check if mobile
 const checkMobile = () => {
@@ -171,6 +178,34 @@ const handleEditProduct = (product: AdminProduct) => {
     category: product.category,
   });
   router.push(`/vadmin/products/${product.dbId}/edit`);
+};
+
+// Handle create product from modal
+const handleCreateProduct = async (productData: Omit<AdminProduct, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const result = await createProduct(productData);
+  if (result) {
+    toast.success('Product created successfully');
+    showAddProductModal.value = false;
+    productToDuplicate.value = null;
+    trackAdminEvent('product_created', {
+      product_name: result.name,
+      category: result.category,
+      variant_count: result.variants?.length || 0,
+    });
+  } else {
+    toast.error('Failed to create product');
+  }
+};
+
+// Handle duplicate product
+const handleDuplicateProduct = (product: AdminProduct) => {
+  productToDuplicate.value = product;
+  showAddProductModal.value = true;
+  trackAdminEvent('product_duplicate_start', {
+    product_id: product.id,
+    product_name: product.name,
+    category: product.category,
+  });
 };
 
 /**
@@ -314,7 +349,7 @@ const handleGlobalKeydown = (event: KeyboardEvent) => {
 };
 
 // Initialize
-onMounted(() => {
+onMounted(async () => {
   // Check authentication
   if (!validateSession()) {
     router.push('/vadmin');
@@ -325,6 +360,9 @@ onMounted(() => {
   checkMobile();
   window.addEventListener('resize', checkMobile);
   document.addEventListener('keydown', handleGlobalKeydown);
+
+  // Refresh products to get latest data (e.g., after returning from edit page)
+  await refreshProducts();
 
   // Load filters from URL
   const urlFilters = parseFiltersFromUrl();
@@ -410,6 +448,7 @@ const mainContentStyle = computed(() => ({
           @update:enabled-filter="handleEnabledFilterUpdate"
           @clear-filters="handleClearFilters"
           @export-csv="exportToCSV"
+          @add-product="showAddProductModal = true"
         />
 
         <!-- Products Table -->
@@ -420,6 +459,7 @@ const mainContentStyle = computed(() => ({
           @select-product="openProductDrawer"
           @toggle-enabled="handleToggleEnabled"
           @edit-product="handleEditProduct"
+          @duplicate-product="handleDuplicateProduct"
         />
 
         <!-- Pagination -->
@@ -440,6 +480,22 @@ const mainContentStyle = computed(() => ({
       :is-open="showProductDrawer"
       @close="closeProductDrawer"
     />
+
+    <!-- Add Product Modal -->
+    <div
+      v-if="showAddProductModal"
+      class="modal-overlay"
+      @click.self="showAddProductModal = false; productToDuplicate = null"
+    >
+      <div class="modal-content">
+        <ProductForm
+          :product="productToDuplicate"
+          mode="add"
+          @save="handleCreateProduct"
+          @cancel="showAddProductModal = false; productToDuplicate = null"
+        />
+      </div>
+    </div>
 
     <!-- Toast Notifications -->
     <ToastContainer />
@@ -495,6 +551,37 @@ const mainContentStyle = computed(() => ({
 
   .admin-content {
     padding: 0 16px 16px;
+  }
+}
+
+/* Add Product Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 767px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-content {
+    max-height: 95vh;
   }
 }
 </style>

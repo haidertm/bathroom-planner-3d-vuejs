@@ -35,6 +35,31 @@ const activeTab = ref<'details' | 'variants'>('details');
 const expandedVariant = ref<string | null>(null);
 const showAddVariant = ref(false);
 
+// Single product vs multiple variants mode
+const hasMultipleVariants = ref(false);
+
+// Single variant data (used when hasMultipleVariants is false)
+const singleVariant = ref<ProductVariant>({
+  id: '',
+  name: '',
+  sku: '',
+  path: '',
+  image: '',
+  link: '',
+  price: '',
+  title: '',
+  dimensions: { width: 0, height: 0, depth: 0 },
+  orientation: {
+    type: 'face_into_room',
+    wallBuffer: 0,
+  },
+  movement: {
+    snapToWall: true,
+    allowVerticalMovement: false,
+    allowFreeRotation: false,
+  },
+});
+
 // New variant form
 const newVariant = ref<ProductVariant>({
   id: '',
@@ -70,6 +95,59 @@ function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(rawValue));
 }
 
+// Reset single variant
+const resetSingleVariant = () => {
+  singleVariant.value = {
+    id: '',
+    name: '',
+    sku: '',
+    path: '',
+    image: '',
+    link: '',
+    price: '',
+    title: '',
+    dimensions: { width: 0, height: 0, depth: 0 },
+    orientation: {
+      type: 'face_into_room',
+      wallBuffer: 0,
+    },
+    movement: {
+      snapToWall: true,
+      allowVerticalMovement: false,
+      allowFreeRotation: false,
+    },
+  };
+};
+
+// Reset form - defined before watch to avoid initialization error
+const resetForm = () => {
+  formData.value = {
+    id: '',
+    category: 'Furniture',
+    name: '',
+    price: '',
+    link: '',
+    image: '',
+    variantType: 'Default',
+    features: [],
+    variants: [],
+    enabled: true,
+  };
+  errors.value = {};
+  hasMultipleVariants.value = false;
+  resetSingleVariant();
+};
+
+// Generate variant ID - defined before watch to avoid initialization error
+const generateVariantId = () => {
+  return `var_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+};
+
+// Generate product ID for new products
+const generateProductId = () => {
+  return `prod_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+};
+
 // Initialize form data from product prop
 onMounted(() => {
   if (props.product) {
@@ -91,39 +169,49 @@ onMounted(() => {
 // Watch for product changes
 watch(() => props.product, (newProduct) => {
   if (newProduct) {
+    // Check if this is a duplicate (mode='add' but product is passed)
+    const isDuplicate = props.mode === 'add';
+
+    // Clone variants with new IDs for duplicates
+    const clonedVariants = deepClone(newProduct.variants).map(v => ({
+      ...v,
+      id: isDuplicate ? generateVariantId() : v.id,
+      sku: isDuplicate ? `${v.sku}-copy` : v.sku,
+    }));
+
     formData.value = {
-      id: newProduct.id,
+      id: isDuplicate ? '' : newProduct.id, // Clear ID for duplicates
       category: newProduct.category,
-      name: newProduct.name,
+      name: isDuplicate ? `${newProduct.name} (Copy)` : newProduct.name,
       price: newProduct.price,
       link: newProduct.link,
       image: newProduct.image,
       variantType: newProduct.variantType,
       features: [...newProduct.features],
-      variants: deepClone(newProduct.variants),
+      variants: clonedVariants,
       enabled: newProduct.enabled,
     };
+
+    // Detect if product has multiple variants
+    if (newProduct.variants && newProduct.variants.length > 1) {
+      hasMultipleVariants.value = true;
+    } else if (newProduct.variants && newProduct.variants.length === 1) {
+      // Single variant - populate singleVariant for editing
+      hasMultipleVariants.value = false;
+      const clonedSingleVariant = deepClone(newProduct.variants[0]);
+      if (isDuplicate) {
+        clonedSingleVariant.id = generateVariantId();
+        clonedSingleVariant.sku = `${clonedSingleVariant.sku}-copy`;
+      }
+      singleVariant.value = clonedSingleVariant;
+    } else {
+      hasMultipleVariants.value = false;
+      resetSingleVariant();
+    }
   } else {
     resetForm();
   }
 }, { immediate: true });
-
-// Reset form
-const resetForm = () => {
-  formData.value = {
-    id: '',
-    category: 'Furniture',
-    name: '',
-    price: '',
-    link: '',
-    image: '',
-    variantType: 'Default',
-    features: [],
-    variants: [],
-    enabled: true,
-  };
-  errors.value = {};
-};
 
 // Add feature
 const addFeature = () => {
@@ -136,11 +224,6 @@ const addFeature = () => {
 // Remove feature
 const removeFeature = (index: number) => {
   formData.value.features.splice(index, 1);
-};
-
-// Generate variant ID
-const generateVariantId = () => {
-  return `var_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 };
 
 // Reset new variant form
@@ -207,8 +290,17 @@ const validate = (): boolean => {
     errors.value.category = 'Category is required';
   }
 
-  if (formData.value.variants.length === 0) {
-    errors.value.variants = 'At least one variant is required';
+  // Validate based on mode
+  if (hasMultipleVariants.value) {
+    // Multiple variants mode - need at least one variant
+    if (formData.value.variants.length === 0) {
+      errors.value.variants = 'At least one variant is required';
+    }
+  } else {
+    // Single product mode - validate single variant fields
+    if (!singleVariant.value.sku.trim()) {
+      errors.value.sku = 'SKU is required';
+    }
   }
 
   return Object.keys(errors.value).length === 0;
@@ -239,21 +331,36 @@ const handleSubmit = () => {
     return;
   }
 
-  // Sync the first variant's title with the product name
-  // This ensures consistency between product name and variant title
-  const updatedVariants = formData.value.variants.map((variant, index) => {
-    if (index === 0) {
-      return {
-        ...variant,
-        title: formData.value.name, // Sync first variant title with product name
-      };
-    }
-    return variant;
-  });
+  let finalVariants: ProductVariant[];
+
+  if (hasMultipleVariants.value) {
+    // Multiple variants mode - use variants from formData
+    finalVariants = formData.value.variants.map((variant, index) => {
+      if (index === 0) {
+        return {
+          ...variant,
+          title: formData.value.name,
+        };
+      }
+      return variant;
+    });
+  } else {
+    // Single product mode - create variant from singleVariant
+    const variant: ProductVariant = {
+      ...singleVariant.value,
+      id: singleVariant.value.id || generateVariantId(),
+      name: singleVariant.value.name || formData.value.name,
+      title: formData.value.name,
+      price: singleVariant.value.price || formData.value.price,
+      image: singleVariant.value.image || formData.value.image,
+      link: singleVariant.value.link || formData.value.link,
+    };
+    finalVariants = [variant];
+  }
 
   const productData = {
     ...formData.value,
-    variants: updatedVariants,
+    variants: finalVariants,
   };
 
   // Track product create/edit event in GTM
@@ -274,8 +381,11 @@ const handleSubmit = () => {
       createdAt: props.product.createdAt,
     } as AdminProduct);
   } else {
-    const { id, ...dataWithoutId } = productData;
-    emit('save', dataWithoutId);
+    // Generate a new product ID for new products/duplicates
+    emit('save', {
+      ...productData,
+      id: generateProductId(),
+    });
   }
 };
 
@@ -308,6 +418,7 @@ const handleCancel = () => {
         Product Details
       </button>
       <button
+        v-if="hasMultipleVariants"
         @click="activeTab = 'variants'"
         :class="['tab', { 'tab-active': activeTab === 'variants' }]"
       >
@@ -438,11 +549,103 @@ const handleCancel = () => {
               </span>
             </div>
           </div>
+
+          <!-- Multiple Variants Toggle (always visible at bottom of details) -->
+          <div class="input-group full-width">
+            <div class="variants-toggle-section">
+              <label class="toggle-label">
+                <input
+                  type="checkbox"
+                  v-model="hasMultipleVariants"
+                  class="toggle-checkbox"
+                />
+                <span class="toggle-switch"></span>
+                <span class="toggle-text">This product has multiple variants</span>
+              </label>
+              <span class="toggle-hint">Enable if the product comes in different sizes, colors, or styles</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Single Product Details (when no multiple variants) -->
+        <div v-if="!hasMultipleVariants" class="single-variant-section">
+          <h3 class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            3D Model & Dimensions
+          </h3>
+
+          <div class="variant-inline-grid">
+            <!-- SKU -->
+            <div class="input-group">
+              <label class="label">SKU *</label>
+              <input
+                v-model="singleVariant.sku"
+                type="text"
+                placeholder="e.g., C76236"
+                :class="['input', { 'input-error': errors.sku }]"
+              />
+              <span v-if="errors.sku" class="error-text">{{ errors.sku }}</span>
+            </div>
+
+            <!-- GLB Model Path -->
+            <div class="input-group">
+              <label class="label">GLB Model Path</label>
+              <input
+                v-model="singleVariant.path"
+                type="text"
+                placeholder="../../models/category/model.glb"
+                class="input"
+              />
+            </div>
+          </div>
+
+          <!-- Dimensions -->
+          <div class="dimensions-inline-section">
+            <label class="label">Dimensions (cm)</label>
+            <div class="dimensions-inline-grid">
+              <div class="dimension-input-group">
+                <span>Width</span>
+                <input v-model.number="singleVariant.dimensions.width" type="number" step="0.1" min="0" class="dimension-input" />
+              </div>
+              <div class="dimension-input-group">
+                <span>Height</span>
+                <input v-model.number="singleVariant.dimensions.height" type="number" step="0.1" min="0" class="dimension-input" />
+              </div>
+              <div class="dimension-input-group">
+                <span>Depth</span>
+                <input v-model.number="singleVariant.dimensions.depth" type="number" step="0.1" min="0" class="dimension-input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Movement Options -->
+          <div class="movement-inline-section">
+            <label class="label">Movement Options</label>
+            <div class="checkbox-inline-group">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="singleVariant.movement!.snapToWall" class="checkbox-input" />
+                Snap to Wall
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="singleVariant.movement!.allowVerticalMovement" class="checkbox-input" />
+                Allow Vertical Movement
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="singleVariant.movement!.allowFreeRotation" class="checkbox-input" />
+                Allow Free Rotation
+              </label>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- Variants Tab -->
-      <div v-show="activeTab === 'variants'" class="tab-content">
+      <!-- Variants Tab (only when multiple variants mode) -->
+      <div v-if="hasMultipleVariants" v-show="activeTab === 'variants'" class="tab-content">
         <div v-if="errors.variants" class="variant-error">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/>
@@ -1205,5 +1408,132 @@ const handleCancel = () => {
 /* Hover States */
 button:hover {
   opacity: 0.9;
+}
+
+/* Toggle Switch */
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-checkbox {
+  display: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background-color: #e2e8f0;
+  border-radius: 13px;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-checkbox:checked + .toggle-switch {
+  background-color: #29275B;
+}
+
+.toggle-checkbox:checked + .toggle-switch::after {
+  transform: translateX(22px);
+}
+
+.toggle-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.toggle-hint {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.variants-toggle-section {
+  padding: 16px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+/* Single Variant Section */
+.single-variant-section {
+  padding: 0 24px 24px;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 8px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 20px 0 16px;
+}
+
+.variant-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.dimensions-inline-section {
+  margin-bottom: 20px;
+}
+
+.dimensions-inline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.movement-inline-section {
+  margin-bottom: 8px;
+}
+
+.checkbox-inline-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+/* Mobile responsive for inline variant */
+@media (max-width: 767px) {
+  .variant-inline-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dimensions-inline-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .checkbox-inline-group {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 </style>

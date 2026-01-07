@@ -18,6 +18,7 @@ const emit = defineEmits<{
   (e: 'update:enabledFilter', value: ProductFilters['enabledFilter']): void;
   (e: 'clear-filters'): void;
   (e: 'export-csv'): void;
+  (e: 'add-product'): void;
 }>();
 
 const showFilters = ref(true);
@@ -101,6 +102,14 @@ const handleEnabledFilterChange = (event: Event) => {
 
       <button v-if="hasActiveFilters" @click="emit('clear-filters')" class="clear-filters-btn">
         Clear all
+      </button>
+
+      <button @click="emit('add-product')" class="add-product-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add Product
       </button>
 
       <button @click="emit('export-csv')" class="export-btn">
@@ -293,6 +302,26 @@ const handleEnabledFilterChange = (event: Event) => {
   background-color: #fecaca;
 }
 
+.add-product-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--primary-color, #29275B);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-left: auto;
+}
+
+.add-product-btn:hover {
+  background-color: #1e1b4b;
+}
+
 .export-btn {
   display: flex;
   align-items: center;
@@ -306,7 +335,6 @@ const handleEnabledFilterChange = (event: Event) => {
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  margin-left: auto;
 }
 
 .export-btn:hover {

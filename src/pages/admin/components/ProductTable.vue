@@ -12,6 +12,7 @@ const emit = defineEmits<{
   (e: 'select-product', product: AdminProduct): void;
   (e: 'toggle-enabled', product: AdminProduct): void;
   (e: 'edit-product', product: AdminProduct): void;
+  (e: 'duplicate-product', product: AdminProduct): void;
 }>();
 
 const togglingProducts = ref<Set<string>>(new Set());
@@ -72,6 +73,11 @@ const handleToggle = (e: Event, product: AdminProduct) => {
 const handleEdit = (e: Event, product: AdminProduct) => {
   e.stopPropagation();
   emit('edit-product', product);
+};
+
+const handleDuplicate = (e: Event, product: AdminProduct) => {
+  e.stopPropagation();
+  emit('duplicate-product', product);
 };
 
 const handleSelectProduct = (product: AdminProduct) => {
@@ -203,6 +209,16 @@ const handleSelectProduct = (product: AdminProduct) => {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button
+                  class="action-btn action-duplicate"
+                  title="Duplicate product"
+                  @click="(e) => handleDuplicate(e, product)"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
                 </button>
                 <button
@@ -416,6 +432,11 @@ const handleSelectProduct = (product: AdminProduct) => {
 .action-edit:hover:not(:disabled) {
   background-color: #dbeafe;
   color: #1d4ed8;
+}
+
+.action-duplicate:hover:not(:disabled) {
+  background-color: #dcfce7;
+  color: #166534;
 }
 
 .action-view:hover:not(:disabled) {
