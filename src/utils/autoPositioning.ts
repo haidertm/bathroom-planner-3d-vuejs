@@ -848,7 +848,8 @@ export const positionBath = (
     console.log('🛁 Bath is corner-install, using constrainToCorner for placement');
 
     // Check if there's a preferred corner specified in the product data
-    const preferredCorner = movement?.cornerInstallOnly?.preferredCorner;
+    // Default to 'north-west' (visible corner) if not specified
+    const preferredCorner = movement?.cornerInstallOnly?.preferredCorner || 'north-west';
     let cornersToTry = sortedCorners;
 
     if (preferredCorner) {
