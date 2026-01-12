@@ -5,7 +5,7 @@ import type { AdminProduct, ProductFilters } from '../../../types/admin';
 type SortColumn = ProductFilters['sortBy'];
 type SortOrder = ProductFilters['sortOrder'];
 
-const props = defineProps<{
+defineProps<{
   products: AdminProduct[];
   isLoading?: boolean;
   useLocalFallback?: boolean;

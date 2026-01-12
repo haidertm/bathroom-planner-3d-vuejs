@@ -170,12 +170,21 @@ const handleKeydown = (event: KeyboardEvent) => {
   transition: all 0.2s ease;
 }
 
-.pagination-btn:hover:not(:disabled) {
+.pagination-btn:hover:not(:disabled):not(.active) {
   background-color: #f8fafc;
   border-color: #cbd5e1;
 }
 
+.pagination-btn.active:hover {
+  background-color: #1e1b4b;
+  border-color: #1e1b4b;
+}
+
 .pagination-btn:focus {
+  outline: none;
+}
+
+.pagination-btn:focus-visible {
   outline: 2px solid var(--primary-color, #29275B);
   outline-offset: 2px;
 }
