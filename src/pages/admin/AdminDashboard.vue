@@ -298,14 +298,19 @@ const handlePriceRangeUpdate = (value: { min: number | null; max: number | null 
   });
 };
 
-const handleSortByUpdate = (value: ProductFilters['sortBy']) => {
-  setFilter('sortBy', value);
-  trackAdminEvent('filter_sort', { sort_by: value, sort_order: filters.value.sortOrder });
-};
-
-const handleSortOrderUpdate = (value: ProductFilters['sortOrder']) => {
-  setFilter('sortOrder', value);
-  trackAdminEvent('filter_sort', { sort_by: filters.value.sortBy, sort_order: value });
+// Handle column header click for sorting
+const handleColumnSort = (column: ProductFilters['sortBy']) => {
+  if (filters.value.sortBy === column) {
+    // Toggle sort order if same column
+    const newOrder = filters.value.sortOrder === 'asc' ? 'desc' : 'asc';
+    setFilter('sortOrder', newOrder);
+    trackAdminEvent('filter_sort', { sort_by: column, sort_order: newOrder });
+  } else {
+    // Set new column with ascending order
+    setFilter('sortBy', column);
+    setFilter('sortOrder', 'asc');
+    trackAdminEvent('filter_sort', { sort_by: column, sort_order: 'asc' });
+  }
 };
 
 const handleEnabledFilterUpdate = (value: ProductFilters['enabledFilter']) => {
@@ -443,8 +448,6 @@ const mainContentStyle = computed(() => ({
           @update:search-query="handleSearchUpdate"
           @toggle-category="handleCategoryToggle"
           @update:price-range="handlePriceRangeUpdate"
-          @update:sort-by="handleSortByUpdate"
-          @update:sort-order="handleSortOrderUpdate"
           @update:enabled-filter="handleEnabledFilterUpdate"
           @clear-filters="handleClearFilters"
           @export-csv="exportToCSV"
@@ -456,10 +459,13 @@ const mainContentStyle = computed(() => ({
           :products="paginatedProducts"
           :is-loading="productsLoading"
           :use-local-fallback="useLocalFallback"
+          :sort-by="filters.sortBy"
+          :sort-order="filters.sortOrder"
           @select-product="openProductDrawer"
           @toggle-enabled="handleToggleEnabled"
           @edit-product="handleEditProduct"
           @duplicate-product="handleDuplicateProduct"
+          @sort="handleColumnSort"
         />
 
         <!-- Pagination -->

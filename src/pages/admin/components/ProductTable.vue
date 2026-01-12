@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref, onBeforeUnmount } from 'vue';
-import type { AdminProduct } from '../../../types/admin';
+import type { AdminProduct, ProductFilters } from '../../../types/admin';
 
-defineProps<{
+type SortColumn = ProductFilters['sortBy'];
+type SortOrder = ProductFilters['sortOrder'];
+
+const props = defineProps<{
   products: AdminProduct[];
   isLoading?: boolean;
   useLocalFallback?: boolean;
+  sortBy?: SortColumn;
+  sortOrder?: SortOrder;
 }>();
 
 const emit = defineEmits<{
@@ -13,7 +18,21 @@ const emit = defineEmits<{
   (e: 'toggle-enabled', product: AdminProduct): void;
   (e: 'edit-product', product: AdminProduct): void;
   (e: 'duplicate-product', product: AdminProduct): void;
+  (e: 'sort', column: SortColumn): void;
 }>();
+
+// Column definitions for sortable headers
+const sortableColumns: { key: SortColumn; label: string }[] = [
+  { key: 'name', label: 'Product' },
+  { key: 'category', label: 'Category' },
+  { key: 'price', label: 'Price' },
+  { key: 'variants', label: 'Variants' },
+  { key: 'status', label: 'Status' },
+];
+
+const handleSort = (column: SortColumn) => {
+  emit('sort', column);
+};
 
 const togglingProducts = ref<Set<string>>(new Set());
 const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
@@ -99,11 +118,59 @@ const handleSelectProduct = (product: AdminProduct) => {
     <table class="product-table">
       <thead>
         <tr>
-          <th scope="col">Product</th>
-          <th scope="col">Category</th>
-          <th scope="col">Price</th>
-          <th scope="col">Variants</th>
-          <th scope="col">Status</th>
+          <th
+            v-for="col in sortableColumns"
+            :key="col.key"
+            scope="col"
+            class="sortable-header"
+            :class="{ 'sorted': sortBy === col.key }"
+            @click="handleSort(col.key)"
+          >
+            <span class="header-content">
+              {{ col.label }}
+              <span class="sort-icon">
+                <!-- Ascending icon -->
+                <svg
+                  v-if="sortBy === col.key && sortOrder === 'asc'"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="sort-active"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>
+                <!-- Descending icon -->
+                <svg
+                  v-else-if="sortBy === col.key && sortOrder === 'desc'"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="sort-active"
+                >
+                  <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>
+                <!-- Default (unsorted) icon -->
+                <svg
+                  v-else
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="sort-default"
+                >
+                  <path d="M7 15l5 5 5-5M7 9l5-5 5 5"/>
+                </svg>
+              </span>
+            </span>
+          </th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
@@ -274,6 +341,49 @@ const handleSelectProduct = (product: AdminProduct) => {
   letter-spacing: 0.5px;
   background-color: #f8fafc;
   border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+/* Sortable header styles */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sortable-header:hover {
+  background-color: #eef2f7;
+  color: var(--text-color, #2d3748);
+}
+
+.sortable-header.sorted {
+  color: var(--primary-color, #29275B);
+  background-color: #f0f0ff;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sort-icon .sort-default {
+  opacity: 0.3;
+  transition: opacity 0.15s ease;
+}
+
+.sortable-header:hover .sort-default {
+  opacity: 0.6;
+}
+
+.sort-icon .sort-active {
+  color: var(--primary-color, #29275B);
 }
 
 .product-table td {

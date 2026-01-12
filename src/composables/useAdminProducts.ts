@@ -218,6 +218,13 @@ const applyLocalFilters = (allProducts: AdminProduct[]): AdminProduct[] => {
       case 'category':
         comparison = a.category.localeCompare(b.category);
         break;
+      case 'variants':
+        comparison = a.variants.length - b.variants.length;
+        break;
+      case 'status':
+        // Enabled products first when ascending
+        comparison = (a.enabled === b.enabled) ? 0 : (a.enabled ? -1 : 1);
+        break;
       case 'createdAt':
         comparison = (a.createdAt || 0) - (b.createdAt || 0);
         break;

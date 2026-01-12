@@ -13,8 +13,6 @@ const emit = defineEmits<{
   (e: 'update:searchQuery', value: string): void;
   (e: 'toggle-category', category: ComponentType): void;
   (e: 'update:priceRange', value: { min: number | null; max: number | null }): void;
-  (e: 'update:sortBy', value: ProductFilters['sortBy']): void;
-  (e: 'update:sortOrder', value: ProductFilters['sortOrder']): void;
   (e: 'update:enabledFilter', value: ProductFilters['enabledFilter']): void;
   (e: 'clear-filters'): void;
   (e: 'export-csv'): void;
@@ -28,7 +26,9 @@ const hasActiveFilters = computed(() => {
     props.filters.searchQuery ||
     props.filters.priceRange.min !== null ||
     props.filters.priceRange.max !== null ||
-    props.filters.enabledFilter !== 'all';
+    props.filters.enabledFilter !== 'all' ||
+    props.filters.sortBy !== 'name' ||
+    props.filters.sortOrder !== 'asc';
 });
 
 const getCategoryColor = (category: string): string => {
@@ -66,15 +66,6 @@ const handlePriceMaxInput = (event: Event) => {
     ...props.filters.priceRange,
     max: target.value ? Number(target.value) : null
   });
-};
-
-const handleSortByChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  emit('update:sortBy', target.value as ProductFilters['sortBy']);
-};
-
-const toggleSortOrder = () => {
-  emit('update:sortOrder', props.filters.sortOrder === 'asc' ? 'desc' : 'asc');
 };
 
 const handleEnabledFilterChange = (event: Event) => {
@@ -209,32 +200,6 @@ const handleEnabledFilterChange = (event: Event) => {
           <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"/>
           </svg>
-        </div>
-      </div>
-
-      <!-- Sort -->
-      <div class="filter-group">
-        <label class="filter-label">Sort by</label>
-        <div class="sort-container">
-          <select
-            :value="filters.sortBy"
-            @change="handleSortByChange"
-            class="sort-select"
-          >
-            <option value="name">Name</option>
-            <option value="price">Price</option>
-            <option value="category">Category</option>
-          </select>
-          <button @click="toggleSortOrder" class="sort-order-btn" :aria-label="filters.sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'">
-            <svg
-              :class="{ 'rotated-180': filters.sortOrder === 'desc' }"
-              class="sort-icon"
-              width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            >
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <polyline points="19 12 12 19 5 12"/>
-            </svg>
-          </button>
         </div>
       </div>
     </div>
@@ -461,27 +426,6 @@ const handleEnabledFilterChange = (event: Event) => {
   font-size: 13px;
 }
 
-.sort-container {
-  display: flex;
-  gap: 8px;
-}
-
-.sort-select {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  background-color: #ffffff;
-  cursor: pointer;
-}
-
-.sort-select:focus {
-  border-color: var(--primary-color, #29275B);
-  box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
-}
-
 /* Status Select Styles */
 .status-select-wrapper {
   position: relative;
@@ -544,31 +488,6 @@ const handleEnabledFilterChange = (event: Event) => {
   right: 12px;
   color: var(--muted-color, #6b7280);
   pointer-events: none;
-}
-
-.sort-order-btn {
-  padding: 10px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 8px;
-  background-color: #ffffff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-color, #2d3748);
-  transition: background-color 0.2s ease;
-}
-
-.sort-order-btn:hover {
-  background-color: #f8fafc;
-}
-
-.sort-icon {
-  transition: transform 0.2s ease;
-}
-
-.sort-icon.rotated-180 {
-  transform: rotate(180deg);
 }
 
 .actions-bar {

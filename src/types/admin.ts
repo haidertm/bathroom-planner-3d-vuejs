@@ -75,7 +75,7 @@ export interface ProductFilters {
     min: number | null;
     max: number | null;
   };
-  sortBy: 'name' | 'price' | 'category' | 'createdAt';
+  sortBy: 'name' | 'price' | 'category' | 'variants' | 'status' | 'createdAt';
   sortOrder: 'asc' | 'desc';
   enabledFilter: 'all' | 'enabled' | 'disabled';
 }
