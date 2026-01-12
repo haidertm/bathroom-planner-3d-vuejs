@@ -227,6 +227,72 @@ onUnmounted(() => {
                     <span class="variant-label">Spawn Height:</span>
                     <span class="variant-value">{{ variant.spawnHeight }} cm</span>
                   </div>
+                  <div v-if="variant.floorOffset !== undefined" class="variant-detail-row">
+                    <span class="variant-label">Floor Offset:</span>
+                    <span class="variant-value">{{ variant.floorOffset }} cm</span>
+                  </div>
+
+                  <!-- Orientation Config -->
+                  <div v-if="variant.orientation" class="variant-config-section">
+                    <span class="variant-config-title">Orientation</span>
+                    <div class="variant-config-grid">
+                      <div class="config-item">
+                        <span class="config-label">Type:</span>
+                        <span class="config-value config-badge">{{ variant.orientation.type }}</span>
+                      </div>
+                      <div v-if="variant.orientation.wallBuffer !== undefined" class="config-item">
+                        <span class="config-label">Wall Buffer:</span>
+                        <span class="config-value">{{ variant.orientation.wallBuffer }} cm</span>
+                      </div>
+                      <div v-if="variant.orientation.rotationOffset !== undefined" class="config-item">
+                        <span class="config-label">Rotation Offset:</span>
+                        <span class="config-value">{{ variant.orientation.rotationOffset }}°</span>
+                      </div>
+                      <div v-if="variant.orientation.description" class="config-item config-item-full">
+                        <span class="config-label">Description:</span>
+                        <span class="config-value">{{ variant.orientation.description }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Movement Config -->
+                  <div v-if="variant.movement" class="variant-config-section">
+                    <span class="variant-config-title">Movement</span>
+                    <div class="variant-config-grid">
+                      <div class="config-item">
+                        <span class="config-label">Snap to Wall:</span>
+                        <span class="config-value" :class="variant.movement.snapToWall ? 'config-yes' : 'config-no'">
+                          {{ variant.movement.snapToWall ? 'Yes' : 'No' }}
+                        </span>
+                      </div>
+                      <div v-if="variant.movement.cornerInstallOnly !== undefined" class="config-item">
+                        <span class="config-label">Corner Only:</span>
+                        <span class="config-value" :class="variant.movement.cornerInstallOnly ? 'config-yes' : 'config-no'">
+                          {{ variant.movement.cornerInstallOnly ? 'Yes' : 'No' }}
+                        </span>
+                      </div>
+                      <div v-if="variant.movement.allowVerticalMovement !== undefined" class="config-item">
+                        <span class="config-label">Vertical Move:</span>
+                        <span class="config-value" :class="variant.movement.allowVerticalMovement ? 'config-yes' : 'config-no'">
+                          {{ variant.movement.allowVerticalMovement ? 'Yes' : 'No' }}
+                        </span>
+                      </div>
+                      <div v-if="variant.movement.allowFreeRotation !== undefined" class="config-item">
+                        <span class="config-label">Free Rotation:</span>
+                        <span class="config-value" :class="variant.movement.allowFreeRotation ? 'config-yes' : 'config-no'">
+                          {{ variant.movement.allowFreeRotation ? 'Yes' : 'No' }}
+                        </span>
+                      </div>
+                      <div v-if="variant.movement.minHeight !== undefined" class="config-item">
+                        <span class="config-label">Min Height:</span>
+                        <span class="config-value">{{ variant.movement.minHeight }} cm</span>
+                      </div>
+                      <div v-if="variant.movement.maxHeight !== undefined" class="config-item">
+                        <span class="config-label">Max Height:</span>
+                        <span class="config-value">{{ variant.movement.maxHeight }} cm</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -543,6 +609,73 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Configuration sections */
+.variant-config-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color, #e2e8f0);
+}
+
+.variant-config-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-color, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.variant-config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.config-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.config-item-full {
+  grid-column: 1 / -1;
+}
+
+.config-label {
+  color: var(--muted-color, #6b7280);
+}
+
+.config-value {
+  color: var(--text-color, #2d3748);
+  font-weight: 500;
+}
+
+.config-badge {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.config-yes {
+  color: #166534;
+  background-color: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.config-no {
+  color: #991b1b;
+  background-color: #fee2e2;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
 }
 
 /* Scrollbar styling */
