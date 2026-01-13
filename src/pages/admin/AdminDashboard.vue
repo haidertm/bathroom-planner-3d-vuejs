@@ -528,41 +528,41 @@ const mainContentStyle = computed(() => ({
         <!-- Bulk Action Bar -->
         <Transition name="slide-down">
           <div v-if="selectedCount > 0" class="bulk-action-bar">
-            <div class="bulk-action-info">
-              <span class="selected-count">{{ selectedCount }}</span>
-              <span class="selected-label">product{{ selectedCount > 1 ? 's' : '' }} selected</span>
-            </div>
-            <div class="bulk-action-buttons">
-              <button
-                class="bulk-btn bulk-btn-enable"
-                :disabled="isBulkActionLoading || useLocalFallback"
-                @click="handleBulkEnable"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                Enable
-              </button>
-              <button
-                class="bulk-btn bulk-btn-disable"
-                :disabled="isBulkActionLoading || useLocalFallback"
-                @click="handleBulkDisable"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
-                Disable
-              </button>
-              <button
-                class="bulk-btn bulk-btn-clear"
-                @click="clearSelection"
-              >
-                Clear
-              </button>
-            </div>
+              <div class="bulk-action-info">
+                <span class="selected-count">{{ selectedCount }}</span>
+                <span class="selected-label">product{{ selectedCount > 1 ? 's' : '' }} selected</span>
+              </div>
+              <div class="bulk-action-buttons">
+                <button
+                  class="bulk-btn bulk-btn-enable"
+                  :disabled="isBulkActionLoading || useLocalFallback"
+                  @click="handleBulkEnable"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  Enable
+                </button>
+                <button
+                  class="bulk-btn bulk-btn-disable"
+                  :disabled="isBulkActionLoading || useLocalFallback"
+                  @click="handleBulkDisable"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                  Disable
+                </button>
+                <button
+                  class="bulk-btn bulk-btn-clear"
+                  @click="clearSelection"
+                >
+                  Clear
+                </button>
+              </div>
           </div>
         </Transition>
 
@@ -574,12 +574,15 @@ const mainContentStyle = computed(() => ({
           :sort-by="filters.sortBy"
           :sort-order="filters.sortOrder"
           :selected-products="selectedProducts"
+          :is-bulk-action-loading="isBulkActionLoading"
           @select-product="openProductDrawer"
           @toggle-enabled="handleToggleEnabled"
           @edit-product="handleEditProduct"
           @duplicate-product="handleDuplicateProduct"
           @sort="handleColumnSort"
           @selection-change="handleSelectionChange"
+          @bulk-enable="handleBulkEnable"
+          @bulk-disable="handleBulkDisable"
         />
 
         <!-- Pagination -->
@@ -711,9 +714,9 @@ const mainContentStyle = computed(() => ({
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
+  margin-bottom: 16px;
   background-color: var(--primary-color, #29275B);
   border-radius: 8px;
-  margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(41, 39, 91, 0.2);
 }
 

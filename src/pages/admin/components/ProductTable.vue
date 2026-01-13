@@ -39,7 +39,9 @@ const isSomeSelected = computed(() => {
 
 const toggleSelectAll = () => {
   const newSelection = new Set(localSelectedProducts.value);
-  if (isAllSelected.value) {
+  // If any products are selected (all or some), deselect them
+  // Only select all when none are selected
+  if (isAllSelected.value || isSomeSelected.value) {
     // Deselect all current page products
     props.products.forEach(p => newSelection.delete(p.id));
   } else {
@@ -158,12 +160,12 @@ const handleSelectProduct = (product: AdminProduct) => {
       <thead>
         <tr>
           <th scope="col" class="checkbox-header">
-            <label class="checkbox-container" @click.stop>
+            <label class="checkbox-container" @click.stop.prevent="toggleSelectAll">
               <input
                 type="checkbox"
                 :checked="isAllSelected"
                 :indeterminate="isSomeSelected"
-                @change="toggleSelectAll"
+                @click.prevent
               />
               <span class="checkmark" :class="{ 'indeterminate': isSomeSelected }"></span>
             </label>
