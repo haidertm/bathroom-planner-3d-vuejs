@@ -567,8 +567,8 @@ const handleUpdatedAtToChange = (event: Event) => {
 }
 
 .status-select:focus {
-  border-color: var(--primary-color, #29275B);
-  box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
+  box-shadow: none;
+  outline: none;
 }
 
 .status-select:hover {
@@ -630,8 +630,8 @@ const handleUpdatedAtToChange = (event: Event) => {
 }
 
 .updated-at-select:focus {
-  border-color: var(--primary-color, #29275B);
-  box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
+  box-shadow: none;
+  outline: none;
 }
 
 .updated-at-select:hover {

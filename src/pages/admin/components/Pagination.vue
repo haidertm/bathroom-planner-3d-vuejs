@@ -139,8 +139,7 @@ const handleKeydown = (event: KeyboardEvent) => {
 }
 
 .pagination:focus {
-  outline: 2px solid var(--primary-color, #29275B);
-  outline-offset: 2px;
+  outline: none;
 }
 
 .pagination-info {
@@ -216,8 +215,6 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .items-per-page-select:focus {
   outline: none;
-  border-color: var(--primary-color, #29275B);
-  box-shadow: 0 0 0 3px rgba(41, 39, 91, 0.1);
 }
 
 /* Mobile styles */
