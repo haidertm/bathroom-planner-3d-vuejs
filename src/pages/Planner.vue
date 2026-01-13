@@ -36,6 +36,7 @@
         :rotation-enabled="rotationArrowsEnabled"
         :is-dragging="isDraggingObject"
         :is-multi-select-mode="isMultiSelectMode"
+        :selected-count="selectedCount"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
@@ -98,21 +99,20 @@
         size="large"
     />
 
-    <!-- Multi-select Toggle -->
+    <!-- Multi-select Toggle (Text Pill Style) -->
     <button
       @click="toggleMultiSelect"
       :style="multiSelectButtonStyle"
-      :title="isMultiSelectMode ? 'Disable Multi-select' : 'Enable Multi-select'"
+      :title="isMultiSelectMode ? 'Disable Group Items' : 'Enable Group Items'"
     >
-      <!-- Multi-select icon: overlapping squares with checkmark when active -->
       <svg
-        :width="isMobileDevice ? 24 : 28"
-        :height="isMobileDevice ? 24 : 28"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
+        style="flex-shrink: 0;"
       >
-        <!-- Back square -->
         <rect
           x="6" y="6"
           width="14" height="14"
@@ -121,7 +121,6 @@
           stroke-width="2"
           fill="none"
         />
-        <!-- Front square -->
         <rect
           x="4" y="4"
           width="12" height="12"
@@ -130,16 +129,8 @@
           stroke-width="2"
           :fill="isMultiSelectMode ? '#29275b' : 'white'"
         />
-        <!-- Checkmark when active -->
-        <path
-          v-if="isMultiSelectMode"
-          d="M7 10L9.5 12.5L13 7"
-          stroke="white"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
       </svg>
+      <span style="margin-left: 6px; white-space: nowrap;">Group Items</span>
     </button>
 
     <!--    2D/3D View Mode Toggle -->
@@ -285,6 +276,7 @@ const selectedBathroomItem = computed(() => {
 // Track dragging state to hide overlay during drag
 const isDraggingObject = ref(false)
 const isMultiSelectMode = ref(false)
+const selectedCount = ref(1)
 
 // Toast notification state
 const toastMessage = ref('')
@@ -309,6 +301,13 @@ const toggleMultiSelect = () => {
   isMultiSelectMode.value = !isMultiSelectMode.value
   if (eventHandlersRef.value) {
     eventHandlersRef.value.setMultiSelectMode(isMultiSelectMode.value)
+    // Clear selection when turning off multi-select to avoid showing delete button
+    if (!isMultiSelectMode.value) {
+      eventHandlersRef.value.clearSelection()
+      selectedItemId.value = null
+      selectedObjectId.value = null
+      selectedCount.value = 1
+    }
   }
 }
 
@@ -578,8 +577,13 @@ const handleVariantSwap = async (swapConfig) => {
 
     console.log('Swapped item created:', swappedItem)
 
+    // Calculate the correct Y position based on new variant's spawnHeight
+    const oldSpawnHeight = currentItem.model?.spawnHeight || 0
+    const newSpawnHeight = newVariant.spawnHeight || 0
+    const wasAtDefaultHeight = Math.abs(currentItem.position[1] - oldSpawnHeight) < 1
+    const shouldUseNewSpawnHeight = wasAtDefaultHeight && oldSpawnHeight !== newSpawnHeight
+
     // RE-CONSTRAIN: Ensure the new variant fits within walls/room
-    // This fixes the issue where larger variants might clip into walls
     const movementConfig = getMovementConfig(swappedItem.type, swappedItem)
 
     if (movementConfig.snapToWall) {
@@ -594,15 +598,18 @@ const handleVariantSwap = async (swapConfig) => {
             item: swappedItem,
             notchWidth: notchWidth.value,
             notchHeight: notchHeight.value,
-            strictFlushMountCheck: true // ✅ NEW: Enforce strict wall boundaries for swapped items
+            strictFlushMountCheck: true
           }
       )
 
+      const finalY = shouldUseNewSpawnHeight ? newSpawnHeight : constraintResult.position.y
+
       swappedItem.position = [
         constraintResult.position.x,
-        constraintResult.position.y,
+        finalY,
         constraintResult.position.z
       ]
+      swappedItem.rotation = constraintResult.rotation
     } else {
       // For free-standing items, ensure they stay in room
       const constraintResult = constrainToRoom(
@@ -619,9 +626,11 @@ const handleVariantSwap = async (swapConfig) => {
           }
       )
 
+      const finalY = shouldUseNewSpawnHeight ? newSpawnHeight : constraintResult.position.y
+
       swappedItem.position = [
         constraintResult.position.x,
-        constraintResult.position.y,
+        finalY,
         constraintResult.position.z
       ]
     }
@@ -687,7 +696,9 @@ const handleVariantSwap = async (swapConfig) => {
               onProgress: (progress) => {
                 console.log(`📈 Progressive swap progress: ${progress}%`)
               }
-            }
+            },
+            { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+            swappedItem.rotation
           )
           console.log('✅ Progressive variant swap initiated')
         } else {
@@ -803,6 +814,10 @@ const handleObjectSelectionChange = () => {
     // Set the selected object ID for the remove button
     selectedObjectId.value = itemId
 
+    // Update selected count for multi-select
+    const selectedIds = eventHandlersRef.value.getSelectedItemIds()
+    selectedCount.value = selectedIds ? selectedIds.length : 1
+
     // Get current items and find the selected one
     const currentItems = getItems()
     const currentItem = currentItems.find(item => item.id === itemId)
@@ -816,6 +831,7 @@ const handleObjectSelectionChange = () => {
     // Clear selection
     selectedObjectId.value = null
     selectedObjectCanRotate.value = false
+    selectedCount.value = 1
   }
 }
 
@@ -978,18 +994,16 @@ const multiSelectButtonStyle = computed(() => ({
   position: 'fixed',
   left: isMobileDevice.value ? '' : sidebarOffset.value,
   right: isMobileDevice.value ? '10px' : '',
-  bottom: isMobileDevice.value ? '280px' : '260px', // Above 2D/3D toggle button (which is at 200px mobile / 130px desktop)
-  width: isMobileDevice.value ? '48px' : '56px',
-  height: isMobileDevice.value ? '48px' : '56px',
-  padding: '0',
+  bottom: isMobileDevice.value ? '280px' : '260px',
+  padding: isMobileDevice.value ? '10px 14px' : '12px 18px',
   backgroundColor: isMultiSelectMode.value ? '#29275b' : 'rgba(255, 255, 255, 0.95)',
   color: isMultiSelectMode.value ? 'white' : '#333',
-  border: 'none',
-  borderRadius: '50%',
+  border: isMultiSelectMode.value ? 'none' : '1px solid rgba(0, 0, 0, 0.1)',
+  borderRadius: '24px',
   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
   cursor: 'pointer',
   fontWeight: '600',
-  fontSize: isMobileDevice.value ? '20px' : '24px',
+  fontSize: isMobileDevice.value ? '13px' : '14px',
   transition: 'all 0.2s ease',
   display: 'flex',
   alignItems: 'center',
@@ -1424,6 +1438,16 @@ const addItem = async (type, productData = null) => {
 
 // 4. Modify your existing deleteItem function to clear selection
 const deleteItem = async (itemId) => {
+  // Check if in multi-select mode - delete all selected items
+  if (isMultiSelectMode.value && eventHandlersRef.value) {
+    const selectedIds = eventHandlersRef.value.getSelectedItemIds()
+    if (selectedIds && selectedIds.length > 1) {
+      console.log('🗑️ Deleting multiple items:', selectedIds)
+      await deleteMultipleItems(selectedIds)
+      return
+    }
+  }
+
   console.log('🗑️ Deleting item:', itemId)
   hasUnsavedChanges.value = true
 
@@ -1465,6 +1489,46 @@ const deleteItem = async (itemId) => {
   })
 
   console.log('✅ Item deleted successfully')
+}
+
+// Delete multiple selected items
+const deleteMultipleItems = async (itemIds) => {
+  hasUnsavedChanges.value = true
+
+  // Remove from 3D scene first
+  if (sceneManagerRef.value) {
+    for (const id of itemIds) {
+      try {
+        await sceneManagerRef.value.removeSingleItem(id)
+      } catch (error) {
+        console.error(`❌ Failed to remove item ${id} from scene:`, error)
+      }
+    }
+  }
+
+  // Clear selection
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
+  }
+
+  // Remove from items array
+  const newItems = items.value.filter(item => !itemIds.includes(item.id))
+  items.value = newItems
+  lastUpdateSource.value = 'delete'
+
+  // Clear selection state
+  selectedItemId.value = null
+  selectedObjectId.value = null
+
+  saveToHistory({
+    items: newItems,
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value,
+    currentFloorTexture: currentFloorTexture.value,
+    currentWallTexture: currentWallTexture.value
+  })
+
+  console.log(`✅ ${itemIds.length} items deleted successfully`)
 }
 
 const handleUndo = () => {

@@ -2095,7 +2095,8 @@ export class SceneManager {
       onFullModelSwapped?: (model: THREE.Group) => void;
       onProgress?: (progress: number) => void;
     },
-    newPosition?: { x: number, y: number, z: number }
+    newPosition?: { x: number, y: number, z: number },
+    newRotation?: number
   ): Promise<THREE.Group | null> {
     const existingModel = this.existingItems.get(itemId);
     if (!existingModel) {
@@ -2112,10 +2113,12 @@ export class SceneManager {
     // Store original transform before swapping
     const originalPosition = existingModel.position.clone();
     if (newPosition) {
-      console.log('📍 Progressive: Using new position for swap:', newPosition);
       originalPosition.set(newPosition.x, newPosition.y, newPosition.z);
     }
     const originalRotation = existingModel.rotation.clone();
+    if (newRotation !== undefined) {
+      originalRotation.set(0, newRotation, 0);
+    }
     const originalScale = existingModel.scale.clone();
     const originalUserData = { ...existingModel.userData };
 

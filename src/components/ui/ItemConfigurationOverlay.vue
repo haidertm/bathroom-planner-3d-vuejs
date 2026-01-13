@@ -13,12 +13,11 @@
         </button>
 
         <button
-            v-if="!isMultiSelectMode"
             type="button"
             @click="deleteItem"
             :style="deleteButtonStyle"
         >
-          🗑️ Delete
+          🗑️ {{ isMultiSelectMode && selectedCount > 1 ? 'Delete All' : 'Delete' }}
         </button>
       </div>
     </div>
@@ -62,6 +61,10 @@ const props = defineProps({
   isMultiSelectMode: {
     type: Boolean,
     default: false
+  },
+  selectedCount: {
+    type: Number,
+    default: 1
   }
 })
 
@@ -173,28 +176,28 @@ const calculateScreenPosition = () => {
       maxScreenY = Math.max(maxScreenY, screenY)
     })
 
-    // Position at the right edge of the screen-space bounding box, vertically centered
-    let x = maxScreenX
-    let y = (minScreenY + maxScreenY) / 2
+    // Position at the top center of the screen-space bounding box
+    let x = (minScreenX + maxScreenX) / 2
+    let y = minScreenY // Top of bounding box
 
     // Get viewport dimensions
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
 
     // Estimate or get actual overlay dimensions
-    const overlayWidth = overlayRef.value?.offsetWidth || 250 // Fallback to estimated width
-    const overlayHeight = overlayRef.value?.offsetHeight || 60 // Fallback to estimated height
-    const xOffset = 20 // The offset we add in overlayStyle
+    const overlayWidth = overlayRef.value?.offsetWidth || 120 // Fallback to estimated width
+    const overlayHeight = overlayRef.value?.offsetHeight || 50 // Fallback to estimated height
+    const yOffset = 10 // Gap above the object
     const padding = 10 // Additional padding from viewport edge
 
-    // Clamp x to keep overlay within viewport (accounting for offset and width)
-    const minX = padding
-    const maxX = viewportWidth - overlayWidth - xOffset - padding
+    // Clamp x to keep overlay within viewport (centered horizontally)
+    const minX = overlayWidth / 2 + padding
+    const maxX = viewportWidth - overlayWidth / 2 - padding
     x = Math.max(minX, Math.min(x, maxX))
 
-    // Clamp y to keep overlay within viewport (accounting for height and vertical centering)
-    const minY = overlayHeight / 2 + padding
-    const maxY = viewportHeight - overlayHeight / 2 - padding
+    // Clamp y to keep overlay within viewport (positioned above object)
+    const minY = overlayHeight + yOffset + padding
+    const maxY = viewportHeight - padding
     y = Math.max(minY, Math.min(y, maxY))
 
     screenPosition.value = { x, y }
@@ -274,8 +277,8 @@ onBeforeUnmount(() => {
 
 // Computed to check if any buttons would be visible (to avoid empty white box)
 const hasVisibleButtons = computed(() => {
-  // Show rotation toggle if available, OR show delete button if not in multi-select mode
-  return props.showRotationToggle || !props.isMultiSelectMode
+  // Always show delete button, optionally show rotation toggle
+  return true
 })
 
 // Check if the selected item has multiple variants available
@@ -347,23 +350,23 @@ const overlayStyle = computed(() => {
 
   return {
     position: 'fixed',
-    left: `${screenPosition.value.x + 20}px`, // Position to the right with 20px gap
-    top: `${screenPosition.value.y}px`, // Vertically centered with object
+    left: `${screenPosition.value.x}px`,
+    top: `${screenPosition.value.y - 10}px`, // Position above object with 10px gap
     zIndex: '1100',
     pointerEvents: 'all',
-    transform: 'translateY(-50%)' // Center vertically
+    transform: 'translate(-50%, -100%)' // Center horizontally, position above
   }
 })
 
 const controlsContainerStyle = computed(() => ({
   backgroundColor: 'white',
-  borderRadius: '12px',
-  padding: '16px 20px',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+  borderRadius: '8px',
+  padding: '8px 12px',
+  boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
   border: '1px solid #e1e5e9',
   display: 'flex',
   alignItems: 'center',
-  gap: '16px',
+  gap: '8px',
 }))
 
 const buttonsContainerStyle = computed(() => ({
