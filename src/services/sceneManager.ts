@@ -114,8 +114,8 @@ export class SceneManager {
   initializeScene(): SceneComponents {
     // Create scene with better background and atmosphere
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xE6E1DA);
-    this.scene.fog = new THREE.Fog(0xE6E1DA, 1000, 5000);
+    this.scene.background = new THREE.Color(0xF4F0EC); // Warm paper/cream tone matching reference
+    this.scene.fog = new THREE.Fog(0xF4F0EC, 1000, 5000);
 
     // Create camera with better positioning and settings
     // Use markRaw to prevent Vue reactivity overhead on Three.js objects
@@ -394,7 +394,7 @@ export class SceneManager {
       case 'se': return new THREE.Vector3(0, 0, 1);   // South is up - rotates view 180°
       case 'sw': return new THREE.Vector3(1, 0, 0);   // East is up - rotates view 90° CCW
       case 'nw':
-      default:   return new THREE.Vector3(0, 0, -1);  // North is up - default orientation
+      default: return new THREE.Vector3(0, 0, -1);  // North is up - default orientation
     }
   }
 
@@ -1545,7 +1545,7 @@ export class SceneManager {
     // Draw dark circle background for better contrast
     ctx.fillStyle = 'rgba(30, 30, 30, 0.9)';
     ctx.beginPath();
-    ctx.arc(size/2, size/2, size/2 - 8, 0, Math.PI * 2);
+    ctx.arc(size / 2, size / 2, size / 2 - 8, 0, Math.PI * 2);
     ctx.fill();
 
     // Draw bright border
@@ -1557,7 +1557,7 @@ export class SceneManager {
     ctx.font = `${size * 0.55}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(icon, size/2, size/2 + 4);
+    ctx.fillText(icon, size / 2, size / 2 + 4);
 
     // Create sprite from canvas
     const texture = new THREE.CanvasTexture(canvas);
@@ -2486,11 +2486,12 @@ export class SceneManager {
     }
   }
 
-  private setupEnhancedLighting(roomWidth?: number): void {
+  private setupEnhancedLighting(): void {
     if (!this.scene) return;
 
     // Use current room dimensions or defaults
-    const width = roomWidth ?? 300; // Default fallback
+    // const width = roomWidth ?? this.roomWidth;
+    // const height = roomHeight ?? this.roomHeight;
 
     // Check if we're in 2D mode - lights should be configured differently
     const is2DMode = this.viewMode === '2d';
@@ -2499,37 +2500,44 @@ export class SceneManager {
     this.lights.forEach(light => this.scene!.remove(light));
     this.lights = [];
 
-    // 1. AMBIENT LIGHT - provides base illumination
-    // In 2D mode, use balanced ambient light for flat, even illumination
-    const ambientLight = new THREE.AmbientLight(0xffffff, is2DMode ? 1.5 : 0.9);
+    // 1. AMBIENT & HEMISPHERE LIGHTS - Natural soft fill
+    const ambientLight = new THREE.AmbientLight(0xffffff, is2DMode ? 1.5 : 0.8);
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
 
-    // Calculate safe positions based on room size
-    const safeMargin = 30; // 30cm margin from walls
+    if (!is2DMode) {
+      // Hemisphere light for natural top-down lighting
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe0e0e0, 0.8);
+      hemiLight.position.set(0, 500, 0);
+      this.scene.add(hemiLight);
+      this.lights.push(hemiLight);
 
-    // FIXED: Clamp maxX to non-negative to prevent negative positions
-    const maxX = Math.max(0, (width / 2) - safeMargin); // Maximum X position, clamped to 0
+      // 2. DIRECTIONAL LIGHT - softer shadows for natural look
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+      dirLight.position.set(200, 500, 400); // Positioned to light the room more naturally
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      dirLight.shadow.camera.near = 0.5;
+      dirLight.shadow.camera.far = 1500;
+      dirLight.shadow.camera.left = -500;
+      dirLight.shadow.camera.right = 500;
+      dirLight.shadow.camera.top = 500;
+      dirLight.shadow.camera.bottom = -500;
+      dirLight.shadow.bias = -0.0005;
+      this.scene!.add(dirLight);
+      this.lights.push(dirLight);
 
-    // 2. CEILING LIGHTS - positioned relative to room size
-
-    // Inner lights - these stay closer to center, using clamped maxX
-    const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
-    const ceilingY = WALL_SETTINGS.HEIGHT;
-
-    const outerX = Math.max(innerX, Math.min(100, maxX * 0.7));
-    for (const x of [innerX, -innerX, outerX, -outerX]) {
-      const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-      light.position.set(x, ceilingY, 0);
-      // Hide point lights in 2D mode for flat appearance (no light spots on floor)
-      light.visible = !is2DMode;
-      this.scene.add(light);
-      this.lights.push(light);
+      // 3. SOFT BACK GLOW - very subtle, placed far away to avoid hotspots
+      const backGlow = new THREE.PointLight(0xffffff, 150, 1000, 2.0);
+      backGlow.position.set(0, WALL_SETTINGS.HEIGHT, 0); // Center of ceiling
+      this.scene!.add(backGlow);
+      this.lights.push(backGlow);
     }
 
-    // 3. Set renderer exposure - different for 2D mode (darker blueprint look)
+    // 4. Set renderer exposure
     if (this.renderer) {
-      this.renderer.toneMappingExposure = is2DMode ? 0.8 : 1.2;
+      this.renderer.toneMappingExposure = is2DMode ? 0.8 : 1.1;
     }
   }
 
@@ -2566,7 +2574,7 @@ export class SceneManager {
     }
 
     // 🔥 UPDATE: Reposition lights when room dimensions change
-    this.setupEnhancedLighting(roomWidth);
+    this.setupEnhancedLighting();
     // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
       this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
@@ -2577,10 +2585,10 @@ export class SceneManager {
     // FIX: Pass room dimensions to texture manager for proper scaling
     const material = textureManager.createTexturedMaterial(floorTexture, { width: roomWidth, height: roomHeight });
 
-    // Enhanced floor material properties
-    material.roughness = 0;
-    material.metalness = 0.02;
-    material.envMapIntensity = 0.5;
+    // Floor material - clean matte finish, uniform appearance
+    material.roughness = 0.7;
+    material.metalness = 0.0;
+    material.envMapIntensity = 0.05;
 
     return material;
   }
@@ -2628,7 +2636,7 @@ export class SceneManager {
     );
 
     // 🔥 UPDATE: Reposition lights when room dimensions change
-    this.setupEnhancedLighting(roomWidth);
+    this.setupEnhancedLighting();
     // Update wall culling manager with new walls and room size (including notch dimensions)
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight, notchWidth, notchHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
@@ -2645,10 +2653,55 @@ export class SceneManager {
   private createEnhancedWallMaterial(wallTexture: TextureConfig): THREE.MeshStandardMaterial {
     const material = textureManager.createTexturedMaterial(wallTexture);
 
-    // Enhanced wall material properties
-    material.roughness = 0.6;      // Semi-matte for good light distribution
-    material.metalness = 0.0;      // Non-metallic
-    material.envMapIntensity = 0.1; // Minimal reflections
+    // Glossy ceramic tile - smooth shine without harsh spots
+    material.roughness = 0.12;
+    material.metalness = 0.0;
+    material.envMapIntensity = 0.5;
+
+    // Cache key to prevent shader recompilation
+    material.customProgramCacheKey = () => 'wall-gradient-shader-v3';
+
+    // Round effect on wall facing camera, side walls uniform
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace(
+        'void main() {',
+        `varying vec2 vWallUv;
+        varying float vFacingCamera;
+        void main() {`
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        vWallUv = uv;
+        // Calculate how much wall faces camera (dot product with view direction)
+        vec3 worldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+        vec3 viewDir = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);
+        vFacingCamera = dot(worldNormal, viewDir);`
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        'void main() {',
+        `varying vec2 vWallUv;
+        varying float vFacingCamera;
+        void main() {`
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        `#include <dithering_fragment>
+        // Wall facing camera gets circle gradient effect
+        float faceFactor = smoothstep(0.3, 0.8, vFacingCamera);
+
+        // Circle gradient - smooth blend from center to edges
+        float dist = distance(vWallUv, vec2(0.5, 0.5));
+        // Gradual falloff starting earlier for smooth blend
+        float circle = 1.0 - smoothstep(0.0, 0.7, dist);
+        // Smooth gradient from gray edges (0.4) to bright center (1.6)
+        float spotlight = 0.4 + circle * 1.2;
+
+        // Blend: facing camera = circle gradient, side walls = bright uniform
+        float brightness = mix(1.3, spotlight, faceFactor);
+        gl_FragColor.rgb *= brightness;`
+      );
+    };
 
     return material;
   }
