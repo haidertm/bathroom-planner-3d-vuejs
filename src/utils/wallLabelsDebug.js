@@ -2,7 +2,7 @@
 // Easy integration utility for adding wall direction labels to your existing 3D scene
 
 import * as THREE from 'three';
-import { WALL_SETTINGS } from '../constants/dimensions.js';
+import { WALL_SETTINGS } from '../constants/dimensions';
 
 export class WallLabelsDebug {
   constructor() {

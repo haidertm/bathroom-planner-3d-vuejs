@@ -494,7 +494,11 @@ export const positionMirror = (
     // For anchor-based placement, we want the visual bottom at vanityTop + gap,
     // so we need: position.y = vanityTop + gap - floorOffset
     const MIRROR_GAP_ABOVE_VANITY = 20; // 20cm (200mm) gap above vanity top
-    const vanityTopY = (vanity.position[1] || 0) + vanityDimensions.height;
+
+    // Calculate vanity's visual top position
+    // Visual top = scene position.y + floorOffset (where model bottom is) + model height
+    const vanityFloorOffset = vanity.model?.floorOffset || 0;
+    const vanityTopY = (vanity.position[1] || 0) + vanityFloorOffset + vanityDimensions.height;
 
     // Get mirror's floorOffset to compensate for it
     // Visual bottom should be at vanityTopY + gap

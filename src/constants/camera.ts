@@ -65,3 +65,32 @@ export const CAMERA_PRESETS = {
     lookAt: LOOK_AT
   }
 } as const;
+
+// 2D Blueprint View - Orthographic camera settings
+export const ORTHOGRAPHIC_SETTINGS = {
+  // Initial zoom level (1 = 100%, fits room in view)
+  INITIAL_ZOOM: 0.85,  // Slightly zoomed out to show wall labels
+
+  // Zoom constraints
+  MIN_ZOOM: 0.3,   // Zoomed out - see more area
+  MAX_ZOOM: 4,     // Zoomed in - detailed view
+
+  // Camera height above room (cm)
+  HEIGHT: 500,
+
+  // Near/far clipping planes for orthographic camera
+  NEAR: 1,
+  FAR: 1000,
+
+  // Padding around room (multiplier, 1.6 = 60% extra space for wall labels)
+  FRUSTUM_PADDING: 1.6,
+
+  // Pan speed for 2D navigation
+  PAN_SPEED: 1.0,
+
+  // Zoom smoothing factor
+  ZOOM_SMOOTHING: 0.15
+} as const;
+
+// View mode type for 2D/3D switching
+export type ViewMode = '2d' | '3d';

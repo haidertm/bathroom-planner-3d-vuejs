@@ -44,6 +44,11 @@ export class MeasurementSystem {
   private notchHeight: number = 0;
   private existingItems: BathroomItem[] = [];
 
+  // Wall dimension labels (for 2D Blueprint view)
+  private wallDimensionLabels: THREE.Group;
+  private wallDimensionLines: THREE.Group;
+  private wallLabelsVisible: boolean = false;
+
   constructor (scene: THREE.Scene, _camera: THREE.Camera, _renderer: THREE.WebGLRenderer) {
     this.scene = scene;
 
@@ -53,8 +58,16 @@ export class MeasurementSystem {
     this.measurementLines = new THREE.Group();
     this.measurementLines.name = 'MeasurementLines';
 
+    // Create groups for wall dimension labels (2D Blueprint view)
+    this.wallDimensionLabels = new THREE.Group();
+    this.wallDimensionLabels.name = 'WallDimensionLabels';
+    this.wallDimensionLines = new THREE.Group();
+    this.wallDimensionLines.name = 'WallDimensionLines';
+
     this.scene.add(this.measurementLabels);
     this.scene.add(this.measurementLines);
+    this.scene.add(this.wallDimensionLabels);
+    this.scene.add(this.wallDimensionLines);
   }
 
   public setEnabled (enabled: boolean): void {
@@ -89,6 +102,10 @@ export class MeasurementSystem {
     this.notchHeight = notchHeight || 0;
     if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
+    }
+    // Update wall dimension labels if they're visible (2D mode)
+    if (this.wallLabelsVisible) {
+      this.createWallDimensionLabels();
     }
   }
 
@@ -1556,9 +1573,376 @@ export class MeasurementSystem {
     return this.currentMeasurements;
   }
 
-  public dispose (): void {
+  /**
+   * Update the camera reference (for 2D/3D view switching)
+   *
+   * @param _camera - The active camera (perspective or orthographic)
+   *
+   * @remarks
+   * **Intentionally a no-op placeholder.** This method is part of the public API
+   * and is called by SceneManager.updatePostProcessingCamera() when switching
+   * between 2D/3D views. It exists to support future camera-dependent features.
+   *
+   * @todo Potential future enhancements:
+   * - Billboard labels that always face the camera
+   * - Distance-based label scaling for consistent readability
+   * - Camera frustum culling for off-screen measurement labels
+   * - Different label styles for orthographic vs perspective views
+   *
+   * @see SceneManager.updatePostProcessingCamera - Caller of this method
+   */
+  public updateCamera(_camera: THREE.Camera): void {
+    // Intentionally empty - placeholder for future camera-dependent functionality
+  }
+
+  // ============================================================================
+  // WALL DIMENSION LABELS (for 2D Blueprint View)
+  // ============================================================================
+
+  /**
+   * Set wall dimension labels visibility (for 2D/3D mode switching)
+   */
+  public setWallLabelsVisible(visible: boolean): void {
+    this.wallLabelsVisible = visible;
+    this.wallDimensionLabels.visible = visible;
+    this.wallDimensionLines.visible = visible;
+
+    if (visible) {
+      this.createWallDimensionLabels();
+    }
+  }
+
+  /**
+   * Dispose all resources (textures, materials, geometries) in wall dimension groups
+   * Must be called before clearing the groups to prevent GPU memory leaks
+   */
+  private disposeWallDimensionResources(): void {
+    // Dispose label sprites (textures and materials)
+    this.wallDimensionLabels.children.forEach((child) => {
+      if (child instanceof THREE.Sprite) {
+        const material = child.material as THREE.SpriteMaterial;
+        if (material.map) {
+          material.map.dispose();
+        }
+        material.dispose();
+      }
+    });
+
+    // Dispose line geometries and materials
+    this.wallDimensionLines.children.forEach((child) => {
+      if (child instanceof THREE.Line) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => mat.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Create wall dimension labels positioned outside the room boundary
+   * Displays room measurements in traditional blueprint style
+   */
+  private createWallDimensionLabels(): void {
+    // Dispose existing resources before clearing
+    this.disposeWallDimensionResources();
+
+    // Clear existing wall labels
+    this.wallDimensionLabels.clear();
+    this.wallDimensionLines.clear();
+
+    const roomHalfWidth = this.roomWidth / 2;
+    const roomHalfHeight = this.roomHeight / 2;
+    const wallThickness = WALL_SETTINGS.THICKNESS;
+    const labelOffset = 30; // 30cm outside the wall
+    const labelY = 1; // Slightly above floor for visibility in 2D
+
+    // Check if L-shaped room (has notch)
+    const hasNotch = this.notchWidth > 0 && this.notchHeight > 0;
+
+    if (hasNotch) {
+      // L-shaped room: Create labels for 6 wall segments
+      this.createLShapedRoomLabels(roomHalfWidth, roomHalfHeight, wallThickness, labelOffset, labelY);
+    } else {
+      // Rectangular room: Create labels for 4 walls
+      this.createRectangularRoomLabels(roomHalfWidth, roomHalfHeight, wallThickness, labelOffset, labelY);
+    }
+  }
+
+  /**
+   * Create dimension labels for a rectangular room (4 walls)
+   */
+  private createRectangularRoomLabels(
+    roomHalfWidth: number,
+    roomHalfHeight: number,
+    wallThickness: number,
+    labelOffset: number,
+    labelY: number
+  ): void {
+    // South wall (bottom) - full room width
+    this.createWallDimensionLabel(
+      `${this.roomWidth.toFixed(0)} cm`,
+      new THREE.Vector3(0, labelY, roomHalfHeight + wallThickness + labelOffset),
+      this.roomWidth,
+      'horizontal',
+      new THREE.Vector3(-roomHalfWidth, labelY, roomHalfHeight + wallThickness + labelOffset),
+      new THREE.Vector3(roomHalfWidth, labelY, roomHalfHeight + wallThickness + labelOffset)
+    );
+
+    // East wall (right) - full room height
+    this.createWallDimensionLabel(
+      `${this.roomHeight.toFixed(0)} cm`,
+      new THREE.Vector3(roomHalfWidth + wallThickness + labelOffset, labelY, 0),
+      this.roomHeight,
+      'vertical',
+      new THREE.Vector3(roomHalfWidth + wallThickness + labelOffset, labelY, -roomHalfHeight),
+      new THREE.Vector3(roomHalfWidth + wallThickness + labelOffset, labelY, roomHalfHeight)
+    );
+  }
+
+  /**
+   * Create dimension labels for an L-shaped room (6 wall segments)
+   */
+  private createLShapedRoomLabels(
+    roomHalfWidth: number,
+    roomHalfHeight: number,
+    wallThickness: number,
+    labelOffset: number,
+    labelY: number
+  ): void {
+    // Get notch boundaries
+    const notchMinX = -roomHalfWidth;
+    const notchMaxX = -roomHalfWidth + this.notchWidth;
+    const notchMinZ = -roomHalfHeight;
+    const notchMaxZ = -roomHalfHeight + this.notchHeight;
+
+    // South wall (bottom) - full room width
+    this.createWallDimensionLabel(
+      `${this.roomWidth.toFixed(0)} cm`,
+      new THREE.Vector3(0, labelY, roomHalfHeight + wallThickness + labelOffset),
+      this.roomWidth,
+      'horizontal',
+      new THREE.Vector3(-roomHalfWidth, labelY, roomHalfHeight + wallThickness + labelOffset),
+      new THREE.Vector3(roomHalfWidth, labelY, roomHalfHeight + wallThickness + labelOffset)
+    );
+
+    // East wall (right) - full room height
+    this.createWallDimensionLabel(
+      `${this.roomHeight.toFixed(0)} cm`,
+      new THREE.Vector3(roomHalfWidth + wallThickness + labelOffset, labelY, 0),
+      this.roomHeight,
+      'vertical',
+      new THREE.Vector3(roomHalfWidth + wallThickness + labelOffset, labelY, -roomHalfHeight),
+      new THREE.Vector3(roomHalfWidth + wallThickness + labelOffset, labelY, roomHalfHeight)
+    );
+
+    // North wall segment (top) - from notch to east wall
+    const northSegmentWidth = this.roomWidth - this.notchWidth;
+    const northSegmentCenterX = notchMaxX + northSegmentWidth / 2;
+    this.createWallDimensionLabel(
+      `${northSegmentWidth.toFixed(0)} cm`,
+      new THREE.Vector3(northSegmentCenterX, labelY, -roomHalfHeight - wallThickness - labelOffset),
+      northSegmentWidth,
+      'horizontal',
+      new THREE.Vector3(notchMaxX, labelY, -roomHalfHeight - wallThickness - labelOffset),
+      new THREE.Vector3(roomHalfWidth, labelY, -roomHalfHeight - wallThickness - labelOffset)
+    );
+
+    // West wall segment (left) - from notch to south wall
+    const westSegmentHeight = this.roomHeight - this.notchHeight;
+    const westSegmentCenterZ = notchMaxZ + westSegmentHeight / 2;
+    this.createWallDimensionLabel(
+      `${westSegmentHeight.toFixed(0)} cm`,
+      new THREE.Vector3(-roomHalfWidth - wallThickness - labelOffset, labelY, westSegmentCenterZ),
+      westSegmentHeight,
+      'vertical',
+      new THREE.Vector3(-roomHalfWidth - wallThickness - labelOffset, labelY, notchMaxZ),
+      new THREE.Vector3(-roomHalfWidth - wallThickness - labelOffset, labelY, roomHalfHeight)
+    );
+
+    // Notch-east wall (vertical part of notch) - notch height
+    // Position label OUTSIDE (in the notch cutout area, to the LEFT of the wall)
+    this.createWallDimensionLabel(
+      `${this.notchHeight.toFixed(0)} cm`,
+      new THREE.Vector3(notchMaxX - labelOffset, labelY, notchMinZ + this.notchHeight / 2),
+      this.notchHeight,
+      'vertical',
+      new THREE.Vector3(notchMaxX - labelOffset, labelY, notchMinZ),
+      new THREE.Vector3(notchMaxX - labelOffset, labelY, notchMaxZ)
+    );
+
+    // Notch-south wall (horizontal part of notch) - notch width
+    // Position label OUTSIDE (in the notch cutout area, ABOVE the wall)
+    this.createWallDimensionLabel(
+      `${this.notchWidth.toFixed(0)} cm`,
+      new THREE.Vector3(notchMinX + this.notchWidth / 2, labelY, notchMaxZ - labelOffset),
+      this.notchWidth,
+      'horizontal',
+      new THREE.Vector3(notchMinX, labelY, notchMaxZ - labelOffset),
+      new THREE.Vector3(notchMaxX, labelY, notchMaxZ - labelOffset)
+    );
+  }
+
+  /**
+   * Create a single wall dimension label with dimension line
+   */
+  private createWallDimensionLabel(
+    text: string,
+    labelPosition: THREE.Vector3,
+    _dimension: number,
+    _direction: 'horizontal' | 'vertical',
+    lineStart: THREE.Vector3,
+    lineEnd: THREE.Vector3
+  ): void {
+    // Create label sprite with high resolution for crisp text
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    // Use higher resolution for sharper text (3x scale)
+    const pixelRatio = 3;
+    const fontSize = 16 * pixelRatio;
+    const padding = 6 * pixelRatio;
+    const borderRadius = 4 * pixelRatio;
+    const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+
+    context.font = `600 ${fontSize}px ${fontFamily}`;
+    const textWidth = context.measureText(text).width;
+    canvas.width = textWidth + padding * 2;
+    canvas.height = fontSize + padding * 2;
+
+    // Clear and draw background
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'rgba(255, 255, 255, 0.95)';
+    if (context.roundRect) {
+      context.roundRect(0, 0, canvas.width, canvas.height, borderRadius);
+    } else {
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    context.fill();
+
+    // Draw border
+    context.strokeStyle = '#333333';
+    context.lineWidth = 2 * pixelRatio;
+    context.stroke();
+
+    // Draw text
+    context.fillStyle = '#333333';
+    context.font = `600 ${fontSize}px ${fontFamily}`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      alphaTest: 0.1,
+      depthTest: false,
+      depthWrite: false,
+      sizeAttenuation: true
+    });
+
+    const sprite = new THREE.Sprite(material);
+    sprite.position.copy(labelPosition);
+    sprite.renderOrder = 1001;
+
+    // Scale back down to maintain same visual size
+    const scale = 1.0 / pixelRatio;
+    const scaleX = canvas.width * scale;
+    const scaleY = canvas.height * scale;
+    sprite.scale.set(scaleX, scaleY, 1);
+
+    this.wallDimensionLabels.add(sprite);
+
+    // Create dimension line with end markers
+    this.createWallDimensionLine(lineStart, lineEnd);
+  }
+
+  /**
+   * Create dimension line with end markers for wall dimensions
+   */
+  private createWallDimensionLine(start: THREE.Vector3, end: THREE.Vector3): void {
+    // Main dimension line
+    const points = [start, end];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+      color: '#333333',
+      linewidth: 1,
+      transparent: false
+    });
+
+    const line = new THREE.Line(geometry, material);
+    line.renderOrder = 1000;
+    this.wallDimensionLines.add(line);
+
+    // End markers (perpendicular ticks)
+    const markerSize = 8;
+    const isHorizontal = Math.abs(start.z - end.z) < 1;
+
+    // Start marker
+    const startMarkerPoints = isHorizontal
+      ? [
+          new THREE.Vector3(start.x, start.y, start.z - markerSize / 2),
+          new THREE.Vector3(start.x, start.y, start.z + markerSize / 2)
+        ]
+      : [
+          new THREE.Vector3(start.x - markerSize / 2, start.y, start.z),
+          new THREE.Vector3(start.x + markerSize / 2, start.y, start.z)
+        ];
+
+    const startMarkerGeom = new THREE.BufferGeometry().setFromPoints(startMarkerPoints);
+    const startMarker = new THREE.Line(startMarkerGeom, material.clone());
+    startMarker.renderOrder = 1000;
+    this.wallDimensionLines.add(startMarker);
+
+    // End marker
+    const endMarkerPoints = isHorizontal
+      ? [
+          new THREE.Vector3(end.x, end.y, end.z - markerSize / 2),
+          new THREE.Vector3(end.x, end.y, end.z + markerSize / 2)
+        ]
+      : [
+          new THREE.Vector3(end.x - markerSize / 2, end.y, end.z),
+          new THREE.Vector3(end.x + markerSize / 2, end.y, end.z)
+        ];
+
+    const endMarkerGeom = new THREE.BufferGeometry().setFromPoints(endMarkerPoints);
+    const endMarker = new THREE.Line(endMarkerGeom, material.clone());
+    endMarker.renderOrder = 1000;
+    this.wallDimensionLines.add(endMarker);
+  }
+
+  /**
+   * Refresh wall dimension labels (call when room dimensions change)
+   */
+  public refreshWallDimensionLabels(): void {
+    if (this.wallLabelsVisible) {
+      this.createWallDimensionLabels();
+    }
+  }
+
+  public dispose(): void {
     this.clearMeasurements();
+
+    // Dispose wall dimension resources before clearing
+    this.disposeWallDimensionResources();
+    this.wallDimensionLabels.clear();
+    this.wallDimensionLines.clear();
+
     this.scene.remove(this.measurementLabels);
     this.scene.remove(this.measurementLines);
+    this.scene.remove(this.wallDimensionLabels);
+    this.scene.remove(this.wallDimensionLines);
   }
 }
