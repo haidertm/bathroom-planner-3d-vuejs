@@ -134,7 +134,6 @@ export class EventHandlers {
   private multiSelectLocalOffsets: Map<number, THREE.Vector3> = new Map();
   private multiSelectLocalRotations: Map<number, number> = new Map();
   private wasAlreadySelected: boolean = false;
-  private singleItemToastShown: boolean = false; // Flag to prevent showing toast multiple times
 
   // 2D/3D View Mode
   private viewMode: ViewMode = '3d';
@@ -146,18 +145,7 @@ export class EventHandlers {
    */
   public setMultiSelectMode(enabled: boolean): void {
     this.isMultiSelectMode = enabled;
-    this.singleItemToastShown = false; // Reset toast flag when mode changes
     console.log('🔄 Multi-select mode:', enabled ? 'ENABLED' : 'DISABLED');
-
-    // If disabling multi-select and we have multiple items, keep only the last one selected
-    if (!enabled && this.selectedObjects.size > 1) {
-      const lastItem = Array.from(this.selectedObjects.values()).pop();
-      this.clearSelection();
-      if (lastItem) {
-        this.selectObject(lastItem);
-        this.selectedObjects.set(lastItem.userData.itemId, lastItem);
-      }
-    }
   }
 
   /**
@@ -751,16 +739,7 @@ export class EventHandlers {
   /**
    * Show a toast notification
    */
-  private showToast(message: string, type: 'info' | 'warning' | 'error' = 'info'): void {
-    if (this.onShowToast) {
-      this.onShowToast(message, type);
-    } else {
-      // Fallback: dispatch a custom event that can be listened to by the UI
-      window.dispatchEvent(new CustomEvent('show-toast', {
-        detail: { message, type }
-      }));
-    }
-  }
+
 
   private queueUpdate(itemId: number, updateData: UpdateData): void {
     if (this.isDragOperation) {
@@ -1765,11 +1744,6 @@ export class EventHandlers {
    */
   private applyBulkMove(primaryObject: THREE.Object3D, _unconstrainedPrimaryPos?: THREE.Vector3, _idealRot?: number): void {
     if (this.selectedObjects.size <= 1) {
-      // Show toast notification when multi-select mode is enabled but only 1 item is selected
-      if (this.isMultiSelectMode && !this.singleItemToastShown) {
-        this.showToast('Please select more than one item to move together', 'info');
-        this.singleItemToastShown = true; // Prevent showing multiple times during drag
-      }
       return;
     }
 
@@ -1809,8 +1783,8 @@ export class EventHandlers {
           constrainedRotation = primaryRot + localRot; // Keep rigid body rotation
         } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
           // 3D MODE: Apply individual wall constraints
-          // Get current wall for stickiness
           const currentItemWall = this.determineCurrentWall(obj.position);
+          const originalY = targetPos.y; // Preserve Y position
 
           const result = constrainToWalls(
             { x: targetPos.x, y: targetPos.y, z: targetPos.z },
@@ -1826,7 +1800,7 @@ export class EventHandlers {
             },
             currentItemWall
           );
-          constrainedPosition = result.position;
+          constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
           constrainedRotation = result.rotation;
         } else if (movementConfig.cornerInstallOnly) {
           const result = constrainToCorner(
@@ -1896,6 +1870,82 @@ export class EventHandlers {
     // If any object in the group is colliding, set the outline color to red
     if (anyColliding) {
       setOutlineColor(true);
+    }
+  }
+
+  /**
+   * Re-snaps wall-standing items to the nearest wall after a group move.
+   * This ensures items with snapToWall: true maintain their wall attachment
+   * when moved as part of a multi-selection group.
+   */
+  private snapWallStandingItemsOnDrop(): void {
+    // Only process if we have a multi-select group
+    if (this.selectedObjects.size <= 1) return;
+
+    // In 2D mode, treat group as rigid body - no individual snapping
+    if (this.viewMode === '2d') return;
+
+    const updatedItems: Array<{id: number, position: [number, number, number], rotation: number}> = [];
+
+    this.selectedObjects.forEach((obj, id) => {
+      const itemType = obj.userData.type as ComponentType;
+      const itemScale = obj.scale.x;
+      const itemData = this.getCurrentItemData(id);
+      const movementConfig = getMovementConfig(itemType, itemData);
+
+      // Only process items with snapToWall: true (wall-standing units)
+      if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+        const currentWall = this.determineCurrentWall(obj.position);
+        const originalY = obj.position.y; // Preserve original Y position
+
+        const result = constrainToWalls(
+          { x: obj.position.x, y: obj.position.y, z: obj.position.z },
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          {
+            type: itemType,
+            scale: itemScale,
+            orientation: obj.userData.orientation,
+            item: itemData,
+            notchWidth: this.notchWidthRef.value,
+            notchHeight: this.notchHeightRef.value
+          },
+          currentWall
+        );
+
+        // Update position (preserve original Y, only snap X/Z to wall)
+        obj.position.set(result.position.x, originalY, result.position.z);
+        obj.rotation.y = result.rotation;
+
+        updatedItems.push({
+          id,
+          position: [result.position.x, originalY, result.position.z],
+          rotation: result.rotation
+        });
+
+        // Update schematic overlay position if in 2D mode toggle
+        if (this.sceneManager?.updateSchematicPosition) {
+          this.sceneManager.updateSchematicPosition(id);
+        }
+      }
+    });
+
+    // Batch update the data model with all snapped positions
+    if (updatedItems.length > 0) {
+      this.setItems((prevItems: BathroomItem[]) => {
+        return prevItems.map(item => {
+          const updated = updatedItems.find(u => u.id === item.id);
+          if (updated) {
+            return {
+              ...item,
+              position: updated.position,
+              rotation: updated.rotation
+            };
+          }
+          return item;
+        });
+      });
+
     }
   }
 
@@ -3144,6 +3194,8 @@ export class EventHandlers {
         if (isColliding && this.preventCollisionPlacementRef.value) {
           console.log('⚠️ Collision detected but placement allowed (prevention disabled)');
         }
+
+        this.snapWallStandingItemsOnDrop();
       }
     }
 
@@ -3719,6 +3771,8 @@ export class EventHandlers {
         setOutlineColor(isColliding);
 
         console.log('🎯 Final touch position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
+
+        this.snapWallStandingItemsOnDrop();
       }
     }
 
@@ -3900,6 +3954,10 @@ export class EventHandlers {
     }
 
     console.log('🧹 clearSelection completed');
+  }
+
+  public getSelectedItemIds(): number[] {
+    return Array.from(this.selectedObjects.keys());
   }
 
   public setRotationArrowsEnabled(enabled: boolean): void {
