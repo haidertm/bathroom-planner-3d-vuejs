@@ -31,7 +31,7 @@
     <ItemConfigurationOverlay
         :selected-item="selectedBathroomItem"
         :scene="sceneManagerRef?.scene || null"
-        :camera="sceneManagerRef?.camera || null"
+        :camera="sceneManagerRef?.getActiveCamera() || null"
         :renderer="sceneManagerRef?.renderer || null"
         :rotation-enabled="rotationArrowsEnabled"
         :is-dragging="isDraggingObject"
@@ -97,6 +97,13 @@
         size="large"
     />
 
+    <!--    2D/3D View Mode Toggle -->
+    <ViewModeToggle
+        :style="viewModeToggleStyle"
+        v-model="viewMode"
+        @mode-change="handleViewModeChange"
+    />
+
     <!-- Instructions Popup -->
     <div v-if="showInstructions" :style="popupOverlayStyle" @click="closeInstructions">
       <div :style="popupContentStyle" @click.stop>
@@ -152,6 +159,7 @@ import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
 import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
+import ViewModeToggle from '../components/ui/ViewModeToggle.vue';
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS, WALL_SETTINGS } from '../constants/dimensions.js'
@@ -163,6 +171,9 @@ import { getTemplateById } from '../constants/templates'
 // Services
 import { SceneManager } from '../services/sceneManager'
 import { EventHandlers } from '../services/eventHandlers'
+
+// Analytics
+import { useGtm } from '@gtm-support/vue-gtm'
 
 // Models
 import { createModel } from '../models/bathroomFixtures.ts'
@@ -185,6 +196,9 @@ import { autoPositionItem } from '../utils/autoPositioning'
 
 // Router
 const router = useRouter()
+
+// Analytics
+const gtm = useGtm()
 
 // Refs - Use shallowRef for Three.js objects to prevent reactivity issues
 const mountRef = ref(null)
@@ -789,6 +803,9 @@ const preventCollisionPlacement = ref(true)
 //For Measurement
 const measurementEnabled = ref(false)
 const currentMeasurements = ref(null)
+
+// For 2D/3D View Mode Toggle
+const viewMode = ref('3d') // '2d' or '3d'
 // Add method to handle measurement toggle
 const handleToggleMeasurements = () => {
   measurementEnabled.value = !measurementEnabled.value
@@ -856,17 +873,26 @@ const toggleButtonStyle = computed(() => ({
   whiteSpace: 'nowrap'
 }))
 
+// Single source of truth for sidebar offset calculation
+// Main sidebar is 480px wide, add extra space (540px) for tooltips to be visible
+const sidebarOffset = computed(() => showTexturePanel.value ? '540px' : '20px')
+
+// Style for 2D/3D View Mode Toggle - positioned ABOVE MeasurementToggle, next to main sidebar
+const viewModeToggleStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
+  zIndex: 100
+}))
+
+// Style for MeasurementToggle - positioned next to main sidebar, BELOW ViewModeToggle
 const toggleMeasurementStyle = computed(() => ({
-  position: 'absolute',
-  left: isMobileDevice.value ? '' : '28%', // Changed from left to right
-  right: isMobileDevice.value ? '12%' : '',
-  bottom: isMobileDevice.value ? '10%' : '30px',
-  color: 'white',
-  padding: '5px 10px',
-  borderRadius: '4px',
-  fontSize: isMobileDevice.value ? '16px' : '20px',
-  maxWidth: isMobileDevice.value ? '280px' : '320px',
-  lineHeight: '1.2'
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '80px' : '30px',
+  zIndex: 100
 }))
 
 const popupOverlayStyle = computed(() => ({
@@ -1419,6 +1445,41 @@ const handleMeasurementUpdate = () => {
 const handleMeasurementToggle = () => {
   handleToggleMeasurements()
 }
+
+// Handle 2D/3D View Mode Change
+const handleViewModeChange = async (mode) => {
+  console.log('🔄 View mode changing to:', mode)
+
+  if (!sceneManagerRef.value) {
+    console.warn('SceneManager not initialized yet')
+    return
+  }
+
+  try {
+    // Use SceneManager as single source of truth for view mode
+    // SceneManager.setViewMode internally updates EventHandlers
+    // Await the scene change BEFORE updating UI state to keep them consistent
+    await sceneManagerRef.value.setViewMode(mode)
+
+    // Only update UI state after scene manager succeeds
+    viewMode.value = mode
+
+    // Track view mode change in GTM
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'view_mode_change',
+        category: 'Bathroom Planner',
+        action: 'Switch View Mode',
+        label: mode === '2d' ? '2D Blueprint' : '3D Perspective',
+        viewMode: mode
+      })
+    }
+  } catch (error) {
+    // Don't change viewMode on error - keep UI consistent with actual scene state
+    console.error('❌ Failed to change view mode:', error)
+  }
+}
+
 // Add this function to load saved room dimensions
 const loadSavedRoomDimensions = () => {
   const dimensions = loadRoomDimensionsFromStorage()
@@ -1849,6 +1910,9 @@ const loadDesignData = (designData) => {
       throw new Error('Invalid design data')
     }
 
+    // Clear stale L-shape corner (saved designs don't support L-shape yet)
+    localStorage.removeItem('l-shape-corner-active')
+
     // Load items (furniture, fixtures, etc.)
     items.value = designData.items || []
 
@@ -1946,6 +2010,11 @@ onMounted(async () => {
         pendingCameraPreset = template.cameraPreset
         console.log('📷 Pre-setting template camera preset:', template.cameraPreset)
       }
+
+      // Clear stale L-shape corner when loading template (templates don't support L-shape yet)
+      if (template.roomShape !== 'l-shape') {
+        localStorage.removeItem('l-shape-corner-active')
+      }
     }
   } else if (!hasDesignToLoad) {
     // No template or design, load saved room dimensions
@@ -1983,8 +2052,14 @@ onMounted(async () => {
       pendingCameraPosition = cornerCameraPositions[lShapeCorner] || cornerCameraPositions['nw']
       console.log('📷 L-shape corner camera position:', lShapeCorner, pendingCameraPosition)
 
-      // Clean up the corner selection from localStorage after using it
+      // Persist corner for 2D/3D view transitions (sceneManager needs this)
+      localStorage.setItem('l-shape-corner-active', lShapeCorner)
+
+      // Clean up the initial corner selection from localStorage after using it
       localStorage.removeItem('l-shape-corner')
+    } else {
+      // Clear stale L-shape corner from previous sessions when loading non-L-shaped room
+      localStorage.removeItem('l-shape-corner-active')
     }
   }
 
@@ -2022,6 +2097,7 @@ onMounted(async () => {
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
+  eventHandlersRef.value.setSceneManager(sceneManagerRef.value);
 
   // Apply pending camera position BEFORE rendering starts (to avoid visual jump)
   if (pendingCameraPosition) {
@@ -2035,7 +2111,7 @@ onMounted(async () => {
   // Set up initial scene
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value, notchWidth.value, notchHeight.value)
   eventHandlersRef.value.setWallCulling(sceneManager.wallCulling)
 
   if (sceneManagerRef.value.debugLabelsEnabled && sceneManagerRef.value.wallLabelsDebug) {
@@ -2129,9 +2205,12 @@ onMounted(async () => {
 watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], () => {
   if (!sceneManagerRef.value) return
 
+  // Update internal dimensions first so orthographic frustum is recalculated
+  sceneManagerRef.value.setRoomDimensions(roomWidth.value, roomHeight.value)
+
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
-  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value)
+  sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value, notchWidth.value, notchHeight.value)
 })
 
 // Watch for texture changes
@@ -2212,6 +2291,9 @@ onUnmounted(() => {
   if (sceneManagerRef.value) {
     sceneManagerRef.value.dispose()
   }
+
+  // Clear session-specific L-shape corner to prevent stale camera angles
+  localStorage.removeItem('l-shape-corner-active')
 })
 
 // NEW: Smart incremental update handler

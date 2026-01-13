@@ -111,6 +111,7 @@ import { useRouter } from 'vue-router'
 import { useGtm } from '@gtm-support/vue-gtm'
 import TemplateSelectionModal from '../components/ui/TemplateSelectionModal.vue'
 import { setSelectedRoomShape } from '../utils/roomShape'
+import { getTemplateById } from '../constants/templates'
 
 const gtm = useGtm()
 
@@ -153,6 +154,24 @@ const selectTemplate = (templateId) => {
 
   const actualTemplateId = templateMap[templateId] || templateId
   console.log('Selected template:', templateId, '-> Loading:', actualTemplateId)
+
+  // Get template config to extract room shape
+  const templateConfig = getTemplateById(actualTemplateId)
+  if (templateConfig) {
+    const roomShape = templateConfig.roomShape
+    setSelectedRoomShape(roomShape)
+
+    // Track room shape selection (same format as handleStartFromScratch)
+    if (gtm?.enabled()) {
+      const isLShape = roomShape === 'l-shape'
+      gtm.trackEvent({
+        event: 'room_shape_selected',
+        category: 'Room Configuration',
+        action: 'Select Shape',
+        label: isLShape ? `l-shape-unknown` : roomShape,
+      })
+    }
+  }
 
   // Store template ID for Planner to load
   localStorage.setItem('selected-template', actualTemplateId)
