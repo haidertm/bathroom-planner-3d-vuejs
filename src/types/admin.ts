@@ -67,6 +67,9 @@ export interface AdminProduct {
   lastSyncedAt?: number;
 }
 
+// Updated At filter preset options
+export type UpdatedAtPreset = 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom';
+
 // Filter state for product list
 export interface ProductFilters {
   categories: ComponentType[];
@@ -75,9 +78,16 @@ export interface ProductFilters {
     min: number | null;
     max: number | null;
   };
-  sortBy: 'name' | 'price' | 'category' | 'variants' | 'status' | 'createdAt';
+  sortBy: 'name' | 'price' | 'category' | 'variants' | 'status' | 'createdAt' | 'updatedAt';
   sortOrder: 'asc' | 'desc';
   enabledFilter: 'all' | 'enabled' | 'disabled';
+  updatedAtFilter: {
+    preset: UpdatedAtPreset;
+    customRange: {
+      from: string | null; // ISO date string
+      to: string | null;   // ISO date string
+    };
+  };
 }
 
 // Pagination state
@@ -122,6 +132,13 @@ export const DEFAULT_FILTERS: ProductFilters = {
   sortBy: 'name',
   sortOrder: 'asc',
   enabledFilter: 'all',
+  updatedAtFilter: {
+    preset: 'all',
+    customRange: {
+      from: null,
+      to: null,
+    },
+  },
 };
 
 // Default pagination

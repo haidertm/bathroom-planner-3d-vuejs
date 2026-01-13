@@ -196,6 +196,62 @@ const applyLocalFilters = (allProducts: AdminProduct[]): AdminProduct[] => {
     result = result.filter(p => p.enabled === enabledValue);
   }
 
+  // Filter by updatedAt
+  if (filters.value.updatedAtFilter.preset !== 'all') {
+    const now = new Date();
+    let fromDate: Date | null = null;
+    let toDate: Date | null = null;
+
+    switch (filters.value.updatedAtFilter.preset) {
+      case 'today': {
+        fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        toDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        break;
+      }
+      case 'yesterday': {
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        fromDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+        toDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+        break;
+      }
+      case 'week': {
+        fromDate = new Date(now);
+        fromDate.setDate(fromDate.getDate() - 7);
+        fromDate.setHours(0, 0, 0, 0);
+        toDate = now;
+        break;
+      }
+      case 'month': {
+        fromDate = new Date(now);
+        fromDate.setDate(fromDate.getDate() - 30);
+        fromDate.setHours(0, 0, 0, 0);
+        toDate = now;
+        break;
+      }
+      case 'custom': {
+        const { from, to } = filters.value.updatedAtFilter.customRange;
+        if (from) {
+          fromDate = new Date(from);
+          fromDate.setHours(0, 0, 0, 0);
+        }
+        if (to) {
+          toDate = new Date(to);
+          toDate.setHours(23, 59, 59, 999);
+        }
+        break;
+      }
+    }
+
+    result = result.filter(p => {
+      if (!p.updatedAt) return false;
+      const productUpdatedAt = new Date(p.updatedAt);
+      if (fromDate && productUpdatedAt < fromDate) return false;
+      if (toDate && productUpdatedAt > toDate) return false;
+      return true;
+    });
+  }
+
   // Sort
   result.sort((a, b) => {
     let comparison = 0;
@@ -227,6 +283,9 @@ const applyLocalFilters = (allProducts: AdminProduct[]): AdminProduct[] => {
         break;
       case 'createdAt':
         comparison = (a.createdAt || 0) - (b.createdAt || 0);
+        break;
+      case 'updatedAt':
+        comparison = (a.updatedAt || 0) - (b.updatedAt || 0);
         break;
     }
     return filters.value.sortOrder === 'asc' ? comparison : -comparison;
@@ -358,6 +417,10 @@ export function useAdminProducts() {
       sortBy: 'name',
       sortOrder: 'asc',
       enabledFilter: 'all',
+      updatedAtFilter: {
+        preset: 'all',
+        customRange: { from: null, to: null },
+      },
     };
   };
 
@@ -399,6 +462,62 @@ export function useAdminProducts() {
       console.error('Failed to toggle product status:', err);
       return false;
     }
+  };
+
+  // Bulk enable products
+  const bulkEnableProducts = async (productIds: Set<string>): Promise<{ success: number; failed: number }> => {
+    let success = 0;
+    let failed = 0;
+
+    const productsToUpdate = products.value.filter(p => productIds.has(p.id) && !p.enabled && p.dbId);
+
+    for (const product of productsToUpdate) {
+      try {
+        const updated = await productApi.toggleEnabled(product.dbId!);
+        const index = products.value.findIndex(p => p.id === product.id);
+        if (index !== -1) {
+          products.value[index] = updated;
+        }
+        success++;
+      } catch (err) {
+        console.error(`Failed to enable product ${product.id}:`, err);
+        failed++;
+      }
+    }
+
+    if (success > 0) {
+      await fetchStats();
+    }
+
+    return { success, failed };
+  };
+
+  // Bulk disable products
+  const bulkDisableProducts = async (productIds: Set<string>): Promise<{ success: number; failed: number }> => {
+    let success = 0;
+    let failed = 0;
+
+    const productsToUpdate = products.value.filter(p => productIds.has(p.id) && p.enabled && p.dbId);
+
+    for (const product of productsToUpdate) {
+      try {
+        const updated = await productApi.toggleEnabled(product.dbId!);
+        const index = products.value.findIndex(p => p.id === product.id);
+        if (index !== -1) {
+          products.value[index] = updated;
+        }
+        success++;
+      } catch (err) {
+        console.error(`Failed to disable product ${product.id}:`, err);
+        failed++;
+      }
+    }
+
+    if (success > 0) {
+      await fetchStats();
+    }
+
+    return { success, failed };
   };
 
   // Update product
@@ -491,6 +610,8 @@ export function useAdminProducts() {
     // CRUD operations
     getProduct,
     toggleProductEnabled,
+    bulkEnableProducts,
+    bulkDisableProducts,
     updateProduct,
     createProduct,
     deleteProduct,

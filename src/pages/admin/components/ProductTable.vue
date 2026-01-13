@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from 'vue';
+import { ref, computed, onBeforeUnmount } from 'vue';
 import type { AdminProduct, ProductFilters } from '../../../types/admin';
 
 type SortColumn = ProductFilters['sortBy'];
 type SortOrder = ProductFilters['sortOrder'];
 
-defineProps<{
+const props = defineProps<{
   products: AdminProduct[];
   isLoading?: boolean;
   useLocalFallback?: boolean;
   sortBy?: SortColumn;
   sortOrder?: SortOrder;
+  selectedProducts?: Set<string>;
 }>();
 
 const emit = defineEmits<{
@@ -19,7 +20,45 @@ const emit = defineEmits<{
   (e: 'edit-product', product: AdminProduct): void;
   (e: 'duplicate-product', product: AdminProduct): void;
   (e: 'sort', column: SortColumn): void;
+  (e: 'selection-change', productIds: Set<string>): void;
 }>();
+
+// Selection state
+const localSelectedProducts = computed(() => props.selectedProducts ?? new Set<string>());
+
+const isAllSelected = computed(() => {
+  if (props.products.length === 0) return false;
+  return props.products.every(p => localSelectedProducts.value.has(p.id));
+});
+
+const isSomeSelected = computed(() => {
+  if (props.products.length === 0) return false;
+  const selectedCount = props.products.filter(p => localSelectedProducts.value.has(p.id)).length;
+  return selectedCount > 0 && selectedCount < props.products.length;
+});
+
+const toggleSelectAll = () => {
+  const newSelection = new Set(localSelectedProducts.value);
+  if (isAllSelected.value) {
+    // Deselect all current page products
+    props.products.forEach(p => newSelection.delete(p.id));
+  } else {
+    // Select all current page products
+    props.products.forEach(p => newSelection.add(p.id));
+  }
+  emit('selection-change', newSelection);
+};
+
+const toggleProductSelection = (e: Event, product: AdminProduct) => {
+  e.stopPropagation();
+  const newSelection = new Set(localSelectedProducts.value);
+  if (newSelection.has(product.id)) {
+    newSelection.delete(product.id);
+  } else {
+    newSelection.add(product.id);
+  }
+  emit('selection-change', newSelection);
+};
 
 // Column definitions for sortable headers
 const sortableColumns: { key: SortColumn; label: string }[] = [
@@ -118,6 +157,17 @@ const handleSelectProduct = (product: AdminProduct) => {
     <table class="product-table">
       <thead>
         <tr>
+          <th scope="col" class="checkbox-header">
+            <label class="checkbox-container" @click.stop>
+              <input
+                type="checkbox"
+                :checked="isAllSelected"
+                :indeterminate="isSomeSelected"
+                @change="toggleSelectAll"
+              />
+              <span class="checkmark" :class="{ 'indeterminate': isSomeSelected }"></span>
+            </label>
+          </th>
           <th
             v-for="col in sortableColumns"
             :key="col.key"
@@ -178,6 +228,7 @@ const handleSelectProduct = (product: AdminProduct) => {
         <!-- Loading skeleton rows -->
         <template v-if="isLoading">
           <tr v-for="i in 5" :key="`skeleton-${i}`" class="skeleton-row">
+            <td><div class="skeleton skeleton-checkbox"></div></td>
             <td>
               <div class="product-cell">
                 <div class="skeleton skeleton-image"></div>
@@ -202,10 +253,21 @@ const handleSelectProduct = (product: AdminProduct) => {
             :key="product.id"
             @click="handleSelectProduct(product)"
             class="product-row"
+            :class="{ 'row-selected': localSelectedProducts.has(product.id) }"
             tabindex="0"
             @keydown.enter="handleSelectProduct(product)"
             @keydown.space.prevent="handleSelectProduct(product)"
           >
+            <td class="checkbox-cell" @click.stop>
+              <label class="checkbox-container">
+                <input
+                  type="checkbox"
+                  :checked="localSelectedProducts.has(product.id)"
+                  @change="(e) => toggleProductSelection(e, product)"
+                />
+                <span class="checkmark"></span>
+              </label>
+            </td>
             <td>
               <div class="product-cell">
                 <img
@@ -304,7 +366,7 @@ const handleSelectProduct = (product: AdminProduct) => {
 
           <!-- Empty state -->
           <tr v-if="products.length === 0">
-            <td colspan="6" class="empty-state">
+            <td colspan="7" class="empty-state">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
               </svg>
@@ -639,6 +701,88 @@ const handleSelectProduct = (product: AdminProduct) => {
   width: 50px;
   height: 20px;
   border-radius: 4px;
+}
+
+.skeleton-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+/* Checkbox styles */
+.checkbox-header,
+.checkbox-cell {
+  width: 48px;
+  padding: 14px 12px !important;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  width: 18px;
+  height: 18px;
+  background-color: #fff;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-container:hover .checkmark {
+  border-color: var(--primary-color, #29275B);
+}
+
+.checkbox-container input:checked ~ .checkmark {
+  background-color: var(--primary-color, #29275B);
+  border-color: var(--primary-color, #29275B);
+}
+
+.checkbox-container input:checked ~ .checkmark::after {
+  content: '';
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.checkmark.indeterminate {
+  background-color: var(--primary-color, #29275B);
+  border-color: var(--primary-color, #29275B);
+}
+
+.checkmark.indeterminate::after {
+  content: '';
+  width: 8px;
+  height: 2px;
+  background-color: white;
+}
+
+/* Selected row highlight */
+.product-row.row-selected {
+  background-color: #f0f0ff;
+}
+
+.product-row.row-selected:hover {
+  background-color: #e8e8f8;
 }
 
 /* Mobile styles */

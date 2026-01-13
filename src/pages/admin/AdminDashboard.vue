@@ -82,9 +82,70 @@ const {
   setPage,
   setItemsPerPage,
   toggleProductEnabled,
+  bulkEnableProducts,
+  bulkDisableProducts,
   createProduct,
   refreshProducts,
 } = useAdminProducts();
+
+// Bulk selection state
+const selectedProducts = ref<Set<string>>(new Set());
+const isBulkActionLoading = ref(false);
+
+const selectedCount = computed(() => selectedProducts.value.size);
+
+const handleSelectionChange = (newSelection: Set<string>) => {
+  selectedProducts.value = newSelection;
+};
+
+const clearSelection = () => {
+  selectedProducts.value = new Set();
+};
+
+// Bulk action handlers
+const handleBulkEnable = async () => {
+  if (selectedProducts.value.size === 0) return;
+
+  isBulkActionLoading.value = true;
+  const result = await bulkEnableProducts(selectedProducts.value);
+  isBulkActionLoading.value = false;
+
+  if (result.success > 0) {
+    toast.success(`Enabled ${result.success} product${result.success > 1 ? 's' : ''}`);
+    trackAdminEvent('bulk_enable', {
+      success_count: result.success,
+      failed_count: result.failed,
+      total_selected: selectedProducts.value.size,
+    });
+  }
+  if (result.failed > 0) {
+    toast.error(`Failed to enable ${result.failed} product${result.failed > 1 ? 's' : ''}`);
+  }
+
+  clearSelection();
+};
+
+const handleBulkDisable = async () => {
+  if (selectedProducts.value.size === 0) return;
+
+  isBulkActionLoading.value = true;
+  const result = await bulkDisableProducts(selectedProducts.value);
+  isBulkActionLoading.value = false;
+
+  if (result.success > 0) {
+    toast.success(`Disabled ${result.success} product${result.success > 1 ? 's' : ''}`);
+    trackAdminEvent('bulk_disable', {
+      success_count: result.success,
+      failed_count: result.failed,
+      total_selected: selectedProducts.value.size,
+    });
+  }
+  if (result.failed > 0) {
+    toast.error(`Failed to disable ${result.failed} product${result.failed > 1 ? 's' : ''}`);
+  }
+
+  clearSelection();
+};
 
 const {
   parseFiltersFromUrl,
@@ -318,6 +379,15 @@ const handleEnabledFilterUpdate = (value: ProductFilters['enabledFilter']) => {
   trackAdminEvent('filter_enabled_status', { enabled_filter: value });
 };
 
+const handleUpdatedAtFilterUpdate = (value: ProductFilters['updatedAtFilter']) => {
+  setFilter('updatedAtFilter', value);
+  trackAdminEvent('filter_updated_at', {
+    preset: value.preset,
+    has_custom_from: !!value.customRange.from,
+    has_custom_to: !!value.customRange.to,
+  });
+};
+
 const handleClearFilters = () => {
   clearFilters();
   clearUrlFilters();
@@ -449,10 +519,52 @@ const mainContentStyle = computed(() => ({
           @toggle-category="handleCategoryToggle"
           @update:price-range="handlePriceRangeUpdate"
           @update:enabled-filter="handleEnabledFilterUpdate"
+          @update:updated-at-filter="handleUpdatedAtFilterUpdate"
           @clear-filters="handleClearFilters"
           @export-csv="exportToCSV"
           @add-product="showAddProductModal = true"
         />
+
+        <!-- Bulk Action Bar -->
+        <Transition name="slide-down">
+          <div v-if="selectedCount > 0" class="bulk-action-bar">
+            <div class="bulk-action-info">
+              <span class="selected-count">{{ selectedCount }}</span>
+              <span class="selected-label">product{{ selectedCount > 1 ? 's' : '' }} selected</span>
+            </div>
+            <div class="bulk-action-buttons">
+              <button
+                class="bulk-btn bulk-btn-enable"
+                :disabled="isBulkActionLoading || useLocalFallback"
+                @click="handleBulkEnable"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Enable
+              </button>
+              <button
+                class="bulk-btn bulk-btn-disable"
+                :disabled="isBulkActionLoading || useLocalFallback"
+                @click="handleBulkDisable"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                Disable
+              </button>
+              <button
+                class="bulk-btn bulk-btn-clear"
+                @click="clearSelection"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </Transition>
 
         <!-- Products Table -->
         <ProductTable
@@ -461,11 +573,13 @@ const mainContentStyle = computed(() => ({
           :use-local-fallback="useLocalFallback"
           :sort-by="filters.sortBy"
           :sort-order="filters.sortOrder"
+          :selected-products="selectedProducts"
           @select-product="openProductDrawer"
           @toggle-enabled="handleToggleEnabled"
           @edit-product="handleEditProduct"
           @duplicate-product="handleDuplicateProduct"
           @sort="handleColumnSort"
+          @selection-change="handleSelectionChange"
         />
 
         <!-- Pagination -->
@@ -588,6 +702,124 @@ const mainContentStyle = computed(() => ({
 
   .modal-content {
     max-height: 95vh;
+  }
+}
+
+/* Bulk Action Bar */
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: var(--primary-color, #29275B);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(41, 39, 91, 0.2);
+}
+
+.bulk-action-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.selected-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.selected-label {
+  font-size: 14px;
+}
+
+.bulk-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bulk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulk-btn-enable {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.bulk-btn-enable:hover:not(:disabled) {
+  background-color: #bbf7d0;
+}
+
+.bulk-btn-disable {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.bulk-btn-disable:hover:not(:disabled) {
+  background-color: #fecaca;
+}
+
+.bulk-btn-clear {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.bulk-btn-clear:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Slide transition */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+@media (max-width: 767px) {
+  .bulk-action-bar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .bulk-action-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .bulk-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
   }
 }
 </style>

@@ -210,6 +210,60 @@ export const productApi = {
     if (filters.sortOrder) {
       params.set('sortOrder', filters.sortOrder);
     }
+    // Updated At filter
+    if (filters.updatedAtFilter && filters.updatedAtFilter.preset !== 'all') {
+      const now = new Date();
+      let fromDate: Date | null = null;
+      let toDate: Date | null = null;
+
+      switch (filters.updatedAtFilter.preset) {
+        case 'today': {
+          fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          toDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          break;
+        }
+        case 'yesterday': {
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          fromDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+          toDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate(), 23, 59, 59, 999);
+          break;
+        }
+        case 'week': {
+          fromDate = new Date(now);
+          fromDate.setDate(fromDate.getDate() - 7);
+          fromDate.setHours(0, 0, 0, 0);
+          toDate = now;
+          break;
+        }
+        case 'month': {
+          fromDate = new Date(now);
+          fromDate.setDate(fromDate.getDate() - 30);
+          fromDate.setHours(0, 0, 0, 0);
+          toDate = now;
+          break;
+        }
+        case 'custom': {
+          const { from, to } = filters.updatedAtFilter.customRange;
+          if (from) {
+            fromDate = new Date(from);
+            fromDate.setHours(0, 0, 0, 0);
+          }
+          if (to) {
+            toDate = new Date(to);
+            toDate.setHours(23, 59, 59, 999);
+          }
+          break;
+        }
+      }
+
+      if (fromDate) {
+        params.set('updatedFrom', fromDate.toISOString());
+      }
+      if (toDate) {
+        params.set('updatedTo', toDate.toISOString());
+      }
+    }
     if (pagination.currentPage) {
       params.set('page', String(pagination.currentPage));
     }
