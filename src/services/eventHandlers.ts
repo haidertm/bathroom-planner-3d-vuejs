@@ -3099,26 +3099,63 @@ export class EventHandlers {
     // Handle collision prevention and snap-back logic
     if (this.isDragging && this.selectedObject) {
       window.dispatchEvent(new CustomEvent('object-moved'));
-      const objectType = this.selectedObject.userData.type as ComponentType;
-      const objectScale = this.selectedObject.scale.x;
-      const itemId = this.selectedObject.userData.itemId as number;
       const currentItems = this.getCurrentItems();
-      const currentItem = currentItems.find(item => item.id === itemId);
-      const finalPosition = this.selectedObject.position;
-      // finalPosition already declared above
-      const isColliding = wouldCollideWithExistingOrWalls(
-        { x: finalPosition.x, y: finalPosition.y, z: finalPosition.z },
-        objectType,
-        objectScale,
-        itemId,
-        currentItems,
-        this.roomWidthRef.value,
-        this.roomHeightRef.value,
-        currentItem,
-        this.selectedObject.rotation.y,
-        this.notchWidthRef.value,
-        this.notchHeightRef.value
-      );
+
+      // Check collision for ALL selected objects in multiselect mode
+      let isColliding = false;
+
+      if (this.isMultiSelectMode && this.selectedObjects.size > 1) {
+        // Check each selected object for collision
+        for (const [id, obj] of this.selectedObjects) {
+          const objType = obj.userData.type as ComponentType;
+          const objScale = obj.scale.x;
+          const objItem = currentItems.find(item => item.id === id);
+          const objPosition = obj.position;
+
+          const objColliding = wouldCollideWithExistingOrWalls(
+            { x: objPosition.x, y: objPosition.y, z: objPosition.z },
+            objType,
+            objScale,
+            id,
+            currentItems,
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            objItem,
+            obj.rotation.y,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+
+          if (objColliding) {
+            isColliding = true;
+            console.log(`⚠️ Multiselect collision detected for item ${id}`);
+            break; // One collision is enough to trigger snap-back
+          }
+        }
+      } else {
+        // Single object collision check
+        const objectType = this.selectedObject.userData.type as ComponentType;
+        const objectScale = this.selectedObject.scale.x;
+        const itemId = this.selectedObject.userData.itemId as number;
+        const currentItem = currentItems.find(item => item.id === itemId);
+        const finalPosition = this.selectedObject.position;
+
+        isColliding = wouldCollideWithExistingOrWalls(
+          { x: finalPosition.x, y: finalPosition.y, z: finalPosition.z },
+          objectType,
+          objectScale,
+          itemId,
+          currentItems,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          currentItem,
+          this.selectedObject.rotation.y,
+          this.notchWidthRef.value,
+          this.notchHeightRef.value
+        );
+      }
+
+      const itemId = this.selectedObject.userData.itemId as number;
 
       // Check if collision prevention is enabled and object is colliding
       if (this.preventCollisionPlacementRef.value && isColliding) {
