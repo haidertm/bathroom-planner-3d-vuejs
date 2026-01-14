@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue';
 import type { AdminProduct, ProductFilters } from '../../../types/admin';
+import GlbPreviewModal from '../../../components/ui/GlbPreviewModal.vue';
 
 type SortColumn = ProductFilters['sortBy'];
 type SortOrder = ProductFilters['sortOrder'];
@@ -91,6 +92,31 @@ const handleSortKeydown = (event: KeyboardEvent, column: SortColumn) => {
 
 const togglingProducts = ref<Set<string>>(new Set());
 const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
+
+// GLB Preview Modal state
+const showGlbPreview = ref(false);
+const previewModelPath = ref('');
+const previewModelName = ref('');
+
+const openGlbPreview = (e: Event, product: AdminProduct) => {
+  e.stopPropagation();
+  // Get the first variant's model path
+  const modelPath = product.variants?.[0]?.path;
+  if (!modelPath) return;
+  previewModelPath.value = modelPath;
+  previewModelName.value = product.name;
+  showGlbPreview.value = true;
+};
+
+const closeGlbPreview = () => {
+  showGlbPreview.value = false;
+  previewModelPath.value = '';
+  previewModelName.value = '';
+};
+
+const hasModelPath = (product: AdminProduct): boolean => {
+  return !!product.variants?.[0]?.path;
+};
 
 // Clean up pending timeouts on unmount to prevent memory leaks
 onBeforeUnmount(() => {
@@ -385,6 +411,19 @@ const handleSelectProduct = (product: AdminProduct) => {
                     <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
                 </button>
+                <button
+                  class="action-btn action-preview"
+                  :class="{ 'action-disabled': !hasModelPath(product) }"
+                  :disabled="!hasModelPath(product)"
+                  title="Preview 3D Model"
+                  @click="(e) => openGlbPreview(e, product)"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                  </svg>
+                </button>
               </div>
             </td>
           </tr>
@@ -402,6 +441,14 @@ const handleSelectProduct = (product: AdminProduct) => {
         </template>
       </tbody>
     </table>
+
+    <!-- GLB Preview Modal -->
+    <GlbPreviewModal
+      :is-open="showGlbPreview"
+      :model-path="previewModelPath"
+      :model-name="previewModelName"
+      @close="closeGlbPreview"
+    />
   </div>
 </template>
 
@@ -651,6 +698,20 @@ const handleSelectProduct = (product: AdminProduct) => {
 .action-view:hover:not(:disabled) {
   background-color: #f3e8ff;
   color: #7c3aed;
+}
+
+.action-preview {
+  color: #29275B;
+}
+
+.action-preview:hover:not(:disabled) {
+  background-color: #29275B;
+  color: #ffffff;
+}
+
+.action-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .empty-state {

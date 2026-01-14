@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, toRaw } from 'vue';
 import { COMPONENTS, type ComponentType } from '../../constants/components';
 import type { AdminProduct, ProductVariant, ValidationErrors } from '../../types/admin';
+import GlbPreviewModal from '../../components/ui/GlbPreviewModal.vue';
 
 type ProductFormData = Omit<AdminProduct, 'dbId' | 'createdAt' | 'updatedAt' | 'lastSyncedAt'>;
 
@@ -34,6 +35,24 @@ const errors = ref<ValidationErrors>({});
 const activeTab = ref<'details' | 'variants'>('details');
 const expandedVariant = ref<string | null>(null);
 const showAddVariant = ref(false);
+
+// GLB Preview Modal state
+const showGlbPreview = ref(false);
+const previewModelPath = ref('');
+const previewModelName = ref('');
+
+const openGlbPreview = (path: string, name?: string) => {
+  if (!path) return;
+  previewModelPath.value = path;
+  previewModelName.value = name || 'Model Preview';
+  showGlbPreview.value = true;
+};
+
+const closeGlbPreview = () => {
+  showGlbPreview.value = false;
+  previewModelPath.value = '';
+  previewModelName.value = '';
+};
 
 // Single product vs multiple variants mode
 const hasMultipleVariants = ref(false);
@@ -608,12 +627,27 @@ const handleCancel = () => {
             <!-- GLB Model Path -->
             <div class="input-group">
               <label class="label">GLB Model Path</label>
-              <input
-                v-model="singleVariant.path"
-                type="text"
-                placeholder="../../models/category/model.glb"
-                class="input"
-              />
+              <div class="path-input-wrapper">
+                <input
+                  v-model="singleVariant.path"
+                  type="text"
+                  placeholder="models/category/model.glb"
+                  class="input path-input"
+                />
+                <button
+                  type="button"
+                  class="preview-btn"
+                  :disabled="!singleVariant.path"
+                  title="Preview 3D Model"
+                  @click="openGlbPreview(singleVariant.path, formData.name)"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -700,7 +734,22 @@ const handleCancel = () => {
             </div>
             <div class="input-group">
               <label class="small-label">GLB Model Path</label>
-              <input v-model="newVariant.path" type="text" placeholder="../../models/category/model.glb" class="small-input" />
+              <div class="path-input-wrapper">
+                <input v-model="newVariant.path" type="text" placeholder="models/category/model.glb" class="small-input path-input" />
+                <button
+                  type="button"
+                  class="preview-btn preview-btn-small"
+                  :disabled="!newVariant.path"
+                  title="Preview 3D Model"
+                  @click="openGlbPreview(newVariant.path, newVariant.name || 'New Variant')"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="input-group">
               <label class="small-label">Image URL</label>
@@ -811,7 +860,22 @@ const handleCancel = () => {
                 </div>
                 <div class="input-group">
                   <label class="small-label">Model Path</label>
-                  <input v-model="variant.path" type="text" class="small-input" />
+                  <div class="path-input-wrapper">
+                    <input v-model="variant.path" type="text" class="small-input path-input" />
+                    <button
+                      type="button"
+                      class="preview-btn preview-btn-small"
+                      :disabled="!variant.path"
+                      title="Preview 3D Model"
+                      @click="openGlbPreview(variant.path, variant.name || variant.title)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
               <div class="dimensions-section">
@@ -862,6 +926,14 @@ const handleCancel = () => {
         </button>
       </div>
     </form>
+
+    <!-- GLB Preview Modal -->
+    <GlbPreviewModal
+      :is-open="showGlbPreview"
+      :model-path="previewModelPath"
+      :model-name="previewModelName"
+      @close="closeGlbPreview"
+    />
   </div>
 </template>
 
@@ -1408,6 +1480,48 @@ const handleCancel = () => {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+}
+
+/* Path Input with Preview Button */
+.path-input-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.path-input {
+  flex: 1;
+}
+
+.preview-btn {
+  padding: 12px;
+  border: 1px solid #29275B;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #29275B;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.preview-btn:hover:not(:disabled) {
+  background-color: #29275B;
+  color: #ffffff;
+}
+
+.preview-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+  color: #6b7280;
+}
+
+.preview-btn-small {
+  padding: 8px;
+  border-radius: 6px;
 }
 
 /* Focus States */
