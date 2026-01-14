@@ -138,14 +138,28 @@ const resetForm = () => {
   resetSingleVariant();
 };
 
+// Secure UUID generator with fallback for older environments
+const generateSecureUUID = (): string => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback using crypto.getRandomValues for older browsers
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant 10
+  const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
+
 // Generate variant ID - defined before watch to avoid initialization error
 const generateVariantId = () => {
-  return `var_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  return `var_${generateSecureUUID()}`;
 };
 
 // Generate product ID for new products
 const generateProductId = () => {
-  return `prod_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  return `prod_${generateSecureUUID()}`;
 };
 
 // Initialize form data from product prop

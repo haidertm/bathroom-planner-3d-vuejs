@@ -454,6 +454,7 @@ onMounted(async () => {
   if (urlFilters.priceRange) setFilter('priceRange', urlFilters.priceRange);
   if (urlFilters.sortBy) setFilter('sortBy', urlFilters.sortBy);
   if (urlFilters.sortOrder) setFilter('sortOrder', urlFilters.sortOrder);
+  if (urlFilters.enabledFilter) setFilter('enabledFilter', urlFilters.enabledFilter);
 
   if (urlPagination) {
     if (urlPagination.page > 1) setPage(urlPagination.page);

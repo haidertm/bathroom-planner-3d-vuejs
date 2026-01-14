@@ -70,6 +70,14 @@ export function useUrlFilters() {
       }
     }
 
+    // Parse enabled filter
+    if (query.enabled && typeof query.enabled === 'string') {
+      const validEnabledValues = ['all', 'enabled', 'disabled'];
+      if (validEnabledValues.includes(query.enabled)) {
+        filters.enabledFilter = query.enabled as ProductFilters['enabledFilter'];
+      }
+    }
+
     return filters;
   };
 
@@ -126,6 +134,11 @@ export function useUrlFilters() {
     }
     if (filters.sortOrder !== 'asc') {
       query.sortOrder = filters.sortOrder;
+    }
+
+    // Add enabled filter (only if not default)
+    if (filters.enabledFilter !== 'all') {
+      query.enabled = filters.enabledFilter;
     }
 
     // Add pagination (only if not default)
