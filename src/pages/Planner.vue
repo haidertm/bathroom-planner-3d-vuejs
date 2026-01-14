@@ -35,6 +35,8 @@
         :renderer="sceneManagerRef?.renderer || null"
         :rotation-enabled="rotationArrowsEnabled"
         :is-dragging="isDraggingObject"
+        :is-multi-select-mode="isMultiSelectMode"
+        :selected-count="selectedCount"
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
@@ -97,6 +99,40 @@
         size="large"
     />
 
+    <!-- Multi-select Toggle (Text Pill Style) -->
+    <button
+      @click="toggleMultiSelect"
+      :style="multiSelectButtonStyle"
+      :title="isMultiSelectMode ? 'Disable Group Items' : 'Enable Group Items'"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style="flex-shrink: 0;"
+      >
+        <rect
+          x="6" y="6"
+          width="14" height="14"
+          rx="2"
+          :stroke="isMultiSelectMode ? 'white' : '#555'"
+          stroke-width="2"
+          fill="none"
+        />
+        <rect
+          x="4" y="4"
+          width="12" height="12"
+          rx="2"
+          :stroke="isMultiSelectMode ? 'white' : '#555'"
+          stroke-width="2"
+          :fill="isMultiSelectMode ? '#29275b' : 'white'"
+        />
+      </svg>
+      <span style="margin-left: 6px; white-space: nowrap;">Group Items</span>
+    </button>
+
     <!--    2D/3D View Mode Toggle -->
     <ViewModeToggle
         :style="viewModeToggleStyle"
@@ -142,6 +178,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Toast Notification -->
+    <Transition name="toast">
+      <div v-if="toastMessage" class="toast-notification" :style="toastStyle">
+        {{ toastMessage }}
+      </div>
+    </Transition>
   </div>
 </template>
 <script setup>
@@ -232,6 +275,41 @@ const selectedBathroomItem = computed(() => {
 
 // Track dragging state to hide overlay during drag
 const isDraggingObject = ref(false)
+const isMultiSelectMode = ref(false)
+const selectedCount = ref(1)
+
+// Toast notification state
+const toastMessage = ref('')
+const toastTimeout = ref(null)
+
+const showToast = (message, type = 'info') => {
+  // Clear any existing timeout
+  if (toastTimeout.value) {
+    clearTimeout(toastTimeout.value)
+  }
+
+  toastMessage.value = message
+
+  // Auto-hide after 3 seconds
+  toastTimeout.value = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimeout.value = null
+  }, 3000)
+}
+
+const toggleMultiSelect = () => {
+  isMultiSelectMode.value = !isMultiSelectMode.value
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.setMultiSelectMode(isMultiSelectMode.value)
+    // Clear selection when turning off multi-select to avoid showing delete button
+    if (!isMultiSelectMode.value) {
+      eventHandlersRef.value.clearSelection()
+      selectedItemId.value = null
+      selectedObjectId.value = null
+      selectedCount.value = 1
+    }
+  }
+}
 
 // Handlers for drag state changes
 const handleDragStart = () => {
@@ -499,8 +577,13 @@ const handleVariantSwap = async (swapConfig) => {
 
     console.log('Swapped item created:', swappedItem)
 
+    // Calculate the correct Y position based on new variant's spawnHeight
+    const oldSpawnHeight = currentItem.model?.spawnHeight || 0
+    const newSpawnHeight = newVariant.spawnHeight || 0
+    const wasAtDefaultHeight = Math.abs(currentItem.position[1] - oldSpawnHeight) < 1
+    const shouldUseNewSpawnHeight = wasAtDefaultHeight && oldSpawnHeight !== newSpawnHeight
+
     // RE-CONSTRAIN: Ensure the new variant fits within walls/room
-    // This fixes the issue where larger variants might clip into walls
     const movementConfig = getMovementConfig(swappedItem.type, swappedItem)
 
     if (movementConfig.snapToWall) {
@@ -515,15 +598,18 @@ const handleVariantSwap = async (swapConfig) => {
             item: swappedItem,
             notchWidth: notchWidth.value,
             notchHeight: notchHeight.value,
-            strictFlushMountCheck: true // ✅ NEW: Enforce strict wall boundaries for swapped items
+            strictFlushMountCheck: true
           }
       )
 
+      const finalY = shouldUseNewSpawnHeight ? newSpawnHeight : constraintResult.position.y
+
       swappedItem.position = [
         constraintResult.position.x,
-        constraintResult.position.y,
+        finalY,
         constraintResult.position.z
       ]
+      swappedItem.rotation = constraintResult.rotation
     } else {
       // For free-standing items, ensure they stay in room
       const constraintResult = constrainToRoom(
@@ -540,9 +626,11 @@ const handleVariantSwap = async (swapConfig) => {
           }
       )
 
+      const finalY = shouldUseNewSpawnHeight ? newSpawnHeight : constraintResult.position.y
+
       swappedItem.position = [
         constraintResult.position.x,
-        constraintResult.position.y,
+        finalY,
         constraintResult.position.z
       ]
     }
@@ -608,7 +696,9 @@ const handleVariantSwap = async (swapConfig) => {
               onProgress: (progress) => {
                 console.log(`📈 Progressive swap progress: ${progress}%`)
               }
-            }
+            },
+            { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
+            swappedItem.rotation
           )
           console.log('✅ Progressive variant swap initiated')
         } else {
@@ -724,6 +814,10 @@ const handleObjectSelectionChange = () => {
     // Set the selected object ID for the remove button
     selectedObjectId.value = itemId
 
+    // Update selected count for multi-select
+    const selectedIds = eventHandlersRef.value.getSelectedItemIds()
+    selectedCount.value = selectedIds ? selectedIds.length : 1
+
     // Get current items and find the selected one
     const currentItems = getItems()
     const currentItem = currentItems.find(item => item.id === itemId)
@@ -737,6 +831,7 @@ const handleObjectSelectionChange = () => {
     // Clear selection
     selectedObjectId.value = null
     selectedObjectCanRotate.value = false
+    selectedCount.value = 1
   }
 }
 
@@ -895,6 +990,27 @@ const toggleMeasurementStyle = computed(() => ({
   zIndex: 100
 }))
 
+const multiSelectButtonStyle = computed(() => ({
+  position: 'fixed',
+  left: isMobileDevice.value ? '' : sidebarOffset.value,
+  right: isMobileDevice.value ? '10px' : '',
+  bottom: isMobileDevice.value ? '280px' : '260px',
+  padding: isMobileDevice.value ? '10px 14px' : '12px 18px',
+  backgroundColor: isMultiSelectMode.value ? '#29275b' : 'rgba(255, 255, 255, 0.95)',
+  color: isMultiSelectMode.value ? 'white' : '#333',
+  border: isMultiSelectMode.value ? 'none' : '1px solid rgba(0, 0, 0, 0.1)',
+  borderRadius: '24px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  cursor: 'pointer',
+  fontWeight: '600',
+  fontSize: isMobileDevice.value ? '13px' : '14px',
+  transition: 'all 0.2s ease',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000
+}))
+
 const popupOverlayStyle = computed(() => ({
   position: 'fixed',
   top: '0',
@@ -958,6 +1074,23 @@ const sectionHeaderStyle = computed(() => ({
   fontSize: '18px',
   marginBottom: '12px',
   fontWeight: '600'
+}))
+
+const toastStyle = computed(() => ({
+  position: 'fixed',
+  bottom: '120px',
+  left: '50%',
+  backgroundColor: 'rgba(41, 39, 91, 0.95)',
+  color: 'white',
+  padding: '12px 24px',
+  borderRadius: '8px',
+  fontSize: isMobileDevice.value ? '14px' : '16px',
+  fontWeight: '500',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+  zIndex: 10001,
+  maxWidth: '90vw',
+  textAlign: 'center',
+  backdropFilter: 'blur(8px)'
 }))
 
 // Watch for room size changes to update refs
@@ -1305,6 +1438,16 @@ const addItem = async (type, productData = null) => {
 
 // 4. Modify your existing deleteItem function to clear selection
 const deleteItem = async (itemId) => {
+  // Check if in multi-select mode - delete all selected items
+  if (isMultiSelectMode.value && eventHandlersRef.value) {
+    const selectedIds = eventHandlersRef.value.getSelectedItemIds()
+    if (selectedIds && selectedIds.length > 1) {
+      console.log('🗑️ Deleting multiple items:', selectedIds)
+      await deleteMultipleItems(selectedIds)
+      return
+    }
+  }
+
   console.log('🗑️ Deleting item:', itemId)
   hasUnsavedChanges.value = true
 
@@ -1346,6 +1489,46 @@ const deleteItem = async (itemId) => {
   })
 
   console.log('✅ Item deleted successfully')
+}
+
+// Delete multiple selected items
+const deleteMultipleItems = async (itemIds) => {
+  hasUnsavedChanges.value = true
+
+  // Remove from 3D scene first
+  if (sceneManagerRef.value) {
+    for (const id of itemIds) {
+      try {
+        await sceneManagerRef.value.removeSingleItem(id)
+      } catch (error) {
+        console.error(`❌ Failed to remove item ${id} from scene:`, error)
+      }
+    }
+  }
+
+  // Clear selection
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.clearSelection()
+  }
+
+  // Remove from items array
+  const newItems = items.value.filter(item => !itemIds.includes(item.id))
+  items.value = newItems
+  lastUpdateSource.value = 'delete'
+
+  // Clear selection state
+  selectedItemId.value = null
+  selectedObjectId.value = null
+
+  saveToHistory({
+    items: newItems,
+    roomWidth: roomWidth.value,
+    roomHeight: roomHeight.value,
+    currentFloorTexture: currentFloorTexture.value,
+    currentWallTexture: currentWallTexture.value
+  })
+
+  console.log(`✅ ${itemIds.length} items deleted successfully`)
 }
 
 const handleUndo = () => {
@@ -2092,10 +2275,11 @@ onMounted(async () => {
     // Connect drag state handlers
     eventHandlersRef.value.onDragStart = handleDragStart
     eventHandlersRef.value.onDragEnd = handleDragEnd
+    // Connect toast notification handler
+    eventHandlersRef.value.onShowToast = showToast
   }
 
   sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
-  eventHandlersRef.value.setSceneManager(sceneManagerRef.value);
 
   // Apply pending camera position BEFORE rendering starts (to avoid visual jump)
   if (pendingCameraPosition) {
@@ -2203,9 +2387,6 @@ onMounted(async () => {
 watch([roomWidth, roomHeight, showGrid, showWallGrid, notchWidth, notchHeight], () => {
   if (!sceneManagerRef.value) return
 
-  // Update internal dimensions first so orthographic frustum is recalculated
-  sceneManagerRef.value.setRoomDimensions(roomWidth.value, roomHeight.value)
-
   sceneManagerRef.value.updateFloor(roomWidth.value, roomHeight.value, FLOOR_TEXTURES[currentFloorTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateWalls(roomWidth.value, roomHeight.value, WALL_TEXTURES[currentWallTexture.value], notchWidth.value, notchHeight.value)
   sceneManagerRef.value.updateGrid(roomWidth.value, roomHeight.value, showGrid.value, showWallGrid.value, notchWidth.value, notchHeight.value)
@@ -2289,9 +2470,6 @@ onUnmounted(() => {
   if (sceneManagerRef.value) {
     sceneManagerRef.value.dispose()
   }
-
-  // Clear session-specific L-shape corner to prevent stale camera angles
-  localStorage.removeItem('l-shape-corner-active')
 })
 
 // NEW: Smart incremental update handler
@@ -2472,5 +2650,20 @@ const handleClearAll = () => {
 
 
 <style scoped>
-/* Add any component-specific styles here */
+/* Toast notification base styles */
+.toast-notification {
+  transform: translateX(-50%);
+}
+
+/* Toast transition styles */
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
 </style>
