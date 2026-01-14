@@ -154,6 +154,11 @@ const handleDuplicate = (e: Event, product: AdminProduct) => {
   emit('duplicate-product', product);
 };
 
+const handleView = (e: Event, product: AdminProduct) => {
+  e.stopPropagation();
+  handleSelectProduct(product);
+};
+
 const handleSelectProduct = (product: AdminProduct) => {
   // GTM Tracking
   if (typeof window !== 'undefined' && (window as any).dataLayer) {
@@ -373,7 +378,7 @@ const handleSelectProduct = (product: AdminProduct) => {
                 <button
                   class="action-btn action-view"
                   title="View details"
-                  @click="emit('select-product', product)"
+                  @click="(e) => handleView(e, product)"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/>

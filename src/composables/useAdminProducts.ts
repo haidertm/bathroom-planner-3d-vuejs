@@ -62,6 +62,11 @@ const useLocalFallback = ref(false);
 // Flag to prevent duplicate API calls during initialization
 const isInitialLoad = ref(true);
 
+// Module-scoped Promise guard to prevent concurrent initialization fetches
+// This ensures only one Promise.all is created even if multiple components
+// call useAdminProducts() simultaneously before the first fetch completes
+let initPromise: Promise<void> | null = null;
+
 // Import local product data for fallback
 let localProductData: any = null;
 
@@ -325,14 +330,25 @@ const fetchStats = async (): Promise<void> => {
 };
 
 export function useAdminProducts() {
-  // Initialize products on first use
+  // Initialize products on first use with Promise guard to prevent race conditions
+  // Multiple concurrent calls will all await the same initialization Promise
   if (isInitialLoad.value && products.value.length === 0) {
-    // Fetch initial data and mark initialization complete
-    Promise.all([fetchProducts(), fetchStats()]).finally(() => {
-      isInitialLoad.value = false;
-    });
-  } else {
-    // If products are already loaded, just ensure the flag is reset
+    // If no initialization is in progress, start one
+    if (!initPromise) {
+      initPromise = Promise.all([fetchProducts(), fetchStats()])
+        .then(() => {
+          // Initialization successful
+        })
+        .finally(() => {
+          // Clear the Promise guard and mark initialization complete
+          initPromise = null;
+          isInitialLoad.value = false;
+        });
+    }
+    // All callers (including concurrent ones) will await the same Promise
+    // This is fire-and-forget in the composable setup, but prevents duplicate fetches
+  } else if (!initPromise) {
+    // If products are already loaded and no init is in progress, ensure the flag is reset
     isInitialLoad.value = false;
   }
 
@@ -545,9 +561,19 @@ export function useAdminProducts() {
   const createProduct = async (product: Partial<AdminProduct>): Promise<AdminProduct | null> => {
     try {
       const created = await productApi.createProduct(product);
-      products.value.push(created);
-      // Update pagination total (totalPages computed property will update automatically)
-      pagination.value.totalItems = (pagination.value.totalItems ?? 0) + 1;
+
+      if (useLocalFallback.value) {
+        // In local fallback mode, push to local array and update pagination manually
+        // since filtering/pagination is done client-side
+        products.value.push(created);
+        pagination.value.totalItems = (pagination.value.totalItems ?? 0) + 1;
+      } else {
+        // In API mode, refresh the current page from the server to respect
+        // server-side ordering/pagination - the new product may not appear
+        // on the current page depending on sort order
+        await fetchProducts();
+      }
+
       await fetchStats();
       return created;
     } catch (err) {

@@ -107,44 +107,48 @@ const handleBulkEnable = async () => {
   if (selectedProducts.value.size === 0) return;
 
   isBulkActionLoading.value = true;
-  const result = await bulkEnableProducts(selectedProducts.value);
-  isBulkActionLoading.value = false;
+  try {
+    const result = await bulkEnableProducts(selectedProducts.value);
 
-  if (result.success > 0) {
-    toast.success(`Enabled ${result.success} product${result.success > 1 ? 's' : ''}`);
-    trackAdminEvent('bulk_enable', {
-      success_count: result.success,
-      failed_count: result.failed,
-      total_selected: selectedProducts.value.size,
-    });
+    if (result.success > 0) {
+      toast.success(`Enabled ${result.success} product${result.success > 1 ? 's' : ''}`);
+      trackAdminEvent('bulk_enable', {
+        success_count: result.success,
+        failed_count: result.failed,
+        total_selected: selectedProducts.value.size,
+      });
+    }
+    if (result.failed > 0) {
+      toast.error(`Failed to enable ${result.failed} product${result.failed > 1 ? 's' : ''}`);
+    }
+  } finally {
+    isBulkActionLoading.value = false;
+    clearSelection();
   }
-  if (result.failed > 0) {
-    toast.error(`Failed to enable ${result.failed} product${result.failed > 1 ? 's' : ''}`);
-  }
-
-  clearSelection();
 };
 
 const handleBulkDisable = async () => {
   if (selectedProducts.value.size === 0) return;
 
   isBulkActionLoading.value = true;
-  const result = await bulkDisableProducts(selectedProducts.value);
-  isBulkActionLoading.value = false;
+  try {
+    const result = await bulkDisableProducts(selectedProducts.value);
 
-  if (result.success > 0) {
-    toast.success(`Disabled ${result.success} product${result.success > 1 ? 's' : ''}`);
-    trackAdminEvent('bulk_disable', {
-      success_count: result.success,
-      failed_count: result.failed,
-      total_selected: selectedProducts.value.size,
-    });
+    if (result.success > 0) {
+      toast.success(`Disabled ${result.success} product${result.success > 1 ? 's' : ''}`);
+      trackAdminEvent('bulk_disable', {
+        success_count: result.success,
+        failed_count: result.failed,
+        total_selected: selectedProducts.value.size,
+      });
+    }
+    if (result.failed > 0) {
+      toast.error(`Failed to disable ${result.failed} product${result.failed > 1 ? 's' : ''}`);
+    }
+  } finally {
+    isBulkActionLoading.value = false;
+    clearSelection();
   }
-  if (result.failed > 0) {
-    toast.error(`Failed to disable ${result.failed} product${result.failed > 1 ? 's' : ''}`);
-  }
-
-  clearSelection();
 };
 
 const {
@@ -436,10 +440,8 @@ onMounted(async () => {
   window.addEventListener('resize', checkMobile);
   document.addEventListener('keydown', handleGlobalKeydown);
 
-  // Refresh products to get latest data (e.g., after returning from edit page)
-  await refreshProducts();
-
-  // Load filters from URL
+  // Load filters from URL BEFORE fetching products
+  // This ensures the first fetch uses the correct filters from URL state
   const urlFilters = parseFiltersFromUrl();
   const urlPagination = parsePaginationFromUrl();
 
@@ -460,6 +462,9 @@ onMounted(async () => {
     if (urlPagination.page > 1) setPage(urlPagination.page);
     if (urlPagination.perPage !== DEFAULT_PAGINATION.itemsPerPage) setItemsPerPage(urlPagination.perPage);
   }
+
+  // Refresh products with the URL-derived filters applied
+  await refreshProducts();
 });
 
 onUnmounted(() => {

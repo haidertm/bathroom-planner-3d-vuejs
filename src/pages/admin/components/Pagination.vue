@@ -86,7 +86,7 @@ const handleKeydown = (event: KeyboardEvent) => {
         </svg>
       </button>
 
-      <template v-for="page in pageNumbers" :key="page">
+      <template v-for="(page, index) in pageNumbers" :key="page === -1 ? `ellipsis-${index}` : `page-${page}`">
         <span v-if="page === -1" class="pagination-ellipsis" aria-hidden="true">...</span>
         <button
           v-else
@@ -140,6 +140,12 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .pagination:focus {
   outline: none;
+}
+
+.pagination:focus-visible {
+  outline: 2px solid var(--primary-color, #29275B);
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 
 .pagination-info {
@@ -215,6 +221,12 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 .items-per-page-select:focus {
   outline: none;
+}
+
+.items-per-page-select:focus-visible {
+  outline: 2px solid var(--primary-color, #29275B);
+  outline-offset: 2px;
+  border-color: var(--primary-color, #29275B);
 }
 
 /* Mobile styles */

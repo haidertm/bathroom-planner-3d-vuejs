@@ -74,16 +74,117 @@ const handleKeydown = (event: KeyboardEvent) => {
 
 // Focus trap for accessibility
 const drawerRef = ref<HTMLElement | null>(null);
+const previousActiveElement = ref<HTMLElement | null>(null);
 
-watch(() => props.isOpen, (isOpen) => {
+// Selector for focusable elements within the drawer
+const FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Get all focusable elements within the drawer
+ */
+const getFocusableElements = (): HTMLElement[] => {
+  if (!drawerRef.value) return [];
+  return Array.from(drawerRef.value.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+};
+
+/**
+ * Handle Tab/Shift+Tab to trap focus within the drawer
+ */
+const handleFocusTrap = (event: KeyboardEvent) => {
+  if (event.key !== 'Tab') return;
+
+  const focusableElements = getFocusableElements();
+  if (focusableElements.length === 0) return;
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+
+  if (event.shiftKey) {
+    // Shift+Tab: if on first element, go to last
+    if (document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    }
+  } else {
+    // Tab: if on last element, go to first
+    if (document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
+};
+
+/**
+ * GTM tracking helper for drawer events
+ */
+const trackDrawerEvent = (action: 'open' | 'close', product: AdminProduct | null) => {
+  if (typeof window !== 'undefined' && (window as any).dataLayer) {
+    (window as any).dataLayer.push({
+      event: 'product_drawer',
+      drawer_action: action,
+      product_id: product?.id || null,
+      product_name: product?.name || null,
+      product_category: product?.category || null,
+    });
+  }
+};
+
+/**
+ * Set up focus trap when drawer opens
+ */
+const setupFocusTrap = () => {
+  // Store the currently focused element to restore later
+  previousActiveElement.value = document.activeElement as HTMLElement;
+
+  // Add focus trap handler to the drawer
+  drawerRef.value?.addEventListener('keydown', handleFocusTrap);
+
+  // Focus the first focusable element (or the close button)
+  setTimeout(() => {
+    const focusableElements = getFocusableElements();
+    if (focusableElements.length > 0) {
+      focusableElements[0].focus();
+    } else {
+      drawerRef.value?.focus();
+    }
+  }, 100);
+};
+
+/**
+ * Clean up focus trap when drawer closes
+ */
+const cleanupFocusTrap = () => {
+  // Remove focus trap handler
+  drawerRef.value?.removeEventListener('keydown', handleFocusTrap);
+
+  // Restore focus to the previously focused element
+  if (previousActiveElement.value && typeof previousActiveElement.value.focus === 'function') {
+    previousActiveElement.value.focus();
+  }
+  previousActiveElement.value = null;
+};
+
+watch(() => props.isOpen, (isOpen, wasOpen) => {
   if (isOpen) {
     document.body.style.overflow = 'hidden';
-    // Focus the drawer when opened
+
+    // Track drawer open event
+    trackDrawerEvent('open', props.product);
+
+    // Set up focus trap after DOM updates
     setTimeout(() => {
-      drawerRef.value?.focus();
-    }, 100);
+      setupFocusTrap();
+    }, 50);
   } else {
     document.body.style.overflow = '';
+
+    // Track drawer close event (only if it was previously open)
+    if (wasOpen) {
+      trackDrawerEvent('close', props.product);
+    }
+
+    // Clean up focus trap
+    cleanupFocusTrap();
   }
 });
 
@@ -93,6 +194,12 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown);
+
+  // Clean up focus trap if drawer is open when component unmounts
+  if (props.isOpen) {
+    drawerRef.value?.removeEventListener('keydown', handleFocusTrap);
+  }
+
   document.body.style.overflow = '';
 });
 </script>

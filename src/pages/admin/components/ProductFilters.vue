@@ -115,6 +115,63 @@ const handleUpdatedAtToChange = (event: Event) => {
     },
   });
 };
+
+/**
+ * GTM tracking helper for ProductFilters events
+ * Pushes events to Google Tag Manager dataLayer for analytics
+ */
+const trackGTMEvent = (
+  eventName: string,
+  eventData: Record<string, string | number | boolean>
+): void => {
+  if (typeof window !== 'undefined' && (window as any).dataLayer) {
+    (window as any).dataLayer.push({
+      event: eventName,
+      ...eventData,
+    });
+  }
+};
+
+/**
+ * Handle Add Product button click with GTM tracking
+ */
+const handleAddProduct = () => {
+  trackGTMEvent('admin_add_product', {
+    source: 'product_filters',
+    current_result_count: props.resultCount,
+  });
+  emit('add-product');
+};
+
+/**
+ * Handle Export CSV button click with GTM tracking
+ */
+const handleExportCSV = () => {
+  trackGTMEvent('admin_export_csv', {
+    source: 'product_filters',
+    result_count: props.resultCount,
+    has_active_filters: hasActiveFilters.value,
+    active_categories: props.filters.categories.join(',') || 'none',
+    search_query: props.filters.searchQuery || 'none',
+  });
+  emit('export-csv');
+};
+
+/**
+ * Handle Clear Filters button click with GTM tracking
+ */
+const handleClearFilters = () => {
+  trackGTMEvent('admin_clear_filters', {
+    source: 'product_filters',
+    cleared_categories: props.filters.categories.join(',') || 'none',
+    cleared_search_query: props.filters.searchQuery || 'none',
+    cleared_price_min: props.filters.priceRange.min ?? 'none',
+    cleared_price_max: props.filters.priceRange.max ?? 'none',
+    cleared_enabled_filter: props.filters.enabledFilter,
+    cleared_updated_at_preset: props.filters.updatedAtFilter.preset,
+  });
+  emit('clear-filters');
+};
 </script>
 
 <template>
@@ -134,11 +191,11 @@ const handleUpdatedAtToChange = (event: Event) => {
         </svg>
       </button>
 
-      <button v-if="hasActiveFilters" @click="emit('clear-filters')" class="clear-filters-btn">
+      <button v-if="hasActiveFilters" @click="handleClearFilters" class="clear-filters-btn">
         Clear all
       </button>
 
-      <button @click="emit('add-product')" class="add-product-btn">
+      <button @click="handleAddProduct" class="add-product-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
@@ -146,7 +203,7 @@ const handleUpdatedAtToChange = (event: Event) => {
         Add Product
       </button>
 
-      <button @click="emit('export-csv')" class="export-btn">
+      <button @click="handleExportCSV" class="export-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
