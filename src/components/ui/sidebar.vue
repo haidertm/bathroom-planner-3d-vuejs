@@ -438,7 +438,7 @@ import ProductDrawer from './ProductDrawer.vue'
 
 // NEW: Import selective preloading functions
 import localProductData from '../../mocks/productData.js'
-import { productApi } from '../../services/api'
+import { useCachedApi } from '../../composables/useCachedApi'
 import { CONFIG } from '../../constants/models'
 import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
 
@@ -446,21 +446,24 @@ import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../
 const productData = ref(localProductData)
 const isLoadingProducts = ref(false)
 
-// Fetch products from database API
+// Cached API instance for IndexedDB caching
+const cachedApi = useCachedApi()
+
+// Fetch products from database API (with IndexedDB caching)
 const fetchProductsFromAPI = async () => {
   isLoadingProducts.value = true
   try {
-    // Use the productApi service for consistency with admin dashboard
-    const data = await productApi.getEnabledProducts()
+    // Use cached API - checks IndexedDB first, then falls back to API
+    const data = await cachedApi.getEnabledProducts()
     // API already returns data grouped by category
     productData.value = data
     if (import.meta.env.DEV) {
-      console.log('Loaded products from database API:', Object.keys(productData.value))
+      console.log('Loaded products (from cache or API):', Object.keys(productData.value))
     }
   } catch (error) {
     if (import.meta.env.DEV) {
       const message = error instanceof Error ? error.message : String(error)
-      console.warn('Failed to fetch from API, using local product data:', message)
+      console.warn('Failed to fetch from API/cache, using local product data:', message)
     }
     productData.value = localProductData
   } finally {

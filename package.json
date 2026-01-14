@@ -16,6 +16,7 @@
     "@gtm-support/vue-gtm": "^3.1.0",
     "@openreplay/tracker": "^17.0.0",
     "@openreplay/tracker-assist": "^11.0.10",
+    "dexie": "^4.2.1",
     "three": "^0.160.0",
     "tsx": "^4.20.3",
     "vue": "^3.5.13",

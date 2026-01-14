@@ -1,4 +1,4 @@
-// Admin Products Management Composable - API Version
+// Admin Products Management Composable - API Version with IndexedDB Caching
 import { ref, computed, watch, onScopeDispose } from 'vue';
 import type { ComponentType } from '../constants/components';
 import { COMPONENTS } from '../constants/components';
@@ -12,7 +12,7 @@ import {
   DEFAULT_FILTERS,
   DEFAULT_PAGINATION,
 } from '../types/admin';
-import { productApi } from '../services/api';
+import { useCachedApi } from './useCachedApi';
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -121,13 +121,17 @@ const loadLocalProducts = async (): Promise<AdminProduct[]> => {
   return allProducts;
 };
 
-// Fetch products from API
-const fetchProducts = async (): Promise<void> => {
+// Cached API instance
+const cachedApi = useCachedApi();
+
+// Fetch products from API with IndexedDB caching
+const fetchProducts = async (forceRefresh = false): Promise<void> => {
   isLoading.value = true;
   error.value = null;
 
   try {
-    const response = await productApi.getProducts(filters.value, pagination.value);
+    // Use cached API - it will check IndexedDB first, then fallback to API
+    const response = await cachedApi.getProducts(filters.value, pagination.value, forceRefresh);
     products.value = response.products;
     pagination.value.totalItems = response.total;
     useLocalFallback.value = false;
@@ -299,10 +303,11 @@ const applyLocalFilters = (allProducts: AdminProduct[]): AdminProduct[] => {
   return result;
 };
 
-// Fetch statistics from API
-const fetchStats = async (): Promise<void> => {
+// Fetch statistics from API with IndexedDB caching
+const fetchStats = async (forceRefresh = false): Promise<void> => {
   try {
-    stats.value = await productApi.getStats();
+    // Use cached API - it will check IndexedDB first, then fallback to API
+    stats.value = await cachedApi.getStats(forceRefresh);
   } catch (err) {
     console.warn('Failed to fetch stats from API:', err);
     // Calculate stats from local data
@@ -457,7 +462,7 @@ export function useAdminProducts() {
     return products.value.find(p => p.id === id);
   };
 
-  // Toggle product enabled status
+  // Toggle product enabled status (with write-through caching)
   const toggleProductEnabled = async (product: AdminProduct): Promise<boolean> => {
     if (!product.dbId) {
       console.error('Cannot toggle product without dbId');
@@ -465,14 +470,15 @@ export function useAdminProducts() {
     }
 
     try {
-      const updated = await productApi.toggleEnabled(product.dbId);
+      // Use cached API - updates both server and IndexedDB
+      const updated = await cachedApi.toggleEnabled(product.dbId);
       // Update local state
       const index = products.value.findIndex(p => p.id === product.id);
       if (index !== -1) {
         products.value[index] = updated;
       }
-      // Refresh stats
-      await fetchStats();
+      // Refresh stats (cache was invalidated by toggle)
+      await fetchStats(true);
       return true;
     } catch (err) {
       console.error('Failed to toggle product status:', err);
@@ -480,7 +486,7 @@ export function useAdminProducts() {
     }
   };
 
-  // Bulk enable products
+  // Bulk enable products (with write-through caching)
   const bulkEnableProducts = async (productIds: Set<string>): Promise<{ success: number; failed: number }> => {
     let success = 0;
     let failed = 0;
@@ -489,7 +495,8 @@ export function useAdminProducts() {
 
     for (const product of productsToUpdate) {
       try {
-        const updated = await productApi.toggleEnabled(product.dbId!);
+        // Use cached API - updates both server and IndexedDB
+        const updated = await cachedApi.toggleEnabled(product.dbId!);
         const index = products.value.findIndex(p => p.id === product.id);
         if (index !== -1) {
           products.value[index] = updated;
@@ -502,13 +509,13 @@ export function useAdminProducts() {
     }
 
     if (success > 0) {
-      await fetchStats();
+      await fetchStats(true);
     }
 
     return { success, failed };
   };
 
-  // Bulk disable products
+  // Bulk disable products (with write-through caching)
   const bulkDisableProducts = async (productIds: Set<string>): Promise<{ success: number; failed: number }> => {
     let success = 0;
     let failed = 0;
@@ -517,7 +524,8 @@ export function useAdminProducts() {
 
     for (const product of productsToUpdate) {
       try {
-        const updated = await productApi.toggleEnabled(product.dbId!);
+        // Use cached API - updates both server and IndexedDB
+        const updated = await cachedApi.toggleEnabled(product.dbId!);
         const index = products.value.findIndex(p => p.id === product.id);
         if (index !== -1) {
           products.value[index] = updated;
@@ -530,13 +538,13 @@ export function useAdminProducts() {
     }
 
     if (success > 0) {
-      await fetchStats();
+      await fetchStats(true);
     }
 
     return { success, failed };
   };
 
-  // Update product
+  // Update product (with write-through caching)
   const updateProduct = async (product: AdminProduct): Promise<boolean> => {
     if (!product.dbId) {
       console.error('Cannot update product without dbId');
@@ -544,7 +552,8 @@ export function useAdminProducts() {
     }
 
     try {
-      const updated = await productApi.updateProduct(product.dbId, product);
+      // Use cached API - updates both server and IndexedDB
+      const updated = await cachedApi.updateProduct(product.dbId, product);
       // Update local state
       const index = products.value.findIndex(p => p.id === product.id);
       if (index !== -1) {
@@ -557,10 +566,11 @@ export function useAdminProducts() {
     }
   };
 
-  // Create product
+  // Create product (with write-through caching)
   const createProduct = async (product: Partial<AdminProduct>): Promise<AdminProduct | null> => {
     try {
-      const created = await productApi.createProduct(product);
+      // Use cached API - creates on server and caches in IndexedDB
+      const created = await cachedApi.createProduct(product);
 
       if (useLocalFallback.value) {
         // In local fallback mode, push to local array and update pagination manually
@@ -574,7 +584,7 @@ export function useAdminProducts() {
         await fetchProducts();
       }
 
-      await fetchStats();
+      await fetchStats(true);
       return created;
     } catch (err) {
       console.error('Failed to create product:', err);
@@ -582,7 +592,7 @@ export function useAdminProducts() {
     }
   };
 
-  // Delete product
+  // Delete product (with write-through caching)
   const deleteProduct = async (product: AdminProduct): Promise<boolean> => {
     if (!product.dbId) {
       console.error('Cannot delete product without dbId');
@@ -590,12 +600,13 @@ export function useAdminProducts() {
     }
 
     try {
-      await productApi.deleteProduct(product.dbId);
+      // Use cached API - deletes from server and removes from IndexedDB
+      await cachedApi.deleteProduct(product.dbId, product.id);
       // Remove from local state
       products.value = products.value.filter(p => p.id !== product.id);
       // Update pagination total (totalPages computed property will update automatically)
       pagination.value.totalItems = Math.max(0, (pagination.value.totalItems ?? 0) - 1);
-      await fetchStats();
+      await fetchStats(true);
       return true;
     } catch (err) {
       console.error('Failed to delete product:', err);
@@ -603,10 +614,39 @@ export function useAdminProducts() {
     }
   };
 
-  // Refresh products
+  // Refresh products (force refresh from API, bypass cache)
   const refreshProducts = async (): Promise<void> => {
-    await fetchProducts();
-    await fetchStats();
+    await fetchProducts(true);
+    await fetchStats(true);
+  };
+
+  // Sync all data to IndexedDB cache
+  const syncCache = async (): Promise<void> => {
+    try {
+      await cachedApi.syncAll();
+      if (import.meta.env.DEV) {
+        console.log('Cache synced successfully');
+      }
+    } catch (err) {
+      console.error('Failed to sync cache:', err);
+    }
+  };
+
+  // Clear IndexedDB cache
+  const clearCache = async (): Promise<void> => {
+    try {
+      await cachedApi.invalidateCache();
+      if (import.meta.env.DEV) {
+        console.log('Cache cleared');
+      }
+    } catch (err) {
+      console.error('Failed to clear cache:', err);
+    }
+  };
+
+  // Get cache debug info
+  const getCacheDebugInfo = async () => {
+    return cachedApi.getDebugInfo();
   };
 
   return {
@@ -642,5 +682,10 @@ export function useAdminProducts() {
     createProduct,
     deleteProduct,
     refreshProducts,
+
+    // Cache management
+    syncCache,
+    clearCache,
+    getCacheDebugInfo,
   };
 }
