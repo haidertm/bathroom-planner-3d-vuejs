@@ -23,7 +23,7 @@ export const FLOOR_TEXTURES: readonly TextureConfig[] = [
 ];
 
 export const WALL_TEXTURES: readonly TextureConfig[] = [
-  { name: 'Metro White Tile', file: '/textures/white-tiles-seamless-horizontal-pattern-white-bricks-metro-pool-wall-floor-subway_206049-2438.avif', color: 0xffffff, scale: [4, 4], roughness: 0.0, metalness: 0.01 },
+  { name: 'Metro White Tile', file: '/textures/wall_metro_white_tile.png', color: 0x000000, scale: [20, 12], roughness: 0.0, metalness: 0.7 },
   { name: 'White Paint', file: '', color: 0xffffff, scale: [1, 1] },
   { name: 'Light Blue', file: '', color: 0xe6f3ff, scale: [1, 1] },
   { name: 'Beige', file: '', color: 0xf5f5dc, scale: [1, 1] },
@@ -32,12 +32,6 @@ export const WALL_TEXTURES: readonly TextureConfig[] = [
   { name: 'Green Tile', file: '', color: 0xc8e6c9, scale: [4, 4] },
   { name: 'Brick', file: '/textures/wall_brick.jpg', color: 0xcc6666, scale: [6, 4] },
   // Procedural realistic ceramic tiles
-  { name: 'White Ceramic', file: '', color: 0xfafafa, scale: [4, 4], procedural: 'tile', groutColor: 0xd0d0d0, glossiness: 0.8 },
-  { name: 'Cream Ceramic', file: '', color: 0xfff8f0, scale: [4, 4], procedural: 'tile', groutColor: 0xc8b8a8, glossiness: 0.75 },
-  { name: 'Gray Ceramic', file: '', color: 0xe8e8e8, scale: [4, 4], procedural: 'tile', groutColor: 0xa0a0a0, glossiness: 0.75 },
-  { name: 'Light Blue Ceramic', file: '', color: 0xe0f0f8, scale: [4, 4], procedural: 'tile', groutColor: 0xb0c0c8, glossiness: 0.8 },
-  { name: 'Sage Green', file: '', color: 0xe8f0e8, scale: [4, 4], procedural: 'tile', groutColor: 0xb8c8b8, glossiness: 0.7 },
-  { name: 'Warm Beige', file: '', color: 0xf5ebe0, scale: [4, 4], procedural: 'tile', groutColor: 0xc8b8a0, glossiness: 0.75 },
 ];
 
 export const DEFAULT_FLOOR_TEXTURE: number = 4; // Wood

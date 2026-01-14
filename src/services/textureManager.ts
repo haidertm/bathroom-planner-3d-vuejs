@@ -364,11 +364,11 @@ class TextureManager {
   createProceduralTileMaterial(config?: Partial<ProceduralTileConfig>): THREE.MeshStandardMaterial {
     const defaults: ProceduralTileConfig = {
       tileColor: 0xf5f5f5,      // Off-white
-      groutColor: 0xd0d0d0,     // Light gray grout
+      groutColor: 0xe0e0e0,     // Very light gray grout (lighter to reduce dark lines)
       tileWidth: 100,           // Realistic tile size
       tileHeight: 100,
-      groutWidth: 6,            // Visible grout lines
-      bevelSize: 2,             // Subtle bevel
+      groutWidth: 5,            // Slightly thinner grout lines
+      bevelSize: 1,             // Minimal bevel
       colorVariation: 0.0,      // Clean uniform tiles
       glossiness: 0.75
     };
@@ -379,16 +379,14 @@ class TextureManager {
     const { diffuseTexture, normalTexture, roughnessTexture } = this.generateTileTextures(settings);
 
     // Create material with ceramic properties
-    const roughnessValue = Math.max(0.2, 1.0 - (settings.glossiness * 0.7));
-
     const material = new THREE.MeshStandardMaterial({
       map: diffuseTexture,
       normalMap: normalTexture,
       roughnessMap: roughnessTexture,
-      normalScale: new THREE.Vector2(0.15, 0.15),
-      roughness: roughnessValue,
-      metalness: 0.0,
-      envMapIntensity: settings.glossiness * 0.2,  // Subtle reflections
+      normalScale: new THREE.Vector2(0.08, 0.08),  // Reduced for less dark grout effect
+      roughness: 0.05,  // Very low roughness = very glossy/shiny
+      metalness: 0.1,   // Slight metalness for reflections
+      envMapIntensity: 0.8,  // Strong environment reflections for shiny look
       side: THREE.FrontSide
     });
 
@@ -430,12 +428,12 @@ class TextureManager {
     diffuseCtx.fillStyle = `rgb(${Math.floor(groutColor.r * 255)}, ${Math.floor(groutColor.g * 255)}, ${Math.floor(groutColor.b * 255)})`;
     diffuseCtx.fillRect(0, 0, textureSize, textureSize);
 
-    // Normal map base - grout is recessed (darker blue = pointing down)
-    normalCtx.fillStyle = 'rgb(128, 100, 255)';
+    // Normal map base - grout is very slightly recessed (subtle effect)
+    normalCtx.fillStyle = 'rgb(128, 120, 255)';  // Closer to neutral to reduce dark appearance
     normalCtx.fillRect(0, 0, textureSize, textureSize);
 
-    // Roughness map base (grout is rougher/matte)
-    roughnessCtx.fillStyle = 'rgb(180, 180, 180)';
+    // Roughness map base (grout is slightly rougher/matte)
+    roughnessCtx.fillStyle = 'rgb(140, 140, 140)';  // Less contrast
     roughnessCtx.fillRect(0, 0, textureSize, textureSize);
 
     const baseColor = new THREE.Color(config.tileColor);
