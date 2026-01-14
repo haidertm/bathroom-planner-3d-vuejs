@@ -30,6 +30,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutlinePass } from 'three/examples/jsm/postprocessing/OutlinePass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { getOrientationForItem } from '../utils/models';
 import { WALL_SETTINGS } from "../constants/dimensions.ts";
 
@@ -64,6 +65,7 @@ export class SceneManager {
   // Post-processing components
   private composer: EffectComposer | null = null;
   private outlinePass: OutlinePass | null = null;
+  private ssaoPass: SSAOPass | null = null;
 
   // Animation loop management
   private animationId: number | null = null;
@@ -114,8 +116,8 @@ export class SceneManager {
   initializeScene(): SceneComponents {
     // Create scene with better background and atmosphere
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xE6E1DA);
-    this.scene.fog = new THREE.Fog(0xE6E1DA, 1000, 5000);
+    this.scene.background = new THREE.Color(0xF4F0EC); // Warm paper/cream tone matching reference
+    this.scene.fog = new THREE.Fog(0xF4F0EC, 1000, 5000);
 
     // Create camera with better positioning and settings
     // Use markRaw to prevent Vue reactivity overhead on Three.js objects
@@ -905,6 +907,11 @@ export class SceneManager {
       this.renderer.toneMappingExposure = 0.8;
     }
 
+    // Disable SSAO in 2D mode (not needed for flat view)
+    if (this.ssaoPass) {
+      this.ssaoPass.enabled = false;
+    }
+
     // Adjust ambient light for even but subdued illumination
     this.lights.forEach(light => {
       if (light instanceof THREE.AmbientLight) {
@@ -937,7 +944,12 @@ export class SceneManager {
     // Re-enable shadow rendering
     if (this.renderer) {
       this.renderer.shadowMap.enabled = this.shadowsEnabled;
-      this.renderer.toneMappingExposure = 1.2;
+      this.renderer.toneMappingExposure = 1.15; // Optimal photorealistic exposure
+    }
+
+    // Re-enable SSAO in 3D mode for photorealistic contact shadows
+    if (this.ssaoPass) {
+      this.ssaoPass.enabled = true;
     }
 
     // Restore ambient light intensity
@@ -2492,6 +2504,15 @@ export class SceneManager {
 
       this.composer.addPass(this.outlinePass);
 
+      // SSAO Pass for realistic contact shadows (ambient occlusion)
+      // Creates subtle darkening where surfaces meet (wall-floor corners, object bases)
+      this.ssaoPass = new SSAOPass(this.scene, activeCamera, window.innerWidth, window.innerHeight);
+      this.ssaoPass.kernelRadius = 16;      // Radius of occlusion sampling
+      this.ssaoPass.minDistance = 0.005;    // Min distance for occlusion
+      this.ssaoPass.maxDistance = 0.1;      // Max distance for occlusion
+      this.ssaoPass.output = SSAOPass.OUTPUT.Default;
+      this.composer.addPass(this.ssaoPass);
+
       // Add OutputPass
       const outputPass = new OutputPass();
       this.composer.addPass(outputPass);
@@ -2499,19 +2520,21 @@ export class SceneManager {
       // Set outline pass reference
       setOutlinePass(this.outlinePass);
 
-      console.log('Enhanced post-processing setup successful');
+      console.log('Enhanced post-processing setup successful with SSAO');
     } catch (error) {
       console.warn('Post-processing setup failed:', error);
       this.composer = null;
       this.outlinePass = null;
+      this.ssaoPass = null;
     }
   }
 
-  private setupEnhancedLighting(roomWidth?: number): void {
+  private setupEnhancedLighting(): void {
     if (!this.scene) return;
 
     // Use current room dimensions or defaults
-    const width = roomWidth ?? 300; // Default fallback
+    // const width = roomWidth ?? this.roomWidth;
+    // const height = roomHeight ?? this.roomHeight;
 
     // Check if we're in 2D mode - lights should be configured differently
     const is2DMode = this.viewMode === '2d';
@@ -2520,37 +2543,45 @@ export class SceneManager {
     this.lights.forEach(light => this.scene!.remove(light));
     this.lights = [];
 
-    // 1. AMBIENT LIGHT - provides base illumination
-    // In 2D mode, use balanced ambient light for flat, even illumination
-    const ambientLight = new THREE.AmbientLight(0xffffff, is2DMode ? 1.5 : 0.9);
+    // 1. AMBIENT & HEMISPHERE LIGHTS - Natural soft fill
+    const ambientLight = new THREE.AmbientLight(0xffffff, is2DMode ? 1.5 : 0.8);
     this.scene.add(ambientLight);
     this.lights.push(ambientLight);
 
-    // Calculate safe positions based on room size
-    const safeMargin = 30; // 30cm margin from walls
+    if (!is2DMode) {
+      // Hemisphere light for natural top-down lighting
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe0e0e0, 0.8);
+      hemiLight.position.set(0, 500, 0);
+      this.scene.add(hemiLight);
+      this.lights.push(hemiLight);
 
-    // FIXED: Clamp maxX to non-negative to prevent negative positions
-    const maxX = Math.max(0, (width / 2) - safeMargin); // Maximum X position, clamped to 0
+      // 2. DIRECTIONAL LIGHT - softer shadows for natural look
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+      dirLight.position.set(200, 500, 400); // Positioned to light the room more naturally
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      dirLight.shadow.camera.near = 0.5;
+      dirLight.shadow.camera.far = 1500;
+      dirLight.shadow.camera.left = -500;
+      dirLight.shadow.camera.right = 500;
+      dirLight.shadow.camera.top = 500;
+      dirLight.shadow.camera.bottom = -500;
+      dirLight.shadow.bias = -0.0005;
+      this.scene!.add(dirLight);
+      this.lights.push(dirLight);
 
-    // 2. CEILING LIGHTS - positioned relative to room size
+      // 3. SOFT BACK GLOW - very subtle, placed far away to avoid hotspots
+      const backGlow = new THREE.PointLight(0xffffff, 150, 1000, 2.0);
+      backGlow.position.set(0, WALL_SETTINGS.HEIGHT, 0); // Center of ceiling
+      this.scene!.add(backGlow);
+      this.lights.push(backGlow);
 
-    // Inner lights - these stay closer to center, using clamped maxX
-    const innerX = Math.min(40, maxX * 0.3); // 30% from center or 40cm max
-    const ceilingY = WALL_SETTINGS.HEIGHT;
-
-    const outerX = Math.max(innerX, Math.min(100, maxX * 0.7));
-    for (const x of [innerX, -innerX, outerX, -outerX]) {
-      const light = new THREE.PointLight(0xffffff, 400, 800, 1.5);
-      light.position.set(x, ceilingY, 0);
-      // Hide point lights in 2D mode for flat appearance (no light spots on floor)
-      light.visible = !is2DMode;
-      this.scene.add(light);
-      this.lights.push(light);
     }
 
-    // 3. Set renderer exposure - different for 2D mode (darker blueprint look)
+    // 4. Set renderer exposure (1.15 for optimal photorealistic look)
     if (this.renderer) {
-      this.renderer.toneMappingExposure = is2DMode ? 0.8 : 1.2;
+      this.renderer.toneMappingExposure = is2DMode ? 0.8 : 1.15;
     }
   }
 
@@ -2587,7 +2618,7 @@ export class SceneManager {
     }
 
     // 🔥 UPDATE: Reposition lights when room dimensions change
-    this.setupEnhancedLighting(roomWidth);
+    this.setupEnhancedLighting();
     // Update measurement system with new room dimensions (including notch for L-shaped rooms)
     if (this.measurementSystem) {
       this.measurementSystem.updateRoomDimensions(roomWidth, roomHeight, notchWidth, notchHeight);
@@ -2598,10 +2629,10 @@ export class SceneManager {
     // FIX: Pass room dimensions to texture manager for proper scaling
     const material = textureManager.createTexturedMaterial(floorTexture, { width: roomWidth, height: roomHeight });
 
-    // Enhanced floor material properties
-    material.roughness = 0;
-    material.metalness = 0.02;
-    material.envMapIntensity = 0.5;
+    // Floor material - clean matte finish, uniform appearance
+    material.roughness = 0.7;
+    material.metalness = 0.0;
+    material.envMapIntensity = 0.05;
 
     return material;
   }
@@ -2649,7 +2680,7 @@ export class SceneManager {
     );
 
     // 🔥 UPDATE: Reposition lights when room dimensions change
-    this.setupEnhancedLighting(roomWidth);
+    this.setupEnhancedLighting();
     // Update wall culling manager with new walls and room size (including notch dimensions)
     this.wallCullingManager.updateRoomSize(roomWidth, roomHeight, notchWidth, notchHeight);
     this.wallCullingManager.initialize(this.wallRefs, this.camera!);
@@ -2664,12 +2695,75 @@ export class SceneManager {
   }
 
   private createEnhancedWallMaterial(wallTexture: TextureConfig): THREE.MeshStandardMaterial {
-    const material = textureManager.createTexturedMaterial(wallTexture);
+    // Use createWallMaterial to support procedural tiles and enhanced reflections
+    const material = textureManager.createWallMaterial(wallTexture);
 
-    // Enhanced wall material properties
-    material.roughness = 0.6;      // Semi-matte for good light distribution
-    material.metalness = 0.0;      // Non-metallic
-    material.envMapIntensity = 0.1; // Minimal reflections
+    // Very glossy shiny tile settings
+    if (wallTexture.roughness === undefined && !wallTexture.procedural) {
+      material.roughness = 0.05;  // Super glossy
+    }
+    if (wallTexture.metalness === undefined && !wallTexture.procedural) {
+      material.metalness = 0.1;  // More shine
+    }
+    // Strong environment reflections
+    if (!wallTexture.procedural) {
+      material.envMapIntensity = 0.6;
+    }
+
+    // Cache key - update version to force shader recompile
+    material.customProgramCacheKey = () => 'wall-bathroom-shiny-v9';
+
+    // Round effect on wall facing camera, side walls uniform
+    material.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace(
+        'void main() {',
+        `varying vec2 vWallUv;
+        varying float vFacingCamera;
+        void main() {`
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        vWallUv = uv;
+        // Calculate how much wall faces camera (dot product with view direction)
+        vec3 worldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+        vec3 viewDir = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);
+        vFacingCamera = dot(worldNormal, viewDir);`
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        'void main() {',
+        `varying vec2 vWallUv;
+        varying float vFacingCamera;
+        void main() {`
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        `#include <dithering_fragment>
+        // Side walls gray, front wall white
+        vec3 grayTint = vec3(0.68, 0.68, 0.72);
+        vec3 whiteTint = vec3(1.0, 1.0, 1.0);
+        float facing = smoothstep(0.0, 0.8, vFacingCamera);
+        vec3 wallColor = mix(grayTint, whiteTint, facing);
+
+        // Shiny light spot - center top area glows
+        vec2 shinyCenter = vec2(0.5, 0.25);
+        float shinyDist = distance(vWallUv, shinyCenter);
+        float shinySpot = 1.0 - smoothstep(0.0, 0.5, shinyDist);
+        float shine = 1.0 + shinySpot * 0.2 * facing;
+
+        // Gradient - brighter top, darker bottom
+        float topLight = 1.0 - vWallUv.y * 0.2;
+
+        // Edge darkening
+        float edgeDark = 1.0 - pow(abs(vWallUv.x - 0.5) * 2.0, 2.0) * 0.15;
+
+        // Combine: wall color + shine + gradient + edges
+        gl_FragColor.rgb *= wallColor * shine * topLight * edgeDark;
+
+        // Add slight white highlight for glossy look on front wall
+        gl_FragColor.rgb += vec3(shinySpot * 0.08 * facing);`
+      );
+    };
 
     return material;
   }
@@ -3146,6 +3240,11 @@ export class SceneManager {
           window.innerWidth * 2,
           window.innerHeight * 2
         );
+      }
+
+      // Update SSAO pass resolution
+      if (this.ssaoPass) {
+        this.ssaoPass.setSize(window.innerWidth, window.innerHeight);
       }
     }
 

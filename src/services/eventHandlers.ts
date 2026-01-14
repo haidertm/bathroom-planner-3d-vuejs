@@ -879,7 +879,6 @@ export class EventHandlers {
         (typeof movementConfig.cornerInstallOnly === 'boolean' || movementConfig.cornerInstallOnly.enabled);
 
       if (movementConfig?.snapToWall && !isCornerInstall && !this.isMultiSelectMode) {
-
         // Check which wall the object is currently on
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
