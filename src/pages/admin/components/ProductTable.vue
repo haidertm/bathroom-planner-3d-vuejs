@@ -75,6 +75,20 @@ const handleSort = (column: SortColumn) => {
   emit('sort', column);
 };
 
+// Get aria-sort value for a column
+const getAriaSortValue = (columnKey: SortColumn): 'ascending' | 'descending' | 'none' => {
+  if (props.sortBy !== columnKey) return 'none';
+  return props.sortOrder === 'asc' ? 'ascending' : 'descending';
+};
+
+// Handle keyboard events for sortable headers (Enter or Space triggers sort)
+const handleSortKeydown = (event: KeyboardEvent, column: SortColumn) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    handleSort(column);
+  }
+};
+
 const togglingProducts = ref<Set<string>>(new Set());
 const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
 
@@ -176,7 +190,11 @@ const handleSelectProduct = (product: AdminProduct) => {
             scope="col"
             class="sortable-header"
             :class="{ 'sorted': sortBy === col.key }"
+            tabindex="0"
+            role="button"
+            :aria-sort="getAriaSortValue(col.key)"
             @click="handleSort(col.key)"
+            @keydown="(e) => handleSortKeydown(e, col.key)"
           >
             <span class="header-content">
               {{ col.label }}
@@ -422,6 +440,18 @@ const handleSelectProduct = (product: AdminProduct) => {
 .sortable-header.sorted {
   color: var(--primary-color, #29275B);
   background-color: #f0f0ff;
+}
+
+.sortable-header:focus {
+  outline: 2px solid var(--primary-color, #29275B);
+  outline-offset: -2px;
+  background-color: #eef2f7;
+  color: var(--text-color, #2d3748);
+}
+
+.sortable-header:focus-visible {
+  outline: 2px solid var(--primary-color, #29275B);
+  outline-offset: -2px;
 }
 
 .header-content {
