@@ -1774,13 +1774,9 @@ export class EventHandlers {
         let constrainedPosition: { x: number, y: number, z: number };
         let constrainedRotation = primaryRot + localRot;
 
-        // ✅ FIX: In 2D mode, treat group as RIGID BODY - no individual constraints
-        // The group bounds pre-check already adjusted primary to keep everyone inside room
-        if (this.viewMode === '2d') {
-          // Pure rigid body - maintain exact relative position
-          constrainedPosition = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
-          constrainedRotation = primaryRot + localRot; // Keep rigid body rotation
-        } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+        // ✅ FIX: Apply individual constraints in BOTH 2D and 3D modes
+        // This ensures items don't go outside room boundaries when dragging multi-select groups
+        if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
           // 3D MODE: Apply individual wall constraints
           const currentItemWall = this.determineCurrentWall(obj.position);
           const originalY = targetPos.y; // Preserve Y position
@@ -1881,8 +1877,8 @@ export class EventHandlers {
     // Only process if we have a multi-select group
     if (this.selectedObjects.size <= 1) return;
 
-    // In 2D mode, treat group as rigid body - no individual snapping
-    if (this.viewMode === '2d') return;
+    // ✅ FIX: Apply wall snapping in BOTH 2D and 3D modes
+    // This ensures items don't go outside room boundaries when dropping multi-select groups
 
     const updatedItems: Array<{id: number, position: [number, number, number], rotation: number}> = [];
 
