@@ -72,72 +72,29 @@
     >
       🎨 Textures
     </button>
-    <UndoRedoPanel
-        :can-undo="canUndo"
-        :can-redo="canRedo"
-        :show-instructions="showInstructions"
-        @undo="handleUndo"
-        @redo="handleRedo"
-        @clear="handleClearAll"
-        @show-instructions="showInstructions = true"
-        @close-instructions="showInstructions = false"
-    />
-
     <!-- Canvas container positioned on the right side -->
     <div
         ref="mountRef"
         :style="canvasContainerStyle"
     />
 
-    <!--    MeasurementToggle button-->
-    <MeasurementToggle
-        :style="toggleMeasurementStyle"
-        v-model="measurementEnabled"
-        @click="handleMeasurementUpdate"
-        @update:modelValue="handleMeasurementToggle"
-        @toggle-measurements="handleToggleMeasurements"
-        size="large"
-    />
-
-    <!-- Multi-select Toggle (Text Pill Style) -->
-    <button
-      @click="toggleMultiSelect"
-      :style="multiSelectButtonStyle"
-      :title="isMultiSelectMode ? 'Disable Group Items' : 'Enable Group Items'"
-    >
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style="flex-shrink: 0;"
-      >
-        <rect
-          x="6" y="6"
-          width="14" height="14"
-          rx="2"
-          :stroke="isMultiSelectMode ? 'white' : '#555'"
-          stroke-width="2"
-          fill="none"
-        />
-        <rect
-          x="4" y="4"
-          width="12" height="12"
-          rx="2"
-          :stroke="isMultiSelectMode ? 'white' : '#555'"
-          stroke-width="2"
-          :fill="isMultiSelectMode ? '#29275b' : 'white'"
-        />
-      </svg>
-      <span style="margin-left: 6px; white-space: nowrap;">Group Items</span>
-    </button>
-
-    <!--    2D/3D View Mode Toggle -->
-    <ViewModeToggle
-        :style="viewModeToggleStyle"
-        v-model="viewMode"
-        @mode-change="handleViewModeChange"
+    <!-- Unified Bottom Toolbar -->
+    <UnifiedToolbar
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :view-mode="viewMode"
+        :measurement-enabled="measurementEnabled"
+        :multi-select-enabled="isMultiSelectMode"
+        :has-selected-item="!!selectedBathroomItem"
+        :sidebar-width="showTexturePanel ? 480 : 0"
+        @undo="handleUndo"
+        @redo="handleRedo"
+        @update:view-mode="handleViewModeChange"
+        @update:measurement-enabled="handleUnifiedMeasurementToggle"
+        @update:multi-select-enabled="handleUnifiedMultiSelectToggle"
+        @delete="handleDeleteSelectedItem"
+        @clear="handleClearAll"
+        @show-instructions="showInstructions = true"
     />
 
     <!-- Instructions Popup -->
@@ -200,9 +157,7 @@ import RotationArrowsToggle from '../components/ui/RotationArrowsToggle.vue'
 import Toolbar from '../components/ui/Toolbar.vue'
 import TexturePanel from '../components/ui/TexturePanel.vue'
 import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
-import UndoRedoPanel from '../components/ui/UndoRedoPanel.vue'
-import MeasurementToggle from '../components/ui/MeasurementToggle.vue';
-import ViewModeToggle from '../components/ui/ViewModeToggle.vue';
+import UnifiedToolbar from '../components/ui/UnifiedToolbar.vue'
 
 // Constants
 import { CONSTRAINTS, ROOM_DEFAULTS, WALL_SETTINGS } from '../constants/dimensions.js'
@@ -308,6 +263,38 @@ const toggleMultiSelect = () => {
       selectedObjectId.value = null
       selectedCount.value = 1
     }
+  }
+}
+
+// Handler for unified toolbar measurement toggle
+const handleUnifiedMeasurementToggle = (enabled) => {
+  measurementEnabled.value = enabled
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.enableMeasurements(enabled)
+    if (enabled) {
+      updateCurrentMeasurements()
+    }
+  }
+}
+
+// Handler for unified toolbar multi-select toggle
+const handleUnifiedMultiSelectToggle = (enabled) => {
+  isMultiSelectMode.value = enabled
+  if (eventHandlersRef.value) {
+    eventHandlersRef.value.setMultiSelectMode(enabled)
+    if (!enabled) {
+      eventHandlersRef.value.clearSelection()
+      selectedItemId.value = null
+      selectedObjectId.value = null
+      selectedCount.value = 1
+    }
+  }
+}
+
+// Handler for deleting selected item from unified toolbar
+const handleDeleteSelectedItem = () => {
+  if (selectedItemId.value) {
+    deleteItem(selectedItemId.value)
   }
 }
 
@@ -966,49 +953,6 @@ const toggleButtonStyle = computed(() => ({
   alignItems: 'center',
   gap: '8px',
   whiteSpace: 'nowrap'
-}))
-
-// Single source of truth for sidebar offset calculation
-// Main sidebar is 480px wide, add extra space (540px) for tooltips to be visible
-const sidebarOffset = computed(() => showTexturePanel.value ? '540px' : '20px')
-
-// Style for 2D/3D View Mode Toggle - positioned ABOVE MeasurementToggle, next to main sidebar
-const viewModeToggleStyle = computed(() => ({
-  position: 'fixed',
-  left: isMobileDevice.value ? '' : sidebarOffset.value,
-  right: isMobileDevice.value ? '10px' : '',
-  bottom: isMobileDevice.value ? '200px' : '130px', // Above MeasurementToggle with space for tooltip
-  zIndex: 100
-}))
-
-// Style for MeasurementToggle - positioned next to main sidebar, BELOW ViewModeToggle
-const toggleMeasurementStyle = computed(() => ({
-  position: 'fixed',
-  left: isMobileDevice.value ? '' : sidebarOffset.value,
-  right: isMobileDevice.value ? '10px' : '',
-  bottom: isMobileDevice.value ? '80px' : '30px',
-  zIndex: 100
-}))
-
-const multiSelectButtonStyle = computed(() => ({
-  position: 'fixed',
-  left: isMobileDevice.value ? '' : sidebarOffset.value,
-  right: isMobileDevice.value ? '10px' : '',
-  bottom: isMobileDevice.value ? '280px' : '260px',
-  padding: isMobileDevice.value ? '10px 14px' : '12px 18px',
-  backgroundColor: isMultiSelectMode.value ? '#29275b' : 'rgba(255, 255, 255, 0.95)',
-  color: isMultiSelectMode.value ? 'white' : '#333',
-  border: isMultiSelectMode.value ? 'none' : '1px solid rgba(0, 0, 0, 0.1)',
-  borderRadius: '24px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  cursor: 'pointer',
-  fontWeight: '600',
-  fontSize: isMobileDevice.value ? '13px' : '14px',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000
 }))
 
 const popupOverlayStyle = computed(() => ({
