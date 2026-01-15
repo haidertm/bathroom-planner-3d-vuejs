@@ -31,7 +31,11 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ProductForm from './ProductForm.vue';
 import { productApi } from '../../services/api';
+import { useCachedApi } from '../../composables/useCachedApi';
 import type { AdminProduct } from '../../types/admin';
+
+// Use cached API for updates to keep IndexedDB in sync
+const cachedApi = useCachedApi();
 
 const route = useRoute();
 const router = useRouter();
@@ -65,7 +69,8 @@ const handleSave = async (updatedProduct: AdminProduct | Omit<AdminProduct, 'id'
   try {
     const productId = route.params.id as string;
 
-    await productApi.updateProduct(Number(productId), updatedProduct as AdminProduct);
+    // Use cachedApi to update both server AND IndexedDB cache
+    await cachedApi.updateProduct(Number(productId), updatedProduct as AdminProduct);
 
     // Go back to dashboard
     router.push('/vadmin/dashboard');

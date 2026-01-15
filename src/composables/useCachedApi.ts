@@ -15,6 +15,8 @@ import {
   getCachedStats,
   clearCache,
   getCacheStats,
+  safeDBOperation,
+  isIndexedDBAvailable,
 } from '../services/db';
 import type { AdminProduct, AdminStats, ProductFilters, PaginationState } from '../types/admin';
 import type { ComponentType } from '../constants/components';
@@ -35,8 +37,12 @@ export function useCachedApi() {
     pagination: Partial<PaginationState> = {},
     forceRefresh = false
   ): Promise<ProductListResponse> {
+    // Check if IndexedDB is available for caching
+    const dbAvailable = await isIndexedDBAvailable();
+
     // Check if we can use cache (only for default/empty filters for simplicity)
     const canUseCache =
+      dbAvailable &&
       !forceRefresh &&
       !filters.searchQuery &&
       !filters.categories?.length &&
@@ -46,13 +52,16 @@ export function useCachedApi() {
       (!filters.updatedAtFilter || filters.updatedAtFilter.preset === 'all');
 
     if (canUseCache) {
-      const cacheIsFresh = await isCacheFresh(
-        CACHE_CONFIG.PRODUCTS_KEY,
-        CACHE_CONFIG.PRODUCTS_TTL
+      const cacheIsFresh = await safeDBOperation(
+        () => isCacheFresh(CACHE_CONFIG.PRODUCTS_KEY, CACHE_CONFIG.PRODUCTS_TTL),
+        false
       );
 
       if (cacheIsFresh || !hasInitialSync.value) {
-        const cachedProducts = await getCachedProducts();
+        const cachedProducts = await safeDBOperation(
+          () => getCachedProducts(),
+          []
+        );
         if (cachedProducts.length > 0 && cacheIsFresh) {
           // Apply local sorting and pagination
           const sorted = applySorting(cachedProducts, filters);
@@ -79,11 +88,17 @@ export function useCachedApi() {
       // For a complete cache, fetch all products without pagination
       try {
         const allProductsResponse = await productApi.getProducts({}, { itemsPerPage: 1000 });
-        await cacheProducts(allProductsResponse.products);
+        await safeDBOperation(
+          () => cacheProducts(allProductsResponse.products),
+          undefined
+        );
         hasInitialSync.value = true;
       } catch {
         // If full fetch fails, cache what we have
-        await cacheProducts(response.products);
+        await safeDBOperation(
+          () => cacheProducts(response.products),
+          undefined
+        );
       }
     }
 
@@ -94,14 +109,19 @@ export function useCachedApi() {
    * Get product statistics with caching
    */
   async function getStats(forceRefresh = false): Promise<AdminStats> {
-    if (!forceRefresh) {
-      const cacheIsFresh = await isCacheFresh(
-        CACHE_CONFIG.STATS_KEY,
-        CACHE_CONFIG.STATS_TTL
+    const dbAvailable = await isIndexedDBAvailable();
+
+    if (!forceRefresh && dbAvailable) {
+      const cacheIsFresh = await safeDBOperation(
+        () => isCacheFresh(CACHE_CONFIG.STATS_KEY, CACHE_CONFIG.STATS_TTL),
+        false
       );
 
       if (cacheIsFresh) {
-        const cached = await getCachedStats();
+        const cached = await safeDBOperation(
+          () => getCachedStats(),
+          undefined
+        );
         if (cached) {
           return cached;
         }
@@ -110,7 +130,7 @@ export function useCachedApi() {
 
     // Fetch from API and cache
     const stats = await productApi.getStats();
-    await cacheStats(stats);
+    await safeDBOperation(() => cacheStats(stats), undefined);
     return stats;
   }
 
@@ -121,14 +141,19 @@ export function useCachedApi() {
   async function getEnabledProducts(
     forceRefresh = false
   ): Promise<Record<ComponentType, AdminProduct[]>> {
-    if (!forceRefresh) {
-      const cacheIsFresh = await isCacheFresh(
-        CACHE_CONFIG.PRODUCTS_KEY,
-        CACHE_CONFIG.PRODUCTS_TTL
+    const dbAvailable = await isIndexedDBAvailable();
+
+    if (!forceRefresh && dbAvailable) {
+      const cacheIsFresh = await safeDBOperation(
+        () => isCacheFresh(CACHE_CONFIG.PRODUCTS_KEY, CACHE_CONFIG.PRODUCTS_TTL),
+        false
       );
 
       if (cacheIsFresh) {
-        const cachedProducts = await getCachedProducts();
+        const cachedProducts = await safeDBOperation(
+          () => getCachedProducts(),
+          []
+        );
         if (cachedProducts.length > 0) {
           // Group enabled products by category
           const result = {} as Record<ComponentType, AdminProduct[]>;
@@ -146,15 +171,23 @@ export function useCachedApi() {
     const data = await productApi.getEnabledProducts();
 
     // Also update the products cache with this data
-    const allProducts: AdminProduct[] = [];
-    for (const products of Object.values(data)) {
-      allProducts.push(...products);
-    }
-    if (allProducts.length > 0) {
-      // Merge with existing cache (don't replace disabled products)
-      const existingProducts = await getCachedProducts();
-      const existingDisabled = existingProducts.filter((p) => !p.enabled);
-      await cacheProducts([...allProducts, ...existingDisabled]);
+    if (dbAvailable) {
+      const allProducts: AdminProduct[] = [];
+      for (const products of Object.values(data)) {
+        allProducts.push(...products);
+      }
+      if (allProducts.length > 0) {
+        // Merge with existing cache (don't replace disabled products)
+        const existingProducts = await safeDBOperation(
+          () => getCachedProducts(),
+          []
+        );
+        const existingDisabled = existingProducts.filter((p) => !p.enabled);
+        await safeDBOperation(
+          () => cacheProducts([...allProducts, ...existingDisabled]),
+          undefined
+        );
+      }
     }
 
     return data;
@@ -169,11 +202,14 @@ export function useCachedApi() {
   ): Promise<AdminProduct> {
     const created = await productApi.createProduct(product);
 
-    // Cache the new product
-    await cacheProduct(created);
+    // Cache the new product (non-blocking, errors logged but not thrown)
+    await safeDBOperation(() => cacheProduct(created), undefined);
 
     // Invalidate stats cache (counts have changed)
-    await db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY);
+    await safeDBOperation(
+      () => db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY),
+      undefined
+    );
 
     return created;
   }
@@ -189,11 +225,14 @@ export function useCachedApi() {
     const updated = await productApi.updateProduct(id, updates);
 
     // Update cache
-    await cacheProduct(updated);
+    await safeDBOperation(() => cacheProduct(updated), undefined);
 
     // Invalidate stats cache if enabled status might have changed
     if ('enabled' in updates) {
-      await db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY);
+      await safeDBOperation(
+        () => db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY),
+        undefined
+      );
     }
 
     return updated;
@@ -207,10 +246,13 @@ export function useCachedApi() {
     const updated = await productApi.toggleEnabled(id);
 
     // Update cache
-    await cacheProduct(updated);
+    await safeDBOperation(() => cacheProduct(updated), undefined);
 
     // Invalidate stats cache
-    await db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY);
+    await safeDBOperation(
+      () => db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY),
+      undefined
+    );
 
     return updated;
   }
@@ -223,10 +265,13 @@ export function useCachedApi() {
     await productApi.deleteProduct(id);
 
     // Remove from cache
-    await uncacheProduct(productId);
+    await safeDBOperation(() => uncacheProduct(productId), undefined);
 
     // Invalidate stats cache
-    await db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY);
+    await safeDBOperation(
+      () => db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY),
+      undefined
+    );
   }
 
   /**
@@ -239,8 +284,8 @@ export function useCachedApi() {
     ]);
 
     await Promise.all([
-      cacheProducts(productsResponse.products),
-      cacheStats(stats),
+      safeDBOperation(() => cacheProducts(productsResponse.products), undefined),
+      safeDBOperation(() => cacheStats(stats), undefined),
     ]);
 
     hasInitialSync.value = true;
@@ -250,7 +295,7 @@ export function useCachedApi() {
    * Clear all cached data
    */
   async function invalidateCache(): Promise<void> {
-    await clearCache();
+    await safeDBOperation(() => clearCache(), undefined);
     hasInitialSync.value = false;
   }
 

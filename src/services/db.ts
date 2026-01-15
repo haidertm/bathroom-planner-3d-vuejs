@@ -5,6 +5,76 @@ import Dexie, { type Table } from 'dexie';
 import type { AdminProduct, AdminStats } from '../types/admin';
 import type { ComponentType } from '../constants/components';
 
+// Track IndexedDB availability
+let indexedDBAvailable: boolean | null = null;
+
+/**
+ * Check if IndexedDB is available in the current environment
+ * Handles private browsing mode and restricted environments
+ */
+export async function isIndexedDBAvailable(): Promise<boolean> {
+  // Return cached result if already checked
+  if (indexedDBAvailable !== null) {
+    return indexedDBAvailable;
+  }
+
+  try {
+    // Check if indexedDB exists
+    if (typeof indexedDB === 'undefined') {
+      indexedDBAvailable = false;
+      return false;
+    }
+
+    // Try to open a test database to verify it actually works
+    // (private browsing mode may have indexedDB but throw on use)
+    const testDBName = '__idb_test__';
+    const testDB = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(testDBName);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+    });
+    testDB.close();
+
+    // Clean up test database
+    await new Promise<void>((resolve) => {
+      const deleteRequest = indexedDB.deleteDatabase(testDBName);
+      deleteRequest.onsuccess = () => resolve();
+      deleteRequest.onerror = () => resolve(); // Ignore cleanup errors
+    });
+
+    indexedDBAvailable = true;
+    return true;
+  } catch {
+    indexedDBAvailable = false;
+    return false;
+  }
+}
+
+/**
+ * Safe wrapper for database operations
+ * Returns null/empty array instead of throwing when IndexedDB is unavailable
+ */
+export async function safeDBOperation<T>(
+  operation: () => Promise<T>,
+  fallback: T
+): Promise<T> {
+  try {
+    const available = await isIndexedDBAvailable();
+    if (!available) {
+      if (import.meta.env.DEV) {
+        console.warn('[IndexedDB] Not available, using fallback');
+      }
+      return fallback;
+    }
+    return await operation();
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('[IndexedDB] Operation failed:', error);
+    }
+    return fallback;
+  }
+}
+
 // Cache metadata for tracking freshness
 export interface CacheMeta {
   id: string;
@@ -118,9 +188,13 @@ export async function cacheProducts(products: AdminProduct[]): Promise<void> {
 
 /**
  * Cache a single product (for create/update operations)
+ * Also updates cache timestamp to prevent stale reads
  */
 export async function cacheProduct(product: AdminProduct): Promise<void> {
-  await db.products.put(product);
+  await db.transaction('rw', db.products, db.cacheMeta, async () => {
+    await db.products.put(product);
+    await updateCacheTimestamp(CACHE_CONFIG.PRODUCTS_KEY);
+  });
 }
 
 /**
@@ -150,7 +224,7 @@ export async function getCachedProductsByCategory(
  * Get enabled products from cache (for planner)
  */
 export async function getCachedEnabledProducts(): Promise<AdminProduct[]> {
-  return db.products.where('enabled').equals(1).toArray();
+  return db.products.filter((product) => product.enabled === true).toArray();
 }
 
 /**
