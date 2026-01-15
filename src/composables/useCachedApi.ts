@@ -25,6 +25,46 @@ import { COMPONENTS } from '../constants/components';
 // Track if initial sync has been done this session
 const hasInitialSync = ref(false);
 
+// Sync lock mechanism to prevent race conditions
+// When sync is in progress, reads will wait for it to complete
+const isSyncing = ref(false);
+let syncPromise: Promise<void> | null = null;
+
+/**
+ * Wait for any in-progress sync to complete
+ * Returns immediately if no sync is in progress
+ */
+async function waitForSync(): Promise<void> {
+  if (syncPromise) {
+    await syncPromise;
+  }
+}
+
+/**
+ * Execute a function with sync lock
+ * Prevents concurrent syncs and allows readers to wait
+ */
+async function withSyncLock<T>(fn: () => Promise<T>): Promise<T> {
+  // Wait for any existing sync to complete first
+  await waitForSync();
+
+  // Set up the lock
+  isSyncing.value = true;
+  let resolveSync: () => void;
+  syncPromise = new Promise<void>((resolve) => {
+    resolveSync = resolve;
+  });
+
+  try {
+    return await fn();
+  } finally {
+    // Always release the lock, even if fn() throws
+    isSyncing.value = false;
+    resolveSync!();
+    syncPromise = null;
+  }
+}
+
 export function useCachedApi() {
   /**
    * Fetch products with caching
@@ -37,6 +77,9 @@ export function useCachedApi() {
     pagination: Partial<PaginationState> = {},
     forceRefresh = false
   ): Promise<ProductListResponse> {
+    // Wait for any in-progress sync to complete before reading cache
+    await waitForSync();
+
     // Check if IndexedDB is available for caching
     const dbAvailable = await isIndexedDBAvailable();
 
@@ -80,35 +123,65 @@ export function useCachedApi() {
     }
 
     // Fetch from API
-    const response = await productApi.getProducts(filters, pagination);
+    try {
+      const response = await productApi.getProducts(filters, pagination);
 
-    // Cache all products if we fetched without filters
-    // This ensures we have a complete dataset for future cached queries
-    if (canUseCache && response.products.length > 0) {
-      // For a complete cache, fetch all products without pagination
-      try {
-        const allProductsResponse = await productApi.getProducts({}, { itemsPerPage: 1000 });
-        await safeDBOperation(
-          () => cacheProducts(allProductsResponse.products),
-          undefined
-        );
-        hasInitialSync.value = true;
-      } catch {
-        // If full fetch fails, cache what we have
-        await safeDBOperation(
-          () => cacheProducts(response.products),
-          undefined
-        );
+      // Cache all products if we fetched without filters
+      // This ensures we have a complete dataset for future cached queries
+      if (canUseCache && response.products.length > 0) {
+        // For a complete cache, fetch all products without pagination
+        try {
+          const allProductsResponse = await productApi.getProducts({}, { itemsPerPage: 1000 });
+          await safeDBOperation(
+            () => cacheProducts(allProductsResponse.products),
+            undefined
+          );
+          hasInitialSync.value = true;
+        } catch {
+          // If full fetch fails, cache what we have
+          await safeDBOperation(
+            () => cacheProducts(response.products),
+            undefined
+          );
+        }
       }
-    }
 
-    return response;
+      return response;
+    } catch (apiError) {
+      // API failed (offline, server down, etc.)
+      // Fall back to stale IndexedDB cache if available
+      if (dbAvailable) {
+        const staleCachedProducts = await safeDBOperation(
+          () => getCachedProducts(),
+          []
+        );
+        if (staleCachedProducts.length > 0) {
+          // Return stale cached data instead of throwing
+          const sorted = applySorting(staleCachedProducts, filters);
+          const paginated = applyPagination(sorted, pagination);
+          return {
+            products: paginated,
+            total: staleCachedProducts.length,
+            page: pagination.currentPage || 1,
+            limit: pagination.itemsPerPage || 12,
+            totalPages: Math.ceil(
+              staleCachedProducts.length / (pagination.itemsPerPage || 12)
+            ),
+          };
+        }
+      }
+      // No cached data available, re-throw the error
+      throw apiError;
+    }
   }
 
   /**
    * Get product statistics with caching
    */
   async function getStats(forceRefresh = false): Promise<AdminStats> {
+    // Wait for any in-progress sync to complete before reading cache
+    await waitForSync();
+
     const dbAvailable = await isIndexedDBAvailable();
 
     if (!forceRefresh && dbAvailable) {
@@ -129,9 +202,23 @@ export function useCachedApi() {
     }
 
     // Fetch from API and cache
-    const stats = await productApi.getStats();
-    await safeDBOperation(() => cacheStats(stats), undefined);
-    return stats;
+    try {
+      const stats = await productApi.getStats();
+      await safeDBOperation(() => cacheStats(stats), undefined);
+      return stats;
+    } catch (apiError) {
+      // API failed - fall back to stale cache if available
+      if (dbAvailable) {
+        const staleStats = await safeDBOperation(
+          () => getCachedStats(),
+          undefined
+        );
+        if (staleStats) {
+          return staleStats;
+        }
+      }
+      throw apiError;
+    }
   }
 
   /**
@@ -141,6 +228,9 @@ export function useCachedApi() {
   async function getEnabledProducts(
     forceRefresh = false
   ): Promise<Record<ComponentType, AdminProduct[]>> {
+    // Wait for any in-progress sync to complete before reading cache
+    await waitForSync();
+
     const dbAvailable = await isIndexedDBAvailable();
 
     if (!forceRefresh && dbAvailable) {
@@ -168,29 +258,50 @@ export function useCachedApi() {
     }
 
     // Fetch from API
-    const data = await productApi.getEnabledProducts();
+    try {
+      const data = await productApi.getEnabledProducts();
 
-    // Also update the products cache with this data
-    if (dbAvailable) {
-      const allProducts: AdminProduct[] = [];
-      for (const products of Object.values(data)) {
-        allProducts.push(...products);
+      // Also update the products cache with this data
+      if (dbAvailable) {
+        const allProducts: AdminProduct[] = [];
+        for (const products of Object.values(data)) {
+          allProducts.push(...products);
+        }
+        if (allProducts.length > 0) {
+          // Merge with existing cache (don't replace disabled products)
+          const existingProducts = await safeDBOperation(
+            () => getCachedProducts(),
+            []
+          );
+          const existingDisabled = existingProducts.filter((p) => !p.enabled);
+          await safeDBOperation(
+            () => cacheProducts([...allProducts, ...existingDisabled]),
+            undefined
+          );
+        }
       }
-      if (allProducts.length > 0) {
-        // Merge with existing cache (don't replace disabled products)
-        const existingProducts = await safeDBOperation(
+
+      return data;
+    } catch (apiError) {
+      // API failed - fall back to stale cache if available
+      if (dbAvailable) {
+        const staleCachedProducts = await safeDBOperation(
           () => getCachedProducts(),
           []
         );
-        const existingDisabled = existingProducts.filter((p) => !p.enabled);
-        await safeDBOperation(
-          () => cacheProducts([...allProducts, ...existingDisabled]),
-          undefined
-        );
+        if (staleCachedProducts.length > 0) {
+          // Group enabled products by category from stale cache
+          const result = {} as Record<ComponentType, AdminProduct[]>;
+          for (const category of COMPONENTS) {
+            result[category] = staleCachedProducts.filter(
+              (p) => p.enabled && p.category === category
+            );
+          }
+          return result;
+        }
       }
+      throw apiError;
     }
-
-    return data;
   }
 
   /**
@@ -276,27 +387,33 @@ export function useCachedApi() {
 
   /**
    * Force sync all data from API to cache
+   * Uses sync lock to prevent race conditions with concurrent reads
    */
   async function syncAll(): Promise<void> {
-    const [productsResponse, stats] = await Promise.all([
-      productApi.getProducts({}, { itemsPerPage: 1000 }),
-      productApi.getStats(),
-    ]);
+    await withSyncLock(async () => {
+      const [productsResponse, stats] = await Promise.all([
+        productApi.getProducts({}, { itemsPerPage: 1000 }),
+        productApi.getStats(),
+      ]);
 
-    await Promise.all([
-      safeDBOperation(() => cacheProducts(productsResponse.products), undefined),
-      safeDBOperation(() => cacheStats(stats), undefined),
-    ]);
+      await Promise.all([
+        safeDBOperation(() => cacheProducts(productsResponse.products), undefined),
+        safeDBOperation(() => cacheStats(stats), undefined),
+      ]);
 
-    hasInitialSync.value = true;
+      hasInitialSync.value = true;
+    });
   }
 
   /**
    * Clear all cached data
+   * Uses sync lock to prevent race conditions with concurrent reads
    */
   async function invalidateCache(): Promise<void> {
-    await safeDBOperation(() => clearCache(), undefined);
-    hasInitialSync.value = false;
+    await withSyncLock(async () => {
+      await safeDBOperation(() => clearCache(), undefined);
+      hasInitialSync.value = false;
+    });
   }
 
   /**
@@ -323,6 +440,7 @@ export function useCachedApi() {
 
     // State
     hasInitialSync,
+    isSyncing,
   };
 }
 
