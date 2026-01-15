@@ -31,9 +31,9 @@ const initScene = () => {
   const width = containerRef.value.clientWidth;
   const height = containerRef.value.clientHeight;
 
-  // Scene
+  // Scene - use medium grey background for better contrast with white objects
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf0f0f0);
+  scene.background = new THREE.Color(0x808080);
 
   // Camera
   camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -45,6 +45,9 @@ const initScene = () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.7;
   containerRef.value.appendChild(renderer.domElement);
 
   // Controls
@@ -54,21 +57,32 @@ const initScene = () => {
   controls.enablePan = true;
   controls.enableZoom = true;
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  // Lighting - minimal for accurate color representation
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  // Hemisphere light for natural sky/ground lighting (helps PBR materials)
+  const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.2);
+  hemisphereLight.position.set(0, 20, 0);
+  scene.add(hemisphereLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
   directionalLight.position.set(5, 10, 7);
   directionalLight.castShadow = true;
   scene.add(directionalLight);
 
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-  fillLight.position.set(-5, 5, -5);
-  scene.add(fillLight);
+  // Create environment map for PBR reflections
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  pmremGenerator.compileEquirectangularShader();
 
-  // Ground plane (grid)
-  const gridHelper = new THREE.GridHelper(4, 20, 0xcccccc, 0xe0e0e0);
+  // Create a simple neutral environment
+  const envScene = new THREE.Scene();
+  envScene.background = new THREE.Color(0xffffff);
+  scene.environment = pmremGenerator.fromScene(envScene, 0.04).texture;
+  pmremGenerator.dispose();
+
+  // Ground plane (grid) - lighter grid for visibility on dark background
+  const gridHelper = new THREE.GridHelper(4, 20, 0x999999, 0x666666);
   scene.add(gridHelper);
 
   // Animation loop
@@ -130,11 +144,27 @@ const loadModel = async (path: string) => {
       currentModel.scale.setScalar(scale);
     }
 
-    // Enable shadows
+    // Enable shadows and fix material/texture color spaces
     currentModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+
+        // Fix material and texture color spaces for correct color rendering
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        materials.forEach((material) => {
+          if (material) {
+            // Fix texture color spaces
+            if ('map' in material && material.map) {
+              material.map.colorSpace = THREE.SRGBColorSpace;
+            }
+            if ('emissiveMap' in material && material.emissiveMap) {
+              material.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+            }
+            // Ensure material updates
+            material.needsUpdate = true;
+          }
+        });
       }
     });
 
