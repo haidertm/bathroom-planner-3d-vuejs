@@ -1343,6 +1343,38 @@ const addItem = async (type, productData = null) => {
   // - Otherwise, use variant's spawnHeight or fallback to freePosition.y
   const itemY = useAutoPositionedY ? freePosition.y : (selectedVariant?.spawnHeight ?? freePosition.y)
 
+  // ============================================================================
+  // FINAL COLLISION VALIDATION: Double-check position is collision-free
+  // This catches any edge cases where auto-positioning or findFreeWallPosition
+  // might have returned a position that still has a collision
+  // ============================================================================
+  const finalPosition = { x: freePosition.x, y: itemY, z: freePosition.z }
+  const tempItemForValidation = {
+    id: -1,
+    type,
+    position: [finalPosition.x, finalPosition.y, finalPosition.z],
+    scale: defaults.scale,
+    sku: sku
+  }
+
+  const hasCollision = wouldCollideWithExistingOrWalls(
+    finalPosition,
+    type,
+    defaults.scale,
+    -1, // exclude ID (new item has no ID yet)
+    items.value,
+    tempItemForValidation,
+    roomWidth.value,
+    roomHeight.value,
+    notchWidth.value,
+    notchHeight.value
+  )
+
+  if (hasCollision) {
+    alert('Cannot add item - no available space found. The room is too crowded. Please remove an existing item first.')
+    return
+  }
+
   const newItem = {
     id: generateUniqueId(),
     type,

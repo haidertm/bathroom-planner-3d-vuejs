@@ -1740,10 +1740,11 @@ export class EventHandlers {
 
   /**
    * Apply movement to all selected objects based on the primary object's movement
+   * @returns true if any secondary object is colliding
    */
-  private applyBulkMove(primaryObject: THREE.Object3D, _unconstrainedPrimaryPos?: THREE.Vector3, _idealRot?: number): void {
+  private applyBulkMoveAndCheckCollision(primaryObject: THREE.Object3D, _unconstrainedPrimaryPos?: THREE.Vector3, _idealRot?: number): boolean {
     if (this.selectedObjects.size <= 1) {
-      return;
+      return false;
     }
 
     const primaryId = primaryObject.userData.itemId;
@@ -1751,6 +1752,10 @@ export class EventHandlers {
     // This ensures the group moves and rotates as a single rigid unit
     const primaryPos = primaryObject.position.clone();
     const primaryRot = primaryObject.rotation.y;
+
+    // Cache virtual items once for the entire bulk operation
+    const virtualItems = this.getVirtualItemsExcludingSelected();
+    // console.log(`🔍 Checking collision against ${virtualItems.length} virtual items`);
 
     let anyColliding = false;
 
@@ -1834,20 +1839,62 @@ export class EventHandlers {
         obj.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
         obj.rotation.y = constrainedRotation;
 
-        // Check collision for this object - exclude other selected items to prevent false positives
-        const isColliding = wouldCollideWithExisting(
+        // Create temporary item with updated rotation for accurate collision check
+        // This ensures checkCollision uses the current visual rotation, not the stored rotation
+        const tempItem = itemData ? { ...itemData, rotation: constrainedRotation } : undefined;
+
+        // Check collision for this object
+        // 1. Check against EXTERNAL items (unselected)
+        const isCollidingExternal = wouldCollideWithExisting(
           { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
           itemType,
           itemScale,
           id,
-          this.getVirtualItemsExcludingSelected(), // Use filtered list to exclude selected group
-          itemData,
+          virtualItems, // Use cached list of unselected items
+          tempItem,     // Use item with current rotation
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           this.notchWidthRef.value,
           this.notchHeightRef.value
         );
-        if (isColliding) anyColliding = true;
+
+        // 2. Check against PRIMARY object (internal collision)
+        // This detects if the group is being squashed together (e.g. against a wall)
+        // We construct a virtual item representing the Primary Object at its NEW position
+        const primaryItemData = this.getCurrentItemData(primaryId);
+        const primaryScale = primaryObject.scale.x;
+        const primaryTempItem: BathroomItem = primaryItemData ? {
+          ...primaryItemData,
+          position: [primaryObject.position.x, primaryObject.position.y, primaryObject.position.z],
+          rotation: primaryObject.rotation.y
+        } : {
+          id: primaryId,
+          type: primaryObject.userData.type,
+          position: [primaryObject.position.x, primaryObject.position.y, primaryObject.position.z],
+          rotation: primaryObject.rotation.y,
+          scale: primaryScale,
+          sku: primaryObject.userData.sku
+        } as BathroomItem;
+
+        // Use import { checkCollision } from '../utils/constraints'; // (Assume present)
+        // We can reuse wouldCollideWithExisting by passing the primary object as the "existing list" -> robust way
+        const isCollidingInternal = wouldCollideWithExisting(
+          { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
+          itemType,
+          itemScale,
+          id,
+          [primaryTempItem], // Check specifically against the moved primary object
+          tempItem,
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          this.notchWidthRef.value,
+          this.notchHeightRef.value
+        );
+
+        if (isCollidingExternal || isCollidingInternal) {
+          anyColliding = true;
+          if (isCollidingInternal) console.log(`💥 Multi-select INTERNAL collision: Item ${id} hits Primary ${primaryId}`);
+        }
 
         // Queue update for this object
         this.queueUpdate(id, {
@@ -1862,10 +1909,8 @@ export class EventHandlers {
       }
     });
 
-    // If any object in the group is colliding, set the outline color to red
-    if (anyColliding) {
-      setOutlineColor(true);
-    }
+    // Return collision state for the caller to handle outline color
+    return anyColliding;
   }
 
   /**
@@ -1880,7 +1925,7 @@ export class EventHandlers {
     // ✅ FIX: Apply wall snapping in BOTH 2D and 3D modes
     // This ensures items don't go outside room boundaries when dropping multi-select groups
 
-    const updatedItems: Array<{id: number, position: [number, number, number], rotation: number}> = [];
+    const updatedItems: Array<{ id: number, position: [number, number, number], rotation: number }> = [];
 
     this.selectedObjects.forEach((obj, id) => {
       const itemType = obj.userData.type as ComponentType;
@@ -2103,8 +2148,8 @@ export class EventHandlers {
           rotation: objectRotation
         });
 
-        // Real-time collision feedback
-        const isColliding = this.checkCollisionState(
+        // Real-time collision feedback - primary object
+        const primaryColliding = this.checkCollisionState(
           { x: constrainedPos.x, y: this.selectedObject.position.y, z: constrainedPos.z },
           objectType,
           objectScale,
@@ -2112,15 +2157,17 @@ export class EventHandlers {
           currentItem,
           objectRotation
         );
-        setOutlineColor(isColliding);
 
         // Update schematic overlay position in 2D mode
         if (this.sceneManager?.updateSchematicPosition) {
           this.sceneManager.updateSchematicPosition(itemId);
         }
 
-        // Apply bulk move to other selected objects
-        this.applyBulkMove(this.selectedObject, idealPosition, objectRotation);
+        // Apply bulk move to other selected objects and check their collisions
+        const secondaryColliding = this.applyBulkMoveAndCheckCollision(this.selectedObject, idealPosition, objectRotation);
+
+        // ✅ Set outline color based on PRIMARY OR SECONDARY collision
+        setOutlineColor(primaryColliding || secondaryColliding);
 
         return; // Exit early
       }
@@ -2261,8 +2308,8 @@ export class EventHandlers {
             }
           }
 
-          // Check for collisions
-          const isColliding = this.checkCollisionState(
+          // Check for collisions - primary object
+          const primaryColliding = this.checkCollisionState(
             constrainedPosition,
             objectType,
             objectScale,
@@ -2270,7 +2317,6 @@ export class EventHandlers {
             currentItem,
             constrainedRotation
           );
-          setOutlineColor(isColliding);
 
           // Apply position to object
           this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
@@ -2294,7 +2340,10 @@ export class EventHandlers {
             constrainedPosition.y,
             floorIntersect.z + this.dragOffset.z
           );
-          this.applyBulkMove(this.selectedObject, idealPosition2D, constrainedRotation);
+          const secondaryColliding = this.applyBulkMoveAndCheckCollision(this.selectedObject, idealPosition2D, constrainedRotation);
+
+          // ✅ Set outline color based on PRIMARY OR SECONDARY collision
+          setOutlineColor(primaryColliding || secondaryColliding);
 
           return; // Exit early - 2D mode handling complete
         }
@@ -2891,8 +2940,8 @@ export class EventHandlers {
         }
       }
 
-      // Check collisions with proper rotation
-      const isColliding = this.checkCollisionState(
+      // Check collisions with proper rotation - primary object
+      const primaryColliding = this.checkCollisionState(
         { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
         objectType,
         objectScale,
@@ -2900,9 +2949,6 @@ export class EventHandlers {
         currentItem,
         constrainedRotation  // ✅ FIX: Pass rotation to collision detection
       );
-
-      // Update outline color
-      setOutlineColor(isColliding);
 
       // Apply constrained position
       this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
@@ -2927,8 +2973,11 @@ export class EventHandlers {
 
       this.queueUpdate(itemId, updateData);
 
-      // Apply bulk move to other selected objects using the stable ideal position
-      this.applyBulkMove(this.selectedObject, idealPosition, constrainedRotation);
+      // Apply bulk move to other selected objects and check their collisions
+      const secondaryColliding = this.applyBulkMoveAndCheckCollision(this.selectedObject, idealPosition, constrainedRotation);
+
+      // ✅ Set outline color based on PRIMARY OR SECONDARY collision
+      setOutlineColor(primaryColliding || secondaryColliding);
 
     } else if (this.isRotating) {
       // 📐 2D MODE: Convert camera orbit to panning
@@ -3601,13 +3650,22 @@ export class EventHandlers {
           currentItem
         );
 
-        setOutlineColor(isColliding);
-
         this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
 
         if (rotationChanged) {
           this.selectedObject.rotation.y = constrainedRotation;
         }
+
+        // Apply bulk move to other selected objects and check their collisions
+        const secondaryColliding = this.applyBulkMoveAndCheckCollision(this.selectedObject, undefined, constrainedRotation);
+
+
+        // ✅ Set outline color based on PRIMARY OR SECONDARY collision
+        const finalCollisionState = isColliding || secondaryColliding;
+        if (finalCollisionState) {
+          console.log(`🚨 MULTI-SELECT COLLISION: Primary=${isColliding}, Secondary=${secondaryColliding}`);
+        }
+        setOutlineColor(finalCollisionState);
 
         // Update schematic overlay position in 2D mode
         if (this.sceneManager?.updateSchematicPosition) {
@@ -3628,9 +3686,6 @@ export class EventHandlers {
         }
 
         this.queueUpdate(itemId, updateData);
-
-        // Apply bulk move to other selected objects
-        this.applyBulkMove(this.selectedObject, newPosition, constrainedRotation);
       } else if (this.isRotating) {
         // Camera rotation for touch (unchanged)
         const deltaX = touch.clientX - this.mouseX;
