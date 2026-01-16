@@ -1,5 +1,6 @@
 // Cached API Composable
 // Provides write-through caching for API calls using IndexedDB
+// Includes cross-tab synchronization via BroadcastChannel
 
 import { ref } from 'vue';
 import { productApi, type ProductListResponse } from '../services/api';
@@ -22,6 +23,14 @@ import {
   getSyncStatus,
   type SyncStatus,
 } from '../services/db';
+import {
+  broadcastProductCreated,
+  broadcastProductUpdated,
+  broadcastProductDeleted,
+  broadcastProductToggled,
+  broadcastCacheSynced,
+  broadcastCacheInvalidated,
+} from '../services/broadcastChannel';
 import type { AdminProduct, AdminStats, ProductFilters, PaginationState } from '../types/admin';
 import type { ComponentType } from '../constants/components';
 import { COMPONENTS } from '../constants/components';
@@ -314,6 +323,9 @@ export function useCachedApi() {
       undefined
     );
 
+    // Broadcast to other tabs
+    broadcastProductCreated(created);
+
     return created;
   }
 
@@ -338,6 +350,9 @@ export function useCachedApi() {
       );
     }
 
+    // Broadcast to other tabs
+    broadcastProductUpdated(updated);
+
     return updated;
   }
 
@@ -357,6 +372,9 @@ export function useCachedApi() {
       undefined
     );
 
+    // Broadcast to other tabs
+    broadcastProductToggled(updated);
+
     return updated;
   }
 
@@ -375,6 +393,9 @@ export function useCachedApi() {
       () => db.cacheMeta.delete(CACHE_CONFIG.STATS_KEY),
       undefined
     );
+
+    // Broadcast to other tabs
+    broadcastProductDeleted(productId);
   }
 
   /**
@@ -453,6 +474,9 @@ export function useCachedApi() {
           console.log('[Sync] Phase 2 complete: All data written successfully', syncStatus);
         }
 
+        // Broadcast to other tabs that cache was synced
+        broadcastCacheSynced(products, stats);
+
         return syncStatus;
       } catch (writeError) {
         // Transaction failed - Dexie automatically rolls back
@@ -473,6 +497,9 @@ export function useCachedApi() {
     await withSyncLock(async () => {
       await safeDBOperation(() => clearCache(), undefined);
       hasInitialSync.value = false;
+
+      // Broadcast to other tabs that cache was invalidated
+      broadcastCacheInvalidated();
     });
   }
 

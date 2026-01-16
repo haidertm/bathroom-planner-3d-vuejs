@@ -1,4 +1,5 @@
 // Admin Products Management Composable - API Version with IndexedDB Caching
+// Includes cross-tab synchronization via BroadcastChannel
 import { ref, computed, watch, onScopeDispose } from 'vue';
 import type { ComponentType } from '../constants/components';
 import { COMPONENTS } from '../constants/components';
@@ -13,6 +14,11 @@ import {
   DEFAULT_PAGINATION,
 } from '../types/admin';
 import { useCachedApi } from './useCachedApi';
+import {
+  subscribe as subscribeToBroadcast,
+  isOwnMessage,
+  type BroadcastMessage,
+} from '../services/broadcastChannel';
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -389,9 +395,79 @@ export function useAdminProducts() {
     fetchProducts();
   }, 300);
 
-  // Clean up debounced function on scope disposal to prevent memory leaks
+  // Set up cross-tab synchronization via BroadcastChannel
+  const handleBroadcastMessage = (message: BroadcastMessage) => {
+    // Ignore messages from this tab
+    if (isOwnMessage(message)) return;
+
+    if (import.meta.env.DEV) {
+      console.log('[useAdminProducts] Received broadcast:', message.type);
+    }
+
+    switch (message.type) {
+      case 'product-created':
+        // Add new product to local state
+        if (message.payload?.product) {
+          const newProduct = message.payload.product;
+          // Check if product already exists (prevent duplicates)
+          const exists = products.value.some(p => p.id === newProduct.id);
+          if (!exists) {
+            // Create new array to trigger Vue reactivity
+            products.value = [...products.value, newProduct];
+          }
+          // Refresh stats
+          fetchStats();
+        }
+        break;
+
+      case 'product-updated':
+      case 'product-toggled':
+        // Update product in local state
+        if (message.payload?.product) {
+          const updatedProduct = message.payload.product;
+          // Create new array with updated product to trigger Vue reactivity
+          products.value = products.value.map(p =>
+            p.id === updatedProduct.id ? updatedProduct : p
+          );
+          // Refresh stats if toggle
+          if (message.type === 'product-toggled') {
+            fetchStats();
+          }
+        }
+        break;
+
+      case 'product-deleted':
+        // Remove product from local state
+        if (message.payload?.productId) {
+          const productId = message.payload.productId;
+          // Create new array without deleted product to trigger Vue reactivity
+          products.value = products.value.filter(p => p.id !== productId);
+          // Refresh stats
+          fetchStats();
+        }
+        break;
+
+      case 'cache-synced':
+        // Another tab synced the cache, refresh our view
+        fetchProducts();
+        fetchStats();
+        break;
+
+      case 'cache-invalidated':
+        // Another tab invalidated the cache, refresh our view
+        fetchProducts();
+        fetchStats();
+        break;
+    }
+  };
+
+  // Subscribe to broadcast messages
+  const unsubscribeBroadcast = subscribeToBroadcast(handleBroadcastMessage);
+
+  // Clean up on scope disposal
   onScopeDispose(() => {
     debouncedFetchProducts.cancel();
+    unsubscribeBroadcast();
   });
 
   // Watch filters and refetch when they change (debounced)

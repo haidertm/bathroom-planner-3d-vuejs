@@ -114,6 +114,11 @@ const loadModel = async (path: string) => {
     modelPath = '/' + modelPath;
   }
 
+  console.log('[GlbPreviewModal] Loading model:', {
+    originalPath: path,
+    resolvedPath: modelPath,
+  });
+
   const loader = new GLTFLoader();
 
   try {
@@ -182,8 +187,12 @@ const loadModel = async (path: string) => {
 
     isLoading.value = false;
   } catch (error) {
-    console.error('Failed to load model:', error);
-    loadError.value = `Failed to load model: ${path}`;
+    console.error('[GlbPreviewModal] Failed to load model:', {
+      originalPath: path,
+      resolvedPath: modelPath,
+      error,
+    });
+    loadError.value = `Failed to load model from path: ${modelPath}\n\nMake sure the file exists in the public folder.`;
     isLoading.value = false;
   }
 };
