@@ -21,6 +21,7 @@ import {
   atomicSyncAll,
   isCacheValid,
   getSyncStatus,
+  validateSchemaVersion,
   type SyncStatus,
 } from '../services/db';
 import {
@@ -37,6 +38,28 @@ import { COMPONENTS } from '../constants/components';
 
 // Track if initial sync has been done this session
 const hasInitialSync = ref(false);
+
+// Track if schema version has been validated this session
+let schemaValidated = false;
+let schemaValidationPromise: Promise<boolean> | null = null;
+
+/**
+ * Ensure schema version is validated before using cache
+ * Only runs once per session, clears cache if schema changed
+ */
+async function ensureSchemaValidated(): Promise<void> {
+  if (schemaValidated) return;
+
+  if (!schemaValidationPromise) {
+    schemaValidationPromise = safeDBOperation(
+      () => validateSchemaVersion(),
+      true
+    );
+  }
+
+  await schemaValidationPromise;
+  schemaValidated = true;
+}
 
 // Sync lock mechanism to prevent race conditions
 // When sync is in progress, reads will wait for it to complete
@@ -91,6 +114,9 @@ export function useCachedApi() {
     pagination: Partial<PaginationState> = {},
     forceRefresh = false
   ): Promise<ProductListResponse> {
+    // Validate schema version before using cache (clears cache if outdated)
+    await ensureSchemaValidated();
+
     // Wait for any in-progress sync to complete before reading cache
     await waitForSync();
 
@@ -229,6 +255,9 @@ export function useCachedApi() {
   async function getEnabledProducts(
     forceRefresh = false
   ): Promise<Record<ComponentType, AdminProduct[]>> {
+    // Validate schema version before using cache (clears cache if outdated)
+    await ensureSchemaValidated();
+
     // Wait for any in-progress sync to complete before reading cache
     await waitForSync();
 

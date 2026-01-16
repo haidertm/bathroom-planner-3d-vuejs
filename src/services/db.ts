@@ -117,6 +117,11 @@ export const CACHE_CONFIG = {
   PRODUCTS_KEY: 'products',
   STATS_KEY: 'stats',
   SYNC_VERSION_KEY: 'syncVersion',
+  SCHEMA_VERSION_KEY: 'schemaVersion',
+
+  // ⚠️ INCREMENT THIS when you add/remove/rename fields in AdminProduct
+  // This forces all users to refresh their cache
+  CURRENT_SCHEMA_VERSION: 1,
 };
 
 // Sync status for tracking atomic sync operations
@@ -360,4 +365,37 @@ export async function isCacheValid(): Promise<boolean> {
     productsMeta?.version === syncMeta.version &&
     statsMeta?.version === syncMeta.version
   );
+}
+
+/**
+ * Check if cached data schema matches current app schema
+ * If not, clear cache to force fresh data fetch
+ *
+ * Call this on app startup before reading from cache
+ */
+export async function validateSchemaVersion(): Promise<boolean> {
+  const schemaMeta = await db.cacheMeta.get(CACHE_CONFIG.SCHEMA_VERSION_KEY);
+  const cachedVersion = schemaMeta?.version ?? 0;
+
+  if (cachedVersion !== CACHE_CONFIG.CURRENT_SCHEMA_VERSION) {
+    if (import.meta.env.DEV) {
+      console.log(
+        `[Schema] Version mismatch: cached=${cachedVersion}, current=${CACHE_CONFIG.CURRENT_SCHEMA_VERSION}. Clearing cache.`
+      );
+    }
+
+    // Clear all cached data
+    await clearCache();
+
+    // Save new schema version
+    await db.cacheMeta.put({
+      id: CACHE_CONFIG.SCHEMA_VERSION_KEY,
+      lastSynced: Date.now(),
+      version: CACHE_CONFIG.CURRENT_SCHEMA_VERSION,
+    });
+
+    return false; // Cache was invalidated
+  }
+
+  return true; // Cache schema is valid
 }
