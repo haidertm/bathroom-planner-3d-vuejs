@@ -291,8 +291,10 @@ export class SceneManager {
     ));
 
     // Position directly above room center, looking down
-    this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
-    this.orthographicCamera.lookAt(0, 0, 0);
+    // Add vertical offset to shift view upward on screen (leaves room for toolbar)
+    const verticalOffset = ORTHOGRAPHIC_SETTINGS.VERTICAL_OFFSET || 0;
+    this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, verticalOffset);
+    this.orthographicCamera.lookAt(0, 0, verticalOffset);
     // Set up vector for proper top-down orientation (North at top of screen)
     this.orthographicCamera.up.set(0, 0, -1);
     this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
@@ -470,9 +472,11 @@ export class SceneManager {
       if (this.orthographicCamera) {
         // Calculate optimal zoom to fit room nicely in viewport
         this.orthographicCamera.zoom = this.calculateOptimalZoomForRoom();
-        this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
+        // Add vertical offset to shift view upward on screen
+        const verticalOffset = ORTHOGRAPHIC_SETTINGS.VERTICAL_OFFSET || 0;
+        this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, verticalOffset);
         this.orthographicCamera.up.copy(targetUp);
-        this.orthographicCamera.lookAt(0, 0, 0);
+        this.orthographicCamera.lookAt(0, 0, verticalOffset);
         this.orthographicCamera.updateProjectionMatrix();
       }
 
@@ -795,7 +799,9 @@ export class SceneManager {
   public reset2DView(): void {
     if (!this.orthographicCamera || this.viewMode !== '2d') return;
 
-    this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, 0);
+    // Add vertical offset to shift view upward on screen
+    const verticalOffset = ORTHOGRAPHIC_SETTINGS.VERTICAL_OFFSET || 0;
+    this.orthographicCamera.position.set(0, ORTHOGRAPHIC_SETTINGS.HEIGHT, verticalOffset);
     // Use calculated optimal zoom for consistent fit
     this.orthographicCamera.zoom = this.calculateOptimalZoomForRoom();
     this.orthographicCamera.updateProjectionMatrix();
