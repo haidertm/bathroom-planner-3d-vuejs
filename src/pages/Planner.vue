@@ -1307,14 +1307,29 @@ const addItem = async (type, productData = null) => {
     defaults.scale,
     -1, // exclude ID (new item has no ID yet)
     items.value,
-    tempItemForValidation,
     roomWidth.value,
     roomHeight.value,
+    tempItemForValidation,
+    wallRotation,
     notchWidth.value,
     notchHeight.value
   )
 
   if (hasCollision) {
+    // Track fixture add failure due to collision in GTM
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'fixture_add_failed',
+        category: 'Bathroom Planner',
+        action: 'Add Fixture Failed',
+        reason: 'collision',
+        fixtureType: type,
+        fixtureSku: sku,
+        fixtureName: selectedVariant?.name || type,
+        roomWidth: roomWidth.value,
+        roomHeight: roomHeight.value
+      })
+    }
     alert('Cannot add item - no available space found. The room is too crowded. Please remove an existing item first.')
     return
   }
@@ -1402,6 +1417,25 @@ const addItem = async (type, productData = null) => {
   const newItems = [...items.value, newItem]
   items.value = newItems
   lastUpdateSource.value = 'add'
+
+  // Track fixture add success in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'fixture_add_success',
+      category: 'Bathroom Planner',
+      action: 'Add Fixture',
+      fixtureId: newItem.id,
+      fixtureType: type,
+      fixtureSku: sku,
+      fixtureName: selectedVariant?.name || type,
+      modelName: newItem.model?.name || type,
+      placementX: freePosition.x,
+      placementY: itemY,
+      placementZ: freePosition.z,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value
+    })
+  }
 
   saveToHistory({
     items: newItems,
