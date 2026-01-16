@@ -85,6 +85,7 @@ const {
   bulkEnableProducts,
   bulkDisableProducts,
   createProduct,
+  loadProducts,
   refreshProducts,
 } = useAdminProducts();
 
@@ -463,8 +464,9 @@ onMounted(async () => {
     if (urlPagination.perPage !== DEFAULT_PAGINATION.itemsPerPage) setItemsPerPage(urlPagination.perPage);
   }
 
-  // Refresh products with the URL-derived filters applied
-  await refreshProducts();
+  // Load products with the URL-derived filters applied
+  // Uses cache if available and fresh, otherwise fetches from API
+  await loadProducts();
 });
 
 onUnmounted(() => {

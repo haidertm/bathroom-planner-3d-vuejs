@@ -17,6 +17,10 @@ import {
   getCacheStats,
   safeDBOperation,
   isIndexedDBAvailable,
+  atomicSyncAll,
+  isCacheValid,
+  getSyncStatus,
+  type SyncStatus,
 } from '../services/db';
 import type { AdminProduct, AdminStats, ProductFilters, PaginationState } from '../types/admin';
 import type { ComponentType } from '../constants/components';
@@ -69,6 +73,7 @@ export function useCachedApi() {
   /**
    * Fetch products with caching
    * - First checks IndexedDB for cached data
+   * - Applies filters, sorting, and pagination locally on cached data
    * - Falls back to API if cache is stale or empty
    * - Updates cache after successful API call
    */
@@ -83,70 +88,64 @@ export function useCachedApi() {
     // Check if IndexedDB is available for caching
     const dbAvailable = await isIndexedDBAvailable();
 
-    // Check if we can use cache (only for default/empty filters for simplicity)
-    const canUseCache =
-      dbAvailable &&
-      !forceRefresh &&
-      !filters.searchQuery &&
-      !filters.categories?.length &&
-      filters.priceRange?.min === null &&
-      filters.priceRange?.max === null &&
-      filters.enabledFilter === 'all' &&
-      (!filters.updatedAtFilter || filters.updatedAtFilter.preset === 'all');
+    // Helper to process cached products with filters, sorting, and pagination
+    const processFromCache = (cachedProducts: AdminProduct[]): ProductListResponse => {
+      // Apply filters → sort → paginate
+      const filtered = applyFilters(cachedProducts, filters);
+      const sorted = applySorting(filtered, filters);
+      const paginated = applyPagination(sorted, pagination);
 
-    if (canUseCache) {
+      return {
+        products: paginated,
+        total: filtered.length,
+        page: pagination.currentPage || 1,
+        limit: pagination.itemsPerPage || 12,
+        totalPages: Math.ceil(filtered.length / (pagination.itemsPerPage || 12)),
+      };
+    };
+
+    // Try to use cache if not forcing refresh
+    if (!forceRefresh && dbAvailable) {
       const cacheIsFresh = await safeDBOperation(
         () => isCacheFresh(CACHE_CONFIG.PRODUCTS_KEY, CACHE_CONFIG.PRODUCTS_TTL),
         false
       );
 
-      if (cacheIsFresh || !hasInitialSync.value) {
+      if (cacheIsFresh) {
         const cachedProducts = await safeDBOperation(
           () => getCachedProducts(),
           []
         );
-        if (cachedProducts.length > 0 && cacheIsFresh) {
-          // Apply local sorting and pagination
-          const sorted = applySorting(cachedProducts, filters);
-          const paginated = applyPagination(sorted, pagination);
-          return {
-            products: paginated,
-            total: cachedProducts.length,
-            page: pagination.currentPage || 1,
-            limit: pagination.itemsPerPage || 12,
-            totalPages: Math.ceil(
-              cachedProducts.length / (pagination.itemsPerPage || 12)
-            ),
-          };
+
+        if (cachedProducts.length > 0) {
+          if (import.meta.env.DEV) {
+            console.log('[getProducts] Using cache:', cachedProducts.length, 'products');
+          }
+          return processFromCache(cachedProducts);
         }
       }
     }
 
-    // Fetch from API
-    try {
-      const response = await productApi.getProducts(filters, pagination);
+    // Cache miss or force refresh - fetch from API
+    if (import.meta.env.DEV) {
+      console.log('[getProducts] Cache miss, fetching from API');
+    }
 
-      // Cache all products if we fetched without filters
-      // This ensures we have a complete dataset for future cached queries
-      if (canUseCache && response.products.length > 0) {
-        // For a complete cache, fetch all products without pagination
-        try {
-          const allProductsResponse = await productApi.getProducts({}, { itemsPerPage: 1000 });
-          await safeDBOperation(
-            () => cacheProducts(allProductsResponse.products),
-            undefined
-          );
-          hasInitialSync.value = true;
-        } catch {
-          // If full fetch fails, cache what we have
-          await safeDBOperation(
-            () => cacheProducts(response.products),
-            undefined
-          );
-        }
+    try {
+      // Always fetch ALL products to populate complete cache
+      const allProductsResponse = await productApi.getProducts({}, { itemsPerPage: 1000 });
+
+      // Cache all products
+      if (dbAvailable && allProductsResponse.products.length > 0) {
+        await safeDBOperation(
+          () => cacheProducts(allProductsResponse.products),
+          undefined
+        );
+        hasInitialSync.value = true;
       }
 
-      return response;
+      // Apply filters locally and return
+      return processFromCache(allProductsResponse.products);
     } catch (apiError) {
       // API failed (offline, server down, etc.)
       // Fall back to stale IndexedDB cache if available
@@ -156,18 +155,10 @@ export function useCachedApi() {
           []
         );
         if (staleCachedProducts.length > 0) {
-          // Return stale cached data instead of throwing
-          const sorted = applySorting(staleCachedProducts, filters);
-          const paginated = applyPagination(sorted, pagination);
-          return {
-            products: paginated,
-            total: staleCachedProducts.length,
-            page: pagination.currentPage || 1,
-            limit: pagination.itemsPerPage || 12,
-            totalPages: Math.ceil(
-              staleCachedProducts.length / (pagination.itemsPerPage || 12)
-            ),
-          };
+          if (import.meta.env.DEV) {
+            console.log('[getProducts] API failed, using stale cache');
+          }
+          return processFromCache(staleCachedProducts);
         }
       }
       // No cached data available, re-throw the error
@@ -223,7 +214,8 @@ export function useCachedApi() {
 
   /**
    * Get enabled products grouped by category (for planner)
-   * Uses cache when available
+   * Uses the same cache as getProducts() - fetches ALL products and filters to enabled
+   * This ensures both admin dashboard and planner share the same complete cache
    */
   async function getEnabledProducts(
     forceRefresh = false
@@ -233,6 +225,18 @@ export function useCachedApi() {
 
     const dbAvailable = await isIndexedDBAvailable();
 
+    // Helper to group enabled products by category
+    const groupEnabledByCategory = (products: AdminProduct[]): Record<ComponentType, AdminProduct[]> => {
+      const result = {} as Record<ComponentType, AdminProduct[]>;
+      for (const category of COMPONENTS) {
+        result[category] = products.filter(
+          (p) => p.enabled && p.category === category
+        );
+      }
+      return result;
+    };
+
+    // Try to use cache first
     if (!forceRefresh && dbAvailable) {
       const cacheIsFresh = await safeDBOperation(
         () => isCacheFresh(CACHE_CONFIG.PRODUCTS_KEY, CACHE_CONFIG.PRODUCTS_TTL),
@@ -244,44 +248,36 @@ export function useCachedApi() {
           () => getCachedProducts(),
           []
         );
+
         if (cachedProducts.length > 0) {
-          // Group enabled products by category
-          const result = {} as Record<ComponentType, AdminProduct[]>;
-          for (const category of COMPONENTS) {
-            result[category] = cachedProducts.filter(
-              (p) => p.enabled && p.category === category
-            );
+          if (import.meta.env.DEV) {
+            console.log('[getEnabledProducts] Using cache:', cachedProducts.length, 'products');
           }
-          return result;
+          return groupEnabledByCategory(cachedProducts);
         }
       }
     }
 
-    // Fetch from API
-    try {
-      const data = await productApi.getEnabledProducts();
+    // Cache miss or force refresh - fetch ALL products (same as admin dashboard)
+    // This ensures complete cache for both planner and admin
+    if (import.meta.env.DEV) {
+      console.log('[getEnabledProducts] Cache miss, fetching all products from API');
+    }
 
-      // Also update the products cache with this data
-      if (dbAvailable) {
-        const allProducts: AdminProduct[] = [];
-        for (const products of Object.values(data)) {
-          allProducts.push(...products);
-        }
-        if (allProducts.length > 0) {
-          // Merge with existing cache (don't replace disabled products)
-          const existingProducts = await safeDBOperation(
-            () => getCachedProducts(),
-            []
-          );
-          const existingDisabled = existingProducts.filter((p) => !p.enabled);
-          await safeDBOperation(
-            () => cacheProducts([...allProducts, ...existingDisabled]),
-            undefined
-          );
-        }
+    try {
+      // Fetch ALL products, not just enabled - this populates complete cache
+      const response = await productApi.getProducts({}, { itemsPerPage: 1000 });
+
+      // Cache all products
+      if (dbAvailable && response.products.length > 0) {
+        await safeDBOperation(
+          () => cacheProducts(response.products),
+          undefined
+        );
       }
 
-      return data;
+      // Return only enabled products grouped by category
+      return groupEnabledByCategory(response.products);
     } catch (apiError) {
       // API failed - fall back to stale cache if available
       if (dbAvailable) {
@@ -290,14 +286,10 @@ export function useCachedApi() {
           []
         );
         if (staleCachedProducts.length > 0) {
-          // Group enabled products by category from stale cache
-          const result = {} as Record<ComponentType, AdminProduct[]>;
-          for (const category of COMPONENTS) {
-            result[category] = staleCachedProducts.filter(
-              (p) => p.enabled && p.category === category
-            );
+          if (import.meta.env.DEV) {
+            console.log('[getEnabledProducts] API failed, using stale cache');
           }
-          return result;
+          return groupEnabledByCategory(staleCachedProducts);
         }
       }
       throw apiError;
@@ -387,21 +379,89 @@ export function useCachedApi() {
 
   /**
    * Force sync all data from API to cache
-   * Uses sync lock to prevent race conditions with concurrent reads
+   * Uses Version-Based Atomic Sync to prevent partial data on failure:
+   * 1. FETCH PHASE: Get all data into memory (nothing written to DB yet)
+   * 2. WRITE PHASE: Write everything in a single atomic transaction
+   *
+   * If fetch fails → old cache remains intact
+   * If write fails → Dexie auto-rollback, old cache remains intact
    */
-  async function syncAll(): Promise<void> {
-    await withSyncLock(async () => {
-      const [productsResponse, stats] = await Promise.all([
-        productApi.getProducts({}, { itemsPerPage: 1000 }),
-        productApi.getStats(),
-      ]);
+  async function syncAll(): Promise<SyncStatus> {
+    return withSyncLock(async () => {
+      // ============================================
+      // PHASE 1: FETCH - Collect all data in memory
+      // ============================================
+      // Nothing is written to IndexedDB in this phase
+      // If any fetch fails, we bail out and keep existing cache
 
-      await Promise.all([
-        safeDBOperation(() => cacheProducts(productsResponse.products), undefined),
-        safeDBOperation(() => cacheStats(stats), undefined),
-      ]);
+      let products: AdminProduct[];
+      let stats: AdminStats;
 
-      hasInitialSync.value = true;
+      try {
+        if (import.meta.env.DEV) {
+          console.log('[Sync] Phase 1: Fetching data from API...');
+        }
+
+        const [productsResponse, statsResponse] = await Promise.all([
+          productApi.getProducts({}, { itemsPerPage: 1000 }),
+          productApi.getStats(),
+        ]);
+
+        products = productsResponse.products;
+        stats = statsResponse;
+
+        if (import.meta.env.DEV) {
+          console.log(`[Sync] Phase 1 complete: ${products.length} products, stats fetched`);
+        }
+      } catch (fetchError) {
+        // Fetch failed - IndexedDB hasn't been touched
+        // Old cache remains perfectly intact
+        if (import.meta.env.DEV) {
+          console.error('[Sync] Phase 1 failed: Fetch error, keeping existing cache', fetchError);
+        }
+        throw fetchError;
+      }
+
+      // ============================================
+      // PHASE 2: WRITE - Single atomic transaction
+      // ============================================
+      // Either ALL writes succeed, or NONE do (Dexie auto-rollback)
+
+      try {
+        if (import.meta.env.DEV) {
+          console.log('[Sync] Phase 2: Writing to IndexedDB (atomic transaction)...');
+        }
+
+        const syncStatus = await safeDBOperation(
+          () => atomicSyncAll(products, stats),
+          {
+            version: 0,
+            timestamp: 0,
+            productsCount: 0,
+            hasStats: false,
+            completedSuccessfully: false,
+          }
+        );
+
+        if (!syncStatus.completedSuccessfully) {
+          throw new Error('Atomic sync failed - transaction may have been rolled back');
+        }
+
+        hasInitialSync.value = true;
+
+        if (import.meta.env.DEV) {
+          console.log('[Sync] Phase 2 complete: All data written successfully', syncStatus);
+        }
+
+        return syncStatus;
+      } catch (writeError) {
+        // Transaction failed - Dexie automatically rolls back
+        // IndexedDB remains in previous state
+        if (import.meta.env.DEV) {
+          console.error('[Sync] Phase 2 failed: Write error, transaction rolled back', writeError);
+        }
+        throw writeError;
+      }
     });
   }
 
@@ -423,6 +483,22 @@ export function useCachedApi() {
     return getCacheStats();
   }
 
+  /**
+   * Check if cache is in a valid state (last sync completed successfully)
+   * Use this to determine if cached data can be trusted
+   */
+  async function checkCacheValidity(): Promise<boolean> {
+    return safeDBOperation(() => isCacheValid(), false);
+  }
+
+  /**
+   * Get the last successful sync status
+   * Returns null if no successful sync has been completed
+   */
+  async function getLastSyncStatus(): Promise<SyncStatus | null> {
+    return safeDBOperation(() => getSyncStatus(), null);
+  }
+
   return {
     // Cached API methods
     getProducts,
@@ -437,6 +513,8 @@ export function useCachedApi() {
     syncAll,
     invalidateCache,
     getDebugInfo,
+    checkCacheValidity,
+    getLastSyncStatus,
 
     // State
     hasInitialSync,
@@ -498,4 +576,101 @@ function applyPagination(
   const limit = pagination.itemsPerPage || 12;
   const start = (page - 1) * limit;
   return products.slice(start, start + limit);
+}
+
+// Helper: Apply all filters to products array (for local filtering)
+function applyFilters(
+  products: AdminProduct[],
+  filters: Partial<ProductFilters>
+): AdminProduct[] {
+  let result = [...products];
+
+  // Filter by search query
+  if (filters.searchQuery?.trim()) {
+    const query = filters.searchQuery.toLowerCase();
+    result = result.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        p.id.toLowerCase().includes(query) ||
+        p.variants.some(
+          (v) =>
+            v.name.toLowerCase().includes(query) ||
+            v.sku.toLowerCase().includes(query)
+        )
+    );
+  }
+
+  // Filter by categories
+  if (filters.categories?.length) {
+    result = result.filter((p) => filters.categories!.includes(p.category));
+  }
+
+  // Filter by price range
+  if (filters.priceRange?.min !== null && filters.priceRange?.min !== undefined) {
+    const minPrice = filters.priceRange.min;
+    result = result.filter((p) => {
+      const price = parseFloat(p.price);
+      return Number.isFinite(price) && price >= minPrice;
+    });
+  }
+  if (filters.priceRange?.max !== null && filters.priceRange?.max !== undefined) {
+    const maxPrice = filters.priceRange.max;
+    result = result.filter((p) => {
+      const price = parseFloat(p.price);
+      return Number.isFinite(price) && price <= maxPrice;
+    });
+  }
+
+  // Filter by enabled status
+  if (filters.enabledFilter && filters.enabledFilter !== 'all') {
+    const enabledValue = filters.enabledFilter === 'enabled';
+    result = result.filter((p) => p.enabled === enabledValue);
+  }
+
+  // Filter by updated date
+  if (filters.updatedAtFilter && filters.updatedAtFilter.preset !== 'all') {
+    const now = Date.now();
+    let cutoffTime: number | null = null;
+
+    switch (filters.updatedAtFilter.preset) {
+      case 'today':
+        cutoffTime = now - 24 * 60 * 60 * 1000;
+        break;
+      case 'yesterday': {
+        const yesterday = now - 24 * 60 * 60 * 1000;
+        const dayBefore = now - 48 * 60 * 60 * 1000;
+        result = result.filter((p) => {
+          const updatedAt = p.updatedAt || 0;
+          return updatedAt >= dayBefore && updatedAt < yesterday;
+        });
+        return result; // Return early for yesterday case
+      }
+      case 'week':
+        cutoffTime = now - 7 * 24 * 60 * 60 * 1000;
+        break;
+      case 'month':
+        cutoffTime = now - 30 * 24 * 60 * 60 * 1000;
+        break;
+      case 'custom':
+        if (filters.updatedAtFilter.customRange?.from) {
+          cutoffTime = new Date(filters.updatedAtFilter.customRange.from).getTime();
+        }
+        break;
+    }
+
+    if (cutoffTime !== null) {
+      result = result.filter((p) => (p.updatedAt || 0) >= cutoffTime!);
+    }
+
+    // Handle custom end date
+    if (
+      filters.updatedAtFilter.preset === 'custom' &&
+      filters.updatedAtFilter.customRange?.to
+    ) {
+      const endTime = new Date(filters.updatedAtFilter.customRange.to).getTime();
+      result = result.filter((p) => (p.updatedAt || 0) <= endTime);
+    }
+  }
+
+  return result;
 }

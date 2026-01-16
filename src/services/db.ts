@@ -116,7 +116,17 @@ export const CACHE_CONFIG = {
   // Keys for cache metadata
   PRODUCTS_KEY: 'products',
   STATS_KEY: 'stats',
+  SYNC_VERSION_KEY: 'syncVersion',
 };
+
+// Sync status for tracking atomic sync operations
+export interface SyncStatus {
+  version: number;
+  timestamp: number;
+  productsCount: number;
+  hasStats: boolean;
+  completedSuccessfully: boolean;
+}
 
 // Helper functions for cache management
 
@@ -248,4 +258,106 @@ export async function getCachedStats(): Promise<AdminStats | undefined> {
     return rest as AdminStats;
   }
   return undefined;
+}
+
+/**
+ * Get the last successful sync status
+ * Returns null if no successful sync has been completed
+ */
+export async function getSyncStatus(): Promise<SyncStatus | null> {
+  const meta = await db.cacheMeta.get(CACHE_CONFIG.SYNC_VERSION_KEY);
+  if (!meta) return null;
+
+  // The sync status is stored in the version field as a JSON string
+  try {
+    // For backwards compatibility, check if we have the new format
+    if (typeof meta.version === 'number' && meta.lastSynced) {
+      // Old format - convert to new format
+      const productCount = await db.products.count();
+      const hasStats = !!(await db.stats.get('global'));
+      return {
+        version: meta.version,
+        timestamp: meta.lastSynced,
+        productsCount: productCount,
+        hasStats,
+        completedSuccessfully: true, // Assume old syncs completed
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Atomic sync: Replace all cached data in a single transaction
+ * Either all data is written or none (rollback on failure)
+ */
+export async function atomicSyncAll(
+  products: AdminProduct[],
+  stats: AdminStats
+): Promise<SyncStatus> {
+  const syncVersion = Date.now();
+
+  const syncStatus: SyncStatus = {
+    version: syncVersion,
+    timestamp: syncVersion,
+    productsCount: products.length,
+    hasStats: true,
+    completedSuccessfully: false, // Will be set to true after transaction succeeds
+  };
+
+  // Single atomic transaction - all or nothing
+  await db.transaction('rw', db.products, db.stats, db.cacheMeta, async () => {
+    // Clear existing data
+    await db.products.clear();
+    await db.stats.clear();
+
+    // Write new data
+    await db.products.bulkPut(products);
+    await db.stats.put({ ...stats, id: 'global' });
+
+    // Update cache timestamps
+    await db.cacheMeta.put({
+      id: CACHE_CONFIG.PRODUCTS_KEY,
+      lastSynced: syncVersion,
+      version: syncVersion,
+    });
+    await db.cacheMeta.put({
+      id: CACHE_CONFIG.STATS_KEY,
+      lastSynced: syncVersion,
+      version: syncVersion,
+    });
+
+    // Mark sync as complete - this is the commit marker
+    syncStatus.completedSuccessfully = true;
+    await db.cacheMeta.put({
+      id: CACHE_CONFIG.SYNC_VERSION_KEY,
+      lastSynced: syncVersion,
+      version: syncVersion,
+    });
+  });
+
+  return syncStatus;
+}
+
+/**
+ * Check if the cache is in a valid state (last sync completed successfully)
+ */
+export async function isCacheValid(): Promise<boolean> {
+  const syncMeta = await db.cacheMeta.get(CACHE_CONFIG.SYNC_VERSION_KEY);
+  if (!syncMeta) {
+    // No sync has ever completed - cache may be empty or partial
+    return false;
+  }
+
+  // Check if we have data matching the sync version
+  const productsMeta = await db.cacheMeta.get(CACHE_CONFIG.PRODUCTS_KEY);
+  const statsMeta = await db.cacheMeta.get(CACHE_CONFIG.STATS_KEY);
+
+  // All metadata should have the same version for a valid cache
+  return (
+    productsMeta?.version === syncMeta.version &&
+    statsMeta?.version === syncMeta.version
+  );
 }

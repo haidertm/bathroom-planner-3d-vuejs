@@ -614,7 +614,14 @@ export function useAdminProducts() {
     }
   };
 
+  // Load products (uses cache if available and fresh)
+  const loadProducts = async (): Promise<void> => {
+    await fetchProducts(false);
+    await fetchStats(false);
+  };
+
   // Refresh products (force refresh from API, bypass cache)
+  // Use this for manual refresh buttons, not for initial page load
   const refreshProducts = async (): Promise<void> => {
     await fetchProducts(true);
     await fetchStats(true);
@@ -681,6 +688,7 @@ export function useAdminProducts() {
     updateProduct,
     createProduct,
     deleteProduct,
+    loadProducts,
     refreshProducts,
 
     // Cache management
