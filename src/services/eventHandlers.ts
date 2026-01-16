@@ -17,7 +17,8 @@ import {
   getDimensions,
   getInteriorBoundaries,
   wouldCollideWithExisting,
-  wouldCollideWithExistingOrWalls
+  wouldCollideWithExistingOrWalls,
+  checkWallCollision
 } from '../utils/constraints';
 import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
@@ -737,9 +738,40 @@ export class EventHandlers {
   public onShowToast: ((message: string, type?: 'info' | 'warning' | 'error') => void) | null = null;
 
   /**
-   * Show a toast notification
+   * Track if boundary alert has been shown during current drag to avoid spam
    */
+  private boundaryAlertShown: boolean = false;
 
+  /**
+   * Check if item is outside boundary and show alert
+   */
+  private checkBoundaryAndShowAlert(
+    position: PositionObjectType,
+    objectType: ComponentType,
+    scale: number,
+    currentItem?: BathroomItem,
+    rotation?: number
+  ): boolean {
+    const isOutsideBoundary = checkWallCollision(
+      position,
+      objectType,
+      scale,
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      currentItem,
+      rotation,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
+    // Show alert only once per drag operation
+    if (isOutsideBoundary && !this.boundaryAlertShown && this.onShowToast) {
+      this.onShowToast('Dragging blocked: Parts of this group are out of bounds', 'warning');
+      this.boundaryAlertShown = true;
+    }
+
+    return isOutsideBoundary;
+  }
 
   private queueUpdate(itemId: number, updateData: UpdateData): void {
     if (this.isDragOperation) {
@@ -989,6 +1021,7 @@ export class EventHandlers {
       } else { // Left click for dragging
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+        this.boundaryAlertShown = false; // Reset boundary alert flag for new drag
 
         // Store start positions and local offsets for all selected objects for bulk move
         this.multiSelectStartPositions.clear();
@@ -2158,6 +2191,15 @@ export class EventHandlers {
           objectRotation
         );
 
+        // Check if item is outside boundary and show alert
+        this.checkBoundaryAndShowAlert(
+          { x: constrainedPos.x, y: this.selectedObject.position.y, z: constrainedPos.z },
+          objectType,
+          objectScale,
+          currentItem,
+          objectRotation
+        );
+
         // Update schematic overlay position in 2D mode
         if (this.sceneManager?.updateSchematicPosition) {
           this.sceneManager.updateSchematicPosition(itemId);
@@ -2314,6 +2356,15 @@ export class EventHandlers {
             objectType,
             objectScale,
             itemId,
+            currentItem,
+            constrainedRotation
+          );
+
+          // Check if item is outside boundary and show alert
+          this.checkBoundaryAndShowAlert(
+            constrainedPosition,
+            objectType,
+            objectScale,
             currentItem,
             constrainedRotation
           );
@@ -2950,6 +3001,15 @@ export class EventHandlers {
         constrainedRotation  // ✅ FIX: Pass rotation to collision detection
       );
 
+      // Check if item is outside boundary and show alert
+      this.checkBoundaryAndShowAlert(
+        { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
+        objectType,
+        objectScale,
+        currentItem,
+        constrainedRotation
+      );
+
       // Apply constrained position
       this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
 
@@ -3440,6 +3500,7 @@ export class EventHandlers {
 
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
+        this.boundaryAlertShown = false; // Reset boundary alert flag for new drag
 
         // Update drag plane for stable movement
         this.updateDragPlane(this.selectedObject);
@@ -3648,6 +3709,15 @@ export class EventHandlers {
           itemId,
           currentItems,
           currentItem
+        );
+
+        // Check if item is outside boundary and show alert
+        this.checkBoundaryAndShowAlert(
+          { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
+          objectType,
+          objectScale,
+          currentItem,
+          constrainedRotation
         );
 
         this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
