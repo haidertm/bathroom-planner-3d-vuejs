@@ -1078,9 +1078,9 @@ const sectionHeaderStyle = computed(() => ({
 
 const toastStyle = computed(() => ({
   position: 'fixed',
-  bottom: '120px',
+  top: '100px',
   left: '50%',
-  backgroundColor: 'rgba(41, 39, 91, 0.95)',
+  backgroundColor: '#29275b',
   color: 'white',
   padding: '12px 24px',
   borderRadius: '8px',
@@ -2696,6 +2696,6 @@ const handleClearAll = () => {
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%) translateY(-20px);
 }
 </style>
