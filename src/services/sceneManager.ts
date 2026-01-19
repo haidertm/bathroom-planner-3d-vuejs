@@ -2538,9 +2538,9 @@ export class SceneManager {
   private setupEnhancedLighting(): void {
     if (!this.scene) return;
 
-    // Use current room dimensions or defaults
-    // const width = roomWidth ?? this.roomWidth;
-    // const height = roomHeight ?? this.roomHeight;
+    // Use current room dimensions for shadow camera bounds
+    const maxDimension = Math.max(this.roomWidth, this.roomHeight, 500);
+    const shadowBound = Math.max(500, maxDimension * 0.8);
 
     // Check if we're in 2D mode - lights should be configured differently
     const is2DMode = this.viewMode === '2d';
@@ -2569,13 +2569,21 @@ export class SceneManager {
       dirLight.shadow.mapSize.height = 2048;
       dirLight.shadow.camera.near = 0.5;
       dirLight.shadow.camera.far = 1500;
-      dirLight.shadow.camera.left = -500;
-      dirLight.shadow.camera.right = 500;
-      dirLight.shadow.camera.top = 500;
-      dirLight.shadow.camera.bottom = -500;
+      // Dynamic shadow camera bounds based on room size
+      dirLight.shadow.camera.left = -shadowBound;
+      dirLight.shadow.camera.right = shadowBound;
+      dirLight.shadow.camera.top = shadowBound;
+      dirLight.shadow.camera.bottom = -shadowBound;
       dirLight.shadow.bias = -0.0005;
       this.scene!.add(dirLight);
       this.lights.push(dirLight);
+
+      // 2b. SECONDARY DIRECTIONAL LIGHT - from opposite direction to balance wall illumination
+      const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
+      dirLight2.position.set(-200, 500, -400); // Opposite corner
+      dirLight2.castShadow = false; // Only one shadow-casting light needed
+      this.scene!.add(dirLight2);
+      this.lights.push(dirLight2);
 
       // 3. SOFT BACK GLOW - very subtle, placed far away to avoid hotspots
       const backGlow = new THREE.PointLight(0xffffff, 150, 1000, 2.0);
@@ -2593,6 +2601,10 @@ export class SceneManager {
 
   updateFloor(roomWidth: number, roomHeight: number, floorTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
     if (!this.scene) return;
+
+    // Update stored room dimensions for lighting calculations
+    this.roomWidth = roomWidth;
+    this.roomHeight = roomHeight;
 
     if (this.floorRef) {
       this.scene.remove(this.floorRef);
@@ -2645,6 +2657,10 @@ export class SceneManager {
 
   updateWalls(roomWidth: number, roomHeight: number, wallTexture: TextureConfig, notchWidth?: number, notchHeight?: number): void {
     if (!this.scene) return;
+
+    // Update stored room dimensions for lighting calculations
+    this.roomWidth = roomWidth;
+    this.roomHeight = roomHeight;
 
     // Remove existing walls
     this.wallRefs.forEach(wall => {
@@ -2717,7 +2733,7 @@ export class SceneManager {
     }
 
     // Cache key - update version to force shader recompile
-    material.customProgramCacheKey = () => 'wall-bathroom-shiny-v9';
+    material.customProgramCacheKey = () => 'wall-bathroom-shiny-v10';
 
     // Round effect on wall facing camera, side walls uniform
     material.onBeforeCompile = (shader) => {
@@ -2751,17 +2767,20 @@ export class SceneManager {
         float facing = smoothstep(0.0, 0.8, vFacingCamera);
         vec3 wallColor = mix(grayTint, whiteTint, facing);
 
+        // Normalize UVs to 0-1 range (handles scaled UVs on east/west walls)
+        vec2 normalizedUv = fract(vWallUv);
+
         // Shiny light spot - center top area glows
         vec2 shinyCenter = vec2(0.5, 0.25);
-        float shinyDist = distance(vWallUv, shinyCenter);
+        float shinyDist = distance(normalizedUv, shinyCenter);
         float shinySpot = 1.0 - smoothstep(0.0, 0.5, shinyDist);
         float shine = 1.0 + shinySpot * 0.2 * facing;
 
         // Gradient - brighter top, darker bottom
-        float topLight = 1.0 - vWallUv.y * 0.2;
+        float topLight = 1.0 - normalizedUv.y * 0.2;
 
-        // Edge darkening
-        float edgeDark = 1.0 - pow(abs(vWallUv.x - 0.5) * 2.0, 2.0) * 0.15;
+        // Edge darkening (normalized UVs prevent extreme values on long walls)
+        float edgeDark = 1.0 - pow(abs(normalizedUv.x - 0.5) * 2.0, 2.0) * 0.15;
 
         // Combine: wall color + shine + gradient + edges
         gl_FragColor.rgb *= wallColor * shine * topLight * edgeDark;
