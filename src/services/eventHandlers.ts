@@ -1739,6 +1739,67 @@ export class EventHandlers {
 
 
   /**
+   * Adjust ideal position for multi-select group to keep all items inside room bounds
+   */
+  private adjustIdealPositionForGroupBounds(idealPos: THREE.Vector3, primaryRot: number): THREE.Vector3 {
+    const result = idealPos.clone();
+
+    // Get room boundaries
+    const boundaries = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+    const { interior } = boundaries;
+
+    // Calculate group extents relative to primary
+    let groupMinX = 0, groupMaxX = 0, groupMinZ = 0, groupMaxZ = 0;
+
+    this.selectedObjects.forEach((obj, id) => {
+      const localOffset = this.multiSelectLocalOffsets.get(id);
+      const itemType = obj.userData.type as ComponentType;
+      const itemScale = obj.scale.x;
+      const itemData = this.getCurrentItemData(id);
+      const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
+
+      if (dims) {
+        const halfW = (dims.width * itemScale) / 2;
+        const halfD = (dims.depth * itemScale) / 2;
+        const halfExtent = Math.max(halfW, halfD); // Use max for rotation-independence
+
+        let offsetX = 0, offsetZ = 0;
+        if (localOffset) {
+          const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), primaryRot);
+          offsetX = worldOffset.x;
+          offsetZ = worldOffset.z;
+        }
+
+        groupMinX = Math.min(groupMinX, offsetX - halfExtent);
+        groupMaxX = Math.max(groupMaxX, offsetX + halfExtent);
+        groupMinZ = Math.min(groupMinZ, offsetZ - halfExtent);
+        groupMaxZ = Math.max(groupMaxZ, offsetZ + halfExtent);
+      }
+    });
+
+    // Adjust position to keep group inside room
+    if (result.x + groupMaxX > interior.maxX) {
+      result.x = interior.maxX - groupMaxX;
+    }
+    if (result.x + groupMinX < interior.minX) {
+      result.x = interior.minX - groupMinX;
+    }
+    if (result.z + groupMaxZ > interior.maxZ) {
+      result.z = interior.maxZ - groupMaxZ;
+    }
+    if (result.z + groupMinZ < interior.minZ) {
+      result.z = interior.minZ - groupMinZ;
+    }
+
+    return result;
+  }
+
+  /**
    * Apply movement to all selected objects based on the primary object's movement
    */
   private applyBulkMove(primaryObject: THREE.Object3D, _unconstrainedPrimaryPos?: THREE.Vector3, _idealRot?: number): void {
@@ -1751,6 +1812,16 @@ export class EventHandlers {
     // This ensures the group moves and rotates as a single rigid unit
     const primaryPos = primaryObject.position.clone();
     const primaryRot = primaryObject.rotation.y;
+
+    // ✅ FIX: Check if any item in the group blocks vertical movement
+    let groupBlocksVerticalMovement = false;
+    this.selectedObjects.forEach((obj, id) => {
+      const itemType = obj.userData.type as ComponentType;
+      const itemData = this.getCurrentItemData(id);
+      if (!canMoveVertically(itemType, itemData)) {
+        groupBlocksVerticalMovement = true;
+      }
+    });
 
     let anyColliding = false;
 
@@ -1835,12 +1906,14 @@ export class EventHandlers {
           constrainedPosition = result.position;
         }
 
-        obj.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
+        // ✅ FIX: If group blocks vertical movement, preserve original Y
+        const finalY = groupBlocksVerticalMovement ? obj.position.y : constrainedPosition.y;
+        obj.position.set(constrainedPosition.x, finalY, constrainedPosition.z);
         obj.rotation.y = constrainedRotation;
 
         // Check collision for this object - exclude other selected items to prevent false positives
         const isColliding = wouldCollideWithExisting(
-          { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
+          { x: constrainedPosition.x, y: finalY, z: constrainedPosition.z },
           itemType,
           itemScale,
           id,
@@ -1855,7 +1928,7 @@ export class EventHandlers {
 
         // Queue update for this object
         this.queueUpdate(id, {
-          position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z],
+          position: [constrainedPosition.x, finalY, constrainedPosition.z],
           rotation: constrainedRotation
         });
 
@@ -2009,6 +2082,22 @@ export class EventHandlers {
         return; // Don't allow height adjustment
       }
 
+      // ✅ FIX: For multi-select, check if ANY item blocks vertical movement
+      if (this.selectedObjects.size > 1) {
+        let anyBlocksVertical = false;
+        this.selectedObjects.forEach((obj, id) => {
+          const itemType = obj.userData.type as ComponentType;
+          const itemData = this.getCurrentItemData(id);
+          if (!canMoveVertically(itemType, itemData)) {
+            anyBlocksVertical = true;
+          }
+        });
+        if (anyBlocksVertical) {
+          console.log('⚠️ Multi-select group has item that blocks vertical movement');
+          return; // Don't allow height adjustment for the group
+        }
+      }
+
       const heightConstraints = this.getProperHeightConstraints(
         objectType,
         currentItem
@@ -2090,6 +2179,26 @@ export class EventHandlers {
       // Get cursor position on the existing drag plane and include initial offset
       this.raycaster.setFromCamera(this.mouse, this.getActiveCamera());
 
+      // ✅ FIX: For multi-select groups, adjust ideal position to keep entire group inside room
+      // Also lock Y position if any item in group blocks vertical movement
+      if (this.selectedObjects.size > 1) {
+        idealPosition = this.adjustIdealPositionForGroupBounds(idealPosition, this.selectedObject.rotation.y);
+
+        // Check if any item in group blocks vertical movement
+        let groupBlocksVertical = false;
+        this.selectedObjects.forEach((obj, id) => {
+          const itemType = obj.userData.type as ComponentType;
+          const itemData = this.getCurrentItemData(id);
+          if (!canMoveVertically(itemType, itemData)) {
+            groupBlocksVertical = true;
+          }
+        });
+
+        // Lock Y position for entire group if any item blocks vertical movement
+        if (groupBlocksVertical) {
+          idealPosition.y = this.selectedObject.position.y;
+        }
+      }
 
       // ✅ ROTATION-AWARE FIX for freestanding objects
       if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
@@ -2814,12 +2923,27 @@ export class EventHandlers {
           rotationChanged = true;
 
           // Handle vertical movement if allowed
-          if (movementConfig.allowVerticalMovement) {
+          // ✅ FIX: For multi-select, check if ANY item blocks vertical movement
+          let allowVerticalForGroup = movementConfig.allowVerticalMovement;
+          if (this.selectedObjects.size > 1) {
+            this.selectedObjects.forEach((obj, id) => {
+              const itemType = obj.userData.type as ComponentType;
+              const itemData = this.getCurrentItemData(id);
+              if (!canMoveVertically(itemType, itemData)) {
+                allowVerticalForGroup = false;
+              }
+            });
+          }
+
+          if (allowVerticalForGroup) {
             const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
             constrainedPosition.y = Math.max(
               heightConstraints.min,
               Math.min(heightConstraints.max, constrainedPosition.y)
             );
+          } else {
+            // Lock Y position to current position
+            constrainedPosition.y = this.selectedObject.position.y;
           }
 
           console.log(`📍 Cursor on ${closestWall} wall at (${newX.toFixed(0)}, ${newZ.toFixed(0)})`);
