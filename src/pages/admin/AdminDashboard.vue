@@ -86,7 +86,6 @@ const {
   bulkDisableProducts,
   createProduct,
   loadProducts,
-  refreshProducts,
 } = useAdminProducts();
 
 // Bulk selection state

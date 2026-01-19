@@ -101,6 +101,61 @@ async function withSyncLock<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * Fetch ALL products using parallel pagination
+ * 1. Fetch first page to get total count
+ * 2. Calculate remaining pages needed
+ * 3. Fetch all remaining pages in parallel
+ * 4. Combine results
+ */
+const PAGE_SIZE = 100; // Products per page
+const MAX_PARALLEL_REQUESTS = 5; // Limit concurrent requests
+
+async function fetchAllProductsParallel(): Promise<AdminProduct[]> {
+  // Step 1: Fetch first page to get total count
+  const firstPage = await productApi.getProducts(
+    {},
+    { currentPage: 1, itemsPerPage: PAGE_SIZE }
+  );
+
+  const total = firstPage.total;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  if (import.meta.env.DEV) {
+    console.log(`[fetchAllProducts] Total: ${total} products, ${totalPages} pages`);
+  }
+
+  // If only one page, we're done
+  if (totalPages <= 1) {
+    return firstPage.products;
+  }
+
+  // Step 2: Fetch remaining pages in parallel (with concurrency limit)
+  const allProducts: AdminProduct[] = [...firstPage.products];
+  const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+
+  // Process pages in batches to avoid overwhelming the server
+  for (let i = 0; i < remainingPages.length; i += MAX_PARALLEL_REQUESTS) {
+    const batch = remainingPages.slice(i, i + MAX_PARALLEL_REQUESTS);
+
+    const batchResults = await Promise.all(
+      batch.map(page =>
+        productApi.getProducts({}, { currentPage: page, itemsPerPage: PAGE_SIZE })
+      )
+    );
+
+    for (const result of batchResults) {
+      allProducts.push(...result.products);
+    }
+
+    if (import.meta.env.DEV) {
+      console.log(`[fetchAllProducts] Fetched pages ${batch.join(', ')} (${allProducts.length}/${total})`);
+    }
+  }
+
+  return allProducts;
+}
+
 export function useCachedApi() {
   /**
    * Fetch products with caching
@@ -167,20 +222,20 @@ export function useCachedApi() {
     }
 
     try {
-      // Always fetch ALL products to populate complete cache
-      const allProductsResponse = await productApi.getProducts({}, { itemsPerPage: 1000 });
+      // Fetch ALL products using parallel pagination for performance
+      const allProducts = await fetchAllProductsParallel();
 
       // Cache all products
-      if (dbAvailable && allProductsResponse.products.length > 0) {
+      if (dbAvailable && allProducts.length > 0) {
         await safeDBOperation(
-          () => cacheProducts(allProductsResponse.products),
+          () => cacheProducts(allProducts),
           undefined
         );
         hasInitialSync.value = true;
       }
 
       // Apply filters locally and return
-      return processFromCache(allProductsResponse.products);
+      return processFromCache(allProducts);
     } catch (apiError) {
       // API failed (offline, server down, etc.)
       // Fall back to stale IndexedDB cache if available
@@ -303,19 +358,19 @@ export function useCachedApi() {
     }
 
     try {
-      // Fetch ALL products, not just enabled - this populates complete cache
-      const response = await productApi.getProducts({}, { itemsPerPage: 1000 });
+      // Fetch ALL products using parallel pagination - this populates complete cache
+      const allProducts = await fetchAllProductsParallel();
 
       // Cache all products
-      if (dbAvailable && response.products.length > 0) {
+      if (dbAvailable && allProducts.length > 0) {
         await safeDBOperation(
-          () => cacheProducts(response.products),
+          () => cacheProducts(allProducts),
           undefined
         );
       }
 
       // Return only enabled products grouped by category
-      return groupEnabledByCategory(response.products);
+      return groupEnabledByCategory(allProducts);
     } catch (apiError) {
       // API failed - fall back to stale cache if available
       if (dbAvailable) {
@@ -452,12 +507,13 @@ export function useCachedApi() {
           console.log('[Sync] Phase 1: Fetching data from API...');
         }
 
-        const [productsResponse, statsResponse] = await Promise.all([
-          productApi.getProducts({}, { itemsPerPage: 1000 }),
+        // Fetch products (with parallel pagination) and stats concurrently
+        const [allProducts, statsResponse] = await Promise.all([
+          fetchAllProductsParallel(),
           productApi.getStats(),
         ]);
 
-        products = productsResponse.products;
+        products = allProducts;
         stats = statsResponse;
 
         if (import.meta.env.DEV) {
