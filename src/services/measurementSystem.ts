@@ -4,7 +4,7 @@ import type { ComponentType } from '../constants/components';
 import type { BathroomItem } from '../utils/constraints';
 import { getDimensions, getInteriorBoundaries } from '../utils/constraints';
 import { getMovementConfig } from '../utils/models';
-import {WALL_SETTINGS} from "../constants/dimensions.ts";
+import { WALL_SETTINGS } from "../constants/dimensions";
 
 export interface MeasurementData {
   objectWidth: number;
@@ -49,7 +49,7 @@ export class MeasurementSystem {
   private wallDimensionLines: THREE.Group;
   private wallLabelsVisible: boolean = false;
 
-  constructor (scene: THREE.Scene, _camera: THREE.Camera, _renderer: THREE.WebGLRenderer) {
+  constructor(scene: THREE.Scene, _camera: THREE.Camera, _renderer: THREE.WebGLRenderer) {
     this.scene = scene;
 
     // Create groups for measurement visuals
@@ -70,7 +70,7 @@ export class MeasurementSystem {
     this.scene.add(this.wallDimensionLines);
   }
 
-  public setEnabled (enabled: boolean): void {
+  public setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     if (!enabled) {
       this.clearMeasurements();
@@ -79,11 +79,11 @@ export class MeasurementSystem {
     }
   }
 
-  public isEnabled (): boolean {
+  public isEnabled(): boolean {
     return this.enabled;
   }
 
-  public setSelectedObject (object: THREE.Object3D | null): void {
+  public setSelectedObject(object: THREE.Object3D | null): void {
     this.selectedObject = object;
 
     // If we have a selected object, immediately trigger update
@@ -95,7 +95,7 @@ export class MeasurementSystem {
     }
   }
 
-  public updateRoomDimensions (width: number, height: number, notchWidth?: number, notchHeight?: number): void {
+  public updateRoomDimensions(width: number, height: number, notchWidth?: number, notchHeight?: number): void {
     this.roomWidth = width;
     this.roomHeight = height;
     this.notchWidth = notchWidth || 0;
@@ -109,14 +109,14 @@ export class MeasurementSystem {
     }
   }
 
-  public updateExistingItems (items: BathroomItem[]): void {
+  public updateExistingItems(items: BathroomItem[]): void {
     this.existingItems = items;
     if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
     }
   }
 
-  private updateMeasurements (): void {
+  private updateMeasurements(): void {
     this.clearMeasurements();
 
     if (!this.selectedObject || !this.enabled) return;
@@ -128,7 +128,7 @@ export class MeasurementSystem {
     this.createMeasurementVisuals(measurements);
   }
 
-  private calculateMeasurements (): MeasurementData | null {
+  private calculateMeasurements(): MeasurementData | null {
     if (!this.selectedObject) return null;
 
     const objectType = this.selectedObject.userData.type as ComponentType;
@@ -245,7 +245,7 @@ export class MeasurementSystem {
     };
   }
 
-  private isObjectWallBound (position: THREE.Vector3, _width: number, _depth: number): boolean {
+  private isObjectWallBound(position: THREE.Vector3, _width: number, _depth: number): boolean {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
     const tolerance = 30; // 30cm tolerance for better wall detection (increased to match getWallDirection)
@@ -263,13 +263,13 @@ export class MeasurementSystem {
       if (notch) {
         // Check if near notch-south wall
         const nearNotchSouth = Math.abs(position.z - notch.maxZ) < tolerance &&
-                               position.x >= notch.minX - tolerance &&
-                               position.x <= notch.maxX + tolerance;
+          position.x >= notch.minX - tolerance &&
+          position.x <= notch.maxX + tolerance;
 
         // Check if near notch-east wall
         const nearNotchEast = Math.abs(position.x - notch.maxX) < tolerance &&
-                              position.z >= notch.minZ - tolerance &&
-                              position.z <= notch.maxZ + tolerance;
+          position.z >= notch.minZ - tolerance &&
+          position.z <= notch.maxZ + tolerance;
 
         if (nearNotchSouth || nearNotchEast) {
           console.log(`✅ Object is wall-bound to notch wall:`, {
@@ -284,7 +284,7 @@ export class MeasurementSystem {
     return nearNorth || nearSouth || nearEast || nearWest;
   }
 
-  private getWallDirection (position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | 'notch-south' | 'notch-east' | undefined {
+  private getWallDirection(position: THREE.Vector3, _width: number, _depth: number): 'north' | 'south' | 'east' | 'west' | 'notch-south' | 'notch-east' | undefined {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
     const tolerance = 30; // ✅ Increased tolerance from 20 to 30 for better detection
@@ -382,11 +382,11 @@ export class MeasurementSystem {
     return undefined;
   }
 
-  private calculateAvailableSpace (
-      position: THREE.Vector3,
-      width: number,
-      height: number,
-      excludeItemId: number
+  private calculateAvailableSpace(
+    position: THREE.Vector3,
+    width: number,
+    height: number,
+    excludeItemId: number
   ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
@@ -426,7 +426,7 @@ export class MeasurementSystem {
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
-        position, width, height, excludeItemId
+      position, width, height, excludeItemId
     );
 
     return {
@@ -439,7 +439,7 @@ export class MeasurementSystem {
     };
   }
 
-  private calculateSpaceToOtherObjects (
+  private calculateSpaceToOtherObjects(
     position: THREE.Vector3,
     width: number,
     height: number, // ✅ Now we use the height parameter
@@ -520,7 +520,7 @@ export class MeasurementSystem {
     };
   }
 
-  private objectsAlignedOnAxis (pos1: THREE.Vector3, pos2: THREE.Vector3, axis: 'x' | 'z'): boolean {
+  private objectsAlignedOnAxis(pos1: THREE.Vector3, pos2: THREE.Vector3, axis: 'x' | 'z'): boolean {
     const tolerance = 20; // 2cm tolerance
     if (axis === 'x') {
       return Math.abs(pos1.z - pos2.z) < tolerance;
@@ -560,7 +560,7 @@ export class MeasurementSystem {
       labels.push({
         id: 'item-bottom-y',
         text: `${Math.round(Math.max(0, spaceBelowObject))} cm`,
-        position: new THREE.Vector3(position.x, objectBottomY - spaceBelowObject/2, position.z),
+        position: new THREE.Vector3(position.x, objectBottomY - spaceBelowObject / 2, position.z),
         direction: 'vertical',
         color: '#007BFF',
         isObjectDimension: false
@@ -572,14 +572,14 @@ export class MeasurementSystem {
     // 2. Object is mounted MORE than 30% up the wall height
 
     const shouldShowTopSpace = spaceAboveObject > 0 &&
-        !movementConfig.allowFreeRotation &&
-        (isObjectHighlyMounted || hasObjectAbove);
+      !movementConfig.allowFreeRotation &&
+      (isObjectHighlyMounted || hasObjectAbove);
 
     if (shouldShowTopSpace) {
       labels.push({
         id: 'item-top-y',
         text: `${Math.round(Math.max(0, spaceAboveObject))} cm`,
-        position: new THREE.Vector3(position.x, objectTopY + spaceAboveObject/2, position.z),
+        position: new THREE.Vector3(position.x, objectTopY + spaceAboveObject / 2, position.z),
         direction: 'vertical',
         color: '#007BFF',
         isObjectDimension: false
@@ -680,7 +680,7 @@ export class MeasurementSystem {
     return Math.max(0, spaceBelow);
   }
 
-// ✅ NEW METHOD: Calculate space above object (to nearest object above OR ceiling)
+  // ✅ NEW METHOD: Calculate space above object (to nearest object above OR ceiling)
   private calculateSpaceAboveObject(measurements: MeasurementData, position: THREE.Vector3, objectTopY: number, ceilingHeight: number): number {
     if (!this.selectedObject) return ceilingHeight - objectTopY; // Fallback to ceiling distance
 
@@ -751,7 +751,7 @@ export class MeasurementSystem {
   }
 
   // ✅ CRITICAL FIX: Calculate object's center height (middle of the actual 3D object)
-  private getObjectCenterY (measurements: MeasurementData, position: THREE.Vector3): number {
+  private getObjectCenterY(measurements: MeasurementData, position: THREE.Vector3): number {
     // Object bottom = scene position + floorOffset
     const objectBottom = position.y + measurements.floorOffset;
     // Object top = object bottom + object height
@@ -761,21 +761,21 @@ export class MeasurementSystem {
   }
 
   // ✅ Calculate object's actual bottom position
-  private getObjectBottomY (measurements: MeasurementData, position: THREE.Vector3): number {
+  private getObjectBottomY(measurements: MeasurementData, position: THREE.Vector3): number {
     // Bottom = object's scene position + floorOffset (where the object actually starts)
     return position.y + measurements.floorOffset;
   }
 
   // ✅ Calculate object's actual top position
-  private getObjectTopY (measurements: MeasurementData, position: THREE.Vector3): number {
+  private getObjectTopY(measurements: MeasurementData, position: THREE.Vector3): number {
     // Top = object's scene position + floorOffset + object height
     return position.y + measurements.floorOffset + measurements.objectHeight;
   }
 
-// REPLACE your entire createWallBoundMeasurements method with this version
-// This completely eliminates room-extension measurements for wall-mounted objects
+  // REPLACE your entire createWallBoundMeasurements method with this version
+  // This completely eliminates room-extension measurements for wall-mounted objects
 
-  private createWallBoundMeasurements (
+  private createWallBoundMeasurements(
     measurements: MeasurementData,
     position: THREE.Vector3,
     labels: MeasurementLabel[]
@@ -1003,7 +1003,7 @@ export class MeasurementSystem {
     console.log(`🎯 FINAL: Created ${labels.length} total labels for wall-mounted object`);
   }
 
-  private createFreeStandingMeasurements (
+  private createFreeStandingMeasurements(
     measurements: MeasurementData,
     position: THREE.Vector3,
     labels: MeasurementLabel[]
@@ -1101,13 +1101,13 @@ export class MeasurementSystem {
     });
   }
 
-  public forceUpdateMeasurements (): void {
+  public forceUpdateMeasurements(): void {
     if (this.enabled && this.selectedObject) {
       this.updateMeasurements();
     }
   }
 
-  private createMeasurementLabel (label: MeasurementLabel): void {
+  private createMeasurementLabel(label: MeasurementLabel): void {
     // Create text sprite for the measurement label
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -1164,7 +1164,7 @@ export class MeasurementSystem {
     this.measurementLabels.add(sprite);
   }
 
-  private shouldSkipWallFacingLine (labelId: string, wallDirection: 'north' | 'south' | 'east' | 'west' | 'notch-south' | 'notch-east'): boolean {
+  private shouldSkipWallFacingLine(labelId: string, wallDirection: 'north' | 'south' | 'east' | 'west' | 'notch-south' | 'notch-east'): boolean {
     // ✅ RESTRICTIVE: For wall-mounted objects, only allow measurements parallel to the wall
     const restrictedLines = {
       'north': ['space-front', 'space-back'],           // Only allow left/right for north wall objects
@@ -1184,7 +1184,7 @@ export class MeasurementSystem {
     return shouldSkip;
   }
 
-  private createMeasurementLine (label: MeasurementLabel, measurements: MeasurementData): void {
+  private createMeasurementLine(label: MeasurementLabel, measurements: MeasurementData): void {
     if (!this.selectedObject) return;
 
     // ✅ SAFEGUARD: For wall-bound objects, don't create lines going into walls
@@ -1206,172 +1206,172 @@ export class MeasurementSystem {
       objectCenterY: objectCenterY.toFixed(1) + 'cm',
       labelType: label.isObjectDimension ? 'OBJECT DIMENSION' : 'SPACE'
     });
-      // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
-      if (label.id === 'space-left') {
-        const startX = position.x - measurements.objectWidth / 2;
-        let endX = startX - measurements.spaceLeft;
+    // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
+    if (label.id === 'space-left') {
+      const startX = position.x - measurements.objectWidth / 2;
+      let endX = startX - measurements.spaceLeft;
 
-        // ✅ Check if object is in notch-affected area
-        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
-        let lineY = objectCenterY;
+      // ✅ Check if object is in notch-affected area
+      const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+      let lineY = objectCenterY;
 
-        let lineZ = position.z;
-        let notchLineAdjusted = false;
+      let lineZ = position.z;
+      let notchLineAdjusted = false;
 
-        console.log(`📏 space-left DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
-        if (notch) {
-          console.log(`📏 space-left DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
+      console.log(`📏 space-left DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
+      if (notch) {
+        console.log(`📏 space-left DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
 
-          // Check if line ends at notch-east wall (object is east of it)
-          if (position.x > notch.maxX) {
-            const distanceToNotchWall = Math.abs(endX - notch.maxX);
-            console.log(`📏 space-left: Object east of notch-east wall! endX=${endX.toFixed(1)}, notch.maxX=${notch.maxX.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
+        // Check if line ends at notch-east wall (object is east of it)
+        if (position.x > notch.maxX) {
+          const distanceToNotchWall = Math.abs(endX - notch.maxX);
+          console.log(`📏 space-left: Object east of notch-east wall! endX=${endX.toFixed(1)}, notch.maxX=${notch.maxX.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
 
-            if (distanceToNotchWall < 20) {
-              // Don't override endX - let the space calculation handle it
-              lineY = objectCenterY + 5;
-              lineZ = position.z + 20;
-              notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-left adjustment for notch-east wall: lineZ offset by 20cm, endX=${endX.toFixed(1)}`);
-            }
-          }
-
-          // ✅ NEW: Check if object is near notch-south wall - offset horizontal lines away from wall
-          if (position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
-            lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
-            console.log(`📏 ✅ APPLYING space-left Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)} (20cm from wall at ${notch.maxZ.toFixed(1)})`);
+          if (distanceToNotchWall < 20) {
+            // Don't override endX - let the space calculation handle it
+            lineY = objectCenterY + 5;
+            lineZ = position.z + 20;
+            notchLineAdjusted = true;
+            console.log(`📏 ✅ APPLYING space-left adjustment for notch-east wall: lineZ offset by 20cm, endX=${endX.toFixed(1)}`);
           }
         }
 
-        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
-        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
-          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 5; // 5cm away from wall face
-
-          switch (measurements.wallDirection) {
-            case 'north': lineZ = wallFaces.north + offset; break; // Move south from north wall
-            case 'south': lineZ = wallFaces.south - offset; break; // Move north from south wall
-            case 'east': lineZ = position.z; break; // Keep original Z for east/west walls
-            case 'west': lineZ = position.z; break; // Keep original Z for east/west walls
-          }
-        }
-
-        points.push(new THREE.Vector3(startX, lineY, lineZ));
-        points.push(new THREE.Vector3(endX, lineY, lineZ));
-        this.createEndMarker(new THREE.Vector3(startX, lineY, lineZ), 'vertical');
-        this.createEndMarker(new THREE.Vector3(endX, lineY, lineZ), 'vertical');
-
-      } else if (label.id === 'space-right') {
-        const startX = position.x + measurements.objectWidth / 2;
-        const endX = startX + measurements.spaceRight;
-
-        // ✅ Check if object is near notch-south wall
-        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
-        let lineZ = position.z;
-
-        if (notch && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
+        // ✅ NEW: Check if object is near notch-south wall - offset horizontal lines away from wall
+        if (position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
           lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
-          console.log(`📏 ✅ APPLYING space-right Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)}`);
-        } else if (measurements.isWallBound && measurements.wallDirection) {
-          // Apply standard wall offset
-          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 5;
-
-          switch (measurements.wallDirection) {
-            case 'north': lineZ = wallFaces.north + offset; break;
-            case 'south': lineZ = wallFaces.south - offset; break;
-            case 'east': lineZ = position.z; break;
-            case 'west': lineZ = position.z; break;
-          }
+          console.log(`📏 ✅ APPLYING space-left Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)} (20cm from wall at ${notch.maxZ.toFixed(1)})`);
         }
-
-        points.push(new THREE.Vector3(startX, objectCenterY, lineZ));
-        points.push(new THREE.Vector3(endX, objectCenterY, lineZ));
-        this.createEndMarker(new THREE.Vector3(startX, objectCenterY, lineZ), 'vertical');
-        this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
-
-      } else if (label.id === 'space-front') {
-        const startZ = position.z - measurements.objectWidth / 2;
-        let endZ = startZ - measurements.spaceFront;
-
-        // ✅ Check if object is in notch-affected area
-        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
-        let lineY = objectCenterY;
-        let lineX = position.x;
-        let notchLineAdjusted = false;
-
-        console.log(`📏 space-front DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
-        if (notch) {
-          console.log(`📏 space-front DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
-
-          // Check if line ends at notch-south wall (object is south of it)
-          if (position.z > notch.maxZ) {
-            const distanceToNotchWall = Math.abs(endZ - notch.maxZ);
-            console.log(`📏 space-front: Object south of notch-south wall! endZ=${endZ.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
-
-            if (distanceToNotchWall < 20) {
-              // Don't override endZ - let the space calculation handle it
-              lineY = objectCenterY + 5;
-              lineX = position.x + 20;
-              notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm, endZ=${endZ.toFixed(1)}`);
-            }
-          }
-
-          // ✅ NEW: Check if object is near notch-east wall - offset vertical lines away from wall
-          if (position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
-            lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
-            console.log(`📏 ✅ APPLYING space-front X-offset for notch-east wall: lineX=${lineX.toFixed(1)} (20cm from wall at ${notch.maxX.toFixed(1)})`);
-          }
-        }
-
-        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
-        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
-          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 5;
-
-          switch (measurements.wallDirection) {
-            case 'north': lineX = position.x; break;
-            case 'south': lineX = position.x; break;
-            case 'east': lineX = wallFaces.east - offset; break;
-            case 'west': lineX = wallFaces.west + offset; break;
-          }
-        }
-
-        points.push(new THREE.Vector3(lineX, lineY, startZ));
-        points.push(new THREE.Vector3(lineX, lineY, endZ));
-        this.createEndMarker(new THREE.Vector3(lineX, lineY, startZ), 'vertical');
-        this.createEndMarker(new THREE.Vector3(lineX, lineY, endZ), 'vertical');
-
-      } else if (label.id === 'space-back') {
-        const startZ = position.z + measurements.objectWidth / 2;
-        const endZ = startZ + measurements.spaceBack;
-
-        // ✅ Check if object is near notch-east wall - offset vertical lines away from wall
-        const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
-        let lineX = position.x;
-
-        if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
-          lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
-          console.log(`📏 ✅ APPLYING space-back X-offset for notch-east wall: lineX=${lineX.toFixed(1)}`);
-        } else if (measurements.isWallBound && measurements.wallDirection) {
-          // Apply standard wall offset
-          const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
-          const offset = 5;
-
-          switch (measurements.wallDirection) {
-            case 'north': lineX = position.x; break;
-            case 'south': lineX = position.x; break;
-            case 'east': lineX = wallFaces.east - offset; break;
-            case 'west': lineX = wallFaces.west + offset; break;
-          }
-        }
-
-        points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
-        points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'vertical');
-        this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'vertical');
       }
+
+      // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
+      if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 5; // 5cm away from wall face
+
+        switch (measurements.wallDirection) {
+          case 'north': lineZ = wallFaces.north + offset; break; // Move south from north wall
+          case 'south': lineZ = wallFaces.south - offset; break; // Move north from south wall
+          case 'east': lineZ = position.z; break; // Keep original Z for east/west walls
+          case 'west': lineZ = position.z; break; // Keep original Z for east/west walls
+        }
+      }
+
+      points.push(new THREE.Vector3(startX, lineY, lineZ));
+      points.push(new THREE.Vector3(endX, lineY, lineZ));
+      this.createEndMarker(new THREE.Vector3(startX, lineY, lineZ), 'vertical');
+      this.createEndMarker(new THREE.Vector3(endX, lineY, lineZ), 'vertical');
+
+    } else if (label.id === 'space-right') {
+      const startX = position.x + measurements.objectWidth / 2;
+      const endX = startX + measurements.spaceRight;
+
+      // ✅ Check if object is near notch-south wall
+      const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+      let lineZ = position.z;
+
+      if (notch && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
+        lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
+        console.log(`📏 ✅ APPLYING space-right Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)}`);
+      } else if (measurements.isWallBound && measurements.wallDirection) {
+        // Apply standard wall offset
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 5;
+
+        switch (measurements.wallDirection) {
+          case 'north': lineZ = wallFaces.north + offset; break;
+          case 'south': lineZ = wallFaces.south - offset; break;
+          case 'east': lineZ = position.z; break;
+          case 'west': lineZ = position.z; break;
+        }
+      }
+
+      points.push(new THREE.Vector3(startX, objectCenterY, lineZ));
+      points.push(new THREE.Vector3(endX, objectCenterY, lineZ));
+      this.createEndMarker(new THREE.Vector3(startX, objectCenterY, lineZ), 'vertical');
+      this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
+
+    } else if (label.id === 'space-front') {
+      const startZ = position.z - measurements.objectWidth / 2;
+      let endZ = startZ - measurements.spaceFront;
+
+      // ✅ Check if object is in notch-affected area
+      const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+      let lineY = objectCenterY;
+      let lineX = position.x;
+      let notchLineAdjusted = false;
+
+      console.log(`📏 space-front DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
+      if (notch) {
+        console.log(`📏 space-front DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
+
+        // Check if line ends at notch-south wall (object is south of it)
+        if (position.z > notch.maxZ) {
+          const distanceToNotchWall = Math.abs(endZ - notch.maxZ);
+          console.log(`📏 space-front: Object south of notch-south wall! endZ=${endZ.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
+
+          if (distanceToNotchWall < 20) {
+            // Don't override endZ - let the space calculation handle it
+            lineY = objectCenterY + 5;
+            lineX = position.x + 20;
+            notchLineAdjusted = true;
+            console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm, endZ=${endZ.toFixed(1)}`);
+          }
+        }
+
+        // ✅ NEW: Check if object is near notch-east wall - offset vertical lines away from wall
+        if (position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+          lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
+          console.log(`📏 ✅ APPLYING space-front X-offset for notch-east wall: lineX=${lineX.toFixed(1)} (20cm from wall at ${notch.maxX.toFixed(1)})`);
+        }
+      }
+
+      // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
+      if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 5;
+
+        switch (measurements.wallDirection) {
+          case 'north': lineX = position.x; break;
+          case 'south': lineX = position.x; break;
+          case 'east': lineX = wallFaces.east - offset; break;
+          case 'west': lineX = wallFaces.west + offset; break;
+        }
+      }
+
+      points.push(new THREE.Vector3(lineX, lineY, startZ));
+      points.push(new THREE.Vector3(lineX, lineY, endZ));
+      this.createEndMarker(new THREE.Vector3(lineX, lineY, startZ), 'vertical');
+      this.createEndMarker(new THREE.Vector3(lineX, lineY, endZ), 'vertical');
+
+    } else if (label.id === 'space-back') {
+      const startZ = position.z + measurements.objectWidth / 2;
+      const endZ = startZ + measurements.spaceBack;
+
+      // ✅ Check if object is near notch-east wall - offset vertical lines away from wall
+      const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+      let lineX = position.x;
+
+      if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+        lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
+        console.log(`📏 ✅ APPLYING space-back X-offset for notch-east wall: lineX=${lineX.toFixed(1)}`);
+      } else if (measurements.isWallBound && measurements.wallDirection) {
+        // Apply standard wall offset
+        const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
+        const offset = 5;
+
+        switch (measurements.wallDirection) {
+          case 'north': lineX = position.x; break;
+          case 'south': lineX = position.x; break;
+          case 'east': lineX = wallFaces.east - offset; break;
+          case 'west': lineX = wallFaces.west + offset; break;
+        }
+      }
+
+      points.push(new THREE.Vector3(lineX, objectCenterY, startZ));
+      points.push(new THREE.Vector3(lineX, objectCenterY, endZ));
+      this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, startZ), 'vertical');
+      this.createEndMarker(new THREE.Vector3(lineX, objectCenterY, endZ), 'vertical');
+    }
     else if (label.id === 'item-bottom-y') {
       // Vertical line from object bottom to floor/object below
       const objectBottomY = this.getObjectBottomY(measurements, position);
@@ -1420,16 +1420,16 @@ export class MeasurementSystem {
 
       points.push(new THREE.Vector3(lineX, objectBottomY, lineZ));
       points.push(new THREE.Vector3(lineX, endY, lineZ));
-        this.createEndMarker(
-            new THREE.Vector3(lineX, objectBottomY, lineZ),
-            'horizontal',
-            measurements.wallDirection
-        );
-        this.createEndMarker(
-            new THREE.Vector3(lineX, endY, lineZ),
-            'horizontal',
-            measurements.wallDirection
-        );
+      this.createEndMarker(
+        new THREE.Vector3(lineX, objectBottomY, lineZ),
+        'horizontal',
+        measurements.wallDirection
+      );
+      this.createEndMarker(
+        new THREE.Vector3(lineX, endY, lineZ),
+        'horizontal',
+        measurements.wallDirection
+      );
 
     } else if (label.id === 'item-top-y') {
       const objectTopY = this.getObjectTopY(measurements, position);
@@ -1478,16 +1478,16 @@ export class MeasurementSystem {
 
       points.push(new THREE.Vector3(lineX, objectTopY, lineZ));
       points.push(new THREE.Vector3(lineX, endY, lineZ));
-        this.createEndMarker(
-            new THREE.Vector3(lineX, objectTopY, lineZ),
-            'horizontal',
-            measurements.wallDirection
-        );
-        this.createEndMarker(
-            new THREE.Vector3(lineX, endY, lineZ),
-            'horizontal',
-            measurements.wallDirection
-        );
+      this.createEndMarker(
+        new THREE.Vector3(lineX, objectTopY, lineZ),
+        'horizontal',
+        measurements.wallDirection
+      );
+      this.createEndMarker(
+        new THREE.Vector3(lineX, endY, lineZ),
+        'horizontal',
+        measurements.wallDirection
+      );
     }
 
     if (points.length === 2) {
@@ -1509,36 +1509,36 @@ export class MeasurementSystem {
   };
   // NEW: Create end markers (small perpendicular lines at measurement ends)
   private createEndMarker(
-      position: THREE.Vector3,
-      direction: 'horizontal' | 'vertical',
-      wallDirection?: 'north' | 'south' | 'east' | 'west' | 'notch-south' | 'notch-east'
+    position: THREE.Vector3,
+    direction: 'horizontal' | 'vertical',
+    wallDirection?: 'north' | 'south' | 'east' | 'west' | 'notch-south' | 'notch-east'
   ): void {
     const markerSize = 8; // Small marker size
     const points: THREE.Vector3[] = [];
 
-      const FLOOR_Y = 0;      // Floor is at Y = 0
-      const EPS = 0.5;        // Small cushion to avoid z-fighting
+    const FLOOR_Y = 0;      // Floor is at Y = 0
+    const EPS = 0.5;        // Small cushion to avoid z-fighting
 
-      // Calculate safe Y position for marker
-      const safeMarkerY = Math.max(position.y, FLOOR_Y + EPS);
+    // Calculate safe Y position for marker
+    const safeMarkerY = Math.max(position.y, FLOOR_Y + EPS);
 
     if (direction === 'vertical') {
 
-        const markerBottom = Math.max(safeMarkerY - markerSize / 2, FLOOR_Y + EPS);
-        const markerTop = markerBottom + markerSize;
+      const markerBottom = Math.max(safeMarkerY - markerSize / 2, FLOOR_Y + EPS);
+      const markerTop = markerBottom + markerSize;
       // Vertical end marker (extends vertically)
-        points.push(new THREE.Vector3(position.x, markerBottom, position.z));
-        points.push(new THREE.Vector3(position.x, markerTop, position.z));
+      points.push(new THREE.Vector3(position.x, markerBottom, position.z));
+      points.push(new THREE.Vector3(position.x, markerTop, position.z));
     } else {
       // Horizontal end marker - orientation depends on wall direction
       if (wallDirection === 'north' || wallDirection === 'south' || wallDirection === 'notch-south') {
         // For north/south/notch-south walls, extend in X-axis (left/right) for front visibility
-          points.push(new THREE.Vector3(position.x - markerSize / 2, safeMarkerY, position.z));
-          points.push(new THREE.Vector3(position.x + markerSize / 2, safeMarkerY, position.z));
+        points.push(new THREE.Vector3(position.x - markerSize / 2, safeMarkerY, position.z));
+        points.push(new THREE.Vector3(position.x + markerSize / 2, safeMarkerY, position.z));
       } else {
         // For east/west/notch-east walls (or no wall), extend in Z-axis (front/back) for side visibility
-          points.push(new THREE.Vector3(position.x, safeMarkerY, position.z - markerSize / 2));
-          points.push(new THREE.Vector3(position.x, safeMarkerY, position.z + markerSize / 2));
+        points.push(new THREE.Vector3(position.x, safeMarkerY, position.z - markerSize / 2));
+        points.push(new THREE.Vector3(position.x, safeMarkerY, position.z + markerSize / 2));
       }
     }
 
@@ -1550,26 +1550,26 @@ export class MeasurementSystem {
       opacity: 1.0
     });
 
-      const marker = new THREE.Line(geometry, material);
-      marker.renderOrder = 999; // Render in front of walls (same as measurement lines)
-      marker.userData = {
-          type: 'endMarker',
-          direction,
-          wallDirection,
-          originalY: position.y,
-          adjustedY: safeMarkerY
-      };
+    const marker = new THREE.Line(geometry, material);
+    marker.renderOrder = 999; // Render in front of walls (same as measurement lines)
+    marker.userData = {
+      type: 'endMarker',
+      direction,
+      wallDirection,
+      originalY: position.y,
+      adjustedY: safeMarkerY
+    };
 
-      this.measurementLines.add(marker);
+    this.measurementLines.add(marker);
   }
 
-  private clearMeasurements (): void {
+  private clearMeasurements(): void {
     this.measurementLabels.clear();
     this.measurementLines.clear();
     this.currentMeasurements = null;
   }
 
-  public getCurrentMeasurements (): MeasurementData | null {
+  public getCurrentMeasurements(): MeasurementData | null {
     return this.currentMeasurements;
   }
 
@@ -1893,13 +1893,13 @@ export class MeasurementSystem {
     // Start marker
     const startMarkerPoints = isHorizontal
       ? [
-          new THREE.Vector3(start.x, start.y, start.z - markerSize / 2),
-          new THREE.Vector3(start.x, start.y, start.z + markerSize / 2)
-        ]
+        new THREE.Vector3(start.x, start.y, start.z - markerSize / 2),
+        new THREE.Vector3(start.x, start.y, start.z + markerSize / 2)
+      ]
       : [
-          new THREE.Vector3(start.x - markerSize / 2, start.y, start.z),
-          new THREE.Vector3(start.x + markerSize / 2, start.y, start.z)
-        ];
+        new THREE.Vector3(start.x - markerSize / 2, start.y, start.z),
+        new THREE.Vector3(start.x + markerSize / 2, start.y, start.z)
+      ];
 
     const startMarkerGeom = new THREE.BufferGeometry().setFromPoints(startMarkerPoints);
     const startMarker = new THREE.Line(startMarkerGeom, material.clone());
@@ -1909,13 +1909,13 @@ export class MeasurementSystem {
     // End marker
     const endMarkerPoints = isHorizontal
       ? [
-          new THREE.Vector3(end.x, end.y, end.z - markerSize / 2),
-          new THREE.Vector3(end.x, end.y, end.z + markerSize / 2)
-        ]
+        new THREE.Vector3(end.x, end.y, end.z - markerSize / 2),
+        new THREE.Vector3(end.x, end.y, end.z + markerSize / 2)
+      ]
       : [
-          new THREE.Vector3(end.x - markerSize / 2, end.y, end.z),
-          new THREE.Vector3(end.x + markerSize / 2, end.y, end.z)
-        ];
+        new THREE.Vector3(end.x - markerSize / 2, end.y, end.z),
+        new THREE.Vector3(end.x + markerSize / 2, end.y, end.z)
+      ];
 
     const endMarkerGeom = new THREE.BufferGeometry().setFromPoints(endMarkerPoints);
     const endMarker = new THREE.Line(endMarkerGeom, material.clone());
