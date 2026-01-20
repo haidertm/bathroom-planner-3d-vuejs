@@ -1,11 +1,11 @@
 <template>
   <Teleport to="body">
-    <div v-if="isOpen" class="all-filters-wrapper">
+    <div class="all-filters-wrapper" :class="{ 'is-open': isOpen }">
       <!-- Overlay -->
       <div class="filters-overlay" @click="closeDrawer"></div>
 
       <!-- Drawer -->
-      <div class="filters-drawer">
+      <div class="filters-drawer" :class="{ 'is-open': isOpen }">
       <!-- Header -->
       <div class="filters-header">
         <h2 class="filters-title">All Filters</h2>
@@ -19,89 +19,41 @@
 
       <!-- Filter Sections -->
       <div class="filters-content">
-        <!-- Length Section -->
-        <div v-if="availableFilters.includes('length')" class="filter-section">
-          <button class="filter-section-header" @click="toggleSection('length')">
-            <span>{{ categoryLabel }} Length</span>
-            <svg
-              class="filter-section-arrow"
-              :class="{ 'is-open': openSections.length }"
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-          <div v-if="openSections.length" class="filter-section-content">
-            <div class="filter-options-grid">
-              <label v-for="option in lengthOptions" :key="option.value" class="filter-checkbox-label">
-                <input
-                  type="checkbox"
-                  :checked="localFilters.length.includes(option.value)"
-                  @change="toggleFilter('length', option.value)"
-                  class="filter-checkbox"
-                />
-                <span>{{ option.label }}</span>
-              </label>
+        <!-- Dynamic Secondary Filter Sections -->
+        <div
+          v-for="filterKey in secondaryFilters"
+          :key="filterKey"
+          class="filter-section"
+        >
+          <template v-if="getFilterOptions(filterKey).length > 0">
+            <button class="filter-section-header" @click="toggleSection(filterKey)">
+              <span>{{ getFilterLabel(filterKey) }}</span>
+              <svg
+                class="filter-section-arrow"
+                :class="{ 'is-open': openSections[filterKey] }"
+                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div v-if="openSections[filterKey]" class="filter-section-content">
+              <div class="filter-options-grid">
+                <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+                  <input
+                    type="checkbox"
+                    :checked="isFilterSelected(filterKey, option.value)"
+                    @change="toggleFilter(filterKey, option.value)"
+                    class="filter-checkbox"
+                  />
+                  <span>{{ option.label }}</span>
+                </label>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
 
-        <!-- Type Section -->
-        <div v-if="availableFilters.includes('type')" class="filter-section">
-          <button class="filter-section-header" @click="toggleSection('type')">
-            <span>{{ categoryLabel }} Type</span>
-            <svg
-              class="filter-section-arrow"
-              :class="{ 'is-open': openSections.type }"
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-          <div v-if="openSections.type" class="filter-section-content">
-            <div class="filter-options-grid">
-              <label v-for="option in typeOptions" :key="option.value" class="filter-checkbox-label">
-                <input
-                  type="checkbox"
-                  :checked="localFilters.type.includes(option.value)"
-                  @change="toggleFilter('type', option.value)"
-                  class="filter-checkbox"
-                />
-                <span>{{ option.label }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Finish Section -->
-        <div v-if="availableFilters.includes('finish')" class="filter-section">
-          <button class="filter-section-header" @click="toggleSection('finish')">
-            <span>{{ categoryLabel }} Finish</span>
-            <svg
-              class="filter-section-arrow"
-              :class="{ 'is-open': openSections.finish }"
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-          <div v-if="openSections.finish" class="filter-section-content">
-            <div class="filter-options-grid">
-              <label v-for="option in finishOptions" :key="option.value" class="filter-checkbox-label">
-                <input
-                  type="checkbox"
-                  :checked="localFilters.finish.includes(option.value)"
-                  @change="toggleFilter('finish', option.value)"
-                  class="filter-checkbox"
-                />
-                <span>{{ option.label }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Price Range Section -->
-        <div class="filter-section">
+        <!-- Price Range Section (always shown if products have prices) -->
+        <div v-if="hasProductsWithPrices" class="filter-section">
           <button class="filter-section-header" @click="toggleSection('price')">
             <span>Price Range</span>
             <svg
@@ -115,18 +67,39 @@
           <div v-if="openSections.price" class="filter-section-content">
             <div class="price-range-container">
               <div class="price-range-labels">
-                <span>£{{ priceRange[0] }}</span>
-                <span>£{{ priceRange[1] }}</span>
+                <span>£{{ localFilters.priceMin }}</span>
+                <span>£{{ localFilters.priceMax }}</span>
               </div>
-              <input
-                type="range"
-                :min="0"
-                :max="maxPrice"
-                v-model.number="priceRange[1]"
-                class="price-range-slider"
-              />
+              <div class="dual-range-slider">
+                <div class="slider-track"></div>
+                <div
+                  class="slider-range"
+                  :style="sliderRangeStyle"
+                ></div>
+                <input
+                  type="range"
+                  :min="minPrice"
+                  :max="maxPrice"
+                  :value="localFilters.priceMin"
+                  @input="updateMinPrice"
+                  class="range-input range-min"
+                />
+                <input
+                  type="range"
+                  :min="minPrice"
+                  :max="maxPrice"
+                  :value="localFilters.priceMax"
+                  @input="updateMaxPrice"
+                  class="range-input range-max"
+                />
+              </div>
             </div>
           </div>
+        </div>
+
+        <!-- Empty state when no secondary filters -->
+        <div v-if="secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
+          <p>No additional filters available for this category.</p>
         </div>
       </div>
 
@@ -145,8 +118,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { getAvailableFilters } from '../../constants/filters'
+import { ref, computed, watch, reactive } from 'vue'
+import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS } from '../../constants/filters'
 import { extractFilterOptions, filterProducts } from '../../utils/filters'
 
 const props = defineProps({
@@ -164,65 +137,126 @@ const props = defineProps({
   },
   selectedFilters: {
     type: Object,
-    default: () => ({ length: [], type: [], finish: [] })
+    default: () => ({ ...EMPTY_FILTERS })
   }
 })
 
 const emit = defineEmits(['close', 'update:filters'])
 
-// Local copy of filters for editing
-const localFilters = ref({
-  length: [...props.selectedFilters.length],
-  type: [...props.selectedFilters.type],
-  finish: [...props.selectedFilters.finish]
+// Price range constants
+const minPrice = 0
+
+// Compute max price from products
+const maxPrice = computed(() => {
+  let max = 0
+  for (const product of props.products) {
+    // Check product-level price
+    const productPrice = parsePrice(product.price)
+    if (productPrice !== null && productPrice > max) {
+      max = productPrice
+    }
+    // Check variant prices
+    if (product.variants) {
+      for (const variant of product.variants) {
+        const variantPrice = parsePrice(variant.price)
+        if (variantPrice !== null && variantPrice > max) {
+          max = variantPrice
+        }
+      }
+    }
+  }
+  // Round up to nearest 100 for nicer slider range
+  return Math.ceil(max / 100) * 100 || 1000
 })
 
-// Price range
-const priceRange = ref([0, 2000])
-const maxPrice = 2000
+// Helper to parse price (handles both string and number)
+function parsePrice(price) {
+  if (typeof price === 'number') return price
+  if (typeof price === 'string') {
+    const parsed = parseFloat(price)
+    return isNaN(parsed) ? null : parsed
+  }
+  return null
+}
 
-// Open/closed state for sections
-const openSections = ref({
-  length: true,
-  type: true,
-  finish: true,
+// Local copy of filters for editing (initialized in watch below after maxPrice is available)
+const localFilters = ref({ ...EMPTY_FILTERS })
+
+// Open/closed state for sections (reactive object to handle dynamic keys)
+const openSections = reactive({
   price: false
 })
 
-// Category label for filter section titles
-const categoryLabel = computed(() => {
-  const labels = {
-    'Bath': 'Bath',
-    'Shower': 'Shower',
-    'Toilet': 'Toilet',
-    'Furniture': 'Vanity',
-    'Radiator': 'Radiator',
-    'TowelRails': 'Towel Rail',
-    'Mirror': 'Mirror',
-    'WindowAndDoor': 'Window/Door'
+// Get secondary filters for this category
+const secondaryFilters = computed(() => {
+  return getSecondaryFilters(props.category)
+})
+
+// Initialize open sections for secondary filters
+watch(secondaryFilters, (filters) => {
+  for (const filterKey of filters) {
+    if (openSections[filterKey] === undefined) {
+      openSections[filterKey] = true // Default to open
+    }
   }
-  return labels[props.category] || props.category
+}, { immediate: true })
+
+// Get filter label for display
+const getFilterLabel = (filterKey) => {
+  return getLabel(filterKey)
+}
+
+// Get filter options for a specific filter key
+const getFilterOptions = (filterKey) => {
+  return extractFilterOptions(props.products, filterKey)
+}
+
+// Check if a filter value is selected
+const isFilterSelected = (filterKey, value) => {
+  const values = localFilters.value[filterKey]
+  return Array.isArray(values) && values.includes(value)
+}
+
+// Computed style for the range slider highlight
+const sliderRangeStyle = computed(() => {
+  const max = maxPrice.value
+  const minPercent = ((localFilters.value.priceMin - minPrice) / (max - minPrice)) * 100
+  const maxPercent = ((localFilters.value.priceMax - minPrice) / (max - minPrice)) * 100
+  return {
+    left: `${minPercent}%`,
+    width: `${maxPercent - minPercent}%`
+  }
 })
 
-// Get available filters for this category
-const availableFilters = computed(() => {
-  return getAvailableFilters(props.category)
-})
+// Update min price from slider
+const updateMinPrice = (event) => {
+  const value = parseInt(event.target.value)
+  if (value <= localFilters.value.priceMax) {
+    localFilters.value.priceMin = value
+  }
+}
 
-// Extract filter options from products
-const lengthOptions = computed(() => {
-  if (!availableFilters.value.includes('length')) return []
-  return extractFilterOptions(props.products, 'length')
-})
+// Update max price from slider
+const updateMaxPrice = (event) => {
+  const value = parseInt(event.target.value)
+  if (value >= localFilters.value.priceMin) {
+    localFilters.value.priceMax = value
+  }
+}
 
-const typeOptions = computed(() => {
-  if (!availableFilters.value.includes('type')) return []
-  return extractFilterOptions(props.products, 'type')
-})
-
-const finishOptions = computed(() => {
-  if (!availableFilters.value.includes('finish')) return []
-  return extractFilterOptions(props.products, 'finish')
+// Check if any products have prices
+const hasProductsWithPrices = computed(() => {
+  return props.products.some(product => {
+    // Check product-level price
+    if (product.price !== undefined && product.price !== null) {
+      return true
+    }
+    // Check variant prices
+    if (product.variants) {
+      return product.variants.some(v => v.price !== undefined && v.price !== null)
+    }
+    return false
+  })
 })
 
 // Count of filtered results
@@ -231,31 +265,54 @@ const filteredCount = computed(() => {
   return filtered.length
 })
 
+// Create local filters object from selected filters
+function createLocalFilters(selectedFilters, dynamicMaxPrice) {
+  const filters = { ...EMPTY_FILTERS }
+
+  // Copy over all array filters
+  for (const key of Object.keys(filters)) {
+    if (key === 'priceMin') {
+      filters[key] = selectedFilters[key] ?? 0
+    } else if (key === 'priceMax') {
+      // Use the dynamic max price as default instead of hardcoded value
+      filters[key] = selectedFilters[key] ?? dynamicMaxPrice
+    } else if (Array.isArray(selectedFilters[key])) {
+      filters[key] = [...selectedFilters[key]]
+    }
+  }
+
+  return filters
+}
+
 // Sync local filters when props change
 watch(() => props.selectedFilters, (newFilters) => {
-  localFilters.value = {
-    length: [...newFilters.length],
-    type: [...newFilters.type],
-    finish: [...newFilters.finish]
-  }
+  localFilters.value = createLocalFilters(newFilters, maxPrice.value)
 }, { deep: true })
 
 // Reset local filters when drawer opens
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    localFilters.value = {
-      length: [...props.selectedFilters.length],
-      type: [...props.selectedFilters.type],
-      finish: [...props.selectedFilters.finish]
-    }
+    localFilters.value = createLocalFilters(props.selectedFilters, maxPrice.value)
   }
 })
 
+// Initialize local filters when maxPrice becomes available
+watch(maxPrice, (newMaxPrice) => {
+  // Only initialize if priceMax is still at default (undefined or matches EMPTY_FILTERS default)
+  if (localFilters.value.priceMax === undefined || localFilters.value.priceMax === EMPTY_FILTERS.priceMax) {
+    localFilters.value.priceMax = newMaxPrice
+  }
+}, { immediate: true })
+
 const toggleSection = (section) => {
-  openSections.value[section] = !openSections.value[section]
+  openSections[section] = !openSections[section]
 }
 
 const toggleFilter = (filterKey, value) => {
+  if (!Array.isArray(localFilters.value[filterKey])) {
+    localFilters.value[filterKey] = []
+  }
+
   const index = localFilters.value[filterKey].indexOf(value)
   if (index === -1) {
     localFilters.value[filterKey].push(value)
@@ -265,12 +322,7 @@ const toggleFilter = (filterKey, value) => {
 }
 
 const clearAllFilters = () => {
-  localFilters.value = {
-    length: [],
-    type: [],
-    finish: []
-  }
-  priceRange.value = [0, maxPrice]
+  localFilters.value = { ...EMPTY_FILTERS, priceMax: maxPrice.value }
   // Emit the cleared filters to parent immediately
   emit('update:filters', { ...localFilters.value })
 }
@@ -294,6 +346,13 @@ const closeDrawer = () => {
   bottom: 0;
   z-index: 10000000; /* Higher than Sidebar search bar (9999999) */
   pointer-events: none; /* Allow clicks to pass through to sidebar */
+  visibility: hidden;
+  transition: visibility 0s 0.3s; /* Delay hiding until transition completes */
+}
+
+.all-filters-wrapper.is-open {
+  visibility: visible;
+  transition: visibility 0s 0s; /* Show immediately when opening */
 }
 
 .filters-overlay {
@@ -304,6 +363,12 @@ const closeDrawer = () => {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
   pointer-events: auto; /* Re-enable clicks on overlay */
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.all-filters-wrapper.is-open .filters-overlay {
+  opacity: 1;
 }
 
 .filters-drawer {
@@ -319,6 +384,12 @@ const closeDrawer = () => {
   overflow: hidden;
   border-left: 1px solid #e5e7eb;
   pointer-events: auto; /* Enable clicks on the drawer */
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-out;
+}
+
+.filters-drawer.is-open {
+  transform: translateX(0);
 }
 
 .filters-header {
@@ -427,39 +498,99 @@ const closeDrawer = () => {
 .price-range-labels {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   font-size: 14px;
-  color: #374151;
+  font-weight: 600;
+  color: #1a1a1a;
   font-family: Arial, sans-serif;
 }
 
-.price-range-slider {
+/* Dual Range Slider */
+.dual-range-slider {
+  position: relative;
+  height: 24px;
+  margin-bottom: 20px;
+}
+
+.slider-track {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+
+.slider-range {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 6px;
+  background: #29275B;
+  border-radius: 3px;
+}
+
+.range-input {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   width: 100%;
   height: 6px;
   -webkit-appearance: none;
   appearance: none;
-  background: #e5e7eb;
-  border-radius: 3px;
+  background: transparent;
+  pointer-events: none;
   outline: none;
 }
 
-.price-range-slider::-webkit-slider-thumb {
+.range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
-  background: #29275B;
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border: 2px solid #29275B;
   border-radius: 50%;
   cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.price-range-slider::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: #29275B;
+.range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.range-input::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  background: #f0f0ff;
+}
+
+.range-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border: 2px solid #29275B;
   border-radius: 50%;
   cursor: pointer;
-  border: none;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.range-input::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.no-filters-message {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  font-family: Arial, sans-serif;
 }
 
 .filters-footer {
@@ -519,6 +650,11 @@ const closeDrawer = () => {
     width: 100vw;
     max-width: 100vw;
     height: calc(100vh - 70px);
+    transform: translateX(-100%);
+  }
+
+  .filters-drawer.is-open {
+    transform: translateX(0);
   }
 
   .filter-options-grid {

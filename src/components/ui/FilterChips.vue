@@ -1,30 +1,13 @@
 <template>
-  <div v-if="availableFilters.length > 0" class="filter-chips-container">
-    <!-- Length Filter -->
+  <div v-if="primaryFilters.length > 0" class="filter-chips-container">
+    <!-- Dynamic Primary Filters -->
     <FilterDropdown
-      v-if="availableFilters.includes('length')"
-      label="Length"
-      :options="lengthOptions"
-      :selected="selectedFilters.length"
-      @update="updateFilter('length', $event)"
-    />
-
-    <!-- Type Filter -->
-    <FilterDropdown
-      v-if="availableFilters.includes('type')"
-      label="Type"
-      :options="typeOptions"
-      :selected="selectedFilters.type"
-      @update="updateFilter('type', $event)"
-    />
-
-    <!-- Finish Filter -->
-    <FilterDropdown
-      v-if="availableFilters.includes('finish')"
-      label="Finish"
-      :options="finishOptions"
-      :selected="selectedFilters.finish"
-      @update="updateFilter('finish', $event)"
+      v-for="filterKey in primaryFilters"
+      :key="filterKey"
+      :label="getFilterLabel(filterKey)"
+      :options="getFilterOptions(filterKey)"
+      :selected="getSelectedValues(filterKey)"
+      @update="updateFilter(filterKey, $event)"
     />
 
     <!-- All Filters Button -->
@@ -45,6 +28,7 @@
         <line x1="17" y1="16" x2="23" y2="16"></line>
       </svg>
       All Filters
+      <span v-if="secondaryActiveCount > 0" class="secondary-filter-badge">{{ secondaryActiveCount }}</span>
     </button>
   </div>
 </template>
@@ -52,7 +36,7 @@
 <script setup>
 import { computed, watch } from 'vue'
 import FilterDropdown from './FilterDropdown.vue'
-import { getAvailableFilters } from '../../constants/filters'
+import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel } from '../../constants/filters'
 import { extractFilterOptions } from '../../utils/filters'
 
 const props = defineProps({
@@ -66,40 +50,66 @@ const props = defineProps({
   },
   selectedFilters: {
     type: Object,
-    default: () => ({ length: [], type: [], finish: [] })
+    default: () => ({})
   }
 })
 
 const emit = defineEmits(['update:filters', 'open-all-filters'])
 
-// Get available filters for this category
-const availableFilters = computed(() => {
-  return getAvailableFilters(props.category)
+// Get primary filters for this category
+const primaryFilters = computed(() => {
+  return getPrimaryFilters(props.category)
 })
 
-// Extract filter options from products
-const lengthOptions = computed(() => {
-  if (!availableFilters.value.includes('length')) return []
-  return extractFilterOptions(props.products, 'length')
+// Get secondary filters for this category (for badge count)
+const secondaryFilters = computed(() => {
+  return getSecondaryFilters(props.category)
 })
 
-const typeOptions = computed(() => {
-  if (!availableFilters.value.includes('type')) return []
-  return extractFilterOptions(props.products, 'type')
-})
+// Get filter label for display
+const getFilterLabel = (filterKey) => {
+  return getLabel(filterKey)
+}
 
-const finishOptions = computed(() => {
-  if (!availableFilters.value.includes('finish')) return []
-  return extractFilterOptions(props.products, 'finish')
-})
+// Get filter options for a specific filter key
+const getFilterOptions = (filterKey) => {
+  return extractFilterOptions(props.products, filterKey)
+}
 
-// Total active filters count
+// Get selected values for a specific filter key
+const getSelectedValues = (filterKey) => {
+  return props.selectedFilters[filterKey] || []
+}
+
+// Total active filters count (for primary filters)
 const totalActiveFilters = computed(() => {
-  return (
-    (props.selectedFilters.length?.length || 0) +
-    (props.selectedFilters.type?.length || 0) +
-    (props.selectedFilters.finish?.length || 0)
-  )
+  let count = 0
+  for (const filterKey of primaryFilters.value) {
+    const values = props.selectedFilters[filterKey]
+    if (Array.isArray(values)) {
+      count += values.length
+    }
+  }
+  return count
+})
+
+// Count of active secondary filters (for badge display)
+const secondaryActiveCount = computed(() => {
+  let count = 0
+  for (const filterKey of secondaryFilters.value) {
+    const values = props.selectedFilters[filterKey]
+    if (Array.isArray(values)) {
+      count += values.length
+    }
+  }
+  // Also count price filter if active
+  // Price filter is considered "active" for badge display only if priceMin > 0
+  // (since priceMax being set to dynamic max doesn't count as user filtering)
+  const hasPriceFilter = props.selectedFilters.priceMin !== undefined && props.selectedFilters.priceMin > 0
+  if (hasPriceFilter) {
+    count += 1
+  }
+  return count
 })
 
 // Update a specific filter
@@ -118,7 +128,7 @@ const openAllFiltersModal = () => {
 
 // Reset filters when category changes
 watch(() => props.category, () => {
-  emit('update:filters', { length: [], type: [], finish: [] })
+  emit('update:filters', {})
 })
 </script>
 
@@ -162,6 +172,26 @@ watch(() => props.category, () => {
 
 .all-filters-btn svg {
   flex-shrink: 0;
+}
+
+.secondary-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9px;
+  margin-left: 4px;
+}
+
+.all-filters-btn.has-filters .secondary-filter-badge {
+  background-color: #ffffff;
+  color: #29275B;
 }
 
 /* Mobile responsiveness */

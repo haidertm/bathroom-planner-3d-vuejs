@@ -432,6 +432,7 @@ import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
 import { filterProducts } from '../../utils/filters'
+import { EMPTY_FILTERS } from '../../constants/filters'
 
 // NEW: Import selective preloading functions
 import productData from '../../mocks/productData.js'
@@ -775,7 +776,7 @@ const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
 // Filter state
-const selectedFilters = ref({ length: [], type: [], finish: [] })
+const selectedFilters = ref({ ...EMPTY_FILTERS })
 
 // Computed: Get products for current category
 const categoryProducts = computed(() => {
@@ -796,7 +797,7 @@ const handleFilterUpdate = (newFilters) => {
 
 // Reset filters when category changes
 const resetFilters = () => {
-  selectedFilters.value = { length: [], type: [], finish: [] }
+  selectedFilters.value = { ...EMPTY_FILTERS }
 }
 
 // NEW: Selective preloading state
