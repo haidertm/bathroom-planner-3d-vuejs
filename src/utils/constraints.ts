@@ -2973,3 +2973,115 @@ export const checkVariantFitsAtPosition = (
         reason
     };
 };
+
+/**
+ * Detect if items are on perpendicular walls (forming an L-shape configuration)
+ * This is used for multi-select constraint resolution
+ */
+export const detectPerpendicularWallItems = (
+    wallItems: Map<WallType, number[]>
+): boolean => {
+    const northSouthWalls: WallType[] = ['north', 'south', 'notch-south'];
+    const eastWestWalls: WallType[] = ['east', 'west', 'notch-east'];
+
+    const walls = Array.from(wallItems.keys());
+
+    // Check if there are items on walls that are perpendicular to each other
+    const hasNorthSouth = walls.some(w => northSouthWalls.includes(w));
+    const hasEastWest = walls.some(w => eastWestWalls.includes(w));
+
+    return hasNorthSouth && hasEastWest;
+};
+
+/**
+ * Get all items on a specific wall
+ */
+export const getItemsOnWall = (
+    items: BathroomItem[],
+    targetWall: WallType,
+    roomWidth: number,
+    roomHeight: number,
+    notchWidth?: number,
+    notchHeight?: number
+): BathroomItem[] => {
+    return items.filter(item => {
+        const wall = getNearestWall(
+            { x: item.position[0], y: item.position[1], z: item.position[2] },
+            roomWidth,
+            roomHeight,
+            notchWidth,
+            notchHeight
+        );
+        return wall === targetWall;
+    });
+};
+
+/**
+ * Group items by their wall
+ */
+export const groupItemsByWall = (
+    items: BathroomItem[],
+    roomWidth: number,
+    roomHeight: number,
+    notchWidth?: number,
+    notchHeight?: number
+): Map<WallType, BathroomItem[]> => {
+    const grouped = new Map<WallType, BathroomItem[]>();
+
+    items.forEach(item => {
+        const wall = getNearestWall(
+            { x: item.position[0], y: item.position[1], z: item.position[2] },
+            roomWidth,
+            roomHeight,
+            notchWidth,
+            notchHeight
+        );
+
+        const existing = grouped.get(wall) || [];
+        existing.push(item);
+        grouped.set(wall, existing);
+    });
+
+    return grouped;
+};
+
+/**
+ * Calculate the bounding box for a group of items
+ */
+export const calculateGroupBoundingBox = (
+    items: BathroomItem[]
+): { minX: number; maxX: number; minZ: number; maxZ: number; minY: number; maxY: number } => {
+    if (items.length === 0) {
+        return { minX: 0, maxX: 0, minZ: 0, maxZ: 0, minY: 0, maxY: 0 };
+    }
+
+    let minX = Infinity, maxX = -Infinity;
+    let minZ = Infinity, maxZ = -Infinity;
+    let minY = Infinity, maxY = -Infinity;
+
+    items.forEach(item => {
+        const dims = getDimensions(item.type, item.sku, item.model);
+        if (dims) {
+            const scale = item.scale || 1;
+            const halfW = (dims.width * scale) / 2;
+            const halfD = (dims.depth * scale) / 2;
+            const h = dims.height * scale;
+
+            minX = Math.min(minX, item.position[0] - halfW);
+            maxX = Math.max(maxX, item.position[0] + halfW);
+            minZ = Math.min(minZ, item.position[2] - halfD);
+            maxZ = Math.max(maxZ, item.position[2] + halfD);
+            minY = Math.min(minY, item.position[1]);
+            maxY = Math.max(maxY, item.position[1] + h);
+        } else {
+            minX = Math.min(minX, item.position[0]);
+            maxX = Math.max(maxX, item.position[0]);
+            minZ = Math.min(minZ, item.position[2]);
+            maxZ = Math.max(maxZ, item.position[2]);
+            minY = Math.min(minY, item.position[1]);
+            maxY = Math.max(maxY, item.position[1]);
+        }
+    });
+
+    return { minX, maxX, minZ, maxZ, minY, maxY };
+};

@@ -28,6 +28,10 @@ import { type Position as PositionArrayType } from '../models/bathroomFixtures.t
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
 import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
 import { RotationArrows } from './rotationArrows';
+import { GroupConstraintResolver, getGroupConstraintResolver } from './groupConstraintResolver';
+import { GroupGhostManager, getGroupGhostManager } from './groupGhostManager';
+import { MagneticSnapIndicator, createMagneticSnapIndicator } from '../utils/helpers';
+import type { GroupConstraints, RoomDimensions } from '../types/groupConstraints';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -134,6 +138,13 @@ export class EventHandlers {
   private multiSelectLocalOffsets: Map<number, THREE.Vector3> = new Map();
   private multiSelectLocalRotations: Map<number, number> = new Map();
   private wasAlreadySelected: boolean = false;
+
+  // Group constraint system for "Most Restrictive Wins" behavior
+  private groupConstraintResolver: GroupConstraintResolver | null = null;
+  private groupGhostManager: GroupGhostManager | null = null;
+  private magneticSnapIndicator: MagneticSnapIndicator | null = null;
+  private currentGroupConstraints: GroupConstraints | null = null;
+  private useGroupConstraintSystem: boolean = true; // Feature flag
 
   // 2D/3D View Mode
   private viewMode: ViewMode = '3d';
@@ -314,6 +325,9 @@ export class EventHandlers {
     // 🔧 FIX: Bind the new visibility change handler
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
     this.rotationArrows = new RotationArrows(this.scene, this.camera, this.renderer);
+
+    // Initialize group constraint system for multi-select
+    this.initializeGroupConstraintSystem();
 
     // Simple animation loop ONLY for zoom
     this.startSimpleZoomAnimation();
@@ -598,6 +612,75 @@ export class EventHandlers {
   // Add method to set measurement system reference
   public setMeasurementSystem(measurementSystem: MeasurementSystem): void {
     this.measurementSystem = measurementSystem;
+  }
+
+  /**
+   * Initialize the group constraint system for multi-select
+   */
+  private initializeGroupConstraintSystem(): void {
+    if (!this.useGroupConstraintSystem) return;
+
+    const roomDimensions: RoomDimensions = {
+      width: this.roomWidthRef.value,
+      height: this.roomHeightRef.value,
+      wallHeight: 250, // Default wall height in cm
+      notchWidth: this.notchWidthRef.value,
+      notchHeight: this.notchHeightRef.value
+    };
+
+    this.groupConstraintResolver = getGroupConstraintResolver(roomDimensions, this.getCurrentItems());
+    this.groupGhostManager = getGroupGhostManager(this.scene);
+    this.magneticSnapIndicator = createMagneticSnapIndicator(this.scene);
+  }
+
+  /**
+   * Analyze group constraints when multi-select starts dragging
+   */
+  private analyzeGroupConstraintsForDrag(): void {
+    if (!this.useGroupConstraintSystem || !this.groupConstraintResolver) return;
+    if (this.selectedObjects.size <= 1) {
+      this.currentGroupConstraints = null;
+      return;
+    }
+
+    // Get items for selected objects
+    const currentItems = this.getCurrentItems();
+    const selectedItems = currentItems.filter(item => this.selectedObjects.has(item.id));
+
+    // Determine primary item (the one being dragged)
+    const primaryId = this.selectedObject?.userData?.itemId;
+
+    // Analyze constraints
+    this.currentGroupConstraints = this.groupConstraintResolver.analyzeGroupConstraints(
+      selectedItems,
+      primaryId
+    );
+
+    // Create ghost objects for visual feedback
+    if (this.groupGhostManager) {
+      this.groupGhostManager.createGhosts(this.selectedObjects);
+    }
+
+    console.log('📊 Group constraints analyzed:', {
+      effectiveType: this.currentGroupConstraints?.effectiveType,
+      level: this.currentGroupConstraints?.level,
+      isLShapeGroup: this.currentGroupConstraints?.isLShapeGroup,
+      allowVerticalMovement: this.currentGroupConstraints?.allowVerticalMovement,
+      allowFreeRotation: this.currentGroupConstraints?.allowFreeRotation
+    });
+  }
+
+  /**
+   * Clean up group constraint system resources
+   */
+  private cleanupGroupConstraintSystem(): void {
+    if (this.groupGhostManager) {
+      this.groupGhostManager.clearGhosts();
+    }
+    if (this.magneticSnapIndicator) {
+      this.magneticSnapIndicator.hide();
+    }
+    this.currentGroupConstraints = null;
   }
 
   // 🆕 NEW: Get current item data for movement configuration
@@ -1012,6 +1095,9 @@ export class EventHandlers {
           const relRot = obj.rotation.y - primaryRot;
           this.multiSelectLocalRotations.set(id, relRot);
         });
+
+        // Analyze group constraints for "Most Restrictive Wins" behavior
+        this.analyzeGroupConstraintsForDrag();
 
         // Notify that dragging has started
         if (this.onDragStart) {
@@ -1801,9 +1887,27 @@ export class EventHandlers {
 
   /**
    * Apply movement to all selected objects based on the primary object's movement
+   * Uses "Most Restrictive Wins" rule when group constraints are analyzed
    */
   private applyBulkMove(primaryObject: THREE.Object3D, _unconstrainedPrimaryPos?: THREE.Vector3, _idealRot?: number): void {
     if (this.selectedObjects.size <= 1) {
+      return;
+    }
+
+    // Check if L-shape group - movement is locked
+    if (this.currentGroupConstraints?.isLShapeGroup) {
+      console.log('🔒 L-Shape group detected - movement locked');
+      // Restore all objects to their start positions
+      this.selectedObjects.forEach((obj, id) => {
+        const startPos = this.multiSelectStartPositions.get(id);
+        const startRot = this.multiSelectStartRotations.get(id);
+        if (startPos) {
+          obj.position.copy(startPos);
+        }
+        if (startRot !== undefined) {
+          obj.rotation.y = startRot;
+        }
+      });
       return;
     }
 
@@ -1813,15 +1917,20 @@ export class EventHandlers {
     const primaryPos = primaryObject.position.clone();
     const primaryRot = primaryObject.rotation.y;
 
-    // ✅ FIX: Check if any item in the group blocks vertical movement
+    // Use group constraints if available, otherwise check manually
     let groupBlocksVerticalMovement = false;
-    this.selectedObjects.forEach((obj, id) => {
-      const itemType = obj.userData.type as ComponentType;
-      const itemData = this.getCurrentItemData(id);
-      if (!canMoveVertically(itemType, itemData)) {
-        groupBlocksVerticalMovement = true;
-      }
-    });
+    if (this.currentGroupConstraints) {
+      groupBlocksVerticalMovement = !this.currentGroupConstraints.allowVerticalMovement;
+    } else {
+      // Fallback: Check if any item in the group blocks vertical movement
+      this.selectedObjects.forEach((obj, id) => {
+        const itemType = obj.userData.type as ComponentType;
+        const itemData = this.getCurrentItemData(id);
+        if (!canMoveVertically(itemType, itemData)) {
+          groupBlocksVerticalMovement = true;
+        }
+      });
+    }
 
     let anyColliding = false;
 
@@ -2200,8 +2309,38 @@ export class EventHandlers {
         }
       }
 
+      // ✅ MOST RESTRICTIVE WINS: When group constraints are active, use group's effective type
+      // This ensures the entire group moves according to the most restrictive constraint
+      let effectiveMovementConfig = movementConfig;
+
+      if (this.currentGroupConstraints && this.selectedObjects.size > 1) {
+        const groupType = this.currentGroupConstraints.effectiveType;
+
+        // Override movement config based on group's most restrictive constraint
+        if (groupType === 'C') {
+          // Corner-only: force corner constraint for ALL items
+          effectiveMovementConfig = {
+            ...movementConfig,
+            snapToWall: false,
+            cornerInstallOnly: { enabled: true },
+            allowFreeRotation: false
+          };
+        } else if (groupType === 'A' || groupType === 'B') {
+          // Wall-mounted: force wall constraint for ALL items
+          effectiveMovementConfig = {
+            ...movementConfig,
+            snapToWall: true,
+            cornerInstallOnly: false,
+            allowFreeRotation: this.currentGroupConstraints.allowFreeRotation
+          };
+        }
+        // Type 'D' (free) - use original config
+
+        console.log('📊 Using group constraint:', groupType, 'for primary movement');
+      }
+
       // ✅ ROTATION-AWARE FIX for freestanding objects
-      if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+      if (effectiveMovementConfig.allowFreeRotation && !effectiveMovementConfig.snapToWall && !effectiveMovementConfig.cornerInstallOnly) {
         const currentPos = idealPosition;
         const constrainedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
 
@@ -2243,7 +2382,8 @@ export class EventHandlers {
       let rotationChanged = false;
 
       // ✅ SIMPLIFIED: Direct cursor following for wall-snapping objects
-      if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+      // Use effectiveMovementConfig to apply "Most Restrictive Wins" rule
+      if (effectiveMovementConfig.snapToWall && !effectiveMovementConfig.cornerInstallOnly) {
         // Get room and object dimensions
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
@@ -2923,8 +3063,8 @@ export class EventHandlers {
           rotationChanged = true;
 
           // Handle vertical movement if allowed
-          // ✅ FIX: For multi-select, check if ANY item blocks vertical movement
-          let allowVerticalForGroup = movementConfig.allowVerticalMovement;
+          // ✅ FIX: For multi-select, use effectiveMovementConfig which already considers group constraints
+          let allowVerticalForGroup = effectiveMovementConfig.allowVerticalMovement;
           if (this.selectedObjects.size > 1) {
             this.selectedObjects.forEach((obj, id) => {
               const itemType = obj.userData.type as ComponentType;
@@ -2951,8 +3091,9 @@ export class EventHandlers {
           console.log(`🔍 Debug - Final position: (${constrainedPosition.x.toFixed(0)}, ${constrainedPosition.z.toFixed(0)}), Current wall: ${currentWall}`);
         }
 
-      } else if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
+      } else if (effectiveMovementConfig.cornerInstallOnly && effectiveMovementConfig.cornerInstallOnly.enabled) {
         // Handle corner-only objects - direct cursor tracking
+        // ✅ MOST RESTRICTIVE WINS: Uses effectiveMovementConfig so group constraint applies
         const heightPlane = new THREE.Plane(
           new THREE.Vector3(0, 1, 0),
           -this.selectedObject.position.y
@@ -2971,7 +3112,7 @@ export class EventHandlers {
             scale: objectScale,
             orientation: currentItem?.model?.orientation,
             item: currentItem,
-            movement: movementConfig,
+            movement: effectiveMovementConfig,
             notchWidth: this.notchWidthRef.value,
             notchHeight: this.notchHeightRef.value
           }
@@ -3011,7 +3152,8 @@ export class EventHandlers {
         constrainedPosition.x = roomConstrainedPos.x;
         constrainedPosition.z = roomConstrainedPos.z;
 
-        if (movementConfig.allowVerticalMovement) {
+        // ✅ MOST RESTRICTIVE WINS: Use effectiveMovementConfig for vertical movement check
+        if (effectiveMovementConfig.allowVerticalMovement) {
           const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
           constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
         } else {
@@ -3384,6 +3526,9 @@ export class EventHandlers {
       window.dispatchEvent(new CustomEvent('object-selected'));
     }
 
+    // Clean up group constraint system resources
+    this.cleanupGroupConstraintSystem();
+
     // Reset all states
     const wasDragging = this.isDragging;
     this.isDragging = false;
@@ -3545,6 +3690,9 @@ export class EventHandlers {
           const relRot = obj.rotation.y - primaryRot;
           this.multiSelectLocalRotations.set(id, relRot);
         });
+
+        // Analyze group constraints for "Most Restrictive Wins" behavior
+        this.analyzeGroupConstraintsForDrag();
 
         window.dispatchEvent(new CustomEvent('object-selected', {
           detail: { itemId: this.selectedObject?.userData?.itemId ?? null }
@@ -3959,6 +4107,9 @@ export class EventHandlers {
       window.dispatchEvent(new CustomEvent('object-selected'));
     }
 
+    // Clean up group constraint system resources
+    this.cleanupGroupConstraintSystem();
+
     // Reset all states
     const wasDragging = this.isDragging;
     this.isDragging = false;
@@ -4112,6 +4263,9 @@ export class EventHandlers {
     if (this.measurementSystem) {
       this.measurementSystem.setSelectedObject(null);
     }
+
+    // Clean up group constraint system
+    this.cleanupGroupConstraintSystem();
 
     console.log('🧹 clearSelection completed');
   }
