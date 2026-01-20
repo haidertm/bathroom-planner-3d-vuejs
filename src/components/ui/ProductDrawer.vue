@@ -105,6 +105,37 @@
         </button>
       </div>
 
+      <!-- Filter Chips (shown when category is selected and not in search mode) -->
+      <div
+        v-if="currentView === 'products' && props.selectedCategory && props.selectedCategory !== 'search'"
+        :style="filterChipsContainerStyle"
+        class="filter-chips-scroll"
+        ref="filterScrollContainer"
+        @wheel="handleFilterScroll"
+        @mousedown="handleDragStart"
+        @mousemove="handleDragMove"
+        @mouseup="handleDragEnd"
+        @mouseleave="handleDragEnd"
+      >
+        <FilterChips
+            :category="props.selectedCategory"
+            :products="props.categoryProducts"
+            :selected-filters="props.selectedFilters"
+            @update:filters="handleFilterUpdate"
+            @open-all-filters="openAllFiltersDrawer"
+        />
+      </div>
+
+      <!-- All Filters Drawer -->
+      <AllFiltersDrawer
+          :is-open="isAllFiltersOpen"
+          :category="props.selectedCategory"
+          :products="props.categoryProducts"
+          :selected-filters="props.selectedFilters"
+          @close="closeAllFiltersDrawer"
+          @update:filters="handleFilterUpdate"
+      />
+
       <!-- PROGRESSIVE LOADING: Show ready products + skeletons for loading ones -->
       <div v-if="currentView === 'products'" :style="contentStyle">
 
@@ -175,6 +206,20 @@
         <div v-if="isAnythingLoading()" :style="loadingProgressStyle">
           <div :style="loadingSpinnerStyle"></div>
           <span>Loading {{ getLoadingProductCount() }} more products...</span>
+        </div>
+
+        <!-- No products match filters message -->
+        <div v-if="readyProducts.length === 0 && !isAnythingLoading() && props.selectedCategory !== 'search'" :style="noResultsStyle">
+          <div :style="noResultsIconStyle">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+              <path d="m8 8 6 6"></path>
+              <path d="m14 8-6 6"></path>
+            </svg>
+          </div>
+          <h4 :style="noResultsTitleStyle">No products match your filters</h4>
+          <p :style="noResultsTextStyle">Try adjusting your filter selections to see more products.</p>
         </div>
 
       </div>
@@ -299,6 +344,8 @@
 import {ref, computed, watch} from 'vue'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
+import FilterChips from './FilterChips.vue'
+import AllFiltersDrawer from './AllFiltersDrawer.vue'
 import { ModelManager } from '../../models/bathroomFixtures'
 import {
   isVariantModelLoaded,
@@ -362,6 +409,19 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  // Filter-related props
+  filteredProducts: {
+    type: Array,
+    default: () => []
+  },
+  selectedFilters: {
+    type: Object,
+    default: () => ({ length: [], type: [], finish: [] })
+  },
+  categoryProducts: {
+    type: Array,
+    default: () => []
+  },
   // Constraint checking props
   roomWidth: {
     type: Number,
@@ -386,7 +446,62 @@ const props = defineProps({
 })
 
 // Emits - ADD 'back' event for better control
-const emit = defineEmits(['close', 'add-to-room', 'retry-loading'])
+const emit = defineEmits(['close', 'add-to-room', 'retry-loading', 'update:filters'])
+
+// Handle filter updates from FilterChips component
+const handleFilterUpdate = (newFilters) => {
+  emit('update:filters', newFilters)
+}
+
+// All Filters Drawer state
+const isAllFiltersOpen = ref(false)
+
+const openAllFiltersDrawer = () => {
+  isAllFiltersOpen.value = true
+}
+
+const closeAllFiltersDrawer = () => {
+  isAllFiltersOpen.value = false
+}
+
+// Filter scroll container ref and horizontal scroll handler
+const filterScrollContainer = ref(null)
+
+const handleFilterScroll = (event) => {
+  // Convert vertical scroll to horizontal scroll
+  if (filterScrollContainer.value) {
+    event.preventDefault()
+    filterScrollContainer.value.scrollLeft += event.deltaY
+  }
+}
+
+// Drag-to-scroll functionality
+const isDragging = ref(false)
+const startX = ref(0)
+const scrollLeft = ref(0)
+
+const handleDragStart = (event) => {
+  if (!filterScrollContainer.value) return
+  isDragging.value = true
+  startX.value = event.pageX - filterScrollContainer.value.offsetLeft
+  scrollLeft.value = filterScrollContainer.value.scrollLeft
+  filterScrollContainer.value.style.cursor = 'grabbing'
+}
+
+const handleDragEnd = () => {
+  isDragging.value = false
+  if (filterScrollContainer.value) {
+    filterScrollContainer.value.style.cursor = 'grab'
+  }
+}
+
+const handleDragMove = (event) => {
+  if (!isDragging.value || !filterScrollContainer.value) return
+  event.preventDefault()
+  const x = event.pageX - filterScrollContainer.value.offsetLeft
+  const walk = (x - startX.value) * 1.5 // Multiply for faster scroll
+  filterScrollContainer.value.scrollLeft = scrollLeft.value - walk
+}
 
 // Reactive state
 const currentView = ref('products') // 'products' or 'variants'
@@ -842,7 +957,15 @@ const readyProducts = computed(() => {
     return transformedResults
   }
 
-  // Handle regular category products (unchanged)
+  // Handle regular category products - use filtered products if available
+  // Use filteredProducts prop when it's provided (it will contain all products when no filters are active)
+  if (props.filteredProducts !== undefined && Array.isArray(props.filteredProducts)) {
+    // If filteredProducts is empty but filters are active, show "no results" message
+    // If filteredProducts has items, show them
+    return props.filteredProducts
+  }
+
+  // Fallback to all category products (when filteredProducts prop is not provided)
   const categoryProducts = getProductsForCategory(props.selectedCategory)
   return categoryProducts || []
 })
@@ -1377,6 +1500,20 @@ const headerStyle = computed(() => ({
   zIndex: 10
 }))
 
+const filterChipsContainerStyle = computed(() => ({
+  padding: '12px 0',
+  backgroundColor: '#ffffff',
+  borderBottom: '1px solid #e5e7eb',
+  overflowX: 'scroll',
+  overflowY: 'hidden',
+  scrollbarWidth: 'none', /* Firefox */
+  msOverflowStyle: 'none', /* IE/Edge */
+  WebkitOverflowScrolling: 'touch', /* iOS smooth scroll */
+  flexShrink: 0,
+  cursor: 'grab',
+  userSelect: 'none' /* Prevent text selection while dragging */
+}))
+
 const backButtonStyle = computed(() => ({
   backgroundColor: 'transparent',
   border: currentView.value === 'variants' ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
@@ -1584,6 +1721,36 @@ const loadingProgressStyle = computed(() => ({
   color: '#666',
   justifyContent: 'center',
   marginTop: '10px'
+}))
+
+// No Results Styles (for when filters have no matches)
+const noResultsStyle = computed(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '60px 20px',
+  textAlign: 'center'
+}))
+
+const noResultsIconStyle = computed(() => ({
+  color: '#9ca3af',
+  marginBottom: '16px'
+}))
+
+const noResultsTitleStyle = computed(() => ({
+  fontSize: '18px',
+  fontWeight: '600',
+  color: '#374151',
+  margin: '0 0 8px 0',
+  fontFamily: 'Arial, sans-serif'
+}))
+
+const noResultsTextStyle = computed(() => ({
+  fontSize: '14px',
+  color: '#6b7280',
+  margin: '0',
+  fontFamily: 'Arial, sans-serif'
 }))
 
 // Error Styles
@@ -1798,6 +1965,11 @@ const searchVariantStyle = computed(() => ({
 </script>
 
 <style scoped>
+/* Hide scrollbar for filter chips horizontal scroll */
+.filter-chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hover effects */
 .product-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;

@@ -50,6 +50,11 @@ export type ObjectModel = {
         height: number;
         depth?: number;
     };
+    filterAttributes?: {
+        length?: string;
+        type?: string;
+        finish?: string;
+    };
 }
 
 export type ObjectModelWithCategory = ObjectModel & {

@@ -4251,7 +4251,8 @@ const productData: ProductData = {
           },
           sku: 'C51096',
           price: '479.99',
-          title: 'Newham 1370mm Freestanding Bath'
+          title: 'Newham 1370mm Freestanding Bath',
+          filterAttributes: { length: '1370mm', type: 'Freestanding', finish: 'White' }
         },
         {
           id: 'c51092',
@@ -4281,7 +4282,8 @@ const productData: ProductData = {
           },
           sku: 'C51092',
           price: '399.00',
-          title: 'Newham 1500mm Freestanding Bath'
+          title: 'Newham 1500mm Freestanding Bath',
+          filterAttributes: { length: '1500mm', type: 'Freestanding', finish: 'White' }
         },
         {
           id: 'c51093',
@@ -4311,7 +4313,8 @@ const productData: ProductData = {
           },
           sku: 'C51093',
           price: '499.99',
-          title: 'Newham 1700mm Freestanding Bath'
+          title: 'Newham 1700mm Freestanding Bath',
+          filterAttributes: { length: '1700mm', type: 'Freestanding', finish: 'White' }
         }
       ],
       variantType: 'Length Options',
@@ -4355,7 +4358,8 @@ const productData: ProductData = {
           },
           sku: 'C57499',
           price: '489.99',
-          title: 'L Shaped 1700 Shower Bath with Front Panel & 6mm Easy Clean Brushed Brass Bath Screen - Right Handed'
+          title: 'L Shaped 1700 Shower Bath with Front Panel & 6mm Easy Clean Brushed Brass Bath Screen - Right Handed',
+          filterAttributes: { length: '1700mm', type: 'L-Shaped Shower Bath', finish: 'White' }
         }
       ],
       variantType: 'Orientation',
@@ -4397,7 +4401,8 @@ const productData: ProductData = {
           },
           sku: 'C51089',
           price: '599.99',
-          title: 'Kensington 1700mm Freestanding Slipper Bath'
+          title: 'Kensington 1700mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1700mm', type: 'Freestanding Slipper', finish: 'White' }
         },
         {
           id: 'C51098',
@@ -4427,7 +4432,8 @@ const productData: ProductData = {
           },
           sku: 'C51098',
           price: '579.99',
-          title: 'Kensington 1370mm Freestanding Slipper Bath'
+          title: 'Kensington 1370mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1370mm', type: 'Freestanding Slipper', finish: 'White' }
         },
         {
           id: 'C51088',
@@ -4457,7 +4463,8 @@ const productData: ProductData = {
           },
           sku: 'C51088',
           price: '589.99',
-          title: 'Kensington 1500mm Freestanding Slipper Bath'
+          title: 'Kensington 1500mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1500mm', type: 'Freestanding Slipper', finish: 'White' }
         },
       ],
       variantType: 'Orientation',
@@ -4500,7 +4507,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53017',
                   price: '125.00',
-                  title: 'Stafford 1700x700 Round Single Ended bath'
+                  title: 'Stafford 1700x700 Round Single Ended bath',
+                  filterAttributes: { length: '1700mm', type: 'Single Ended', finish: 'White' }
               },
               {
                   id: 'C53014',
@@ -4531,7 +4539,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53014',
                   price: '139.99',
-                  title: 'Stafford 1400x700 Round Single Ended Bath'
+                  title: 'Stafford 1400x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1400mm', type: 'Single Ended', finish: 'White' }
               },
               {
                   id: 'C53015',
@@ -4562,7 +4571,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53015',
                   price: '139.99',
-                  title: 'Stafford 1500x700 Round Single Ended Bath'
+                  title: 'Stafford 1500x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1500mm', type: 'Single Ended', finish: 'White' }
               },
               {
                   id: 'C53016',
@@ -4593,7 +4603,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53016',
                   price: '139.99',
-                  title: 'Stafford 1600x700 Round Single Ended Bath'
+                  title: 'Stafford 1600x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1600mm', type: 'Single Ended', finish: 'White' }
               },
           ],
           variantType: 'Size Options',
