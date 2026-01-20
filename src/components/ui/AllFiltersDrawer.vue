@@ -292,14 +292,14 @@ const closeDrawer = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000; /* Higher than ProductDrawer (1900) */
+  z-index: 10000000; /* Higher than Sidebar search bar (9999999) */
   pointer-events: none; /* Allow clicks to pass through to sidebar */
 }
 
 .filters-overlay {
   position: absolute;
   top: 0;
-  left: 480px; /* Start overlay after the sidebar */
+  left: 0; /* Full overlay */
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
@@ -309,8 +309,8 @@ const closeDrawer = () => {
 .filters-drawer {
   position: absolute;
   top: 60px; /* Match sidebar top position (below header) */
-  left: 480px; /* Position to the right of ProductDrawer (480px wide) */
-  width: 320px;
+  left: 0; /* Position over the sidebar */
+  width: 480px; /* Match ProductDrawer width */
   height: calc(100vh - 60px); /* Full height minus top offset */
   background-color: #ffffff;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
