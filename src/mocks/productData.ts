@@ -6650,16 +6650,7 @@ const productData: ProductData = {
           },
           movement: {
             snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
+            cornerInstallOnly: false,
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -6680,16 +6671,7 @@ const productData: ProductData = {
           },
           movement: {
             snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
+            cornerInstallOnly: false,
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -6710,16 +6692,7 @@ const productData: ProductData = {
           },
           movement: {
             snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
+            cornerInstallOnly: false,
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -6796,16 +6769,7 @@ const productData: ProductData = {
           },
           movement: {
             snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
+            cornerInstallOnly: false,
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -6826,16 +6790,7 @@ const productData: ProductData = {
           },
           movement: {
             snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
+            cornerInstallOnly: false,
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -6856,16 +6811,7 @@ const productData: ProductData = {
           },
           movement: {
             snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
+            cornerInstallOnly: false,
             allowVerticalMovement: false,
             allowFreeRotation: true
           },
@@ -7168,16 +7114,7 @@ const productData: ProductData = {
                   },
                   movement: {
                       snapToWall: false,
-                      cornerInstallOnly: {
-                          enabled: true,
-                          preferredCorner: 'north-west',
-                          rotation: {
-                              'north-west': 0,
-                              'north-east': -Math.PI / 2,
-                              'south-east': Math.PI,
-                              'south-west': Math.PI / 2
-                          }
-                      },
+                      cornerInstallOnly: false,
                       allowVerticalMovement: false,
                       allowFreeRotation: true
                   },
@@ -7198,16 +7135,7 @@ const productData: ProductData = {
                   },
                   movement: {
                       snapToWall: false,
-                      cornerInstallOnly: {
-                          enabled: true,
-                          preferredCorner: 'north-west',
-                          rotation: {
-                              'north-west': 0,
-                              'north-east': -Math.PI / 2,
-                              'south-east': Math.PI,
-                              'south-west': Math.PI / 2
-                          }
-                      },
+                      cornerInstallOnly: false,
                       allowVerticalMovement: false,
                       allowFreeRotation: true
                   },
@@ -7228,16 +7156,7 @@ const productData: ProductData = {
                   },
                   movement: {
                       snapToWall: false,
-                      cornerInstallOnly: {
-                          enabled: true,
-                          preferredCorner: 'north-west',
-                          rotation: {
-                              'north-west': 0,
-                              'north-east': -Math.PI / 2,
-                              'south-east': Math.PI,
-                              'south-west': Math.PI / 2
-                          }
-                      },
+                      cornerInstallOnly: false,
                       allowVerticalMovement: false,
                       allowFreeRotation: true
                   },
