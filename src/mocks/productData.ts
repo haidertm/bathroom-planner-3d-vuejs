@@ -4478,7 +4478,7 @@ const productData: ProductData = {
         {
             id: 'bath_3',
             link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
-            name: 'Kensington 1700mm Freestanding Slipper Bath',
+            name: 'Kensington Freestanding Slipper Bath',
             price: '599.99',
             image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
             variants: [
@@ -4857,7 +4857,7 @@ const productData: ProductData = {
         {
             id: 'bath_6',
             link: 'https://www.bathroommountain.co.uk/richmond-v2-1500mm-freestanding-slipper-bath-c51090',
-            name: 'Richmond 1500mm Freestanding Slipper Bath',
+            name: 'Richmond Freestanding Slipper Bath',
             price: '449.00',
             image: 'assets/productImages/bath/c51090-1000-richmond-v2-1500mm-freestanding-slipper-bath.webp',
             variants: [
@@ -4889,7 +4889,8 @@ const productData: ProductData = {
                     },
                     sku: 'C51090',
                     price: '449.00',
-                    title: 'Richmond 1500mm Freestanding Slipper Bath'
+                    title: 'Richmond 1500mm Freestanding Slipper Bath',
+                    filterAttributes: { length: '1500mm', width: '710mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
                 },
                 {
                     id: 'C51097',
@@ -4919,7 +4920,8 @@ const productData: ProductData = {
                     },
                     sku: 'C51097',
                     price: '439.99',
-                    title: 'Richmond 1370mm Freestanding Slipper Bath'
+                    title: 'Richmond 1370mm Freestanding Slipper Bath',
+                    filterAttributes: { length: '1370mm', width: '710mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
                 },
                 {
                     id: 'C51091',
@@ -4949,7 +4951,8 @@ const productData: ProductData = {
                     },
                     sku: 'C51091',
                     price: '579.99',
-                    title: 'Richmond 1700mm Freestanding Slipper Bath'
+                    title: 'Richmond 1700mm Freestanding Slipper Bath',
+                    filterAttributes: { length: '1700mm', width: '730mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
                 },
             ],
             variantType: 'Orientation',

@@ -67,8 +67,8 @@
           <div v-if="openSections.price" class="filter-section-content">
             <div class="price-range-container">
               <div class="price-range-labels">
-                <span>£{{ localFilters.priceMin }}</span>
-                <span>£{{ localFilters.priceMax }}</span>
+                <span>£{{ displayPriceMin }}</span>
+                <span>£{{ displayPriceMax }}</span>
               </div>
               <div class="dual-range-slider">
                 <div class="slider-track"></div>
@@ -80,7 +80,7 @@
                   type="range"
                   :min="minPrice"
                   :max="maxPrice"
-                  :value="localFilters.priceMin"
+                  :value="displayPriceMin"
                   @input="updateMinPrice"
                   class="range-input range-min"
                 />
@@ -88,7 +88,7 @@
                   type="range"
                   :min="minPrice"
                   :max="maxPrice"
-                  :value="localFilters.priceMax"
+                  :value="displayPriceMax"
                   @input="updateMaxPrice"
                   class="range-input range-max"
                 />
@@ -120,7 +120,7 @@
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
 import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS } from '../../constants/filters'
-import { extractFilterOptions, filterProducts } from '../../utils/filters'
+import { extractFilterOptions, filterProducts, filterProductVariants } from '../../utils/filters'
 
 const props = defineProps({
   isOpen: {
@@ -143,8 +143,28 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'update:filters'])
 
-// Price range constants
-const minPrice = 0
+// Compute min price from products
+const minPrice = computed(() => {
+  let min = Infinity
+  for (const product of props.products) {
+    // Check product-level price
+    const productPrice = parsePrice(product.price)
+    if (productPrice !== null && productPrice < min) {
+      min = productPrice
+    }
+    // Check variant prices
+    if (product.variants) {
+      for (const variant of product.variants) {
+        const variantPrice = parsePrice(variant.price)
+        if (variantPrice !== null && variantPrice < min) {
+          min = variantPrice
+        }
+      }
+    }
+  }
+  // Round down to nearest 10 for nicer slider range, default to 0 if no products
+  return min === Infinity ? 0 : Math.floor(min / 10) * 10
+})
 
 // Compute max price from products
 const maxPrice = computed(() => {
@@ -165,8 +185,8 @@ const maxPrice = computed(() => {
       }
     }
   }
-  // Round up to nearest 100 for nicer slider range
-  return Math.ceil(max / 100) * 100 || 1000
+  // Round up to nearest 10 for nicer slider range
+  return Math.ceil(max / 10) * 10 || 1000
 })
 
 // Helper to parse price (handles both string and number)
@@ -217,14 +237,42 @@ const isFilterSelected = (filterKey, value) => {
   return Array.isArray(values) && values.includes(value)
 }
 
+// Computed display values for price labels (ensures they stay within valid range)
+const displayPriceMin = computed(() => {
+  const min = minPrice.value
+  const value = localFilters.value.priceMin
+  // If value is less than dynamic min, show the dynamic min
+  return (value === undefined || value < min) ? min : value
+})
+
+const displayPriceMax = computed(() => {
+  const max = maxPrice.value
+  const value = localFilters.value.priceMax
+  // If value is undefined or greater than dynamic max, show the dynamic max
+  return (value === undefined || value > max) ? max : value
+})
+
 // Computed style for the range slider highlight
 const sliderRangeStyle = computed(() => {
+  const min = minPrice.value
   const max = maxPrice.value
-  const minPercent = ((localFilters.value.priceMin - minPrice) / (max - minPrice)) * 100
-  const maxPercent = ((localFilters.value.priceMax - minPrice) / (max - minPrice)) * 100
+
+  // Use dynamic min/max as defaults if localFilters values are out of range
+  const currentMin = Math.max(localFilters.value.priceMin ?? min, min)
+  const currentMax = Math.min(localFilters.value.priceMax ?? max, max)
+
+  // Calculate percentages, clamping to 0-100 range
+  const range = max - min
+  if (range <= 0) {
+    return { left: '0%', width: '100%' }
+  }
+
+  const minPercent = Math.max(0, Math.min(100, ((currentMin - min) / range) * 100))
+  const maxPercent = Math.max(0, Math.min(100, ((currentMax - min) / range) * 100))
+
   return {
     left: `${minPercent}%`,
-    width: `${maxPercent - minPercent}%`
+    width: `${Math.max(0, maxPercent - minPercent)}%`
   }
 })
 
@@ -259,20 +307,29 @@ const hasProductsWithPrices = computed(() => {
   })
 })
 
-// Count of filtered results
+// Count of filtered results - count matching VARIANTS, not just products
 const filteredCount = computed(() => {
-  const filtered = filterProducts(props.products, localFilters.value)
-  return filtered.length
+  const filteredProducts = filterProducts(props.products, localFilters.value)
+
+  // Count total matching variants across all filtered products
+  let variantCount = 0
+  for (const product of filteredProducts) {
+    const matchingVariants = filterProductVariants(product, localFilters.value)
+    variantCount += matchingVariants.length
+  }
+
+  return variantCount
 })
 
 // Create local filters object from selected filters
-function createLocalFilters(selectedFilters, dynamicMaxPrice) {
+function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice) {
   const filters = { ...EMPTY_FILTERS }
 
   // Copy over all array filters
   for (const key of Object.keys(filters)) {
     if (key === 'priceMin') {
-      filters[key] = selectedFilters[key] ?? 0
+      // Use the dynamic min price as default instead of hardcoded 0
+      filters[key] = selectedFilters[key] ?? dynamicMinPrice
     } else if (key === 'priceMax') {
       // Use the dynamic max price as default instead of hardcoded value
       filters[key] = selectedFilters[key] ?? dynamicMaxPrice
@@ -286,15 +343,23 @@ function createLocalFilters(selectedFilters, dynamicMaxPrice) {
 
 // Sync local filters when props change
 watch(() => props.selectedFilters, (newFilters) => {
-  localFilters.value = createLocalFilters(newFilters, maxPrice.value)
+  localFilters.value = createLocalFilters(newFilters, minPrice.value, maxPrice.value)
 }, { deep: true })
 
 // Reset local filters when drawer opens
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    localFilters.value = createLocalFilters(props.selectedFilters, maxPrice.value)
+    localFilters.value = createLocalFilters(props.selectedFilters, minPrice.value, maxPrice.value)
   }
 })
+
+// Initialize local filters when minPrice becomes available
+watch(minPrice, (newMinPrice) => {
+  // Only initialize if priceMin is still at default (undefined or 0)
+  if (localFilters.value.priceMin === undefined || localFilters.value.priceMin === 0) {
+    localFilters.value.priceMin = newMinPrice
+  }
+}, { immediate: true })
 
 // Initialize local filters when maxPrice becomes available
 watch(maxPrice, (newMaxPrice) => {
@@ -322,7 +387,7 @@ const toggleFilter = (filterKey, value) => {
 }
 
 const clearAllFilters = () => {
-  localFilters.value = { ...EMPTY_FILTERS, priceMax: maxPrice.value }
+  localFilters.value = { ...EMPTY_FILTERS, priceMin: minPrice.value, priceMax: maxPrice.value }
   // Emit the cleared filters to parent immediately
   emit('update:filters', { ...localFilters.value })
 }

@@ -151,16 +151,44 @@ export function filterProducts(
     return products
   }
 
+  // Helper to parse price
+  const parsePrice = (price: unknown): number | null => {
+    if (typeof price === 'number') return price
+    if (typeof price === 'string') {
+      const parsed = parseFloat(price)
+      return isNaN(parsed) ? null : parsed
+    }
+    return null
+  }
+
+  // Helper to check if a price is within filter range
+  const isPriceInRange = (price: number | null, minPrice: number, maxPrice: number): boolean => {
+    if (price === null) return true // No price = don't filter by price
+    return price >= minPrice && price <= maxPrice
+  }
+
   return products.filter(product => {
-    // First check price filter at product level
+    const minPrice = filters.priceMin ?? 0
+    const maxPrice = filters.priceMax ?? Infinity
+
+    // Check if ANY variant (or product itself) has price within range AND matches attribute filters
     if (hasPriceFilter) {
-      const productPrice = getProductMinPrice(product)
-      if (productPrice !== null) {
-        const minPrice = filters.priceMin ?? 0
-        const maxPrice = filters.priceMax ?? Infinity
-        if (productPrice < minPrice || productPrice > maxPrice) {
-          return false
-        }
+      // Check if any variant's price is within range
+      let hasVariantInPriceRange = false
+
+      if (product.variants && product.variants.length > 0) {
+        hasVariantInPriceRange = product.variants.some(variant => {
+          const variantPrice = parsePrice(variant.price)
+          return isPriceInRange(variantPrice, minPrice, maxPrice)
+        })
+      } else {
+        // No variants, check product-level price
+        const productPrice = parsePrice(product.price)
+        hasVariantInPriceRange = isPriceInRange(productPrice, minPrice, maxPrice)
+      }
+
+      if (!hasVariantInPriceRange) {
+        return false
       }
     }
 
@@ -202,42 +230,6 @@ function getActiveFilterKeys(filters: SelectedFilters): FilterAttributeKey[] {
   })
 }
 
-/**
- * Get the minimum price from a product (from variants or product level)
- * Handles both number and string prices
- */
-function getProductMinPrice(product: Product): number | null {
-  // Helper to parse price (handles both string and number)
-  const parsePrice = (price: unknown): number | null => {
-    if (typeof price === 'number') {
-      return price
-    }
-    if (typeof price === 'string') {
-      const parsed = parseFloat(price)
-      return isNaN(parsed) ? null : parsed
-    }
-    return null
-  }
-
-  // Check product-level price first
-  const productPrice = parsePrice(product.price)
-  if (productPrice !== null) {
-    return productPrice
-  }
-
-  // Check variant prices and get minimum
-  if (product.variants && product.variants.length > 0) {
-    const prices = product.variants
-      .map(v => parsePrice(v.price))
-      .filter((p): p is number => p !== null)
-
-    if (prices.length > 0) {
-      return Math.min(...prices)
-    }
-  }
-
-  return null
-}
 
 /**
  * Check if filterAttributes match the selected filters
@@ -248,7 +240,10 @@ function matchesFilters(
   filters: SelectedFilters,
   activeFilterKeys: FilterAttributeKey[]
 ): boolean {
-  if (!attributes) return false
+  if (!attributes) {
+    console.log('🔍 matchesFilters: No attributes, returning false')
+    return false
+  }
 
   // Check each active filter key
   for (const filterKey of activeFilterKeys) {
@@ -257,6 +252,7 @@ function matchesFilters(
 
     const attributeValue = attributes[filterKey]
     if (attributeValue === undefined || attributeValue === null) {
+      console.log(`🔍 matchesFilters: Missing attribute "${filterKey}", returning false`)
       return false
     }
 
@@ -264,7 +260,10 @@ function matchesFilters(
     const attributeString = formatFilterValue(attributeValue)
 
     // Check if the attribute value matches any of the selected filter values
-    if (!filterValues.includes(attributeString)) {
+    const matches = filterValues.includes(attributeString)
+    console.log(`🔍 matchesFilters: Checking "${filterKey}": variant has "${attributeString}", filter wants ${JSON.stringify(filterValues)} => ${matches ? 'MATCH' : 'NO MATCH'}`)
+
+    if (!matches) {
       return false
     }
   }
@@ -302,7 +301,7 @@ export function getFilterOptionsWithCounts(
 
 /**
  * Filter product variants based on selected filters
- * Returns only the variants that match the filters
+ * Returns only the variants that match the filters (including price filter)
  */
 export function filterProductVariants(
   product: Product,
@@ -312,28 +311,63 @@ export function filterProductVariants(
 
   const activeFilterKeys = getActiveFilterKeys(filters)
 
-  if (activeFilterKeys.length === 0) {
+  // Check if price filter is active
+  const hasPriceFilter =
+    (filters.priceMin !== undefined && filters.priceMin > 0) ||
+    (filters.priceMax !== undefined)
+
+  // Helper to parse variant price
+  const parsePrice = (price: unknown): number | null => {
+    if (typeof price === 'number') return price
+    if (typeof price === 'string') {
+      const parsed = parseFloat(price)
+      return isNaN(parsed) ? null : parsed
+    }
+    return null
+  }
+
+  // If no filters active, return all variants
+  if (activeFilterKeys.length === 0 && !hasPriceFilter) {
     return product.variants
   }
 
-  return product.variants.filter(variant =>
-    matchesFilters(variant.filterAttributes, filters, activeFilterKeys)
-  )
+  return product.variants.filter(variant => {
+    // Check price filter first
+    if (hasPriceFilter) {
+      const variantPrice = parsePrice(variant.price)
+      if (variantPrice !== null) {
+        const minPrice = filters.priceMin ?? 0
+        const maxPrice = filters.priceMax ?? Infinity
+        if (variantPrice < minPrice || variantPrice > maxPrice) {
+          return false
+        }
+      }
+    }
+
+    // If no attribute filters, variant passes (price already checked)
+    if (activeFilterKeys.length === 0) {
+      return true
+    }
+
+    // Check attribute filters
+    return matchesFilters(variant.filterAttributes, filters, activeFilterKeys)
+  })
 }
 
 /**
  * Check if any filters are currently active
  * @param filters - The selected filters
+ * @param minPrice - Optional min price to check against (dynamic based on products)
  * @param maxPrice - Optional max price to check against (dynamic based on products)
  */
-export function hasActiveFilters(filters: SelectedFilters, maxPrice?: number): boolean {
+export function hasActiveFilters(filters: SelectedFilters, minPrice?: number, maxPrice?: number): boolean {
   const activeFilterKeys = getActiveFilterKeys(filters)
 
   // Check if price filter is active
-  // priceMin > 0 means user moved min slider
-  // priceMax < maxPrice means user moved max slider (if maxPrice provided)
+  // Compare against dynamic min/max to detect user changes
+  const dynamicMin = minPrice ?? 0
   const hasPriceFilter =
-    (filters.priceMin !== undefined && filters.priceMin > 0) ||
+    (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
     (maxPrice !== undefined && filters.priceMax !== undefined && filters.priceMax < maxPrice)
 
   return activeFilterKeys.length > 0 || hasPriceFilter
@@ -342,9 +376,10 @@ export function hasActiveFilters(filters: SelectedFilters, maxPrice?: number): b
 /**
  * Get the total count of active filters
  * @param filters - The selected filters
+ * @param minPrice - Optional min price to check against (dynamic based on products)
  * @param maxPrice - Optional max price to check against (dynamic based on products)
  */
-export function getActiveFilterCount(filters: SelectedFilters, maxPrice?: number): number {
+export function getActiveFilterCount(filters: SelectedFilters, minPrice?: number, maxPrice?: number): number {
   const activeFilterKeys = getActiveFilterKeys(filters)
   let count = 0
 
@@ -356,8 +391,9 @@ export function getActiveFilterCount(filters: SelectedFilters, maxPrice?: number
   }
 
   // Count price filter as 1 if active
+  const dynamicMin = minPrice ?? 0
   const hasPriceFilter =
-    (filters.priceMin !== undefined && filters.priceMin > 0) ||
+    (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
     (maxPrice !== undefined && filters.priceMax !== undefined && filters.priceMax < maxPrice)
 
   if (hasPriceFilter) {

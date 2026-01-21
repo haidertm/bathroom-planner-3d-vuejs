@@ -144,6 +144,8 @@ const toggleOption = (value) => {
   }
   // Emit immediately for real-time filtering
   emit('update', newSelected)
+  // Close dropdown after selection
+  closeDropdown()
 }
 
 // Click outside to close
