@@ -28,6 +28,13 @@ import { type Position as PositionArrayType } from '../models/bathroomFixtures.t
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
 import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
 import { RotationArrows } from './rotationArrows';
+import {
+  type GroupConstraint,
+  ConstraintPriority,
+  analyzeGroupConstraints,
+  snapRotationTo90Degrees,
+  describeGroupConstraint
+} from '../utils/groupConstraints';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -134,6 +141,8 @@ export class EventHandlers {
   private multiSelectLocalOffsets: Map<number, THREE.Vector3> = new Map();
   private multiSelectLocalRotations: Map<number, number> = new Map();
   private wasAlreadySelected: boolean = false;
+  // Group constraint for multi-selection (cached on drag start)
+  private groupConstraint: GroupConstraint | null = null;
 
   // 2D/3D View Mode
   private viewMode: ViewMode = '3d';
@@ -1013,6 +1022,21 @@ export class EventHandlers {
           this.multiSelectLocalRotations.set(id, relRot);
         });
 
+        // Calculate group constraint for multi-selection (most restrictive wins)
+        if (this.selectedObjects.size > 1) {
+          this.groupConstraint = analyzeGroupConstraints(
+            this.selectedObjects,
+            (id) => this.getCurrentItemData(id),
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+          console.log('📊 Group constraint calculated:', describeGroupConstraint(this.groupConstraint));
+        } else {
+          this.groupConstraint = null;
+        }
+
         // Notify that dragging has started
         if (this.onDragStart) {
           this.onDragStart();
@@ -1750,7 +1774,14 @@ export class EventHandlers {
     // Use the CURRENT position and rotation of the primary object as the base for the group
     // This ensures the group moves and rotates as a single rigid unit
     const primaryPos = primaryObject.position.clone();
-    const primaryRot = primaryObject.rotation.y;
+    let primaryRot = primaryObject.rotation.y;
+
+    // 📊 UNIFIED GROUP CONSTRAINT: Apply "most restrictive wins" rule
+    // If we have a group constraint, snap rotation to 90 degrees if required
+    if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+      primaryRot = snapRotationTo90Degrees(primaryRot);
+      primaryObject.rotation.y = primaryRot;
+    }
 
     let anyColliding = false;
 
@@ -1774,14 +1805,49 @@ export class EventHandlers {
         let constrainedPosition: { x: number, y: number, z: number };
         let constrainedRotation = primaryRot + localRot;
 
-        // ✅ FIX: In 2D mode, treat group as RIGID BODY - no individual constraints
-        // The group bounds pre-check already adjusted primary to keep everyone inside room
-        if (this.viewMode === '2d') {
+        // 📊 UNIFIED GROUP CONSTRAINT: Apply snap_90 to all items in the group
+        if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+          constrainedRotation = snapRotationTo90Degrees(constrainedRotation);
+        }
+
+        // ✅ RIGID BODY MODE: When group has unified constraint, treat as rigid body
+        // The primary object's constraint is applied to the whole group
+        const useRigidBody = this.viewMode === '2d' ||
+          (this.groupConstraint && (
+            this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY ||
+            this.groupConstraint.isLShapeGroup
+          ));
+
+        if (useRigidBody) {
           // Pure rigid body - maintain exact relative position
+          // The primary object's constraint already handles the group positioning
           constrainedPosition = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
-          constrainedRotation = primaryRot + localRot; // Keep rigid body rotation
+        } else if (this.groupConstraint && this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP) {
+          // 📊 WALL_SNAP GROUP: All items snap to walls as rigid body
+          // But each item snaps to its nearest wall while maintaining relative offset
+          const currentItemWall = this.determineCurrentWall(obj.position);
+          const originalY = targetPos.y; // Preserve Y position
+
+          const result = constrainToWalls(
+            { x: targetPos.x, y: targetPos.y, z: targetPos.z },
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            {
+              type: itemType,
+              scale: itemScale,
+              orientation: obj.userData.orientation,
+              item: itemData,
+              notchWidth: this.notchWidthRef.value,
+              notchHeight: this.notchHeightRef.value
+            },
+            currentItemWall
+          );
+          constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
+          // For wall-snap groups, keep the rigid body rotation
+          // Don't use individual wall rotation as it would break the group shape
+          // constrainedRotation is already set above
         } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
-          // 3D MODE: Apply individual wall constraints
+          // 3D MODE: Individual wall constraints (when no group constraint)
           const currentItemWall = this.determineCurrentWall(obj.position);
           const originalY = targetPos.y; // Preserve Y position
 
@@ -2003,6 +2069,12 @@ export class EventHandlers {
         return;
       }
 
+      // 📊 GROUP CONSTRAINT: Block height adjustment for entire group if ANY item has fixed height
+      if (this.selectedObjects.size > 1 && this.groupConstraint?.heightRestriction === 'locked') {
+        console.log('⚠️ Height adjustment blocked for group - mixed height-adjustable/fixed items');
+        return;
+      }
+
       // Check if vertical movement is allowed
       if (!canMoveVertically(objectType, currentItem)) {
         console.log('⚠️ Vertical movement not allowed for', objectType);
@@ -2069,6 +2141,19 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
+      // 📊 GROUP CONSTRAINT: Override primary object's movement based on group constraint
+      // If group has CORNER_ONLY or L-shape constraint, ALL objects (including primary) must be constrained
+      const effectiveCornerOnly = (this.groupConstraint && (
+        this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY ||
+        this.groupConstraint.isLShapeGroup
+      )) || (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled);
+
+      // 📊 GROUP CONSTRAINT: Check if group requires wall snap
+      const effectiveWallSnap = (this.groupConstraint &&
+        this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP &&
+        !effectiveCornerOnly
+      ) || (movementConfig.snapToWall && !effectiveCornerOnly);
+
       // ✅ NEW: Calculate stable ideal position for the entire group using the camera-facing plane
       // 📐 2D MODE: Use floor plane for position calculation
       let idealPosition: THREE.Vector3;
@@ -2092,14 +2177,20 @@ export class EventHandlers {
 
 
       // ✅ ROTATION-AWARE FIX for freestanding objects
-      if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+      // 📊 GROUP CONSTRAINT: Skip free rotation handling if group has more restrictive constraint
+      if (movementConfig.allowFreeRotation && !movementConfig.snapToWall && !effectiveCornerOnly && !effectiveWallSnap) {
         const currentPos = idealPosition;
         const constrainedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
 
         // Set position
         this.selectedObject.position.set(constrainedPos.x, this.selectedObject.position.y, constrainedPos.z);
 
-        const objectRotation = this.selectedObject.rotation.y;
+        // 📊 GROUP CONSTRAINT: Apply snap_90 if group requires it
+        let objectRotation = this.selectedObject.rotation.y;
+        if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+          objectRotation = snapRotationTo90Degrees(objectRotation);
+          this.selectedObject.rotation.y = objectRotation;
+        }
 
         // Update data model
         this.queueUpdate(itemId, {
@@ -2133,8 +2224,15 @@ export class EventHandlers {
       let constrainedRotation = this.selectedObject.rotation.y;
       let rotationChanged = false;
 
+      // 📊 GROUP CONSTRAINT: Apply snap_90 rotation if group requires it
+      if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+        constrainedRotation = snapRotationTo90Degrees(constrainedRotation);
+        rotationChanged = true;
+      }
+
       // ✅ SIMPLIFIED: Direct cursor following for wall-snapping objects
-      if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+      // 📊 GROUP CONSTRAINT: Use effectiveWallSnap instead of individual config
+      if (effectiveWallSnap) {
         // Get room and object dimensions
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
@@ -2827,8 +2925,9 @@ export class EventHandlers {
           console.log(`🔍 Debug - Final position: (${constrainedPosition.x.toFixed(0)}, ${constrainedPosition.z.toFixed(0)}), Current wall: ${currentWall}`);
         }
 
-      } else if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
+      } else if (effectiveCornerOnly) {
         // Handle corner-only objects - direct cursor tracking
+        // 📊 GROUP CONSTRAINT: This also handles groups that need corner-only movement
         const heightPlane = new THREE.Plane(
           new THREE.Vector3(0, 1, 0),
           -this.selectedObject.position.y
@@ -2838,24 +2937,81 @@ export class EventHandlers {
         const cursorWorldPos = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(heightPlane, cursorWorldPos);
 
+        // 📊 GROUP CONSTRAINT: If primary is NOT corner-only but group has corner-only item,
+        // find the corner-only item and use IT as the anchor for corner positioning
+        let cornerAnchorId = itemId;
+        let cornerAnchorObj = this.selectedObject;
+        let cornerAnchorOffset = new THREE.Vector3(0, 0, 0);
+
+        if (this.selectedObjects.size > 1 && this.groupConstraint &&
+            !(movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled)) {
+          // Primary is not corner-only, find the corner-only item in the group
+          this.selectedObjects.forEach((obj, id) => {
+            if (id === itemId) return;
+            const objItemData = this.getCurrentItemData(id);
+            const objMovement = getMovementConfig(obj.userData.type as ComponentType, objItemData);
+            if (objMovement.cornerInstallOnly && objMovement.cornerInstallOnly.enabled) {
+              cornerAnchorId = id;
+              cornerAnchorObj = obj;
+              // Get the local offset of this corner-only item from primary
+              const localOffset = this.multiSelectLocalOffsets.get(id);
+              if (localOffset) {
+                cornerAnchorOffset = localOffset.clone();
+              }
+            }
+          });
+        }
+
+        // Get corner-only item's config for proper corner constraint
+        const cornerAnchorData = this.getCurrentItemData(cornerAnchorId);
+        const cornerAnchorMovement = getMovementConfig(cornerAnchorObj.userData.type as ComponentType, cornerAnchorData);
+
+        // Calculate where the cursor would position the corner-only item
+        // The cursor position + offset to where the corner item would be
+        const primaryRot = this.selectedObject.rotation.y;
+        const worldAnchorOffset = cornerAnchorOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), primaryRot);
+        const cursorPosForCornerItem = new THREE.Vector3(
+          cursorWorldPos.x + worldAnchorOffset.x,
+          cursorWorldPos.y,
+          cursorWorldPos.z + worldAnchorOffset.z
+        );
+
+        // Use the corner-only item's movement config for proper corner positioning
+        const effectiveMovementConfig = (cornerAnchorMovement.cornerInstallOnly && cornerAnchorMovement.cornerInstallOnly.enabled)
+          ? cornerAnchorMovement
+          : { ...movementConfig, cornerInstallOnly: { enabled: true } };
+
         const { position: cornerPos, rotation: cornerRot } = constrainToCorner(
-          { x: cursorWorldPos.x, y: cursorWorldPos.y, z: cursorWorldPos.z },
+          { x: cursorPosForCornerItem.x, y: cursorPosForCornerItem.y, z: cursorPosForCornerItem.z },
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
-            type: objectType,
-            scale: objectScale,
-            orientation: currentItem?.model?.orientation,
-            item: currentItem,
-            movement: movementConfig,
+            type: cornerAnchorObj.userData.type as ComponentType,
+            scale: cornerAnchorObj.scale.x,
+            orientation: cornerAnchorData?.model?.orientation,
+            item: cornerAnchorData,
+            movement: effectiveMovementConfig,
             notchWidth: this.notchWidthRef.value,
             notchHeight: this.notchHeightRef.value
           }
         );
 
-        constrainedPosition.x = cornerPos.x;
-        constrainedPosition.z = cornerPos.z;
-        constrainedPosition.y = cornerPos.y;
+        // Calculate primary object position by reversing the offset from the corner-only item
+        // cornerPos is where the corner-only item should be
+        // primary should be at: cornerPos - worldAnchorOffset
+        if (cornerAnchorId !== itemId) {
+          // Recalculate world offset with the new corner rotation
+          const newWorldAnchorOffset = cornerAnchorOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), cornerRot);
+          constrainedPosition.x = cornerPos.x - newWorldAnchorOffset.x;
+          constrainedPosition.z = cornerPos.z - newWorldAnchorOffset.z;
+          constrainedPosition.y = this.selectedObject.position.y;
+          console.log('📊 Corner anchor is item', cornerAnchorId, '- primary positioned relative to it');
+        } else {
+          constrainedPosition.x = cornerPos.x;
+          constrainedPosition.z = cornerPos.z;
+          constrainedPosition.y = cornerPos.y;
+        }
+
         constrainedRotation = cornerRot;
         rotationChanged = true;
 
@@ -3422,6 +3578,21 @@ export class EventHandlers {
           this.multiSelectLocalRotations.set(id, relRot);
         });
 
+        // Calculate group constraint for multi-selection (most restrictive wins)
+        if (this.selectedObjects.size > 1) {
+          this.groupConstraint = analyzeGroupConstraints(
+            this.selectedObjects,
+            (id) => this.getCurrentItemData(id),
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+          console.log('📊 Group constraint calculated (touch):', describeGroupConstraint(this.groupConstraint));
+        } else {
+          this.groupConstraint = null;
+        }
+
         window.dispatchEvent(new CustomEvent('object-selected', {
           detail: { itemId: this.selectedObject?.userData?.itemId ?? null }
         }));
@@ -3973,6 +4144,7 @@ export class EventHandlers {
       this.multiSelectStartRotations.clear();
       this.multiSelectLocalOffsets.clear();
       this.multiSelectLocalRotations.clear();
+      this.groupConstraint = null; // Clear group constraint on selection clear
 
       // EMIT deselection event
       if (this.onItemDeselected) {
