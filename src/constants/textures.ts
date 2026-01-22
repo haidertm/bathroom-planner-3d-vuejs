@@ -3,6 +3,12 @@ export interface TextureConfig {
   readonly file: string;
   readonly color: number; // Hex color value
   readonly scale: readonly [number, number]; // [x, y] scaling
+  readonly normalMap?: string; // Path to normal map texture for grout/depth effects
+  readonly roughness?: number; // Material roughness override (0=glossy, 1=matte)
+  readonly metalness?: number; // Material metalness override (0=non-metal, 1=metal)
+  readonly procedural?: 'tile'; // Use procedural generation instead of file
+  readonly groutColor?: number; // Grout color for procedural tiles
+  readonly glossiness?: number; // Glossiness for procedural tiles (0-1)
 }
 
 // Custom texture definitions - supports both files and colors
@@ -17,7 +23,7 @@ export const FLOOR_TEXTURES: readonly TextureConfig[] = [
 ];
 
 export const WALL_TEXTURES: readonly TextureConfig[] = [
-  { name: 'Metro White Tile', file: '/textures/wall_metro_white_tile.png', color: 0xffffff, scale: [20, 12] },
+  { name: 'Metro White Tile', file: '/textures/wall_metro_white_tile.png', color: 0x000000, scale: [20, 12], roughness: 0.0, metalness: 0.7 },
   { name: 'White Paint', file: '', color: 0xffffff, scale: [1, 1] },
   { name: 'Light Blue', file: '', color: 0xe6f3ff, scale: [1, 1] },
   { name: 'Beige', file: '', color: 0xf5f5dc, scale: [1, 1] },
@@ -25,7 +31,7 @@ export const WALL_TEXTURES: readonly TextureConfig[] = [
   { name: 'Blue Tile', file: '', color: 0xb0d4f1, scale: [4, 4] },
   { name: 'Green Tile', file: '', color: 0xc8e6c9, scale: [4, 4] },
   { name: 'Brick', file: '/textures/wall_brick.jpg', color: 0xcc6666, scale: [6, 4] },
-  { name: 'Subway Tile', file: '', color: 0xf0f0f0, scale: [8, 6] }
+  // Procedural realistic ceramic tiles
 ];
 
 export const DEFAULT_FLOOR_TEXTURE: number = 4; // Wood
