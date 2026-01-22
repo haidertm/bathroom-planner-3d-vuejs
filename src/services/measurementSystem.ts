@@ -821,9 +821,23 @@ export class MeasurementSystem {
     const excludeItemId = this.selectedObject.userData.itemId;
     let nearestObjectBelowTopY = 0; // Start from floor level (Y=0)
 
-    // Get current object's horizontal bounds for overlap detection
-    const objectWidth = measurements.objectWidth;
-    const objectDepth = measurements.objectDepth;
+    // Get current object's horizontal bounds using getItemBoundingBoxEdges for accurate corner object handling
+    const currentItem = this.existingItems.find(item => item.id === excludeItemId);
+    let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
+
+    if (currentItem) {
+      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      currentMinX = currentBounds.minX;
+      currentMaxX = currentBounds.maxX;
+      currentMinZ = currentBounds.minZ;
+      currentMaxZ = currentBounds.maxZ;
+    } else {
+      // Fallback to center-pivot if current item not found
+      currentMinX = position.x - measurements.objectWidth / 2;
+      currentMaxX = position.x + measurements.objectWidth / 2;
+      currentMinZ = position.z - measurements.objectDepth / 2;
+      currentMaxZ = position.z + measurements.objectDepth / 2;
+    }
 
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return; // Skip current object
@@ -833,10 +847,20 @@ export class MeasurementSystem {
       if (!itemDimensions) return;
 
       const itemScale = item.scale || 1.0;
-      const itemWidth = itemDimensions.width * itemScale;
-      const itemDepth = itemDimensions.depth * itemScale;
+      const itemBaseWidth = itemDimensions.width * itemScale;
+      const itemBaseDepth = itemDimensions.depth * itemScale;
       const itemHeight = itemDimensions.height * itemScale;
       const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      // Account for item rotation - at 90° or 270°, width and depth are swapped
+      const itemRotation = item.rotation || 0;
+      const normalizedItemRotation = ((itemRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      const itemRotationEpsilon = 0.01;
+      const isItemRotated90 =
+        Math.abs(normalizedItemRotation - Math.PI / 2) < itemRotationEpsilon ||
+        Math.abs(normalizedItemRotation - (3 * Math.PI / 2)) < itemRotationEpsilon;
+      const itemEffectiveWidth = isItemRotated90 ? itemBaseDepth : itemBaseWidth;
+      const itemEffectiveDepth = isItemRotated90 ? itemBaseWidth : itemBaseDepth;
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
       const itemBottomY = itemPos.y + itemFloorOffset;
@@ -845,24 +869,13 @@ export class MeasurementSystem {
       // Check if other object is BELOW current object
       if (itemTopY >= objectBottomY - 10) return; // Not below (with 10cm buffer)
 
-      // Check horizontal overlap (XZ plane)
+      // Check horizontal overlap (XZ plane) using getItemBoundingBoxEdges for accurate bounds
       const horizontalBuffer = 10; // 10cm buffer
-
-      // Current object bounds
-      const currentMinX = position.x - objectWidth / 2;
-      const currentMaxX = position.x + objectWidth / 2;
-      const currentMinZ = position.z - objectDepth / 2;
-      const currentMaxZ = position.z + objectDepth / 2;
-
-      // Other object bounds
-      const itemMinX = itemPos.x - itemWidth / 2;
-      const itemMaxX = itemPos.x + itemWidth / 2;
-      const itemMinZ = itemPos.z - itemDepth / 2;
-      const itemMaxZ = itemPos.z + itemDepth / 2;
+      const itemBounds = this.getItemBoundingBoxEdges(item, itemPos, itemEffectiveWidth, itemEffectiveDepth);
 
       // Check for horizontal overlap
-      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
-      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+      const overlapX = !(currentMaxX + horizontalBuffer < itemBounds.minX || itemBounds.maxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemBounds.minZ || itemBounds.maxZ + horizontalBuffer < currentMinZ);
 
       if (overlapX && overlapZ) {
         // Objects overlap horizontally and other object is below
@@ -891,9 +904,23 @@ export class MeasurementSystem {
     const excludeItemId = this.selectedObject.userData.itemId;
     let nearestObjectAboveBottomY = ceilingHeight; // Start from ceiling level
 
-    // Get current object's horizontal bounds for overlap detection
-    const objectWidth = measurements.objectWidth;
-    const objectDepth = measurements.objectDepth;
+    // Get current object's horizontal bounds using getItemBoundingBoxEdges for accurate corner object handling
+    const currentItem = this.existingItems.find(item => item.id === excludeItemId);
+    let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
+
+    if (currentItem) {
+      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      currentMinX = currentBounds.minX;
+      currentMaxX = currentBounds.maxX;
+      currentMinZ = currentBounds.minZ;
+      currentMaxZ = currentBounds.maxZ;
+    } else {
+      // Fallback to center-pivot if current item not found
+      currentMinX = position.x - measurements.objectWidth / 2;
+      currentMaxX = position.x + measurements.objectWidth / 2;
+      currentMinZ = position.z - measurements.objectDepth / 2;
+      currentMaxZ = position.z + measurements.objectDepth / 2;
+    }
 
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return; // Skip current object
@@ -903,36 +930,33 @@ export class MeasurementSystem {
       if (!itemDimensions) return;
 
       const itemScale = item.scale || 1.0;
-      const itemWidth = itemDimensions.width * itemScale;
-      const itemDepth = itemDimensions.depth * itemScale;
-      // const itemHeight = itemDimensions.height * itemScale;
+      const itemBaseWidth = itemDimensions.width * itemScale;
+      const itemBaseDepth = itemDimensions.depth * itemScale;
       const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      // Account for item rotation - at 90° or 270°, width and depth are swapped
+      const itemRotation = item.rotation || 0;
+      const normalizedItemRotation = ((itemRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      const itemRotationEpsilon = 0.01;
+      const isItemRotated90 =
+        Math.abs(normalizedItemRotation - Math.PI / 2) < itemRotationEpsilon ||
+        Math.abs(normalizedItemRotation - (3 * Math.PI / 2)) < itemRotationEpsilon;
+      const itemEffectiveWidth = isItemRotated90 ? itemBaseDepth : itemBaseWidth;
+      const itemEffectiveDepth = isItemRotated90 ? itemBaseWidth : itemBaseDepth;
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
       const itemBottomY = itemPos.y + itemFloorOffset;
-      // const itemTopY = itemBottomY + itemHeight;
 
       // Check if other object is ABOVE current object
       if (itemBottomY <= objectTopY + 10) return; // Not above (with 10cm buffer)
 
-      // Check horizontal overlap (XZ plane)
+      // Check horizontal overlap (XZ plane) using getItemBoundingBoxEdges for accurate bounds
       const horizontalBuffer = 10; // 10cm buffer
-
-      // Current object bounds
-      const currentMinX = position.x - objectWidth / 2;
-      const currentMaxX = position.x + objectWidth / 2;
-      const currentMinZ = position.z - objectDepth / 2;
-      const currentMaxZ = position.z + objectDepth / 2;
-
-      // Other object bounds
-      const itemMinX = itemPos.x - itemWidth / 2;
-      const itemMaxX = itemPos.x + itemWidth / 2;
-      const itemMinZ = itemPos.z - itemDepth / 2;
-      const itemMaxZ = itemPos.z + itemDepth / 2;
+      const itemBounds = this.getItemBoundingBoxEdges(item, itemPos, itemEffectiveWidth, itemEffectiveDepth);
 
       // Check for horizontal overlap
-      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
-      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+      const overlapX = !(currentMaxX + horizontalBuffer < itemBounds.minX || itemBounds.maxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemBounds.minZ || itemBounds.maxZ + horizontalBuffer < currentMinZ);
 
       if (overlapX && overlapZ) {
         // Objects overlap horizontally and other object is above
