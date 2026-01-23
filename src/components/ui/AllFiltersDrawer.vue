@@ -6,120 +6,120 @@
 
       <!-- Drawer -->
       <div class="filters-drawer" :class="{ 'is-open': isOpen }">
-      <!-- Header -->
-      <div class="filters-header">
-        <h2 class="filters-title">All Filters</h2>
-        <button class="filters-close" @click="closeDrawer">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
+        <!-- Header -->
+        <div class="filters-header">
+          <h2 class="filters-title">All Filters</h2>
+          <button class="filters-close" @click="closeDrawer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
 
-      <!-- Filter Sections -->
-      <div class="filters-content">
-        <!-- Dynamic Secondary Filter Sections -->
-        <div
-          v-for="filterKey in secondaryFilters"
-          :key="filterKey"
-          class="filter-section"
-        >
-          <template v-if="getFilterOptions(filterKey).length > 0">
-            <button class="filter-section-header" @click="toggleSection(filterKey)">
-              <span>{{ getFilterLabel(filterKey) }}</span>
+        <!-- Filter Sections -->
+        <div class="filters-content">
+          <!-- Dynamic Secondary Filter Sections -->
+          <div
+              v-for="filterKey in secondaryFilters"
+              :key="filterKey"
+              class="filter-section"
+          >
+            <template v-if="getFilterOptions(filterKey).length > 0">
+              <button class="filter-section-header" @click="toggleSection(filterKey)">
+                <span>{{ getFilterLabel(filterKey) }}</span>
+                <svg
+                    class="filter-section-arrow"
+                    :class="{ 'is-open': openSections[filterKey] }"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div v-if="openSections[filterKey]" class="filter-section-content">
+                <div class="filter-options-grid">
+                  <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+                    <input
+                        type="checkbox"
+                        :checked="isFilterSelected(filterKey, option.value)"
+                        @change="toggleFilter(filterKey, option.value)"
+                        class="filter-checkbox"
+                    />
+                    <span>{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Price Range Section (always shown if products have prices) -->
+          <div v-if="hasProductsWithPrices" class="filter-section">
+            <button class="filter-section-header" @click="toggleSection('price')">
+              <span>Price Range</span>
               <svg
-                class="filter-section-arrow"
-                :class="{ 'is-open': openSections[filterKey] }"
-                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  class="filter-section-arrow"
+                  :class="{ 'is-open': openSections.price }"
+                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               >
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </button>
-            <div v-if="openSections[filterKey]" class="filter-section-content">
-              <div class="filter-options-grid">
-                <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+            <div v-if="openSections.price" class="filter-section-content">
+              <div class="price-range-container">
+                <div class="price-range-labels">
+                  <span>£{{ displayPriceMin }}</span>
+                  <span>£{{ displayPriceMax }}</span>
+                </div>
+                <div class="dual-range-slider">
+                  <div class="slider-track"></div>
+                  <div
+                      class="slider-range"
+                      :style="sliderRangeStyle"
+                  ></div>
                   <input
-                    type="checkbox"
-                    :checked="isFilterSelected(filterKey, option.value)"
-                    @change="toggleFilter(filterKey, option.value)"
-                    class="filter-checkbox"
+                      type="range"
+                      :min="minPrice"
+                      :max="maxPrice"
+                      :value="displayPriceMin"
+                      @input="updateMinPrice"
+                      class="range-input range-min"
                   />
-                  <span>{{ option.label }}</span>
-                </label>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- Price Range Section (always shown if products have prices) -->
-        <div v-if="hasProductsWithPrices" class="filter-section">
-          <button class="filter-section-header" @click="toggleSection('price')">
-            <span>Price Range</span>
-            <svg
-              class="filter-section-arrow"
-              :class="{ 'is-open': openSections.price }"
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-          <div v-if="openSections.price" class="filter-section-content">
-            <div class="price-range-container">
-              <div class="price-range-labels">
-                <span>£{{ displayPriceMin }}</span>
-                <span>£{{ displayPriceMax }}</span>
-              </div>
-              <div class="dual-range-slider">
-                <div class="slider-track"></div>
-                <div
-                  class="slider-range"
-                  :style="sliderRangeStyle"
-                ></div>
-                <input
-                  type="range"
-                  :min="minPrice"
-                  :max="maxPrice"
-                  :value="displayPriceMin"
-                  @input="updateMinPrice"
-                  class="range-input range-min"
-                />
-                <input
-                  type="range"
-                  :min="minPrice"
-                  :max="maxPrice"
-                  :value="displayPriceMax"
-                  @input="updateMaxPrice"
-                  class="range-input range-max"
-                />
+                  <input
+                      type="range"
+                      :min="minPrice"
+                      :max="maxPrice"
+                      :value="displayPriceMax"
+                      @input="updateMaxPrice"
+                      class="range-input range-max"
+                  />
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Empty state when no secondary filters -->
+          <div v-if="secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
+            <p>No additional filters available for this category.</p>
+          </div>
         </div>
 
-        <!-- Empty state when no secondary filters -->
-        <div v-if="secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
-          <p>No additional filters available for this category.</p>
+        <!-- Footer -->
+        <div class="filters-footer">
+          <button class="filters-clear-btn" @click="clearAllFilters">
+            Clear All
+          </button>
+          <button class="filters-apply-btn" @click="applyFilters">
+            Show {{ filteredCount }} Results
+          </button>
         </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="filters-footer">
-        <button class="filters-clear-btn" @click="clearAllFilters">
-          Clear All
-        </button>
-        <button class="filters-apply-btn" @click="applyFilters">
-          Show {{ filteredCount }} Results
-        </button>
       </div>
     </div>
-  </div>
   </Teleport>
 </template>
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
-import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS } from '../../constants/filters'
+import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants } from '../../utils/filters'
 
 const props = defineProps({
@@ -137,7 +137,7 @@ const props = defineProps({
   },
   selectedFilters: {
     type: Object,
-    default: () => ({ ...EMPTY_FILTERS })
+    default: () => createEmptyFilters()
   }
 })
 
@@ -189,18 +189,21 @@ const maxPrice = computed(() => {
   return Math.ceil(max / 10) * 10 || 1000
 })
 
-// Helper to parse price (handles both string and number)
+// Helper to parse price (handles both string and number, including currency-formatted strings)
 function parsePrice(price) {
   if (typeof price === 'number') return price
   if (typeof price === 'string') {
-    const parsed = parseFloat(price)
+    // Normalize: trim whitespace, remove currency symbols and thousands separators
+    // Keep only digits, optional leading minus, and decimal point
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
     return isNaN(parsed) ? null : parsed
   }
   return null
 }
 
 // Local copy of filters for editing (initialized in watch below after maxPrice is available)
-const localFilters = ref({ ...EMPTY_FILTERS })
+const localFilters = ref(createEmptyFilters())
 
 // Open/closed state for sections (reactive object to handle dynamic keys)
 const openSections = reactive({
@@ -323,7 +326,7 @@ const filteredCount = computed(() => {
 
 // Create local filters object from selected filters
 function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice) {
-  const filters = { ...EMPTY_FILTERS }
+  const filters = createEmptyFilters()
 
   // Copy over all array filters
   for (const key of Object.keys(filters)) {
@@ -387,13 +390,27 @@ const toggleFilter = (filterKey, value) => {
 }
 
 const clearAllFilters = () => {
-  localFilters.value = { ...EMPTY_FILTERS, priceMin: minPrice.value, priceMax: maxPrice.value }
-  // Emit the cleared filters to parent immediately
-  emit('update:filters', { ...localFilters.value })
+  // Reset local filters with dynamic price values for slider display
+  const freshFilters = createEmptyFilters()
+  freshFilters.priceMin = minPrice.value
+  freshFilters.priceMax = maxPrice.value
+  localFilters.value = freshFilters
+  // Emit empty filters to parent (priceMin: 0) so badge count resets properly
+  emit('update:filters', createEmptyFilters())
 }
 
 const applyFilters = () => {
-  emit('update:filters', { ...localFilters.value })
+  // Create a copy of localFilters for emission
+  const filtersToEmit = { ...localFilters.value }
+
+  // If price values match the dynamic bounds (user didn't change them),
+  // normalize to EMPTY_FILTERS values so they're not treated as active filters
+  if (localFilters.value.priceMin === minPrice.value && localFilters.value.priceMax === maxPrice.value) {
+    filtersToEmit.priceMin = EMPTY_FILTERS.priceMin
+    filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
+  }
+
+  emit('update:filters', filtersToEmit)
   closeDrawer()
 }
 

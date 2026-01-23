@@ -82,10 +82,15 @@ export type ObjectModel = {
         panel?: string;
         // Bath filters
         handed?: string;
+        feetColour?: string;
         // Suite filters
         composition?: string;
         bathType?: string;
         toiletType?: string;
+        // Plumbing filters
+        diameter?: string;
+        size?: string;
+        material?: string;
     };
 }
 

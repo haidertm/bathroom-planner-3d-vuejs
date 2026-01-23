@@ -226,7 +226,47 @@ export function getFilterLabel(filterKey: string): string {
   return FILTER_LABELS[filterKey] || filterKey
 }
 
-// Create empty filters object
+// Create empty filters object with fresh arrays to prevent state bleed
 export function createEmptyFilters(): SelectedFilters {
-  return { ...EMPTY_FILTERS }
+  return {
+    // Common
+    length: [],
+    type: [],
+    finish: [],
+    width: [],
+    style: [],
+    colour: [],
+
+    // Bath
+    handed: [],
+
+    // Furniture
+    mounting: [],
+    basinType: [],
+    depth: [],
+
+    // Toilet
+    projection: [],
+    shape: [],
+    rimless: [],
+    cisternEntry: [],
+    softCloseSeat: [],
+
+    // Radiator
+    height: [],
+    orientation: [],
+    btuOutput: [],
+    pipeCentres: [],
+
+    // Shower
+    doorType: [],
+    glassThickness: [],
+    frameType: [],
+    frameFinish: [],
+    range: [],
+
+    // Price
+    priceMin: 0,
+    priceMax: undefined
+  }
 }

@@ -1,15 +1,16 @@
 // Filter utility functions for product filtering
 
 import type { FilterOption, SelectedFilters } from '../constants/filters'
-import { EMPTY_FILTERS } from '../constants/filters'
+import { EMPTY_FILTERS, createEmptyFilters } from '../constants/filters'
 
 // All possible filter attribute keys
 type FilterAttributeKey =
-  | 'length' | 'type' | 'finish' | 'width' | 'style' | 'colour'
-  | 'handed' | 'mounting' | 'basinType' | 'depth'
-  | 'projection' | 'shape' | 'rimless' | 'cisternEntry' | 'softCloseSeat'
-  | 'height' | 'orientation' | 'btuOutput' | 'pipeCentres'
-  | 'doorType' | 'glassThickness' | 'frameType' | 'frameFinish' | 'range'
+    | 'length' | 'type' | 'finish' | 'width' | 'style' | 'colour'
+    | 'handed' | 'mounting' | 'basinType' | 'depth'
+    | 'projection' | 'shape' | 'rimless' | 'cisternEntry' | 'softCloseSeat'
+    | 'height' | 'orientation' | 'btuOutput' | 'pipeCentres'
+    | 'doorType' | 'glassThickness' | 'frameType' | 'frameFinish' | 'range'
+    | 'feetColour' | 'diameter' | 'size' | 'material'
 
 interface FilterAttributes {
   length?: string
@@ -36,6 +37,10 @@ interface FilterAttributes {
   frameType?: string
   frameFinish?: string
   range?: string
+  feetColour?: string
+  diameter?: string
+  size?: string
+  material?: string
   [key: string]: unknown
 }
 
@@ -67,8 +72,8 @@ interface Product {
  * Looks at both product-level and variant-level filterAttributes
  */
 export function extractFilterOptions(
-  products: Product[],
-  filterKey: string
+    products: Product[],
+    filterKey: string
 ): FilterOption[] {
   const valuesSet = new Set<string>()
 
@@ -92,20 +97,20 @@ export function extractFilterOptions(
 
   // Convert to FilterOption array and sort
   return Array.from(valuesSet)
-    .sort((a, b) => {
-      // Sort numeric values numerically (e.g., "1370mm" < "1500mm")
-      const numA = parseInt(a)
-      const numB = parseInt(b)
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return numA - numB
-      }
-      // Sort strings alphabetically
-      return a.localeCompare(b)
-    })
-    .map(value => ({
-      value,
-      label: formatDisplayLabel(value, filterKey)
-    }))
+      .sort((a, b) => {
+        // Sort numeric values numerically (e.g., "1370mm" < "1500mm")
+        const numA = parseInt(a)
+        const numB = parseInt(b)
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return numA - numB
+        }
+        // Sort strings alphabetically
+        return a.localeCompare(b)
+      })
+      .map(value => ({
+        value,
+        label: formatDisplayLabel(value, filterKey)
+      }))
 }
 
 /**
@@ -134,8 +139,8 @@ function formatDisplayLabel(value: string, _filterKey: string): string {
  * A product matches if ANY of its variants match ALL selected filter criteria
  */
 export function filterProducts(
-  products: Product[],
-  filters: SelectedFilters
+    products: Product[],
+    filters: SelectedFilters
 ): Product[] {
   // Get all filter keys that have active selections
   const activeFilterKeys = getActiveFilterKeys(filters)
@@ -143,8 +148,8 @@ export function filterProducts(
   // Check if price filter is active
   // We consider it active if priceMin > 0 OR if priceMax is explicitly set (not undefined)
   const hasPriceFilter =
-    (filters.priceMin !== undefined && filters.priceMin > 0) ||
-    (filters.priceMax !== undefined)
+      (filters.priceMin !== undefined && filters.priceMin > 0) ||
+      (filters.priceMax !== undefined)
 
   // If no filters selected, return all products
   if (activeFilterKeys.length === 0 && !hasPriceFilter) {
@@ -163,52 +168,50 @@ export function filterProducts(
 
   // Helper to check if a price is within filter range
   const isPriceInRange = (price: number | null, minPrice: number, maxPrice: number): boolean => {
-    if (price === null) return true // No price = don't filter by price
+    if (price === null) return false // No valid price = treat as non-match when price filter is active
     return price >= minPrice && price <= maxPrice
+  }
+
+  // Helper to check if a single item (variant or product) matches both price and attribute filters
+  const itemMatchesAllFilters = (
+      price: unknown,
+      filterAttributes: Record<string, unknown> | undefined,
+      minPrice: number,
+      maxPrice: number
+  ): boolean => {
+    // Check price filter if active
+    if (hasPriceFilter) {
+      const parsedPrice = parsePrice(price)
+      if (!isPriceInRange(parsedPrice, minPrice, maxPrice)) {
+        return false
+      }
+    }
+
+    // Check attribute filters if active
+    if (activeFilterKeys.length > 0) {
+      if (!matchesFilters(filterAttributes, filters, activeFilterKeys)) {
+        return false
+      }
+    }
+
+    return true
   }
 
   return products.filter(product => {
     const minPrice = filters.priceMin ?? 0
     const maxPrice = filters.priceMax ?? Infinity
 
-    // Check if ANY variant (or product itself) has price within range AND matches attribute filters
-    if (hasPriceFilter) {
-      // Check if any variant's price is within range
-      let hasVariantInPriceRange = false
-
-      if (product.variants && product.variants.length > 0) {
-        hasVariantInPriceRange = product.variants.some(variant => {
-          const variantPrice = parsePrice(variant.price)
-          return isPriceInRange(variantPrice, minPrice, maxPrice)
-        })
-      } else {
-        // No variants, check product-level price
-        const productPrice = parsePrice(product.price)
-        hasVariantInPriceRange = isPriceInRange(productPrice, minPrice, maxPrice)
-      }
-
-      if (!hasVariantInPriceRange) {
-        return false
-      }
+    // For products with variants, check if ANY variant matches BOTH price AND attributes together
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.some(variant => {
+        // Use variant price, fall back to product price if variant has no price
+        const variantPrice = variant.price ?? product.price
+        return itemMatchesAllFilters(variantPrice, variant.filterAttributes, minPrice, maxPrice)
+      })
     }
 
-    // If no attribute filters, product passes (price already checked)
-    if (activeFilterKeys.length === 0) {
-      return true
-    }
-
-    // Check if product-level attributes match
-    const productMatches = matchesFilters(product.filterAttributes, filters, activeFilterKeys)
-    if (productMatches) return true
-
-    // Check if any variant matches
-    if (product.variants) {
-      return product.variants.some(variant =>
-        matchesFilters(variant.filterAttributes, filters, activeFilterKeys)
-      )
-    }
-
-    return false
+    // For products without variants, check product-level price and attributes together
+    return itemMatchesAllFilters(product.price, product.filterAttributes, minPrice, maxPrice)
   })
 }
 
@@ -221,7 +224,8 @@ function getActiveFilterKeys(filters: SelectedFilters): FilterAttributeKey[] {
     'handed', 'mounting', 'basinType', 'depth',
     'projection', 'shape', 'rimless', 'cisternEntry', 'softCloseSeat',
     'height', 'orientation', 'btuOutput', 'pipeCentres',
-    'doorType', 'glassThickness', 'frameType', 'frameFinish', 'range'
+    'doorType', 'glassThickness', 'frameType', 'frameFinish', 'range',
+    'feetColour', 'diameter', 'size', 'material'
   ]
 
   return allFilterKeys.filter(key => {
@@ -236,12 +240,11 @@ function getActiveFilterKeys(filters: SelectedFilters): FilterAttributeKey[] {
  * Uses AND logic between filter types, but OR within same filter type
  */
 function matchesFilters(
-  attributes: FilterAttributes | undefined,
-  filters: SelectedFilters,
-  activeFilterKeys: FilterAttributeKey[]
+    attributes: FilterAttributes | undefined,
+    filters: SelectedFilters,
+    activeFilterKeys: FilterAttributeKey[]
 ): boolean {
   if (!attributes) {
-    console.log('🔍 matchesFilters: No attributes, returning false')
     return false
   }
 
@@ -252,7 +255,6 @@ function matchesFilters(
 
     const attributeValue = attributes[filterKey]
     if (attributeValue === undefined || attributeValue === null) {
-      console.log(`🔍 matchesFilters: Missing attribute "${filterKey}", returning false`)
       return false
     }
 
@@ -261,7 +263,6 @@ function matchesFilters(
 
     // Check if the attribute value matches any of the selected filter values
     const matches = filterValues.includes(attributeString)
-    console.log(`🔍 matchesFilters: Checking "${filterKey}": variant has "${attributeString}", filter wants ${JSON.stringify(filterValues)} => ${matches ? 'MATCH' : 'NO MATCH'}`)
 
     if (!matches) {
       return false
@@ -276,9 +277,9 @@ function matchesFilters(
  * Shows how many products would match if each option was selected
  */
 export function getFilterOptionsWithCounts(
-  products: Product[],
-  filterKey: string,
-  currentFilters: SelectedFilters
+    products: Product[],
+    filterKey: string,
+    currentFilters: SelectedFilters
 ): FilterOption[] {
   const options = extractFilterOptions(products, filterKey)
 
@@ -304,8 +305,8 @@ export function getFilterOptionsWithCounts(
  * Returns only the variants that match the filters (including price filter)
  */
 export function filterProductVariants(
-  product: Product,
-  filters: SelectedFilters
+    product: Product,
+    filters: SelectedFilters
 ): ProductVariant[] {
   if (!product.variants) return []
 
@@ -313,8 +314,8 @@ export function filterProductVariants(
 
   // Check if price filter is active
   const hasPriceFilter =
-    (filters.priceMin !== undefined && filters.priceMin > 0) ||
-    (filters.priceMax !== undefined)
+      (filters.priceMin !== undefined && filters.priceMin > 0) ||
+      (filters.priceMax !== undefined)
 
   // Helper to parse variant price
   const parsePrice = (price: unknown): number | null => {
@@ -367,8 +368,8 @@ export function hasActiveFilters(filters: SelectedFilters, minPrice?: number, ma
   // Compare against dynamic min/max to detect user changes
   const dynamicMin = minPrice ?? 0
   const hasPriceFilter =
-    (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
-    (maxPrice !== undefined && filters.priceMax !== undefined && filters.priceMax < maxPrice)
+      (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
+      (filters.priceMax !== undefined && (maxPrice === undefined || filters.priceMax < maxPrice))
 
   return activeFilterKeys.length > 0 || hasPriceFilter
 }
@@ -393,8 +394,8 @@ export function getActiveFilterCount(filters: SelectedFilters, minPrice?: number
   // Count price filter as 1 if active
   const dynamicMin = minPrice ?? 0
   const hasPriceFilter =
-    (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
-    (maxPrice !== undefined && filters.priceMax !== undefined && filters.priceMax < maxPrice)
+      (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
+      (filters.priceMax !== undefined && (maxPrice === undefined || filters.priceMax < maxPrice))
 
   if (hasPriceFilter) {
     count += 1
@@ -407,7 +408,7 @@ export function getActiveFilterCount(filters: SelectedFilters, minPrice?: number
  * Clear all filters - returns empty filter state
  */
 export function clearAllFilters(): SelectedFilters {
-  return { ...EMPTY_FILTERS }
+  return createEmptyFilters()
 }
 
 /**
