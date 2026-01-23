@@ -1,7 +1,7 @@
 // Filter utility functions for product filtering
 
 import type { FilterOption, SelectedFilters } from '../constants/filters'
-import { EMPTY_FILTERS, createEmptyFilters } from '../constants/filters'
+import { createEmptyFilters } from '../constants/filters'
 
 // All possible filter attribute keys
 type FilterAttributeKey =
