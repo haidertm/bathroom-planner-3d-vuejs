@@ -298,7 +298,7 @@
 <script setup>
 import {ref, computed, watch} from 'vue'
 import { isMobile } from '../../utils/helpers.js'
-import productData from '../../mocks/productData'
+import localProductData from '../../mocks/productData'
 import { ModelManager } from '../../models/bathroomFixtures'
 import {
   isVariantModelLoaded,
@@ -382,6 +382,10 @@ const props = defineProps({
   notchHeight: {
     type: Number,
     default: 0
+  },
+  productData: {
+    type: Object,
+    default: () => JSON.parse(JSON.stringify(localProductData))
   }
 })
 
@@ -501,6 +505,7 @@ const isVariantTooLarge = (variant) => {
   if (!category || category === 'search' || !objectType) return false
 
   // Check if a valid position exists using findFreeWallPosition
+  // Pass variant as model so dimensions can be looked up directly (for database products)
   const freePosition = findFreeWallPosition(
     props.roomWidth,
     props.roomHeight,
@@ -514,7 +519,8 @@ const isVariantTooLarge = (variant) => {
     variant.floorOffset,
     variant.sku,
     props.notchWidth,
-    props.notchHeight
+    props.notchHeight,
+    variant // Pass variant as model - it has dimensions property
   )
 
   // If no valid position found, variant is too large/no space
@@ -750,7 +756,7 @@ const isMobileDevice = computed(() => isMobile())
 
 // Methods
 const getProductsForCategory = (category) => {
-  return productData[category] || []
+  return props.productData[category] || []
 }
 
 const readyProducts = computed(() => {
@@ -787,7 +793,7 @@ const readyProducts = computed(() => {
       if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
         return {
           id: matchingVariant.id || matchingVariant.sku,
-          name: matchingVariant.title || matchingVariant.name || product.name,
+          name: product.name || matchingVariant.title || matchingVariant.name,
           price: matchingVariant.price || product.price,
           image: matchingVariant.image || product.image,
           link: matchingVariant.link || product.link,
@@ -1032,13 +1038,19 @@ const getDisplayImage = () => {
 }
 
 const getDisplayName = () => {
+  // Always prioritize product.name for consistency with dashboard
+  // This ensures the name from the database is shown, not the variant title
+  if (selectedProduct.value?.name) {
+    return selectedProduct.value.name
+  }
+  // Fallback to variant title/name if product name not available
   if (selectedVariant.value && selectedVariant.value.title) {
     return selectedVariant.value.title
   }
   if (selectedVariant.value && selectedVariant.value.name) {
-    return `${selectedProduct.value?.name} - ${selectedVariant.value.name}`
+    return selectedVariant.value.name
   }
-  return selectedProduct.value?.name || ''
+  return ''
 }
 
 const getDisplaySku = () => {
