@@ -1861,23 +1861,13 @@ export class EventHandlers {
           console.log('📊 Corner item re-snapped to corner:', id);
         } else if (isCornerOnlyGroup && isWallSnapItem) {
           // ✅ FIX: CORNER_ONLY group with WALL_SNAP item - re-snap to appropriate wall
-          // PRESERVE relative position along the wall when moving to a new wall
+          // Use targetPos which already has the correct offset from primary object applied
           const originalY = targetPos.y; // Preserve Y position
-          const roomHalfWidth = this.roomWidthRef.value / 2;
-          const roomHalfHeight = this.roomHeightRef.value / 2;
 
-          // Calculate current relative position along the wall (0 to 1)
-          const currentPos = obj.position;
-          const currentWall = this.determineCurrentWall(currentPos);
-          let relativePosition = 0.5; // Default to center
+          // Determine the target wall based on targetPos (which includes the offset)
+          const targetItemWall = this.determineCurrentWall(targetPos);
 
-          if (currentWall === 'north' || currentWall === 'south') {
-            relativePosition = (currentPos.x + roomHalfWidth) / this.roomWidthRef.value;
-          } else if (currentWall === 'east' || currentWall === 'west') {
-            relativePosition = (currentPos.z + roomHalfHeight) / this.roomHeightRef.value;
-          }
-
-          // First, snap to get the target wall
+          // Snap to wall while preserving the lateral offset from targetPos
           const result = constrainToWalls(
             { x: targetPos.x, y: targetPos.y, z: targetPos.z },
             this.roomWidthRef.value,
@@ -1889,27 +1879,14 @@ export class EventHandlers {
               item: itemData,
               notchWidth: this.notchWidthRef.value,
               notchHeight: this.notchHeightRef.value
-            }
+            },
+            targetItemWall // Pass target wall for stickiness
           );
 
-          // Determine which wall we're now on based on rotation
-          const newWallRotation = result.rotation;
-          const isNorthSouthWall = Math.abs(Math.cos(newWallRotation)) > 0.7;
-
-          // Apply relative position to the new wall
-          let finalX = result.position.x;
-          let finalZ = result.position.z;
-
-          if (isNorthSouthWall) {
-            finalX = -roomHalfWidth + (relativePosition * this.roomWidthRef.value);
-            finalX = Math.max(-roomHalfWidth + 20, Math.min(roomHalfWidth - 20, finalX));
-          } else {
-            finalZ = -roomHalfHeight + (relativePosition * this.roomHeightRef.value);
-            finalZ = Math.max(-roomHalfHeight + 20, Math.min(roomHalfHeight - 20, finalZ));
-          }
-
-          constrainedPosition = { x: finalX, y: originalY, z: finalZ };
+          // Use the result directly - constrainToWalls preserves the lateral position
+          constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
           constrainedRotation = result.rotation;
+          console.log('📊 Wall-snap item in corner group re-snapped:', id, 'target wall:', targetItemWall);
         } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
           // 3D MODE: Individual wall constraints (when no group constraint)
           // Determine the target wall for THIS secondary object based on its targetPos
