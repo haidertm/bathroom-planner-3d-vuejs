@@ -50,6 +50,48 @@ export type ObjectModel = {
         height: number;
         depth?: number;
     };
+    filterAttributes?: {
+        // Common filters
+        length?: string;
+        type?: string;
+        finish?: string;
+        style?: string;
+        // Furniture filters
+        width?: string;
+        colour?: string;
+        mounting?: string;
+        basinType?: string;
+        depth?: string;
+        // Toilet filters
+        projection?: string;
+        shape?: string;
+        rimless?: boolean;
+        cisternEntry?: string;
+        softCloseSeat?: boolean;
+        // Shower filters
+        doorType?: string;
+        glassThickness?: string;
+        frameType?: string;
+        frameFinish?: string;
+        range?: string;
+        // Radiator filters
+        orientation?: string;
+        height?: string;
+        btuOutput?: string;
+        pipeCentres?: string;
+        panel?: string;
+        // Bath filters
+        handed?: string;
+        feetColour?: string;
+        // Suite filters
+        composition?: string;
+        bathType?: string;
+        toiletType?: string;
+        // Plumbing filters
+        diameter?: string;
+        size?: string;
+        material?: string;
+    };
 }
 
 export type ObjectModelWithCategory = ObjectModel & {
