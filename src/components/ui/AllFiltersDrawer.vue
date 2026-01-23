@@ -119,8 +119,11 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants } from '../../utils/filters'
+
+const gtm = useGtm()
 
 const props = defineProps({
   isOpen: {
@@ -390,6 +393,16 @@ const toggleFilter = (filterKey, value) => {
 }
 
 const clearAllFilters = () => {
+  // Track clear filters in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_clear',
+      category: 'Filters',
+      action: 'Clear All',
+      label: 'Clear All'
+    })
+  }
+
   // Reset local filters with dynamic price values for slider display
   const freshFilters = createEmptyFilters()
   freshFilters.priceMin = minPrice.value
@@ -408,6 +421,17 @@ const applyFilters = () => {
   if (localFilters.value.priceMin === minPrice.value && localFilters.value.priceMax === maxPrice.value) {
     filtersToEmit.priceMin = EMPTY_FILTERS.priceMin
     filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
+  }
+
+  // Track apply filters in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_apply',
+      category: 'Filters',
+      action: 'Apply',
+      label: 'Apply',
+      value: filteredCount.value
+    })
   }
 
   emit('update:filters', filtersToEmit)
