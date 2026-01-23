@@ -1776,6 +1776,15 @@ export class EventHandlers {
     const primaryPos = primaryObject.position.clone();
     let primaryRot = primaryObject.rotation.y;
 
+    // 📊 Get primary object's movement configuration to determine actual constraint behavior
+    const primaryItemData = this.getCurrentItemData(primaryId);
+    const primaryMovementConfig = getMovementConfig(primaryObject.userData.type as ComponentType, primaryItemData);
+    const primaryIsCornerOnly = primaryMovementConfig.cornerInstallOnly &&
+      typeof primaryMovementConfig.cornerInstallOnly === 'object' &&
+      primaryMovementConfig.cornerInstallOnly.enabled;
+    const primaryIsWallSnap = primaryMovementConfig.snapToWall && !primaryIsCornerOnly;
+    const primaryIsFreestanding = !primaryIsWallSnap && !primaryIsCornerOnly;
+
     // 📊 UNIFIED GROUP CONSTRAINT: Apply "most restrictive wins" rule
     // If we have a group constraint, snap rotation to 90 degrees if required
     if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
@@ -1812,7 +1821,8 @@ export class EventHandlers {
 
         // ✅ FIX: Check if this is a CORNER_ONLY group with a WALL_SNAP secondary item
         // In this case, the wall item should re-snap to the appropriate wall when corner moves
-        const isCornerOnlyGroup = this.groupConstraint && (
+        // IMPORTANT: If primary is freestanding, don't treat as corner-only group
+        const isCornerOnlyGroup = !primaryIsFreestanding && this.groupConstraint && (
           this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY ||
           this.groupConstraint.isLShapeGroup
         );
@@ -1864,12 +1874,22 @@ export class EventHandlers {
           // Use targetPos which already has the correct offset from primary object applied
           const originalY = targetPos.y; // Preserve Y position
 
-          // Determine the target wall based on targetPos (which includes the offset)
-          const targetItemWall = this.determineCurrentWall(targetPos);
+          // ✅ FIX: Clamp targetPos to room interior before determining wall
+          // This prevents secondary items from going outside the room
+          const roomHalfW = this.roomWidthRef.value / 2;
+          const roomHalfH = this.roomHeightRef.value / 2;
+          const clampedTargetPos = new THREE.Vector3(
+            Math.max(-roomHalfW + 20, Math.min(roomHalfW - 20, targetPos.x)),
+            targetPos.y,
+            Math.max(-roomHalfH + 20, Math.min(roomHalfH - 20, targetPos.z))
+          );
 
-          // Snap to wall while preserving the lateral offset from targetPos
+          // Determine the target wall based on clamped position
+          const targetItemWall = this.determineCurrentWall(clampedTargetPos);
+
+          // Snap to wall while preserving the lateral offset from clamped targetPos
           const result = constrainToWalls(
-            { x: targetPos.x, y: targetPos.y, z: targetPos.z },
+            clampedTargetPos,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -1891,11 +1911,20 @@ export class EventHandlers {
           // 3D MODE: Individual wall constraints (when no group constraint)
           // Determine the target wall for THIS secondary object based on its targetPos
           // This is critical when the primary object has just switched walls
-          const currentItemWall = this.determineCurrentWall(targetPos);
           const originalY = targetPos.y; // Preserve Y position
 
+          // ✅ FIX: Clamp targetPos to room interior before determining wall
+          const roomHalfW2 = this.roomWidthRef.value / 2;
+          const roomHalfH2 = this.roomHeightRef.value / 2;
+          const clampedTargetPos2 = new THREE.Vector3(
+            Math.max(-roomHalfW2 + 20, Math.min(roomHalfW2 - 20, targetPos.x)),
+            targetPos.y,
+            Math.max(-roomHalfH2 + 20, Math.min(roomHalfH2 - 20, targetPos.z))
+          );
+          const currentItemWall = this.determineCurrentWall(clampedTargetPos2);
+
           const result = constrainToWalls(
-            { x: targetPos.x, y: targetPos.y, z: targetPos.z },
+            clampedTargetPos2,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -2013,7 +2042,7 @@ export class EventHandlers {
     // In 2D mode, treat group as rigid body - no individual snapping
     if (this.viewMode === '2d') return;
 
-    const updatedItems: Array<{id: number, position: [number, number, number], rotation: number}> = [];
+    const updatedItems: Array<{ id: number, position: [number, number, number], rotation: number }> = [];
 
     this.selectedObjects.forEach((obj, id) => {
       const itemType = obj.userData.type as ComponentType;
@@ -2204,18 +2233,46 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
+      // ✅ FIX: Check if primary is a freestanding object
+      // Freestanding objects have their origin at center, so they need different positioning when snapped to walls
+      const primaryIsFreestanding = !movementConfig.snapToWall &&
+        !(movementConfig.cornerInstallOnly && typeof movementConfig.cornerInstallOnly === 'object' && movementConfig.cornerInstallOnly.enabled);
+
       // 📊 GROUP CONSTRAINT: Override primary object's movement based on group constraint
       // If group has CORNER_ONLY or L-shape constraint, ALL objects (including primary) must be constrained
+      // ✅ FIX: When primary is freestanding, ignore L-shape detection because freestanding items aren't really "on" a wall
+      // L-shape detection only matters when ALL items in the group are wall-mounted
+      // Check if there's an actual corner-only item in the group (not just L-shape detection)
+      const hasActualCornerOnlyItem = this.groupConstraint &&
+        Array.from(this.selectedObjects.values()).some(obj => {
+          const itemData = this.getCurrentItemData(obj.userData.itemId as number);
+          const itemMovement = getMovementConfig(obj.userData.type as ComponentType, itemData);
+          return itemMovement.cornerInstallOnly &&
+            typeof itemMovement.cornerInstallOnly === 'object' &&
+            itemMovement.cornerInstallOnly.enabled;
+        });
+
       const effectiveCornerOnly = (this.groupConstraint && (
-        this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY ||
-        this.groupConstraint.isLShapeGroup
+        // Only use CORNER_ONLY if there's an actual corner-only item, OR L-shape with no freestanding primary
+        (this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY && hasActualCornerOnlyItem) ||
+        (this.groupConstraint.isLShapeGroup && !primaryIsFreestanding)
       )) || (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled);
 
       // 📊 GROUP CONSTRAINT: Check if group requires wall snap
+      // ✅ FIX: When primary is freestanding and group has L-shape (which we're ignoring),
+      // check if any item in the group has wall-snap to determine if we should use wall-snap behavior
+      const hasWallSnapItemInGroup = this.groupConstraint &&
+        Array.from(this.selectedObjects.values()).some(obj => {
+          const itemData = this.getCurrentItemData(obj.userData.itemId as number);
+          const itemMovement = getMovementConfig(obj.userData.type as ComponentType, itemData);
+          return itemMovement.snapToWall && !itemMovement.cornerInstallOnly;
+        });
+
       const effectiveWallSnap = (this.groupConstraint &&
         this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP &&
         !effectiveCornerOnly
-      ) || (movementConfig.snapToWall && !effectiveCornerOnly);
+      ) || (movementConfig.snapToWall && !effectiveCornerOnly) ||
+        (primaryIsFreestanding && hasWallSnapItemInGroup && !effectiveCornerOnly);  // ✅ FIX: Freestanding + wall-snap group
 
       // ✅ NEW: Calculate stable ideal position for the entire group using the camera-facing plane
       // 📐 2D MODE: Use floor plane for position calculation
@@ -2390,6 +2447,30 @@ export class EventHandlers {
 
             constrainedPosition = result.position;
             constrainedRotation = result.rotation;
+
+            // ✅ FIX: Freestanding primary objects rotate with wall but need position offset
+            if (primaryIsFreestanding) {
+              // Offset position by half depth based on wall direction
+              const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+              if (dims) {
+                const halfDepth = (dims.depth * objectScale) / 2;
+                // Determine which wall based on rotation and offset accordingly
+                const normalizedRot = ((constrainedRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                if (normalizedRot < Math.PI / 4 || normalizedRot > 7 * Math.PI / 4) {
+                  // On north wall - move away from north
+                  constrainedPosition.z += halfDepth;
+                } else if (normalizedRot > 3 * Math.PI / 4 && normalizedRot < 5 * Math.PI / 4) {
+                  // On south wall - move away from south
+                  constrainedPosition.z -= halfDepth;
+                } else if (normalizedRot > Math.PI / 4 && normalizedRot < 3 * Math.PI / 4) {
+                  // On west wall - move away from west
+                  constrainedPosition.x += halfDepth;
+                } else {
+                  // On east wall - move away from east
+                  constrainedPosition.x -= halfDepth;
+                }
+              }
+            }
 
             // ✅ FIX: Apply group bounds constraint for multi-select in 2D mode
             // Only constrain the LATERAL axis (along the wall), not the wall-perpendicular axis
@@ -2990,7 +3071,38 @@ export class EventHandlers {
           constrainedPosition.x = newX;
           constrainedPosition.z = newZ;
           constrainedPosition.y = newY;
-          rotationChanged = true;
+
+          // ✅ FIX: Freestanding primary objects rotate with the wall (like wall-snap items)
+          // but need position offset because their origin is at center
+          if (primaryIsFreestanding) {
+            // Freestanding rotates with wall direction (same as wall-snap items)
+            rotationChanged = true;
+
+            // Offset position by half depth based on wall direction
+            const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+            if (dims) {
+              const halfDepth = (dims.depth * objectScale) / 2;
+              // Offset based on which wall - move center away from wall by half depth
+              switch (closestWall) {
+                case 'north':
+                case 'notch-south':
+                  constrainedPosition.z += halfDepth;
+                  break;
+                case 'south':
+                  constrainedPosition.z -= halfDepth;
+                  break;
+                case 'east':
+                  constrainedPosition.x -= halfDepth;
+                  break;
+                case 'west':
+                case 'notch-east':
+                  constrainedPosition.x += halfDepth;
+                  break;
+              }
+            }
+          } else {
+            rotationChanged = true;
+          }
 
           // Handle vertical movement if allowed (disabled during multi-select)
           if (movementConfig.allowVerticalMovement && this.selectedObjects.size <= 1) {
