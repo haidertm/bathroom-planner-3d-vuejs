@@ -35,9 +35,12 @@
 
 <script setup>
 import { computed, watch } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import FilterDropdown from './FilterDropdown.vue'
-import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel } from '../../constants/filters'
+import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, createEmptyFilters } from '../../constants/filters'
 import { extractFilterOptions } from '../../utils/filters'
+
+const gtm = useGtm()
 
 const props = defineProps({
   category: {
@@ -119,16 +122,36 @@ const updateFilter = (filterKey, values) => {
     [filterKey]: values
   }
   emit('update:filters', newFilters)
+
+  // Track filter update in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filter_chip_update',
+      category: 'Filters',
+      action: 'Update Filter',
+      label: `${filterKey}: ${values.length} selected`
+    })
+  }
 }
 
 // Open all filters modal
 const openAllFiltersModal = () => {
   emit('open-all-filters')
+
+  // Track modal open in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filter_modal_open',
+      category: 'Filters',
+      action: 'Open All Filters',
+      label: 'All Filters Modal'
+    })
+  }
 }
 
 // Reset filters when category changes
 watch(() => props.category, () => {
-  emit('update:filters', {})
+  emit('update:filters', createEmptyFilters())
 })
 </script>
 

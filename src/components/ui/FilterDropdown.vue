@@ -57,6 +57,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
+
+const gtm = useGtm()
 
 const props = defineProps({
   label: {
@@ -122,6 +125,15 @@ const toggleDropdown = () => {
     nextTick(() => {
       searchInputRef.value?.focus()
     })
+    // Track dropdown opened event
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'filter_interaction',
+        category: 'Filter',
+        action: 'dropdown_opened',
+        label: props.label ?? 'filter'
+      })
+    }
   }
 }
 
@@ -141,6 +153,15 @@ const toggleOption = (value) => {
     newSelected.push(value)
   } else {
     newSelected.splice(index, 1)
+  }
+  // Track option selected event
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filter_interaction',
+      category: 'Filter',
+      action: 'option_selected',
+      label: String(value)
+    })
   }
   // Emit immediately for real-time filtering
   emit('update', newSelected)

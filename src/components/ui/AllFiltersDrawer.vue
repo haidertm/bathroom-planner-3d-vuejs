@@ -119,7 +119,7 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
-import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS } from '../../constants/filters'
+import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants } from '../../utils/filters'
 
 const props = defineProps({
@@ -137,7 +137,7 @@ const props = defineProps({
   },
   selectedFilters: {
     type: Object,
-    default: () => ({ ...EMPTY_FILTERS })
+    default: () => createEmptyFilters()
   }
 })
 
@@ -189,18 +189,21 @@ const maxPrice = computed(() => {
   return Math.ceil(max / 10) * 10 || 1000
 })
 
-// Helper to parse price (handles both string and number)
+// Helper to parse price (handles both string and number, including currency-formatted strings)
 function parsePrice(price) {
   if (typeof price === 'number') return price
   if (typeof price === 'string') {
-    const parsed = parseFloat(price)
+    // Normalize: trim whitespace, remove currency symbols and thousands separators
+    // Keep only digits, optional leading minus, and decimal point
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
     return isNaN(parsed) ? null : parsed
   }
   return null
 }
 
 // Local copy of filters for editing (initialized in watch below after maxPrice is available)
-const localFilters = ref({ ...EMPTY_FILTERS })
+const localFilters = ref(createEmptyFilters())
 
 // Open/closed state for sections (reactive object to handle dynamic keys)
 const openSections = reactive({
@@ -323,7 +326,7 @@ const filteredCount = computed(() => {
 
 // Create local filters object from selected filters
 function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice) {
-  const filters = { ...EMPTY_FILTERS }
+  const filters = createEmptyFilters()
 
   // Copy over all array filters
   for (const key of Object.keys(filters)) {
@@ -388,13 +391,26 @@ const toggleFilter = (filterKey, value) => {
 
 const clearAllFilters = () => {
   // Reset local filters with dynamic price values for slider display
-  localFilters.value = { ...EMPTY_FILTERS, priceMin: minPrice.value, priceMax: maxPrice.value }
-  // Emit EMPTY_FILTERS to parent (priceMin: 0) so badge count resets properly
-  emit('update:filters', { ...EMPTY_FILTERS })
+  const freshFilters = createEmptyFilters()
+  freshFilters.priceMin = minPrice.value
+  freshFilters.priceMax = maxPrice.value
+  localFilters.value = freshFilters
+  // Emit empty filters to parent (priceMin: 0) so badge count resets properly
+  emit('update:filters', createEmptyFilters())
 }
 
 const applyFilters = () => {
-  emit('update:filters', { ...localFilters.value })
+  // Create a copy of localFilters for emission
+  const filtersToEmit = { ...localFilters.value }
+
+  // If price values match the dynamic bounds (user didn't change them),
+  // normalize to EMPTY_FILTERS values so they're not treated as active filters
+  if (localFilters.value.priceMin === minPrice.value && localFilters.value.priceMax === maxPrice.value) {
+    filtersToEmit.priceMin = EMPTY_FILTERS.priceMin
+    filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
+  }
+
+  emit('update:filters', filtersToEmit)
   closeDrawer()
 }
 

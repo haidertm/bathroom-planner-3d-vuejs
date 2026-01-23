@@ -1,7 +1,7 @@
 // Filter utility functions for product filtering
 
 import type { FilterOption, SelectedFilters } from '../constants/filters'
-import { EMPTY_FILTERS } from '../constants/filters'
+import { EMPTY_FILTERS, createEmptyFilters } from '../constants/filters'
 
 // All possible filter attribute keys
 type FilterAttributeKey =
@@ -168,52 +168,50 @@ export function filterProducts(
 
   // Helper to check if a price is within filter range
   const isPriceInRange = (price: number | null, minPrice: number, maxPrice: number): boolean => {
-    if (price === null) return true // No price = don't filter by price
+    if (price === null) return false // No valid price = treat as non-match when price filter is active
     return price >= minPrice && price <= maxPrice
+  }
+
+  // Helper to check if a single item (variant or product) matches both price and attribute filters
+  const itemMatchesAllFilters = (
+    price: unknown,
+    filterAttributes: Record<string, unknown> | undefined,
+    minPrice: number,
+    maxPrice: number
+  ): boolean => {
+    // Check price filter if active
+    if (hasPriceFilter) {
+      const parsedPrice = parsePrice(price)
+      if (!isPriceInRange(parsedPrice, minPrice, maxPrice)) {
+        return false
+      }
+    }
+
+    // Check attribute filters if active
+    if (activeFilterKeys.length > 0) {
+      if (!matchesFilters(filterAttributes, filters, activeFilterKeys)) {
+        return false
+      }
+    }
+
+    return true
   }
 
   return products.filter(product => {
     const minPrice = filters.priceMin ?? 0
     const maxPrice = filters.priceMax ?? Infinity
 
-    // Check if ANY variant (or product itself) has price within range AND matches attribute filters
-    if (hasPriceFilter) {
-      // Check if any variant's price is within range
-      let hasVariantInPriceRange = false
-
-      if (product.variants && product.variants.length > 0) {
-        hasVariantInPriceRange = product.variants.some(variant => {
-          const variantPrice = parsePrice(variant.price)
-          return isPriceInRange(variantPrice, minPrice, maxPrice)
-        })
-      } else {
-        // No variants, check product-level price
-        const productPrice = parsePrice(product.price)
-        hasVariantInPriceRange = isPriceInRange(productPrice, minPrice, maxPrice)
-      }
-
-      if (!hasVariantInPriceRange) {
-        return false
-      }
+    // For products with variants, check if ANY variant matches BOTH price AND attributes together
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.some(variant => {
+        // Use variant price, fall back to product price if variant has no price
+        const variantPrice = variant.price ?? product.price
+        return itemMatchesAllFilters(variantPrice, variant.filterAttributes, minPrice, maxPrice)
+      })
     }
 
-    // If no attribute filters, product passes (price already checked)
-    if (activeFilterKeys.length === 0) {
-      return true
-    }
-
-    // Check if product-level attributes match
-    const productMatches = matchesFilters(product.filterAttributes, filters, activeFilterKeys)
-    if (productMatches) return true
-
-    // Check if any variant matches
-    if (product.variants) {
-      return product.variants.some(variant =>
-        matchesFilters(variant.filterAttributes, filters, activeFilterKeys)
-      )
-    }
-
-    return false
+    // For products without variants, check product-level price and attributes together
+    return itemMatchesAllFilters(product.price, product.filterAttributes, minPrice, maxPrice)
   })
 }
 
@@ -247,7 +245,6 @@ function matchesFilters(
   activeFilterKeys: FilterAttributeKey[]
 ): boolean {
   if (!attributes) {
-    console.log('🔍 matchesFilters: No attributes, returning false')
     return false
   }
 
@@ -258,7 +255,6 @@ function matchesFilters(
 
     const attributeValue = attributes[filterKey]
     if (attributeValue === undefined || attributeValue === null) {
-      console.log(`🔍 matchesFilters: Missing attribute "${filterKey}", returning false`)
       return false
     }
 
@@ -267,7 +263,6 @@ function matchesFilters(
 
     // Check if the attribute value matches any of the selected filter values
     const matches = filterValues.includes(attributeString)
-    console.log(`🔍 matchesFilters: Checking "${filterKey}": variant has "${attributeString}", filter wants ${JSON.stringify(filterValues)} => ${matches ? 'MATCH' : 'NO MATCH'}`)
 
     if (!matches) {
       return false
@@ -374,7 +369,7 @@ export function hasActiveFilters(filters: SelectedFilters, minPrice?: number, ma
   const dynamicMin = minPrice ?? 0
   const hasPriceFilter =
     (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
-    (maxPrice !== undefined && filters.priceMax !== undefined && filters.priceMax < maxPrice)
+    (filters.priceMax !== undefined && (maxPrice === undefined || filters.priceMax < maxPrice))
 
   return activeFilterKeys.length > 0 || hasPriceFilter
 }
@@ -400,7 +395,7 @@ export function getActiveFilterCount(filters: SelectedFilters, minPrice?: number
   const dynamicMin = minPrice ?? 0
   const hasPriceFilter =
     (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
-    (maxPrice !== undefined && filters.priceMax !== undefined && filters.priceMax < maxPrice)
+    (filters.priceMax !== undefined && (maxPrice === undefined || filters.priceMax < maxPrice))
 
   if (hasPriceFilter) {
     count += 1
@@ -413,7 +408,7 @@ export function getActiveFilterCount(filters: SelectedFilters, minPrice?: number
  * Clear all filters - returns empty filter state
  */
 export function clearAllFilters(): SelectedFilters {
-  return { ...EMPTY_FILTERS }
+  return createEmptyFilters()
 }
 
 /**
