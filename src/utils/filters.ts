@@ -340,9 +340,10 @@ export function filterProductVariants(
 
   return product.variants.filter(variant => {
     // Check price filter first using shared helpers
-    // Variants with null prices are excluded when price filter is active
+    // Use variant price, fall back to product price if variant has no price
+    // Variants with null prices (after fallback) are excluded when price filter is active
     if (hasPriceFilter) {
-      const variantPrice = parsePrice(variant.price)
+      const variantPrice = parsePrice(variant.price ?? product.price)
       if (!isPriceInRange(variantPrice, minPrice, maxPrice)) {
         return false
       }

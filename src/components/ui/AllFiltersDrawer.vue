@@ -9,8 +9,8 @@
       <!-- Header -->
       <div class="filters-header">
         <h2 class="filters-title">All Filters</h2>
-        <button class="filters-close" @click="closeDrawer">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="filters-close" @click="closeDrawer" aria-label="Close filters">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -83,6 +83,10 @@
                   :value="displayPriceMin"
                   @input="updateMinPrice"
                   class="range-input range-min"
+                  aria-label="Minimum price"
+                  :aria-valuemin="minPrice"
+                  :aria-valuemax="maxPrice"
+                  :aria-valuenow="displayPriceMin"
                 />
                 <input
                   type="range"
@@ -91,6 +95,10 @@
                   :value="displayPriceMax"
                   @input="updateMaxPrice"
                   class="range-input range-max"
+                  aria-label="Maximum price"
+                  :aria-valuemin="minPrice"
+                  :aria-valuemax="maxPrice"
+                  :aria-valuenow="displayPriceMax"
                 />
               </div>
             </div>
@@ -298,16 +306,30 @@ const updateMaxPrice = (event) => {
   }
 }
 
-// Check if any products have prices
+// Helper to check if a price is a valid, parseable numeric value
+const isValidPrice = (price) => {
+  if (price === null || price === undefined || price === '') return false
+  if (typeof price === 'number') return isFinite(price)
+  if (typeof price === 'string') {
+    // Strip currency symbols and thousands separators, then parse
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    if (normalized === '') return false
+    const parsed = parseFloat(normalized)
+    return isFinite(parsed)
+  }
+  return false
+}
+
+// Check if any products have valid numeric prices
 const hasProductsWithPrices = computed(() => {
   return props.products.some(product => {
     // Check product-level price
-    if (product.price !== undefined && product.price !== null) {
+    if (isValidPrice(product.price)) {
       return true
     }
     // Check variant prices
     if (product.variants) {
-      return product.variants.some(v => v.price !== undefined && v.price !== null)
+      return product.variants.some(v => isValidPrice(v.price))
     }
     return false
   })
