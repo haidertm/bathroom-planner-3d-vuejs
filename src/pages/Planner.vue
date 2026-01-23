@@ -1022,9 +1022,9 @@ const sectionHeaderStyle = computed(() => ({
 
 const toastStyle = computed(() => ({
   position: 'fixed',
-  bottom: '120px',
+  top: '100px',
   left: '50%',
-  backgroundColor: 'rgba(41, 39, 91, 0.95)',
+  backgroundColor: '#29275b',
   color: 'white',
   padding: '12px 24px',
   borderRadius: '8px',
@@ -1287,6 +1287,53 @@ const addItem = async (type, productData = null) => {
   // - Otherwise, use variant's spawnHeight or fallback to freePosition.y
   const itemY = useAutoPositionedY ? freePosition.y : (selectedVariant?.spawnHeight ?? freePosition.y)
 
+  // ============================================================================
+  // FINAL COLLISION VALIDATION: Double-check position is collision-free
+  // This catches any edge cases where auto-positioning or findFreeWallPosition
+  // might have returned a position that still has a collision
+  // ============================================================================
+  const finalPosition = { x: freePosition.x, y: itemY, z: freePosition.z }
+  const tempItemForValidation = {
+    id: -1,
+    type,
+    position: [finalPosition.x, finalPosition.y, finalPosition.z],
+    scale: defaults.scale,
+    sku: sku
+  }
+
+  const hasCollision = wouldCollideWithExistingOrWalls(
+    finalPosition,
+    type,
+    defaults.scale,
+    -1, // exclude ID (new item has no ID yet)
+    items.value,
+    roomWidth.value,
+    roomHeight.value,
+    tempItemForValidation,
+    wallRotation,
+    notchWidth.value,
+    notchHeight.value
+  )
+
+  if (hasCollision) {
+    // Track fixture add failure due to collision in GTM
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'fixture_add_failed',
+        category: 'Bathroom Planner',
+        action: 'Add Fixture Failed',
+        reason: 'collision',
+        fixtureType: type,
+        fixtureSku: sku,
+        fixtureName: selectedVariant?.name || type,
+        roomWidth: roomWidth.value,
+        roomHeight: roomHeight.value
+      })
+    }
+    alert('Cannot add item - no available space found. The room is too crowded. Please remove an existing item first.')
+    return
+  }
+
   const newItem = {
     id: generateUniqueId(),
     type,
@@ -1370,6 +1417,25 @@ const addItem = async (type, productData = null) => {
   const newItems = [...items.value, newItem]
   items.value = newItems
   lastUpdateSource.value = 'add'
+
+  // Track fixture add success in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'fixture_add_success',
+      category: 'Bathroom Planner',
+      action: 'Add Fixture',
+      fixtureId: newItem.id,
+      fixtureType: type,
+      fixtureSku: sku,
+      fixtureName: selectedVariant?.name || type,
+      modelName: newItem.model?.name || type,
+      placementX: freePosition.x,
+      placementY: itemY,
+      placementZ: freePosition.z,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value
+    })
+  }
 
   saveToHistory({
     items: newItems,
@@ -2608,6 +2674,6 @@ const handleClearAll = () => {
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%) translateY(-20px);
 }
 </style>
