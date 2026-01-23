@@ -387,9 +387,10 @@ const toggleFilter = (filterKey, value) => {
 }
 
 const clearAllFilters = () => {
+  // Reset local filters with dynamic price values for slider display
   localFilters.value = { ...EMPTY_FILTERS, priceMin: minPrice.value, priceMax: maxPrice.value }
-  // Emit the cleared filters to parent immediately
-  emit('update:filters', { ...localFilters.value })
+  // Emit EMPTY_FILTERS to parent (priceMin: 0) so badge count resets properly
+  emit('update:filters', { ...EMPTY_FILTERS })
 }
 
 const applyFilters = () => {

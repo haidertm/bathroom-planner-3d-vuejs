@@ -10,6 +10,7 @@ type FilterAttributeKey =
   | 'projection' | 'shape' | 'rimless' | 'cisternEntry' | 'softCloseSeat'
   | 'height' | 'orientation' | 'btuOutput' | 'pipeCentres'
   | 'doorType' | 'glassThickness' | 'frameType' | 'frameFinish' | 'range'
+  | 'feetColour' | 'diameter' | 'size' | 'material'
 
 interface FilterAttributes {
   length?: string
@@ -36,6 +37,10 @@ interface FilterAttributes {
   frameType?: string
   frameFinish?: string
   range?: string
+  feetColour?: string
+  diameter?: string
+  size?: string
+  material?: string
   [key: string]: unknown
 }
 
@@ -221,7 +226,8 @@ function getActiveFilterKeys(filters: SelectedFilters): FilterAttributeKey[] {
     'handed', 'mounting', 'basinType', 'depth',
     'projection', 'shape', 'rimless', 'cisternEntry', 'softCloseSeat',
     'height', 'orientation', 'btuOutput', 'pipeCentres',
-    'doorType', 'glassThickness', 'frameType', 'frameFinish', 'range'
+    'doorType', 'glassThickness', 'frameType', 'frameFinish', 'range',
+    'feetColour', 'diameter', 'size', 'material'
   ]
 
   return allFilterKeys.filter(key => {

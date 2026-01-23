@@ -3321,7 +3321,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82723',
                     price: '449.99',
-                    title: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 800mm'
+                    title: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3349,7 +3350,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82724',
                     price: '419.99',
-                    title: 'Crete Fluted Linen White Basin Vanity Drawer 600mm'
+                    title: 'Crete Fluted Linen White Basin Vanity Drawer 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3377,7 +3379,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82725',
                     price: '419.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3405,7 +3408,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82726',
                     price: '479.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 600mm'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3433,7 +3437,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82727',
                     price: '479.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3461,7 +3466,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82728',
                     price: '489.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 600mm'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3489,7 +3495,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82729',
                     price: '399.99',
-                    title: 'Crete Fluted Linen White Basin Vanity 600mm'
+                    title: 'Crete Fluted Linen White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3517,7 +3524,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82730',
                     price: '399.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3545,7 +3553,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82731',
                     price: '449.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 600mm'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3573,7 +3582,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82732',
                     price: '459.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3601,7 +3611,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82733',
                     price: '459.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 600mm'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3629,7 +3640,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82734',
                     price: '549.99',
-                    title: 'Crete Fluted Linen White Basin Vanity Drawer 800mm'
+                    title: 'Crete Fluted Linen White Basin Vanity Drawer 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3657,7 +3669,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82735',
                     price: '549.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3685,7 +3698,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82736',
                     price: '599.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 800mm'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3713,7 +3727,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82737',
                     price: '599.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3741,7 +3756,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82738',
                     price: '599.99',
-                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 800mm'
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3769,7 +3785,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82739',
                     price: '499.99',
-                    title: 'Crete Fluted Linen White Basin Vanity 800mm'
+                    title: 'Crete Fluted Linen White Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3797,7 +3814,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82740',
                     price: '499.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3825,7 +3843,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82741',
                     price: '549.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 800mm'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3853,7 +3872,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82742',
                     price: '549.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3881,7 +3901,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82743',
                     price: '549.99',
-                    title: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 800mm'
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3909,7 +3930,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82744',
                     price: '419.99',
-                    title: 'Crete Fluted Apex Oak Basin Vanity Drawer 600mm'
+                    title: 'Crete Fluted Apex Oak Basin Vanity Drawer 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3937,7 +3959,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82745',
                     price: '419.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3965,7 +3988,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82746',
                     price: '479.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3993,7 +4017,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82747',
                     price: '479.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4021,7 +4046,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82748',
                     price: '489.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4049,7 +4075,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82749',
                     price: '399.99',
-                    title: 'Crete Fluted Apex Oak Basin Vanity 600mm'
+                    title: 'Crete Fluted Apex Oak Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4077,7 +4104,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82750',
                     price: '399.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4105,7 +4133,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82751',
                     price: '449.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4133,7 +4162,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82752',
                     price: '459.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4161,7 +4191,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82753',
                     price: '459.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4189,7 +4220,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82754',
                     price: '549.99',
-                    title: 'Crete Fluted Apex Oak Basin Vanity Drawer 800mm'
+                    title: 'Crete Fluted Apex Oak Basin Vanity Drawer 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4217,7 +4249,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82755',
                     price: '549.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4245,7 +4278,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82756',
                     price: '599.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 800mm'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4273,7 +4307,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82757',
                     price: '599.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4301,7 +4336,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82758',
                     price: '599.99',
-                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 800mm'
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4329,7 +4365,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82759',
                     price: '499.99',
-                    title: 'Crete Fluted Apex Oak Basin Vanity 800mm'
+                    title: 'Crete Fluted Apex Oak Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4357,7 +4394,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82760',
                     price: '499.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4385,7 +4423,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82761',
                     price: '549.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 800mm'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4413,7 +4452,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82762',
                     price: '549.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4441,7 +4481,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82763',
                     price: '549.99',
-                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 800mm'
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4469,7 +4510,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82764',
                     price: '349.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 600mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4497,7 +4539,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82765',
                     price: '369.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4525,7 +4568,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82766',
                     price: '399.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Nevis Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4553,7 +4597,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82767',
                     price: '409.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4581,7 +4626,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82768',
                     price: '409.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4609,7 +4655,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82769',
                     price: '419.99',
-                    title: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 600mm'
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4637,7 +4684,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82770',
                     price: '419.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4665,7 +4713,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82771',
                     price: '479.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4693,7 +4742,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82772',
                     price: '479.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4721,7 +4771,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82773',
                     price: '489.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4749,7 +4800,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82774',
                     price: '399.99',
-                    title: 'Crete Fluted Charcoal Elm Basin Vanity 600mm'
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4777,7 +4829,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82775',
                     price: '399.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4805,7 +4858,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82776',
                     price: '449.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4833,7 +4887,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82777',
                     price: '459.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4861,7 +4916,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82778',
                     price: '459.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 600mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4889,7 +4945,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82779',
                     price: '439.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 800mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4917,7 +4974,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82780',
                     price: '469.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4945,7 +5003,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82782',
                     price: '509.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -4973,7 +5032,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82783',
                     price: '509.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5001,7 +5061,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82784',
                     price: '549.99',
-                    title: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 800mm'
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5029,7 +5090,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82785',
                     price: '549.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5057,7 +5119,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82786',
                     price: '599.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5085,7 +5148,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82787',
                     price: '599.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5113,7 +5177,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82788',
                     price: '599.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5141,7 +5206,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82789',
                     price: '499.99',
-                    title: 'Crete Fluted Charcoal Elm Basin Vanity 800mm'
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5169,7 +5235,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82790',
                     price: '499.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5197,7 +5264,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82791',
                     price: '549.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5225,7 +5293,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82792',
                     price: '549.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5253,7 +5322,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82793',
                     price: '549.99',
-                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 800mm'
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -8013,7 +8083,8 @@ const productData: ProductData = {
                     },
                     sku: 'C59021',
                     price: '999.99',
-                    title: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet'
+                    title: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet',
+                    filterAttributes: { length: '1700mm', type: 'Freestanding', colour: 'Matt Green', feetColour: 'Gunmetal', style: 'Modern' }
                 },
             ],
             variantType: 'Orientation',
@@ -8046,7 +8117,8 @@ const productData: ProductData = {
                     },
                     sku: 'C59022',
                     price: '999.99',
-                    title: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet'
+                    title: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet',
+                    filterAttributes: { length: '1700mm', type: 'Freestanding', colour: 'Matt Green', feetColour: 'Matt Black', style: 'Modern' }
                 },
             ],
             variantType: 'Orientation',
@@ -8079,7 +8151,8 @@ const productData: ProductData = {
                     },
                     sku: 'C59023',
                     price: '999.99',
-                    title: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet'
+                    title: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet',
+                    filterAttributes: { length: '1700mm', type: 'Freestanding', colour: 'Matt Green', feetColour: 'Brushed Brass', style: 'Modern' }
                 },
             ],
             variantType: 'Orientation',
@@ -8112,7 +8185,8 @@ const productData: ProductData = {
                     },
                     sku: 'C59024',
                     price: '419.99',
-                    title: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet'
+                    title: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet',
+                    filterAttributes: { length: '1700mm', type: 'Roll Top', colour: 'White', feetColour: 'Grey', style: 'Traditional' }
                 },
             ],
             variantType: 'Orientation',
@@ -8145,7 +8219,8 @@ const productData: ProductData = {
                     },
                     sku: 'C59025',
                     price: '419.99',
-                    title: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet'
+                    title: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet',
+                    filterAttributes: { length: '1500mm', type: 'Roll Top', colour: 'White', feetColour: 'Grey', style: 'Traditional' }
                 },
             ],
             variantType: 'Orientation',
@@ -10343,7 +10418,8 @@ const productData: ProductData = {
                     },
                     sku: 'SP110MM',
                     price: '89.99',
-                    title: '110mm Soil Pipe Connector with Inspection Cap'
+                    title: '110mm Soil Pipe Connector with Inspection Cap',
+                    filterAttributes: { type: 'Soil Pipe', diameter: '110mm', material: 'PVC' }
                 },
                 {
                     id: 'corner_column_150',
@@ -10370,7 +10446,8 @@ const productData: ProductData = {
                     },
                     sku: 'CC150X150',
                     price: '45.99',
-                    title: '150mm Corner Column Boxing - Tile Ready'
+                    title: '150mm Corner Column Boxing - Tile Ready',
+                    filterAttributes: { type: 'Boxing', size: '150x150mm', material: 'MDF' }
                 }
             ],
             variantType: 'Size Options',
@@ -10411,7 +10488,8 @@ const productData: ProductData = {
                     },
                     sku: 'DOOR-WHITE-800X2135',
                     price: '0.00',
-                    title: 'White Door 800×2100mm'
+                    title: 'White Door 800×2100mm',
+                    filterAttributes: { type: 'Door', colour: 'White', width: '800mm', height: '2135mm' }
                 },
                 {
                     id: 'brown_door',
@@ -10438,7 +10516,8 @@ const productData: ProductData = {
                     },
                     sku: 'DOOR-BROWN-800X2100',
                     price: '0.00',
-                    title: 'Brown Door 800×2100mm'
+                    title: 'Brown Door 800×2100mm',
+                    filterAttributes: { type: 'Door', colour: 'Brown', width: '800mm', height: '2100mm' }
                 },
             ],
             variantType: 'Color Options',
@@ -10477,7 +10556,8 @@ const productData: ProductData = {
                     },
                     sku: 'WIN-WHITE-800X600',
                     price: '0.00',
-                    title: 'White Window 800×600mm'
+                    title: 'White Window 800×600mm',
+                    filterAttributes: { type: 'Window', colour: 'White', width: '800mm', height: '600mm' }
                 },
                 {
                     id: 'brown_window',
@@ -10505,7 +10585,8 @@ const productData: ProductData = {
                     },
                     sku: 'WIN-BROWN-800X600',
                     price: '0.00',
-                    title: 'Brown Window 800×600mm'
+                    title: 'Brown Window 800×600mm',
+                    filterAttributes: { type: 'Window', colour: 'Brown', width: '800mm', height: '600mm' }
                 },
             ],
             variantType: 'Color Options',
