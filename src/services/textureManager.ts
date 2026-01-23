@@ -7,6 +7,24 @@ export interface TextureConfig {
   file: string;
   color: number;
   scale?: readonly [number, number];
+  normalMap?: string; // Path to normal map texture for grout/depth effects
+  roughness?: number; // Material roughness override (0=glossy, 1=matte)
+  metalness?: number; // Material metalness override (0=non-metal, 1=metal)
+  procedural?: 'tile'; // Use procedural generation instead of file
+  groutColor?: number; // Grout color for procedural tiles
+  glossiness?: number; // Glossiness for procedural tiles (0-1)
+}
+
+// Procedural tile configuration interface
+export interface ProceduralTileConfig {
+  tileColor: number;        // Base tile color (hex)
+  groutColor: number;       // Grout color (hex)
+  tileWidth: number;        // Tile width in pixels (within texture)
+  tileHeight: number;       // Tile height in pixels
+  groutWidth: number;       // Grout line width in pixels
+  bevelSize: number;        // Tile edge bevel size
+  colorVariation: number;   // Random color variation (0-1)
+  glossiness: number;       // 0 = matte, 1 = very glossy
 }
 
 class TextureManager {
@@ -23,20 +41,32 @@ class TextureManager {
   }
 
   private initializeEnvironmentMap(): void {
-    // Create a simple environment map for better reflections
-    // In a real app, you might load actual HDRI images
-    const size = 512;
-    const data = new Uint8Array(size * size * 3);
+    // Create a subtle gradient environment map
+    const size = 128;
+    const data = new Uint8Array(size * size * 4);  // RGBA
 
-    for (let i = 0; i < data.length; i += 3) {
-      data[i] = 240;     // R
-      data[i + 1] = 240; // G
-      data[i + 2] = 255; // B
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const i = (y * size + x) * 4;
+
+        const ny = y / size;
+
+        // Gentle top-to-bottom gradient
+        const brightness = 0.75 - ny * 0.15;
+
+        // Neutral tones
+        data[i] = Math.floor(220 * brightness);       // R
+        data[i + 1] = Math.floor(220 * brightness);   // G
+        data[i + 2] = Math.floor(225 * brightness);   // B
+        data[i + 3] = 255;                             // A
+      }
     }
 
-    const texture = new THREE.DataTexture(data, size, size, THREE.RGBFormat);
+    const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
     texture.needsUpdate = true;
     texture.mapping = THREE.EquirectangularReflectionMapping;
+
+    this.environmentMap = texture as unknown as THREE.CubeTexture;
   }
 
   createTexturedMaterial(textureConfig: TextureConfig, roomDimensions?: { width: number, height: number }): THREE.MeshStandardMaterial {
@@ -93,6 +123,14 @@ class TextureManager {
       return material;
     }
 
+    // Apply roughness/metalness from config if provided
+    if (textureConfig.roughness !== undefined) {
+      material.roughness = textureConfig.roughness;
+    }
+    if (textureConfig.metalness !== undefined) {
+      material.metalness = textureConfig.metalness;
+    }
+
     // Load texture from file
     this.textureLoader.load(
       textureConfig.file,
@@ -106,8 +144,24 @@ class TextureManager {
         material.map = texture;
         material.needsUpdate = true;
 
-          // DISABLED: generateNormalMap uses Math.random() which causes different patterns on each refresh
-          // this.generateNormalMap(texture, material);
+        // Load normal map if specified for grout/depth effects
+        if (textureConfig.normalMap) {
+          this.textureLoader.load(
+            textureConfig.normalMap,
+            (normalTexture: THREE.Texture) => {
+              normalTexture.wrapS = THREE.RepeatWrapping;
+              normalTexture.wrapT = THREE.RepeatWrapping;
+              normalTexture.repeat.copy(texture.repeat);
+              material.normalMap = normalTexture;
+              material.normalScale.set(0.5, 0.5); // Adjust for grout depth
+              material.needsUpdate = true;
+            },
+            undefined,
+            (error: unknown) => {
+              console.warn(`Failed to load normal map: ${textureConfig.normalMap}`, error);
+            }
+          );
+        }
       },
       (progress: ProgressEvent<EventTarget>) => {
         if (progress.lengthComputable) {
@@ -190,12 +244,35 @@ class TextureManager {
   }
 
   createWallMaterial(textureConfig: TextureConfig): THREE.MeshStandardMaterial {
+    // Check if this is a procedural tile texture
+    if (textureConfig.procedural === 'tile') {
+      return this.createProceduralTileMaterial({
+        tileColor: textureConfig.color,
+        groutColor: textureConfig.groutColor ?? 0xc0c0c0,
+        glossiness: textureConfig.glossiness ?? 0.7
+      });
+    }
+
     const material = this.createTexturedMaterial(textureConfig);
 
-    // Wall-specific properties
-    material.roughness = 0.9;
-    material.metalness = 0.0;
-    material.envMapIntensity = 0.2;
+    // Wall-specific properties - use config values if provided, otherwise defaults
+    material.roughness = textureConfig.roughness !== undefined ? textureConfig.roughness : 0.9;
+    material.metalness = textureConfig.metalness !== undefined ? textureConfig.metalness : 0.05;
+
+    // Subtle reflection based on glossiness
+    const roughness = textureConfig.roughness ?? 0.9;
+    if (roughness < 0.1) {
+      material.envMapIntensity = 0.25;
+    } else if (roughness < 0.3) {
+      material.envMapIntensity = 0.15;
+    } else {
+      material.envMapIntensity = 0.08;
+    }
+
+    // Add environment map for reflections
+    if (this.environmentMap) {
+      material.envMap = this.environmentMap;
+    }
 
     return material;
   }
@@ -281,6 +358,187 @@ class TextureManager {
       texture.anisotropy = anisotropy;
       texture.needsUpdate = true;
     });
+  }
+
+  // Create procedural tile material without needing an image
+  createProceduralTileMaterial(config?: Partial<ProceduralTileConfig>): THREE.MeshStandardMaterial {
+    const defaults: ProceduralTileConfig = {
+      tileColor: 0xf5f5f5,      // Off-white
+      groutColor: 0xe0e0e0,     // Very light gray grout (lighter to reduce dark lines)
+      tileWidth: 100,           // Realistic tile size
+      tileHeight: 100,
+      groutWidth: 5,            // Slightly thinner grout lines
+      bevelSize: 1,             // Minimal bevel
+      colorVariation: 0.0,      // Clean uniform tiles
+      glossiness: 0.75
+    };
+
+    const settings = { ...defaults, ...config };
+
+    // Generate textures
+    const { diffuseTexture, normalTexture, roughnessTexture } = this.generateTileTextures(settings);
+
+    // Create material with ceramic properties
+    const material = new THREE.MeshStandardMaterial({
+      map: diffuseTexture,
+      normalMap: normalTexture,
+      roughnessMap: roughnessTexture,
+      normalScale: new THREE.Vector2(0.08, 0.08),  // Reduced for less dark grout effect
+      roughness: 0.05,  // Very low roughness = very glossy/shiny
+      metalness: 0.1,   // Slight metalness for reflections
+      envMapIntensity: 0.8,  // Strong environment reflections for shiny look
+      side: THREE.FrontSide
+    });
+
+    // Add environment map for reflections
+    if (this.environmentMap) {
+      material.envMap = this.environmentMap;
+    }
+
+    return material;
+  }
+
+  // Generate tile textures (diffuse, normal, roughness)
+  private generateTileTextures(config: ProceduralTileConfig): {
+    diffuseTexture: THREE.CanvasTexture;
+    normalTexture: THREE.CanvasTexture;
+    roughnessTexture: THREE.CanvasTexture;
+  } {
+    const textureSize = 512;
+
+    // Calculate tile layout - 4 tiles per texture for good detail
+    const tilesPerRow = 4;
+    const tileWithGrout = textureSize / tilesPerRow;
+    const actualTileSize = tileWithGrout - config.groutWidth;
+
+    // Create canvases
+    const diffuseCanvas = document.createElement('canvas');
+    const normalCanvas = document.createElement('canvas');
+    const roughnessCanvas = document.createElement('canvas');
+
+    diffuseCanvas.width = normalCanvas.width = roughnessCanvas.width = textureSize;
+    diffuseCanvas.height = normalCanvas.height = roughnessCanvas.height = textureSize;
+
+    const diffuseCtx = diffuseCanvas.getContext('2d')!;
+    const normalCtx = normalCanvas.getContext('2d')!;
+    const roughnessCtx = roughnessCanvas.getContext('2d')!;
+
+    // Fill entire canvas with grout color first
+    const groutColor = new THREE.Color(config.groutColor);
+    diffuseCtx.fillStyle = `rgb(${Math.floor(groutColor.r * 255)}, ${Math.floor(groutColor.g * 255)}, ${Math.floor(groutColor.b * 255)})`;
+    diffuseCtx.fillRect(0, 0, textureSize, textureSize);
+
+    // Normal map base - grout is very slightly recessed (subtle effect)
+    normalCtx.fillStyle = 'rgb(128, 120, 255)';  // Closer to neutral to reduce dark appearance
+    normalCtx.fillRect(0, 0, textureSize, textureSize);
+
+    // Roughness map base (grout is slightly rougher/matte)
+    roughnessCtx.fillStyle = 'rgb(140, 140, 140)';  // Less contrast
+    roughnessCtx.fillRect(0, 0, textureSize, textureSize);
+
+    const baseColor = new THREE.Color(config.tileColor);
+
+    // Draw tiles in a clean grid
+    for (let ty = 0; ty < tilesPerRow; ty++) {
+      for (let tx = 0; tx < tilesPerRow; tx++) {
+        // Calculate tile position
+        const x = tx * tileWithGrout + config.groutWidth / 2;
+        const y = ty * tileWithGrout + config.groutWidth / 2;
+
+        // Draw tile on diffuse map - clean solid fill
+        this.drawTile(diffuseCtx, x, y, actualTileSize, actualTileSize, baseColor, config.bevelSize);
+
+        // Draw tile normal (raised surface)
+        this.drawTileNormal(normalCtx, x, y, actualTileSize, actualTileSize, config.bevelSize);
+
+        // Draw tile roughness (tiles are smooth/glossy)
+        const tileRoughness = Math.floor((1 - config.glossiness) * 100 + 20);
+        roughnessCtx.fillStyle = `rgb(${tileRoughness}, ${tileRoughness}, ${tileRoughness})`;
+        roughnessCtx.fillRect(x, y, actualTileSize, actualTileSize);
+      }
+    }
+
+    // Create Three.js textures
+    const diffuseTexture = new THREE.CanvasTexture(diffuseCanvas);
+    const normalTexture = new THREE.CanvasTexture(normalCanvas);
+    const roughnessTexture = new THREE.CanvasTexture(roughnessCanvas);
+
+    // Configure textures for tiling
+    [diffuseTexture, normalTexture, roughnessTexture].forEach(texture => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(3, 3);  // 3x3 repeat for good tile density
+      texture.generateMipmaps = true;
+      texture.minFilter = THREE.LinearMipmapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.anisotropy = 16;
+    });
+
+    diffuseTexture.colorSpace = THREE.SRGBColorSpace;
+
+    return { diffuseTexture, normalTexture, roughnessTexture };
+  }
+
+  // Draw a single tile - clean ceramic look
+  private drawTile(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number,
+    width: number, height: number,
+    color: THREE.Color,
+    bevelSize: number
+  ): void {
+    const r = Math.floor(color.r * 255);
+    const g = Math.floor(color.g * 255);
+    const b = Math.floor(color.b * 255);
+
+    // Main tile body - solid clean fill
+    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+    ctx.fillRect(x, y, width, height);
+
+    // Subtle inner highlight for 3D effect (top-left inner edge)
+    const highlightR = Math.min(255, r + 6);
+    const highlightG = Math.min(255, g + 6);
+    const highlightB = Math.min(255, b + 6);
+    ctx.fillStyle = `rgb(${highlightR}, ${highlightG}, ${highlightB})`;
+    ctx.fillRect(x + bevelSize, y + bevelSize, width - bevelSize * 2, bevelSize);
+    ctx.fillRect(x + bevelSize, y + bevelSize, bevelSize, height - bevelSize * 2);
+
+    // Subtle inner shadow (bottom-right inner edge)
+    const shadowR = Math.max(0, r - 8);
+    const shadowG = Math.max(0, g - 8);
+    const shadowB = Math.max(0, b - 8);
+    ctx.fillStyle = `rgb(${shadowR}, ${shadowG}, ${shadowB})`;
+    ctx.fillRect(x + bevelSize, y + height - bevelSize * 2, width - bevelSize * 2, bevelSize);
+    ctx.fillRect(x + width - bevelSize * 2, y + bevelSize, bevelSize, height - bevelSize * 2);
+  }
+
+  // Draw normal map for a tile (raised surface effect)
+  private drawTileNormal(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number,
+    width: number, height: number,
+    bevelSize: number
+  ): void {
+    // Flat tile surface (neutral normal - pointing straight out)
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(x, y, width, height);
+
+    // Beveled edges for depth - more subtle values
+    // Top edge (normal tilted up)
+    ctx.fillStyle = 'rgb(128, 145, 255)';
+    ctx.fillRect(x, y, width, bevelSize);
+
+    // Bottom edge (normal tilted down)
+    ctx.fillStyle = 'rgb(128, 111, 255)';
+    ctx.fillRect(x, y + height - bevelSize, width, bevelSize);
+
+    // Left edge (normal tilted left)
+    ctx.fillStyle = 'rgb(145, 128, 255)';
+    ctx.fillRect(x, y, bevelSize, height);
+
+    // Right edge (normal tilted right)
+    ctx.fillStyle = 'rgb(111, 128, 255)';
+    ctx.fillRect(x + width - bevelSize, y, bevelSize, height);
   }
 }
 

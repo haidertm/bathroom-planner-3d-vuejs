@@ -1419,10 +1419,10 @@ const getTexturePreviewStyle = (texture) => ({
 // (I'll keep them the same as in your original code)
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
-  bottom: '30px',
-  left: '20px',
-  width: '60px',
-  height: '60px',
+  bottom: '130px',
+  left: '16px',
+  width: '50px',
+  height: '50px',
   borderRadius: '50%',
   backgroundColor: isButtonPressed.value ? '#29275B' : '#29275B',
   color: 'white',
@@ -1436,7 +1436,8 @@ const mobileFloatingButtonStyle = computed(() => ({
   transform: isButtonPressed.value ? 'scale(0.95)' : 'scale(1)',
   fontSize: '24px',
   fontWeight: 'bold',
-  backdropFilter: 'blur(10px)'
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
 }))
 
 const plusIconStyle = computed(() => ({

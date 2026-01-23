@@ -78,6 +78,9 @@ export const ORTHOGRAPHIC_SETTINGS = {
   // Camera height above room (cm)
   HEIGHT: 500,
 
+  // Vertical offset to shift 2D view upward on screen (cm) - leaves room for toolbar
+  VERTICAL_OFFSET: 50,
+
   // Near/far clipping planes for orthographic camera
   NEAR: 1,
   FAR: 1000,
