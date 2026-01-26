@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount } from 'vue';
+import { ref, computed, onBeforeUnmount, nextTick } from 'vue';
 import type { AdminProduct, ProductFilters, ProductVariant } from '../../../types/admin';
 import GlbPreviewModal from '../../../components/ui/GlbPreviewModal.vue';
 
@@ -94,8 +94,10 @@ const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
 // Expanded variants state
 const expandedProducts = ref<Set<string>>(new Set());
 
-const toggleVariantsExpanded = (e: Event, productId: string) => {
+const toggleVariantsExpanded = async (e: Event, productId: string) => {
   e.stopPropagation();
+  const isExpanding = !expandedProducts.value.has(productId);
+
   if (expandedProducts.value.has(productId)) {
     expandedProducts.value.delete(productId);
   } else {
@@ -103,6 +105,15 @@ const toggleVariantsExpanded = (e: Event, productId: string) => {
   }
   // Trigger reactivity
   expandedProducts.value = new Set(expandedProducts.value);
+
+  // Scroll the parent product row into view when expanding so both product and variants are visible
+  if (isExpanding) {
+    await nextTick();
+    const productRow = document.querySelector(`[data-product-row="${productId}"]`);
+    if (productRow) {
+      productRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 };
 
 const isProductExpanded = (productId: string): boolean => {
@@ -322,6 +333,7 @@ const handleSelectProduct = (product: AdminProduct) => {
             @click="handleSelectProduct(product)"
             class="product-row"
             :class="{ 'row-selected': localSelectedProducts.has(product.id) }"
+            :data-product-row="product.id"
             tabindex="0"
             @keydown.enter="handleSelectProduct(product)"
             @keydown.space.prevent="handleSelectProduct(product)"
@@ -452,6 +464,7 @@ const handleSelectProduct = (product: AdminProduct) => {
           <tr
             v-if="isProductExpanded(product.id) && product.variants.length > 0"
             :key="`${product.id}-variants`"
+            :data-variants-row="product.id"
             class="variants-expansion-row"
           >
             <td colspan="7">
@@ -633,6 +646,7 @@ const handleSelectProduct = (product: AdminProduct) => {
 .product-row {
   cursor: pointer;
   transition: background-color 0.15s ease;
+  scroll-margin-top: 48px; /* Account for sticky header height */
 }
 
 .product-row:hover {
