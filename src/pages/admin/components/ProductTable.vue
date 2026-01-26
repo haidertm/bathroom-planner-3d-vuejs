@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeUnmount, nextTick } from 'vue';
+import { ref, computed, nextTick } from 'vue';
 import type { AdminProduct, ProductFilters, ProductVariant } from '../../../types/admin';
 import GlbPreviewModal from '../../../components/ui/GlbPreviewModal.vue';
 
@@ -9,7 +9,6 @@ type SortOrder = ProductFilters['sortOrder'];
 const props = defineProps<{
   products: AdminProduct[];
   isLoading?: boolean;
-  useLocalFallback?: boolean;
   sortBy?: SortColumn;
   sortOrder?: SortOrder;
   selectedProducts?: Set<string>;
@@ -17,7 +16,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select-product', product: AdminProduct): void;
-  (e: 'toggle-enabled', product: AdminProduct): void;
   (e: 'sort', column: SortColumn): void;
   (e: 'selection-change', productIds: Set<string>): void;
 }>();
@@ -88,9 +86,6 @@ const handleSortKeydown = (event: KeyboardEvent, column: SortColumn) => {
   }
 };
 
-const togglingProducts = ref<Set<string>>(new Set());
-const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
-
 // Expanded variants state
 const expandedProducts = ref<Set<string>>(new Set());
 
@@ -157,14 +152,6 @@ const variantHasModelPath = (variant: ProductVariant): boolean => {
   return !!variant.path;
 };
 
-// Clean up pending timeouts on unmount to prevent memory leaks
-onBeforeUnmount(() => {
-  for (const timeoutId of pendingTimeouts) {
-    clearTimeout(timeoutId);
-  }
-  pendingTimeouts.clear();
-});
-
 const formatPrice = (price: string): string => {
   const num = parseFloat(price?.trim() ?? '');
   if (!Number.isFinite(num)) {
@@ -195,18 +182,6 @@ const getCategoryColor = (category: string): string => {
     WindowAndDoor: '#14b8a6',
   };
   return colors[category] || '#6b7280';
-};
-
-const handleToggle = (e: Event, product: AdminProduct) => {
-  e.stopPropagation();
-  togglingProducts.value.add(product.id);
-  emit('toggle-enabled', product);
-  // Remove from toggling after a delay (actual update happens in parent)
-  const timeoutId = setTimeout(() => {
-    togglingProducts.value.delete(product.id);
-    pendingTimeouts.delete(timeoutId);
-  }, 1000);
-  pendingTimeouts.add(timeoutId);
 };
 
 const handleView = (e: Event, product: AdminProduct) => {
@@ -322,7 +297,7 @@ const handleSelectProduct = (product: AdminProduct) => {
             <td><div class="skeleton skeleton-text skeleton-text--price"></div></td>
             <td><div class="skeleton skeleton-text skeleton-text--count"></div></td>
             <td><div class="skeleton skeleton-badge"></div></td>
-            <td><div class="skeleton skeleton-text skeleton-text--price"></div></td>
+            <td><div class="skeleton skeleton-badge"></div></td>
           </tr>
         </template>
 
@@ -416,23 +391,6 @@ const handleSelectProduct = (product: AdminProduct) => {
             </td>
             <td>
               <div class="actions" @click.stop>
-                <button
-                  class="action-btn action-toggle"
-                  :class="{ 'toggling': togglingProducts.has(product.id) }"
-                  :disabled="useLocalFallback || togglingProducts.has(product.id)"
-                  :title="product.enabled ? 'Disable product' : 'Enable product'"
-                  @click="(e) => handleToggle(e, product)"
-                >
-                  <svg v-if="product.enabled" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                  </svg>
-                </button>
                 <button
                   class="action-btn action-view"
                   title="View details"
@@ -774,20 +732,6 @@ const handleSelectProduct = (product: AdminProduct) => {
 .action-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.action-btn.toggling {
-  animation: pulse 0.5s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.action-toggle:hover:not(:disabled) {
-  background-color: #fef3c7;
-  color: #b45309;
 }
 
 .action-view:hover:not(:disabled) {
