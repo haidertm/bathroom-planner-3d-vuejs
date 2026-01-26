@@ -276,7 +276,7 @@ const handleSelectProduct = (product: AdminProduct) => {
               </span>
             </span>
           </th>
-          <th scope="col">Actions</th>
+          <th scope="col" class="actions-header">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -353,7 +353,7 @@ const handleSelectProduct = (product: AdminProduct) => {
                 {{ product.category }}
               </span>
             </td>
-            <td>{{ formatPrice(product.price) }}</td>
+            <td class="price-cell">{{ formatPrice(product.price) }}</td>
             <td>
               <button
                 v-if="product.variants.length > 0"
@@ -480,7 +480,7 @@ const handleSelectProduct = (product: AdminProduct) => {
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                         <line x1="12" y1="22.08" x2="12" y2="12"/>
                       </svg>
-                      <span>3D</span>
+                      <span class="btn-text">Preview</span>
                     </button>
                   </div>
                 </div>
@@ -602,8 +602,25 @@ const handleSelectProduct = (product: AdminProduct) => {
 .product-table td {
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.product-table td.price-cell {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   font-size: 14px;
   color: var(--text-color, #2d3748);
+  text-align: right;
+  min-width: 90px;
+}
+
+/* Price header alignment */
+.product-table th[aria-sort]:nth-of-type(3) .header-content {
+  justify-content: flex-end;
+}
+
+/* Actions header centered */
+.actions-header {
+  text-align: center !important;
 }
 
 .product-row {
@@ -713,6 +730,7 @@ const handleSelectProduct = (product: AdminProduct) => {
 .actions {
   display: flex;
   gap: 4px;
+  justify-content: center;
 }
 
 .action-btn {
@@ -841,31 +859,31 @@ const handleSelectProduct = (product: AdminProduct) => {
   padding-left: 28px;
 }
 
-/* Vertical connector line */
+/* Vertical connector line - lighter grey, terminates at last variant */
 .variants-list::before {
   content: '';
   position: absolute;
   left: 8px;
-  top: 0;
-  bottom: 20px;
+  top: 12px; /* Start from center of first variant */
+  bottom: calc(12px + 22px); /* End at center of last variant (12px padding + ~22px to center) */
   width: 1px;
-  background-color: #d1d5db;
+  background-color: #e5e7eb;
 }
 
 .variant-item {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 16px;
-  margin-top: 8px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  padding: 12px 16px;
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
   transition: all 0.15s ease;
   position: relative;
 }
 
-/* L-connector elbow for each variant */
+/* L-connector elbow for each variant - lighter grey */
 .variant-item::before {
   content: '';
   position: absolute;
@@ -873,17 +891,15 @@ const handleSelectProduct = (product: AdminProduct) => {
   top: 50%;
   width: 20px;
   height: 1px;
-  background-color: #d1d5db;
+  background-color: #e5e7eb;
 }
 
-.variant-item:first-child {
-  margin-top: 0;
+.variant-item:last-child {
+  border-bottom: none;
 }
 
 .variant-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border-color: #c7d2fe;
-  background-color: #fafaff;
+  background-color: rgba(41, 39, 91, 0.02);
 }
 
 .variant-item:hover::before {
@@ -934,7 +950,7 @@ const handleSelectProduct = (product: AdminProduct) => {
 
 .variant-sku {
   font-size: 11px;
-  color: var(--muted-color, #6b7280);
+  color: #374151;
   font-family: 'SF Mono', Monaco, monospace;
   background-color: #f3f4f6;
   padding: 2px 6px;
@@ -942,14 +958,15 @@ const handleSelectProduct = (product: AdminProduct) => {
 }
 
 .variant-dimensions-col {
-  width: 100px;
+  width: 140px;
   flex-shrink: 0;
 }
 
 .variant-dimensions {
   font-size: 12px;
-  color: #4b5563;
+  color: #374151;
   margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .variant-price-col {
@@ -969,15 +986,15 @@ const handleSelectProduct = (product: AdminProduct) => {
 .leader-line {
   width: 24px;
   height: 1px;
-  background: linear-gradient(to right, #d1d5db 50%, transparent 50%);
+  background: linear-gradient(to right, #e5e7eb 50%, transparent 50%);
   background-size: 6px 1px;
 }
 
 .variant-preview-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  gap: 0;
+  padding: 8px;
   border: none;
   border-radius: 6px;
   background-color: var(--primary-color, #29275B);
@@ -985,19 +1002,35 @@ const handleSelectProduct = (product: AdminProduct) => {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .variant-preview-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.variant-preview-btn .btn-text {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.2s ease, opacity 0.2s ease, margin-left 0.2s ease;
+  margin-left: 0;
 }
 
 .variant-preview-btn:hover:not(:disabled) {
   background-color: #1e1b4b;
-  transform: translateY(-1px);
+  padding-right: 12px;
+}
+
+.variant-preview-btn:hover:not(:disabled) .btn-text {
+  max-width: 60px;
+  opacity: 1;
+  margin-left: 6px;
 }
 
 .variant-preview-btn.disabled {
@@ -1197,11 +1230,13 @@ const handleSelectProduct = (product: AdminProduct) => {
 
   .variants-list::before {
     left: 6px;
+    background-color: #e5e7eb;
   }
 
   .variant-item::before {
     left: -20px;
     width: 14px;
+    background-color: #e5e7eb;
   }
 
   .variant-item {
