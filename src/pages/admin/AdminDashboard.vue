@@ -16,7 +16,6 @@ import ProductFiltersComponent from './components/ProductFilters.vue';
 import ProductTable from './components/ProductTable.vue';
 import Pagination from './components/Pagination.vue';
 import ProductDrawer from './components/ProductDrawer.vue';
-import ProductForm from './ProductForm.vue';
 import ToastContainer from '../../components/ui/ToastContainer.vue';
 
 /**
@@ -84,7 +83,6 @@ const {
   toggleProductEnabled,
   bulkEnableProducts,
   bulkDisableProducts,
-  createProduct,
   loadProducts,
 } = useAdminProducts();
 
@@ -169,10 +167,6 @@ const showMobileSidebar = ref(false);
 const selectedProduct = ref<AdminProduct | null>(null);
 const showProductDrawer = ref(false);
 
-// Add Product Modal State
-const showAddProductModal = ref(false);
-const productToDuplicate = ref<AdminProduct | null>(null);
-
 // Check if mobile
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768;
@@ -229,48 +223,6 @@ const handleToggleEnabled = async (product: AdminProduct) => {
   } else {
     toast.error('Failed to update product status');
   }
-};
-
-// Handle product edit - navigate to edit page
-const handleEditProduct = (product: AdminProduct) => {
-  if (!product.dbId) {
-    toast.warning('This product cannot be edited in local fallback mode.');
-    return;
-  }
-  trackAdminEvent('product_edit_start', {
-    product_id: product.id,
-    product_name: product.name,
-    category: product.category,
-  });
-  router.push(`/vadmin/products/${product.dbId}/edit`);
-};
-
-// Handle create product from modal
-const handleCreateProduct = async (productData: Omit<AdminProduct, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const result = await createProduct(productData);
-  if (result) {
-    toast.success('Product created successfully');
-    showAddProductModal.value = false;
-    productToDuplicate.value = null;
-    trackAdminEvent('product_created', {
-      product_name: result.name,
-      category: result.category,
-      variant_count: result.variants?.length || 0,
-    });
-  } else {
-    toast.error('Failed to create product');
-  }
-};
-
-// Handle duplicate product
-const handleDuplicateProduct = (product: AdminProduct) => {
-  productToDuplicate.value = product;
-  showAddProductModal.value = true;
-  trackAdminEvent('product_duplicate_start', {
-    product_id: product.id,
-    product_name: product.name,
-    category: product.category,
-  });
 };
 
 /**
@@ -529,7 +481,6 @@ const mainContentStyle = computed(() => ({
           @update:updated-at-filter="handleUpdatedAtFilterUpdate"
           @clear-filters="handleClearFilters"
           @export-csv="exportToCSV"
-          @add-product="showAddProductModal = true"
         />
 
         <!-- Bulk Action Bar -->
@@ -584,8 +535,6 @@ const mainContentStyle = computed(() => ({
           :is-bulk-action-loading="isBulkActionLoading"
           @select-product="openProductDrawer"
           @toggle-enabled="handleToggleEnabled"
-          @edit-product="handleEditProduct"
-          @duplicate-product="handleDuplicateProduct"
           @sort="handleColumnSort"
           @selection-change="handleSelectionChange"
           @bulk-enable="handleBulkEnable"
@@ -610,22 +559,6 @@ const mainContentStyle = computed(() => ({
       :is-open="showProductDrawer"
       @close="closeProductDrawer"
     />
-
-    <!-- Add Product Modal -->
-    <div
-      v-if="showAddProductModal"
-      class="modal-overlay"
-      @click.self="showAddProductModal = false; productToDuplicate = null"
-    >
-      <div class="modal-content">
-        <ProductForm
-          :product="productToDuplicate"
-          mode="add"
-          @save="handleCreateProduct"
-          @cancel="showAddProductModal = false; productToDuplicate = null"
-        />
-      </div>
-    </div>
 
     <!-- Toast Notifications -->
     <ToastContainer />
@@ -681,37 +614,6 @@ const mainContentStyle = computed(() => ({
 
   .admin-content {
     padding: 0 16px 16px;
-  }
-}
-
-/* Add Product Modal */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  max-width: 900px;
-  max-height: 90vh;
-  overflow-y: auto;
-  width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-@media (max-width: 767px) {
-  .modal-overlay {
-    padding: 10px;
-  }
-
-  .modal-content {
-    max-height: 95vh;
   }
 }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount } from 'vue';
-import type { AdminProduct, ProductFilters } from '../../../types/admin';
+import type { AdminProduct, ProductFilters, ProductVariant } from '../../../types/admin';
 import GlbPreviewModal from '../../../components/ui/GlbPreviewModal.vue';
 
 type SortColumn = ProductFilters['sortBy'];
@@ -18,8 +18,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'select-product', product: AdminProduct): void;
   (e: 'toggle-enabled', product: AdminProduct): void;
-  (e: 'edit-product', product: AdminProduct): void;
-  (e: 'duplicate-product', product: AdminProduct): void;
   (e: 'sort', column: SortColumn): void;
   (e: 'selection-change', productIds: Set<string>): void;
 }>();
@@ -93,6 +91,24 @@ const handleSortKeydown = (event: KeyboardEvent, column: SortColumn) => {
 const togglingProducts = ref<Set<string>>(new Set());
 const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>();
 
+// Expanded variants state
+const expandedProducts = ref<Set<string>>(new Set());
+
+const toggleVariantsExpanded = (e: Event, productId: string) => {
+  e.stopPropagation();
+  if (expandedProducts.value.has(productId)) {
+    expandedProducts.value.delete(productId);
+  } else {
+    expandedProducts.value.add(productId);
+  }
+  // Trigger reactivity
+  expandedProducts.value = new Set(expandedProducts.value);
+};
+
+const isProductExpanded = (productId: string): boolean => {
+  return expandedProducts.value.has(productId);
+};
+
 // GLB Preview Modal state
 const showGlbPreview = ref(false);
 const previewModelPath = ref('');
@@ -108,6 +124,14 @@ const openGlbPreview = (e: Event, product: AdminProduct) => {
   showGlbPreview.value = true;
 };
 
+const openVariantGlbPreview = (e: Event, variant: ProductVariant, productName: string) => {
+  e.stopPropagation();
+  if (!variant.path) return;
+  previewModelPath.value = variant.path;
+  previewModelName.value = `${productName} - ${variant.name}`;
+  showGlbPreview.value = true;
+};
+
 const closeGlbPreview = () => {
   showGlbPreview.value = false;
   previewModelPath.value = '';
@@ -116,6 +140,10 @@ const closeGlbPreview = () => {
 
 const hasModelPath = (product: AdminProduct): boolean => {
   return !!product.variants?.[0]?.path;
+};
+
+const variantHasModelPath = (variant: ProductVariant): boolean => {
+  return !!variant.path;
 };
 
 // Clean up pending timeouts on unmount to prevent memory leaks
@@ -168,16 +196,6 @@ const handleToggle = (e: Event, product: AdminProduct) => {
     pendingTimeouts.delete(timeoutId);
   }, 1000);
   pendingTimeouts.add(timeoutId);
-};
-
-const handleEdit = (e: Event, product: AdminProduct) => {
-  e.stopPropagation();
-  emit('edit-product', product);
-};
-
-const handleDuplicate = (e: Event, product: AdminProduct) => {
-  e.stopPropagation();
-  emit('duplicate-product', product);
 };
 
 const handleView = (e: Event, product: AdminProduct) => {
@@ -299,9 +317,8 @@ const handleSelectProduct = (product: AdminProduct) => {
 
         <!-- Actual product rows -->
         <template v-else>
+          <template v-for="product in products" :key="product.id">
           <tr
-            v-for="product in products"
-            :key="product.id"
             @click="handleSelectProduct(product)"
             class="product-row"
             :class="{ 'row-selected': localSelectedProducts.has(product.id) }"
@@ -350,7 +367,30 @@ const handleSelectProduct = (product: AdminProduct) => {
               </span>
             </td>
             <td>{{ formatPrice(product.price) }}</td>
-            <td>{{ product.variants.length }}</td>
+            <td>
+              <button
+                v-if="product.variants.length > 0"
+                class="variants-toggle-btn"
+                :class="{ 'expanded': isProductExpanded(product.id) }"
+                @click="(e) => toggleVariantsExpanded(e, product.id)"
+                :title="isProductExpanded(product.id) ? 'Hide variants' : 'Show variants'"
+              >
+                <span class="variants-count">{{ product.variants.length }}</span>
+                <svg
+                  class="chevron-icon"
+                  :class="{ 'rotated': isProductExpanded(product.id) }"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <span v-else class="variants-count-static">0</span>
+            </td>
             <td>
               <span
                 class="status-badge"
@@ -382,26 +422,6 @@ const handleSelectProduct = (product: AdminProduct) => {
                   </svg>
                 </button>
                 <button
-                  class="action-btn action-edit"
-                  title="Edit product"
-                  @click="(e) => handleEdit(e, product)"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                  </svg>
-                </button>
-                <button
-                  class="action-btn action-duplicate"
-                  title="Duplicate product"
-                  @click="(e) => handleDuplicate(e, product)"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                  </svg>
-                </button>
-                <button
                   class="action-btn action-view"
                   title="View details"
                   @click="(e) => handleView(e, product)"
@@ -427,6 +447,71 @@ const handleSelectProduct = (product: AdminProduct) => {
               </div>
             </td>
           </tr>
+
+          <!-- Variants Expansion Row -->
+          <tr
+            v-if="isProductExpanded(product.id) && product.variants.length > 0"
+            :key="`${product.id}-variants`"
+            class="variants-expansion-row"
+          >
+            <td colspan="7">
+              <div class="variants-panel">
+                <div class="variants-header">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  </svg>
+                  <span>{{ product.variants.length }} Variant{{ product.variants.length !== 1 ? 's' : '' }}</span>
+                </div>
+                <div class="variants-list">
+                  <div
+                    v-for="variant in product.variants"
+                    :key="variant.id"
+                    class="variant-item"
+                  >
+                    <img
+                      v-if="variant.image"
+                      :src="getImageUrl(variant.image)"
+                      :alt="variant.name"
+                      class="variant-image"
+                      loading="lazy"
+                    />
+                    <div v-else class="variant-image-placeholder">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                    </div>
+                    <div class="variant-info">
+                      <p class="variant-name">{{ variant.name }}</p>
+                      <p class="variant-sku">SKU: {{ variant.sku }}</p>
+                      <p class="variant-dimensions" v-if="variant.dimensions">
+                        {{ variant.dimensions.width }}×{{ variant.dimensions.height }}{{ variant.dimensions.depth ? `×${variant.dimensions.depth}` : '' }} cm
+                      </p>
+                    </div>
+                    <div class="variant-price">
+                      {{ formatPrice(variant.price) }}
+                    </div>
+                    <button
+                      class="variant-preview-btn"
+                      :class="{ 'disabled': !variantHasModelPath(variant) }"
+                      :disabled="!variantHasModelPath(variant)"
+                      :title="variantHasModelPath(variant) ? 'Preview 3D Model' : 'No 3D model available'"
+                      @click="(e) => openVariantGlbPreview(e, variant, product.name)"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                      </svg>
+                      <span>3D Preview</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          </template>
 
           <!-- Empty state -->
           <tr v-if="products.length === 0">
@@ -457,12 +542,15 @@ const handleSelectProduct = (product: AdminProduct) => {
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: auto;
+  max-height: calc(100vh - 340px);
+  min-height: 400px;
 }
 
 .product-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .product-table th {
@@ -475,6 +563,9 @@ const handleSelectProduct = (product: AdminProduct) => {
   letter-spacing: 0.5px;
   background-color: #f8fafc;
   border-bottom: 1px solid var(--border-color, #e2e8f0);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 /* Sortable header styles */
@@ -685,16 +776,6 @@ const handleSelectProduct = (product: AdminProduct) => {
   color: #b45309;
 }
 
-.action-edit:hover:not(:disabled) {
-  background-color: #dbeafe;
-  color: #1d4ed8;
-}
-
-.action-duplicate:hover:not(:disabled) {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
 .action-view:hover:not(:disabled) {
   background-color: #f3e8ff;
   color: #7c3aed;
@@ -711,6 +792,180 @@ const handleSelectProduct = (product: AdminProduct) => {
 
 .action-disabled {
   opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Variants toggle button */
+.variants-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 16px;
+  background-color: #f8fafc;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-color, #2d3748);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.variants-toggle-btn:hover {
+  background-color: #eef2f7;
+  border-color: var(--primary-color, #29275B);
+}
+
+.variants-toggle-btn.expanded {
+  background-color: var(--primary-color, #29275B);
+  border-color: var(--primary-color, #29275B);
+  color: #ffffff;
+}
+
+.variants-toggle-btn .chevron-icon {
+  transition: transform 0.2s ease;
+}
+
+.variants-toggle-btn .chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.variants-count {
+  font-weight: 600;
+}
+
+.variants-count-static {
+  font-size: 14px;
+  color: var(--muted-color, #6b7280);
+}
+
+/* Variants expansion row */
+.variants-expansion-row {
+  background-color: #f8fafc;
+}
+
+.variants-expansion-row td {
+  padding: 0 !important;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.variants-panel {
+  padding: 16px 20px;
+  margin-left: 48px;
+  border-left: 3px solid var(--primary-color, #29275B);
+}
+
+.variants-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-color, #29275B);
+  margin-bottom: 12px;
+}
+
+.variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.variant-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  transition: box-shadow 0.15s ease;
+}
+
+.variant-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.variant-image {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  background-color: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.variant-image-placeholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  flex-shrink: 0;
+}
+
+.variant-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.variant-name {
+  font-weight: 500;
+  font-size: 14px;
+  margin: 0 0 2px;
+  color: var(--text-color, #2d3748);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.variant-sku {
+  font-size: 12px;
+  color: var(--muted-color, #6b7280);
+  margin: 0 0 2px;
+  font-family: monospace;
+}
+
+.variant-dimensions {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.variant-price {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-color, #2d3748);
+  white-space: nowrap;
+}
+
+.variant-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--primary-color, #29275B);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.variant-preview-btn:hover:not(:disabled) {
+  background-color: #1e1b4b;
+  transform: translateY(-1px);
+}
+
+.variant-preview-btn.disabled {
+  background-color: #e2e8f0;
+  color: #9ca3af;
   cursor: not-allowed;
 }
 
@@ -886,12 +1141,38 @@ const handleSelectProduct = (product: AdminProduct) => {
 /* Mobile styles */
 @media (max-width: 767px) {
   .table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    max-height: calc(100vh - 280px);
+    min-height: 300px;
   }
 
   .product-table {
     min-width: 700px;
+  }
+
+  .variants-panel {
+    margin-left: 16px;
+    padding: 12px 14px;
+  }
+
+  .variant-item {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .variant-info {
+    flex: 1 1 150px;
+  }
+
+  .variant-price {
+    order: 3;
+    width: 100%;
+  }
+
+  .variant-preview-btn {
+    order: 4;
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
   }
 }
 </style>

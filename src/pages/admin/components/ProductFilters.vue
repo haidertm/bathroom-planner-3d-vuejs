@@ -17,7 +17,6 @@ const emit = defineEmits<{
   (e: 'update:updatedAtFilter', value: ProductFilters['updatedAtFilter']): void;
   (e: 'clear-filters'): void;
   (e: 'export-csv'): void;
-  (e: 'add-product'): void;
 }>();
 
 const showFilters = ref(true);
@@ -133,17 +132,6 @@ const trackGTMEvent = (
 };
 
 /**
- * Handle Add Product button click with GTM tracking
- */
-const handleAddProduct = () => {
-  trackGTMEvent('admin_add_product', {
-    source: 'product_filters',
-    current_result_count: props.resultCount,
-  });
-  emit('add-product');
-};
-
-/**
  * Handle Export CSV button click with GTM tracking
  */
 const handleExportCSV = () => {
@@ -193,14 +181,6 @@ const handleClearFilters = () => {
 
       <button v-if="hasActiveFilters" @click="handleClearFilters" class="clear-filters-btn">
         Clear all
-      </button>
-
-      <button @click="handleAddProduct" class="add-product-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Add Product
       </button>
 
       <button @click="handleExportCSV" class="export-btn">
@@ -416,27 +396,8 @@ const handleClearFilters = () => {
   background-color: #fecaca;
 }
 
-.add-product-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  background-color: var(--primary-color, #29275B);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  margin-left: auto;
-}
-
-.add-product-btn:hover {
-  background-color: #1e1b4b;
-}
-
 .export-btn {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
