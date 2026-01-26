@@ -1904,13 +1904,16 @@ export class EventHandlers {
           ));
 
         if (useRigidBody) {
-          // Rigid body - maintain relative position but re-snap wall items to wall
+          // Rigid body - maintain relative position
           constrainedPosition = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
 
-          // ✅ FIX: For wall-snap items in rigid body mode, re-snap to wall
-          // This keeps the toilet ON the wall while maintaining lateral position
-          if (isWallSnapItem) {
-            const result = constrainToWalls(
+          // ✅ FIX: For wall-snap items, use constrainToWalls to get correct wall position
+          // but preserve the lateral position from rigid body calculation
+          if (isWallSnapItem && !isCornerOnlyItem) {
+            const itemWall = this.determineCurrentWall(new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z));
+
+            // Get the correct wall-snapped position
+            const wallResult = constrainToWalls(
               constrainedPosition,
               this.roomWidthRef.value,
               this.roomHeightRef.value,
@@ -1922,10 +1925,18 @@ export class EventHandlers {
                 notchWidth: this.notchWidthRef.value,
                 notchHeight: this.notchHeightRef.value
               },
-              undefined // Let constrainToWalls find the nearest wall
+              itemWall
             );
-            constrainedPosition = result.position;
-            constrainedRotation = result.rotation;
+
+            // Keep lateral position from rigid body, use perpendicular from constrainToWalls
+            if (itemWall === 'south' || itemWall === 'north') {
+              // North/South walls: keep X (lateral), use Z from constrainToWalls (perpendicular)
+              constrainedPosition.z = wallResult.position.z;
+            } else if (itemWall === 'east' || itemWall === 'west') {
+              // East/West walls: keep Z (lateral), use X from constrainToWalls (perpendicular)
+              constrainedPosition.x = wallResult.position.x;
+            }
+            constrainedRotation = wallResult.rotation;
           }
         } else if (isCornerOnlyGroup && isCornerOnlyItem) {
           // ✅ FIX: CORNER_ONLY secondary item in a group - re-snap to appropriate corner
