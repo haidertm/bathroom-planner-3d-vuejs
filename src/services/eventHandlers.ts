@@ -999,30 +999,8 @@ export class EventHandlers {
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
 
-        // Store start positions and local offsets for all selected objects for bulk move
-        this.multiSelectStartPositions.clear();
-        this.multiSelectStartRotations.clear();
-        this.multiSelectLocalOffsets.clear();
-        this.multiSelectLocalRotations.clear();
-
-        const primaryPos = this.selectedObject.position.clone();
-        const primaryRot = this.selectedObject.rotation.y;
-
-        this.selectedObjects.forEach((obj, id) => {
-          this.multiSelectStartPositions.set(id, obj.position.clone());
-          this.multiSelectStartRotations.set(id, obj.rotation.y);
-
-          // Calculate local offset relative to primary object's rotation
-          const offset = new THREE.Vector3().subVectors(obj.position, primaryPos);
-          offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), -primaryRot);
-          this.multiSelectLocalOffsets.set(id, offset);
-
-          // Calculate local rotation relative to primary object
-          const relRot = obj.rotation.y - primaryRot;
-          this.multiSelectLocalRotations.set(id, relRot);
-        });
-
-        // Calculate group constraint for multi-selection (most restrictive wins)
+        // ✅ FIX: Calculate group constraint FIRST (before calculating offsets)
+        // This allows us to snap the primary's rotation before offset calculation
         if (this.selectedObjects.size > 1) {
           this.groupConstraint = analyzeGroupConstraints(
             this.selectedObjects,
@@ -1037,6 +1015,78 @@ export class EventHandlers {
           this.groupConstraint = null;
         }
 
+        // Store start positions and local offsets for all selected objects for bulk move
+        this.multiSelectStartPositions.clear();
+        this.multiSelectStartRotations.clear();
+        this.multiSelectLocalOffsets.clear();
+        this.multiSelectLocalRotations.clear();
+
+        // ✅ FIX: "Most restrictive wins" - if primary is freestanding but group has wall-snap,
+        // snap the primary TO the wall BEFORE calculating offsets
+        // This ensures both items have compatible wall-based coordinates
+        const groupHasWallSnap = this.groupConstraint &&
+          this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP;
+        const primaryIsFreestandingItem = !movementConfig.snapToWall &&
+          !(movementConfig.cornerInstallOnly && typeof movementConfig.cornerInstallOnly === 'object' && movementConfig.cornerInstallOnly.enabled);
+
+        let primaryPos = this.selectedObject.position.clone();
+        let primaryRot = this.selectedObject.rotation.y;
+
+        if (groupHasWallSnap && primaryIsFreestandingItem) {
+          // Find the wall that wall-snap items are on
+          let targetWall: WallType | null = null;
+          this.selectedObjects.forEach((obj, id) => {
+            if (targetWall) return;
+            const itemData = this.getCurrentItemData(id);
+            const itemMovement = getMovementConfig(obj.userData.type as ComponentType, itemData);
+            if (itemMovement.snapToWall && !itemMovement.cornerInstallOnly) {
+              targetWall = this.determineCurrentWall(obj.position);
+            }
+          });
+
+          if (targetWall) {
+            // Snap primary to the same wall as the wall-snap items
+            const result = constrainToWalls(
+              { x: primaryPos.x, y: primaryPos.y, z: primaryPos.z },
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              {
+                type: objectType,
+                scale: objectScale,
+                orientation: this.selectedObject.userData.orientation,
+                item: currentItem,
+                notchWidth: this.notchWidthRef.value,
+                notchHeight: this.notchHeightRef.value
+              },
+              targetWall
+            );
+
+            // Update primary position and rotation to wall-snapped values
+            primaryPos = new THREE.Vector3(result.position.x, result.position.y, result.position.z);
+            primaryRot = result.rotation;
+
+            // Actually move the object to the wall
+            this.selectedObject.position.copy(primaryPos);
+            this.selectedObject.rotation.y = primaryRot;
+
+            console.log('📊 Snapped freestanding primary to wall:', targetWall, primaryPos);
+          }
+        }
+
+        this.selectedObjects.forEach((obj, id) => {
+          this.multiSelectStartPositions.set(id, obj.position.clone());
+          this.multiSelectStartRotations.set(id, obj.rotation.y);
+
+          // Calculate local offset relative to primary object's (possibly snapped) position/rotation
+          const offset = new THREE.Vector3().subVectors(obj.position, primaryPos);
+          offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), -primaryRot);
+          this.multiSelectLocalOffsets.set(id, offset);
+
+          // Calculate local rotation relative to primary object
+          const relRot = obj.rotation.y - primaryRot;
+          this.multiSelectLocalRotations.set(id, relRot);
+        });
+
         // Notify that dragging has started
         if (this.onDragStart) {
           this.onDragStart();
@@ -1047,8 +1097,16 @@ export class EventHandlers {
         this.originalDragPosition.copy(this.selectedObject.position);
         this.originalDragRotation = this.selectedObject.rotation.y;
 
+        // ✅ FIX: Use wall plane for drag offset when:
+        // 1. Primary is wall-snap, OR
+        // 2. Group has wall-snap constraint (freestanding primary is snapped to wall at drag start)
+        const groupHasWallSnapForDrag = this.groupConstraint &&
+          this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP;
+        const useWallPlaneForDrag = (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) ||
+          groupHasWallSnapForDrag;
+
         // ✅ FIX: For wall-mounted objects, calculate dragOffset using the wall plane
-        if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+        if (useWallPlaneForDrag) {
           // 📐 2D MODE: Use floor plane for dragOffset calculation (matches drag handling)
           if (this.viewMode === '2d') {
             const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -1063,7 +1121,6 @@ export class EventHandlers {
             );
           } else {
             // 3D MODE: Use wall plane intersection
-            // Determine which wall the object is on
             const currentWall = this.determineCurrentWall(this.selectedObject.position);
             const roomHalfWidth = this.roomWidthRef.value / 2;
             const roomHalfHeight = this.roomHeightRef.value / 2;
@@ -1833,22 +1890,54 @@ export class EventHandlers {
           movementConfig.cornerInstallOnly.enabled;
 
         // ✅ RIGID BODY MODE: When group has unified constraint, treat as rigid body
-        // The primary object's constraint is applied to the whole group
+        // "Most restrictive wins" - all items move together as one unit
         // EXCEPTION: When CORNER_ONLY group has WALL_SNAP items, let them re-snap to walls
         // EXCEPTION: When primary is WALL_SNAP and secondary is CORNER_ONLY, let corner re-snap to corner
         const useRigidBody = this.viewMode === '2d' ||
           (this.groupConstraint && (
             // For CORNER_ONLY groups: use rigid body UNLESS item is WALL_SNAP (let it re-snap) or CORNER_ONLY (let it re-snap)
             (this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY && !isWallSnapItem && !isCornerOnlyItem) ||
+            // For WALL_SNAP groups: always use rigid body (freestanding primary is snapped to wall at drag start)
             this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP ||
             // For L-shape groups: use rigid body UNLESS item is WALL_SNAP (let it re-snap) or CORNER_ONLY
             (this.groupConstraint.isLShapeGroup && !isWallSnapItem && !isCornerOnlyItem)
           ));
 
         if (useRigidBody) {
-          // Pure rigid body - maintain exact relative position
-          // The primary object's constraint already handles the group positioning
+          // Rigid body - maintain relative position
           constrainedPosition = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
+
+          // ✅ FIX: For wall-snap items, use constrainToWalls to get correct wall position
+          // but preserve the lateral position from rigid body calculation
+          if (isWallSnapItem && !isCornerOnlyItem) {
+            const itemWall = this.determineCurrentWall(new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z));
+
+            // Get the correct wall-snapped position
+            const wallResult = constrainToWalls(
+              constrainedPosition,
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              {
+                type: itemType,
+                scale: itemScale,
+                orientation: obj.userData.orientation,
+                item: itemData,
+                notchWidth: this.notchWidthRef.value,
+                notchHeight: this.notchHeightRef.value
+              },
+              itemWall
+            );
+
+            // Keep lateral position from rigid body, use perpendicular from constrainToWalls
+            if (itemWall === 'south' || itemWall === 'north') {
+              // North/South walls: keep X (lateral), use Z from constrainToWalls (perpendicular)
+              constrainedPosition.z = wallResult.position.z;
+            } else if (itemWall === 'east' || itemWall === 'west') {
+              // East/West walls: keep Z (lateral), use X from constrainToWalls (perpendicular)
+              constrainedPosition.x = wallResult.position.x;
+            }
+            constrainedRotation = wallResult.rotation;
+          }
         } else if (isCornerOnlyGroup && isCornerOnlyItem) {
           // ✅ FIX: CORNER_ONLY secondary item in a group - re-snap to appropriate corner
           // This allows corner items to move to new corners when dragged via a wall-snap primary
@@ -1874,22 +1963,13 @@ export class EventHandlers {
           // Use targetPos which already has the correct offset from primary object applied
           const originalY = targetPos.y; // Preserve Y position
 
-          // ✅ FIX: Clamp targetPos to room interior before determining wall
-          // This prevents secondary items from going outside the room
-          const roomHalfW = this.roomWidthRef.value / 2;
-          const roomHalfH = this.roomHeightRef.value / 2;
-          const clampedTargetPos = new THREE.Vector3(
-            Math.max(-roomHalfW + 20, Math.min(roomHalfW - 20, targetPos.x)),
-            targetPos.y,
-            Math.max(-roomHalfH + 20, Math.min(roomHalfH - 20, targetPos.z))
-          );
+          // ✅ FIX: Use UNCLAMPED target position to determine which wall to switch to
+          // This allows wall switching when the item goes past the boundary
+          const targetItemWall = this.determineCurrentWall(targetPos);
 
-          // Determine the target wall based on clamped position
-          const targetItemWall = this.determineCurrentWall(clampedTargetPos);
-
-          // Snap to wall while preserving the lateral offset from clamped targetPos
+          // Snap to wall - constrainToWalls will handle boundaries correctly
           const result = constrainToWalls(
-            clampedTargetPos,
+            targetPos,  // Use unclamped position - constrainToWalls will handle boundaries
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -1900,10 +1980,9 @@ export class EventHandlers {
               notchWidth: this.notchWidthRef.value,
               notchHeight: this.notchHeightRef.value
             },
-            targetItemWall // Pass target wall for stickiness
+            targetItemWall
           );
 
-          // Use the result directly - constrainToWalls preserves the lateral position
           constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
           constrainedRotation = result.rotation;
           console.log('📊 Wall-snap item in corner group re-snapped:', id, 'target wall:', targetItemWall);
@@ -1913,18 +1992,13 @@ export class EventHandlers {
           // This is critical when the primary object has just switched walls
           const originalY = targetPos.y; // Preserve Y position
 
-          // ✅ FIX: Clamp targetPos to room interior before determining wall
-          const roomHalfW2 = this.roomWidthRef.value / 2;
-          const roomHalfH2 = this.roomHeightRef.value / 2;
-          const clampedTargetPos2 = new THREE.Vector3(
-            Math.max(-roomHalfW2 + 20, Math.min(roomHalfW2 - 20, targetPos.x)),
-            targetPos.y,
-            Math.max(-roomHalfH2 + 20, Math.min(roomHalfH2 - 20, targetPos.z))
-          );
-          const currentItemWall = this.determineCurrentWall(clampedTargetPos2);
+          // ✅ FIX: Use UNCLAMPED target position to determine which wall to switch to
+          // This allows wall switching when the item goes past the boundary
+          const targetItemWall = this.determineCurrentWall(targetPos);
 
+          // Now constrain to that wall - constrainToWalls will handle positioning correctly
           const result = constrainToWalls(
-            clampedTargetPos2,
+            targetPos,  // Use unclamped position - constrainToWalls will handle boundaries
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -1935,7 +2009,7 @@ export class EventHandlers {
               notchWidth: this.notchWidthRef.value,
               notchHeight: this.notchHeightRef.value
             },
-            currentItemWall
+            targetItemWall
           );
           constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
           constrainedRotation = result.rotation;
@@ -2258,21 +2332,12 @@ export class EventHandlers {
         (this.groupConstraint.isLShapeGroup && !primaryIsFreestanding)
       )) || (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled);
 
-      // 📊 GROUP CONSTRAINT: Check if group requires wall snap
-      // ✅ FIX: When primary is freestanding and group has L-shape (which we're ignoring),
-      // check if any item in the group has wall-snap to determine if we should use wall-snap behavior
-      const hasWallSnapItemInGroup = this.groupConstraint &&
-        Array.from(this.selectedObjects.values()).some(obj => {
-          const itemData = this.getCurrentItemData(obj.userData.itemId as number);
-          const itemMovement = getMovementConfig(obj.userData.type as ComponentType, itemData);
-          return itemMovement.snapToWall && !itemMovement.cornerInstallOnly;
-        });
-
+      // 📊 GROUP CONSTRAINT: "Most restrictive wins" - wall-snap behavior applies to entire group
+      // Freestanding primary is snapped to wall at drag start, so it can move along walls
       const effectiveWallSnap = (this.groupConstraint &&
         this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP &&
         !effectiveCornerOnly
-      ) || (movementConfig.snapToWall && !effectiveCornerOnly) ||
-        (primaryIsFreestanding && hasWallSnapItemInGroup && !effectiveCornerOnly);  // ✅ FIX: Freestanding + wall-snap group
+      ) || (movementConfig.snapToWall && !effectiveCornerOnly);
 
       // ✅ NEW: Calculate stable ideal position for the entire group using the camera-facing plane
       // 📐 2D MODE: Use floor plane for position calculation
