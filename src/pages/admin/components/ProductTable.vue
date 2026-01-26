@@ -455,13 +455,18 @@ const handleSelectProduct = (product: AdminProduct) => {
                     </div>
                     <div class="variant-info">
                       <p class="variant-name">{{ variant.name }}</p>
-                      <p class="variant-sku">SKU: {{ variant.sku }}</p>
-                      <p class="variant-dimensions" v-if="variant.dimensions">
-                        {{ variant.dimensions.width }}×{{ variant.dimensions.height }}{{ variant.dimensions.depth ? `×${variant.dimensions.depth}` : '' }} cm
-                      </p>
                     </div>
-                    <div class="variant-price">
-                      {{ formatPrice(variant.price) }}
+                    <div class="variant-sku-col">
+                      <span class="variant-sku">{{ variant.sku }}</span>
+                    </div>
+                    <div class="variant-dimensions-col">
+                      <span class="variant-dimensions" v-if="variant.dimensions">
+                        {{ variant.dimensions.width }}×{{ variant.dimensions.height }}{{ variant.dimensions.depth ? `×${variant.dimensions.depth}` : '' }} cm
+                      </span>
+                    </div>
+                    <div class="variant-price-col">
+                      <span class="variant-price">{{ formatPrice(variant.price) }}</span>
+                      <span class="leader-line"></span>
                     </div>
                     <button
                       class="variant-preview-btn"
@@ -475,7 +480,7 @@ const handleSelectProduct = (product: AdminProduct) => {
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                         <line x1="12" y1="22.08" x2="12" y2="12"/>
                       </svg>
-                      <span>3D Preview</span>
+                      <span>3D</span>
                     </button>
                   </div>
                 </div>
@@ -808,40 +813,81 @@ const handleSelectProduct = (product: AdminProduct) => {
 }
 
 .variants-panel {
-  padding: 16px 20px;
+  padding: 16px 20px 16px 36px;
   margin-left: 48px;
+  background: linear-gradient(to right, rgba(41, 39, 91, 0.03), transparent 40%);
   border-left: 3px solid var(--primary-color, #29275B);
+  position: relative;
 }
 
 .variants-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--primary-color, #29275B);
   margin-bottom: 12px;
+  margin-left: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .variants-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
+  position: relative;
+  padding-left: 28px;
+}
+
+/* Vertical connector line */
+.variants-list::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 20px;
+  width: 1px;
+  background-color: #d1d5db;
 }
 
 .variant-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
+  gap: 16px;
+  padding: 10px 16px;
+  margin-top: 8px;
   background-color: #ffffff;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  transition: box-shadow 0.15s ease;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+/* L-connector elbow for each variant */
+.variant-item::before {
+  content: '';
+  position: absolute;
+  left: -28px;
+  top: 50%;
+  width: 20px;
+  height: 1px;
+  background-color: #d1d5db;
+}
+
+.variant-item:first-child {
+  margin-top: 0;
 }
 
 .variant-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-color: #c7d2fe;
+  background-color: #fafaff;
+}
+
+.variant-item:hover::before {
+  background-color: var(--primary-color, #29275B);
 }
 
 .variant-image {
@@ -866,31 +912,51 @@ const handleSelectProduct = (product: AdminProduct) => {
 }
 
 .variant-info {
-  flex: 1;
-  min-width: 0;
+  width: 160px;
+  min-width: 120px;
+  flex-shrink: 0;
 }
 
 .variant-name {
-  font-weight: 500;
-  font-size: 14px;
-  margin: 0 0 2px;
+  font-weight: 450;
+  font-size: 13px;
+  margin: 0;
   color: var(--text-color, #2d3748);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.variant-sku-col {
+  width: 120px;
+  flex-shrink: 0;
+}
+
 .variant-sku {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted-color, #6b7280);
-  margin: 0 0 2px;
-  font-family: monospace;
+  font-family: 'SF Mono', Monaco, monospace;
+  background-color: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.variant-dimensions-col {
+  width: 100px;
+  flex-shrink: 0;
 }
 
 .variant-dimensions {
-  font-size: 11px;
-  color: #9ca3af;
+  font-size: 12px;
+  color: #4b5563;
   margin: 0;
+}
+
+.variant-price-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .variant-price {
@@ -900,20 +966,33 @@ const handleSelectProduct = (product: AdminProduct) => {
   white-space: nowrap;
 }
 
+.leader-line {
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(to right, #d1d5db 50%, transparent 50%);
+  background-size: 6px 1px;
+}
+
 .variant-preview-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 5px;
+  padding: 6px 12px;
   border: none;
   border-radius: 6px;
   background-color: var(--primary-color, #29275B);
   color: #ffffff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.variant-preview-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .variant-preview-btn:hover:not(:disabled) {
@@ -1109,28 +1188,52 @@ const handleSelectProduct = (product: AdminProduct) => {
 
   .variants-panel {
     margin-left: 16px;
-    padding: 12px 14px;
+    padding: 12px 14px 12px 24px;
+  }
+
+  .variants-list {
+    padding-left: 20px;
+  }
+
+  .variants-list::before {
+    left: 6px;
+  }
+
+  .variant-item::before {
+    left: -20px;
+    width: 14px;
   }
 
   .variant-item {
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
 
   .variant-info {
+    width: auto;
     flex: 1 1 150px;
   }
 
-  .variant-price {
+  .variant-sku-col,
+  .variant-dimensions-col {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .variant-price-col {
     order: 3;
     width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+
+  .leader-line {
+    display: none;
   }
 
   .variant-preview-btn {
     order: 4;
-    width: 100%;
-    justify-content: center;
-    padding: 10px;
   }
 }
 </style>
