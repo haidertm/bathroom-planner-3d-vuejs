@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import type { AdminProduct, ProductFilters, ProductVariant } from '../../../types/admin';
 import GlbPreviewModal from '../../../components/ui/GlbPreviewModal.vue';
 
@@ -33,6 +33,16 @@ const isSomeSelected = computed(() => {
   const selectedCount = props.products.filter(p => localSelectedProducts.value.has(p.id)).length;
   return selectedCount > 0 && selectedCount < props.products.length;
 });
+
+// Template ref for select-all checkbox (indeterminate is a DOM property, not an attribute)
+const selectAllCheckbox = ref<HTMLInputElement | null>(null);
+
+// Sync indeterminate state to DOM property
+watch(isSomeSelected, (value) => {
+  if (selectAllCheckbox.value) {
+    selectAllCheckbox.value.indeterminate = value;
+  }
+}, { immediate: true });
 
 const toggleSelectAll = () => {
   const newSelection = new Set(localSelectedProducts.value);
@@ -127,6 +137,16 @@ const openGlbPreview = (e: Event, product: AdminProduct) => {
   if (!modelPath) return;
   previewModelPath.value = modelPath;
   previewModelName.value = product.name;
+
+  // GTM Tracking
+  if (typeof window !== 'undefined' && (window as any).dataLayer) {
+    (window as any).dataLayer.push({
+      event: 'product_preview_open',
+      product_name: product.name,
+      model_path: modelPath
+    });
+  }
+
   showGlbPreview.value = true;
 };
 
@@ -135,6 +155,17 @@ const openVariantGlbPreview = (e: Event, variant: ProductVariant, productName: s
   if (!variant.path) return;
   previewModelPath.value = variant.path;
   previewModelName.value = `${productName} - ${variant.name}`;
+
+  // GTM Tracking
+  if (typeof window !== 'undefined' && (window as any).dataLayer) {
+    (window as any).dataLayer.push({
+      event: 'product_preview_open',
+      product_name: productName,
+      variant_name: variant.name,
+      model_path: variant.path
+    });
+  }
+
   showGlbPreview.value = true;
 };
 
@@ -211,9 +242,9 @@ const handleSelectProduct = (product: AdminProduct) => {
           <th scope="col" class="checkbox-header">
             <label class="checkbox-container" @click.stop.prevent="toggleSelectAll">
               <input
+                ref="selectAllCheckbox"
                 type="checkbox"
                 :checked="isAllSelected"
-                :indeterminate="isSomeSelected"
                 @click.prevent
               />
               <span class="checkmark" :class="{ 'indeterminate': isSomeSelected }"></span>

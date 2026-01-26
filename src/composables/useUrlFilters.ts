@@ -59,7 +59,7 @@ export function useUrlFilters() {
 
     // Parse sort options
     if (query.sortBy && typeof query.sortBy === 'string') {
-      const validSortBy = ['name', 'price', 'category', 'createdAt'];
+      const validSortBy = ['name', 'price', 'category', 'variants', 'status', 'createdAt', 'updatedAt'];
       if (validSortBy.includes(query.sortBy)) {
         filters.sortBy = query.sortBy as ProductFilters['sortBy'];
       }

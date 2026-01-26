@@ -231,7 +231,15 @@ const handleToggleEnabled = async (product: AdminProduct) => {
  * - Wraps in double-quotes if field contains comma, double-quote, or newline
  */
 const escapeField = (value: string | number): string => {
-  const str = String(value);
+  let str = String(value);
+
+  // Protect against CSV formula injection for string inputs only
+  // Dangerous characters that can trigger formula execution: =, +, -, @, tab (\t), carriage return (\r)
+  // Only apply to strings so numeric values (including negative numbers) are not altered
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(str)) {
+    str = "'" + str;
+  }
+
   const needsQuoting = /[",\n\r]/.test(str);
   const escaped = str.replace(/"/g, '""');
   return needsQuoting ? `"${escaped}"` : escaped;
@@ -339,8 +347,8 @@ const handleUpdatedAtFilterUpdate = (value: ProductFilters['updatedAtFilter']) =
   setFilter('updatedAtFilter', value);
   trackAdminEvent('filter_updated_at', {
     preset: value.preset,
-    has_custom_from: !!value.customRange.from,
-    has_custom_to: !!value.customRange.to,
+    has_custom_from: !!value.customRange?.from,
+    has_custom_to: !!value.customRange?.to,
   });
 };
 

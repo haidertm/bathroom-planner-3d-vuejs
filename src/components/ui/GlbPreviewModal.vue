@@ -24,6 +24,47 @@ let renderer: THREE.WebGLRenderer | null = null;
 let controls: OrbitControls | null = null;
 let animationFrameId: number | null = null;
 let currentModel: THREE.Group | null = null;
+let initTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Dispose of a Three.js object and all its children to free GPU memory.
+ * Traverses the object tree and disposes geometries, materials, and textures.
+ */
+const disposeObject = (object: THREE.Object3D) => {
+  object.traverse((node) => {
+    // Dispose geometry
+    if ('geometry' in node && node.geometry) {
+      (node.geometry as THREE.BufferGeometry).dispose();
+    }
+
+    // Dispose materials and their textures
+    if ('material' in node && node.material) {
+      const materials = Array.isArray(node.material) ? node.material : [node.material];
+
+      materials.forEach((material: THREE.Material) => {
+        if (!material) return;
+
+        // Dispose all texture properties commonly used in PBR materials
+        const textureProps = [
+          'map', 'normalMap', 'roughnessMap', 'metalnessMap',
+          'aoMap', 'emissiveMap', 'alphaMap', 'bumpMap',
+          'displacementMap', 'envMap', 'lightMap', 'specularMap'
+        ];
+
+        textureProps.forEach((prop) => {
+          if (prop in material) {
+            const texture = (material as any)[prop] as THREE.Texture | null;
+            if (texture) {
+              texture.dispose();
+            }
+          }
+        });
+
+        material.dispose();
+      });
+    }
+  });
+};
 
 const initScene = () => {
   if (!containerRef.value) return;
@@ -102,8 +143,9 @@ const loadModel = async (path: string) => {
   isLoading.value = true;
   loadError.value = null;
 
-  // Remove previous model
+  // Remove previous model and dispose GPU resources
   if (currentModel) {
+    disposeObject(currentModel);
     scene.remove(currentModel);
     currentModel = null;
   }
@@ -219,17 +261,41 @@ const cleanup = () => {
     controls = null;
   }
 
+  // Dispose current model
+  if (currentModel && scene) {
+    disposeObject(currentModel);
+    scene.remove(currentModel);
+    currentModel = null;
+  }
+
+  // Dispose scene resources
+  if (scene) {
+    // Dispose environment texture
+    if (scene.environment) {
+      scene.environment.dispose();
+      scene.environment = null;
+    }
+
+    // Dispose background if it's a texture
+    if (scene.background && scene.background instanceof THREE.Texture) {
+      scene.background.dispose();
+    }
+    scene.background = null;
+
+    // Dispose all scene children (grid, lights, etc.)
+    while (scene.children.length > 0) {
+      const child = scene.children[0];
+      disposeObject(child);
+      scene.remove(child);
+    }
+  }
+
   if (renderer) {
     renderer.dispose();
     if (containerRef.value && renderer.domElement.parentNode === containerRef.value) {
       containerRef.value.removeChild(renderer.domElement);
     }
     renderer = null;
-  }
-
-  if (currentModel && scene) {
-    scene.remove(currentModel);
-    currentModel = null;
   }
 
   scene = null;
@@ -249,7 +315,11 @@ const handleKeydown = (e: KeyboardEvent) => {
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     // Wait for DOM to render
-    setTimeout(() => {
+    initTimeoutId = setTimeout(() => {
+      // Guard: check modal is still open before initializing
+      // (user may have closed it before timeout fired)
+      if (!props.isOpen) return;
+
       initScene();
       if (props.modelPath) {
         loadModel(props.modelPath);
@@ -258,6 +328,11 @@ watch(() => props.isOpen, (isOpen) => {
       window.addEventListener('keydown', handleKeydown);
     }, 50);
   } else {
+    // Cancel pending initialization if modal closed quickly
+    if (initTimeoutId) {
+      clearTimeout(initTimeoutId);
+      initTimeoutId = null;
+    }
     cleanup();
     window.removeEventListener('resize', handleResize);
     window.removeEventListener('keydown', handleKeydown);
@@ -271,6 +346,11 @@ watch(() => props.modelPath, (newPath) => {
 });
 
 onBeforeUnmount(() => {
+  // Cancel pending initialization timeout
+  if (initTimeoutId) {
+    clearTimeout(initTimeoutId);
+    initTimeoutId = null;
+  }
   cleanup();
   window.removeEventListener('resize', handleResize);
   window.removeEventListener('keydown', handleKeydown);

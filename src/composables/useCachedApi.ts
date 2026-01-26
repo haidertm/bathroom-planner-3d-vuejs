@@ -81,11 +81,18 @@ async function waitForSync(): Promise<void> {
  * Prevents concurrent syncs and allows readers to wait
  */
 async function withSyncLock<T>(fn: () => Promise<T>): Promise<T> {
-  // Wait for any existing sync to complete first
-  await waitForSync();
+  // Only wait if a sync is already in progress
+  // This avoids creating a microtask boundary when no sync is active,
+  // preventing two callers from both passing when no sync is in progress
+  if (isSyncing.value) {
+    await waitForSync();
+  }
 
-  // Set up the lock
+  // Immediately claim the lock (no await between check and claim)
   isSyncing.value = true;
+
+  // Create promise and resolver scoped to this call
+  // so concurrent callers cannot overwrite resolveSync
   let resolveSync: () => void;
   syncPromise = new Promise<void>((resolve) => {
     resolveSync = resolve;
@@ -669,10 +676,10 @@ function applySorting(
         comparison = a.enabled === b.enabled ? 0 : a.enabled ? -1 : 1;
         break;
       case 'createdAt':
-        comparison = (a.createdAt || 0) - (b.createdAt || 0);
+        comparison = (a.createdAt ?? 0) - (b.createdAt ?? 0);
         break;
       case 'updatedAt':
-        comparison = (a.updatedAt || 0) - (b.updatedAt || 0);
+        comparison = (a.updatedAt ?? 0) - (b.updatedAt ?? 0);
         break;
     }
     return sortOrder === 'asc' ? comparison : -comparison;
@@ -739,48 +746,67 @@ function applyFilters(
     result = result.filter((p) => p.enabled === enabledValue);
   }
 
-  // Filter by updated date
+  // Filter by updated date (using calendar-day boundaries in local time)
   if (filters.updatedAtFilter && filters.updatedAtFilter.preset !== 'all') {
-    const now = Date.now();
-    let cutoffTime: number | null = null;
+    // Compute start of today (00:00:00.000 local time)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayMs = startOfToday.getTime();
+
+    let lowerBound: number | null = null;
+    let upperBound: number | null = null;
 
     switch (filters.updatedAtFilter.preset) {
       case 'today':
-        cutoffTime = now - 24 * 60 * 60 * 1000;
+        // From start of today onwards
+        lowerBound = startOfTodayMs;
         break;
       case 'yesterday': {
-        const yesterday = now - 24 * 60 * 60 * 1000;
-        const dayBefore = now - 48 * 60 * 60 * 1000;
-        result = result.filter((p) => {
-          const updatedAt = p.updatedAt || 0;
-          return updatedAt >= dayBefore && updatedAt < yesterday;
-        });
-        return result; // Return early for yesterday case
+        // From start of yesterday to start of today (exclusive)
+        const startOfYesterday = new Date(startOfToday);
+        startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+        lowerBound = startOfYesterday.getTime();
+        upperBound = startOfTodayMs - 1; // End of yesterday (23:59:59.999)
+        break;
       }
-      case 'week':
-        cutoffTime = now - 7 * 24 * 60 * 60 * 1000;
+      case 'week': {
+        // From start of day 7 days ago onwards
+        const startOfWeekAgo = new Date(startOfToday);
+        startOfWeekAgo.setDate(startOfWeekAgo.getDate() - 7);
+        lowerBound = startOfWeekAgo.getTime();
         break;
-      case 'month':
-        cutoffTime = now - 30 * 24 * 60 * 60 * 1000;
+      }
+      case 'month': {
+        // From start of day 30 days ago onwards
+        const startOfMonthAgo = new Date(startOfToday);
+        startOfMonthAgo.setDate(startOfMonthAgo.getDate() - 30);
+        lowerBound = startOfMonthAgo.getTime();
         break;
-      case 'custom':
+      }
+      case 'custom': {
+        // Normalize 'from' to start of day and 'to' to end of day
         if (filters.updatedAtFilter.customRange?.from) {
-          cutoffTime = new Date(filters.updatedAtFilter.customRange.from).getTime();
+          const fromDate = new Date(filters.updatedAtFilter.customRange.from);
+          fromDate.setHours(0, 0, 0, 0);
+          lowerBound = fromDate.getTime();
+        }
+        if (filters.updatedAtFilter.customRange?.to) {
+          const toDate = new Date(filters.updatedAtFilter.customRange.to);
+          toDate.setHours(23, 59, 59, 999);
+          upperBound = toDate.getTime();
         }
         break;
+      }
     }
 
-    if (cutoffTime !== null) {
-      result = result.filter((p) => (p.updatedAt || 0) >= cutoffTime!);
+    // Apply lower bound filter
+    if (lowerBound !== null) {
+      result = result.filter((p) => (p.updatedAt ?? 0) >= lowerBound!);
     }
 
-    // Handle custom end date
-    if (
-      filters.updatedAtFilter.preset === 'custom' &&
-      filters.updatedAtFilter.customRange?.to
-    ) {
-      const endTime = new Date(filters.updatedAtFilter.customRange.to).getTime();
-      result = result.filter((p) => (p.updatedAt || 0) <= endTime);
+    // Apply upper bound filter
+    if (upperBound !== null) {
+      result = result.filter((p) => (p.updatedAt ?? 0) <= upperBound!);
     }
   }
 
