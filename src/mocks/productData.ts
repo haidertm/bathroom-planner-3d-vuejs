@@ -6827,16 +6827,7 @@ const productData: ProductData = {
                     },
                     movement: {
                         snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
+                        cornerInstallOnly: false,
                         allowVerticalMovement: false,
                         allowFreeRotation: true
                     },
@@ -6858,16 +6849,7 @@ const productData: ProductData = {
                     },
                     movement: {
                         snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
+                        cornerInstallOnly: false,
                         allowVerticalMovement: false,
                         allowFreeRotation: true
                     },
@@ -6889,16 +6871,7 @@ const productData: ProductData = {
                     },
                     movement: {
                         snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
+                        cornerInstallOnly: false,
                         allowVerticalMovement: false,
                         allowFreeRotation: true
                     },
@@ -6957,1276 +6930,1261 @@ const productData: ProductData = {
             features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
         },
 
+    {
+      id: 'bath_3',
+      link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
+      name: 'Kensington 1700mm Freestanding Slipper Bath',
+      price: '599.99',
+      image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
+      variants: [
         {
-            id: 'bath_3',
-            link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
-            name: 'Kensington 1700mm Freestanding Slipper Bath',
-            price: '599.99',
-            image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
-            variants: [
-                {
-                    id: 'C51089',
-                    name: '1700mm',
-                    image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
-                    link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
-                    path: '../../models/bath/C51089.glb',
-                    dimensions: { width: 170, height: 67, depth: 73 },
-                    orientation: {
-                        type: 'face_into_room',
-                        description: 'Freestanding bath with buffer from wall'
-                    },
-                    movement: {
-                        snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C51089',
-                    price: '599.99',
-                    title: 'Kensington 1700mm Freestanding Slipper Bath',
-                    filterAttributes: { length: '1700mm', width: '730mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
-                },
-                {
-                    id: 'C51098',
-                    name: '1370mm',
-                    image: 'assets/productImages/bath/C51098-1000-Kensington-1370mm-Freestanding-Slipper-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/kensington-1370mm-freestanding-slipper-bath-c51098',
-                    path: '../../models/bath/C51098.glb',
-                    dimensions: { width: 137.2, height: 67, depth: 71.7 },
-                    orientation: {
-                        type: 'face_into_room',
-                        description: 'Freestanding bath with buffer from wall'
-                    },
-                    movement: {
-                        snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C51098',
-                    price: '579.99',
-                    title: 'Kensington 1370mm Freestanding Slipper Bath',
-                    filterAttributes: { length: '1370mm', width: '720mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
-                },
-                {
-                    id: 'C51088',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/C51088-1000-Kensington-V2-1500mm-Freestanding-Slipper-Bath_13.webp',
-                    link: 'https://www.bathroommountain.co.uk/kensington-v2-1500mm-freestanding-slipper-bath-c51088',
-                    path: '../../models/bath/C51088.glb',
-                    dimensions: { width: 152.2, height: 67, depth: 73.1 },
-                    orientation: {
-                        type: 'face_into_room',
-                        description: 'Freestanding bath with buffer from wall'
-                    },
-                    movement: {
-                        snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C51088',
-                    price: '589.99',
-                    title: 'Kensington 1500mm Freestanding Slipper Bath',
-                    filterAttributes: { length: '1500mm', width: '730mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+          id: 'C51089',
+          name: '1700mm',
+          image: 'assets/productImages/bath/C51089-1000-Kensington-V2-1700mm-Freestanding-Slipper-Bath_13.webp',
+          link: 'https://www.bathroommountain.co.uk/kensington-v2-1700mm-freestanding-slipper-bath-c51089',
+          path: '../../models/bath/C51089.glb',
+          dimensions: { width: 170, height: 67, depth: 73 },
+          orientation: {
+            type: 'face_into_room',
+            description: 'Freestanding bath with buffer from wall'
+          },
+          movement: {
+            snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C51089',
+          price: '599.99',
+          title: 'Kensington 1700mm Freestanding Slipper Bath'
         },
+        {
+          id: 'C51098',
+          name: '1370mm',
+          image: 'assets/productImages/bath/C51098-1000-Kensington-1370mm-Freestanding-Slipper-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/kensington-1370mm-freestanding-slipper-bath-c51098',
+          path: '../../models/bath/C51098.glb',
+          dimensions: { width: 137.2, height: 67, depth: 71.7 },
+          orientation: {
+            type: 'face_into_room',
+            description: 'Freestanding bath with buffer from wall'
+          },
+          movement: {
+            snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C51098',
+          price: '579.99',
+          title: 'Kensington 1370mm Freestanding Slipper Bath'
+        },
+        {
+          id: 'C51088',
+          name: '1500mm',
+          image: 'assets/productImages/bath/C51088-1000-Kensington-V2-1500mm-Freestanding-Slipper-Bath_13.webp',
+          link: 'https://www.bathroommountain.co.uk/kensington-v2-1500mm-freestanding-slipper-bath-c51088',
+          path: '../../models/bath/C51088.glb',
+          dimensions: { width: 152.2, height: 67, depth: 73.1 },
+          orientation: {
+            type: 'face_into_room',
+            description: 'Freestanding bath with buffer from wall'
+          },
+          movement: {
+            snapToWall: false,
+            cornerInstallOnly: {
+              enabled: true,
+              preferredCorner: 'north-west',
+              rotation: {
+                'north-west': 0,
+                'north-east': -Math.PI / 2,
+                'south-east': Math.PI,
+                'south-west': Math.PI / 2
+              }
+            },
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C51088',
+          price: '589.99',
+          title: 'Kensington 1500mm Freestanding Slipper Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+    },
 
+    {
+          id: 'bath_4',
+          link: 'https://www.bathroommountain.co.uk/stafford-1700x700-round-single-ended-bath-c53017',
+          name: 'Stafford 1700x700 Round Single Ended bath',
+          price: '125.00',
+          image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
+          variants: [
+              {
+                  id: 'C53017',
+                  name: '1700 X 700mm',
+                  image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-1700x700-round-single-ended-bath-c53017',
+                  path: '../../models/bath/C53017.glb',
+                  dimensions: { width: 170, height: 41.1, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53017',
+                  price: '125.00',
+                  title: 'Stafford 1700x700 Round Single Ended bath'
+              },
+              {
+                  id: 'C53014',
+                  name: '1400 X 700mm',
+                  image: 'assets/productImages/bath/C53014-1000-1400x700-Round-Single-Ended-Bath_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-v2-1400x700-round-single-ended-bath-c53014',
+                  path: '../../models/bath/C53014.glb',
+                  dimensions: { width: 140.3, height: 41.4, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53014',
+                  price: '139.99',
+                  title: 'Stafford 1400x700 Round Single Ended Bath'
+              },
+              {
+                  id: 'C53015',
+                  name: '1500 X 700mm',
+                  image: 'assets/productImages/bath/C53015-1000-1500x700-Round-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-1500x700-round-single-ended-bath-c53015',
+                  path: '../../models/bath/C53015.glb',
+                  dimensions: { width: 150, height: 41.1, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53015',
+                  price: '139.99',
+                  title: 'Stafford 1500x700 Round Single Ended Bath'
+              },
+              {
+                  id: 'C53016',
+                  name: '1600 X 700mm',
+                  image: 'assets/productImages/bath/C53016-1000-1600x700-Round-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/stafford-1600x700-round-single-ended-bath-c53016',
+                  path: '../../models/bath/C53016.glb',
+                  dimensions: { width: 160, height: 41.1, depth: 70 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53016',
+                  price: '139.99',
+                  title: 'Stafford 1600x700 Round Single Ended Bath'
+              },
+          ],
+          variantType: 'Size Options',
+          features: ['Single Ended Design', 'Acrylic Construction', 'Multiple Lengths']
+      },
+    {
+          id: 'bath_5',
+          link: 'https://www.bathroommountain.co.uk/hereford-v2-1500x700-square-single-ended-bath-c53018',
+          name: 'Hereford 1500x700 Square Single Ended Bath',
+          price: '129.00',
+          image: 'assets/productImages/bath/C53018-1000-1500x700-Square-Single-Ended-Bath_1.webp',
+          variants: [
+              {
+                  id: 'C53018',
+                  name: '1500 X 700mm',
+                  image: 'assets/productImages/bath/C53018-1000-1500x700-Square-Single-Ended-Bath_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1500x700-square-single-ended-bath-c53018',
+                  path: '../../models/bath/C53018.glb',
+                  dimensions: { width: 150.8, height: 44.6, depth: 70.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53018',
+                  price: '129.00',
+                  title: 'Hereford 1500x700 Square Single Ended Bath'
+              },
+              {
+                  id: 'C53019',
+                  name: '1600 X 700mm',
+                  image: 'assets/productImages/bath/C53019-1000-1600x700-Square-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1600x700-square-single-ended-bath-c53019',
+                  path: '../../models/bath/C53019.glb',
+                  dimensions: { width: 160.2, height: 44.6, depth: 70.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53019',
+                  price: '159.99',
+                  title: 'Hereford 1600x700 Square Single Ended Bath'
+              },
+              {
+                  id: 'C53021',
+                  name: '1700 X 750mm',
+                  image: 'assets/productImages/bath/C53021-1000-1700x750-Square-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1700x750-square-single-ended-bath-c53021',
+                  path: '../../models/bath/C53021.glb',
+                  dimensions: { width: 169.5, height: 44.6, depth: 70.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53021',
+                  price: '184.99',
+                  title: 'Hereford 1700x750 Square Single Ended Bath'
+              },
+              {
+                  id: 'C53022',
+                  name: '1800 X 800mm',
+                  image: 'assets/productImages/bath/C53022-1000-1800x800-Square-Single-Ended-Bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/hereford-v2-1800x800-square-single-ended-bath-c53022',
+                  path: '../../models/bath/C53022.glb',
+                  dimensions: { width: 179.4, height: 54.6, depth: 79.3 },
+                  orientation: {
+                      type: 'face_into_room',
+                      wallBuffer: 0, // Flush with wall - no gap
+                      description: 'Item is part of wall opening'
+                  },
+                  movement: { // NEW: Sink movement configuration
+                      snapToWall: true,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: false
+                  },
+                  sku: 'C53022',
+                  price: '209.99',
+                  title: 'Hereford 1800x800 Square Single Ended Bath'
+              },
+          ],
+          variantType: 'Orientation',
+        features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+      },
+    {
+          id: 'bath_6',
+          link: 'https://www.bathroommountain.co.uk/richmond-v2-1500mm-freestanding-slipper-bath-c51090',
+          name: 'Richmond 1500mm Freestanding Slipper Bath',
+          price: '449.00',
+          image: 'assets/productImages/bath/c51090-1000-richmond-v2-1500mm-freestanding-slipper-bath.webp',
+          variants: [
+              {
+                  id: 'C51090',
+                  name: '1500mm',
+                  image: 'assets/productImages/bath/c51090-1000-richmond-v2-1500mm-freestanding-slipper-bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/richmond-v2-1500mm-freestanding-slipper-bath-c51090',
+                  path: '../../models/bath/C51090.glb',
+                  dimensions: { width: 149.7, height: 66.8, depth: 71.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      description: 'Freestanding bath with buffer from wall'
+                  },
+                  movement: {
+                      snapToWall: false,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: true
+                  },
+                  sku: 'C51090',
+                  price: '449.00',
+                  title: 'Richmond 1500mm Freestanding Slipper Bath'
+              },
+              {
+                  id: 'C51097',
+                  name: '1350mm',
+                  image: 'assets/productImages/bath/C51097-1000-Richmond-1370mm-Freestanding-Slipper-Bath_1.webp',
+                  link: 'https://www.bathroommountain.co.uk/richmond-1370mm-freestanding-slipper-bath-c51097',
+                  path: '../../models/bath/C51097.glb',
+                  dimensions: { width: 136.7, height: 66.8, depth: 71.2 },
+                  orientation: {
+                      type: 'face_into_room',
+                      description: 'Freestanding bath with buffer from wall'
+                  },
+                  movement: {
+                      snapToWall: false,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: true
+                  },
+                  sku: 'C51097',
+                  price: '439.99',
+                  title: 'Richmond 1370mm Freestanding Slipper Bath'
+              },
+              {
+                  id: 'C51091',
+                  name: '1700',
+                  image: 'assets/productImages/bath/c51091-1000-richmond-v2-1700mm-freestanding-slipper-bath.webp',
+                  link: 'https://www.bathroommountain.co.uk/richmond-v2-1700mm-freestanding-slipper-bath-c51091',
+                  path: '../../models/bath/C51091.glb',
+                  dimensions: { width: 170, height: 66.9, depth: 73.1 },
+                  orientation: {
+                      type: 'face_into_room',
+                      description: 'Freestanding bath with buffer from wall'
+                  },
+                  movement: {
+                      snapToWall: false,
+                      cornerInstallOnly: {
+                          enabled: true,
+                          preferredCorner: 'north-west',
+                          rotation: {
+                              'north-west': 0,
+                              'north-east': -Math.PI / 2,
+                              'south-east': Math.PI,
+                              'south-west': Math.PI / 2
+                          }
+                      },
+                      allowVerticalMovement: false,
+                      allowFreeRotation: true
+                  },
+                  sku: 'C51091',
+                  price: '579.99',
+                  title: 'Richmond 1700mm Freestanding Slipper Bath'
+              },
+          ],
+          variantType: 'Orientation',
+        features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+      },
+    {
+      id: 'bath_7',
+      link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-white-freestanding-bath-51125',
+      name: 'Ealing 1500mm Matt White Freestanding Bath',
+      price: '749.99',
+      image: 'assets/productImages/bath/51125-1000-Ealing-1500mm-Matt-White-Freestanding-Bath_2.webp',
+      variants: [
         {
-            id: 'bath_4',
-            link: 'https://www.bathroommountain.co.uk/stafford-1700x700-round-single-ended-bath-c53017',
-            name: 'Stafford 1700x700 Round Single Ended bath',
-            price: '125.00',
-            image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
-            variants: [
-                {
-                    id: 'C53017',
-                    name: '1700 X 700mm',
-                    image: 'assets/productImages/bath/C53017-1000-1700x700-Round-Single-Ended-bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/stafford-1700x700-round-single-ended-bath-c53017',
-                    path: '../../models/bath/C53017.glb',
-                    dimensions: { width: 170, height: 41.1, depth: 70 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53017',
-                    price: '125.00',
-                    title: 'Stafford 1700x700 Round Single Ended bath',
-                    filterAttributes: { length: '1700mm', width: '700mm', type: 'Standard', finish: 'White', style: 'Modern', handed: 'N/A' }
-                },
-                {
-                    id: 'C53014',
-                    name: '1400 X 700mm',
-                    image: 'assets/productImages/bath/C53014-1000-1400x700-Round-Single-Ended-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/stafford-v2-1400x700-round-single-ended-bath-c53014',
-                    path: '../../models/bath/C53014.glb',
-                    dimensions: { width: 140.3, height: 41.4, depth: 70 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53014',
-                    price: '139.99',
-                    title: 'Stafford 1400x700 Round Single Ended Bath',
-                    filterAttributes: { length: '1400mm', width: '700mm', type: 'Standard', finish: 'White', style: 'Modern', handed: 'N/A' }
-                },
-                {
-                    id: 'C53015',
-                    name: '1500 X 700mm',
-                    image: 'assets/productImages/bath/C53015-1000-1500x700-Round-Single-Ended-Bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/stafford-1500x700-round-single-ended-bath-c53015',
-                    path: '../../models/bath/C53015.glb',
-                    dimensions: { width: 150, height: 41.1, depth: 70 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53015',
-                    price: '139.99',
-                    title: 'Stafford 1500x700 Round Single Ended Bath',
-                    filterAttributes: { length: '1500mm', width: '700mm', type: 'Standard', finish: 'White', style: 'Modern', handed: 'N/A' }
-                },
-                {
-                    id: 'C53016',
-                    name: '1600 X 700mm',
-                    image: 'assets/productImages/bath/C53016-1000-1600x700-Round-Single-Ended-Bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/stafford-1600x700-round-single-ended-bath-c53016',
-                    path: '../../models/bath/C53016.glb',
-                    dimensions: { width: 160, height: 41.1, depth: 70 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53016',
-                    price: '139.99',
-                    title: 'Stafford 1600x700 Round Single Ended Bath',
-                    filterAttributes: { length: '1600mm', width: '700mm', type: 'Standard', finish: 'White', style: 'Modern', handed: 'N/A' }
-                },
-            ],
-            variantType: 'Size Options',
-            features: ['Single Ended Design', 'Acrylic Construction', 'Multiple Lengths']
+          id: '51125',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51125-1000-Ealing-1500mm-Matt-White-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-white-freestanding-bath-51125',
+          path: '../../models/bath/51125.glb',
+          dimensions: { width: 149.7, height: 58, depth: 79.7 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51125',
+          price: '749.99',
+          title: 'Ealing 1500mm Matt White Freestanding Bath'
         },
         {
-            id: 'bath_5',
-            link: 'https://www.bathroommountain.co.uk/hereford-v2-1500x700-square-single-ended-bath-c53018',
-            name: 'Hereford 1500x700 Square Single Ended Bath',
-            price: '129.00',
-            image: 'assets/productImages/bath/C53018-1000-1500x700-Square-Single-Ended-Bath_1.webp',
-            variants: [
-                {
-                    id: 'C53018',
-                    name: '1500 X 700mm',
-                    image: 'assets/productImages/bath/C53018-1000-1500x700-Square-Single-Ended-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/hereford-v2-1500x700-square-single-ended-bath-c53018',
-                    path: '../../models/bath/C53018.glb',
-                    dimensions: { width: 150.8, height: 44.6, depth: 70.1 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53018',
-                    price: '129.00',
-                    title: 'Hereford 1500x700 Square Single Ended Bath'
-                },
-                {
-                    id: 'C53019',
-                    name: '1600 X 700mm',
-                    image: 'assets/productImages/bath/C53019-1000-1600x700-Square-Single-Ended-Bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/hereford-v2-1600x700-square-single-ended-bath-c53019',
-                    path: '../../models/bath/C53019.glb',
-                    dimensions: { width: 160.2, height: 44.6, depth: 70.1 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53019',
-                    price: '159.99',
-                    title: 'Hereford 1600x700 Square Single Ended Bath'
-                },
-                {
-                    id: 'C53021',
-                    name: '1700 X 750mm',
-                    image: 'assets/productImages/bath/C53021-1000-1700x750-Square-Single-Ended-Bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/hereford-v2-1700x750-square-single-ended-bath-c53021',
-                    path: '../../models/bath/C53021.glb',
-                    dimensions: { width: 169.5, height: 44.6, depth: 70.1 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53021',
-                    price: '184.99',
-                    title: 'Hereford 1700x750 Square Single Ended Bath'
-                },
-                {
-                    id: 'C53022',
-                    name: '1800 X 800mm',
-                    image: 'assets/productImages/bath/C53022-1000-1800x800-Square-Single-Ended-Bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/hereford-v2-1800x800-square-single-ended-bath-c53022',
-                    path: '../../models/bath/C53022.glb',
-                    dimensions: { width: 179.4, height: 54.6, depth: 79.3 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C53022',
-                    price: '209.99',
-                    title: 'Hereford 1800x800 Square Single Ended Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: '51126',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51126-1000-Ealing-1700mm-Matt-White-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1700mm-matt-white-freestanding-bath-51126',
+          path: '../../models/bath/51126.glb',
+          dimensions: { width: 170.1, height: 62.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51126',
+          price: '799.99',
+          title: 'Ealing 1700mm Matt White Freestanding Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_8',
+      link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-black-freestanding-bath-51127',
+      name: 'Ealing 1500mm Matt Black Freestanding Bath',
+      price: '679.99',
+      image: 'assets/productImages/bath/51127-1000-Ealing-1500mm-Matt-Black-Freestanding-Bath_2.webp',
+      variants: [
+        {
+          id: '51127',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51127-1000-Ealing-1500mm-Matt-Black-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-black-freestanding-bath-51127',
+          path: '../../models/bath/51127.glb',
+          dimensions: { width: 149.7, height: 58, depth: 79.7 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51127',
+          price: '679.99',
+          title: 'Ealing 1500mm Matt Black Freestanding Bath'
         },
         {
-            id: 'bath_6',
-            link: 'https://www.bathroommountain.co.uk/richmond-v2-1500mm-freestanding-slipper-bath-c51090',
-            name: 'Richmond 1500mm Freestanding Slipper Bath',
-            price: '449.00',
-            image: 'assets/productImages/bath/c51090-1000-richmond-v2-1500mm-freestanding-slipper-bath.webp',
-            variants: [
-                {
-                    id: 'C51090',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/c51090-1000-richmond-v2-1500mm-freestanding-slipper-bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/richmond-v2-1500mm-freestanding-slipper-bath-c51090',
-                    path: '../../models/bath/C51090.glb',
-                    dimensions: { width: 149.7, height: 66.8, depth: 71.2 },
-                    orientation: {
-                        type: 'face_into_room',
-                        description: 'Freestanding bath with buffer from wall'
-                    },
-                    movement: {
-                        snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C51090',
-                    price: '449.00',
-                    title: 'Richmond 1500mm Freestanding Slipper Bath',
-                    filterAttributes: { length: '1500mm', width: '710mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
-                },
-                {
-                    id: 'C51097',
-                    name: '1350mm',
-                    image: 'assets/productImages/bath/C51097-1000-Richmond-1370mm-Freestanding-Slipper-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/richmond-1370mm-freestanding-slipper-bath-c51097',
-                    path: '../../models/bath/C51097.glb',
-                    dimensions: { width: 136.7, height: 66.8, depth: 71.2 },
-                    orientation: {
-                        type: 'face_into_room',
-                        description: 'Freestanding bath with buffer from wall'
-                    },
-                    movement: {
-                        snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C51097',
-                    price: '439.99',
-                    title: 'Richmond 1370mm Freestanding Slipper Bath',
-                    filterAttributes: { length: '1370mm', width: '710mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
-                },
-                {
-                    id: 'C51091',
-                    name: '1700',
-                    image: 'assets/productImages/bath/c51091-1000-richmond-v2-1700mm-freestanding-slipper-bath.webp',
-                    link: 'https://www.bathroommountain.co.uk/richmond-v2-1700mm-freestanding-slipper-bath-c51091',
-                    path: '../../models/bath/C51091.glb',
-                    dimensions: { width: 170, height: 66.9, depth: 73.1 },
-                    orientation: {
-                        type: 'face_into_room',
-                        description: 'Freestanding bath with buffer from wall'
-                    },
-                    movement: {
-                        snapToWall: false,
-                        cornerInstallOnly: {
-                            enabled: true,
-                            preferredCorner: 'north-west',
-                            rotation: {
-                                'north-west': 0,
-                                'north-east': -Math.PI / 2,
-                                'south-east': Math.PI,
-                                'south-west': Math.PI / 2
-                            }
-                        },
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C51091',
-                    price: '579.99',
-                    title: 'Richmond 1700mm Freestanding Slipper Bath',
-                    filterAttributes: { length: '1700mm', width: '730mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: '51128',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51128-1000-Ealing-1700mm-Matt-Black-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1700mm-matt-black-freestanding-bath-51128',
+          path: '../../models/bath/51128.glb',
+          dimensions: { width: 170.1, height: 62.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51128',
+          price: '719.99',
+          title: 'Ealing 1700mm Matt Black Freestanding Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_9',
+      link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-freestanding-bath-51129',
+      name: 'Finchley 1500mm Fluted Freestanding Bath',
+      price: '495.99',
+      image: 'assets/productImages/bath/51129-1000-Finchley-1500mm-Fluted-Freestanding-Bath_2.webp',
+      variants: [
+        {
+          id: '51129',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51129-1000-Finchley-1500mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-freestanding-bath-51129',
+          path: '../../models/bath/51129.glb',
+          dimensions: { width: 150, height: 58.5, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51129',
+          price: '495.99',
+          title: 'Finchley 1700mm Fluted Freestanding Bath'
         },
         {
-            id: 'bath_7',
-            link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-white-freestanding-bath-51125',
-            name: 'Ealing 1500mm Matt White Freestanding Bath',
-            price: '749.99',
-            image: 'assets/productImages/bath/51125-1000-Ealing-1500mm-Matt-White-Freestanding-Bath_2.webp',
-            variants: [
-                {
-                    id: '51125',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/51125-1000-Ealing-1500mm-Matt-White-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-white-freestanding-bath-51125',
-                    path: '../../models/bath/51125.glb',
-                    dimensions: { width: 149.7, height: 58, depth: 79.7 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51125',
-                    price: '749.99',
-                    title: 'Ealing 1500mm Matt White Freestanding Bath'
-                },
-                {
-                    id: '51126',
-                    name: '1700mm',
-                    image: 'assets/productImages/bath/51126-1000-Ealing-1700mm-Matt-White-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/ealing-1700mm-matt-white-freestanding-bath-51126',
-                    path: '../../models/bath/51126.glb',
-                    dimensions: { width: 170.1, height: 62.5, depth: 80 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51126',
-                    price: '799.99',
-                    title: 'Ealing 1700mm Matt White Freestanding Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: '51130',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51130-1000-Finchley-1700mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1700mm-fluted-freestanding-bath-51130',
+          path: '../../models/bath/51130.glb',
+          dimensions: { width: 170, height: 58.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51130',
+          price: '639.99',
+          title: 'Finchley 1700mm Fluted Freestanding Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_10',
+      link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-back-to-wall-bath-51131',
+      name: 'Finchley 1500mm Fluted Back To Wall Bath',
+      price: '495.99',
+      image: 'assets/productImages/bath/51131-1000-Finchley-1500mm-Fluted-Back-To-Wall-Bath_2.webp',
+      variants: [
+        {
+          id: '51131',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51131-1000-Finchley-1500mm-Fluted-Back-To-Wall-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-back-to-wall-bath-51131',
+          path: '../../models/bath/51131.glb',
+          dimensions: { width: 150, height: 58.5, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: '51131',
+          price: '495.99',
+          title: 'Finchley 1500mm Fluted Back To Wall Bath'
         },
         {
-            id: 'bath_8',
-            link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-black-freestanding-bath-51127',
-            name: 'Ealing 1500mm Matt Black Freestanding Bath',
-            price: '679.99',
-            image: 'assets/productImages/bath/51127-1000-Ealing-1500mm-Matt-Black-Freestanding-Bath_2.webp',
-            variants: [
-                {
-                    id: '51127',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/51127-1000-Ealing-1500mm-Matt-Black-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-black-freestanding-bath-51127',
-                    path: '../../models/bath/51127.glb',
-                    dimensions: { width: 149.7, height: 58, depth: 79.7 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51127',
-                    price: '679.99',
-                    title: 'Ealing 1500mm Matt Black Freestanding Bath'
-                },
-                {
-                    id: '51128',
-                    name: '1700mm',
-                    image: 'assets/productImages/bath/51128-1000-Ealing-1700mm-Matt-Black-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/ealing-1700mm-matt-black-freestanding-bath-51128',
-                    path: '../../models/bath/51128.glb',
-                    dimensions: { width: 170.1, height: 62.5, depth: 80 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51128',
-                    price: '719.99',
-                    title: 'Ealing 1700mm Matt Black Freestanding Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: '51132',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51132-1000-Finchley-1700mm-Fluted-Back-To-Wall-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1700mm-fluted-back-to-wall-bath-51132',
+          path: '../../models/bath/51132.glb',
+          dimensions: { width: 170, height: 58.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51132',
+          price: '639.99',
+          title: 'Finchley 1700mm Fluted Back To Wall Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_11',
+      link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-freestanding-bath-51137',
+      name: 'Brent 1500mm Fluted Matt White Freestanding Bath',
+      price: '749.99',
+      image: 'assets/productImages/bath/51137-1000-Brent-1500mm-Fluted-Freestanding-Bath_2.webp',
+      variants: [
+        {
+          id: '51137',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51137-1000-Brent-1500mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-freestanding-bath-51137',
+          path: '../../models/bath/51137.glb',
+          dimensions: { width: 150, height: 60, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51137',
+          price: '749.99',
+          title: 'Brent 1500mm Fluted Matt White Freestanding Bath'
         },
         {
-            id: 'bath_9',
-            link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-freestanding-bath-51129',
-            name: 'Finchley 1500mm Fluted Freestanding Bath',
-            price: '495.99',
-            image: 'assets/productImages/bath/51129-1000-Finchley-1500mm-Fluted-Freestanding-Bath_2.webp',
-            variants: [
-                {
-                    id: '51129',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/51129-1000-Finchley-1500mm-Fluted-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-freestanding-bath-51129',
-                    path: '../../models/bath/51129.glb',
-                    dimensions: { width: 150, height: 58.5, depth: 75 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51129',
-                    price: '495.99',
-                    title: 'Finchley 1700mm Fluted Freestanding Bath'
-                },
-                {
-                    id: '51130',
-                    name: '1700mm',
-                    image: 'assets/productImages/bath/51130-1000-Finchley-1700mm-Fluted-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/finchley-1700mm-fluted-freestanding-bath-51130',
-                    path: '../../models/bath/51130.glb',
-                    dimensions: { width: 170, height: 58.5, depth: 80 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51130',
-                    price: '639.99',
-                    title: 'Finchley 1700mm Fluted Freestanding Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: '51138',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51138-1000-Brent-1700mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1700mm-fluted-matt-white-freestanding-bath-51138',
+          path: '../../models/bath/51138.glb',
+          dimensions: { width: 170, height: 60, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51138',
+          price: '639.99',
+          title: 'Brent 1700mm Fluted Matt White Freestanding Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_12',
+      link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-back-to-wall-bath-51139',
+      name: 'Brent 1500mm Fluted Matt White Back To Wall Bath',
+      price: '749.99',
+      image: 'assets/productImages/bath/51139-1000-Brent-1500mm-Fluted-Back-To-Wall-Bath_1.webp',
+      variants: [
+        {
+          id: '51139',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51139-1000-Brent-1500mm-Fluted-Back-To-Wall-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-back-to-wall-bath-51139',
+          path: '../../models/bath/51139.glb',
+          dimensions: { width: 150, height: 58, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: '51139',
+          price: '749.99',
+          title: 'Brent 1500mm Fluted Matt White Back To Wall Bath'
         },
         {
-            id: 'bath_10',
-            link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-back-to-wall-bath-51131',
-            name: 'Finchley 1500mm Fluted Back To Wall Bath',
-            price: '495.99',
-            image: 'assets/productImages/bath/51131-1000-Finchley-1500mm-Fluted-Back-To-Wall-Bath_2.webp',
-            variants: [
-                {
-                    id: '51131',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/51131-1000-Finchley-1500mm-Fluted-Back-To-Wall-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-back-to-wall-bath-51131',
-                    path: '../../models/bath/51131.glb',
-                    dimensions: { width: 150, height: 58.5, depth: 75 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: '51131',
-                    price: '495.99',
-                    title: 'Finchley 1500mm Fluted Back To Wall Bath'
-                },
-                {
-                    id: '51132',
-                    name: '1700mm',
-                    image: 'assets/productImages/bath/51132-1000-Finchley-1700mm-Fluted-Back-To-Wall-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/finchley-1700mm-fluted-back-to-wall-bath-51132',
-                    path: '../../models/bath/51132.glb',
-                    dimensions: { width: 170, height: 58.5, depth: 80 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51132',
-                    price: '639.99',
-                    title: 'Finchley 1700mm Fluted Back To Wall Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: '51140',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51140-1000-Brent-1700mm-Fluted-Back-To-Wall-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1700mm-fluted-matt-white-back-to-wall-bath-51140',
+          path: '../../models/bath/51140.glb',
+          dimensions: { width: 170, height: 58, depth: 78 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51140',
+          price: '639.99',
+          title: 'Brent 1700mm Fluted Matt White Back To Wall Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_13',
+      link: 'https://www.bathroommountain.co.uk/belvoir-1700-fluted-freestanding-bath-c59005',
+      name: 'Belvoir 1700 Fluted Freestanding Bath',
+      price: '455.99',
+      image: 'assets/productImages/bath/C59005-1000-Belvoir-1700-Fluted-Freestanding-Bath_1.webp',
+      variants: [
+        {
+          id: 'C59005',
+          name: '1700',
+          image: 'assets/productImages/bath/C59005-1000-Belvoir-1700-Fluted-Freestanding-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/belvoir-1700-fluted-freestanding-bath-c59005',
+          path: '../../models/bath/C59005.glb',
+          dimensions: { width: 169.9, height: 58, depth: 78 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59005',
+          price: '455.99',
+          title: 'Belvoir 1700 Fluted Freestanding Bath'
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_14',
+      link: 'https://www.bathroommountain.co.uk/somer-1500-freestanding-bath-c59006',
+      name: 'Somer 1500 Freestanding Bath',
+      price: '569.99',
+      image: 'assets/productImages/bath/C59006-1000-Somer-1500-Freestanding-Bath_1.webp',
+      variants: [
+        {
+          id: 'C59006',
+          name: '1500',
+          image: 'assets/productImages/bath/C59006-1000-Somer-1500-Freestanding-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/somer-1500-freestanding-bath-c59006',
+          path: '../../models/bath/C59006.glb',
+          dimensions: { width: 149.5, height: 67.7, depth: 77.7 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59006',
+          price: '569.99',
+          title: 'Somer 1500 Freestanding Bath'
         },
         {
-            id: 'bath_11',
-            link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-freestanding-bath-51137',
-            name: 'Brent 1500mm Fluted Matt White Freestanding Bath',
-            price: '749.99',
-            image: 'assets/productImages/bath/51137-1000-Brent-1500mm-Fluted-Freestanding-Bath_2.webp',
-            variants: [
-                {
-                    id: '51137',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/51137-1000-Brent-1500mm-Fluted-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-freestanding-bath-51137',
-                    path: '../../models/bath/51137.glb',
-                    dimensions: { width: 150, height: 60, depth: 75 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51137',
-                    price: '749.99',
-                    title: 'Brent 1500mm Fluted Matt White Freestanding Bath'
-                },
-                {
-                    id: '51138',
-                    name: '1700mm',
-                    image: 'assets/productImages/bath/51138-1000-Brent-1700mm-Fluted-Freestanding-Bath_2.webp',
-                    link: 'https://www.bathroommountain.co.uk/brent-1700mm-fluted-matt-white-freestanding-bath-51138',
-                    path: '../../models/bath/51138.glb',
-                    dimensions: { width: 170, height: 60, depth: 80 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51138',
-                    price: '639.99',
-                    title: 'Brent 1700mm Fluted Matt White Freestanding Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59007',
+          name: '1700',
+          image: 'assets/productImages/bath/C59007-1000-Somer-1700-Freestanding-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/somer-1700-freestanding-bath-c59007',
+          path: '../../models/bath/C59007.glb',
+          dimensions: { width: 169.5, height: 67.7, depth: 77.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59007',
+          price: '599.99',
+          title: 'Somer 1700 Freestanding Bath'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_15',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-chrome-feet-c59008',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59008-1000-Gloss-White-1700-Freestanding-Bath-Chrome-Feet_1.webp',
+      variants: [
         {
-            id: 'bath_12',
-            link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-back-to-wall-bath-51139',
-            name: 'Brent 1500mm Fluted Matt White Back To Wall Bath',
-            price: '749.99',
-            image: 'assets/productImages/bath/51139-1000-Brent-1500mm-Fluted-Back-To-Wall-Bath_1.webp',
-            variants: [
-                {
-                    id: '51139',
-                    name: '1500mm',
-                    image: 'assets/productImages/bath/51139-1000-Brent-1500mm-Fluted-Back-To-Wall-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-back-to-wall-bath-51139',
-                    path: '../../models/bath/51139.glb',
-                    dimensions: { width: 150, height: 58, depth: 75 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: '51139',
-                    price: '749.99',
-                    title: 'Brent 1500mm Fluted Matt White Back To Wall Bath'
-                },
-                {
-                    id: '51140',
-                    name: '1700mm',
-                    image: 'assets/productImages/bath/51140-1000-Brent-1700mm-Fluted-Back-To-Wall-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/brent-1700mm-fluted-matt-white-back-to-wall-bath-51140',
-                    path: '../../models/bath/51140.glb',
-                    dimensions: { width: 170, height: 58, depth: 78 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: '51140',
-                    price: '639.99',
-                    title: 'Brent 1700mm Fluted Matt White Back To Wall Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59008',
+          name: '1700',
+          image: 'assets/productImages/bath/C59008-1000-Gloss-White-1700-Freestanding-Bath-Chrome-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-chrome-feet-c59008',
+          path: '../../models/bath/C59008.glb',
+          dimensions: { width: 170, height: 51.6, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59008',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_16',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gunmetal-feet-c59009',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59009-1000-Gloss-White-1700-Freestanding-Bath-Gummetal-Feet_1.webp',
+      variants: [
         {
-            id: 'bath_13',
-            link: 'https://www.bathroommountain.co.uk/belvoir-1700-fluted-freestanding-bath-c59005',
-            name: 'Belvoir 1700 Fluted Freestanding Bath',
-            price: '455.99',
-            image: 'assets/productImages/bath/C59005-1000-Belvoir-1700-Fluted-Freestanding-Bath_1.webp',
-            variants: [
-                {
-                    id: 'C59005',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59005-1000-Belvoir-1700-Fluted-Freestanding-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/belvoir-1700-fluted-freestanding-bath-c59005',
-                    path: '../../models/bath/C59005.glb',
-                    dimensions: { width: 169.9, height: 58, depth: 78 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59005',
-                    price: '455.99',
-                    title: 'Belvoir 1700 Fluted Freestanding Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59009',
+          name: '1700',
+          image: 'assets/productImages/bath/C59009-1000-Gloss-White-1700-Freestanding-Bath-Gummetal-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gunmetal-feet-c59009',
+          path: '../../models/bath/C59009.glb',
+          dimensions: { width: 170, height: 60.6, depth: 83 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59009',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_17',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-matt-black-feet-c59010',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59010-1000-Gloss-White-1700-Freestanding-Bath-Matt-Black-Feet_1.webp',
+      variants: [
         {
-            id: 'bath_14',
-            link: 'https://www.bathroommountain.co.uk/somer-1500-freestanding-bath-c59006',
-            name: 'Somer 1500 Freestanding Bath',
-            price: '569.99',
-            image: 'assets/productImages/bath/C59006-1000-Somer-1500-Freestanding-Bath_1.webp',
-            variants: [
-                {
-                    id: 'C59006',
-                    name: '1500',
-                    image: 'assets/productImages/bath/C59006-1000-Somer-1500-Freestanding-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/somer-1500-freestanding-bath-c59006',
-                    path: '../../models/bath/C59006.glb',
-                    dimensions: { width: 149.5, height: 67.7, depth: 77.7 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59006',
-                    price: '569.99',
-                    title: 'Somer 1500 Freestanding Bath'
-                },
-                {
-                    id: 'C59007',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59007-1000-Somer-1700-Freestanding-Bath_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/somer-1700-freestanding-bath-c59007',
-                    path: '../../models/bath/C59007.glb',
-                    dimensions: { width: 169.5, height: 67.7, depth: 77.8 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59007',
-                    price: '599.99',
-                    title: 'Somer 1700 Freestanding Bath'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59010',
+          name: '1700',
+          image: 'assets/productImages/bath/C59010-1000-Gloss-White-1700-Freestanding-Bath-Matt-Black-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-matt-black-feet-c59010',
+          path: '../../models/bath/C59010.glb',
+          dimensions: { width: 170, height: 60.6, depth: 83 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59010',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_18',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gold-feet-c59011',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59011-1000-Gloss-White-1700-Freestanding-Bath-Brushed-Brass_1.webp',
+      variants: [
         {
-            id: 'bath_15',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-chrome-feet-c59008',
-            name: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet',
-            price: '679.99',
-            image: 'assets/productImages/bath/C59008-1000-Gloss-White-1700-Freestanding-Bath-Chrome-Feet_1.webp',
-            variants: [
-                {
-                    id: 'C59008',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59008-1000-Gloss-White-1700-Freestanding-Bath-Chrome-Feet_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-chrome-feet-c59008',
-                    path: '../../models/bath/C59008.glb',
-                    dimensions: { width: 170, height: 51.6, depth: 75 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59008',
-                    price: '679.99',
-                    title: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59011',
+          name: '1700',
+          image: 'assets/productImages/bath/C59011-1000-Gloss-White-1700-Freestanding-Bath-Brushed-Brass_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gold-feet-c59011',
+          path: '../../models/bath/C59011.glb',
+          dimensions: { width: 170, height: 60.6, depth: 83 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59011',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_19',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-white-freestanding-bath-chrome-feet-c59012',
+      name: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet',
+      price: '899.99',
+      image: 'assets/productImages/bath/C59012-1000-1700-Matt-White-Freestanding-Bath-Chrome-Feet_1.webp',
+      variants: [
         {
-            id: 'bath_16',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gunmetal-feet-c59009',
-            name: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet',
-            price: '679.99',
-            image: 'assets/productImages/bath/C59009-1000-Gloss-White-1700-Freestanding-Bath-Gummetal-Feet_1.webp',
-            variants: [
-                {
-                    id: 'C59009',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59009-1000-Gloss-White-1700-Freestanding-Bath-Gummetal-Feet_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gunmetal-feet-c59009',
-                    path: '../../models/bath/C59009.glb',
-                    dimensions: { width: 170, height: 60.6, depth: 83 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59009',
-                    price: '679.99',
-                    title: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59012',
+          name: '1700',
+          image: 'assets/productImages/bath/C59012-1000-1700-Matt-White-Freestanding-Bath-Chrome-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-white-freestanding-bath-chrome-feet-c59012',
+          path: '../../models/bath/C59012.glb',
+          dimensions: { width: 170, height: 60.6, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59012',
+          price: '899.99',
+          title: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_20',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-chrome-feet-c59020',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/C59020-1000-Shore-1700-Green-Freestanding-Bath-Chrome-Feet.webp',
+      variants: [
         {
-            id: 'bath_17',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-matt-black-feet-c59010',
-            name: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet',
-            price: '679.99',
-            image: 'assets/productImages/bath/C59010-1000-Gloss-White-1700-Freestanding-Bath-Matt-Black-Feet_1.webp',
-            variants: [
-                {
-                    id: 'C59010',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59010-1000-Gloss-White-1700-Freestanding-Bath-Matt-Black-Feet_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-matt-black-feet-c59010',
-                    path: '../../models/bath/C59010.glb',
-                    dimensions: { width: 170, height: 60.6, depth: 83 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59010',
-                    price: '679.99',
-                    title: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59020',
+          name: '1700',
+          image: 'assets/productImages/bath/C59020-1000-Shore-1700-Green-Freestanding-Bath-Chrome-Feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-chrome-feet-c59020',
+          path: '../../models/bath/C59020.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59020',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_21',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gunmetal-feet-c59021',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/C59021-1000-Shore-1700-Green-Freestanding-Bath-Gummetal-Feet.webp',
+      variants: [
         {
-            id: 'bath_18',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gold-feet-c59011',
-            name: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet',
-            price: '679.99',
-            image: 'assets/productImages/bath/C59011-1000-Gloss-White-1700-Freestanding-Bath-Brushed-Brass_1.webp',
-            variants: [
-                {
-                    id: 'C59011',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59011-1000-Gloss-White-1700-Freestanding-Bath-Brushed-Brass_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gold-feet-c59011',
-                    path: '../../models/bath/C59011.glb',
-                    dimensions: { width: 170, height: 60.6, depth: 83 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59011',
-                    price: '679.99',
-                    title: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59021',
+          name: '1700',
+          image: 'assets/productImages/bath/C59021-1000-Shore-1700-Green-Freestanding-Bath-Gummetal-Feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gunmetal-feet-c59021',
+          path: '../../models/bath/C59021.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59021',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_22',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-matt-black-feet-c59022',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/c59022-1000-shore-1700-green-freestanding-bath-matt-black-feet.webp',
+      variants: [
         {
-            id: 'bath_19',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-matt-white-freestanding-bath-chrome-feet-c59012',
-            name: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet',
-            price: '899.99',
-            image: 'assets/productImages/bath/C59012-1000-1700-Matt-White-Freestanding-Bath-Chrome-Feet_1.webp',
-            variants: [
-                {
-                    id: 'C59012',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59012-1000-1700-Matt-White-Freestanding-Bath-Chrome-Feet_1.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-matt-white-freestanding-bath-chrome-feet-c59012',
-                    path: '../../models/bath/C59012.glb',
-                    dimensions: { width: 170, height: 60.6, depth: 82.8 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59012',
-                    price: '899.99',
-                    title: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59022',
+          name: '1700',
+          image: 'assets/productImages/bath/c59022-1000-shore-1700-green-freestanding-bath-matt-black-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-matt-black-feet-c59022',
+          path: '../../models/bath/C59022.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59022',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_23',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gold-feet-c59023',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/c59023-1000-1700-green-freestanding-bath-brushed-brass-feet.webp',
+      variants: [
         {
-            id: 'bath_20',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-chrome-feet-c59020',
-            name: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet',
-            price: '999.99',
-            image: 'assets/productImages/bath/C59020-1000-Shore-1700-Green-Freestanding-Bath-Chrome-Feet.webp',
-            variants: [
-                {
-                    id: 'C59020',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59020-1000-Shore-1700-Green-Freestanding-Bath-Chrome-Feet.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-chrome-feet-c59020',
-                    path: '../../models/bath/C59020.glb',
-                    dimensions: { width: 170, height: 59.9, depth: 82.8 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59020',
-                    price: '999.99',
-                    title: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet'
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59023',
+          name: '1700',
+          image: 'assets/productImages/bath/c59023-1000-1700-green-freestanding-bath-brushed-brass-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gold-feet-c59023',
+          path: '../../models/bath/C59023.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59023',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_24',
+      link: 'https://www.bathroommountain.co.uk/abingdon-1700mm-single-ended-roll-top-bath-grey-feet-c59024',
+      name: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet',
+      price: '419.99',
+      image: 'assets/productImages/bath/c59024-1000-1700mm-single-ended-roll-top-bath-grey-feet.webp',
+      variants: [
         {
-            id: 'bath_21',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gunmetal-feet-c59021',
-            name: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet',
-            price: '999.99',
-            image: 'assets/productImages/bath/C59021-1000-Shore-1700-Green-Freestanding-Bath-Gummetal-Feet.webp',
-            variants: [
-                {
-                    id: 'C59021',
-                    name: '1700',
-                    image: 'assets/productImages/bath/C59021-1000-Shore-1700-Green-Freestanding-Bath-Gummetal-Feet.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gunmetal-feet-c59021',
-                    path: '../../models/bath/C59021.glb',
-                    dimensions: { width: 170, height: 59.9, depth: 82.8 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59021',
-                    price: '999.99',
-                    title: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet',
-                    filterAttributes: { length: '1700mm', type: 'Freestanding', colour: 'Matt Green', feetColour: 'Gunmetal', style: 'Modern' }
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59024',
+          name: '1700',
+          image: 'assets/productImages/bath/c59024-1000-1700mm-single-ended-roll-top-bath-grey-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/abingdon-1700mm-single-ended-roll-top-bath-grey-feet-c59024',
+          path: '../../models/bath/C59024.glb',
+          dimensions: { width: 153.2, height: 83, depth: 75.6 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59024',
+          price: '419.99',
+          title: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet'
         },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_25',
+      link: 'https://www.bathroommountain.co.uk/abingdon-1500mm-single-ended-roll-top-bath-grey-feet-c59025',
+      name: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet',
+      price: '419.99',
+      image: 'assets/productImages/bath/c59025-1000-1500mm-single-ended-roll-top-bath-grey-feet.webp',
+      variants: [
         {
-            id: 'bath_22',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-matt-black-feet-c59022',
-            name: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet',
-            price: '999.99',
-            image: 'assets/productImages/bath/c59022-1000-shore-1700-green-freestanding-bath-matt-black-feet.webp',
-            variants: [
-                {
-                    id: 'C59022',
-                    name: '1700',
-                    image: 'assets/productImages/bath/c59022-1000-shore-1700-green-freestanding-bath-matt-black-feet.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-matt-black-feet-c59022',
-                    path: '../../models/bath/C59022.glb',
-                    dimensions: { width: 170, height: 59.9, depth: 82.8 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59022',
-                    price: '999.99',
-                    title: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet',
-                    filterAttributes: { length: '1700mm', type: 'Freestanding', colour: 'Matt Green', feetColour: 'Matt Black', style: 'Modern' }
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+          id: 'C59025',
+          name: '1500',
+          image: 'assets/productImages/bath/c59025-1000-1500mm-single-ended-roll-top-bath-grey-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/abingdon-1500mm-single-ended-roll-top-bath-grey-feet-c59025',
+          path: '../../models/bath/C59025.glb',
+          dimensions: { width: 153.2, height: 83, depth: 75.6 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59025',
+          price: '419.99',
+          title: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet'
         },
-        {
-            id: 'bath_23',
-            link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gold-feet-c59023',
-            name: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet',
-            price: '999.99',
-            image: 'assets/productImages/bath/c59023-1000-1700-green-freestanding-bath-brushed-brass-feet.webp',
-            variants: [
-                {
-                    id: 'C59023',
-                    name: '1700',
-                    image: 'assets/productImages/bath/c59023-1000-1700-green-freestanding-bath-brushed-brass-feet.webp',
-                    link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gold-feet-c59023',
-                    path: '../../models/bath/C59023.glb',
-                    dimensions: { width: 170, height: 59.9, depth: 82.8 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59023',
-                    price: '999.99',
-                    title: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet',
-                    filterAttributes: { length: '1700mm', type: 'Freestanding', colour: 'Matt Green', feetColour: 'Brushed Brass', style: 'Modern' }
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
-        },
-        {
-            id: 'bath_24',
-            link: 'https://www.bathroommountain.co.uk/abingdon-1700mm-single-ended-roll-top-bath-grey-feet-c59024',
-            name: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet',
-            price: '419.99',
-            image: 'assets/productImages/bath/c59024-1000-1700mm-single-ended-roll-top-bath-grey-feet.webp',
-            variants: [
-                {
-                    id: 'C59024',
-                    name: '1700',
-                    image: 'assets/productImages/bath/c59024-1000-1700mm-single-ended-roll-top-bath-grey-feet.webp',
-                    link: 'https://www.bathroommountain.co.uk/abingdon-1700mm-single-ended-roll-top-bath-grey-feet-c59024',
-                    path: '../../models/bath/C59024.glb',
-                    dimensions: { width: 153.2, height: 83, depth: 75.6 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59024',
-                    price: '419.99',
-                    title: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet',
-                    filterAttributes: { length: '1700mm', type: 'Roll Top', colour: 'White', feetColour: 'Grey', style: 'Traditional' }
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
-        },
-        {
-            id: 'bath_25',
-            link: 'https://www.bathroommountain.co.uk/abingdon-1500mm-single-ended-roll-top-bath-grey-feet-c59025',
-            name: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet',
-            price: '419.99',
-            image: 'assets/productImages/bath/c59025-1000-1500mm-single-ended-roll-top-bath-grey-feet.webp',
-            variants: [
-                {
-                    id: 'C59025',
-                    name: '1500',
-                    image: 'assets/productImages/bath/c59025-1000-1500mm-single-ended-roll-top-bath-grey-feet.webp',
-                    link: 'https://www.bathroommountain.co.uk/abingdon-1500mm-single-ended-roll-top-bath-grey-feet-c59025',
-                    path: '../../models/bath/C59025.glb',
-                    dimensions: { width: 153.2, height: 83, depth: 75.6 },
-                    floorOffset: 0,
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: false,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: true
-                    },
-                    sku: 'C59025',
-                    price: '419.99',
-                    title: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet',
-                    filterAttributes: { length: '1500mm', type: 'Roll Top', colour: 'White', feetColour: 'Grey', style: 'Traditional' }
-                },
-            ],
-            variantType: 'Orientation',
-            features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
-        },
-    ],
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+  ],
 
     Toilet: [
         // Toilet Variant 1 (2 variants)

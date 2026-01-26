@@ -436,7 +436,8 @@ export const constrainToCorner = (
     // Handle vertical positioning
     if (movementConfig.allowVerticalMovement) {
         const minHeight = movementConfig.minHeight || 0;
-        const maxHeight = movementConfig.maxHeight || 250;
+        // Handle -1, 0, undefined, null as "unlimited" (use default ceiling height)
+        const maxHeight = (movementConfig.maxHeight && movementConfig.maxHeight > 0) ? movementConfig.maxHeight : 250;
         constrainedPosition.y = Math.max(minHeight, Math.min(maxHeight, position.y));
     } else {
         constrainedPosition.y = movementConfig.minHeight || 0;
@@ -1623,7 +1624,8 @@ export const constrainToWalls = (
     // Handle vertical positioning
     if (movementConfig.allowVerticalMovement) {
         const minHeight = movementConfig.minHeight || 0;
-        const maxHeight = movementConfig.maxHeight || 250;
+        // Handle -1, 0, undefined, null as "unlimited" (use default ceiling height)
+        const maxHeight = (movementConfig.maxHeight && movementConfig.maxHeight > 0) ? movementConfig.maxHeight : 250;
         constrainedPosition.y = Math.max(minHeight, Math.min(maxHeight, position.y));
     } else {
         constrainedPosition.y = movementConfig.minHeight || 0;

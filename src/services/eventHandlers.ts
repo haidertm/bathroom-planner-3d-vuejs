@@ -28,6 +28,13 @@ import { type Position as PositionArrayType } from '../models/bathroomFixtures.t
 import { type Position as PositionObjectType } from '../utils/constraints.ts';
 import { SimpleWallCulling } from '../services/simpleWallCulling.ts';
 import { RotationArrows } from './rotationArrows';
+import {
+  type GroupConstraint,
+  ConstraintPriority,
+  analyzeGroupConstraints,
+  snapRotationTo90Degrees,
+  describeGroupConstraint
+} from '../utils/groupConstraints';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -134,6 +141,8 @@ export class EventHandlers {
   private multiSelectLocalOffsets: Map<number, THREE.Vector3> = new Map();
   private multiSelectLocalRotations: Map<number, number> = new Map();
   private wasAlreadySelected: boolean = false;
+  // Group constraint for multi-selection (cached on drag start)
+  private groupConstraint: GroupConstraint | null = null;
 
   // 2D/3D View Mode
   private viewMode: ViewMode = '3d';
@@ -1013,6 +1022,21 @@ export class EventHandlers {
           this.multiSelectLocalRotations.set(id, relRot);
         });
 
+        // Calculate group constraint for multi-selection (most restrictive wins)
+        if (this.selectedObjects.size > 1) {
+          this.groupConstraint = analyzeGroupConstraints(
+            this.selectedObjects,
+            (id) => this.getCurrentItemData(id),
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+          console.log('📊 Group constraint calculated:', describeGroupConstraint(this.groupConstraint));
+        } else {
+          this.groupConstraint = null;
+        }
+
         // Notify that dragging has started
         if (this.onDragStart) {
           this.onDragStart();
@@ -1750,7 +1774,23 @@ export class EventHandlers {
     // Use the CURRENT position and rotation of the primary object as the base for the group
     // This ensures the group moves and rotates as a single rigid unit
     const primaryPos = primaryObject.position.clone();
-    const primaryRot = primaryObject.rotation.y;
+    let primaryRot = primaryObject.rotation.y;
+
+    // 📊 Get primary object's movement configuration to determine actual constraint behavior
+    const primaryItemData = this.getCurrentItemData(primaryId);
+    const primaryMovementConfig = getMovementConfig(primaryObject.userData.type as ComponentType, primaryItemData);
+    const primaryIsCornerOnly = primaryMovementConfig.cornerInstallOnly &&
+      typeof primaryMovementConfig.cornerInstallOnly === 'object' &&
+      primaryMovementConfig.cornerInstallOnly.enabled;
+    const primaryIsWallSnap = primaryMovementConfig.snapToWall && !primaryIsCornerOnly;
+    const primaryIsFreestanding = !primaryIsWallSnap && !primaryIsCornerOnly;
+
+    // 📊 UNIFIED GROUP CONSTRAINT: Apply "most restrictive wins" rule
+    // If we have a group constraint, snap rotation to 90 degrees if required
+    if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+      primaryRot = snapRotationTo90Degrees(primaryRot);
+      primaryObject.rotation.y = primaryRot;
+    }
 
     let anyColliding = false;
 
@@ -1774,19 +1814,117 @@ export class EventHandlers {
         let constrainedPosition: { x: number, y: number, z: number };
         let constrainedRotation = primaryRot + localRot;
 
-        // ✅ FIX: In 2D mode, treat group as RIGID BODY - no individual constraints
-        // The group bounds pre-check already adjusted primary to keep everyone inside room
-        if (this.viewMode === '2d') {
+        // 📊 UNIFIED GROUP CONSTRAINT: Apply snap_90 to all items in the group
+        if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+          constrainedRotation = snapRotationTo90Degrees(constrainedRotation);
+        }
+
+        // ✅ FIX: Check if this is a CORNER_ONLY group with a WALL_SNAP secondary item
+        // In this case, the wall item should re-snap to the appropriate wall when corner moves
+        // IMPORTANT: If primary is freestanding, don't treat as corner-only group
+        const isCornerOnlyGroup = !primaryIsFreestanding && this.groupConstraint && (
+          this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY ||
+          this.groupConstraint.isLShapeGroup
+        );
+        const isWallSnapItem = movementConfig.snapToWall &&
+          !(movementConfig.cornerInstallOnly && typeof movementConfig.cornerInstallOnly === 'object' && movementConfig.cornerInstallOnly.enabled);
+        const isCornerOnlyItem = movementConfig.cornerInstallOnly &&
+          typeof movementConfig.cornerInstallOnly === 'object' &&
+          movementConfig.cornerInstallOnly.enabled;
+
+        // ✅ RIGID BODY MODE: When group has unified constraint, treat as rigid body
+        // The primary object's constraint is applied to the whole group
+        // EXCEPTION: When CORNER_ONLY group has WALL_SNAP items, let them re-snap to walls
+        // EXCEPTION: When primary is WALL_SNAP and secondary is CORNER_ONLY, let corner re-snap to corner
+        const useRigidBody = this.viewMode === '2d' ||
+          (this.groupConstraint && (
+            // For CORNER_ONLY groups: use rigid body UNLESS item is WALL_SNAP (let it re-snap) or CORNER_ONLY (let it re-snap)
+            (this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY && !isWallSnapItem && !isCornerOnlyItem) ||
+            this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP ||
+            // For L-shape groups: use rigid body UNLESS item is WALL_SNAP (let it re-snap) or CORNER_ONLY
+            (this.groupConstraint.isLShapeGroup && !isWallSnapItem && !isCornerOnlyItem)
+          ));
+
+        if (useRigidBody) {
           // Pure rigid body - maintain exact relative position
+          // The primary object's constraint already handles the group positioning
           constrainedPosition = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
-          constrainedRotation = primaryRot + localRot; // Keep rigid body rotation
-        } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
-          // 3D MODE: Apply individual wall constraints
-          const currentItemWall = this.determineCurrentWall(obj.position);
+        } else if (isCornerOnlyGroup && isCornerOnlyItem) {
+          // ✅ FIX: CORNER_ONLY secondary item in a group - re-snap to appropriate corner
+          // This allows corner items to move to new corners when dragged via a wall-snap primary
+          const result = constrainToCorner(
+            { x: targetPos.x, y: targetPos.y, z: targetPos.z },
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            {
+              type: itemType,
+              scale: itemScale,
+              orientation: obj.userData.orientation,
+              item: itemData,
+              movement: movementConfig,
+              notchWidth: this.notchWidthRef.value,
+              notchHeight: this.notchHeightRef.value
+            }
+          );
+          constrainedPosition = result.position;
+          constrainedRotation = result.rotation;
+          console.log('📊 Corner item re-snapped to corner:', id);
+        } else if (isCornerOnlyGroup && isWallSnapItem) {
+          // ✅ FIX: CORNER_ONLY group with WALL_SNAP item - re-snap to appropriate wall
+          // Use targetPos which already has the correct offset from primary object applied
           const originalY = targetPos.y; // Preserve Y position
 
+          // ✅ FIX: Clamp targetPos to room interior before determining wall
+          // This prevents secondary items from going outside the room
+          const roomHalfW = this.roomWidthRef.value / 2;
+          const roomHalfH = this.roomHeightRef.value / 2;
+          const clampedTargetPos = new THREE.Vector3(
+            Math.max(-roomHalfW + 20, Math.min(roomHalfW - 20, targetPos.x)),
+            targetPos.y,
+            Math.max(-roomHalfH + 20, Math.min(roomHalfH - 20, targetPos.z))
+          );
+
+          // Determine the target wall based on clamped position
+          const targetItemWall = this.determineCurrentWall(clampedTargetPos);
+
+          // Snap to wall while preserving the lateral offset from clamped targetPos
           const result = constrainToWalls(
-            { x: targetPos.x, y: targetPos.y, z: targetPos.z },
+            clampedTargetPos,
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            {
+              type: itemType,
+              scale: itemScale,
+              orientation: obj.userData.orientation,
+              item: itemData,
+              notchWidth: this.notchWidthRef.value,
+              notchHeight: this.notchHeightRef.value
+            },
+            targetItemWall // Pass target wall for stickiness
+          );
+
+          // Use the result directly - constrainToWalls preserves the lateral position
+          constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
+          constrainedRotation = result.rotation;
+          console.log('📊 Wall-snap item in corner group re-snapped:', id, 'target wall:', targetItemWall);
+        } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+          // 3D MODE: Individual wall constraints (when no group constraint)
+          // Determine the target wall for THIS secondary object based on its targetPos
+          // This is critical when the primary object has just switched walls
+          const originalY = targetPos.y; // Preserve Y position
+
+          // ✅ FIX: Clamp targetPos to room interior before determining wall
+          const roomHalfW2 = this.roomWidthRef.value / 2;
+          const roomHalfH2 = this.roomHeightRef.value / 2;
+          const clampedTargetPos2 = new THREE.Vector3(
+            Math.max(-roomHalfW2 + 20, Math.min(roomHalfW2 - 20, targetPos.x)),
+            targetPos.y,
+            Math.max(-roomHalfH2 + 20, Math.min(roomHalfH2 - 20, targetPos.z))
+          );
+          const currentItemWall = this.determineCurrentWall(clampedTargetPos2);
+
+          const result = constrainToWalls(
+            clampedTargetPos2,
             this.roomWidthRef.value,
             this.roomHeightRef.value,
             {
@@ -1833,6 +1971,26 @@ export class EventHandlers {
             }
           );
           constrainedPosition = result.position;
+        }
+
+        // Only apply room boundary clamp for FREE-STANDING objects
+        // Wall-snapping objects are already correctly positioned by constrainToWalls
+        // and constrainToRoom would incorrectly pull them away from the wall
+        if (!movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+          const finalConstrainedResult = constrainToRoom(
+            { x: constrainedPosition.x, y: constrainedPosition.y, z: constrainedPosition.z },
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            {
+              type: itemType,
+              scale: itemScale,
+              orientation: obj.userData.orientation,
+              item: itemData,
+              notchWidth: this.notchWidthRef.value,
+              notchHeight: this.notchHeightRef.value
+            }
+          );
+          constrainedPosition = finalConstrainedResult.position;
         }
 
         obj.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
@@ -1884,7 +2042,7 @@ export class EventHandlers {
     // In 2D mode, treat group as rigid body - no individual snapping
     if (this.viewMode === '2d') return;
 
-    const updatedItems: Array<{id: number, position: [number, number, number], rotation: number}> = [];
+    const updatedItems: Array<{ id: number, position: [number, number, number], rotation: number }> = [];
 
     this.selectedObjects.forEach((obj, id) => {
       const itemType = obj.userData.type as ComponentType;
@@ -2003,6 +2161,12 @@ export class EventHandlers {
         return;
       }
 
+      // 📊 GROUP CONSTRAINT: Block height adjustment for entire group if ANY item has fixed height
+      if (this.selectedObjects.size > 1 && this.groupConstraint?.heightRestriction === 'locked') {
+        console.log('⚠️ Height adjustment blocked for group - mixed height-adjustable/fixed items');
+        return;
+      }
+
       // Check if vertical movement is allowed
       if (!canMoveVertically(objectType, currentItem)) {
         console.log('⚠️ Vertical movement not allowed for', objectType);
@@ -2069,6 +2233,47 @@ export class EventHandlers {
       const currentItem = this.getCurrentItemData(itemId);
       const movementConfig = getMovementConfig(objectType, currentItem);
 
+      // ✅ FIX: Check if primary is a freestanding object
+      // Freestanding objects have their origin at center, so they need different positioning when snapped to walls
+      const primaryIsFreestanding = !movementConfig.snapToWall &&
+        !(movementConfig.cornerInstallOnly && typeof movementConfig.cornerInstallOnly === 'object' && movementConfig.cornerInstallOnly.enabled);
+
+      // 📊 GROUP CONSTRAINT: Override primary object's movement based on group constraint
+      // If group has CORNER_ONLY or L-shape constraint, ALL objects (including primary) must be constrained
+      // ✅ FIX: When primary is freestanding, ignore L-shape detection because freestanding items aren't really "on" a wall
+      // L-shape detection only matters when ALL items in the group are wall-mounted
+      // Check if there's an actual corner-only item in the group (not just L-shape detection)
+      const hasActualCornerOnlyItem = this.groupConstraint &&
+        Array.from(this.selectedObjects.values()).some(obj => {
+          const itemData = this.getCurrentItemData(obj.userData.itemId as number);
+          const itemMovement = getMovementConfig(obj.userData.type as ComponentType, itemData);
+          return itemMovement.cornerInstallOnly &&
+            typeof itemMovement.cornerInstallOnly === 'object' &&
+            itemMovement.cornerInstallOnly.enabled;
+        });
+
+      const effectiveCornerOnly = (this.groupConstraint && (
+        // Only use CORNER_ONLY if there's an actual corner-only item, OR L-shape with no freestanding primary
+        (this.groupConstraint.movementType === ConstraintPriority.CORNER_ONLY && hasActualCornerOnlyItem) ||
+        (this.groupConstraint.isLShapeGroup && !primaryIsFreestanding)
+      )) || (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled);
+
+      // 📊 GROUP CONSTRAINT: Check if group requires wall snap
+      // ✅ FIX: When primary is freestanding and group has L-shape (which we're ignoring),
+      // check if any item in the group has wall-snap to determine if we should use wall-snap behavior
+      const hasWallSnapItemInGroup = this.groupConstraint &&
+        Array.from(this.selectedObjects.values()).some(obj => {
+          const itemData = this.getCurrentItemData(obj.userData.itemId as number);
+          const itemMovement = getMovementConfig(obj.userData.type as ComponentType, itemData);
+          return itemMovement.snapToWall && !itemMovement.cornerInstallOnly;
+        });
+
+      const effectiveWallSnap = (this.groupConstraint &&
+        this.groupConstraint.movementType === ConstraintPriority.WALL_SNAP &&
+        !effectiveCornerOnly
+      ) || (movementConfig.snapToWall && !effectiveCornerOnly) ||
+        (primaryIsFreestanding && hasWallSnapItemInGroup && !effectiveCornerOnly);  // ✅ FIX: Freestanding + wall-snap group
+
       // ✅ NEW: Calculate stable ideal position for the entire group using the camera-facing plane
       // 📐 2D MODE: Use floor plane for position calculation
       let idealPosition: THREE.Vector3;
@@ -2092,14 +2297,20 @@ export class EventHandlers {
 
 
       // ✅ ROTATION-AWARE FIX for freestanding objects
-      if (movementConfig.allowFreeRotation && !movementConfig.snapToWall) {
+      // 📊 GROUP CONSTRAINT: Skip free rotation handling if group has more restrictive constraint
+      if (movementConfig.allowFreeRotation && !movementConfig.snapToWall && !effectiveCornerOnly && !effectiveWallSnap) {
         const currentPos = idealPosition;
         const constrainedPos = this.constrainFreeRotationObjectPosition(currentPos, objectType, currentItem);
 
         // Set position
         this.selectedObject.position.set(constrainedPos.x, this.selectedObject.position.y, constrainedPos.z);
 
-        const objectRotation = this.selectedObject.rotation.y;
+        // 📊 GROUP CONSTRAINT: Apply snap_90 if group requires it
+        let objectRotation = this.selectedObject.rotation.y;
+        if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+          objectRotation = snapRotationTo90Degrees(objectRotation);
+          this.selectedObject.rotation.y = objectRotation;
+        }
 
         // Update data model
         this.queueUpdate(itemId, {
@@ -2133,8 +2344,67 @@ export class EventHandlers {
       let constrainedRotation = this.selectedObject.rotation.y;
       let rotationChanged = false;
 
+      // 📊 GROUP CONSTRAINT: Apply snap_90 rotation if group requires it
+      if (this.groupConstraint && this.groupConstraint.rotationRestriction === 'snap_90') {
+        constrainedRotation = snapRotationTo90Degrees(constrainedRotation);
+        rotationChanged = true;
+      }
+
+      // ✅ Helper to calculate group bounds for a given rotation (moved here to be accessible in all branches)
+      const calculateGroupBounds = (rotation: number) => {
+        let minX = 0, maxX = 0, minZ = 0, maxZ = 0;
+        if (this.selectedObjects.size <= 1) {
+          const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+          if (dims) {
+            const hW = (dims.width * objectScale) / 2;
+            const hD = (dims.depth * objectScale) / 2;
+            // For single object, use width for X and depth for Z based on rotation
+            // rotation 0 or PI = facing north/south, width along X
+            // rotation ±PI/2 = facing east/west, width along Z
+            const isNorthSouth = Math.abs(Math.cos(rotation)) > 0.7;
+            return isNorthSouth
+              ? { minX: -hW, maxX: hW, minZ: -hD, maxZ: hD }
+              : { minX: -hD, maxX: hD, minZ: -hW, maxZ: hW };
+          }
+          return { minX: 0, maxX: 0, minZ: 0, maxZ: 0 };
+        }
+
+        this.selectedObjects.forEach((obj, id) => {
+          const localOffset = this.multiSelectLocalOffsets.get(id);
+          if (localOffset) {
+            const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
+            const itemType = obj.userData.type as ComponentType;
+            const itemScale = obj.scale.x;
+            const itemData = this.getCurrentItemData(id);
+            const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
+
+            if (dims) {
+              const hW = (dims.width * itemScale) / 2;
+              const hD = (dims.depth * itemScale) / 2;
+              // Use width for X and depth for Z based on group rotation
+              // rotation 0 or PI = facing north/south, width along X
+              // rotation ±PI/2 = facing east/west, width along Z
+              const isNorthSouth = Math.abs(Math.cos(rotation)) > 0.7;
+              const extentX = isNorthSouth ? hW : hD;
+              const extentZ = isNorthSouth ? hD : hW;
+              minX = Math.min(minX, worldOffset.x - extentX);
+              maxX = Math.max(maxX, worldOffset.x + extentX);
+              minZ = Math.min(minZ, worldOffset.z - extentZ);
+              maxZ = Math.max(maxZ, worldOffset.z + extentZ);
+            } else {
+              minX = Math.min(minX, worldOffset.x);
+              maxX = Math.max(maxX, worldOffset.x);
+              minZ = Math.min(minZ, worldOffset.z);
+              maxZ = Math.max(maxZ, worldOffset.z);
+            }
+          }
+        });
+        return { minX, maxX, minZ, maxZ };
+      };
+
       // ✅ SIMPLIFIED: Direct cursor following for wall-snapping objects
-      if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
+      // 📊 GROUP CONSTRAINT: Use effectiveWallSnap instead of individual config
+      if (effectiveWallSnap) {
         // Get room and object dimensions
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
@@ -2177,6 +2447,30 @@ export class EventHandlers {
 
             constrainedPosition = result.position;
             constrainedRotation = result.rotation;
+
+            // ✅ FIX: Freestanding primary objects rotate with wall but need position offset
+            if (primaryIsFreestanding) {
+              // Offset position by half depth based on wall direction
+              const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+              if (dims) {
+                const halfDepth = (dims.depth * objectScale) / 2;
+                // Determine which wall based on rotation and offset accordingly
+                const normalizedRot = ((constrainedRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                if (normalizedRot < Math.PI / 4 || normalizedRot > 7 * Math.PI / 4) {
+                  // On north wall - move away from north
+                  constrainedPosition.z += halfDepth;
+                } else if (normalizedRot > 3 * Math.PI / 4 && normalizedRot < 5 * Math.PI / 4) {
+                  // On south wall - move away from south
+                  constrainedPosition.z -= halfDepth;
+                } else if (normalizedRot > Math.PI / 4 && normalizedRot < 3 * Math.PI / 4) {
+                  // On west wall - move away from west
+                  constrainedPosition.x += halfDepth;
+                } else {
+                  // On east wall - move away from east
+                  constrainedPosition.x -= halfDepth;
+                }
+              }
+            }
 
             // ✅ FIX: Apply group bounds constraint for multi-select in 2D mode
             // Only constrain the LATERAL axis (along the wall), not the wall-perpendicular axis
@@ -2311,41 +2605,6 @@ export class EventHandlers {
           this.notchWidthRef.value,
           this.notchHeightRef.value
         );
-
-        // ✅ NEW: Helper to calculate group bounds for a given rotation
-        const calculateGroupBounds = (rotation: number) => {
-          let minX = 0, maxX = 0, minZ = 0, maxZ = 0;
-          if (this.selectedObjects.size <= 1) {
-            const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-            const hW = dims ? (dims.width * objectScale) / 2 : 0;
-            return { minX: -hW, maxX: hW, minZ: -hW, maxZ: hW };
-          }
-
-          this.selectedObjects.forEach((obj, id) => {
-            const localOffset = this.multiSelectLocalOffsets.get(id);
-            if (localOffset) {
-              const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
-              const itemType = obj.userData.type as ComponentType;
-              const itemScale = obj.scale.x;
-              const itemData = this.getCurrentItemData(id);
-              const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
-
-              if (dims) {
-                const hW = (dims.width * itemScale) / 2;
-                minX = Math.min(minX, worldOffset.x - hW);
-                maxX = Math.max(maxX, worldOffset.x + hW);
-                minZ = Math.min(minZ, worldOffset.z - hW);
-                maxZ = Math.max(maxZ, worldOffset.z + hW);
-              } else {
-                minX = Math.min(minX, worldOffset.x);
-                maxX = Math.max(maxX, worldOffset.x);
-                minZ = Math.min(minZ, worldOffset.z);
-                maxZ = Math.max(maxZ, worldOffset.z);
-              }
-            }
-          });
-          return { minX, maxX, minZ, maxZ };
-        };
 
         // Calculate current group bounds for stickiness logic
         const currentGroupBounds = calculateGroupBounds(this.selectedObject.rotation.y);
@@ -2699,11 +2958,12 @@ export class EventHandlers {
           let newY;
 
           // ✅ Adjust Y position (3D mode only - 2D already handled above)
-          if (movementConfig.allowVerticalMovement) {
+          // ✅ FIX: Disable height adjustment during multi-select to keep group as rigid body
+          if (movementConfig.allowVerticalMovement && this.selectedObjects.size <= 1) {
             // For wall-mounted objects, apply dragOffset to maintain where user clicked
             newY = closestPoint.y + this.dragOffset.y;
           } else {
-            // Keep current Y if not allowing vertical movement
+            // Keep current Y if not allowing vertical movement or during multi-select
             newY = this.selectedObject.position.y;
           }
 
@@ -2811,10 +3071,41 @@ export class EventHandlers {
           constrainedPosition.x = newX;
           constrainedPosition.z = newZ;
           constrainedPosition.y = newY;
-          rotationChanged = true;
 
-          // Handle vertical movement if allowed
-          if (movementConfig.allowVerticalMovement) {
+          // ✅ FIX: Freestanding primary objects rotate with the wall (like wall-snap items)
+          // but need position offset because their origin is at center
+          if (primaryIsFreestanding) {
+            // Freestanding rotates with wall direction (same as wall-snap items)
+            rotationChanged = true;
+
+            // Offset position by half depth based on wall direction
+            const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
+            if (dims) {
+              const halfDepth = (dims.depth * objectScale) / 2;
+              // Offset based on which wall - move center away from wall by half depth
+              switch (closestWall) {
+                case 'north':
+                case 'notch-south':
+                  constrainedPosition.z += halfDepth;
+                  break;
+                case 'south':
+                  constrainedPosition.z -= halfDepth;
+                  break;
+                case 'east':
+                  constrainedPosition.x -= halfDepth;
+                  break;
+                case 'west':
+                case 'notch-east':
+                  constrainedPosition.x += halfDepth;
+                  break;
+              }
+            }
+          } else {
+            rotationChanged = true;
+          }
+
+          // Handle vertical movement if allowed (disabled during multi-select)
+          if (movementConfig.allowVerticalMovement && this.selectedObjects.size <= 1) {
             const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
             constrainedPosition.y = Math.max(
               heightConstraints.min,
@@ -2827,8 +3118,9 @@ export class EventHandlers {
           console.log(`🔍 Debug - Final position: (${constrainedPosition.x.toFixed(0)}, ${constrainedPosition.z.toFixed(0)}), Current wall: ${currentWall}`);
         }
 
-      } else if (movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled) {
+      } else if (effectiveCornerOnly) {
         // Handle corner-only objects - direct cursor tracking
+        // 📊 GROUP CONSTRAINT: This also handles groups that need corner-only movement
         const heightPlane = new THREE.Plane(
           new THREE.Vector3(0, 1, 0),
           -this.selectedObject.position.y
@@ -2838,26 +3130,150 @@ export class EventHandlers {
         const cursorWorldPos = new THREE.Vector3();
         this.raycaster.ray.intersectPlane(heightPlane, cursorWorldPos);
 
+        // 📊 GROUP CONSTRAINT: If primary is NOT corner-only but group has corner-only item,
+        // find the corner-only item and use IT as the anchor for corner positioning
+        let cornerAnchorId = itemId;
+        let cornerAnchorObj = this.selectedObject;
+        let cornerAnchorOffset = new THREE.Vector3(0, 0, 0);
+        const primaryIsCornerOnly = movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled;
+
+        if (this.selectedObjects.size > 1 && this.groupConstraint && !primaryIsCornerOnly) {
+          // Primary is not corner-only, find the corner-only item in the group
+          this.selectedObjects.forEach((obj, id) => {
+            if (id === itemId) return;
+            const objItemData = this.getCurrentItemData(id);
+            const objMovement = getMovementConfig(obj.userData.type as ComponentType, objItemData);
+            if (objMovement.cornerInstallOnly && objMovement.cornerInstallOnly.enabled) {
+              cornerAnchorId = id;
+              cornerAnchorObj = obj;
+              // Get the local offset of this corner-only item from primary
+              const localOffset = this.multiSelectLocalOffsets.get(id);
+              if (localOffset) {
+                cornerAnchorOffset = localOffset.clone();
+              }
+            }
+          });
+        }
+
+        // Get corner-only item's config for proper corner constraint
+        const cornerAnchorData = this.getCurrentItemData(cornerAnchorId);
+        const cornerAnchorMovement = getMovementConfig(cornerAnchorObj.userData.type as ComponentType, cornerAnchorData);
+
+        // Calculate where the cursor would position the corner-only item
+        const primaryRot = this.selectedObject.rotation.y;
+        const worldAnchorOffset = cornerAnchorOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), primaryRot);
+        const cursorPosForCornerItem = new THREE.Vector3(
+          cursorWorldPos.x + worldAnchorOffset.x,
+          cursorWorldPos.y,
+          cursorWorldPos.z + worldAnchorOffset.z
+        );
+
+        // Use the corner-only item's movement config for proper corner positioning
+        const effectiveMovementConfig = (cornerAnchorMovement.cornerInstallOnly && cornerAnchorMovement.cornerInstallOnly.enabled)
+          ? cornerAnchorMovement
+          : { ...movementConfig, cornerInstallOnly: { enabled: true } };
+
         const { position: cornerPos, rotation: cornerRot } = constrainToCorner(
-          { x: cursorWorldPos.x, y: cursorWorldPos.y, z: cursorWorldPos.z },
+          { x: cursorPosForCornerItem.x, y: cursorPosForCornerItem.y, z: cursorPosForCornerItem.z },
           this.roomWidthRef.value,
           this.roomHeightRef.value,
           {
-            type: objectType,
-            scale: objectScale,
-            orientation: currentItem?.model?.orientation,
-            item: currentItem,
-            movement: movementConfig,
+            type: cornerAnchorObj.userData.type as ComponentType,
+            scale: cornerAnchorObj.scale.x,
+            orientation: cornerAnchorData?.model?.orientation,
+            item: cornerAnchorData,
+            movement: effectiveMovementConfig,
             notchWidth: this.notchWidthRef.value,
             notchHeight: this.notchHeightRef.value
           }
         );
 
-        constrainedPosition.x = cornerPos.x;
-        constrainedPosition.z = cornerPos.z;
-        constrainedPosition.y = cornerPos.y;
-        constrainedRotation = cornerRot;
-        rotationChanged = true;
+        // Calculate primary object position by reversing the offset from the corner-only item
+        // cornerPos is where the corner-only item should be
+        // primary should be at: cornerPos - worldAnchorOffset
+        if (cornerAnchorId !== itemId) {
+          // Recalculate world offset with the new corner rotation
+          const newWorldAnchorOffset = cornerAnchorOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), cornerRot);
+          const rawPrimaryX = cornerPos.x - newWorldAnchorOffset.x;
+          const rawPrimaryZ = cornerPos.z - newWorldAnchorOffset.z;
+          const rawPrimaryY = this.selectedObject.position.y;
+
+          // ✅ FIX: If primary is a wall-snap item, re-snap it to the appropriate wall
+          // This prevents wall-mounted items from going outside room boundaries
+          // PRESERVE relative position along the wall when moving to a new wall
+          if (movementConfig.snapToWall && !(movementConfig.cornerInstallOnly && movementConfig.cornerInstallOnly.enabled)) {
+            const roomHalfWidth = this.roomWidthRef.value / 2;
+            const roomHalfHeight = this.roomHeightRef.value / 2;
+
+            // Calculate current relative position along the wall (0 to 1)
+            const currentPos = this.selectedObject.position;
+            const currentWall = this.determineCurrentWall(currentPos);
+            let relativePosition = 0.5; // Default to center
+
+            if (currentWall === 'north' || currentWall === 'south') {
+              // Position along X axis
+              relativePosition = (currentPos.x + roomHalfWidth) / this.roomWidthRef.value;
+            } else if (currentWall === 'east' || currentWall === 'west') {
+              // Position along Z axis
+              relativePosition = (currentPos.z + roomHalfHeight) / this.roomHeightRef.value;
+            }
+
+            // First, snap to get the target wall
+            const wallResult = constrainToWalls(
+              { x: rawPrimaryX, y: rawPrimaryY, z: rawPrimaryZ },
+              this.roomWidthRef.value,
+              this.roomHeightRef.value,
+              {
+                type: objectType,
+                scale: objectScale,
+                orientation: this.selectedObject.userData.orientation,
+                item: currentItem,
+                notchWidth: this.notchWidthRef.value,
+                notchHeight: this.notchHeightRef.value
+              }
+            );
+
+            // Determine which wall we're now on based on rotation
+            const newWallRotation = wallResult.rotation;
+            const isNorthSouthWall = Math.abs(Math.cos(newWallRotation)) > 0.7; // rotation ~0 or ~π
+
+            // Apply relative position to the new wall
+            let finalX = wallResult.position.x;
+            let finalZ = wallResult.position.z;
+
+            if (isNorthSouthWall) {
+              // On north/south wall - apply relative position along X axis
+              finalX = -roomHalfWidth + (relativePosition * this.roomWidthRef.value);
+              // Clamp to room bounds
+              finalX = Math.max(-roomHalfWidth + 20, Math.min(roomHalfWidth - 20, finalX));
+            } else {
+              // On east/west wall - apply relative position along Z axis
+              finalZ = -roomHalfHeight + (relativePosition * this.roomHeightRef.value);
+              // Clamp to room bounds
+              finalZ = Math.max(-roomHalfHeight + 20, Math.min(roomHalfHeight - 20, finalZ));
+            }
+
+            constrainedPosition.x = finalX;
+            constrainedPosition.z = finalZ;
+            constrainedPosition.y = rawPrimaryY;
+            constrainedRotation = wallResult.rotation;
+            rotationChanged = true;
+            console.log('📊 Corner anchor moved, primary preserved relative position:', relativePosition.toFixed(2));
+          } else {
+            constrainedPosition.x = rawPrimaryX;
+            constrainedPosition.z = rawPrimaryZ;
+            constrainedPosition.y = rawPrimaryY;
+            constrainedRotation = cornerRot;
+            rotationChanged = true;
+            console.log('📊 Corner anchor is item', cornerAnchorId, '- primary positioned relative to it');
+          }
+        } else {
+          constrainedPosition.x = cornerPos.x;
+          constrainedPosition.z = cornerPos.z;
+          constrainedPosition.y = cornerPos.y;
+          constrainedRotation = cornerRot;
+          rotationChanged = true;
+        }
 
       } else {
         // Free movement objects - use traditional drag with offset
@@ -2887,11 +3303,12 @@ export class EventHandlers {
         constrainedPosition.x = roomConstrainedPos.x;
         constrainedPosition.z = roomConstrainedPos.z;
 
-        if (movementConfig.allowVerticalMovement) {
+        // ✅ FIX: Disable height adjustment during multi-select
+        if (movementConfig.allowVerticalMovement && this.selectedObjects.size <= 1) {
           const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
           constrainedPosition.y = Math.max(heightConstraints.min, Math.min(heightConstraints.max, newPosition.y));
         } else {
-          constrainedPosition.y = 0;
+          constrainedPosition.y = this.selectedObject.position.y; // Keep current height during multi-select
         }
       }
 
@@ -2907,6 +3324,40 @@ export class EventHandlers {
 
       // Update outline color
       setOutlineColor(isColliding);
+
+      // ✅ Group-aware boundary clamping for FREE-STANDING objects only
+      // Wall-snapping objects are already correctly positioned by their wall constraints
+      // and this clamping would incorrectly pull them away from the wall
+      if (this.selectedObjects.size > 1 && !effectiveWallSnap && !effectiveCornerOnly) {
+        const { interior, notch } = getInteriorBoundaries(
+          this.roomWidthRef.value,
+          this.roomHeightRef.value,
+          this.notchWidthRef.value,
+          this.notchHeightRef.value
+        );
+
+        const groupBounds = calculateGroupBounds(constrainedRotation);
+
+        const effectiveMinX = notch ? notch.maxX + WALL_SETTINGS.THICKNESS : interior.minX;
+        const effectiveMinZ = notch ? notch.maxZ + WALL_SETTINGS.THICKNESS : interior.minZ;
+
+        const clampMinX = effectiveMinX - groupBounds.minX;
+        const clampMaxX = interior.maxX - groupBounds.maxX;
+        const clampMinZ = effectiveMinZ - groupBounds.minZ;
+        const clampMaxZ = interior.maxZ - groupBounds.maxZ;
+
+        // Clamp primary's X position based on group bounds
+        constrainedPosition.x = Math.max(
+          clampMinX,
+          Math.min(clampMaxX, constrainedPosition.x)
+        );
+
+        // Clamp primary's Z position based on group bounds
+        constrainedPosition.z = Math.max(
+          clampMinZ,
+          Math.min(clampMaxZ, constrainedPosition.z)
+        );
+      }
 
       // Apply constrained position
       this.selectedObject.position.set(constrainedPosition.x, constrainedPosition.y, constrainedPosition.z);
@@ -3421,6 +3872,21 @@ export class EventHandlers {
           const relRot = obj.rotation.y - primaryRot;
           this.multiSelectLocalRotations.set(id, relRot);
         });
+
+        // Calculate group constraint for multi-selection (most restrictive wins)
+        if (this.selectedObjects.size > 1) {
+          this.groupConstraint = analyzeGroupConstraints(
+            this.selectedObjects,
+            (id) => this.getCurrentItemData(id),
+            this.roomWidthRef.value,
+            this.roomHeightRef.value,
+            this.notchWidthRef.value,
+            this.notchHeightRef.value
+          );
+          console.log('📊 Group constraint calculated (touch):', describeGroupConstraint(this.groupConstraint));
+        } else {
+          this.groupConstraint = null;
+        }
 
         window.dispatchEvent(new CustomEvent('object-selected', {
           detail: { itemId: this.selectedObject?.userData?.itemId ?? null }
@@ -3973,6 +4439,7 @@ export class EventHandlers {
       this.multiSelectStartRotations.clear();
       this.multiSelectLocalOffsets.clear();
       this.multiSelectLocalRotations.clear();
+      this.groupConstraint = null; // Clear group constraint on selection clear
 
       // EMIT deselection event
       if (this.onItemDeselected) {
