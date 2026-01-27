@@ -698,7 +698,8 @@ const productData: ProductData = {
                     },
                     sku: 'C78596',
                     price: '689.99',
-                    title: 'Bermuda Chalk White Double Basin Vanity 1200mm - Brushed Brass Accents'
+                    title: 'Bermuda Chalk White Double Basin Vanity 1200mm - Brushed Brass Accents',
+                    filterAttributes: { width: '1200mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '419mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1243,7 +1244,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77683',
                     price: '299.99',
-                    title: 'Monaco Dove Grey Basin Vanity 600mm'
+                    title: 'Monaco Dove Grey Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Dove Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
                 },
                 {
                     id: 'C77732',
@@ -1259,7 +1261,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77732',
                     price: '239.00',
-                    title: 'Monaco Graphite Grey Basin Vanity 600mm'
+                    title: 'Monaco Graphite Grey Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Graphite Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
                 },
                 {
                     id: 'C78377',
@@ -1275,7 +1278,8 @@ const productData: ProductData = {
                     },
                     sku: 'C78377',
                     price: '299.99',
-                    title: 'Monaco Inky Blue Basin Vanity 600mm'
+                    title: 'Monaco Inky Blue Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
                 },
                 {
                     id: 'C78704',
@@ -1291,7 +1295,8 @@ const productData: ProductData = {
                     },
                     sku: 'C78704',
                     price: '299.99',
-                    title: 'Monaco Midnight Green Basin Vanity 600mm'
+                    title: 'Monaco Midnight Green Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Midnight Green', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1319,7 +1324,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79932',
                     price: '319.99',
-                    title: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm'
+                    title: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '809mm', style: 'Modern' }
                 },
                 {
                     id: 'C79930',
@@ -1335,7 +1341,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79930',
                     price: '219.99',
-                    title: 'Quartz Gloss White Basin Vanity and Back To Wall Toilet Unit 1050mm - Excludes Toilet'
+                    title: 'Quartz Gloss White Basin Vanity and Back To Wall Toilet Unit 1050mm - Excludes Toilet',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '426mm', style: 'Modern' }
                 },
                 {
                     id: 'C79931',
@@ -1351,7 +1358,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79931',
                     price: '289.99',
-                    title: 'Quartz Gloss White Combination Vanity Basin and Austin Toilet 1050mm'
+                    title: 'Quartz Gloss White Combination Vanity Basin and Austin Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '820mm', style: 'Modern' }
                 },
                 {
                     id: 'C79933',
@@ -1367,7 +1375,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79933',
                     price: '263.00',
-                    title: 'Quartz Gloss White Combination Vanity Basin and Houston Toilet 1050mm'
+                    title: 'Quartz Gloss White Combination Vanity Basin and Houston Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '844mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1395,7 +1404,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79921',
                     price: '99.99',
-                    title: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm'
+                    title: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '242mm', style: 'Modern' }
                 },
                 {
                     id: 'C79920',
@@ -1412,7 +1422,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79920',
                     price: '89.99',
-                    title: 'Quartz Gloss White Cloakroom Wall Hung Basin Vanity 400mm'
+                    title: 'Quartz Gloss White Cloakroom Wall Hung Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '242mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1439,7 +1450,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79777',
                     price: '269.99',
-                    title: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm'
+                    title: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '242mm', style: 'Modern' }
                 },
                 {
                     id: 'C78548',
@@ -1456,7 +1468,8 @@ const productData: ProductData = {
                     },
                     sku: 'C78548',
                     price: '229.99',
-                    title: 'Corsica Inky Blue Wall Hung Slimline Basin Drawer Vanity 500mm'
+                    title: 'Corsica Inky Blue Wall Hung Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Inky Blue', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1483,7 +1496,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77185',
                     price: '529.99',
-                    title: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm'
+                    title: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm',
+                    filterAttributes: { width: '1300mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '340mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1511,7 +1525,8 @@ const productData: ProductData = {
                     sku: 'C77065',
                     spawnHeight: 32,
                     price: '269.99',
-                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm'
+                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '395mm', style: 'Modern' }
                 },
                 {
                     id: 'C77064',
@@ -1528,7 +1543,8 @@ const productData: ProductData = {
                     sku: 'C77064',
                     spawnHeight: 32,
                     price: '185.00',
-                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm'
+                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '395mm', style: 'Modern' }
                 },
                 {
                     id: 'C77066',
@@ -1545,7 +1561,8 @@ const productData: ProductData = {
                     sku: 'C77066',
                     spawnHeight: 32,
                     price: '263.00',
-                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 800mm'
+                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '396mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1572,7 +1589,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76504',
                     price: '209.99',
-                    title: 'Avon Stone Grey Basin Vanity 600mm'
+                    title: 'Avon Stone Grey Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '421mm', style: 'Modern' }
                 },
                 {
                     id: 'C76503',
@@ -1588,7 +1606,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76503',
                     price: '159.00',
-                    title: 'Avon Stone Grey Basin Vanity 500mm'
+                    title: 'Avon Stone Grey Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '429mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1615,7 +1634,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76749',
                     price: '339.99',
-                    title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm'
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '817mm', style: 'Modern' }
                 },
                 {
                     id: 'C76751',
@@ -1631,7 +1651,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76751',
                     price: '389.99',
-                    title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1050mm'
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '805mm', style: 'Modern' }
                 },
                 {
                     id: 'C77020',
@@ -1647,7 +1668,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77020',
                     price: '259.99',
-                    title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1050mm'
+                    title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '422mm', style: 'Modern' }
                 },
                 {
                     id: 'C76750',
@@ -1663,7 +1685,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76750',
                     price: '369.99',
-                    title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1050mm'
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '804mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1690,7 +1713,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81212',
                     price: '299.99',
-                    title: 'Milos Cotton White Basin Vanity 800mm - Brushed Handles'
+                    title: 'Milos Cotton White Basin Vanity 800mm - Brushed Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '479mm', style: 'Modern' }
                 },
                 {
                     id: 'C81214',
@@ -1706,7 +1730,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81214',
                     price: '263.00',
-                    title: 'Milos Cotton White Vanity with Oval Basin 800mm - Brushed Handles'
+                    title: 'Milos Cotton White Vanity with Oval Basin 800mm - Brushed Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
                 },
                 {
                     id: 'C81215',
@@ -1722,7 +1747,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81215',
                     price: '329.99',
-                    title: 'Milos Cotton White Vanity with Troy Basin 800mm - Brushed Handles'
+                    title: 'Milos Cotton White Vanity with Troy Basin 800mm - Brushed Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1749,7 +1775,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79697',
                     price: '189.99',
-                    title: 'Mersey Gloss White Basin Vanity 600mm'
+                    title: 'Mersey Gloss White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '485mm', style: 'Modern' }
                 },
                 {
                     id: 'C81184',
@@ -1765,7 +1792,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81184',
                     price: '199.99',
-                    title: 'Mersey Gloss White Vanity with Oval Basin 600mm'
+                    title: 'Mersey Gloss White Vanity with Oval Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '483mm', style: 'Modern' }
                 },
                 {
                     id: 'C81185',
@@ -1781,7 +1809,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81185',
                     price: '199.99',
-                    title: 'Mersey Gloss White Vanity with Troy Basin 600mm'
+                    title: 'Mersey Gloss White Vanity with Troy Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '483mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1808,7 +1837,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81113',
                     price: '375.00',
-                    title: 'Capri Navy Blue Combination Vanity Basin and Denver Toilet 1050mm - Chrome Handles'
+                    title: 'Capri Navy Blue Combination Vanity Basin and Denver Toilet 1050mm - Chrome Handles',
+                    filterAttributes: { width: '1050mm', colour: 'Navy Blue', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '483mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1835,7 +1865,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79923',
                     price: '124.99',
-                    title: 'Quartz Gloss White Vanity with Semi Recessed Basin 550mm'
+                    title: 'Quartz Gloss White Vanity with Semi Recessed Basin 550mm',
+                    filterAttributes: { width: '550mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '426mm', style: 'Modern' }
                 },
                 {
                     id: 'C79922',
@@ -1851,7 +1882,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79922',
                     price: '119.99',
-                    title: 'Quartz Gloss White Cloakroom Vanity with Semi Recessed Basin 450mm'
+                    title: 'Quartz Gloss White Cloakroom Vanity with Semi Recessed Basin 450mm',
+                    filterAttributes: { width: '450mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '446mm', style: 'Modern' }
                 },
                 {
                     id: 'C79924',
@@ -1867,7 +1899,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79924',
                     price: '149.99',
-                    title: 'Quartz Gloss White Vanity with Semi Recessed Basin 650mm'
+                    title: 'Quartz Gloss White Vanity with Semi Recessed Basin 650mm',
+                    filterAttributes: { width: '650mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '435mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1894,7 +1927,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76752',
                     price: '289.00',
-                    title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1150mm'
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '827mm', style: 'Modern' }
                 },
                 {
                     id: 'C76754',
@@ -1910,7 +1944,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76754',
                     price: '335.00',
-                    title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1150mm'
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '815mm', style: 'Modern' }
                 },
                 {
                     id: 'C77021',
@@ -1926,7 +1961,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77021',
                     price: '289.99',
-                    title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1150mm'
+                    title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '435mm', style: 'Modern' }
                 },
                 {
                     id: 'C76753',
@@ -1942,7 +1978,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76753',
                     price: '399.99',
-                    title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1150mm'
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '814mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -1969,7 +2006,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81581',
                     price: '263.00',
-                    title: 'Corsica Gloss White Basin Drawer Vanity 600mm'
+                    title: 'Corsica Gloss White Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
                 {
                     id: 'C81584',
@@ -1985,7 +2023,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81584',
                     price: '379.99',
-                    title: 'Corsica Gloss White Vanity Drawer with Marble Top & Curved Counter Top Basin 600mm'
+                    title: 'Corsica Gloss White Vanity Drawer with Marble Top & Curved Counter Top Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
                 {
                     id: 'C81585',
@@ -2001,7 +2040,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81585',
                     price: '389.99',
-                    title: 'Corsica Gloss White Vanity Drawer with Marble Top & Marin Basin 600mm'
+                    title: 'Corsica Gloss White Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
                 {
                     id: 'C81582',
@@ -2017,7 +2057,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81582',
                     price: '349.99',
-                    title: 'Corsica Gloss White Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Corsica Gloss White Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2106,7 +2147,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81231',
                     price: '191.99',
-                    title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles'
+                    title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles',
+                    filterAttributes: { width: '500mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '465mm', style: 'Modern' }
                 },
                 {
                     id: 'C81228',
@@ -2122,7 +2164,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81228',
                     price: '175.00',
-                    title: 'Milos Cotton White Basin Vanity 500mm - Chrome Handles'
+                    title: 'Milos Cotton White Basin Vanity 500mm - Chrome Handles',
+                    filterAttributes: { width: '500mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '422mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2149,7 +2192,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81208',
                     price: '259.99',
-                    title: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles'
+                    title: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '478mm', style: 'Modern' }
                 },
                 {
                     id: 'C81210',
@@ -2165,7 +2209,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81210',
                     price: '223.00',
-                    title: 'Milos Cotton White Vanity with Oval Basin 600mm - Brushed Handles'
+                    title: 'Milos Cotton White Vanity with Oval Basin 600mm - Brushed Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
                 },
                 {
                     id: 'C81211',
@@ -2181,7 +2226,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81211',
                     price: '279.99',
-                    title: 'Milos Cotton White Vanity with Troy Basin 600mm - Brushed Handles'
+                    title: 'Milos Cotton White Vanity with Troy Basin 600mm - Brushed Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2208,7 +2254,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77479',
                     price: '179.00',
-                    title: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm'
+                    title: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
                 },
                 {
                     id: 'C79614',
@@ -2224,7 +2271,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79614',
                     price: '239.99',
-                    title: 'Harper Navy Blue Vanity with Semi Recessed Basin 500mm'
+                    title: 'Harper Navy Blue Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Navy Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
                 },
                 {
                     id: 'C77016',
@@ -2240,7 +2288,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77016',
                     price: '239.99',
-                    title: 'Harper Stone Grey Vanity with Semi Recessed Basin 500mm'
+                    title: 'Harper Stone Grey Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
                 },
                 {
                     id: 'C77012',
@@ -2256,7 +2305,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77012',
                     price: '179.00',
-                    title: 'Harper Gloss White Vanity with Semi Recessed Basin 500mm'
+                    title: 'Harper Gloss White Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2458,7 +2508,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77098',
                     price: '367.00',
-                    title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm'
+                    title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '413mm', style: 'Modern' }
                 },
                 {
                     id: 'C77635',
@@ -2474,7 +2525,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77635',
                     price: '335.99',
-                    title: 'Bermuda Chalk White Cabinet with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Bermuda Chalk White Cabinet with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '413mm', style: 'Modern' }
                 },
                 {
                     id: 'C77097',
@@ -2490,7 +2542,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77097',
                     price: '449.99',
-                    title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 800mm'
+                    title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '430mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2518,7 +2571,8 @@ const productData: ProductData = {
                     },
                     sku: 'C77098',
                     price: '229.99',
-                    title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm'
+                    title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Storm Grey', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
                 },
                 {
                     id: 'C76245',
@@ -2534,7 +2588,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76245',
                     price: '199.00',
-                    title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 500mm'
+                    title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Storm Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2561,7 +2616,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76359V2',
                     price: '791.00',
-                    title: 'Lucia Chalk White Double Vanity with Marble Top & Undermount Basins 1200mm'
+                    title: 'Lucia Chalk White Double Vanity with Marble Top & Undermount Basins 1200mm',
+                    filterAttributes: { width: '1200mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Undermount', depth: '472mm', style: 'Traditional' }
                 },
                 {
                     id: 'C76350V2',
@@ -2577,7 +2633,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76350V2',
                     price: '455.00',
-                    title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 630mm'
+                    title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 630mm',
+                    filterAttributes: { width: '630mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Undermount', depth: '472mm', style: 'Traditional' }
                 },
 
                 {
@@ -2594,7 +2651,8 @@ const productData: ProductData = {
                     },
                     sku: 'C76355V2',
                     price: '519.00',
-                    title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 830mm'
+                    title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 830mm',
+                    filterAttributes: { width: '830mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Undermount', depth: '472mm', style: 'Traditional' }
                 },
             ],
             variantType: 'Width Options',
@@ -2621,7 +2679,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79696',
                     price: '159.99',
-                    title: 'Mersey Gloss White Basin Vanity 500mm'
+                    title: 'Mersey Gloss White Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '440mm', style: 'Modern' }
                 },
                 {
                     id: 'C79944',
@@ -2637,7 +2696,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79944',
                     price: '179.99',
-                    title: 'Mersey Gloss White Vanity with Mesa Basin 500mm'
+                    title: 'Mersey Gloss White Vanity with Mesa Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '418mm', style: 'Modern' }
                 },
 
                 {
@@ -2654,7 +2714,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79925',
                     price: '149.99',
-                    title: 'Mersey Gloss White Vanity 500mm - Excludes Counter Top Basin'
+                    title: 'Mersey Gloss White Vanity 500mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '418mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2682,7 +2743,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79823',
                     price: '351.00',
-                    title: 'Crete Fluted Linen White Wall Hung Basin Drawer Vanity 800mm'
+                    title: 'Crete Fluted Linen White Wall Hung Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
                 {
                     id: 'C79827',
@@ -2699,7 +2761,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79827',
                     price: '509.99',
-                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Cody Basin 800mm'
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Cody Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
                 },
                 {
                     id: 'C79825',
@@ -2716,7 +2779,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79825',
                     price: '499.99',
-                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Curved Basin 800mm'
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Curved Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '452mm', style: 'Modern' }
                 },
                 {
                     id: 'C79826',
@@ -2733,7 +2797,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79826',
                     price: '407.99',
-                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm'
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
                 },
                 {
                     id: 'C79824',
@@ -2750,7 +2815,8 @@ const productData: ProductData = {
                     },
                     sku: 'C79824',
                     price: '469.99',
-                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2777,7 +2843,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81236',
                     price: '239.00',
-                    title: 'Milos Cotton White Basin Vanity 800mm - Chrome Handles'
+                    title: 'Milos Cotton White Basin Vanity 800mm - Chrome Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '479mm', style: 'Modern' }
                 },
                 {
                     id: 'C81238',
@@ -2793,7 +2860,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81238',
                     price: '329.99',
-                    title: 'Milos Cotton White Vanity with Oval Basin 800mm - Chrome Handles'
+                    title: 'Milos Cotton White Vanity with Oval Basin 800mm - Chrome Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
                 {
                     id: 'C81239',
@@ -2809,7 +2877,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81239',
                     price: '263.99',
-                    title: 'Milos Cotton White Vanity with Troy Basin 800mm - Chrome Handles'
+                    title: 'Milos Cotton White Vanity with Troy Basin 800mm - Chrome Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2837,7 +2906,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81576',
                     price: '279.99',
-                    title: 'Corsica Gloss White Wall Hung Basin Drawer Vanity 600mm'
+                    title: 'Corsica Gloss White Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
                 {
                     id: 'C81579',
@@ -2854,7 +2924,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81579',
                     price: '271.99',
-                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Curved Counter Top Basin 600mm'
+                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Curved Counter Top Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '450mm', style: 'Modern' }
                 },
                 {
                     id: 'C81580',
@@ -2871,7 +2942,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81580',
                     price: '279.00',
-                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm'
+                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '450mm', style: 'Modern' }
                 },
                 {
                     id: 'C81577',
@@ -2888,7 +2960,8 @@ const productData: ProductData = {
                     },
                     sku: 'C81577',
                     price: '309.99',
-                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '450mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -2916,7 +2989,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82105',
                     price: '349.99',
-                    title: 'Crete Fluted Apex Oak Wall Hung Basin Drawer Vanity 600mm'
+                    title: 'Crete Fluted Apex Oak Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
                 {
                     id: 'C82106',
@@ -2933,7 +3007,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82106',
                     price: '369.99',
-                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
                 },
                 {
                     id: 'C82108',
@@ -2950,7 +3025,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82108',
                     price: '327.00',
-                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
                 },
                 {
                     id: 'C82107',
@@ -2967,7 +3043,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82107',
                     price: '399.99',
-                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Curved Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Curved Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
                 },
                 {
                     id: 'C82109',
@@ -2984,7 +3061,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82109',
                     price: '409.99',
-                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Cody Basin 600mm'
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Cody Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3013,7 +3091,8 @@ const productData: ProductData = {
                     },
                     sku: '72144',
                     price: '269.99',
-                    title: 'Crete Fluted Charcoal Elm Wall Hung Tall Cabinet 1400x350mm'
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Tall Cabinet 1400x350mm',
+                    filterAttributes: { width: '350mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Tall Cabinet', basinType: 'N/A', depth: '300mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3041,7 +3120,8 @@ const productData: ProductData = {
                     },
                     sku: '74130',
                     price: '199.99',
-                    title: 'Crete Fluted Charcoal Elm Slimline Back To Wall Toilet Unit 500mm'
+                    title: 'Crete Fluted Charcoal Elm Slimline Back To Wall Toilet Unit 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Toilet Unit', basinType: 'N/A', depth: '253mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3069,7 +3149,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82714',
                     price: '249.99',
-                    title: 'Corsica Gloss White Slimline Basin Vanity 500mm'
+                    title: 'Corsica Gloss White Slimline Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3097,7 +3178,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82715',
                     price: '279.99',
-                    title: 'Corsica Gloss White Slimline Basin Vanity 600mm'
+                    title: 'Corsica Gloss White Slimline Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3125,7 +3207,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82716',
                     price: '329.99',
-                    title: 'Corsica Gloss White Basin Vanity 600mm'
+                    title: 'Corsica Gloss White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3153,7 +3236,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82717',
                     price: '319.99',
-                    title: 'Corsica Gloss White Vanity with Marble Top 600mm - Excludes Counter Top Basin'
+                    title: 'Corsica Gloss White Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3181,7 +3265,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82718',
                     price: '359.99',
-                    title: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 600mm'
+                    title: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3209,7 +3294,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82719',
                     price: '369.99',
-                    title: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 600mm'
+                    title: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3237,7 +3323,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82720',
                     price: '399.99',
-                    title: 'Corsica Gloss White Basin Vanity 800mm'
+                    title: 'Corsica Gloss White Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3265,7 +3352,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82721',
                     price: '399.99',
-                    title: 'Corsica Gloss White Vanity with Marble Top 800mm - Excludes Counter Top Basin'
+                    title: 'Corsica Gloss White Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -3293,7 +3381,8 @@ const productData: ProductData = {
                     },
                     sku: 'C82722',
                     price: '439.99',
-                    title: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 800mm'
+                    title: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5351,7 +5440,8 @@ const productData: ProductData = {
                     },
                     sku: 'C67010',
                     price: '59.99',
-                    title: 'Reno Pedestal Basin 500mm'
+                    title: 'Reno Pedestal Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '375mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5379,7 +5469,8 @@ const productData: ProductData = {
                     },
                     sku: 'C67011',
                     price: '49.99',
-                    title: 'Opel Pedestal Basin 500mm'
+                    title: 'Opel Pedestal Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '421mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5407,7 +5498,8 @@ const productData: ProductData = {
                     },
                     sku: 'C67012',
                     price: '69.99',
-                    title: 'Vail Pedestal Basin 520mm'
+                    title: 'Vail Pedestal Basin 520mm',
+                    filterAttributes: { width: '520mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '424mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5435,7 +5527,8 @@ const productData: ProductData = {
                     },
                     sku: 'C67013',
                     price: '69.99',
-                    title: 'Dunn Pedestal Basin 520mm'
+                    title: 'Dunn Pedestal Basin 520mm',
+                    filterAttributes: { width: '520mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '444mm', style: 'Modern' }
                 },
             ],
             variantType: 'Width Options',
@@ -5463,7 +5556,8 @@ const productData: ProductData = {
                     },
                     sku: 'C67014',
                     price: '79.99',
-                    title: 'Enid Traditional Pedestal Basin Single Tap Hole 545mm'
+                    title: 'Enid Traditional Pedestal Basin Single Tap Hole 545mm',
+                    filterAttributes: { width: '545mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '501mm', style: 'Traditional' }
                 },
             ],
             variantType: 'Width Options',
@@ -6464,7 +6558,8 @@ const productData: ProductData = {
                     },
                     sku: 'C46246',
                     price: '175.00',
-                    title: 'London 6mm Sliding Shower Enclosure 1200x760mm'
+                    title: 'London 6mm Sliding Shower Enclosure 1200x760mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1200mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
                 },
                 {
                     id: 'C46005',
@@ -6965,7 +7060,8 @@ const productData: ProductData = {
           },
           sku: 'C51089',
           price: '599.99',
-          title: 'Kensington 1700mm Freestanding Slipper Bath'
+          title: 'Kensington 1700mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1700mm', width: '730mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
         {
           id: 'C51098',
@@ -6995,7 +7091,8 @@ const productData: ProductData = {
           },
           sku: 'C51098',
           price: '579.99',
-          title: 'Kensington 1370mm Freestanding Slipper Bath'
+          title: 'Kensington 1370mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1370mm', width: '717mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
         {
           id: 'C51088',
@@ -7025,7 +7122,8 @@ const productData: ProductData = {
           },
           sku: 'C51088',
           price: '589.99',
-          title: 'Kensington 1500mm Freestanding Slipper Bath'
+          title: 'Kensington 1500mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1500mm', width: '731mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7068,7 +7166,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53017',
                   price: '125.00',
-                  title: 'Stafford 1700x700 Round Single Ended bath'
+                  title: 'Stafford 1700x700 Round Single Ended bath',
+                  filterAttributes: { length: '1700mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53014',
@@ -7099,7 +7198,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53014',
                   price: '139.99',
-                  title: 'Stafford 1400x700 Round Single Ended Bath'
+                  title: 'Stafford 1400x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1400mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53015',
@@ -7130,7 +7230,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53015',
                   price: '139.99',
-                  title: 'Stafford 1500x700 Round Single Ended Bath'
+                  title: 'Stafford 1500x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1500mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53016',
@@ -7161,7 +7262,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53016',
                   price: '139.99',
-                  title: 'Stafford 1600x700 Round Single Ended Bath'
+                  title: 'Stafford 1600x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1600mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
           ],
           variantType: 'Size Options',
@@ -7203,7 +7305,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53018',
                   price: '129.00',
-                  title: 'Hereford 1500x700 Square Single Ended Bath'
+                  title: 'Hereford 1500x700 Square Single Ended Bath',
+                  filterAttributes: { length: '1500mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53019',
@@ -7234,7 +7337,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53019',
                   price: '159.99',
-                  title: 'Hereford 1600x700 Square Single Ended Bath'
+                  title: 'Hereford 1600x700 Square Single Ended Bath',
+                  filterAttributes: { length: '1600mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53021',
@@ -7265,7 +7369,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53021',
                   price: '184.99',
-                  title: 'Hereford 1700x750 Square Single Ended Bath'
+                  title: 'Hereford 1700x750 Square Single Ended Bath',
+                  filterAttributes: { length: '1700mm', width: '750mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53022',
@@ -7296,7 +7401,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53022',
                   price: '209.99',
-                  title: 'Hereford 1800x800 Square Single Ended Bath'
+                  title: 'Hereford 1800x800 Square Single Ended Bath',
+                  filterAttributes: { length: '1800mm', width: '800mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
           ],
           variantType: 'Orientation',
@@ -7337,7 +7443,8 @@ const productData: ProductData = {
                   },
                   sku: 'C51090',
                   price: '449.00',
-                  title: 'Richmond 1500mm Freestanding Slipper Bath'
+                  title: 'Richmond 1500mm Freestanding Slipper Bath',
+                  filterAttributes: { length: '1500mm', width: '712mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
               },
               {
                   id: 'C51097',
@@ -7367,7 +7474,8 @@ const productData: ProductData = {
                   },
                   sku: 'C51097',
                   price: '439.99',
-                  title: 'Richmond 1370mm Freestanding Slipper Bath'
+                  title: 'Richmond 1370mm Freestanding Slipper Bath',
+                  filterAttributes: { length: '1370mm', width: '712mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
               },
               {
                   id: 'C51091',
@@ -7397,7 +7505,8 @@ const productData: ProductData = {
                   },
                   sku: 'C51091',
                   price: '579.99',
-                  title: 'Richmond 1700mm Freestanding Slipper Bath'
+                  title: 'Richmond 1700mm Freestanding Slipper Bath',
+                  filterAttributes: { length: '1700mm', width: '731mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
               },
           ],
           variantType: 'Orientation',
@@ -7430,7 +7539,8 @@ const productData: ProductData = {
           },
           sku: '51125',
           price: '749.99',
-          title: 'Ealing 1500mm Matt White Freestanding Bath'
+          title: 'Ealing 1500mm Matt White Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '797mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
         },
         {
           id: '51126',
@@ -7452,7 +7562,8 @@ const productData: ProductData = {
           },
           sku: '51126',
           price: '799.99',
-          title: 'Ealing 1700mm Matt White Freestanding Bath'
+          title: 'Ealing 1700mm Matt White Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7485,7 +7596,8 @@ const productData: ProductData = {
           },
           sku: '51127',
           price: '679.99',
-          title: 'Ealing 1500mm Matt Black Freestanding Bath'
+          title: 'Ealing 1500mm Matt Black Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '797mm', type: 'Freestanding', finish: 'Matt Black', style: 'Modern', handed: 'N/A' }
         },
         {
           id: '51128',
@@ -7507,7 +7619,8 @@ const productData: ProductData = {
           },
           sku: '51128',
           price: '719.99',
-          title: 'Ealing 1700mm Matt Black Freestanding Bath'
+          title: 'Ealing 1700mm Matt Black Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '730mm', type: 'Freestanding', finish: 'Matt Black', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7540,7 +7653,8 @@ const productData: ProductData = {
           },
           sku: '51129',
           price: '495.99',
-          title: 'Finchley 1700mm Fluted Freestanding Bath'
+          title: 'Finchley 1700mm Fluted Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
         },
         {
           id: '51130',
@@ -7562,7 +7676,8 @@ const productData: ProductData = {
           },
           sku: '51130',
           price: '639.99',
-          title: 'Finchley 1700mm Fluted Freestanding Bath'
+          title: 'Finchley 1700mm Fluted Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7595,7 +7710,8 @@ const productData: ProductData = {
           },
           sku: '51131',
           price: '495.99',
-          title: 'Finchley 1500mm Fluted Back To Wall Bath'
+          title: 'Finchley 1500mm Fluted Back To Wall Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Back To Wall', finish: 'White', style: 'Modern', handed: 'N/A' }
         },
         {
           id: '51132',
@@ -7617,7 +7733,8 @@ const productData: ProductData = {
           },
           sku: '51132',
           price: '639.99',
-          title: 'Finchley 1700mm Fluted Back To Wall Bath'
+          title: 'Finchley 1700mm Fluted Back To Wall Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Back To Wall', finish: 'White', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7650,7 +7767,8 @@ const productData: ProductData = {
           },
           sku: '51137',
           price: '749.99',
-          title: 'Brent 1500mm Fluted Matt White Freestanding Bath'
+          title: 'Brent 1500mm Fluted Matt White Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
         },
         {
           id: '51138',
@@ -7672,7 +7790,8 @@ const productData: ProductData = {
           },
           sku: '51138',
           price: '639.99',
-          title: 'Brent 1700mm Fluted Matt White Freestanding Bath'
+          title: 'Brent 1700mm Fluted Matt White Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7705,7 +7824,8 @@ const productData: ProductData = {
           },
           sku: '51139',
           price: '749.99',
-          title: 'Brent 1500mm Fluted Matt White Back To Wall Bath'
+          title: 'Brent 1500mm Fluted Matt White Back To Wall Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Back To Wall', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
         },
         {
           id: '51140',
@@ -7727,7 +7847,8 @@ const productData: ProductData = {
           },
           sku: '51140',
           price: '639.99',
-          title: 'Brent 1700mm Fluted Matt White Back To Wall Bath'
+          title: 'Brent 1700mm Fluted Matt White Back To Wall Bath',
+          filterAttributes: { length: '1700mm', width: '780mm', type: 'Back To Wall', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7760,7 +7881,8 @@ const productData: ProductData = {
           },
           sku: 'C59005',
           price: '455.99',
-          title: 'Belvoir 1700 Fluted Freestanding Bath'
+          title: 'Belvoir 1700 Fluted Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '780mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7793,7 +7915,8 @@ const productData: ProductData = {
           },
           sku: 'C59006',
           price: '569.99',
-          title: 'Somer 1500 Freestanding Bath'
+          title: 'Somer 1500 Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '777mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
         },
         {
           id: 'C59007',
@@ -7815,7 +7938,8 @@ const productData: ProductData = {
           },
           sku: 'C59007',
           price: '599.99',
-          title: 'Somer 1700 Freestanding Bath'
+          title: 'Somer 1700 Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '778mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7848,7 +7972,8 @@ const productData: ProductData = {
           },
           sku: 'C59008',
           price: '679.99',
-          title: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet'
+          title: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet',
+          filterAttributes: { length: '1700mm', width: '750mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7881,7 +8006,8 @@ const productData: ProductData = {
           },
           sku: 'C59009',
           price: '679.99',
-          title: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet'
+          title: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet',
+          filterAttributes: { length: '1700mm', width: '830mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7914,7 +8040,8 @@ const productData: ProductData = {
           },
           sku: 'C59010',
           price: '679.99',
-          title: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet'
+          title: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet',
+          filterAttributes: { length: '1700mm', width: '830mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7947,7 +8074,8 @@ const productData: ProductData = {
           },
           sku: 'C59011',
           price: '679.99',
-          title: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet'
+          title: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet',
+          filterAttributes: { length: '1700mm', width: '830mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -7980,7 +8108,8 @@ const productData: ProductData = {
           },
           sku: 'C59012',
           price: '899.99',
-          title: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet'
+          title: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -8013,7 +8142,8 @@ const productData: ProductData = {
           },
           sku: 'C59020',
           price: '999.99',
-          title: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet'
+          title: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -8046,7 +8176,8 @@ const productData: ProductData = {
           },
           sku: 'C59021',
           price: '999.99',
-          title: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet'
+          title: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -8079,7 +8210,8 @@ const productData: ProductData = {
           },
           sku: 'C59022',
           price: '999.99',
-          title: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet'
+          title: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -8112,7 +8244,8 @@ const productData: ProductData = {
           },
           sku: 'C59023',
           price: '999.99',
-          title: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet'
+          title: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -8145,7 +8278,8 @@ const productData: ProductData = {
           },
           sku: 'C59024',
           price: '419.99',
-          title: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet'
+          title: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet',
+          filterAttributes: { length: '1700mm', width: '756mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -8178,7 +8312,8 @@ const productData: ProductData = {
           },
           sku: 'C59025',
           price: '419.99',
-          title: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet'
+          title: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet',
+          filterAttributes: { length: '1500mm', width: '756mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -9578,7 +9713,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66373',
                     price: '139.99',
-                    title: 'Boise Rimless Close Coupled Toilet With Soft Close Seat'
+                    title: 'Boise Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9611,7 +9747,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66374',
                     price: '139.99',
-                    title: 'Boise Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
+                    title: 'Boise Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9644,7 +9781,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66375',
                     price: '129.99',
-                    title: 'Napa Rimless Close Coupled Toilet With Slim Soft Close Seat'
+                    title: 'Napa Rimless Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9677,7 +9815,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66376',
                     price: '159.99',
-                    title: 'Napa Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat'
+                    title: 'Napa Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9710,7 +9849,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66377',
                     price: '169.99',
-                    title: 'Lodi Rimless Comfort Height Close Coupled Toilet With Soft Close Seat'
+                    title: 'Lodi Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9743,7 +9883,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66378',
                     price: '169.99',
-                    title: 'Lodi Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat'
+                    title: 'Lodi Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9776,7 +9917,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66379',
                     price: '129.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Soft Close Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9809,7 +9951,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66380',
                     price: '159.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Dove Grey Wooden Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Dove Grey Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9842,7 +9985,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66381',
                     price: '159.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Chalk White Wooden Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Chalk White Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9875,7 +10019,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66382',
                     price: '159.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Graphite Grey Wooden Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Graphite Grey Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9908,7 +10053,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66383',
                     price: '159.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Inky Blue Wooden Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Inky Blue Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9941,7 +10087,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66384',
                     price: '159.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Midnight Green Wooden Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Midnight Green Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -9974,7 +10121,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66385',
                     price: '159.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Cotton White Wooden Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Cotton White Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -10007,7 +10155,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66386',
                     price: '159.99',
-                    title: 'Lima Traditional Close Coupled Toilet With Cashmere Pink Wooden Seat'
+                    title: 'Lima Traditional Close Coupled Toilet With Cashmere Pink Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
@@ -10040,7 +10189,8 @@ const productData: ProductData = {
                     },
                     sku: 'C66387',
                     price: '159.99',
-                    title: 'Portland Slimline 555 Depth Rimless Close Coupled Toilet With Soft Close Seat'
+                    title: 'Portland Slimline 555 Depth Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Slimline', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
                 },
             ],
             variantType: 'Style Options',
