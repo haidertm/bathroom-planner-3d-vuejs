@@ -811,18 +811,7 @@ const categoryDisplayLabels = {
   'Plumbing': 'Soil Pipe'
 }
 
-const drawerTitle = computed(() => {
-  if (props.selectedCategory === 'search') {
-    const raw = (props && props.searchResults && 'value' in props.searchResults)
-        ? props.searchResults.value
-        : props.searchResults
-    const count = Array.isArray(raw) ? raw.length : 0
-    return `<span style="color:#EC048C">${count} </span> Results Found`
-  }
 
-  // Use display label mapping, fallback to category name
-  return categoryDisplayLabels[props.selectedCategory] || props.selectedCategory || 'Products'
-})
 
 // 4. FIXED search result highlighting that properly handles Vue refs
 const getHighlightedName = (product) => {
@@ -964,13 +953,14 @@ const readyProducts = computed(() => {
     }
 
     // Transform search results based on match type
-    const transformedResults = searchResultsArray.map((result, index) => {
-
+    const transformedResults = []
+    
+    searchResultsArray.forEach((result) => {
       const { category, product, matchingVariant, matchType, isExactMatch } = result
 
-      // For EXACT SKU matches - show direct add functionality
+      // For EXACT SKU matches - show single direct add item (keep existing logic)
       if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
-        return {
+        transformedResults.push({
           id: matchingVariant.id || matchingVariant.sku,
           name: matchingVariant.title || matchingVariant.name || product.name,
           price: matchingVariant.price || product.price,
@@ -994,36 +984,73 @@ const readyProducts = computed(() => {
             selectedVariant: matchingVariant,
             selectedColor: product.colors?.[0]?.id || null
           }
-        }
+        })
+        return
       }
 
-      // For NAME matches or partial SKU matches - show regular SELECT button
-      return {
-        id: product.id,
-        name: product.name,
-        price: product.price, // Use product base price, not variant price
-        image: product.image, // Use product main image
-        link: product.link,
-        category: category,
-        variants: product.variants, // Include variants for selection
-        colors: product.colors, // Include colors
-        variantType: product.variantType,
-        features: product.features,
-
-        // Search context for name/partial matches
-        searchContext: {
-          isExactMatch: false,
-          matchType: matchType,
-          matchingVariant: matchingVariant, // Keep for reference
-          originalProduct: product,
-          showDirectAdd: false, // Show SELECT button instead
-          highlightedVariant: matchingVariant // Highlight the matching variant
-        },
-
-        // No direct productData - user must select variant first
-        productData: null
+      // FOR ALL OTHER MATCHES: Flatten variants into individual cards
+      // This matches the "Filter" behavior where every variant is shown with "Add to Room"
+      
+      const variants = product.variants || []
+      
+      // If product has no variants, show the product itself (fallback)
+      if (variants.length === 0) {
+        transformedResults.push({
+            id: product.id,
+            name: product.name,
+            price: product.price, 
+            image: product.image, 
+            link: product.link,
+            category: category,
+            variants: [],
+            colors: product.colors,
+            features: product.features,
+            
+            searchContext: {
+              isExactMatch: false,
+              matchType: 'product_match',
+              matchingVariant: null,
+              originalProduct: product,
+              showDirectAdd: false // Fallback to Select
+            },
+            productData: null
+        })
+        return
       }
+
+      // Create a card for EACH variant
+      variants.forEach(variant => {
+        transformedResults.push({
+          id: `${product.id}-${variant.id || variant.sku}`,
+          // Show full variant name
+          name: variant.title || `${product.name} - ${variant.name}`,
+          price: variant.price || product.price,
+          image: variant.image || product.image, // Variant image or product image fallback
+          link: variant.link || product.link,
+          category: category,
+          
+          isFilteredVariant: true, // Mark as flattened variant
+          
+          searchContext: {
+            isExactMatch: false,
+            matchType: 'flattened_variant',
+            matchingVariant: variant,
+            originalProduct: product,
+            showDirectAdd: true, // ENABLE DIRECT ADD
+            category: category
+          },
+
+          // PREPARE DATA FOR ADD TO ROOM
+          productData: {
+            type: category,
+            product: product,
+            selectedVariant: variant,
+            selectedColor: product.colors?.[0]?.id || null
+          }
+        })
+      })
     })
+
     return transformedResults
   }
 
@@ -1084,6 +1111,17 @@ const readyProducts = computed(() => {
   // Fallback to all category products (when filteredProducts prop is not provided)
   const categoryProducts = getProductsForCategory(props.selectedCategory)
   return categoryProducts || []
+})
+
+const drawerTitle = computed(() => {
+  if (props.selectedCategory === 'search') {
+    // UPDATED: Count the FLATTENED results (readyProducts) to match what is displayed
+    const count = readyProducts.value ? readyProducts.value.length : 0
+    return `<span style="color:#EC048C">${count} </span> Results Found`
+  }
+
+  // Use display label mapping, fallback to category name
+  return categoryDisplayLabels[props.selectedCategory] || props.selectedCategory || 'Products'
 })
 
 const isSingleProductSearchMode = computed(() => {
