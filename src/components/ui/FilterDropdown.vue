@@ -1,10 +1,10 @@
 <template>
   <div class="filter-dropdown" ref="dropdownRef">
     <button
-      ref="triggerRef"
-      class="filter-trigger"
-      :class="{ 'is-active': selected.length > 0 || isOpen }"
-      @click="toggleDropdown"
+        ref="triggerRef"
+        class="filter-trigger"
+        :class="{ 'is-active': selected.length > 0 || isOpen }"
+        @click="toggleDropdown"
     >
       <span class="filter-label">{{ label }}</span>
       <span class="filter-arrow">&#9662;</span>
@@ -13,34 +13,34 @@
     <!-- Teleport dropdown menu to body to avoid overflow clipping -->
     <Teleport to="body">
       <div
-        v-if="isOpen"
-        class="filter-dropdown-menu"
-        :style="dropdownMenuStyle"
-        ref="menuRef"
+          v-if="isOpen"
+          class="filter-dropdown-menu"
+          :style="dropdownMenuStyle"
+          ref="menuRef"
       >
         <!-- Search Input -->
         <div class="filter-search">
           <input
-            type="text"
-            v-model="searchQuery"
-            :placeholder="`Search ${label}`"
-            class="filter-search-input"
-            ref="searchInputRef"
+              type="text"
+              v-model="searchQuery"
+              :placeholder="`Search ${label}`"
+              class="filter-search-input"
+              ref="searchInputRef"
           />
         </div>
 
         <!-- Options List -->
         <div class="filter-options">
           <label
-            v-for="option in filteredOptions"
-            :key="option.value"
-            class="filter-option"
+              v-for="option in filteredOptions"
+              :key="option.value"
+              class="filter-option"
           >
             <input
-              type="checkbox"
-              :checked="isSelected(option.value)"
-              @change="toggleOption(option.value)"
-              class="filter-checkbox"
+                type="checkbox"
+                :checked="isSelected(option.value)"
+                @change="toggleOption(option.value)"
+                class="filter-checkbox"
             />
             <span class="filter-option-label">{{ option.label }}</span>
           </label>
@@ -102,7 +102,7 @@ const filteredOptions = computed(() => {
   }
   const query = searchQuery.value.toLowerCase().trim()
   return props.options.filter(option =>
-    option.label.toLowerCase().includes(query)
+      option.label.toLowerCase().includes(query)
   )
 })
 

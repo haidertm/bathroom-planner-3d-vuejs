@@ -6,129 +6,154 @@
 
       <!-- Drawer -->
       <div class="filters-drawer" :class="{ 'is-open': isOpen }">
-      <!-- Header -->
-      <div class="filters-header">
-        <h2 class="filters-title">All Filters</h2>
-        <button class="filters-close" @click="closeDrawer" aria-label="Close filters">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
+        <!-- Header -->
+        <div class="filters-header">
+          <h2 class="filters-title">All Filters</h2>
+          <button class="filters-close" @click="closeDrawer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
 
-      <!-- Filter Sections -->
-      <div class="filters-content">
-        <!-- Dynamic Secondary Filter Sections -->
-        <div
-          v-for="filterKey in secondaryFilters"
-          :key="filterKey"
-          class="filter-section"
-        >
-          <template v-if="getFilterOptions(filterKey).length > 0">
-            <button class="filter-section-header" @click="toggleSection(filterKey)">
-              <span>{{ getFilterLabel(filterKey) }}</span>
+        <!-- Filter Sections -->
+        <div class="filters-content">
+          <!-- Dynamic Primary Filter Sections (Length, Type, Finish, etc.) -->
+          <div
+              v-for="filterKey in primaryFilters"
+              :key="'primary-' + filterKey"
+              class="filter-section"
+          >
+            <template v-if="getFilterOptions(filterKey).length > 0">
+              <button class="filter-section-header" @click="toggleSection(filterKey)">
+                <span>{{ getFilterLabel(filterKey) }}</span>
+                <svg
+                    class="filter-section-arrow"
+                    :class="{ 'is-open': openSections[filterKey] }"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div v-if="openSections[filterKey]" class="filter-section-content">
+                <div class="filter-options-grid">
+                  <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+                    <input
+                        type="checkbox"
+                        :checked="isFilterSelected(filterKey, option.value)"
+                        @change="toggleFilter(filterKey, option.value)"
+                        class="filter-checkbox"
+                    />
+                    <span>{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Dynamic Secondary Filter Sections -->
+          <div
+              v-for="filterKey in secondaryFilters"
+              :key="'secondary-' + filterKey"
+              class="filter-section"
+          >
+            <template v-if="getFilterOptions(filterKey).length > 0">
+              <button class="filter-section-header" @click="toggleSection(filterKey)">
+                <span>{{ getFilterLabel(filterKey) }}</span>
+                <svg
+                    class="filter-section-arrow"
+                    :class="{ 'is-open': openSections[filterKey] }"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div v-if="openSections[filterKey]" class="filter-section-content">
+                <div class="filter-options-grid">
+                  <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+                    <input
+                        type="checkbox"
+                        :checked="isFilterSelected(filterKey, option.value)"
+                        @change="toggleFilter(filterKey, option.value)"
+                        class="filter-checkbox"
+                    />
+                    <span>{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Price Range Section (always shown if products have prices) -->
+          <div v-if="hasProductsWithPrices" class="filter-section">
+            <button class="filter-section-header" @click="toggleSection('price')">
+              <span>Price Range</span>
               <svg
-                class="filter-section-arrow"
-                :class="{ 'is-open': openSections[filterKey] }"
-                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  class="filter-section-arrow"
+                  :class="{ 'is-open': openSections.price }"
+                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               >
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </button>
-            <div v-if="openSections[filterKey]" class="filter-section-content">
-              <div class="filter-options-grid">
-                <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+            <div v-if="openSections.price" class="filter-section-content">
+              <div class="price-range-container">
+                <div class="price-range-labels">
+                  <span>£{{ displayPriceMin }}</span>
+                  <span>£{{ displayPriceMax }}</span>
+                </div>
+                <div class="dual-range-slider">
+                  <div class="slider-track"></div>
+                  <div
+                      class="slider-range"
+                      :style="sliderRangeStyle"
+                  ></div>
                   <input
-                    type="checkbox"
-                    :checked="isFilterSelected(filterKey, option.value)"
-                    @change="toggleFilter(filterKey, option.value)"
-                    class="filter-checkbox"
+                      type="range"
+                      :min="minPrice"
+                      :max="maxPrice"
+                      :value="displayPriceMin"
+                      @input="updateMinPrice"
+                      class="range-input range-min"
                   />
-                  <span>{{ option.label }}</span>
-                </label>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- Price Range Section (always shown if products have prices) -->
-        <div v-if="hasProductsWithPrices" class="filter-section">
-          <button class="filter-section-header" @click="toggleSection('price')">
-            <span>Price Range</span>
-            <svg
-              class="filter-section-arrow"
-              :class="{ 'is-open': openSections.price }"
-              width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            >
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-          <div v-if="openSections.price" class="filter-section-content">
-            <div class="price-range-container">
-              <div class="price-range-labels">
-                <span>£{{ displayPriceMin }}</span>
-                <span>£{{ displayPriceMax }}</span>
-              </div>
-              <div class="dual-range-slider">
-                <div class="slider-track"></div>
-                <div
-                  class="slider-range"
-                  :style="sliderRangeStyle"
-                ></div>
-                <input
-                  type="range"
-                  :min="minPrice"
-                  :max="maxPrice"
-                  :value="displayPriceMin"
-                  @input="updateMinPrice"
-                  class="range-input range-min"
-                  aria-label="Minimum price"
-                  :aria-valuemin="minPrice"
-                  :aria-valuemax="maxPrice"
-                  :aria-valuenow="displayPriceMin"
-                />
-                <input
-                  type="range"
-                  :min="minPrice"
-                  :max="maxPrice"
-                  :value="displayPriceMax"
-                  @input="updateMaxPrice"
-                  class="range-input range-max"
-                  aria-label="Maximum price"
-                  :aria-valuemin="minPrice"
-                  :aria-valuemax="maxPrice"
-                  :aria-valuenow="displayPriceMax"
-                />
+                  <input
+                      type="range"
+                      :min="minPrice"
+                      :max="maxPrice"
+                      :value="displayPriceMax"
+                      @input="updateMaxPrice"
+                      class="range-input range-max"
+                  />
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Empty state when no filters available -->
+          <div v-if="primaryFilters.length === 0 && secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
+            <p>No filters available for this category.</p>
+          </div>
         </div>
 
-        <!-- Empty state when no secondary filters -->
-        <div v-if="secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
-          <p>No additional filters available for this category.</p>
+        <!-- Footer -->
+        <div class="filters-footer">
+          <button class="filters-clear-btn" @click="clearAllFilters">
+            Clear All
+          </button>
+          <button class="filters-apply-btn" @click="applyFilters">
+            Show {{ filteredCount }} Results
+          </button>
         </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="filters-footer">
-        <button class="filters-clear-btn" @click="clearAllFilters">
-          Clear All
-        </button>
-        <button class="filters-apply-btn" @click="applyFilters">
-          Show {{ filteredCount }} Results
-        </button>
       </div>
     </div>
-  </div>
   </Teleport>
 </template>
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
-import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
+import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants } from '../../utils/filters'
 
 const gtm = useGtm()
@@ -218,13 +243,27 @@ const localFilters = ref(createEmptyFilters())
 
 // Open/closed state for sections (reactive object to handle dynamic keys)
 const openSections = reactive({
-  price: false
+  price: true // Price section open by default
+})
+
+// Get primary filters for this category (shown in chips)
+const primaryFilters = computed(() => {
+  return getPrimaryFilters(props.category)
 })
 
 // Get secondary filters for this category
 const secondaryFilters = computed(() => {
   return getSecondaryFilters(props.category)
 })
+
+// Initialize open sections for primary filters
+watch(primaryFilters, (filters) => {
+  for (const filterKey of filters) {
+    if (openSections[filterKey] === undefined) {
+      openSections[filterKey] = true // Default to open
+    }
+  }
+}, { immediate: true })
 
 // Initialize open sections for secondary filters
 watch(secondaryFilters, (filters) => {
@@ -235,9 +274,14 @@ watch(secondaryFilters, (filters) => {
   }
 }, { immediate: true })
 
-// Get filter label for display
+// Get filter label for display (with category prefix)
 const getFilterLabel = (filterKey) => {
-  return getLabel(filterKey)
+  const baseLabel = getLabel(filterKey)
+  // Add category prefix for clarity (e.g., "Bath Length" instead of just "Length")
+  if (props.category) {
+    return `${props.category} ${baseLabel}`
+  }
+  return baseLabel
 }
 
 // Get filter options for a specific filter key
@@ -475,35 +519,35 @@ const closeDrawer = () => {
   z-index: 10000000; /* Higher than Sidebar search bar (9999999) */
   pointer-events: none; /* Allow clicks to pass through to sidebar */
   visibility: hidden;
-  transition: visibility 0s 0.3s; /* Delay hiding until transition completes */
+  /* No transition - instant show/hide */
 }
 
 .all-filters-wrapper.is-open {
   visibility: visible;
-  transition: visibility 0s 0s; /* Show immediately when opening */
 }
 
 .filters-overlay {
   position: absolute;
   top: 0;
-  left: 0; /* Full overlay */
+  left: 480px; /* Start after sidebar */
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
   pointer-events: auto; /* Re-enable clicks on overlay */
   opacity: 0;
-  transition: opacity 0.3s ease-out;
+  /* No transition on close - instant hide */
 }
 
 .all-filters-wrapper.is-open .filters-overlay {
   opacity: 1;
+  transition: opacity 0.3s ease-out; /* Only animate on open */
 }
 
 .filters-drawer {
   position: absolute;
   top: 60px; /* Match sidebar top position (below header) */
-  left: 0; /* Position over the sidebar */
-  width: 480px; /* Match ProductDrawer width */
+  left: 480px; /* Position next to the sidebar */
+  width: 400px; /* Narrower width for filter panel */
   height: calc(100vh - 60px); /* Full height minus top offset */
   background-color: #ffffff;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
@@ -513,24 +557,25 @@ const closeDrawer = () => {
   border-left: 1px solid #e5e7eb;
   pointer-events: auto; /* Enable clicks on the drawer */
   transform: translateX(-100%);
-  transition: transform 0.3s ease-out;
+  /* No transition on close - instant hide */
 }
 
 .filters-drawer.is-open {
   transform: translateX(0);
+  transition: transform 0.3s ease-out; /* Only animate on open */
 }
 
 .filters-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
+  padding: 16px;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
 .filters-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
@@ -567,10 +612,10 @@ const closeDrawer = () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background: none;
   border: none;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #1a1a1a;
   cursor: pointer;
@@ -592,7 +637,7 @@ const closeDrawer = () => {
 }
 
 .filter-section-content {
-  padding: 0 20px 16px 20px;
+  padding: 0 16px 12px 16px;
 }
 
 .filter-options-grid {
@@ -723,24 +768,25 @@ const closeDrawer = () => {
 
 .filters-footer {
   display: flex;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 8px;
+  padding: 12px 16px;
   border-top: 1px solid #e5e7eb;
   background-color: #ffffff;
   flex-shrink: 0;
 }
 
 .filters-clear-btn {
-  padding: 12px 24px;
+  padding: 10px 16px;
   background-color: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #374151;
   cursor: pointer;
   font-family: Arial, sans-serif;
   transition: all 0.15s ease;
+  width: 70%;
 }
 
 .filters-clear-btn:hover {
@@ -749,17 +795,17 @@ const closeDrawer = () => {
 }
 
 .filters-apply-btn {
-  flex: 1;
-  padding: 12px 24px;
+  padding: 10px 16px;
   background-color: #29275B;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #ffffff;
   cursor: pointer;
   font-family: Arial, sans-serif;
   transition: background-color 0.15s ease;
+  width: 100%;
 }
 
 .filters-apply-btn:hover {

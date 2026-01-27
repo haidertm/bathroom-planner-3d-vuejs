@@ -283,12 +283,6 @@ export function createEmptyFilters(): SelectedFilters {
     frameFinish: [],
     range: [],
 
-    // Additional
-    feetColour: [],
-    diameter: [],
-    size: [],
-    material: [],
-
     // Price
     priceMin: 0,
     priceMax: undefined
