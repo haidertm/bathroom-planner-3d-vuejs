@@ -739,6 +739,8 @@ watch(() => props.isOpen, (isOpen) => {
       selectedColor.value = '';
     }
   } else {
+    // Close AllFiltersDrawer when ProductDrawer closes
+    isAllFiltersOpen.value = false;
     productPreloading.value.clear();
   }
 });
@@ -1472,6 +1474,8 @@ const getSearchAwareButtonStyle = (product) => {
 
 
 const closeDrawer = () => {
+  // Close the AllFiltersDrawer when going back
+  isAllFiltersOpen.value = false
   emit('close')
 }
 

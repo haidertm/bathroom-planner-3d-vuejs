@@ -19,10 +19,43 @@
 
         <!-- Filter Sections -->
         <div class="filters-content">
+          <!-- Dynamic Primary Filter Sections (Length, Type, Finish, etc.) -->
+          <div
+              v-for="filterKey in primaryFilters"
+              :key="'primary-' + filterKey"
+              class="filter-section"
+          >
+            <template v-if="getFilterOptions(filterKey).length > 0">
+              <button class="filter-section-header" @click="toggleSection(filterKey)">
+                <span>{{ getFilterLabel(filterKey) }}</span>
+                <svg
+                    class="filter-section-arrow"
+                    :class="{ 'is-open': openSections[filterKey] }"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div v-if="openSections[filterKey]" class="filter-section-content">
+                <div class="filter-options-grid">
+                  <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+                    <input
+                        type="checkbox"
+                        :checked="isFilterSelected(filterKey, option.value)"
+                        @change="toggleFilter(filterKey, option.value)"
+                        class="filter-checkbox"
+                    />
+                    <span>{{ option.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </template>
+          </div>
+
           <!-- Dynamic Secondary Filter Sections -->
           <div
               v-for="filterKey in secondaryFilters"
-              :key="filterKey"
+              :key="'secondary-' + filterKey"
               class="filter-section"
           >
             <template v-if="getFilterOptions(filterKey).length > 0">
@@ -97,9 +130,9 @@
             </div>
           </div>
 
-          <!-- Empty state when no secondary filters -->
-          <div v-if="secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
-            <p>No additional filters available for this category.</p>
+          <!-- Empty state when no filters available -->
+          <div v-if="primaryFilters.length === 0 && secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
+            <p>No filters available for this category.</p>
           </div>
         </div>
 
@@ -119,7 +152,7 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
-import { getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
+import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants } from '../../utils/filters'
 
 const props = defineProps({
@@ -207,13 +240,27 @@ const localFilters = ref(createEmptyFilters())
 
 // Open/closed state for sections (reactive object to handle dynamic keys)
 const openSections = reactive({
-  price: false
+  price: true // Price section open by default
+})
+
+// Get primary filters for this category (shown in chips)
+const primaryFilters = computed(() => {
+  return getPrimaryFilters(props.category)
 })
 
 // Get secondary filters for this category
 const secondaryFilters = computed(() => {
   return getSecondaryFilters(props.category)
 })
+
+// Initialize open sections for primary filters
+watch(primaryFilters, (filters) => {
+  for (const filterKey of filters) {
+    if (openSections[filterKey] === undefined) {
+      openSections[filterKey] = true // Default to open
+    }
+  }
+}, { immediate: true })
 
 // Initialize open sections for secondary filters
 watch(secondaryFilters, (filters) => {
@@ -224,9 +271,14 @@ watch(secondaryFilters, (filters) => {
   }
 }, { immediate: true })
 
-// Get filter label for display
+// Get filter label for display (with category prefix)
 const getFilterLabel = (filterKey) => {
-  return getLabel(filterKey)
+  const baseLabel = getLabel(filterKey)
+  // Add category prefix for clarity (e.g., "Bath Length" instead of just "Length")
+  if (props.category) {
+    return `${props.category} ${baseLabel}`
+  }
+  return baseLabel
 }
 
 // Get filter options for a specific filter key
@@ -429,35 +481,35 @@ const closeDrawer = () => {
   z-index: 10000000; /* Higher than Sidebar search bar (9999999) */
   pointer-events: none; /* Allow clicks to pass through to sidebar */
   visibility: hidden;
-  transition: visibility 0s 0.3s; /* Delay hiding until transition completes */
+  /* No transition - instant show/hide */
 }
 
 .all-filters-wrapper.is-open {
   visibility: visible;
-  transition: visibility 0s 0s; /* Show immediately when opening */
 }
 
 .filters-overlay {
   position: absolute;
   top: 0;
-  left: 0; /* Full overlay */
+  left: 480px; /* Start after sidebar */
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
   pointer-events: auto; /* Re-enable clicks on overlay */
   opacity: 0;
-  transition: opacity 0.3s ease-out;
+  /* No transition on close - instant hide */
 }
 
 .all-filters-wrapper.is-open .filters-overlay {
   opacity: 1;
+  transition: opacity 0.3s ease-out; /* Only animate on open */
 }
 
 .filters-drawer {
   position: absolute;
   top: 60px; /* Match sidebar top position (below header) */
-  left: 0; /* Position over the sidebar */
-  width: 480px; /* Match ProductDrawer width */
+  left: 480px; /* Position next to the sidebar */
+  width: 400px; /* Narrower width for filter panel */
   height: calc(100vh - 60px); /* Full height minus top offset */
   background-color: #ffffff;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
@@ -467,24 +519,25 @@ const closeDrawer = () => {
   border-left: 1px solid #e5e7eb;
   pointer-events: auto; /* Enable clicks on the drawer */
   transform: translateX(-100%);
-  transition: transform 0.3s ease-out;
+  /* No transition on close - instant hide */
 }
 
 .filters-drawer.is-open {
   transform: translateX(0);
+  transition: transform 0.3s ease-out; /* Only animate on open */
 }
 
 .filters-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
+  padding: 16px;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
 }
 
 .filters-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #1a1a1a;
   margin: 0;
@@ -521,10 +574,10 @@ const closeDrawer = () => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 16px 20px;
+  padding: 12px 16px;
   background: none;
   border: none;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: #1a1a1a;
   cursor: pointer;
@@ -546,7 +599,7 @@ const closeDrawer = () => {
 }
 
 .filter-section-content {
-  padding: 0 20px 16px 20px;
+  padding: 0 16px 12px 16px;
 }
 
 .filter-options-grid {
@@ -677,24 +730,25 @@ const closeDrawer = () => {
 
 .filters-footer {
   display: flex;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 8px;
+  padding: 12px 16px;
   border-top: 1px solid #e5e7eb;
   background-color: #ffffff;
   flex-shrink: 0;
 }
 
 .filters-clear-btn {
-  padding: 12px 24px;
+  padding: 10px 16px;
   background-color: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: #374151;
   cursor: pointer;
   font-family: Arial, sans-serif;
   transition: all 0.15s ease;
+  width: 70%;
 }
 
 .filters-clear-btn:hover {
@@ -703,17 +757,17 @@ const closeDrawer = () => {
 }
 
 .filters-apply-btn {
-  flex: 1;
-  padding: 12px 24px;
+  padding: 10px 16px;
   background-color: #29275B;
   border: none;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #ffffff;
   cursor: pointer;
   font-family: Arial, sans-serif;
   transition: background-color 0.15s ease;
+  width: 100%;
 }
 
 .filters-apply-btn:hover {
