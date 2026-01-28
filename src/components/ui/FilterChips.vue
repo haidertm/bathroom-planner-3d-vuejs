@@ -37,8 +37,8 @@
 import { computed, watch } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import FilterDropdown from './FilterDropdown.vue'
-import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, createEmptyFilters } from '../../constants/filters'
-import { extractFilterOptions } from '../../utils/filters'
+import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, createEmptyFilters, RANGE_FILTERS } from '../../constants/filters'
+import { extractFilterOptions, extractRangeBounds } from '../../utils/filters'
 
 const gtm = useGtm()
 
@@ -112,6 +112,26 @@ const secondaryActiveCount = computed(() => {
   if (hasPriceFilter) {
     count += 1
   }
+
+  // Count active range filters (length, width, height, depth)
+  for (const rangeKey of RANGE_FILTERS) {
+    const minKey = `${rangeKey}Min`
+    const maxKey = `${rangeKey}Max`
+    const filterMin = props.selectedFilters[minKey]
+    const filterMax = props.selectedFilters[maxKey]
+
+    // Get dynamic bounds for comparison
+    const bounds = extractRangeBounds(props.products, rangeKey)
+    if (bounds) {
+      // Count as active if min is greater than dynamic min OR max is less than dynamic max
+      const isActive = (filterMin !== undefined && filterMin > bounds.min) ||
+                       (filterMax !== undefined && filterMax < bounds.max)
+      if (isActive) {
+        count += 1
+      }
+    }
+  }
+
   return count
 })
 

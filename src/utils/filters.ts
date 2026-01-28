@@ -1,7 +1,7 @@
 // Filter utility functions for product filtering
 
 import type { FilterOption, SelectedFilters } from '../constants/filters'
-import { createEmptyFilters } from '../constants/filters'
+import { createEmptyFilters, RANGE_FILTERS } from '../constants/filters'
 
 // All possible filter attribute keys
 type FilterAttributeKey =
@@ -65,6 +65,62 @@ interface Product {
   variants?: ProductVariant[]
   filterAttributes?: FilterAttributes
   [key: string]: unknown
+}
+
+/**
+ * Extract numeric value from a dimension string (e.g., "1500mm" -> 1500, "1.5m" -> 1500)
+ * Returns null if no valid number found
+ */
+export function extractNumericValue(value: unknown): number | null {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    // Remove all non-numeric characters except dots and minus signs
+    const normalized = value.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
+    return isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+/**
+ * Extract min and max numeric values from filter options for a given filter key
+ * Used to determine the range bounds for range sliders
+ */
+export function extractRangeBounds(
+    products: Product[],
+    filterKey: string
+): { min: number; max: number } | null {
+  let min = Infinity
+  let max = -Infinity
+
+  for (const product of products) {
+    // Check product-level filterAttributes
+    const productValue = product.filterAttributes?.[filterKey]
+    const productNumeric = extractNumericValue(productValue)
+    if (productNumeric !== null) {
+      if (productNumeric < min) min = productNumeric
+      if (productNumeric > max) max = productNumeric
+    }
+
+    // Check variant-level filterAttributes
+    if (product.variants) {
+      for (const variant of product.variants) {
+        const variantValue = variant.filterAttributes?.[filterKey]
+        const variantNumeric = extractNumericValue(variantValue)
+        if (variantNumeric !== null) {
+          if (variantNumeric < min) min = variantNumeric
+          if (variantNumeric > max) max = variantNumeric
+        }
+      }
+    }
+  }
+
+  // Return null if no valid values found
+  if (min === Infinity || max === -Infinity) {
+    return null
+  }
+
+  return { min, max }
 }
 
 /**
@@ -135,6 +191,44 @@ function formatDisplayLabel(value: string, _filterKey: string): string {
 }
 
 /**
+ * Get active range filters (dimension filters with min/max values set)
+ */
+function getActiveRangeFilters(filters: SelectedFilters): Array<{
+  key: string
+  min: number
+  max: number
+}> {
+  const activeRanges: Array<{ key: string; min: number; max: number }> = []
+
+  for (const rangeKey of RANGE_FILTERS) {
+    const minKey = `${rangeKey}Min` as keyof SelectedFilters
+    const maxKey = `${rangeKey}Max` as keyof SelectedFilters
+    const minVal = filters[minKey] as number | undefined
+    const maxVal = filters[maxKey] as number | undefined
+
+    // Consider range active if either min or max is set
+    if (minVal !== undefined || maxVal !== undefined) {
+      activeRanges.push({
+        key: rangeKey,
+        min: minVal ?? 0,
+        max: maxVal ?? Infinity
+      })
+    }
+  }
+
+  return activeRanges
+}
+
+/**
+ * Check if a value falls within a range
+ */
+function isValueInRange(value: unknown, min: number, max: number): boolean {
+  const numericValue = extractNumericValue(value)
+  if (numericValue === null) return false
+  return numericValue >= min && numericValue <= max
+}
+
+/**
  * Filter products based on selected filters
  * A product matches if ANY of its variants match ALL selected filter criteria
  */
@@ -142,8 +236,11 @@ export function filterProducts(
     products: Product[],
     filters: SelectedFilters
 ): Product[] {
-  // Get all filter keys that have active selections
+  // Get all filter keys that have active selections (checkbox filters)
   const activeFilterKeys = getActiveFilterKeys(filters)
+
+  // Get active range filters (dimension sliders)
+  const activeRangeFilters = getActiveRangeFilters(filters)
 
   // Check if price filter is active
   // We consider it active if priceMin > 0 OR if priceMax is explicitly set (not undefined)
@@ -152,7 +249,7 @@ export function filterProducts(
       (filters.priceMax !== undefined)
 
   // If no filters selected, return all products
-  if (activeFilterKeys.length === 0 && !hasPriceFilter) {
+  if (activeFilterKeys.length === 0 && !hasPriceFilter && activeRangeFilters.length === 0) {
     return products
   }
 
@@ -172,7 +269,20 @@ export function filterProducts(
     return price >= minPrice && price <= maxPrice
   }
 
-  // Helper to check if a single item (variant or product) matches both price and attribute filters
+  // Helper to check if attributes match all range filters
+  const matchesRangeFilters = (filterAttributes: Record<string, unknown> | undefined): boolean => {
+    if (!filterAttributes) return activeRangeFilters.length === 0
+
+    for (const rangeFilter of activeRangeFilters) {
+      const attributeValue = filterAttributes[rangeFilter.key]
+      if (!isValueInRange(attributeValue, rangeFilter.min, rangeFilter.max)) {
+        return false
+      }
+    }
+    return true
+  }
+
+  // Helper to check if a single item (variant or product) matches price, range, and attribute filters
   const itemMatchesAllFilters = (
       price: unknown,
       filterAttributes: Record<string, unknown> | undefined,
@@ -187,7 +297,14 @@ export function filterProducts(
       }
     }
 
-    // Check attribute filters if active
+    // Check range filters (dimension sliders)
+    if (activeRangeFilters.length > 0) {
+      if (!matchesRangeFilters(filterAttributes)) {
+        return false
+      }
+    }
+
+    // Check attribute filters if active (checkbox filters)
     if (activeFilterKeys.length > 0) {
       if (!matchesFilters(filterAttributes, filters, activeFilterKeys)) {
         return false
@@ -302,7 +419,7 @@ export function getFilterOptionsWithCounts(
 
 /**
  * Filter product variants based on selected filters
- * Returns only the variants that match the filters (including price filter)
+ * Returns only the variants that match the filters (including price and range filters)
  */
 export function filterProductVariants(
     product: Product,
@@ -311,6 +428,7 @@ export function filterProductVariants(
   if (!product.variants) return []
 
   const activeFilterKeys = getActiveFilterKeys(filters)
+  const activeRangeFilters = getActiveRangeFilters(filters)
 
   // Check if price filter is active
   const hasPriceFilter =
@@ -328,7 +446,7 @@ export function filterProductVariants(
   }
 
   // If no filters active, return all variants
-  if (activeFilterKeys.length === 0 && !hasPriceFilter) {
+  if (activeFilterKeys.length === 0 && !hasPriceFilter && activeRangeFilters.length === 0) {
     return product.variants
   }
 
@@ -345,7 +463,17 @@ export function filterProductVariants(
       }
     }
 
-    // If no attribute filters, variant passes (price already checked)
+    // Check range filters (dimension sliders)
+    if (activeRangeFilters.length > 0) {
+      for (const rangeFilter of activeRangeFilters) {
+        const attributeValue = variant.filterAttributes?.[rangeFilter.key]
+        if (!isValueInRange(attributeValue, rangeFilter.min, rangeFilter.max)) {
+          return false
+        }
+      }
+    }
+
+    // If no attribute filters, variant passes (price and range already checked)
     if (activeFilterKeys.length === 0) {
       return true
     }
@@ -356,31 +484,71 @@ export function filterProductVariants(
 }
 
 /**
+ * Interface for dynamic range bounds (used to detect if user changed from defaults)
+ */
+export interface DynamicRangeBounds {
+  priceMin?: number
+  priceMax?: number
+  lengthMin?: number
+  lengthMax?: number
+  widthMin?: number
+  widthMax?: number
+  heightMin?: number
+  heightMax?: number
+  depthMin?: number
+  depthMax?: number
+}
+
+/**
  * Check if any filters are currently active
  * @param filters - The selected filters
- * @param minPrice - Optional min price to check against (dynamic based on products)
- * @param maxPrice - Optional max price to check against (dynamic based on products)
+ * @param dynamicBounds - Optional dynamic bounds to compare against (based on products)
  */
-export function hasActiveFilters(filters: SelectedFilters, minPrice?: number, maxPrice?: number): boolean {
+export function hasActiveFilters(
+    filters: SelectedFilters,
+    dynamicBounds?: DynamicRangeBounds
+): boolean {
   const activeFilterKeys = getActiveFilterKeys(filters)
 
   // Check if price filter is active
-  // Compare against dynamic min/max to detect user changes
-  const dynamicMin = minPrice ?? 0
+  const dynamicPriceMin = dynamicBounds?.priceMin ?? 0
+  const dynamicPriceMax = dynamicBounds?.priceMax
   const hasPriceFilter =
-      (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
-      (filters.priceMax !== undefined && (maxPrice === undefined || filters.priceMax < maxPrice))
+      (filters.priceMin !== undefined && filters.priceMin > dynamicPriceMin) ||
+      (filters.priceMax !== undefined && (dynamicPriceMax === undefined || filters.priceMax < dynamicPriceMax))
 
-  return activeFilterKeys.length > 0 || hasPriceFilter
+  // Check if any dimension range filters are active
+  let hasRangeFilter = false
+  for (const rangeKey of RANGE_FILTERS) {
+    const minKey = `${rangeKey}Min` as keyof SelectedFilters
+    const maxKey = `${rangeKey}Max` as keyof SelectedFilters
+    const dynamicMinKey = `${rangeKey}Min` as keyof DynamicRangeBounds
+    const dynamicMaxKey = `${rangeKey}Max` as keyof DynamicRangeBounds
+
+    const filterMin = filters[minKey] as number | undefined
+    const filterMax = filters[maxKey] as number | undefined
+    const dynamicMin = dynamicBounds?.[dynamicMinKey] ?? 0
+    const dynamicMax = dynamicBounds?.[dynamicMaxKey]
+
+    if ((filterMin !== undefined && filterMin > dynamicMin) ||
+        (filterMax !== undefined && (dynamicMax === undefined || filterMax < dynamicMax))) {
+      hasRangeFilter = true
+      break
+    }
+  }
+
+  return activeFilterKeys.length > 0 || hasPriceFilter || hasRangeFilter
 }
 
 /**
  * Get the total count of active filters
  * @param filters - The selected filters
- * @param minPrice - Optional min price to check against (dynamic based on products)
- * @param maxPrice - Optional max price to check against (dynamic based on products)
+ * @param dynamicBounds - Optional dynamic bounds to compare against (based on products)
  */
-export function getActiveFilterCount(filters: SelectedFilters, minPrice?: number, maxPrice?: number): number {
+export function getActiveFilterCount(
+    filters: SelectedFilters,
+    dynamicBounds?: DynamicRangeBounds
+): number {
   const activeFilterKeys = getActiveFilterKeys(filters)
   let count = 0
 
@@ -392,13 +560,32 @@ export function getActiveFilterCount(filters: SelectedFilters, minPrice?: number
   }
 
   // Count price filter as 1 if active
-  const dynamicMin = minPrice ?? 0
+  const dynamicPriceMin = dynamicBounds?.priceMin ?? 0
+  const dynamicPriceMax = dynamicBounds?.priceMax
   const hasPriceFilter =
-      (filters.priceMin !== undefined && filters.priceMin > dynamicMin) ||
-      (filters.priceMax !== undefined && (maxPrice === undefined || filters.priceMax < maxPrice))
+      (filters.priceMin !== undefined && filters.priceMin > dynamicPriceMin) ||
+      (filters.priceMax !== undefined && (dynamicPriceMax === undefined || filters.priceMax < dynamicPriceMax))
 
   if (hasPriceFilter) {
     count += 1
+  }
+
+  // Count each active dimension range filter as 1
+  for (const rangeKey of RANGE_FILTERS) {
+    const minKey = `${rangeKey}Min` as keyof SelectedFilters
+    const maxKey = `${rangeKey}Max` as keyof SelectedFilters
+    const dynamicMinKey = `${rangeKey}Min` as keyof DynamicRangeBounds
+    const dynamicMaxKey = `${rangeKey}Max` as keyof DynamicRangeBounds
+
+    const filterMin = filters[minKey] as number | undefined
+    const filterMax = filters[maxKey] as number | undefined
+    const dynamicMin = dynamicBounds?.[dynamicMinKey] ?? 0
+    const dynamicMax = dynamicBounds?.[dynamicMaxKey]
+
+    if ((filterMin !== undefined && filterMin > dynamicMin) ||
+        (filterMax !== undefined && (dynamicMax === undefined || filterMax < dynamicMax))) {
+      count += 1
+    }
   }
 
   return count

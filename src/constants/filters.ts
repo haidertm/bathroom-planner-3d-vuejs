@@ -6,9 +6,13 @@ export interface FilterOption {
   count?: number
 }
 
+// Filters that should use range sliders instead of checkboxes in AllFiltersDrawer
+export const RANGE_FILTERS = ['length', 'width', 'height', 'depth'] as const
+export type RangeFilterKey = typeof RANGE_FILTERS[number]
+
 // All possible filter attributes across all categories
 export interface SelectedFilters {
-  // Common filters
+  // Common filters (checkbox-based)
   length: string[]
   type: string[]
   finish: string[]
@@ -47,6 +51,16 @@ export interface SelectedFilters {
   // Price range
   priceMin?: number
   priceMax?: number
+
+  // Dimension range filters (used in AllFiltersDrawer only)
+  lengthMin?: number
+  lengthMax?: number
+  widthMin?: number
+  widthMax?: number
+  heightMin?: number
+  heightMax?: number
+  depthMin?: number
+  depthMax?: number
 }
 
 export interface CategoryFilters {
@@ -201,7 +215,17 @@ export const EMPTY_FILTERS: SelectedFilters = {
 
   // Price
   priceMin: 0,
-  priceMax: undefined // Will be set dynamically based on product prices
+  priceMax: undefined, // Will be set dynamically based on product prices
+
+  // Dimension ranges (used in AllFiltersDrawer only)
+  lengthMin: undefined,
+  lengthMax: undefined,
+  widthMin: undefined,
+  widthMax: undefined,
+  heightMin: undefined,
+  heightMax: undefined,
+  depthMin: undefined,
+  depthMax: undefined
 }
 
 // Get primary filters for a category (shown in sticky chips)
@@ -267,6 +291,21 @@ export function createEmptyFilters(): SelectedFilters {
 
     // Price
     priceMin: 0,
-    priceMax: undefined
+    priceMax: undefined,
+
+    // Dimension ranges (used in AllFiltersDrawer only)
+    lengthMin: undefined,
+    lengthMax: undefined,
+    widthMin: undefined,
+    widthMax: undefined,
+    heightMin: undefined,
+    heightMax: undefined,
+    depthMin: undefined,
+    depthMax: undefined
   }
+}
+
+// Check if a filter key should use a range slider in AllFiltersDrawer
+export function isRangeFilter(filterKey: string): boolean {
+  return (RANGE_FILTERS as readonly string[]).includes(filterKey)
 }
