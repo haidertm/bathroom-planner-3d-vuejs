@@ -26,6 +26,10 @@ let animationFrameId: number | null = null;
 let currentModel: THREE.Group | null = null;
 let initTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
+// Request token to guard against out-of-order GLTF loads
+let loadTokenCounter = 0;
+let currentLoadToken: number | null = null;
+
 /**
  * Dispose of a Three.js object and all its children to free GPU memory.
  * Traverses the object tree and disposes geometries, materials, and textures.
@@ -140,6 +144,10 @@ const initScene = () => {
 const loadModel = async (path: string) => {
   if (!scene) return;
 
+  // Generate a unique token for this load request
+  const thisLoadToken = ++loadTokenCounter;
+  currentLoadToken = thisLoadToken;
+
   isLoading.value = true;
   loadError.value = null;
 
@@ -159,6 +167,7 @@ const loadModel = async (path: string) => {
   console.log('[GlbPreviewModal] Loading model:', {
     originalPath: path,
     resolvedPath: modelPath,
+    loadToken: thisLoadToken,
   });
 
   const loader = new GLTFLoader();
@@ -172,6 +181,18 @@ const loadModel = async (path: string) => {
         (error) => reject(error)
       );
     });
+
+    // Check if this load is stale (a newer load was initiated)
+    if (thisLoadToken !== currentLoadToken) {
+      console.log('[GlbPreviewModal] Stale load detected, discarding result:', {
+        thisLoadToken,
+        currentLoadToken,
+        modelPath,
+      });
+      // Dispose the loaded model since it's stale
+      disposeObject(gltf.scene);
+      return;
+    }
 
     currentModel = gltf.scene;
 
@@ -229,9 +250,20 @@ const loadModel = async (path: string) => {
 
     isLoading.value = false;
   } catch (error) {
+    // Only update error state if this is still the active load
+    if (thisLoadToken !== currentLoadToken) {
+      console.log('[GlbPreviewModal] Stale load error, ignoring:', {
+        thisLoadToken,
+        currentLoadToken,
+        modelPath,
+      });
+      return;
+    }
+
     console.error('[GlbPreviewModal] Failed to load model:', {
       originalPath: path,
       resolvedPath: modelPath,
+      loadToken: thisLoadToken,
       error,
     });
     loadError.value = `Failed to load model from path: ${modelPath}\n\nMake sure the file exists in the public folder.`;
@@ -251,6 +283,9 @@ const handleResize = () => {
 };
 
 const cleanup = () => {
+  // Invalidate any pending loads
+  currentLoadToken = null;
+
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
