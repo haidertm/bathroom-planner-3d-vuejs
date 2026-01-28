@@ -554,6 +554,31 @@ const handleSelectProduct = (product: AdminProduct) => {
   min-height: 400px;
 }
 
+/* Show scrollbars for table (override global hidden scrollbars) */
+.table-container::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.table-container {
+  scrollbar-width: auto;
+  -ms-overflow-style: auto;
+}
+
 .product-table {
   width: 100%;
   border-collapse: separate;
