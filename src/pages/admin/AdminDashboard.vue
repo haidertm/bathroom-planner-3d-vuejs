@@ -80,7 +80,6 @@ const {
   clearFilters,
   setPage,
   setItemsPerPage,
-  toggleProductEnabled,
   bulkEnableProducts,
   bulkDisableProducts,
   loadProducts,
@@ -206,23 +205,6 @@ const closeProductDrawer = () => {
 const handleLogout = () => {
   logout();
   router.push('/vadmin');
-};
-
-// Handle product toggle
-const handleToggleEnabled = async (product: AdminProduct) => {
-  const newStatus = !product.enabled;
-  const success = await toggleProductEnabled(product);
-  if (success) {
-    toast.success(`Product ${newStatus ? 'enabled' : 'disabled'} successfully`);
-    trackAdminEvent('product_toggle', {
-      product_id: product.id,
-      product_name: product.name,
-      category: product.category,
-      new_status: newStatus ? 'enabled' : 'disabled',
-    });
-  } else {
-    toast.error('Failed to update product status');
-  }
 };
 
 /**
@@ -536,17 +518,12 @@ const mainContentStyle = computed(() => ({
         <ProductTable
           :products="paginatedProducts"
           :is-loading="productsLoading"
-          :use-local-fallback="useLocalFallback"
           :sort-by="filters.sortBy"
           :sort-order="filters.sortOrder"
           :selected-products="selectedProducts"
-          :is-bulk-action-loading="isBulkActionLoading"
           @select-product="openProductDrawer"
-          @toggle-enabled="handleToggleEnabled"
           @sort="handleColumnSort"
           @selection-change="handleSelectionChange"
-          @bulk-enable="handleBulkEnable"
-          @bulk-disable="handleBulkDisable"
         />
 
         <!-- Pagination -->
