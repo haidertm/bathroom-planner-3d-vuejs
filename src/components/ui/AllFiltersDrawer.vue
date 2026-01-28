@@ -955,13 +955,13 @@ const closeDrawer = () => {
 .all-filters-wrapper {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 480px; /* Start at sidebar edge */
   right: 0;
   bottom: 0;
-  z-index: 10000000; /* Higher than Sidebar search bar (9999999) */
-  pointer-events: none; /* Allow clicks to pass through to sidebar */
+  z-index: 2000; /* Above ProductDrawer overlay (1800) and drawer (1900) */
+  pointer-events: none;
   visibility: hidden;
-  /* No transition - instant show/hide */
+  overflow: hidden; /* Clip the drawer as it slides out */
 }
 
 .all-filters-wrapper.is-open {
@@ -971,40 +971,38 @@ const closeDrawer = () => {
 .filters-overlay {
   position: absolute;
   top: 0;
-  left: 480px; /* Start after sidebar */
+  left: 0;
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
-  pointer-events: auto; /* Re-enable clicks on overlay */
+  pointer-events: auto;
   opacity: 0;
-  /* No transition on close - instant hide */
 }
 
 .all-filters-wrapper.is-open .filters-overlay {
   opacity: 1;
-  transition: opacity 0.3s ease-out; /* Only animate on open */
+  transition: opacity 0.3s ease-out;
 }
 
 .filters-drawer {
   position: absolute;
-  top: 60px; /* Match sidebar top position (below header) */
-  left: 480px; /* Position next to the sidebar */
-  width: 400px; /* Narrower width for filter panel */
-  height: calc(100vh - 60px); /* Full height minus top offset */
+  top: 60px;
+  left: 0; /* Relative to wrapper which starts at 480px */
+  width: 400px;
+  height: calc(100vh - 60px);
   background-color: #ffffff;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-left: 1px solid #e5e7eb;
-  pointer-events: auto; /* Enable clicks on the drawer */
-  transform: translateX(-100%);
-  /* No transition on close - instant hide */
+  pointer-events: auto;
+  transform: translateX(-100%); /* Hidden behind sidebar edge */
 }
 
 .filters-drawer.is-open {
-  transform: translateX(0);
-  transition: transform 0.3s ease-out; /* Only animate on open */
+  transform: translateX(0); /* Slide out to visible position */
+  transition: transform 0.3s ease-out;
 }
 
 .filters-header {
@@ -1336,8 +1334,13 @@ const closeDrawer = () => {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .all-filters-wrapper {
+    left: 0; /* Full width on mobile */
+    z-index: 10000000;
+  }
+
   .filters-overlay {
-    left: 0; /* Full overlay on mobile */
+    left: 0;
   }
 
   .filters-drawer {
