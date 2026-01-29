@@ -426,13 +426,16 @@
 
 <script setup>
 import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
-import { filterProducts } from '../../utils/filters'
-import { EMPTY_FILTERS } from '../../constants/filters'
+import { filterProducts, getActiveFilterCount } from '../../utils/filters'
+import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
+
+const gtm = useGtm()
 
 // NEW: Import selective preloading functions
 import productData from '../../mocks/productData.js'
@@ -776,7 +779,7 @@ const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
 // Filter state
-const selectedFilters = ref({ ...EMPTY_FILTERS })
+const selectedFilters = ref(createEmptyFilters())
 
 // Computed: Get products for current category
 const categoryProducts = computed(() => {
@@ -793,11 +796,23 @@ const filteredCategoryProducts = computed(() => {
 // Handle filter updates
 const handleFilterUpdate = (newFilters) => {
   selectedFilters.value = newFilters
+
+  // Track filter change in GTM
+  if (gtm?.enabled()) {
+    const activeCount = getActiveFilterCount(newFilters)
+    gtm.trackEvent({
+      event: 'filter_change',
+      category: 'Filters',
+      action: 'Update Filters',
+      label: `${selectedCategory.value || 'All'} - ${activeCount} active`,
+      filterCount: activeCount
+    })
+  }
 }
 
 // Reset filters when category changes
 const resetFilters = () => {
-  selectedFilters.value = { ...EMPTY_FILTERS }
+  selectedFilters.value = createEmptyFilters()
 }
 
 // NEW: Selective preloading state
@@ -1419,10 +1434,10 @@ const getTexturePreviewStyle = (texture) => ({
 // (I'll keep them the same as in your original code)
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
-  bottom: '30px',
-  left: '20px',
-  width: '60px',
-  height: '60px',
+  bottom: '130px',
+  left: '16px',
+  width: '50px',
+  height: '50px',
   borderRadius: '50%',
   backgroundColor: isButtonPressed.value ? '#29275B' : '#29275B',
   color: 'white',
@@ -1436,7 +1451,8 @@ const mobileFloatingButtonStyle = computed(() => ({
   transform: isButtonPressed.value ? 'scale(0.95)' : 'scale(1)',
   fontSize: '24px',
   fontWeight: 'bold',
-  backdropFilter: 'blur(10px)'
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
 }))
 
 const plusIconStyle = computed(() => ({

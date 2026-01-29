@@ -83,6 +83,24 @@ export function extractNumericValue(value: unknown): number | null {
 }
 
 /**
+ * Parse a price value, handling currency-formatted strings
+ * Strips currency symbols, commas, and whitespace before parsing
+ * Returns null for empty, non-numeric, or invalid values
+ */
+function parsePrice(price: unknown): number | null {
+  if (typeof price === 'number') return price
+  if (typeof price === 'string') {
+    // Normalize: trim whitespace, remove currency symbols and thousands separators
+    // Keep only digits, optional leading minus, and decimal point
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    if (normalized === '') return null
+    const parsed = parseFloat(normalized)
+    return isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+/**
  * Extract min and max numeric values from filter options for a given filter key
  * Used to determine the range bounds for range sliders
  */
@@ -121,6 +139,15 @@ export function extractRangeBounds(
   }
 
   return { min, max }
+}
+
+/**
+ * Check if a price is within the filter range
+ * Returns false for null prices (treat as non-match when price filter is active)
+ */
+function isPriceInRange(price: number | null, minPrice: number, maxPrice: number): boolean {
+  if (price === null) return false // No valid price = treat as non-match when price filter is active
+  return price >= minPrice && price <= maxPrice
 }
 
 /**
@@ -253,23 +280,7 @@ export function filterProducts(
     return products
   }
 
-  // Helper to parse price
-  const parsePrice = (price: unknown): number | null => {
-    if (typeof price === 'number') return price
-    if (typeof price === 'string') {
-      const parsed = parseFloat(price)
-      return isNaN(parsed) ? null : parsed
-    }
-    return null
-  }
-
-  // Helper to check if a price is within filter range
-  const isPriceInRange = (price: number | null, minPrice: number, maxPrice: number): boolean => {
-    if (price === null) return false // No valid price = treat as non-match when price filter is active
-    return price >= minPrice && price <= maxPrice
-  }
-
-  // Helper to check if attributes match all range filters
+// Helper to check if attributes match all range filters
   const matchesRangeFilters = (filterAttributes: Record<string, unknown> | undefined): boolean => {
     if (!filterAttributes) return activeRangeFilters.length === 0
 
@@ -435,31 +446,22 @@ export function filterProductVariants(
       (filters.priceMin !== undefined && filters.priceMin > 0) ||
       (filters.priceMax !== undefined)
 
-  // Helper to parse variant price
-  const parsePrice = (price: unknown): number | null => {
-    if (typeof price === 'number') return price
-    if (typeof price === 'string') {
-      const parsed = parseFloat(price)
-      return isNaN(parsed) ? null : parsed
-    }
-    return null
-  }
-
   // If no filters active, return all variants
   if (activeFilterKeys.length === 0 && !hasPriceFilter && activeRangeFilters.length === 0) {
     return product.variants
   }
 
+  const minPrice = filters.priceMin ?? 0
+  const maxPrice = filters.priceMax ?? Infinity
+
   return product.variants.filter(variant => {
-    // Check price filter first
+    // Check price filter first using shared helpers
+    // Use variant price, fall back to product price if variant has no price
+    // Variants with null prices (after fallback) are excluded when price filter is active
     if (hasPriceFilter) {
-      const variantPrice = parsePrice(variant.price)
-      if (variantPrice !== null) {
-        const minPrice = filters.priceMin ?? 0
-        const maxPrice = filters.priceMax ?? Infinity
-        if (variantPrice < minPrice || variantPrice > maxPrice) {
-          return false
-        }
+      const variantPrice = parsePrice(variant.price ?? product.price)
+      if (!isPriceInRange(variantPrice, minPrice, maxPrice)) {
+        return false
       }
     }
 
@@ -479,7 +481,9 @@ export function filterProductVariants(
     }
 
     // Check attribute filters
-    return matchesFilters(variant.filterAttributes, filters, activeFilterKeys)
+    // Merge product-level attributes with variant-level attributes (variant keys override product keys)
+    const mergedAttributes = { ...product.filterAttributes, ...variant.filterAttributes }
+    return matchesFilters(mergedAttributes, filters, activeFilterKeys)
   })
 }
 

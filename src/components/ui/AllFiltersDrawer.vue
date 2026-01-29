@@ -314,8 +314,11 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters, isRangeFilter, RANGE_FILTERS } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds } from '../../utils/filters'
+
+const gtm = useGtm()
 
 const props = defineProps({
   isOpen: {
@@ -762,16 +765,30 @@ const handlePriceMouseMove = (event) => {
   activePriceSlider.value = valueAtMouse < midpoint ? 'min' : 'max'
 }
 
-// Check if any products have prices
+// Helper to check if a price is a valid, parseable numeric value
+const isValidPrice = (price) => {
+  if (price === null || price === undefined || price === '') return false
+  if (typeof price === 'number') return isFinite(price)
+  if (typeof price === 'string') {
+    // Strip currency symbols and thousands separators, then parse
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    if (normalized === '') return false
+    const parsed = parseFloat(normalized)
+    return isFinite(parsed)
+  }
+  return false
+}
+
+// Check if any products have valid numeric prices
 const hasProductsWithPrices = computed(() => {
   return props.products.some(product => {
     // Check product-level price
-    if (product.price !== undefined && product.price !== null) {
+    if (isValidPrice(product.price)) {
       return true
     }
     // Check variant prices
     if (product.variants) {
-      return product.variants.some(v => v.price !== undefined && v.price !== null)
+      return product.variants.some(v => isValidPrice(v.price))
     }
     return false
   })
@@ -899,6 +916,16 @@ const toggleFilter = (filterKey, value) => {
 }
 
 const clearAllFilters = () => {
+  // Track clear filters in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_clear',
+      category: 'Filters',
+      action: 'Clear All',
+      label: 'Clear All'
+    })
+  }
+
   // Reset local filters with dynamic price and range values for slider display
   const freshFilters = createEmptyFilters()
   freshFilters.priceMin = minPrice.value
@@ -929,7 +956,7 @@ const applyFilters = () => {
     filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
   }
 
-  // If dimension range values match the dynamic bounds, normalize to undefined
+// If dimension range values match the dynamic bounds, normalize to undefined
   for (const rangeKey of RANGE_FILTERS) {
     const bounds = rangeBounds.value[rangeKey]
     if (bounds) {
@@ -940,6 +967,17 @@ const applyFilters = () => {
         filtersToEmit[maxKey] = undefined
       }
     }
+  }
+
+  // Track apply filters in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_apply',
+      category: 'Filters',
+      action: 'Apply',
+      label: 'Apply',
+      value: filteredCount.value
+    })
   }
 
   emit('update:filters', filtersToEmit)

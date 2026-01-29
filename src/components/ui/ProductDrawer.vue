@@ -371,7 +371,7 @@ import {
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
 import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
-import { EMPTY_FILTERS } from '../../constants/filters'
+import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
 
@@ -474,7 +474,7 @@ const handleFilterUpdate = (newFilters) => {
 
 // Clear all filters - reset to empty state
 const clearAllFilters = () => {
-  emit('update:filters', { ...EMPTY_FILTERS })
+  emit('update:filters', createEmptyFilters())
 }
 
 // All Filters Drawer state

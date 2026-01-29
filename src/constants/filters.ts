@@ -48,6 +48,12 @@ export interface SelectedFilters {
   frameFinish: string[]
   range: string[]
 
+  // Additional attributes
+  feetColour: string[]
+  diameter: string[]
+  size: string[]
+  material: string[]
+
   // Price range
   priceMin?: number
   priceMax?: number
@@ -172,7 +178,13 @@ export const FILTER_LABELS: Record<string, string> = {
   glassThickness: 'Glass Thickness',
   frameType: 'Frame Type',
   frameFinish: 'Frame Finish',
-  range: 'Range'
+  range: 'Range',
+
+  // Additional
+  feetColour: 'Feet Colour',
+  diameter: 'Diameter',
+  size: 'Size',
+  material: 'Material'
 }
 
 // Empty filter state with all possible attributes
@@ -212,6 +224,12 @@ export const EMPTY_FILTERS: SelectedFilters = {
   frameType: [],
   frameFinish: [],
   range: [],
+
+  // Additional
+  feetColour: [],
+  diameter: [],
+  size: [],
+  material: [],
 
   // Price
   priceMin: 0,
@@ -288,6 +306,12 @@ export function createEmptyFilters(): SelectedFilters {
     frameType: [],
     frameFinish: [],
     range: [],
+
+    // Additional attributes
+    feetColour: [],
+    diameter: [],
+    size: [],
+    material: [],
 
     // Price
     priceMin: 0,
