@@ -3,6 +3,9 @@ export interface TextureConfig {
   readonly file: string;
   readonly color: number; // Hex color value
   readonly scale: readonly [number, number]; // [x, y] scaling
+  readonly roughness?: number;
+  readonly metalness?: number;
+  readonly procedural?: boolean;
 }
 
 // Custom texture definitions - supports both files and colors
