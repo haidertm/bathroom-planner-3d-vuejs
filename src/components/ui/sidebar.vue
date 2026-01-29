@@ -415,20 +415,24 @@
     <ProductDrawer
         v-bind="productDrawerProps"
         :search-triggered="searchTriggered"
+        :category-products="categoryProducts"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
         @retry-loading="retryLoadingCategory"
+        @update:filters="handleFilterUpdate"
     />
   </div>
 </template>
 
 <script setup>
-import {computed, ref, watch, onBeforeUnmount, nextTick} from 'vue'
+import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
+import { filterProducts } from '../../utils/filters'
+import { EMPTY_FILTERS } from '../../constants/filters'
 
 // NEW: Import selective preloading functions
 import productData from '../../mocks/productData.js'
@@ -771,6 +775,31 @@ const getProductsForCategory = (category) => {
 const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
 
+// Filter state
+const selectedFilters = ref({ ...EMPTY_FILTERS })
+
+// Computed: Get products for current category
+const categoryProducts = computed(() => {
+  if (!selectedCategory.value || selectedCategory.value === 'search') return []
+  return getProductsForCategory(selectedCategory.value)
+})
+
+// Computed: Get filtered products based on selected filters
+const filteredCategoryProducts = computed(() => {
+  if (!categoryProducts.value.length) return []
+  return filterProducts(categoryProducts.value, selectedFilters.value)
+})
+
+// Handle filter updates
+const handleFilterUpdate = (newFilters) => {
+  selectedFilters.value = newFilters
+}
+
+// Reset filters when category changes
+const resetFilters = () => {
+  selectedFilters.value = { ...EMPTY_FILTERS }
+}
+
 // NEW: Selective preloading state
 let progressCheckIntervalId = null
 let safetyTimeoutId = null
@@ -861,6 +890,9 @@ const productDrawerProps = computed(() => ({
   loadingError: errorMessage.value,
   searchResults: searchResults,
   searchQuery: searchQuery.value,
+  // Filter-related props
+  filteredProducts: filteredCategoryProducts.value,
+  selectedFilters: selectedFilters.value,
   // Constraint checking props
   roomWidth: props.roomWidth,
   roomHeight: props.roomHeight,
@@ -931,6 +963,9 @@ const handleProductDrawerClose = () => {
   console.log('🔍 Product drawer close event received')
   isProductDrawerOpen.value = false
   selectedCategory.value = ''
+
+  // Reset filters when closing the drawer
+  resetFilters()
 
   // IMPORTANT: Don't hide the main sidebar when closing product drawer
   // The sidebar should stay open for the user to access other features
