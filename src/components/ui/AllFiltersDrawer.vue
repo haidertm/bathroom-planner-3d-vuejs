@@ -314,8 +314,11 @@
 
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters, isRangeFilter, RANGE_FILTERS } from '../../constants/filters'
-import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds } from '../../utils/filters'
+import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds, parsePrice } from '../../utils/filters'
+
+const gtm = useGtm()
 
 const props = defineProps({
   isOpen: {
@@ -383,19 +386,6 @@ const maxPrice = computed(() => {
   // Round up to nearest 10 for nicer slider range
   return Math.ceil(max / 10) * 10 || 1000
 })
-
-// Helper to parse price (handles both string and number, including currency-formatted strings)
-function parsePrice(price) {
-  if (typeof price === 'number') return price
-  if (typeof price === 'string') {
-    // Normalize: trim whitespace, remove currency symbols and thousands separators
-    // Keep only digits, optional leading minus, and decimal point
-    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
-    const parsed = parseFloat(normalized)
-    return isNaN(parsed) ? null : parsed
-  }
-  return null
-}
 
 // Compute range bounds for dimension filters (length, width, height, depth)
 const rangeBounds = computed(() => {
@@ -779,12 +769,38 @@ const hasProductsWithPrices = computed(() => {
 
 // Count of filtered results - count matching VARIANTS, not just products
 const filteredCount = computed(() => {
-  const filteredProducts = filterProducts(props.products, localFilters.value)
+  if (!props.products || props.products.length === 0) {
+    return 0
+  }
+
+  // Normalize filters the same way applyFilters does - treat values at bounds as "no filter"
+  const normalizedFilters = { ...localFilters.value }
+
+  // If price values match the dynamic bounds, normalize to non-active values
+  if (normalizedFilters.priceMin === minPrice.value && normalizedFilters.priceMax === maxPrice.value) {
+    normalizedFilters.priceMin = EMPTY_FILTERS.priceMin
+    normalizedFilters.priceMax = EMPTY_FILTERS.priceMax
+  }
+
+  // If dimension range values match the dynamic bounds, normalize to undefined
+  for (const rangeKey of RANGE_FILTERS) {
+    const bounds = rangeBounds.value[rangeKey]
+    if (bounds) {
+      const minKey = `${rangeKey}Min`
+      const maxKey = `${rangeKey}Max`
+      if (normalizedFilters[minKey] === bounds.min && normalizedFilters[maxKey] === bounds.max) {
+        normalizedFilters[minKey] = undefined
+        normalizedFilters[maxKey] = undefined
+      }
+    }
+  }
+
+  const filteredProducts = filterProducts(props.products, normalizedFilters)
 
   // Count total matching variants across all filtered products
   let variantCount = 0
   for (const product of filteredProducts) {
-    const matchingVariants = filterProductVariants(product, localFilters.value)
+    const matchingVariants = filterProductVariants(product, normalizedFilters)
     variantCount += matchingVariants.length
   }
 
@@ -899,6 +915,13 @@ const toggleFilter = (filterKey, value) => {
 }
 
 const clearAllFilters = () => {
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_cleared',
+      category: props.category
+    })
+  }
+
   // Reset local filters with dynamic price and range values for slider display
   const freshFilters = createEmptyFilters()
   freshFilters.priceMin = minPrice.value
@@ -942,11 +965,27 @@ const applyFilters = () => {
     }
   }
 
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_applied',
+      category: props.category,
+      filters: filtersToEmit,
+      resultCount: filteredCount.value
+    })
+  }
+
   emit('update:filters', filtersToEmit)
   closeDrawer()
 }
 
 const closeDrawer = () => {
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_closed',
+      category: props.category
+    })
+  }
+
   emit('close')
 }
 </script>

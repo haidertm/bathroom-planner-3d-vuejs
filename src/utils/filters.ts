@@ -83,6 +83,23 @@ export function extractNumericValue(value: unknown): number | null {
 }
 
 /**
+ * Parse price value (handles both string and number, including currency-formatted strings)
+ * Trims whitespace, removes currency symbols and thousands separators
+ * Returns null if no valid number found
+ */
+export function parsePrice(price: unknown): number | null {
+  if (typeof price === 'number') return price
+  if (typeof price === 'string') {
+    // Normalize: trim whitespace, remove currency symbols and thousands separators
+    // Keep only digits, optional leading minus, and decimal point
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
+    return isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
+/**
  * Extract min and max numeric values from filter options for a given filter key
  * Used to determine the range bounds for range sliders
  */
@@ -154,9 +171,9 @@ export function extractFilterOptions(
   // Convert to FilterOption array and sort
   return Array.from(valuesSet)
       .sort((a, b) => {
-        // Sort numeric values numerically (e.g., "1370mm" < "1500mm")
-        const numA = parseInt(a)
-        const numB = parseInt(b)
+        // Sort numeric values numerically (e.g., "1370mm" < "1500.5mm")
+        const numA = parseFloat(a)
+        const numB = parseFloat(b)
         if (!isNaN(numA) && !isNaN(numB)) {
           return numA - numB
         }
@@ -251,16 +268,6 @@ export function filterProducts(
   // If no filters selected, return all products
   if (activeFilterKeys.length === 0 && !hasPriceFilter && activeRangeFilters.length === 0) {
     return products
-  }
-
-  // Helper to parse price
-  const parsePrice = (price: unknown): number | null => {
-    if (typeof price === 'number') return price
-    if (typeof price === 'string') {
-      const parsed = parseFloat(price)
-      return isNaN(parsed) ? null : parsed
-    }
-    return null
   }
 
   // Helper to check if a price is within filter range
@@ -435,16 +442,6 @@ export function filterProductVariants(
       (filters.priceMin !== undefined && filters.priceMin > 0) ||
       (filters.priceMax !== undefined)
 
-  // Helper to parse variant price
-  const parsePrice = (price: unknown): number | null => {
-    if (typeof price === 'number') return price
-    if (typeof price === 'string') {
-      const parsed = parseFloat(price)
-      return isNaN(parsed) ? null : parsed
-    }
-    return null
-  }
-
   // If no filters active, return all variants
   if (activeFilterKeys.length === 0 && !hasPriceFilter && activeRangeFilters.length === 0) {
     return product.variants
@@ -454,12 +451,14 @@ export function filterProductVariants(
     // Check price filter first
     if (hasPriceFilter) {
       const variantPrice = parsePrice(variant.price)
-      if (variantPrice !== null) {
-        const minPrice = filters.priceMin ?? 0
-        const maxPrice = filters.priceMax ?? Infinity
-        if (variantPrice < minPrice || variantPrice > maxPrice) {
-          return false
-        }
+      // Exclude variants with null prices when price filter is active
+      if (variantPrice === null) {
+        return false
+      }
+      const minPrice = filters.priceMin ?? 0
+      const maxPrice = filters.priceMax ?? Infinity
+      if (variantPrice < minPrice || variantPrice > maxPrice) {
+        return false
       }
     }
 

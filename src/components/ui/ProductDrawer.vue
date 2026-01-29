@@ -116,6 +116,9 @@
         @mousemove="handleDragMove"
         @mouseup="handleDragEnd"
         @mouseleave="handleDragEnd"
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
+        @touchend="handleTouchEnd"
       >
         <FilterChips
             :category="props.selectedCategory"
@@ -140,7 +143,7 @@
       <div v-if="currentView === 'products'" :style="contentStyle">
 
         <!-- Empty state when no products match filters -->
-        <div v-if="readyProducts.length === 0 && hasActiveFilters(props.selectedFilters) && !isAnythingLoading() && props.selectedCategory !== 'search'" class="no-products-state">
+        <div v-if="readyProducts.length === 0 && hasActiveFiltersComputed && !isAnythingLoading() && props.selectedCategory !== 'search'" class="no-products-state">
           <div class="no-products-icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -359,6 +362,7 @@
 
 <script setup>
 import {ref, computed, watch} from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
 import FilterChips from './FilterChips.vue'
@@ -374,6 +378,8 @@ import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
 import { EMPTY_FILTERS } from '../../constants/filters'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
+
+const gtm = useGtm()
 
 // Props
 const props = defineProps({
@@ -467,6 +473,9 @@ const props = defineProps({
 // Emits - ADD 'back' event for better control
 const emit = defineEmits(['close', 'add-to-room', 'retry-loading', 'update:filters'])
 
+// Computed property for checking if filters are active (cached for performance)
+const hasActiveFiltersComputed = computed(() => hasActiveFilters(props.selectedFilters))
+
 // Handle filter updates from FilterChips component
 const handleFilterUpdate = (newFilters) => {
   emit('update:filters', newFilters)
@@ -482,10 +491,22 @@ const isAllFiltersOpen = ref(false)
 
 const openAllFiltersDrawer = () => {
   isAllFiltersOpen.value = true
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'open_all_filters_drawer',
+      ui_element: 'all_filters_drawer'
+    })
+  }
 }
 
 const closeAllFiltersDrawer = () => {
   isAllFiltersOpen.value = false
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'close_all_filters_drawer',
+      ui_element: 'all_filters_drawer'
+    })
+  }
 }
 
 // Filter scroll container ref and horizontal scroll handler
@@ -527,6 +548,26 @@ const handleDragMove = (event) => {
   filterScrollContainer.value.scrollLeft = scrollLeft.value - walk
 }
 
+// Touch-based drag-to-scroll functionality (mobile support)
+const handleTouchStart = (event) => {
+  if (!filterScrollContainer.value || event.touches.length !== 1) return
+  isDragging.value = true
+  startX.value = event.touches[0].pageX - filterScrollContainer.value.offsetLeft
+  scrollLeft.value = filterScrollContainer.value.scrollLeft
+}
+
+const handleTouchEnd = () => {
+  isDragging.value = false
+}
+
+const handleTouchMove = (event) => {
+  if (!isDragging.value || !filterScrollContainer.value || event.touches.length !== 1) return
+  event.preventDefault()
+  const x = event.touches[0].pageX - filterScrollContainer.value.offsetLeft
+  const walk = (x - startX.value) * 1.5 // Multiply for faster scroll
+  filterScrollContainer.value.scrollLeft = scrollLeft.value - walk
+}
+
 // Reactive state
 const currentView = ref('products') // 'products' or 'variants'
 const selectedProduct = ref(null)
@@ -538,48 +579,36 @@ const productPreloading = ref(new Map()) // Track which products are currently p
 
 const showAllVariants = ref(false)
 
+// Debug flag for verbose logging (only in development)
+const isDebug = import.meta.env.DEV
+
 // Get filtered variants based on selected filters
 const filteredVariants = computed(() => {
   if (!selectedProduct.value?.variants) return []
 
-  // Debug: Log all filter details
   const allVariants = selectedProduct.value.variants
-  const lengthFilter = props.selectedFilters?.length
-  const hasActive = hasActiveFilters(props.selectedFilters)
-
-  console.log('🔍 ====== FILTERING VARIANTS ======')
-  console.log('🔍 Product:', selectedProduct.value.name)
-  console.log('🔍 Total variants:', allVariants.length)
-  console.log('🔍 All variant lengths:', allVariants.map(v => ({
-    name: v.name,
-    sku: v.sku,
-    filterLength: v.filterAttributes?.length
-  })))
-  console.log('🔍 Selected filters:', JSON.stringify(props.selectedFilters, null, 2))
-  console.log('🔍 Length filter array:', lengthFilter)
-  console.log('🔍 hasActiveFilters result:', hasActive)
 
   // If no active filters, return all variants
-  if (!hasActive) {
-    console.log('🔍 ❌ No active filters detected, returning ALL variants')
+  if (!hasActiveFiltersComputed.value) {
     return allVariants
   }
 
   // Filter variants based on selected filters
   const filtered = filterProductVariants(selectedProduct.value, props.selectedFilters)
-  console.log('🔍 ✅ Active filters detected!')
-  console.log('🔍 Filtered result:', filtered.map(v => ({
-    name: v.name,
-    sku: v.sku,
-    filterLength: v.filterAttributes?.length
-  })))
-  console.log('🔍 ====== END FILTERING ======')
+
+  if (isDebug) {
+    console.log('🔍 Filtering variants:', {
+      product: selectedProduct.value.name,
+      totalVariants: allVariants.length,
+      filteredCount: filtered.length
+    })
+  }
   return filtered
 })
 
 // Check if we have only one filtered variant (for direct add-to-room)
 const hasOnlyOneFilteredVariant = computed(() => {
-  return filteredVariants.value.length === 1 && hasActiveFilters(props.selectedFilters)
+  return filteredVariants.value.length === 1 && hasActiveFiltersComputed.value
 })
 
 // Add this computed property for displayed variants (with pagination)
@@ -1061,7 +1090,7 @@ const readyProducts = computed(() => {
     // If filteredProducts has items, show them
 
     // When filters are active, show each matching variant as a direct-add item
-    if (hasActiveFilters(props.selectedFilters)) {
+    if (hasActiveFiltersComputed.value) {
       const directAddItems = []
 
       for (const product of props.filteredProducts) {
@@ -1169,7 +1198,7 @@ const selectProduct = async (product) => {
     // If there's a highlighted variant from search, pre-select it
     console.log('🔍 Pre-selecting highlighted variant from search')
     selectedVariant.value = product.searchContext.highlightedVariant
-  } else if (hasActiveFilters(props.selectedFilters) && product.variants) {
+  } else if (hasActiveFiltersComputed.value && product.variants) {
     // If filters are active, get filtered variants and select appropriately
     console.log('🔍 Filters are active, filtering variants...')
     const filtered = filterProductVariants(product, props.selectedFilters)
