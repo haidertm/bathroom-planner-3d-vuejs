@@ -25,7 +25,87 @@
               :key="'primary-' + filterKey"
               class="filter-section"
           >
-            <template v-if="getFilterOptions(filterKey).length > 0">
+            <!-- Range Slider for dimension filters (length, width, height, depth) -->
+            <template v-if="isRangeFilter(filterKey) && hasRangeBounds(filterKey)">
+              <button class="filter-section-header" @click="toggleSection(filterKey)">
+                <span>{{ getFilterLabel(filterKey) }}</span>
+                <svg
+                    class="filter-section-arrow"
+                    :class="{ 'is-open': openSections[filterKey] }"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div v-if="openSections[filterKey]" class="filter-section-content">
+                <div class="range-filter-container">
+                  <!-- Input fields for min/max -->
+                  <div class="range-inputs">
+                    <div class="range-input-group">
+                      <label class="range-input-label">Min</label>
+                      <div class="range-input-wrapper">
+                        <input
+                            type="number"
+                            :value="getMinInputValue(filterKey)"
+                            @focus="handleMinInputFocus(filterKey)"
+                            @input="updateRangeMinInput(filterKey, $event)"
+                            @blur="validateRangeMinInput(filterKey, $event)"
+                            :min="rangeBounds[filterKey]?.min"
+                            :max="rangeBounds[filterKey]?.max"
+                            class="range-number-input"
+                        />
+                        <span class="range-input-unit">{{ getFilterUnit(filterKey) }}</span>
+                      </div>
+                    </div>
+                    <div class="range-input-separator">-</div>
+                    <div class="range-input-group">
+                      <label class="range-input-label">Max</label>
+                      <div class="range-input-wrapper">
+                        <input
+                            type="number"
+                            :value="getMaxInputValue(filterKey)"
+                            @focus="handleMaxInputFocus(filterKey)"
+                            @input="updateRangeMaxInput(filterKey, $event)"
+                            @blur="validateRangeMaxInput(filterKey, $event)"
+                            :min="rangeBounds[filterKey]?.min"
+                            :max="rangeBounds[filterKey]?.max"
+                            class="range-number-input"
+                        />
+                        <span class="range-input-unit">{{ getFilterUnit(filterKey) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Dual range slider -->
+                  <div class="dual-range-slider" @mousemove="handleRangeMouseMove(filterKey, $event)">
+                    <div class="slider-track"></div>
+                    <div
+                        class="slider-range"
+                        :style="getRangeSliderStyle(filterKey)"
+                    ></div>
+                    <input
+                        type="range"
+                        :min="rangeBounds[filterKey]?.min"
+                        :max="rangeBounds[filterKey]?.max"
+                        :value="getRangeDisplayMin(filterKey)"
+                        @input="updateRangeMin(filterKey, $event)"
+                        class="range-input range-min"
+                        :class="{ 'on-top': isMinSliderOnTop(filterKey) }"
+                    />
+                    <input
+                        type="range"
+                        :min="rangeBounds[filterKey]?.min"
+                        :max="rangeBounds[filterKey]?.max"
+                        :value="getRangeDisplayMax(filterKey)"
+                        @input="updateRangeMax(filterKey, $event)"
+                        class="range-input range-max"
+                        :class="{ 'on-top': !isMinSliderOnTop(filterKey) }"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+            <!-- Checkbox list for non-range filters -->
+            <template v-else-if="getFilterOptions(filterKey).length > 0">
               <button class="filter-section-header" @click="toggleSection(filterKey)">
                 <span>{{ getFilterLabel(filterKey) }}</span>
                 <svg
@@ -58,7 +138,87 @@
               :key="'secondary-' + filterKey"
               class="filter-section"
           >
-            <template v-if="getFilterOptions(filterKey).length > 0">
+            <!-- Range Slider for dimension filters (length, width, height, depth) -->
+            <template v-if="isRangeFilter(filterKey) && hasRangeBounds(filterKey)">
+              <button class="filter-section-header" @click="toggleSection(filterKey)">
+                <span>{{ getFilterLabel(filterKey) }}</span>
+                <svg
+                    class="filter-section-arrow"
+                    :class="{ 'is-open': openSections[filterKey] }"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div v-if="openSections[filterKey]" class="filter-section-content">
+                <div class="range-filter-container">
+                  <!-- Input fields for min/max -->
+                  <div class="range-inputs">
+                    <div class="range-input-group">
+                      <label class="range-input-label">Min</label>
+                      <div class="range-input-wrapper">
+                        <input
+                            type="number"
+                            :value="getMinInputValue(filterKey)"
+                            @focus="handleMinInputFocus(filterKey)"
+                            @input="updateRangeMinInput(filterKey, $event)"
+                            @blur="validateRangeMinInput(filterKey, $event)"
+                            :min="rangeBounds[filterKey]?.min"
+                            :max="rangeBounds[filterKey]?.max"
+                            class="range-number-input"
+                        />
+                        <span class="range-input-unit">{{ getFilterUnit(filterKey) }}</span>
+                      </div>
+                    </div>
+                    <div class="range-input-separator">-</div>
+                    <div class="range-input-group">
+                      <label class="range-input-label">Max</label>
+                      <div class="range-input-wrapper">
+                        <input
+                            type="number"
+                            :value="getMaxInputValue(filterKey)"
+                            @focus="handleMaxInputFocus(filterKey)"
+                            @input="updateRangeMaxInput(filterKey, $event)"
+                            @blur="validateRangeMaxInput(filterKey, $event)"
+                            :min="rangeBounds[filterKey]?.min"
+                            :max="rangeBounds[filterKey]?.max"
+                            class="range-number-input"
+                        />
+                        <span class="range-input-unit">{{ getFilterUnit(filterKey) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Dual range slider -->
+                  <div class="dual-range-slider" @mousemove="handleRangeMouseMove(filterKey, $event)">
+                    <div class="slider-track"></div>
+                    <div
+                        class="slider-range"
+                        :style="getRangeSliderStyle(filterKey)"
+                    ></div>
+                    <input
+                        type="range"
+                        :min="rangeBounds[filterKey]?.min"
+                        :max="rangeBounds[filterKey]?.max"
+                        :value="getRangeDisplayMin(filterKey)"
+                        @input="updateRangeMin(filterKey, $event)"
+                        class="range-input range-min"
+                        :class="{ 'on-top': isMinSliderOnTop(filterKey) }"
+                    />
+                    <input
+                        type="range"
+                        :min="rangeBounds[filterKey]?.min"
+                        :max="rangeBounds[filterKey]?.max"
+                        :value="getRangeDisplayMax(filterKey)"
+                        @input="updateRangeMax(filterKey, $event)"
+                        class="range-input range-max"
+                        :class="{ 'on-top': !isMinSliderOnTop(filterKey) }"
+                    />
+                  </div>
+                </div>
+              </div>
+            </template>
+            <!-- Checkbox list for non-range filters -->
+            <template v-else-if="getFilterOptions(filterKey).length > 0">
               <button class="filter-section-header" @click="toggleSection(filterKey)">
                 <span>{{ getFilterLabel(filterKey) }}</span>
                 <svg
@@ -103,7 +263,7 @@
                   <span>£{{ displayPriceMin }}</span>
                   <span>£{{ displayPriceMax }}</span>
                 </div>
-                <div class="dual-range-slider">
+                <div class="dual-range-slider" @mousemove="handlePriceMouseMove">
                   <div class="slider-track"></div>
                   <div
                       class="slider-range"
@@ -116,6 +276,7 @@
                       :value="displayPriceMin"
                       @input="updateMinPrice"
                       class="range-input range-min"
+                      :class="{ 'on-top': activePriceSlider === 'min' }"
                   />
                   <input
                       type="range"
@@ -124,6 +285,7 @@
                       :value="displayPriceMax"
                       @input="updateMaxPrice"
                       class="range-input range-max"
+                      :class="{ 'on-top': activePriceSlider === 'max' }"
                   />
                 </div>
               </div>
@@ -153,8 +315,8 @@
 <script setup>
 import { ref, computed, watch, reactive } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
-import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
-import { extractFilterOptions, filterProducts, filterProductVariants } from '../../utils/filters'
+import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters, isRangeFilter, RANGE_FILTERS } from '../../constants/filters'
+import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds } from '../../utils/filters'
 
 const gtm = useGtm()
 
@@ -236,6 +398,230 @@ function parsePrice(price) {
     return isNaN(parsed) ? null : parsed
   }
   return null
+}
+
+// Compute range bounds for dimension filters (length, width, height, depth)
+const rangeBounds = computed(() => {
+  const bounds = {}
+  for (const rangeKey of RANGE_FILTERS) {
+    const result = extractRangeBounds(props.products, rangeKey)
+    if (result) {
+      bounds[rangeKey] = {
+        min: Math.floor(result.min),
+        max: Math.ceil(result.max)
+      }
+    }
+  }
+  return bounds
+})
+
+// Check if a range filter has valid bounds (products have values for this filter)
+const hasRangeBounds = (filterKey) => {
+  return !!rangeBounds.value[filterKey]
+}
+
+// Get display values for range filters
+const getRangeDisplayMin = (filterKey) => {
+  const bounds = rangeBounds.value[filterKey]
+  if (!bounds) return 0
+  const minKey = `${filterKey}Min`
+  const value = localFilters.value[minKey]
+  return (value === undefined || value < bounds.min) ? bounds.min : value
+}
+
+const getRangeDisplayMax = (filterKey) => {
+  const bounds = rangeBounds.value[filterKey]
+  if (!bounds) return 0
+  const maxKey = `${filterKey}Max`
+  const value = localFilters.value[maxKey]
+  return (value === undefined || value > bounds.max) ? bounds.max : value
+}
+
+// Get slider range style for dimension filters
+const getRangeSliderStyle = (filterKey) => {
+  const bounds = rangeBounds.value[filterKey]
+  if (!bounds) return { left: '0%', width: '100%' }
+
+  const min = bounds.min
+  const max = bounds.max
+  const currentMin = Math.max(localFilters.value[`${filterKey}Min`] ?? min, min)
+  const currentMax = Math.min(localFilters.value[`${filterKey}Max`] ?? max, max)
+
+  const range = max - min
+  if (range <= 0) return { left: '0%', width: '100%' }
+
+  const minPercent = Math.max(0, Math.min(100, ((currentMin - min) / range) * 100))
+  const maxPercent = Math.max(0, Math.min(100, ((currentMax - min) / range) * 100))
+
+  return {
+    left: `${minPercent}%`,
+    width: `${Math.max(0, maxPercent - minPercent)}%`
+  }
+}
+
+// Track which range slider thumb should be on top (for handling overlapping thumbs)
+const activeRangeSlider = reactive({})
+
+// Update range filter min value from slider
+const updateRangeMin = (filterKey, event) => {
+  const value = parseInt(event.target.value)
+  const maxKey = `${filterKey}Max`
+  const currentMax = localFilters.value[maxKey] ?? rangeBounds.value[filterKey]?.max ?? Infinity
+
+  // Allow movement up to and including max position
+  localFilters.value[`${filterKey}Min`] = Math.min(value, currentMax)
+
+  // When min reaches max, set active to 'min' so user can drag it back left
+  if (value >= currentMax) {
+    activeRangeSlider[filterKey] = 'min'
+  }
+}
+
+// Update range filter max value from slider
+const updateRangeMax = (filterKey, event) => {
+  const value = parseInt(event.target.value)
+  const minKey = `${filterKey}Min`
+  const currentMin = localFilters.value[minKey] ?? rangeBounds.value[filterKey]?.min ?? 0
+
+  // Allow movement down to and including min position
+  localFilters.value[`${filterKey}Max`] = Math.max(value, currentMin)
+
+  // When max reaches min, set active to 'max' so user can drag it back right
+  if (value <= currentMin) {
+    activeRangeSlider[filterKey] = 'max'
+  }
+}
+
+// Handle mouse enter on range slider to determine which thumb should be on top
+const handleRangeMouseMove = (filterKey, event) => {
+  const bounds = rangeBounds.value[filterKey]
+  if (!bounds) return
+
+  const rect = event.currentTarget.getBoundingClientRect()
+  const percent = (event.clientX - rect.left) / rect.width
+  const valueAtMouse = bounds.min + percent * (bounds.max - bounds.min)
+
+  const currentMin = localFilters.value[`${filterKey}Min`] ?? bounds.min
+  const currentMax = localFilters.value[`${filterKey}Max`] ?? bounds.max
+  const midpoint = (currentMin + currentMax) / 2
+
+  // If mouse is closer to the left, make min slider active (on top)
+  // If mouse is closer to the right, make max slider active (on top)
+  activeRangeSlider[filterKey] = valueAtMouse < midpoint ? 'min' : 'max'
+}
+
+// Check if min slider should be on top for a given filter
+const isMinSliderOnTop = (filterKey) => {
+  return activeRangeSlider[filterKey] === 'min'
+}
+
+// Track which input is currently being edited (to prevent value override)
+const editingInput = reactive({})
+
+// Get the display value for min input (returns empty string if editing)
+const getMinInputValue = (filterKey) => {
+  if (editingInput[`${filterKey}Min`] !== undefined) {
+    return editingInput[`${filterKey}Min`]
+  }
+  return getRangeDisplayMin(filterKey)
+}
+
+// Get the display value for max input (returns empty string if editing)
+const getMaxInputValue = (filterKey) => {
+  if (editingInput[`${filterKey}Max`] !== undefined) {
+    return editingInput[`${filterKey}Max`]
+  }
+  return getRangeDisplayMax(filterKey)
+}
+
+// Handle focus on min input
+const handleMinInputFocus = (filterKey) => {
+  editingInput[`${filterKey}Min`] = getRangeDisplayMin(filterKey)
+}
+
+// Handle focus on max input
+const handleMaxInputFocus = (filterKey) => {
+  editingInput[`${filterKey}Max`] = getRangeDisplayMax(filterKey)
+}
+
+// Update range filter min value from input field (real-time as user types)
+const updateRangeMinInput = (filterKey, event) => {
+  const inputValue = event.target.value
+  editingInput[`${filterKey}Min`] = inputValue
+
+  const value = parseInt(inputValue)
+  if (!isNaN(value)) {
+    // Update slider position in real-time
+    localFilters.value[`${filterKey}Min`] = value
+  }
+}
+
+// Update range filter max value from input field (real-time as user types)
+const updateRangeMaxInput = (filterKey, event) => {
+  const inputValue = event.target.value
+  editingInput[`${filterKey}Max`] = inputValue
+
+  const value = parseInt(inputValue)
+  if (!isNaN(value)) {
+    // Update slider position in real-time
+    localFilters.value[`${filterKey}Max`] = value
+  }
+}
+
+// Validate and clamp range min value on blur
+const validateRangeMinInput = (filterKey, event) => {
+  const value = parseInt(event.target.value)
+  const bounds = rangeBounds.value[filterKey]
+
+  // Clear editing state
+  delete editingInput[`${filterKey}Min`]
+
+  if (!bounds) return
+
+  const maxKey = `${filterKey}Max`
+  const currentMax = localFilters.value[maxKey] ?? bounds.max
+
+  // If empty or invalid, reset to bounds.min
+  if (isNaN(value) || event.target.value === '') {
+    localFilters.value[`${filterKey}Min`] = bounds.min
+    return
+  }
+
+  // Clamp between bounds.min and currentMax (can't exceed the max handle)
+  const clampedValue = Math.max(bounds.min, Math.min(value, currentMax))
+  localFilters.value[`${filterKey}Min`] = clampedValue
+}
+
+// Validate and clamp range max value on blur
+const validateRangeMaxInput = (filterKey, event) => {
+  const value = parseInt(event.target.value)
+  const bounds = rangeBounds.value[filterKey]
+
+  // Clear editing state
+  delete editingInput[`${filterKey}Max`]
+
+  if (!bounds) return
+
+  const minKey = `${filterKey}Min`
+  const currentMin = localFilters.value[minKey] ?? bounds.min
+
+  // If empty or invalid, reset to bounds.max
+  if (isNaN(value) || event.target.value === '') {
+    localFilters.value[`${filterKey}Max`] = bounds.max
+    return
+  }
+
+  // Clamp between currentMin and bounds.max (can't go below the min handle)
+  const clampedValue = Math.max(currentMin, Math.min(value, bounds.max))
+  localFilters.value[`${filterKey}Max`] = clampedValue
+}
+
+// Get unit suffix for a filter (mm for dimensions)
+const getFilterUnit = (filterKey) => {
+  if (['length', 'width', 'height', 'depth'].includes(filterKey)) {
+    return 'mm'
+  }
+  return ''
 }
 
 // Local copy of filters for editing (initialized in watch below after maxPrice is available)
@@ -334,20 +720,49 @@ const sliderRangeStyle = computed(() => {
   }
 })
 
+// Track which price slider thumb should be on top
+const activePriceSlider = ref('max')
+
 // Update min price from slider
 const updateMinPrice = (event) => {
   const value = parseInt(event.target.value)
-  if (value <= localFilters.value.priceMax) {
-    localFilters.value.priceMin = value
+  const currentMax = localFilters.value.priceMax ?? maxPrice.value
+
+  // Allow movement up to and including max position
+  localFilters.value.priceMin = Math.min(value, currentMax)
+
+  // When min reaches max, set active to 'min' so user can drag it back left
+  if (value >= currentMax) {
+    activePriceSlider.value = 'min'
   }
 }
 
 // Update max price from slider
 const updateMaxPrice = (event) => {
   const value = parseInt(event.target.value)
-  if (value >= localFilters.value.priceMin) {
-    localFilters.value.priceMax = value
+  const currentMin = localFilters.value.priceMin ?? minPrice.value
+
+  // Allow movement down to and including min position
+  localFilters.value.priceMax = Math.max(value, currentMin)
+
+  // When max reaches min, set active to 'max' so user can drag it back right
+  if (value <= currentMin) {
+    activePriceSlider.value = 'max'
   }
+}
+
+// Handle mouse move on price slider to determine which thumb should be on top
+const handlePriceMouseMove = (event) => {
+  const rect = event.currentTarget.getBoundingClientRect()
+  const percent = (event.clientX - rect.left) / rect.width
+  const valueAtMouse = minPrice.value + percent * (maxPrice.value - minPrice.value)
+
+  const currentMin = localFilters.value.priceMin ?? minPrice.value
+  const currentMax = localFilters.value.priceMax ?? maxPrice.value
+  const midpoint = (currentMin + currentMax) / 2
+
+  // If mouse is closer to the left, make min slider active (on top)
+  activePriceSlider.value = valueAtMouse < midpoint ? 'min' : 'max'
 }
 
 // Helper to check if a price is a valid, parseable numeric value
@@ -394,7 +809,7 @@ const filteredCount = computed(() => {
 })
 
 // Create local filters object from selected filters
-function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice) {
+function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice, dynamicRangeBounds) {
   const filters = createEmptyFilters()
 
   // Copy over all array filters
@@ -410,18 +825,29 @@ function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice) {
     }
   }
 
+  // Initialize dimension range filter values from selectedFilters or dynamic bounds
+  for (const rangeKey of RANGE_FILTERS) {
+    const minKey = `${rangeKey}Min`
+    const maxKey = `${rangeKey}Max`
+    const bounds = dynamicRangeBounds?.[rangeKey]
+
+    // Use selectedFilters value if set, otherwise use dynamic bounds
+    filters[minKey] = selectedFilters[minKey] ?? bounds?.min
+    filters[maxKey] = selectedFilters[maxKey] ?? bounds?.max
+  }
+
   return filters
 }
 
 // Sync local filters when props change
 watch(() => props.selectedFilters, (newFilters) => {
-  localFilters.value = createLocalFilters(newFilters, minPrice.value, maxPrice.value)
+  localFilters.value = createLocalFilters(newFilters, minPrice.value, maxPrice.value, rangeBounds.value)
 }, { deep: true })
 
 // Reset local filters when drawer opens
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    localFilters.value = createLocalFilters(props.selectedFilters, minPrice.value, maxPrice.value)
+    localFilters.value = createLocalFilters(props.selectedFilters, minPrice.value, maxPrice.value, rangeBounds.value)
   }
 })
 
@@ -440,6 +866,37 @@ watch(maxPrice, (newMaxPrice) => {
     localFilters.value.priceMax = newMaxPrice
   }
 }, { immediate: true })
+
+// Initialize local filters when rangeBounds become available
+watch(rangeBounds, (newBounds) => {
+  for (const rangeKey of RANGE_FILTERS) {
+    const bounds = newBounds[rangeKey]
+    if (bounds) {
+      const minKey = `${rangeKey}Min`
+      const maxKey = `${rangeKey}Max`
+
+      // Check if the parent (selectedFilters) has user-defined values for this filter
+      const parentMin = props.selectedFilters[minKey]
+      const parentMax = props.selectedFilters[maxKey]
+      const hasUserDefinedMin = parentMin !== undefined
+      const hasUserDefinedMax = parentMax !== undefined
+
+      // If no user-defined value, always use bounds (full range)
+      // If user-defined value exists, use it but clamp to bounds
+      if (!hasUserDefinedMin) {
+        localFilters.value[minKey] = bounds.min
+      } else {
+        localFilters.value[minKey] = Math.max(bounds.min, Math.min(parentMin, bounds.max))
+      }
+
+      if (!hasUserDefinedMax) {
+        localFilters.value[maxKey] = bounds.max
+      } else {
+        localFilters.value[maxKey] = Math.max(bounds.min, Math.min(parentMax, bounds.max))
+      }
+    }
+  }
+}, { immediate: true, deep: true })
 
 const toggleSection = (section) => {
   openSections[section] = !openSections[section]
@@ -469,12 +926,22 @@ const clearAllFilters = () => {
     })
   }
 
-  // Reset local filters with dynamic price values for slider display
+  // Reset local filters with dynamic price and range values for slider display
   const freshFilters = createEmptyFilters()
   freshFilters.priceMin = minPrice.value
   freshFilters.priceMax = maxPrice.value
+
+  // Reset dimension range filters to their dynamic bounds
+  for (const rangeKey of RANGE_FILTERS) {
+    const bounds = rangeBounds.value[rangeKey]
+    if (bounds) {
+      freshFilters[`${rangeKey}Min`] = bounds.min
+      freshFilters[`${rangeKey}Max`] = bounds.max
+    }
+  }
+
   localFilters.value = freshFilters
-  // Emit empty filters to parent (priceMin: 0) so badge count resets properly
+  // Emit empty filters to parent so badge count resets properly
   emit('update:filters', createEmptyFilters())
 }
 
@@ -487,6 +954,19 @@ const applyFilters = () => {
   if (localFilters.value.priceMin === minPrice.value && localFilters.value.priceMax === maxPrice.value) {
     filtersToEmit.priceMin = EMPTY_FILTERS.priceMin
     filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
+  }
+
+// If dimension range values match the dynamic bounds, normalize to undefined
+  for (const rangeKey of RANGE_FILTERS) {
+    const bounds = rangeBounds.value[rangeKey]
+    if (bounds) {
+      const minKey = `${rangeKey}Min`
+      const maxKey = `${rangeKey}Max`
+      if (localFilters.value[minKey] === bounds.min && localFilters.value[maxKey] === bounds.max) {
+        filtersToEmit[minKey] = undefined
+        filtersToEmit[maxKey] = undefined
+      }
+    }
   }
 
   // Track apply filters in GTM
@@ -513,13 +993,13 @@ const closeDrawer = () => {
 .all-filters-wrapper {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 480px; /* Start at sidebar edge */
   right: 0;
   bottom: 0;
-  z-index: 10000000; /* Higher than Sidebar search bar (9999999) */
-  pointer-events: none; /* Allow clicks to pass through to sidebar */
+  z-index: 2000; /* Above ProductDrawer overlay (1800) and drawer (1900) */
+  pointer-events: none;
   visibility: hidden;
-  /* No transition - instant show/hide */
+  overflow: hidden; /* Clip the drawer as it slides out */
 }
 
 .all-filters-wrapper.is-open {
@@ -529,40 +1009,38 @@ const closeDrawer = () => {
 .filters-overlay {
   position: absolute;
   top: 0;
-  left: 480px; /* Start after sidebar */
+  left: 0;
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.3);
-  pointer-events: auto; /* Re-enable clicks on overlay */
+  pointer-events: auto;
   opacity: 0;
-  /* No transition on close - instant hide */
 }
 
 .all-filters-wrapper.is-open .filters-overlay {
   opacity: 1;
-  transition: opacity 0.3s ease-out; /* Only animate on open */
+  transition: opacity 0.3s ease-out;
 }
 
 .filters-drawer {
   position: absolute;
-  top: 60px; /* Match sidebar top position (below header) */
-  left: 480px; /* Position next to the sidebar */
-  width: 400px; /* Narrower width for filter panel */
-  height: calc(100vh - 60px); /* Full height minus top offset */
+  top: 60px;
+  left: 0; /* Relative to wrapper which starts at 480px */
+  width: 400px;
+  height: calc(100vh - 60px);
   background-color: #ffffff;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border-left: 1px solid #e5e7eb;
-  pointer-events: auto; /* Enable clicks on the drawer */
-  transform: translateX(-100%);
-  /* No transition on close - instant hide */
+  pointer-events: auto;
+  transform: translateX(-100%); /* Hidden behind sidebar edge */
 }
 
 .filters-drawer.is-open {
-  transform: translateX(0);
-  transition: transform 0.3s ease-out; /* Only animate on open */
+  transform: translateX(0); /* Slide out to visible position */
+  transition: transform 0.3s ease-out;
 }
 
 .filters-header {
@@ -664,6 +1142,81 @@ const closeDrawer = () => {
   flex-shrink: 0;
 }
 
+/* Range Filter Container (for length, width, height, depth) */
+.range-filter-container {
+  padding: 8px 0;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.range-input-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.range-input-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  font-family: Arial, sans-serif;
+}
+
+.range-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  transition: border-color 0.15s ease;
+}
+
+.range-input-wrapper:focus-within {
+  border-color: #29275B;
+  background: #ffffff;
+}
+
+.range-number-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+  font-family: Arial, sans-serif;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.range-number-input::-webkit-outer-spin-button,
+.range-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.range-input-unit {
+  font-size: 12px;
+  color: #9ca3af;
+  font-family: Arial, sans-serif;
+  flex-shrink: 0;
+}
+
+.range-input-separator {
+  font-size: 16px;
+  color: #9ca3af;
+  font-weight: 500;
+  padding-bottom: 8px;
+}
+
 .price-range-container {
   padding: 8px 0;
 }
@@ -758,6 +1311,11 @@ const closeDrawer = () => {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* Dynamic z-index for overlapping slider handles */
+.range-input.on-top {
+  z-index: 2;
+}
+
 .no-filters-message {
   padding: 40px 20px;
   text-align: center;
@@ -814,8 +1372,13 @@ const closeDrawer = () => {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
+  .all-filters-wrapper {
+    left: 0; /* Full width on mobile */
+    z-index: 10000000;
+  }
+
   .filters-overlay {
-    left: 0; /* Full overlay on mobile */
+    left: 0;
   }
 
   .filters-drawer {
