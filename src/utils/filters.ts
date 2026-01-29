@@ -600,6 +600,64 @@ export interface DynamicRangeBounds {
 }
 
 /**
+ * Check if price filter is active (user changed from dynamic bounds)
+ * @param filters - The selected filters
+ * @param dynamicBounds - Optional dynamic bounds to compare against
+ */
+export function isPriceFilterActive(
+    filters: SelectedFilters,
+    dynamicBounds?: DynamicRangeBounds
+): boolean {
+  const dynamicPriceMin = dynamicBounds?.priceMin ?? 0
+  const dynamicPriceMax = dynamicBounds?.priceMax
+  return (filters.priceMin !== undefined && filters.priceMin > dynamicPriceMin) ||
+         (filters.priceMax !== undefined && (dynamicPriceMax === undefined || filters.priceMax < dynamicPriceMax))
+}
+
+/**
+ * Check if a specific dimension range filter is active (user changed from dynamic bounds)
+ * @param filters - The selected filters
+ * @param rangeKey - The range filter key (length, width, height, depth)
+ * @param dynamicBounds - Optional dynamic bounds to compare against
+ */
+export function isRangeFilterActive(
+    filters: SelectedFilters,
+    rangeKey: string,
+    dynamicBounds?: DynamicRangeBounds
+): boolean {
+  const minKey = `${rangeKey}Min` as keyof SelectedFilters
+  const maxKey = `${rangeKey}Max` as keyof SelectedFilters
+  const dynamicMinKey = `${rangeKey}Min` as keyof DynamicRangeBounds
+  const dynamicMaxKey = `${rangeKey}Max` as keyof DynamicRangeBounds
+
+  const filterMin = filters[minKey] as number | undefined
+  const filterMax = filters[maxKey] as number | undefined
+  const dynamicMin = dynamicBounds?.[dynamicMinKey] ?? 0
+  const dynamicMax = dynamicBounds?.[dynamicMaxKey]
+
+  return (filterMin !== undefined && filterMin > dynamicMin) ||
+         (filterMax !== undefined && (dynamicMax === undefined || filterMax < dynamicMax))
+}
+
+/**
+ * Get array of active dimension range filter keys
+ * @param filters - The selected filters
+ * @param dynamicBounds - Optional dynamic bounds to compare against
+ */
+export function getActiveRangeFilterKeys(
+    filters: SelectedFilters,
+    dynamicBounds?: DynamicRangeBounds
+): string[] {
+  const activeKeys: string[] = []
+  for (const rangeKey of RANGE_FILTERS) {
+    if (isRangeFilterActive(filters, rangeKey, dynamicBounds)) {
+      activeKeys.push(rangeKey)
+    }
+  }
+  return activeKeys
+}
+
+/**
  * Check if any filters are currently active
  * @param filters - The selected filters
  * @param dynamicBounds - Optional dynamic bounds to compare against (based on products)
@@ -609,33 +667,8 @@ export function hasActiveFilters(
     dynamicBounds?: DynamicRangeBounds
 ): boolean {
   const activeFilterKeys = getActiveFilterKeys(filters)
-
-  // Check if price filter is active
-  const dynamicPriceMin = dynamicBounds?.priceMin ?? 0
-  const dynamicPriceMax = dynamicBounds?.priceMax
-  const hasPriceFilter =
-      (filters.priceMin !== undefined && filters.priceMin > dynamicPriceMin) ||
-      (filters.priceMax !== undefined && (dynamicPriceMax === undefined || filters.priceMax < dynamicPriceMax))
-
-  // Check if any dimension range filters are active
-  let hasRangeFilter = false
-  for (const rangeKey of RANGE_FILTERS) {
-    const minKey = `${rangeKey}Min` as keyof SelectedFilters
-    const maxKey = `${rangeKey}Max` as keyof SelectedFilters
-    const dynamicMinKey = `${rangeKey}Min` as keyof DynamicRangeBounds
-    const dynamicMaxKey = `${rangeKey}Max` as keyof DynamicRangeBounds
-
-    const filterMin = filters[minKey] as number | undefined
-    const filterMax = filters[maxKey] as number | undefined
-    const dynamicMin = dynamicBounds?.[dynamicMinKey] ?? 0
-    const dynamicMax = dynamicBounds?.[dynamicMaxKey]
-
-    if ((filterMin !== undefined && filterMin > dynamicMin) ||
-        (filterMax !== undefined && (dynamicMax === undefined || filterMax < dynamicMax))) {
-      hasRangeFilter = true
-      break
-    }
-  }
+  const hasPriceFilter = isPriceFilterActive(filters, dynamicBounds)
+  const hasRangeFilter = getActiveRangeFilterKeys(filters, dynamicBounds).length > 0
 
   return activeFilterKeys.length > 0 || hasPriceFilter || hasRangeFilter
 }
@@ -652,6 +685,7 @@ export function getActiveFilterCount(
   const activeFilterKeys = getActiveFilterKeys(filters)
   let count = 0
 
+  // Count checkbox filter values
   for (const key of activeFilterKeys) {
     const filterValue = filters[key as keyof SelectedFilters]
     if (Array.isArray(filterValue)) {
@@ -660,33 +694,12 @@ export function getActiveFilterCount(
   }
 
   // Count price filter as 1 if active
-  const dynamicPriceMin = dynamicBounds?.priceMin ?? 0
-  const dynamicPriceMax = dynamicBounds?.priceMax
-  const hasPriceFilter =
-      (filters.priceMin !== undefined && filters.priceMin > dynamicPriceMin) ||
-      (filters.priceMax !== undefined && (dynamicPriceMax === undefined || filters.priceMax < dynamicPriceMax))
-
-  if (hasPriceFilter) {
+  if (isPriceFilterActive(filters, dynamicBounds)) {
     count += 1
   }
 
   // Count each active dimension range filter as 1
-  for (const rangeKey of RANGE_FILTERS) {
-    const minKey = `${rangeKey}Min` as keyof SelectedFilters
-    const maxKey = `${rangeKey}Max` as keyof SelectedFilters
-    const dynamicMinKey = `${rangeKey}Min` as keyof DynamicRangeBounds
-    const dynamicMaxKey = `${rangeKey}Max` as keyof DynamicRangeBounds
-
-    const filterMin = filters[minKey] as number | undefined
-    const filterMax = filters[maxKey] as number | undefined
-    const dynamicMin = dynamicBounds?.[dynamicMinKey] ?? 0
-    const dynamicMax = dynamicBounds?.[dynamicMaxKey]
-
-    if ((filterMin !== undefined && filterMin > dynamicMin) ||
-        (filterMax !== undefined && (dynamicMax === undefined || filterMax < dynamicMax))) {
-      count += 1
-    }
-  }
+  count += getActiveRangeFilterKeys(filters, dynamicBounds).length
 
   return count
 }

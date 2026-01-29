@@ -260,8 +260,8 @@
             <div v-if="openSections.price" class="filter-section-content">
               <div class="price-range-container">
                 <div class="price-range-labels">
-                  <span>£{{ displayPriceMin }}</span>
-                  <span>£{{ displayPriceMax }}</span>
+                  <span>{{ formatCurrency(displayPriceMin) }}</span>
+                  <span>{{ formatCurrency(displayPriceMax) }}</span>
                 </div>
                 <div class="dual-range-slider" @mousemove="handlePriceMouseMove">
                   <div class="slider-track"></div>
@@ -336,8 +336,31 @@ const props = defineProps({
   selectedFilters: {
     type: Object,
     default: () => createEmptyFilters()
+  },
+  currencyCode: {
+    type: String,
+    default: 'GBP'
+  },
+  locale: {
+    type: String,
+    default: 'en-GB'
   }
 })
+
+// Currency formatter using Intl.NumberFormat for locale-aware formatting
+const currencyFormatter = computed(() => {
+  return new Intl.NumberFormat(props.locale, {
+    style: 'currency',
+    currency: props.currencyCode,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })
+})
+
+// Format a price value with locale-aware currency
+const formatCurrency = (value) => {
+  return currencyFormatter.value.format(value)
+}
 
 const emit = defineEmits(['close', 'update:filters'])
 
