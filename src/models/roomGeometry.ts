@@ -381,13 +381,26 @@ export const createWalls = (
     const wall = new THREE.Mesh(wallData.geometry, wallMaterial);
     wall.position.set(wallData.position[0], wallData.position[1], wallData.position[2]);
     wall.receiveShadow = true;
-    // wall.castShadow = true;
     wall.userData.isWall = true;
 
     // Add wall direction for easier identification
     const directions = ['north', 'south', 'east', 'west'];
     wall.userData.wallDirection = directions[index];
     wall.name = `Wall_${directions[index]}`;
+
+    // Fix UV mapping for East/West walls to match front wall tile pattern
+    if (index >= 2) { // East and West walls
+      const uvAttribute = wall.geometry.getAttribute('uv');
+      if (uvAttribute) {
+        const uvArray = uvAttribute.array as Float32Array;
+        // Scale UVs so tiles appear same size as front wall
+        const scaleX = roomHeight / roomWidth;
+        for (let i = 0; i < uvArray.length; i += 2) {
+          uvArray[i] = uvArray[i] * scaleX;
+        }
+        uvAttribute.needsUpdate = true;
+      }
+    }
 
     walls.push(wall);
   });
@@ -524,6 +537,8 @@ const createWall = (
   wall.userData.isWall = true;
   wall.userData.wallDirection = direction;
   wall.name = `Wall_${direction}`;
+
+  
   return wall;
 };
 

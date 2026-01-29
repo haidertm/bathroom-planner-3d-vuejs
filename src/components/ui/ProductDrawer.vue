@@ -105,8 +105,55 @@
         </button>
       </div>
 
+      <!-- Filter Chips (shown when category is selected and not in search mode) -->
+      <div
+        v-if="currentView === 'products' && props.selectedCategory && props.selectedCategory !== 'search'"
+        :style="filterChipsContainerStyle"
+        class="filter-chips-scroll"
+        ref="filterScrollContainer"
+        @wheel="handleFilterScroll"
+        @mousedown="handleDragStart"
+        @mousemove="handleDragMove"
+        @mouseup="handleDragEnd"
+        @mouseleave="handleDragEnd"
+      >
+        <FilterChips
+            :category="props.selectedCategory"
+            :products="props.categoryProducts"
+            :selected-filters="props.selectedFilters"
+            @update:filters="handleFilterUpdate"
+            @open-all-filters="openAllFiltersDrawer"
+        />
+      </div>
+
+      <!-- All Filters Drawer -->
+      <AllFiltersDrawer
+          :is-open="isAllFiltersOpen"
+          :category="props.selectedCategory"
+          :products="props.categoryProducts"
+          :selected-filters="props.selectedFilters"
+          @close="closeAllFiltersDrawer"
+          @update:filters="handleFilterUpdate"
+      />
+
       <!-- PROGRESSIVE LOADING: Show ready products + skeletons for loading ones -->
       <div v-if="currentView === 'products'" :style="contentStyle">
+
+        <!-- Empty state when no products match filters -->
+        <div v-if="readyProducts.length === 0 && hasActiveFilters(props.selectedFilters) && !isAnythingLoading() && props.selectedCategory !== 'search'" class="no-products-state">
+          <div class="no-products-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+              <path d="M8 8l6 6"></path>
+              <path d="M14 8l-6 6"></path>
+            </svg>
+          </div>
+          <p class="no-products-message">No products found matching these filters.</p>
+          <button class="clear-filters-btn" @click="clearAllFilters">
+            Clear All Filters
+          </button>
+        </div>
 
         <!-- Show products that are ready (models loaded) -->
         <div
@@ -177,6 +224,7 @@
           <span>Loading {{ getLoadingProductCount() }} more products...</span>
         </div>
 
+
       </div>
 
       <!-- VARIANTS VIEW - Original Design -->
@@ -198,42 +246,56 @@
 
         <!-- Variants Selection (if product has variants) -->
         <div v-if="selectedProduct.variants && selectedProduct.variants.length > 0" :style="sectionStyle">
-          <h4 :style="sectionTitleStyle">{{ selectedProduct.variantType || 'Size' }}</h4>
-          <div :style="variantOptionsStyle">
-            <button
-                v-for="(variant, index) in displayedVariants"
-                :key="variant.id || variant.sku || variant.name || index"
-                @click="selectVariant(variant)"
-                :style="getVariantButtonStyle(variant)"
-                class="variant-button"
-                :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
-            >
-              <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
-                <span>{{ variant.name }}</span>
-                <!-- Show too large badge for variants that don't fit -->
-                <span v-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
-                  ⚠ Too Large
-                </span>
+          <!-- Single filtered variant - show simplified view -->
+          <template v-if="hasOnlyOneFilteredVariant">
+            <h4 :style="sectionTitleStyle">Selected {{ selectedProduct.variantType || 'Size' }}</h4>
+            <div :style="singleVariantInfoStyle">
+              <span :style="singleVariantNameStyle">{{ selectedVariant?.name }}</span>
+              <span v-if="isVariantTooLarge(selectedVariant)" :style="tooLargeBadgeStyle">
+                ⚠ Too Large
               </span>
-            </button>
-          </div>
+            </div>
+          </template>
 
-          <!-- See More / See Less Button -->
-          <div
-              v-if="shouldShowSeeMoreButton"
-              :style="seeMoreContainerStyle"
-          >
-            <button
-                @click="toggleShowAllVariants"
-                :style="seeMoreButtonStyle"
-                class="see-more-button"
+          <!-- Multiple variants - show selection buttons -->
+          <template v-else>
+            <h4 :style="sectionTitleStyle">{{ selectedProduct.variantType || 'Size' }}</h4>
+            <div :style="variantOptionsStyle">
+              <button
+                  v-for="(variant, index) in displayedVariants"
+                  :key="variant.id || variant.sku || variant.name || index"
+                  @click="selectVariant(variant)"
+                  :style="getVariantButtonStyle(variant)"
+                  class="variant-button"
+                  :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
+              >
+                <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
+                  <span>{{ variant.name }}</span>
+                  <!-- Show too large badge for variants that don't fit -->
+                  <span v-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
+                    ⚠ Too Large
+                  </span>
+                </span>
+              </button>
+            </div>
+
+            <!-- See More / See Less Button -->
+            <div
+                v-if="shouldShowSeeMoreButton"
+                :style="seeMoreContainerStyle"
             >
-              {{ showAllVariants ? 'See Less' : `See More (${selectedProduct.variants.length - 5} more)` }}
-              <span :style="{ marginLeft: '8px' }">
-            {{ showAllVariants ? '↑' : '↓' }}
-          </span>
-            </button>
-          </div>
+              <button
+                  @click="toggleShowAllVariants"
+                  :style="seeMoreButtonStyle"
+                  class="see-more-button"
+              >
+                {{ showAllVariants ? 'See Less' : `See More (${filteredVariants.length - 5} more)` }}
+                <span :style="{ marginLeft: '8px' }">
+              {{ showAllVariants ? '↑' : '↓' }}
+            </span>
+              </button>
+            </div>
+          </template>
 
         </div>
 
@@ -299,6 +361,8 @@
 import {ref, computed, watch} from 'vue'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
+import FilterChips from './FilterChips.vue'
+import AllFiltersDrawer from './AllFiltersDrawer.vue'
 import { ModelManager } from '../../models/bathroomFixtures'
 import {
   isVariantModelLoaded,
@@ -306,6 +370,8 @@ import {
   isVariantModelLoadedWithCache,
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
+import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
+import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
 
@@ -362,6 +428,19 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  // Filter-related props
+  filteredProducts: {
+    type: Array,
+    default: () => []
+  },
+  selectedFilters: {
+    type: Object,
+    default: () => ({ length: [], type: [], finish: [] })
+  },
+  categoryProducts: {
+    type: Array,
+    default: () => []
+  },
   // Constraint checking props
   roomWidth: {
     type: Number,
@@ -386,7 +465,67 @@ const props = defineProps({
 })
 
 // Emits - ADD 'back' event for better control
-const emit = defineEmits(['close', 'add-to-room', 'retry-loading'])
+const emit = defineEmits(['close', 'add-to-room', 'retry-loading', 'update:filters'])
+
+// Handle filter updates from FilterChips component
+const handleFilterUpdate = (newFilters) => {
+  emit('update:filters', newFilters)
+}
+
+// Clear all filters - reset to empty state
+const clearAllFilters = () => {
+  emit('update:filters', createEmptyFilters())
+}
+
+// All Filters Drawer state
+const isAllFiltersOpen = ref(false)
+
+const openAllFiltersDrawer = () => {
+  isAllFiltersOpen.value = true
+}
+
+const closeAllFiltersDrawer = () => {
+  isAllFiltersOpen.value = false
+}
+
+// Filter scroll container ref and horizontal scroll handler
+const filterScrollContainer = ref(null)
+
+const handleFilterScroll = (event) => {
+  // Convert vertical scroll to horizontal scroll
+  if (filterScrollContainer.value) {
+    event.preventDefault()
+    filterScrollContainer.value.scrollLeft += event.deltaY
+  }
+}
+
+// Drag-to-scroll functionality
+const isDragging = ref(false)
+const startX = ref(0)
+const scrollLeft = ref(0)
+
+const handleDragStart = (event) => {
+  if (!filterScrollContainer.value) return
+  isDragging.value = true
+  startX.value = event.pageX - filterScrollContainer.value.offsetLeft
+  scrollLeft.value = filterScrollContainer.value.scrollLeft
+  filterScrollContainer.value.style.cursor = 'grabbing'
+}
+
+const handleDragEnd = () => {
+  isDragging.value = false
+  if (filterScrollContainer.value) {
+    filterScrollContainer.value.style.cursor = 'grab'
+  }
+}
+
+const handleDragMove = (event) => {
+  if (!isDragging.value || !filterScrollContainer.value) return
+  event.preventDefault()
+  const x = event.pageX - filterScrollContainer.value.offsetLeft
+  const walk = (x - startX.value) * 1.5 // Multiply for faster scroll
+  filterScrollContainer.value.scrollLeft = scrollLeft.value - walk
+}
 
 // Reactive state
 const currentView = ref('products') // 'products' or 'variants'
@@ -399,11 +538,55 @@ const productPreloading = ref(new Map()) // Track which products are currently p
 
 const showAllVariants = ref(false)
 
-// Add this computed property for filtered variants
-const displayedVariants = computed(() => {
+// Get filtered variants based on selected filters
+const filteredVariants = computed(() => {
   if (!selectedProduct.value?.variants) return []
 
-  const variants = selectedProduct.value.variants
+  // Debug: Log all filter details
+  const allVariants = selectedProduct.value.variants
+  const lengthFilter = props.selectedFilters?.length
+  const hasActive = hasActiveFilters(props.selectedFilters)
+
+  console.log('🔍 ====== FILTERING VARIANTS ======')
+  console.log('🔍 Product:', selectedProduct.value.name)
+  console.log('🔍 Total variants:', allVariants.length)
+  console.log('🔍 All variant lengths:', allVariants.map(v => ({
+    name: v.name,
+    sku: v.sku,
+    filterLength: v.filterAttributes?.length
+  })))
+  console.log('🔍 Selected filters:', JSON.stringify(props.selectedFilters, null, 2))
+  console.log('🔍 Length filter array:', lengthFilter)
+  console.log('🔍 hasActiveFilters result:', hasActive)
+
+  // If no active filters, return all variants
+  if (!hasActive) {
+    console.log('🔍 ❌ No active filters detected, returning ALL variants')
+    return allVariants
+  }
+
+  // Filter variants based on selected filters
+  const filtered = filterProductVariants(selectedProduct.value, props.selectedFilters)
+  console.log('🔍 ✅ Active filters detected!')
+  console.log('🔍 Filtered result:', filtered.map(v => ({
+    name: v.name,
+    sku: v.sku,
+    filterLength: v.filterAttributes?.length
+  })))
+  console.log('🔍 ====== END FILTERING ======')
+  return filtered
+})
+
+// Check if we have only one filtered variant (for direct add-to-room)
+const hasOnlyOneFilteredVariant = computed(() => {
+  return filteredVariants.value.length === 1 && hasActiveFilters(props.selectedFilters)
+})
+
+// Add this computed property for displayed variants (with pagination)
+const displayedVariants = computed(() => {
+  const variants = filteredVariants.value
+
+  if (variants.length === 0) return []
 
   // If we have 5 or fewer variants, show all
   if (variants.length <= 5) {
@@ -419,9 +602,9 @@ const displayedVariants = computed(() => {
   return variants
 })
 
-// Check if we should show the "See More" button
+// Check if we should show the "See More" button (based on filtered variants)
 const shouldShowSeeMoreButton = computed(() => {
-  return selectedProduct.value?.variants?.length > 5
+  return filteredVariants.value.length > 5
 })
 
 // Function to toggle showing all variants
@@ -556,6 +739,8 @@ watch(() => props.isOpen, (isOpen) => {
       selectedColor.value = '';
     }
   } else {
+    // Close AllFiltersDrawer when ProductDrawer closes
+    isAllFiltersOpen.value = false;
     productPreloading.value.clear();
   }
 });
@@ -626,18 +811,7 @@ const categoryDisplayLabels = {
   'Plumbing': 'Soil Pipe'
 }
 
-const drawerTitle = computed(() => {
-  if (props.selectedCategory === 'search') {
-    const raw = (props && props.searchResults && 'value' in props.searchResults)
-        ? props.searchResults.value
-        : props.searchResults
-    const count = Array.isArray(raw) ? raw.length : 0
-    return `<span style="color:#EC048C">${count} </span> Results Found`
-  }
 
-  // Use display label mapping, fallback to category name
-  return categoryDisplayLabels[props.selectedCategory] || props.selectedCategory || 'Products'
-})
 
 // 4. FIXED search result highlighting that properly handles Vue refs
 const getHighlightedName = (product) => {
@@ -779,13 +953,14 @@ const readyProducts = computed(() => {
     }
 
     // Transform search results based on match type
-    const transformedResults = searchResultsArray.map((result, index) => {
-
+    const transformedResults = []
+    
+    searchResultsArray.forEach((result) => {
       const { category, product, matchingVariant, matchType, isExactMatch } = result
 
-      // For EXACT SKU matches - show direct add functionality
+      // For EXACT SKU matches - show single direct add item (keep existing logic)
       if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
-        return {
+        transformedResults.push({
           id: matchingVariant.id || matchingVariant.sku,
           name: matchingVariant.title || matchingVariant.name || product.name,
           price: matchingVariant.price || product.price,
@@ -809,42 +984,144 @@ const readyProducts = computed(() => {
             selectedVariant: matchingVariant,
             selectedColor: product.colors?.[0]?.id || null
           }
-        }
+        })
+        return
       }
 
-      // For NAME matches or partial SKU matches - show regular SELECT button
-      return {
-        id: product.id,
-        name: product.name,
-        price: product.price, // Use product base price, not variant price
-        image: product.image, // Use product main image
-        link: product.link,
-        category: category,
-        variants: product.variants, // Include variants for selection
-        colors: product.colors, // Include colors
-        variantType: product.variantType,
-        features: product.features,
-
-        // Search context for name/partial matches
-        searchContext: {
-          isExactMatch: false,
-          matchType: matchType,
-          matchingVariant: matchingVariant, // Keep for reference
-          originalProduct: product,
-          showDirectAdd: false, // Show SELECT button instead
-          highlightedVariant: matchingVariant // Highlight the matching variant
-        },
-
-        // No direct productData - user must select variant first
-        productData: null
+      // FOR ALL OTHER MATCHES: Flatten variants into individual cards
+      // This matches the "Filter" behavior where every variant is shown with "Add to Room"
+      
+      const variants = product.variants || []
+      
+      // If product has no variants, show the product itself (fallback)
+      if (variants.length === 0) {
+        transformedResults.push({
+            id: product.id,
+            name: product.name,
+            price: product.price, 
+            image: product.image, 
+            link: product.link,
+            category: category,
+            variants: [],
+            colors: product.colors,
+            features: product.features,
+            
+            searchContext: {
+              isExactMatch: false,
+              matchType: 'product_match',
+              matchingVariant: null,
+              originalProduct: product,
+              showDirectAdd: false // Fallback to Select
+            },
+            productData: null
+        })
+        return
       }
+
+      // Create a card for EACH variant
+      variants.forEach(variant => {
+        transformedResults.push({
+          id: `${product.id}-${variant.id || variant.sku}`,
+          // Show full variant name
+          name: variant.title || `${product.name} - ${variant.name}`,
+          price: variant.price || product.price,
+          image: variant.image || product.image, // Variant image or product image fallback
+          link: variant.link || product.link,
+          category: category,
+          
+          isFilteredVariant: true, // Mark as flattened variant
+          
+          searchContext: {
+            isExactMatch: false,
+            matchType: 'flattened_variant',
+            matchingVariant: variant,
+            originalProduct: product,
+            showDirectAdd: true, // ENABLE DIRECT ADD
+            category: category
+          },
+
+          // PREPARE DATA FOR ADD TO ROOM
+          productData: {
+            type: category,
+            product: product,
+            selectedVariant: variant,
+            selectedColor: product.colors?.[0]?.id || null
+          }
+        })
+      })
     })
+
     return transformedResults
   }
 
-  // Handle regular category products (unchanged)
+  // Handle regular category products - use filtered products if available
+  // Use filteredProducts prop when it's provided (it will contain all products when no filters are active)
+  if (props.filteredProducts !== undefined && Array.isArray(props.filteredProducts)) {
+    // If filteredProducts is empty but filters are active, show "no results" message
+    // If filteredProducts has items, show them
+
+    // When filters are active, show each matching variant as a direct-add item
+    if (hasActiveFilters(props.selectedFilters)) {
+      const directAddItems = []
+
+      for (const product of props.filteredProducts) {
+        // Find all variants that match the filters
+        const matchingVariants = filterProductVariants(product, props.selectedFilters)
+
+        // Create a direct-add item for each matching variant
+        for (const variant of matchingVariants) {
+          directAddItems.push({
+            id: `${product.id}-${variant.id || variant.sku}`,
+            name: variant.title || `${product.name} - ${variant.name}`,
+            price: variant.price || product.price,
+            image: variant.image || product.image,
+            link: variant.link || product.link,
+            category: product.category,
+            // Mark as direct-add (filtered result)
+            isFilteredVariant: true,
+            // Store original product and variant for add-to-room
+            _originalProduct: product,
+            _matchingVariant: variant,
+            // Search context for direct add functionality
+            searchContext: {
+              isExactMatch: true,
+              matchType: 'filtered_variant',
+              matchingVariant: variant,
+              originalProduct: product,
+              showDirectAdd: true,
+              category: props.selectedCategory
+            },
+            // Product data ready for direct adding
+            productData: {
+              type: props.selectedCategory,
+              product: product,
+              selectedVariant: variant,
+              selectedColor: product.colors?.[0]?.id || null
+            }
+          })
+        }
+      }
+
+      return directAddItems
+    }
+
+    return props.filteredProducts
+  }
+
+  // Fallback to all category products (when filteredProducts prop is not provided)
   const categoryProducts = getProductsForCategory(props.selectedCategory)
   return categoryProducts || []
+})
+
+const drawerTitle = computed(() => {
+  if (props.selectedCategory === 'search') {
+    // UPDATED: Count the FLATTENED results (readyProducts) to match what is displayed
+    const count = readyProducts.value ? readyProducts.value.length : 0
+    return `<span style="color:#EC048C">${count} </span> Results Found`
+  }
+
+  // Use display label mapping, fallback to category name
+  return categoryDisplayLabels[props.selectedCategory] || props.selectedCategory || 'Products'
 })
 
 const isSingleProductSearchMode = computed(() => {
@@ -872,6 +1149,11 @@ const isAnythingLoading = () => {
 
 // Methods - Original functionality
 const selectProduct = async (product) => {
+  console.log('🔍 ====== PRODUCT SELECTED ======')
+  console.log('🔍 Product name:', product.name)
+  console.log('🔍 Product has', product.variants?.length || 0, 'variants')
+  console.log('🔍 Variant SKUs:', product.variants?.map(v => v.sku))
+  console.log('🔍 Current selectedFilters prop:', JSON.stringify(props.selectedFilters))
 
   // If it's a direct add product (exact SKU match), add directly
   if (product.searchContext?.showDirectAdd) {
@@ -882,13 +1164,35 @@ const selectProduct = async (product) => {
   // Regular product selection flow
   selectedProduct.value = product
 
-  // If there's a highlighted variant from search, pre-select it
+  // Determine which variant to pre-select
   if (product.searchContext?.highlightedVariant) {
+    // If there's a highlighted variant from search, pre-select it
+    console.log('🔍 Pre-selecting highlighted variant from search')
     selectedVariant.value = product.searchContext.highlightedVariant
+  } else if (hasActiveFilters(props.selectedFilters) && product.variants) {
+    // If filters are active, get filtered variants and select appropriately
+    console.log('🔍 Filters are active, filtering variants...')
+    const filtered = filterProductVariants(product, props.selectedFilters)
+    console.log('🔍 Filtered variants:', filtered.map(v => ({ sku: v.sku, name: v.name })))
+    if (filtered.length === 1) {
+      // Only one variant matches filters - select it directly
+      console.log('🔍 Single variant match, selecting:', filtered[0].sku)
+      selectedVariant.value = filtered[0]
+    } else if (filtered.length > 0) {
+      // Multiple variants match - select the first filtered one
+      console.log('🔍 Multiple matches, selecting first:', filtered[0].sku)
+      selectedVariant.value = filtered[0]
+    } else {
+      // No variants match (shouldn't happen if product was shown) - fallback to first
+      console.log('🔍 No variants match filters, falling back to first variant')
+      selectedVariant.value = product.variants?.[0] || ''
+    }
   } else {
-    // Default to first variant
+    // No filters active - default to first variant
+    console.log('🔍 No active filters, selecting first variant')
     selectedVariant.value = product.variants?.[0] || ''
   }
+  console.log('🔍 ====== END PRODUCT SELECTED ======')
 
   selectedColor.value = product.colors?.[0]?.id || ''
   currentView.value = 'variants'
@@ -1208,6 +1512,8 @@ const getSearchAwareButtonStyle = (product) => {
 
 
 const closeDrawer = () => {
+  // Close the AllFiltersDrawer when going back
+  isAllFiltersOpen.value = false
   emit('close')
 }
 
@@ -1375,6 +1681,20 @@ const headerStyle = computed(() => ({
   position: 'sticky',
   top: 0,
   zIndex: 10
+}))
+
+const filterChipsContainerStyle = computed(() => ({
+  padding: '12px 0',
+  backgroundColor: '#ffffff',
+  borderBottom: '1px solid #e5e7eb',
+  overflowX: 'scroll',
+  overflowY: 'hidden',
+  scrollbarWidth: 'none', /* Firefox */
+  msOverflowStyle: 'none', /* IE/Edge */
+  WebkitOverflowScrolling: 'touch', /* iOS smooth scroll */
+  flexShrink: 0,
+  cursor: 'grab',
+  userSelect: 'none' /* Prevent text selection while dragging */
 }))
 
 const backButtonStyle = computed(() => ({
@@ -1586,6 +1906,36 @@ const loadingProgressStyle = computed(() => ({
   marginTop: '10px'
 }))
 
+// No Results Styles (for when filters have no matches)
+const noResultsStyle = computed(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '60px 20px',
+  textAlign: 'center'
+}))
+
+const noResultsIconStyle = computed(() => ({
+  color: '#9ca3af',
+  marginBottom: '16px'
+}))
+
+const noResultsTitleStyle = computed(() => ({
+  fontSize: '18px',
+  fontWeight: '600',
+  color: '#374151',
+  margin: '0 0 8px 0',
+  fontFamily: 'Arial, sans-serif'
+}))
+
+const noResultsTextStyle = computed(() => ({
+  fontSize: '14px',
+  color: '#6b7280',
+  margin: '0',
+  fontFamily: 'Arial, sans-serif'
+}))
+
 // Error Styles
 const errorBannerStyle = computed(() => ({
   backgroundColor: '#fee',
@@ -1644,6 +1994,24 @@ const variantOptionsStyle = computed(() => ({
   display: 'flex',
   flexDirection: 'column',
   gap: '10px'
+}))
+
+// Styles for single filtered variant display
+const singleVariantInfoStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '14px 16px',
+  backgroundColor: '#f0f9f0',
+  borderRadius: '8px',
+  border: '2px solid #29275B'
+}))
+
+const singleVariantNameStyle = computed(() => ({
+  fontSize: '15px',
+  fontWeight: '600',
+  color: '#29275B',
+  fontFamily: 'Arial, sans-serif'
 }))
 
 const colorOptionsStyle = computed(() => ({
@@ -1798,6 +2166,11 @@ const searchVariantStyle = computed(() => ({
 </script>
 
 <style scoped>
+/* Hide scrollbar for filter chips horizontal scroll */
+.filter-chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Hover effects */
 .product-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
@@ -1883,6 +2256,48 @@ const searchVariantStyle = computed(() => ({
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Empty state - No products found */
+.no-products-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  min-height: 300px;
+}
+
+.no-products-icon {
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.no-products-message {
+  font-size: 16px;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 0 0 24px 0;
+  font-family: Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.clear-filters-btn {
+  padding: 12px 24px;
+  background-color: #29275B;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  transition: background-color 0.15s ease;
+}
+
+.clear-filters-btn:hover {
+  background-color: #1e1b47;
 }
 
 </style>
