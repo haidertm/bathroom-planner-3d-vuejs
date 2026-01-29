@@ -68,6 +68,23 @@ interface Product {
 }
 
 /**
+ * Get effective filter attributes for a variant, falling back to product-level attributes
+ * Returns variant.filterAttributes if present, otherwise product.filterAttributes
+ * This ensures variants without their own attributes inherit from the product
+ */
+function getEffectiveAttributes(
+    variant: ProductVariant,
+    product: Product
+): FilterAttributes | undefined {
+  // If variant has its own filterAttributes, use them
+  if (variant.filterAttributes && Object.keys(variant.filterAttributes).length > 0) {
+    return variant.filterAttributes
+  }
+  // Fall back to product-level filterAttributes
+  return product.filterAttributes
+}
+
+/**
  * Extract numeric value from a dimension string and convert to centimeters
  * Detects unit suffixes (mm, cm, m) and applies appropriate conversion:
  *   - mm → multiply by 0.1 (to get cm)
@@ -379,7 +396,9 @@ export function filterProducts(
       return product.variants.some(variant => {
         // Use variant price, fall back to product price if variant has no price
         const variantPrice = variant.price ?? product.price
-        return itemMatchesAllFilters(variantPrice, variant.filterAttributes, minPrice, maxPrice)
+        // Use effective attributes (variant's own or fallback to product's)
+        const effectiveAttributes = getEffectiveAttributes(variant, product)
+        return itemMatchesAllFilters(variantPrice, effectiveAttributes, minPrice, maxPrice)
       })
     }
 
@@ -537,14 +556,16 @@ export function getFilterOptionsWithCounts(
       // For products with variants, check each variant
       for (const variant of product.variants) {
         const variantPrice = variant.price ?? product.price
+        // Use effective attributes (variant's own or fallback to product's)
+        const effectiveAttributes = getEffectiveAttributes(variant, product)
 
         // Check if variant passes all other filters
-        if (!itemPassesOtherFilters(variantPrice, variant.filterAttributes)) {
+        if (!itemPassesOtherFilters(variantPrice, effectiveAttributes)) {
           continue
         }
 
         // Get this variant's value for filterKey and increment count
-        const attributeValue = variant.filterAttributes?.[filterKey]
+        const attributeValue = effectiveAttributes?.[filterKey]
         if (attributeValue !== undefined && attributeValue !== null) {
           const valueString = formatFilterValue(attributeValue)
           if (countMap.has(valueString)) {
@@ -600,6 +621,9 @@ export function filterProductVariants(
   }
 
   return product.variants.filter(variant => {
+    // Use effective attributes (variant's own or fallback to product's)
+    const effectiveAttributes = getEffectiveAttributes(variant, product)
+
     // Check price filter first
     if (hasPriceFilter) {
       const variantPrice = parsePrice(variant.price)
@@ -617,7 +641,7 @@ export function filterProductVariants(
     // Check range filters (dimension sliders)
     if (activeRangeFilters.length > 0) {
       for (const rangeFilter of activeRangeFilters) {
-        const attributeValue = variant.filterAttributes?.[rangeFilter.key]
+        const attributeValue = effectiveAttributes?.[rangeFilter.key]
         if (!isValueInRange(attributeValue, rangeFilter.min, rangeFilter.max)) {
           return false
         }
@@ -630,7 +654,7 @@ export function filterProductVariants(
     }
 
     // Check attribute filters
-    return matchesFilters(variant.filterAttributes, filters, activeFilterKeys)
+    return matchesFilters(effectiveAttributes, filters, activeFilterKeys)
   })
 }
 
