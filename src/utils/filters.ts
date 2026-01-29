@@ -68,17 +68,68 @@ interface Product {
 }
 
 /**
- * Extract numeric value from a dimension string (e.g., "1500mm" -> 1500, "1.5m" -> 1500)
+ * Extract numeric value from a dimension string and convert to centimeters
+ * Detects unit suffixes (mm, cm, m) and applies appropriate conversion:
+ *   - mm → multiply by 0.1 (to get cm)
+ *   - cm → multiply by 1 (no change)
+ *   - m  → multiply by 100 (to get cm)
+ * If no unit is present, assumes the value is already in centimeters
+ * Examples: "1500mm" -> 150, "150cm" -> 150, "1.5m" -> 150, "150" -> 150
  * Returns null if no valid number found
  */
 export function extractNumericValue(value: unknown): number | null {
+  // If already a number, assume it's in centimeters
   if (typeof value === 'number') return value
+
   if (typeof value === 'string') {
-    // Remove all non-numeric characters except dots and minus signs
-    const normalized = value.trim().replace(/[^0-9.\-]/g, '')
-    const parsed = parseFloat(normalized)
-    return isNaN(parsed) ? null : parsed
+    const trimmed = value.trim()
+    if (trimmed === '') return null
+
+    // Regex to extract numeric part (with optional sign and decimals) and unit suffix
+    // Matches: optional minus, digits, optional decimal part, optional unit (mm, cm, m)
+    const match = trimmed.match(/^(-?\d+(?:\.\d+)?)\s*(mm|cm|m)?$/i)
+
+    if (match) {
+      const numericPart = parseFloat(match[1])
+      if (isNaN(numericPart)) return null
+
+      const unit = match[2]?.toLowerCase()
+
+      // Apply conversion factor based on unit
+      switch (unit) {
+        case 'mm':
+          return numericPart * 0.1  // mm to cm
+        case 'm':
+          return numericPart * 100  // m to cm
+        case 'cm':
+        default:
+          return numericPart        // cm or no unit (assume cm)
+      }
+    }
+
+    // Fallback: try to extract any numeric value if regex didn't match
+    // This handles edge cases like "~150cm" or "150 cm approx"
+    const fallbackMatch = trimmed.match(/(-?\d+(?:\.\d+)?)\s*(mm|cm|m)?/i)
+    if (fallbackMatch) {
+      const numericPart = parseFloat(fallbackMatch[1])
+      if (isNaN(numericPart)) return null
+
+      const unit = fallbackMatch[2]?.toLowerCase()
+
+      switch (unit) {
+        case 'mm':
+          return numericPart * 0.1
+        case 'm':
+          return numericPart * 100
+        case 'cm':
+        default:
+          return numericPart
+      }
+    }
+
+    return null
   }
+
   return null
 }
 

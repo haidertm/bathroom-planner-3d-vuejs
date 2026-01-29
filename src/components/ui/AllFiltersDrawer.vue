@@ -9,8 +9,8 @@
         <!-- Header -->
         <div class="filters-header">
           <h2 class="filters-title">All Filters</h2>
-          <button class="filters-close" @click="closeDrawer">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button class="filters-close" @click="closeDrawer" aria-label="Close filters">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -105,7 +105,7 @@
               </div>
             </template>
             <!-- Checkbox list for non-range filters -->
-            <template v-else-if="getFilterOptions(filterKey).length > 0">
+            <template v-else-if="filterOptionsMap[filterKey]?.length > 0">
               <button class="filter-section-header" @click="toggleSection(filterKey)">
                 <span>{{ getFilterLabel(filterKey) }}</span>
                 <svg
@@ -118,7 +118,7 @@
               </button>
               <div v-if="openSections[filterKey]" class="filter-section-content">
                 <div class="filter-options-grid">
-                  <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+                  <label v-for="option in filterOptionsMap[filterKey]" :key="option.value" class="filter-checkbox-label">
                     <input
                         type="checkbox"
                         :checked="isFilterSelected(filterKey, option.value)"
@@ -218,7 +218,7 @@
               </div>
             </template>
             <!-- Checkbox list for non-range filters -->
-            <template v-else-if="getFilterOptions(filterKey).length > 0">
+            <template v-else-if="filterOptionsMap[filterKey]?.length > 0">
               <button class="filter-section-header" @click="toggleSection(filterKey)">
                 <span>{{ getFilterLabel(filterKey) }}</span>
                 <svg
@@ -231,7 +231,7 @@
               </button>
               <div v-if="openSections[filterKey]" class="filter-section-content">
                 <div class="filter-options-grid">
-                  <label v-for="option in getFilterOptions(filterKey)" :key="option.value" class="filter-checkbox-label">
+                  <label v-for="option in filterOptionsMap[filterKey]" :key="option.value" class="filter-checkbox-label">
                     <input
                         type="checkbox"
                         :checked="isFilterSelected(filterKey, option.value)"
@@ -680,9 +680,22 @@ const getFilterLabel = (filterKey) => {
   return baseLabel
 }
 
-// Get filter options for a specific filter key
+// Computed cache for filter options - avoids re-running extractFilterOptions on each render
+// Builds a map of filterKey -> options array for all primary and secondary filters
+const filterOptionsMap = computed(() => {
+  const map = {}
+  const allFilterKeys = [...primaryFilters.value, ...secondaryFilters.value]
+
+  for (const filterKey of allFilterKeys) {
+    map[filterKey] = extractFilterOptions(props.products, filterKey)
+  }
+
+  return map
+})
+
+// Get filter options for a specific filter key (reads from cached map)
 const getFilterOptions = (filterKey) => {
-  return extractFilterOptions(props.products, filterKey)
+  return filterOptionsMap.value[filterKey] || []
 }
 
 // Check if a filter value is selected
