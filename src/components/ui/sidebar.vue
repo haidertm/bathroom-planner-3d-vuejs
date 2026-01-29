@@ -865,6 +865,11 @@ const failedProducts = ref(new Set())
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
 
+  // Clear search query when navigating to a category to avoid UX confusion
+  searchQuery.value = ''
+  searchResults.value = []
+  hasSearched.value = false
+
   // GTM tracking for category selection
     if (window.dataLayer) {
        window.dataLayer.push({
@@ -979,6 +984,10 @@ const handleProductDrawerClose = () => {
   isProductDrawerOpen.value = false
   selectedCategory.value = ''
 
+  // Clear search query when closing the drawer to avoid UX confusion
+  searchQuery.value = ''
+  searchResults.value = []
+  hasSearched.value = false
   // Reset filters when closing the drawer
   resetFilters()
 
