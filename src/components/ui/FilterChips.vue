@@ -96,6 +96,15 @@ const totalActiveFilters = computed(() => {
   return count
 })
 
+// Pre-compute range bounds once for all range filters
+const rangeBoundsMap = computed(() => {
+  const boundsMap = {}
+  for (const rangeKey of RANGE_FILTERS) {
+    boundsMap[rangeKey] = extractRangeBounds(props.products, rangeKey)
+  }
+  return boundsMap
+})
+
 // Count of active secondary filters (for badge display)
 const secondaryActiveCount = computed(() => {
   let count = 0
@@ -120,8 +129,8 @@ const secondaryActiveCount = computed(() => {
     const filterMin = props.selectedFilters[minKey]
     const filterMax = props.selectedFilters[maxKey]
 
-    // Get dynamic bounds for comparison
-    const bounds = extractRangeBounds(props.products, rangeKey)
+    // Get pre-computed bounds for comparison
+    const bounds = rangeBoundsMap.value[rangeKey]
     if (bounds) {
       // Count as active if min is greater than dynamic min OR max is less than dynamic max
       const isActive = (filterMin !== undefined && filterMin > bounds.min) ||

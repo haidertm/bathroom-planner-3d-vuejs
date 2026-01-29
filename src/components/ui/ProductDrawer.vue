@@ -143,7 +143,7 @@
       <div v-if="currentView === 'products'" :style="contentStyle">
 
         <!-- Empty state when no products match filters -->
-        <div v-if="readyProducts.length === 0 && hasActiveFiltersComputed && !isAnythingLoading() && props.selectedCategory !== 'search'" class="no-products-state">
+        <div v-if="showEmptyFilterState" class="no-products-state">
           <div class="no-products-icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"></circle>
@@ -159,12 +159,13 @@
         </div>
 
         <!-- Show products that are ready (models loaded) -->
-        <div
-            v-for="product in readyProducts"
-            :key="product.id"
-            :style="productCardStyle"
-            class="product-card"
-        >
+        <template v-else-if="readyProducts.length > 0">
+          <div
+              v-for="product in readyProducts"
+              :key="product.id"
+              :style="productCardStyle"
+              class="product-card"
+          >
           <!-- Product Image -->
           <div :style="productImageStyle">
             <img :src="product.image" :alt="product.name" :style="imageStyle" />
@@ -198,6 +199,7 @@
             </button>
           </div>
         </div>
+        </template>
 
         <!-- Show skeleton loaders for products still loading -->
         <div
@@ -479,11 +481,31 @@ const hasActiveFiltersComputed = computed(() => hasActiveFilters(props.selectedF
 // Handle filter updates from FilterChips component
 const handleFilterUpdate = (newFilters) => {
   emit('update:filters', newFilters)
+
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_updated',
+      filters: newFilters,
+      source: 'ProductDrawer',
+      interaction_type: 'filter_chip_toggle',
+      category: props.selectedCategory
+    })
+  }
 }
 
 // Clear all filters - reset to empty state
 const clearAllFilters = () => {
   emit('update:filters', { ...EMPTY_FILTERS })
+
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filters_cleared',
+      filters: { ...EMPTY_FILTERS },
+      source: 'ProductDrawer',
+      interaction_type: 'clear_all_button',
+      category: props.selectedCategory
+    })
+  }
 }
 
 // All Filters Drawer state
@@ -1097,10 +1119,14 @@ const readyProducts = computed(() => {
         // Find all variants that match the filters
         const matchingVariants = filterProductVariants(product, props.selectedFilters)
 
-        // Create a direct-add item for each matching variant
+        // Create a direct-add item for each matching variant (deduplicate by SKU)
         for (const variant of matchingVariants) {
+          const itemId = `${product.id}-${variant.id || variant.sku}`
+          // Skip if we already have this item (prevents duplicates from data issues)
+          if (directAddItems.some(item => item.id === itemId)) continue
+
           directAddItems.push({
-            id: `${product.id}-${variant.id || variant.sku}`,
+            id: itemId,
             name: variant.title || `${product.name} - ${variant.name}`,
             price: variant.price || product.price,
             image: variant.image || product.image,
@@ -1140,6 +1166,14 @@ const readyProducts = computed(() => {
   // Fallback to all category products (when filteredProducts prop is not provided)
   const categoryProducts = getProductsForCategory(props.selectedCategory)
   return categoryProducts || []
+})
+
+// Computed property for showing empty filter state - ensures mutual exclusivity with product list
+const showEmptyFilterState = computed(() => {
+  return readyProducts.value.length === 0 &&
+         hasActiveFiltersComputed.value &&
+         !isAnythingLoading() &&
+         props.selectedCategory !== 'search'
 })
 
 const drawerTitle = computed(() => {

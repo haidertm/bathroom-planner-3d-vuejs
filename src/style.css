@@ -1,3 +1,13 @@
+:root {
+  --sidebar-width: 480px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 100vw;
+  }
+}
+
 .layout {
   display: flex;
   flex-direction: column;

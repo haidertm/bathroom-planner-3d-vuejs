@@ -316,7 +316,7 @@
 import { ref, computed, watch, reactive } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters, isRangeFilter, RANGE_FILTERS } from '../../constants/filters'
-import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds, parsePrice } from '../../utils/filters'
+import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds, parsePrice, extractNumericValue } from '../../utils/filters'
 
 const gtm = useGtm()
 
@@ -782,15 +782,41 @@ const filteredCount = computed(() => {
     normalizedFilters.priceMax = EMPTY_FILTERS.priceMax
   }
 
-  // If dimension range values match the dynamic bounds, normalize to undefined
+  // Handle dimension range filters - same logic as applyFilters
   for (const rangeKey of RANGE_FILTERS) {
     const bounds = rangeBounds.value[rangeKey]
     if (bounds) {
       const minKey = `${rangeKey}Min`
       const maxKey = `${rangeKey}Max`
-      if (normalizedFilters[minKey] === bounds.min && normalizedFilters[maxKey] === bounds.max) {
+      const currentMin = normalizedFilters[minKey]
+      const currentMax = normalizedFilters[maxKey]
+
+      // If range values match the dynamic bounds, normalize to undefined (no filter)
+      if (currentMin === bounds.min && currentMax === bounds.max) {
         normalizedFilters[minKey] = undefined
         normalizedFilters[maxKey] = undefined
+        normalizedFilters[rangeKey] = []
+        continue
+      }
+
+      // Check if there are checkbox selections for this dimension
+      const checkboxValues = normalizedFilters[rangeKey]
+      if (Array.isArray(checkboxValues) && checkboxValues.length > 0) {
+        // Extract numeric values from checkbox selections
+        const numericValues = checkboxValues
+          .map(v => extractNumericValue(v))
+          .filter(v => v !== null)
+
+        if (numericValues.length > 0) {
+          const minFromCheckbox = Math.min(...numericValues)
+          const maxFromCheckbox = Math.max(...numericValues)
+
+          // If range slider was modified from the checkbox-derived values,
+          // clear the checkbox array and use only the range values
+          if (currentMin !== minFromCheckbox || currentMax !== maxFromCheckbox) {
+            normalizedFilters[rangeKey] = []
+          }
+        }
       }
     }
   }
@@ -825,14 +851,38 @@ function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice, d
   }
 
   // Initialize dimension range filter values from selectedFilters or dynamic bounds
+  // Also sync checkbox selections to range sliders for dimension filters
   for (const rangeKey of RANGE_FILTERS) {
     const minKey = `${rangeKey}Min`
     const maxKey = `${rangeKey}Max`
     const bounds = dynamicRangeBounds?.[rangeKey]
 
-    // Use selectedFilters value if set, otherwise use dynamic bounds
-    filters[minKey] = selectedFilters[minKey] ?? bounds?.min
-    filters[maxKey] = selectedFilters[maxKey] ?? bounds?.max
+    // Check if there are checkbox selections for this dimension filter
+    const checkboxValues = selectedFilters[rangeKey]
+    if (Array.isArray(checkboxValues) && checkboxValues.length > 0) {
+      // Extract numeric values from checkbox selections (e.g., '400mm' -> 400)
+      const numericValues = checkboxValues
+        .map(v => extractNumericValue(v))
+        .filter(v => v !== null)
+
+      if (numericValues.length > 0) {
+        // Set range to cover all selected checkbox values
+        const minFromCheckbox = Math.min(...numericValues)
+        const maxFromCheckbox = Math.max(...numericValues)
+
+        // Use checkbox-derived values, clamped to bounds
+        filters[minKey] = bounds ? Math.max(minFromCheckbox, bounds.min) : minFromCheckbox
+        filters[maxKey] = bounds ? Math.min(maxFromCheckbox, bounds.max) : maxFromCheckbox
+      } else {
+        // No valid numeric values, fall back to selectedFilters or bounds
+        filters[minKey] = selectedFilters[minKey] ?? bounds?.min
+        filters[maxKey] = selectedFilters[maxKey] ?? bounds?.max
+      }
+    } else {
+      // No checkbox selections, use selectedFilters value if set, otherwise use dynamic bounds
+      filters[minKey] = selectedFilters[minKey] ?? bounds?.min
+      filters[maxKey] = selectedFilters[maxKey] ?? bounds?.max
+    }
   }
 
   return filters
@@ -874,14 +924,33 @@ watch(rangeBounds, (newBounds) => {
       const minKey = `${rangeKey}Min`
       const maxKey = `${rangeKey}Max`
 
-      // Check if the parent (selectedFilters) has user-defined values for this filter
+      // Check if the parent (selectedFilters) has user-defined min/max values for this filter
       const parentMin = props.selectedFilters[minKey]
       const parentMax = props.selectedFilters[maxKey]
       const hasUserDefinedMin = parentMin !== undefined
       const hasUserDefinedMax = parentMax !== undefined
 
-      // If no user-defined value, always use bounds (full range)
-      // If user-defined value exists, use it but clamp to bounds
+      // Check if there are checkbox selections for this dimension filter
+      const checkboxValues = props.selectedFilters[rangeKey]
+      const hasCheckboxSelections = Array.isArray(checkboxValues) && checkboxValues.length > 0
+
+      if (hasCheckboxSelections) {
+        // Extract numeric values from checkbox selections (e.g., '400mm' -> 400)
+        const numericValues = checkboxValues
+          .map(v => extractNumericValue(v))
+          .filter(v => v !== null)
+
+        if (numericValues.length > 0) {
+          // Set range to cover all selected checkbox values, clamped to bounds
+          const minFromCheckbox = Math.min(...numericValues)
+          const maxFromCheckbox = Math.max(...numericValues)
+          localFilters.value[minKey] = Math.max(minFromCheckbox, bounds.min)
+          localFilters.value[maxKey] = Math.min(maxFromCheckbox, bounds.max)
+          continue // Skip the default logic below
+        }
+      }
+
+      // If no checkbox selections, use explicit min/max values or bounds
       if (!hasUserDefinedMin) {
         localFilters.value[minKey] = bounds.min
       } else {
@@ -952,15 +1021,43 @@ const applyFilters = () => {
     filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
   }
 
-  // If dimension range values match the dynamic bounds, normalize to undefined
+  // Handle dimension range filters - check if user modified the range from checkbox-derived values
   for (const rangeKey of RANGE_FILTERS) {
     const bounds = rangeBounds.value[rangeKey]
     if (bounds) {
       const minKey = `${rangeKey}Min`
       const maxKey = `${rangeKey}Max`
-      if (localFilters.value[minKey] === bounds.min && localFilters.value[maxKey] === bounds.max) {
+      const currentMin = localFilters.value[minKey]
+      const currentMax = localFilters.value[maxKey]
+
+      // If range values match the dynamic bounds, normalize to undefined (no filter)
+      if (currentMin === bounds.min && currentMax === bounds.max) {
         filtersToEmit[minKey] = undefined
         filtersToEmit[maxKey] = undefined
+        // Also clear checkbox values since range covers everything
+        filtersToEmit[rangeKey] = []
+        continue
+      }
+
+      // Check if there are checkbox selections for this dimension
+      const checkboxValues = localFilters.value[rangeKey]
+      if (Array.isArray(checkboxValues) && checkboxValues.length > 0) {
+        // Extract numeric values from checkbox selections
+        const numericValues = checkboxValues
+          .map(v => extractNumericValue(v))
+          .filter(v => v !== null)
+
+        if (numericValues.length > 0) {
+          const minFromCheckbox = Math.min(...numericValues)
+          const maxFromCheckbox = Math.max(...numericValues)
+
+          // If range slider was modified from the checkbox-derived values,
+          // clear the checkbox array and use only the range values
+          if (currentMin !== minFromCheckbox || currentMax !== maxFromCheckbox) {
+            filtersToEmit[rangeKey] = [] // Clear checkbox values
+            // Keep the range values as-is (they were set by the user)
+          }
+        }
       }
     }
   }
@@ -994,7 +1091,7 @@ const closeDrawer = () => {
 .all-filters-wrapper {
   position: fixed;
   top: 0;
-  left: 480px; /* Start at sidebar edge */
+  left: var(--sidebar-width, 480px); /* Start at sidebar edge, using CSS variable with fallback */
   right: 0;
   bottom: 0;
   z-index: 2000; /* Above ProductDrawer overlay (1800) and drawer (1900) */

@@ -175,82 +175,8 @@ export const FILTER_LABELS: Record<string, string> = {
   range: 'Range'
 }
 
-// Empty filter state with all possible attributes
-export const EMPTY_FILTERS: SelectedFilters = {
-  // Common
-  length: [],
-  type: [],
-  finish: [],
-  width: [],
-  style: [],
-  colour: [],
-
-  // Bath
-  handed: [],
-
-  // Furniture
-  mounting: [],
-  basinType: [],
-  depth: [],
-
-  // Toilet
-  projection: [],
-  shape: [],
-  rimless: [],
-  cisternEntry: [],
-  softCloseSeat: [],
-
-  // Radiator
-  height: [],
-  orientation: [],
-  btuOutput: [],
-  pipeCentres: [],
-
-  // Shower
-  doorType: [],
-  glassThickness: [],
-  frameType: [],
-  frameFinish: [],
-  range: [],
-
-  // Price
-  priceMin: 0,
-  priceMax: undefined, // Will be set dynamically based on product prices
-
-  // Dimension ranges (used in AllFiltersDrawer only)
-  lengthMin: undefined,
-  lengthMax: undefined,
-  widthMin: undefined,
-  widthMax: undefined,
-  heightMin: undefined,
-  heightMax: undefined,
-  depthMin: undefined,
-  depthMax: undefined
-}
-
-// Get primary filters for a category (shown in sticky chips)
-export function getPrimaryFilters(category: string): string[] {
-  return CATEGORY_FILTER_CONFIG[category]?.primary || []
-}
-
-// Get secondary filters for a category (shown in All Filters panel)
-export function getSecondaryFilters(category: string): string[] {
-  return CATEGORY_FILTER_CONFIG[category]?.secondary || []
-}
-
-// Get all available filters for a category (primary + secondary)
-export function getAvailableFilters(category: string): string[] {
-  const config = CATEGORY_FILTER_CONFIG[category]
-  if (!config) return []
-  return [...config.primary, ...config.secondary]
-}
-
-// Get filter label for display
-export function getFilterLabel(filterKey: string): string {
-  return FILTER_LABELS[filterKey] || filterKey
-}
-
 // Create empty filters object with fresh arrays to prevent state bleed
+// This is the single source of truth for the filter shape
 export function createEmptyFilters(): SelectedFilters {
   return {
     // Common
@@ -291,7 +217,7 @@ export function createEmptyFilters(): SelectedFilters {
 
     // Price
     priceMin: 0,
-    priceMax: undefined,
+    priceMax: undefined, // Will be set dynamically based on product prices
 
     // Dimension ranges (used in AllFiltersDrawer only)
     lengthMin: undefined,
@@ -303,6 +229,32 @@ export function createEmptyFilters(): SelectedFilters {
     depthMin: undefined,
     depthMax: undefined
   }
+}
+
+// Frozen empty filter state for comparisons (immutable reference)
+// Use createEmptyFilters() when you need a fresh mutable copy
+export const EMPTY_FILTERS: Readonly<SelectedFilters> = Object.freeze(createEmptyFilters())
+
+// Get primary filters for a category (shown in sticky chips)
+export function getPrimaryFilters(category: string): string[] {
+  return CATEGORY_FILTER_CONFIG[category]?.primary || []
+}
+
+// Get secondary filters for a category (shown in All Filters panel)
+export function getSecondaryFilters(category: string): string[] {
+  return CATEGORY_FILTER_CONFIG[category]?.secondary || []
+}
+
+// Get all available filters for a category (primary + secondary)
+export function getAvailableFilters(category: string): string[] {
+  const config = CATEGORY_FILTER_CONFIG[category]
+  if (!config) return []
+  return [...config.primary, ...config.secondary]
+}
+
+// Get filter label for display
+export function getFilterLabel(filterKey: string): string {
+  return FILTER_LABELS[filterKey] || filterKey
 }
 
 // Check if a filter key should use a range slider in AllFiltersDrawer

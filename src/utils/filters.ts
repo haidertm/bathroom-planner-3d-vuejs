@@ -182,7 +182,7 @@ export function extractFilterOptions(
       })
       .map(value => ({
         value,
-        label: formatDisplayLabel(value, filterKey)
+        label: value
       }))
 }
 
@@ -197,18 +197,9 @@ function formatFilterValue(value: unknown): string {
 }
 
 /**
- * Format display label for filter values
- */
-function formatDisplayLabel(value: string, _filterKey: string): string {
-  // For boolean-type filters, the value is already 'Yes' or 'No'
-  if (value === 'Yes' || value === 'No') {
-    return value
-  }
-  return value
-}
-
-/**
  * Get active range filters (dimension filters with min/max values set)
+ * Skips range filters when checkbox filters exist for the same dimension
+ * (checkbox filters take precedence over range filters)
  */
 function getActiveRangeFilters(filters: SelectedFilters): Array<{
   key: string
@@ -218,6 +209,13 @@ function getActiveRangeFilters(filters: SelectedFilters): Array<{
   const activeRanges: Array<{ key: string; min: number; max: number }> = []
 
   for (const rangeKey of RANGE_FILTERS) {
+    // Skip range filter if checkbox filter exists for this dimension
+    // Checkbox filters take precedence (e.g., width: ['400mm', '600mm'] overrides widthMin/widthMax)
+    const checkboxValues = filters[rangeKey as keyof SelectedFilters]
+    if (Array.isArray(checkboxValues) && checkboxValues.length > 0) {
+      continue // Use checkbox filter instead of range filter
+    }
+
     const minKey = `${rangeKey}Min` as keyof SelectedFilters
     const maxKey = `${rangeKey}Max` as keyof SelectedFilters
     const minVal = filters[minKey] as number | undefined
@@ -399,6 +397,7 @@ function matchesFilters(
 /**
  * Get filter options with counts based on current filter state
  * Shows how many products would match if each option was selected
+ * Optimized: single pass over products instead of O(options × products)
  */
 export function getFilterOptionsWithCounts(
     products: Product[],
@@ -407,21 +406,123 @@ export function getFilterOptionsWithCounts(
 ): FilterOption[] {
   const options = extractFilterOptions(products, filterKey)
 
-  return options.map(option => {
-    // Create a test filter with this option selected
-    const testFilters: SelectedFilters = {
-      ...currentFilters,
-      [filterKey]: [option.value]
+  // Initialize count map for all option values
+  const countMap = new Map<string, number>()
+  for (const option of options) {
+    countMap.set(option.value, 0)
+  }
+
+  // Get active filters EXCLUDING the current filterKey
+  const allActiveFilterKeys = getActiveFilterKeys(currentFilters)
+  const activeFilterKeysExcludingCurrent = allActiveFilterKeys.filter(key => key !== filterKey)
+
+  // Get active range filters
+  const activeRangeFilters = getActiveRangeFilters(currentFilters)
+
+  // Check if price filter is active
+  const hasPriceFilter =
+      (currentFilters.priceMin !== undefined && currentFilters.priceMin > 0) ||
+      (currentFilters.priceMax !== undefined)
+
+  const minPriceFilter = currentFilters.priceMin ?? 0
+  const maxPriceFilter = currentFilters.priceMax ?? Infinity
+
+  // Helper to check if price is in range
+  const isPriceInRange = (price: number | null): boolean => {
+    if (!hasPriceFilter) return true
+    if (price === null) return false
+    return price >= minPriceFilter && price <= maxPriceFilter
+  }
+
+  // Helper to check if attributes match range filters
+  const matchesRangeFilters = (filterAttributes: Record<string, unknown> | undefined): boolean => {
+    if (activeRangeFilters.length === 0) return true
+    if (!filterAttributes) return false
+
+    for (const rangeFilter of activeRangeFilters) {
+      const attributeValue = filterAttributes[rangeFilter.key]
+      if (!isValueInRange(attributeValue, rangeFilter.min, rangeFilter.max)) {
+        return false
+      }
+    }
+    return true
+  }
+
+  // Helper to check if attributes match other active filters (excluding filterKey)
+  const matchesOtherFilters = (filterAttributes: Record<string, unknown> | undefined): boolean => {
+    if (activeFilterKeysExcludingCurrent.length === 0) return true
+    return matchesFilters(filterAttributes as FilterAttributes, currentFilters, activeFilterKeysExcludingCurrent as FilterAttributeKey[])
+  }
+
+  // Helper to check if an item passes all filters except filterKey
+  const itemPassesOtherFilters = (
+      price: unknown,
+      filterAttributes: Record<string, unknown> | undefined
+  ): boolean => {
+    // Check price filter
+    if (hasPriceFilter) {
+      const parsedPrice = parsePrice(price)
+      if (!isPriceInRange(parsedPrice)) {
+        return false
+      }
     }
 
-    // Count how many products match with this filter
-    const matchingProducts = filterProducts(products, testFilters)
-
-    return {
-      ...option,
-      count: matchingProducts.length
+    // Check range filters
+    if (!matchesRangeFilters(filterAttributes)) {
+      return false
     }
-  })
+
+    // Check other attribute filters (excluding filterKey)
+    if (!matchesOtherFilters(filterAttributes)) {
+      return false
+    }
+
+    return true
+  }
+
+  // Single pass over products to accumulate counts
+  for (const product of products) {
+    if (product.variants && product.variants.length > 0) {
+      // For products with variants, check each variant
+      for (const variant of product.variants) {
+        const variantPrice = variant.price ?? product.price
+
+        // Check if variant passes all other filters
+        if (!itemPassesOtherFilters(variantPrice, variant.filterAttributes)) {
+          continue
+        }
+
+        // Get this variant's value for filterKey and increment count
+        const attributeValue = variant.filterAttributes?.[filterKey]
+        if (attributeValue !== undefined && attributeValue !== null) {
+          const valueString = formatFilterValue(attributeValue)
+          if (countMap.has(valueString)) {
+            countMap.set(valueString, countMap.get(valueString)! + 1)
+          }
+        }
+      }
+    } else {
+      // For products without variants, check product-level attributes
+      if (!itemPassesOtherFilters(product.price, product.filterAttributes)) {
+        continue
+      }
+
+      // Get this product's value for filterKey and increment count
+      const attributeValue = product.filterAttributes?.[filterKey]
+      if (attributeValue !== undefined && attributeValue !== null) {
+        const valueString = formatFilterValue(attributeValue)
+        if (countMap.has(valueString)) {
+          countMap.set(valueString, countMap.get(valueString)! + 1)
+        }
+      }
+    }
+  }
+
+  // Map options to include counts
+  return options.map(option => ({
+    ...option,
+    count: countMap.get(option.value) ?? 0
+  }))
 }
 
 /**
