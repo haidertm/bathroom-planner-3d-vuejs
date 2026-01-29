@@ -821,6 +821,11 @@ const failedProducts = ref(new Set())
 const handleCategoryClick = async (category) => {
   console.log(`🖱️ Category clicked: ${category}`)
 
+  // Clear search query when navigating to a category to avoid UX confusion
+  searchQuery.value = ''
+  searchResults.value = []
+  hasSearched.value = false
+
   // GTM tracking for category selection
     if (window.dataLayer) {
        window.dataLayer.push({
@@ -931,6 +936,11 @@ const handleProductDrawerClose = () => {
   console.log('🔍 Product drawer close event received')
   isProductDrawerOpen.value = false
   selectedCategory.value = ''
+
+  // Clear search query when closing the drawer to avoid UX confusion
+  searchQuery.value = ''
+  searchResults.value = []
+  hasSearched.value = false
 
   // IMPORTANT: Don't hide the main sidebar when closing product drawer
   // The sidebar should stay open for the user to access other features
