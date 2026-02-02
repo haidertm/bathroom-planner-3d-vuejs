@@ -825,15 +825,19 @@ function createLocalFilters(selectedFilters, dynamicMinPrice, dynamicMaxPrice, d
     }
   }
 
-  // Initialize dimension range filter values from selectedFilters or dynamic bounds
+  // Initialize dimension range filter values from selectedFilters ONLY if explicitly set
+  // Don't default to bounds - that would make the filter "active" when user hasn't changed it
   for (const rangeKey of RANGE_FILTERS) {
     const minKey = `${rangeKey}Min`
     const maxKey = `${rangeKey}Max`
-    const bounds = dynamicRangeBounds?.[rangeKey]
 
-    // Use selectedFilters value if set, otherwise use dynamic bounds
-    filters[minKey] = selectedFilters[minKey] ?? bounds?.min
-    filters[maxKey] = selectedFilters[maxKey] ?? bounds?.max
+    // Only copy if selectedFilters explicitly has a value (not undefined)
+    if (selectedFilters[minKey] !== undefined) {
+      filters[minKey] = selectedFilters[minKey]
+    }
+    if (selectedFilters[maxKey] !== undefined) {
+      filters[maxKey] = selectedFilters[maxKey]
+    }
   }
 
   return filters
@@ -868,6 +872,8 @@ watch(maxPrice, (newMaxPrice) => {
 }, { immediate: true })
 
 // Initialize local filters when rangeBounds become available
+// Only set values if user has explicitly set them in selectedFilters
+// Leave undefined otherwise so range filters aren't treated as "active"
 watch(rangeBounds, (newBounds) => {
   for (const rangeKey of RANGE_FILTERS) {
     const bounds = newBounds[rangeKey]
@@ -878,20 +884,14 @@ watch(rangeBounds, (newBounds) => {
       // Check if the parent (selectedFilters) has user-defined values for this filter
       const parentMin = props.selectedFilters[minKey]
       const parentMax = props.selectedFilters[maxKey]
-      const hasUserDefinedMin = parentMin !== undefined
-      const hasUserDefinedMax = parentMax !== undefined
 
-      // If no user-defined value, always use bounds (full range)
-      // If user-defined value exists, use it but clamp to bounds
-      if (!hasUserDefinedMin) {
-        localFilters.value[minKey] = bounds.min
-      } else {
+      // Only set if user has explicitly defined a value, and clamp to bounds
+      if (parentMin !== undefined) {
         localFilters.value[minKey] = Math.max(bounds.min, Math.min(parentMin, bounds.max))
       }
+      // Leave undefined if no user value - slider display handles this via getRangeDisplayMin/Max
 
-      if (!hasUserDefinedMax) {
-        localFilters.value[maxKey] = bounds.max
-      } else {
+      if (parentMax !== undefined) {
         localFilters.value[maxKey] = Math.max(bounds.min, Math.min(parentMax, bounds.max))
       }
     }

@@ -126,8 +126,23 @@
         />
       </div>
 
-      <!-- All Filters Drawer -->
+      <!-- Search Filter Bar (shown only in search mode) -->
+      <div
+        v-if="currentView === 'products' && props.selectedCategory === 'search' && !isSingleProductSearchMode"
+        :style="searchFilterBarContainerStyle"
+        class="search-filter-bar-container"
+      >
+        <SearchFilterBar
+            :search-results="unfilteredSearchResults"
+            :selected-filters="searchFilters"
+            :search-query="props.searchQuery"
+            @update:filters="handleSearchFilterUpdate"
+        />
+      </div>
+
+      <!-- All Filters Drawer (hidden in search mode) -->
       <AllFiltersDrawer
+          v-if="props.selectedCategory !== 'search'"
           :is-open="isAllFiltersOpen"
           :category="props.selectedCategory"
           :products="props.categoryProducts"
@@ -139,7 +154,7 @@
       <!-- PROGRESSIVE LOADING: Show ready products + skeletons for loading ones -->
       <div v-if="currentView === 'products'" :style="contentStyle">
 
-        <!-- Empty state when no products match filters -->
+        <!-- Empty state when no products match filters (category mode) -->
         <div v-if="readyProducts.length === 0 && hasActiveFilters(props.selectedFilters) && !isAnythingLoading() && props.selectedCategory !== 'search'" class="no-products-state">
           <div class="no-products-icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -152,6 +167,22 @@
           <p class="no-products-message">No products found matching these filters.</p>
           <button class="clear-filters-btn" @click="clearAllFilters">
             Clear All Filters
+          </button>
+        </div>
+
+        <!-- Empty state when no products match search filters (search mode) -->
+        <div v-if="readyProducts.length === 0 && hasActiveSearchFilters && props.selectedCategory === 'search'" class="no-products-state">
+          <div class="no-products-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+              <path d="M8 8l6 6"></path>
+              <path d="M14 8l-6 6"></path>
+            </svg>
+          </div>
+          <p class="no-products-message">No results match the selected filters.</p>
+          <button class="clear-filters-btn" @click="clearSearchFilters">
+            Clear Filters
           </button>
         </div>
 
@@ -359,10 +390,12 @@
 
 <script setup>
 import {ref, computed, watch} from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
 import FilterChips from './FilterChips.vue'
 import AllFiltersDrawer from './AllFiltersDrawer.vue'
+import SearchFilterBar from './SearchFilterBar.vue'
 import { ModelManager } from '../../models/bathroomFixtures'
 import {
   isVariantModelLoaded,
@@ -374,6 +407,17 @@ import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
 import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
+
+// Default search filter state - used for initialization and reset
+const INITIAL_SEARCH_FILTERS = {
+  category: null,
+  priceMin: null,
+  priceMax: null,
+  styles: []
+}
+
+// Initialize GTM
+const gtm = useGtm()
 
 // Props
 const props = defineProps({
@@ -487,6 +531,111 @@ const openAllFiltersDrawer = () => {
 const closeAllFiltersDrawer = () => {
   isAllFiltersOpen.value = false
 }
+
+// Search filter state (for SearchFilterBar)
+const searchFilters = ref({ ...INITIAL_SEARCH_FILTERS })
+
+// Handle search filter updates from SearchFilterBar
+const handleSearchFilterUpdate = (newFilters) => {
+  searchFilters.value = { ...newFilters }
+
+  // Track search filter updates in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'search_filters_updated',
+      category: 'Search Filters',
+      action: 'Update',
+      searchQuery: props.searchQuery || '',
+      selectedCategory: props.selectedCategory || 'search',
+      isSingleProductSearchMode: isSingleProductSearchMode.value,
+      filters: {
+        category: newFilters.category,
+        priceMin: newFilters.priceMin,
+        priceMax: newFilters.priceMax,
+        stylesCount: newFilters.styles?.length || 0
+      }
+    })
+  }
+}
+
+// Clear search filters
+const clearSearchFilters = () => {
+  searchFilters.value = { ...INITIAL_SEARCH_FILTERS }
+}
+
+// Check if search filters are active
+// Note: SearchFilterBar emits null for priceMin/priceMax when no price filter is active,
+// so we only need to check if they are non-null to know if a price filter is applied
+const hasActiveSearchFilters = computed(() => {
+  const hasCategoryFilter = searchFilters.value.category !== null
+  const hasPriceFilter = searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null
+  const hasStyleFilter = searchFilters.value.styles.length > 0
+
+  return hasCategoryFilter || hasPriceFilter || hasStyleFilter
+})
+
+// Unfiltered search results for SearchFilterBar (to calculate filter options)
+const unfilteredSearchResults = computed(() => {
+  if (props.selectedCategory !== 'search') return []
+
+  // Get search results array safely
+  let searchResultsArray = []
+  try {
+    let unwrapped = props.searchResults
+    if (unwrapped && typeof unwrapped === 'object' && 'value' in unwrapped) {
+      unwrapped = unwrapped.value
+    }
+    if (Array.isArray(unwrapped)) {
+      searchResultsArray = unwrapped
+    } else if (unwrapped && typeof unwrapped === 'object' && unwrapped.length !== undefined) {
+      searchResultsArray = Array.from(unwrapped)
+    }
+  } catch (error) {
+    console.warn('Error processing searchResults for filter bar:', error)
+    searchResultsArray = []
+  }
+
+  // Transform to flat list for filter calculation
+  const transformedResults = []
+
+  searchResultsArray.forEach((result) => {
+    const { category, product, matchingVariant, matchType, isExactMatch } = result
+
+    // For exact SKU matches
+    if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
+      transformedResults.push({
+        id: matchingVariant.id || matchingVariant.sku,
+        price: matchingVariant.price || product.price,
+        category: category,
+        filterAttributes: matchingVariant.filterAttributes || {}
+      })
+      return
+    }
+
+    // For other matches - add each variant
+    const variants = product.variants || []
+    if (variants.length > 0) {
+      variants.forEach(variant => {
+        transformedResults.push({
+          id: `${product.id}-${variant.id || variant.sku}`,
+          price: variant.price || product.price,
+          category: category,
+          filterAttributes: variant.filterAttributes || {}
+        })
+      })
+    } else {
+      // Product has no variants - add product-level entry
+      transformedResults.push({
+        id: product.id || product.sku,
+        price: product.price,
+        category: category,
+        filterAttributes: product.filterAttributes || {}
+      })
+    }
+  })
+
+  return transformedResults
+})
 
 // Filter scroll container ref and horizontal scroll handler
 const filterScrollContainer = ref(null)
@@ -725,6 +874,8 @@ watch(() => props.searchTriggered, (newValue, oldValue) => {
     selectedProduct.value = null;
     selectedVariant.value = '';
     selectedColor.value = '';
+    // Reset search filters for new search
+    searchFilters.value = { ...INITIAL_SEARCH_FILTERS };
   }
 });
 
@@ -742,6 +893,8 @@ watch(() => props.isOpen, (isOpen) => {
     // Close AllFiltersDrawer when ProductDrawer closes
     isAllFiltersOpen.value = false;
     productPreloading.value.clear();
+    // Reset search filters when drawer closes
+    searchFilters.value = { ...INITIAL_SEARCH_FILTERS };
   }
 });
 
@@ -1028,9 +1181,12 @@ const readyProducts = computed(() => {
           image: variant.image || product.image, // Variant image or product image fallback
           link: variant.link || product.link,
           category: category,
-          
+
           isFilteredVariant: true, // Mark as flattened variant
-          
+
+          // Store filter attributes for search filtering
+          filterAttributes: variant.filterAttributes || {},
+
           searchContext: {
             isExactMatch: false,
             matchType: 'flattened_variant',
@@ -1051,7 +1207,40 @@ const readyProducts = computed(() => {
       })
     })
 
-    return transformedResults
+    // Apply search filters if any are active
+    let filteredResults = transformedResults
+
+    // Filter by category
+    if (searchFilters.value.category) {
+      filteredResults = filteredResults.filter(item => {
+        const itemCategory = item.category || item.searchContext?.category
+        return itemCategory === searchFilters.value.category
+      })
+    }
+
+    // Filter by price range
+    // Use epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
+    // Only apply if user has actually set a price filter (not just default range)
+    if (searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null) {
+      const EPS = 0.01
+      filteredResults = filteredResults.filter(item => {
+        const price = parseFloat(item.price) || 0
+        // Include items with no valid price (price = 0) - don't filter them out
+        if (price === 0) return true
+        return price + EPS >= searchFilters.value.priceMin && price - EPS <= searchFilters.value.priceMax
+      })
+    }
+
+    // Filter by style
+    if (searchFilters.value.styles && searchFilters.value.styles.length > 0) {
+      filteredResults = filteredResults.filter(item => {
+        const itemStyle = item.filterAttributes?.style ||
+                          item.searchContext?.matchingVariant?.filterAttributes?.style
+        return itemStyle && searchFilters.value.styles.includes(itemStyle)
+      })
+    }
+
+    return filteredResults
   }
 
   // Handle regular category products - use filtered products if available
@@ -1695,6 +1884,18 @@ const filterChipsContainerStyle = computed(() => ({
   flexShrink: 0,
   cursor: 'grab',
   userSelect: 'none' /* Prevent text selection while dragging */
+}))
+
+// Search filter bar container style - allows dropdowns to overflow
+const searchFilterBarContainerStyle = computed(() => ({
+  padding: '12px 0',
+  backgroundColor: '#ffffff',
+  borderBottom: '1px solid #e5e7eb',
+  overflowX: 'auto',
+  overflowY: 'visible',
+  flexShrink: 0,
+  position: 'relative',
+  zIndex: 100
 }))
 
 const backButtonStyle = computed(() => ({
