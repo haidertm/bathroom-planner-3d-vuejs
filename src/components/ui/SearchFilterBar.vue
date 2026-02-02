@@ -47,7 +47,7 @@
       <!-- Category Dropdown -->
       <div
         v-if="isCategoryDropdownOpen"
-        class="filter-dropdown-portal"
+        class="sf-filter-dropdown-portal"
         :style="categoryDropdownStyle"
         @click.stop
       >
@@ -76,7 +76,7 @@
       <!-- Price Range Dropdown -->
       <div
         v-if="isPriceDropdownOpen"
-        class="filter-dropdown-portal price-dropdown"
+        class="sf-filter-dropdown-portal sf-price-dropdown"
         :style="priceDropdownStyle"
         @click.stop
       >
@@ -168,7 +168,7 @@
       <!-- Style Dropdown -->
       <div
         v-if="isStyleDropdownOpen"
-        class="filter-dropdown-portal"
+        class="sf-filter-dropdown-portal"
         :style="styleDropdownStyle"
         @click.stop
       >
@@ -197,7 +197,7 @@
       <!-- Click outside overlay to close dropdowns -->
       <div
         v-if="isCategoryDropdownOpen || isPriceDropdownOpen || isStyleDropdownOpen"
-        class="dropdown-overlay-portal"
+        class="sf-dropdown-overlay-portal"
         @click="closeAllDropdowns"
       ></div>
     </Teleport>
@@ -206,6 +206,10 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
+
+// Initialize GTM
+const gtm = useGtm()
 
 const props = defineProps({
   searchResults: {
@@ -220,6 +224,11 @@ const props = defineProps({
       priceMax: null,
       styles: []
     })
+  },
+  // Search query string - used to detect when a new search is performed
+  searchQuery: {
+    type: String,
+    default: ''
   }
 })
 
@@ -248,7 +257,7 @@ const localSelectedCategory = ref(props.selectedFilters.category || null)
 const localPriceMin = ref(null)
 const localPriceMax = ref(null)
 const localSelectedStyles = ref([...(props.selectedFilters.styles || [])])
-const lastSearchResultsLength = ref(0)
+const lastSearchQuery = ref(props.searchQuery || '') // Track search query to detect new searches
 const userHasSetPriceFilter = ref(false) // Track if user manually changed price
 
 // Category display labels
@@ -332,13 +341,13 @@ const getResultsFilteredByAllFilters = (excludeFilter = null) => {
 
   // Apply price filter (if not excluded and user has modified the price)
   if (excludeFilter !== 'price' && hasPriceFilter.value) {
+    const EPS = 0.01
     filtered = filtered.filter(result => {
       const price = getProductPrice(result)
       // Include items with no valid price (price = 0) - don't filter them out
       if (price === 0) return true
-      // Use Math.floor for min comparison and Math.ceil for max comparison
-      // to handle floating point prices like 419.99 when slider shows 420
-      return Math.ceil(price) >= effectivePriceMin.value && Math.floor(price) <= effectivePriceMax.value
+      // Use epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
+      return price + EPS >= effectivePriceMin.value && price - EPS <= effectivePriceMax.value
     })
   }
 
@@ -579,24 +588,28 @@ const styleChipLabel = computed(() => {
 // Selected styles for parent
 const selectedStyles = computed(() => localSelectedStyles.value)
 
-// Initialize/reset price values when search results change
-watch(() => props.searchResults, (newResults, oldResults) => {
-  const newLength = newResults?.length || 0
-  const oldLength = oldResults?.length || 0
+// Reset filters when a NEW search is performed (search query changes)
+// This uses the search query as a stable identifier, not results length,
+// to avoid wiping user selections on incremental updates
+watch(() => props.searchQuery, (newQuery, oldQuery) => {
+  const normalizedNew = (newQuery || '').trim().toLowerCase()
+  const normalizedOld = (oldQuery || '').trim().toLowerCase()
+  const lastNormalized = (lastSearchQuery.value || '').trim().toLowerCase()
 
-  // Reset all filters when search results change significantly (new search)
-  // This handles the case when user clears search and searches again
-  if (newLength !== oldLength || lastSearchResultsLength.value === 0) {
+  // Only reset if this is genuinely a new search (query changed)
+  if (normalizedNew !== lastNormalized) {
     // Reset filters for new search
     localSelectedCategory.value = null
     localSelectedStyles.value = []
-    userHasSetPriceFilter.value = false // Reset the manual price flag
+    userHasSetPriceFilter.value = false
 
-    // Initialize price values from the new price range
-    localPriceMin.value = priceRange.value.min
-    localPriceMax.value = priceRange.value.max
+    // Initialize price values from the new price range (use nextTick to ensure priceRange is updated)
+    nextTick(() => {
+      localPriceMin.value = priceRange.value.min
+      localPriceMax.value = priceRange.value.max
+    })
 
-    lastSearchResultsLength.value = newLength
+    lastSearchQuery.value = normalizedNew
   }
 }, { immediate: true })
 
@@ -605,16 +618,10 @@ watch(() => props.searchResults, (newResults, oldResults) => {
 // the price slider causes your category selection to disappear.
 // Users can see "0 results" and adjust their filters manually if needed.
 
-// Reset price slider when category changes
+// Reset price slider when selecting a new category (only if user hasn't manually set a filter)
 watch(localSelectedCategory, (newCategory, oldCategory) => {
-  // When category is cleared, always reset price to full range
+  // Don't reset price when clearing category - keep filters independent
   if (newCategory === null) {
-    nextTick(() => {
-      localPriceMin.value = priceRange.value.min
-      localPriceMax.value = priceRange.value.max
-      userHasSetPriceFilter.value = false
-      emitFilterUpdate() // Notify parent of the reset
-    })
     return
   }
 
@@ -697,16 +704,46 @@ const emitFilterUpdate = () => {
 }
 
 const applyCategory = () => {
+  // Track category filter interaction
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filter_interaction',
+      category: 'Filter',
+      action: 'category_applied',
+      label: localSelectedCategory.value || 'cleared'
+    })
+  }
   emitFilterUpdate()
   isCategoryDropdownOpen.value = false
 }
 
 const applyPrice = () => {
-  // Ensure min doesn't exceed max
+  // Clamp min value to valid range
+  if (localPriceMin.value !== null && localPriceMin.value !== undefined) {
+    localPriceMin.value = Math.max(priceRange.value.min, Math.min(localPriceMin.value, priceRange.value.max))
+  }
+  // Clamp max value to valid range
+  if (localPriceMax.value !== null && localPriceMax.value !== undefined) {
+    localPriceMax.value = Math.max(priceRange.value.min, Math.min(localPriceMax.value, priceRange.value.max))
+  }
+  // Swap if min > max
   if (localPriceMin.value > localPriceMax.value) {
+    const temp = localPriceMin.value
     localPriceMin.value = localPriceMax.value
+    localPriceMax.value = temp
+  }
+  userHasSetPriceFilter.value = true
+  // Track price filter interaction
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filter_interaction',
+      category: 'Filter',
+      action: 'price_applied',
+      label: priceChipLabel.value
+    })
   }
   emitFilterUpdate()
+  isPriceDropdownOpen.value = false
 }
 
 // Clamp values to valid range and apply (called on input blur)
@@ -728,6 +765,15 @@ const clampAndApplyPrice = () => {
 }
 
 const applyStyle = () => {
+  // Track style filter interaction
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'filter_interaction',
+      category: 'Filter',
+      action: 'style_applied',
+      label: localSelectedStyles.value.join(', ') || 'cleared'
+    })
+  }
   emitFilterUpdate()
 }
 
@@ -892,8 +938,8 @@ onUnmounted(() => {
 </style>
 
 <style>
-/* Global styles for teleported dropdowns */
-.filter-dropdown-portal {
+/* Global styles for SearchFilterBar teleported dropdowns (sf- prefix for namespace isolation) */
+.sf-filter-dropdown-portal {
   min-width: 220px;
   max-width: 320px;
   background-color: #ffffff;
@@ -904,11 +950,11 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.filter-dropdown-portal.price-dropdown {
+.sf-filter-dropdown-portal.sf-price-dropdown {
   min-width: 280px;
 }
 
-.filter-dropdown-portal .dropdown-header {
+.sf-filter-dropdown-portal .dropdown-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -917,13 +963,13 @@ onUnmounted(() => {
   background-color: #f9fafb;
 }
 
-.filter-dropdown-portal .dropdown-header span {
+.sf-filter-dropdown-portal .dropdown-header span {
   font-size: 13px;
   font-weight: 600;
   color: #374151;
 }
 
-.filter-dropdown-portal .clear-btn {
+.sf-filter-dropdown-portal .clear-btn {
   font-size: 12px;
   color: #ef4444;
   background: none;
@@ -932,17 +978,17 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.filter-dropdown-portal .clear-btn:hover {
+.sf-filter-dropdown-portal .clear-btn:hover {
   text-decoration: underline;
 }
 
-.filter-dropdown-portal .dropdown-options {
+.sf-filter-dropdown-portal .dropdown-options {
   max-height: 250px;
   overflow-y: auto;
   padding: 8px 0;
 }
 
-.filter-dropdown-portal .dropdown-option {
+.sf-filter-dropdown-portal .dropdown-option {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -951,46 +997,46 @@ onUnmounted(() => {
   transition: background-color 0.15s ease;
 }
 
-.filter-dropdown-portal .dropdown-option:hover {
+.sf-filter-dropdown-portal .dropdown-option:hover {
   background-color: #f3f4f6;
 }
 
-.filter-dropdown-portal .dropdown-option input[type="radio"],
-.filter-dropdown-portal .dropdown-option input[type="checkbox"] {
+.sf-filter-dropdown-portal .dropdown-option input[type="radio"],
+.sf-filter-dropdown-portal .dropdown-option input[type="checkbox"] {
   width: 16px;
   height: 16px;
   accent-color: #29275B;
   cursor: pointer;
 }
 
-.filter-dropdown-portal .option-label {
+.sf-filter-dropdown-portal .option-label {
   flex: 1;
   font-size: 14px;
   color: #374151;
 }
 
-.filter-dropdown-portal .option-count {
+.sf-filter-dropdown-portal .option-count {
   font-size: 12px;
   color: #9ca3af;
 }
 
 /* Price slider styles */
-.filter-dropdown-portal .price-slider-container {
+.sf-filter-dropdown-portal .price-slider-container {
   padding: 16px;
 }
 
-.filter-dropdown-portal .price-inputs {
+.sf-filter-dropdown-portal .price-inputs {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
 }
 
-.filter-dropdown-portal .price-input-group {
+.sf-filter-dropdown-portal .price-input-group {
   flex: 1;
 }
 
-.filter-dropdown-portal .price-input-group label {
+.sf-filter-dropdown-portal .price-input-group label {
   display: block;
   font-size: 11px;
   font-weight: 600;
@@ -999,7 +1045,7 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
-.filter-dropdown-portal .price-input-wrapper {
+.sf-filter-dropdown-portal .price-input-wrapper {
   display: flex;
   align-items: center;
   border: 1px solid #d1d5db;
@@ -1007,7 +1053,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.filter-dropdown-portal .price-input-wrapper .currency {
+.sf-filter-dropdown-portal .price-input-wrapper .currency {
   padding: 8px 10px;
   background-color: #f3f4f6;
   font-size: 14px;
@@ -1015,7 +1061,7 @@ onUnmounted(() => {
   border-right: 1px solid #d1d5db;
 }
 
-.filter-dropdown-portal .price-input-wrapper input {
+.sf-filter-dropdown-portal .price-input-wrapper input {
   flex: 1;
   padding: 8px 10px;
   border: none;
@@ -1024,19 +1070,19 @@ onUnmounted(() => {
   width: 60px;
 }
 
-.filter-dropdown-portal .price-separator {
+.sf-filter-dropdown-portal .price-separator {
   color: #9ca3af;
   font-weight: 500;
 }
 
 /* Dual range slider */
-.filter-dropdown-portal .dual-slider-container {
+.sf-filter-dropdown-portal .dual-slider-container {
   position: relative;
   height: 24px;
   margin-bottom: 8px;
 }
 
-.filter-dropdown-portal .slider-track {
+.sf-filter-dropdown-portal .slider-track {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -1046,14 +1092,14 @@ onUnmounted(() => {
   border-radius: 3px;
 }
 
-.filter-dropdown-portal .slider-range {
+.sf-filter-dropdown-portal .slider-range {
   position: absolute;
   height: 100%;
   background-color: #29275B;
   border-radius: 3px;
 }
 
-.filter-dropdown-portal .slider {
+.sf-filter-dropdown-portal .slider {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -1069,16 +1115,16 @@ onUnmounted(() => {
 /* Slider layering for dual range slider */
 /* Default: both sliders at z-index 1 */
 /* slider-top: the slider that should be on top when not actively dragging */
-.filter-dropdown-portal .slider-top {
+.sf-filter-dropdown-portal .slider-top {
   z-index: 2;
 }
 
 /* Active slider (currently being dragged) always on top */
-.filter-dropdown-portal .slider-active {
+.sf-filter-dropdown-portal .slider-active {
   z-index: 3 !important;
 }
 
-.filter-dropdown-portal .slider::-webkit-slider-thumb {
+.sf-filter-dropdown-portal .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 20px;
@@ -1093,7 +1139,7 @@ onUnmounted(() => {
   z-index: inherit;
 }
 
-.filter-dropdown-portal .slider::-moz-range-thumb {
+.sf-filter-dropdown-portal .slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -1104,15 +1150,15 @@ onUnmounted(() => {
   pointer-events: auto;
 }
 
-.filter-dropdown-portal .price-range-labels {
+.sf-filter-dropdown-portal .price-range-labels {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
   color: #9ca3af;
 }
 
-/* Overlay for closing dropdowns */
-.dropdown-overlay-portal {
+/* Overlay for closing SearchFilterBar dropdowns */
+.sf-dropdown-overlay-portal {
   position: fixed;
   top: 0;
   left: 0;

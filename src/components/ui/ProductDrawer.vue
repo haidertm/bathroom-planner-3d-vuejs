@@ -135,6 +135,7 @@
         <SearchFilterBar
             :search-results="unfilteredSearchResults"
             :selected-filters="searchFilters"
+            :search-query="props.searchQuery"
             @update:filters="handleSearchFilterUpdate"
         />
       </div>
@@ -543,10 +544,14 @@ const clearSearchFilters = () => {
 }
 
 // Check if search filters are active
+// Note: SearchFilterBar emits null for priceMin/priceMax when no price filter is active,
+// so we only need to check if they are non-null to know if a price filter is applied
 const hasActiveSearchFilters = computed(() => {
-  return searchFilters.value.category !== null ||
-         (searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null) ||
-         searchFilters.value.styles.length > 0
+  const hasCategoryFilter = searchFilters.value.category !== null
+  const hasPriceFilter = searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null
+  const hasStyleFilter = searchFilters.value.styles.length > 0
+
+  return hasCategoryFilter || hasPriceFilter || hasStyleFilter
 })
 
 // Unfiltered search results for SearchFilterBar (to calculate filter options)
@@ -589,14 +594,24 @@ const unfilteredSearchResults = computed(() => {
 
     // For other matches - add each variant
     const variants = product.variants || []
-    variants.forEach(variant => {
-      transformedResults.push({
-        id: `${product.id}-${variant.id || variant.sku}`,
-        price: variant.price || product.price,
-        category: category,
-        filterAttributes: variant.filterAttributes || {}
+    if (variants.length > 0) {
+      variants.forEach(variant => {
+        transformedResults.push({
+          id: `${product.id}-${variant.id || variant.sku}`,
+          price: variant.price || product.price,
+          category: category,
+          filterAttributes: variant.filterAttributes || {}
+        })
       })
-    })
+    } else {
+      // Product has no variants - add product-level entry
+      transformedResults.push({
+        id: product.id || product.sku,
+        price: product.price,
+        category: category,
+        filterAttributes: product.filterAttributes || {}
+      })
+    }
   })
 
   return transformedResults
