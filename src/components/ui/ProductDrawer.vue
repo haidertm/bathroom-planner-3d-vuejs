@@ -390,6 +390,7 @@
 
 <script setup>
 import {ref, computed, watch} from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
 import FilterChips from './FilterChips.vue'
@@ -406,6 +407,17 @@ import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
 import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
+
+// Default search filter state - used for initialization and reset
+const INITIAL_SEARCH_FILTERS = {
+  category: null,
+  priceMin: null,
+  priceMax: null,
+  styles: []
+}
+
+// Initialize GTM
+const gtm = useGtm()
 
 // Props
 const props = defineProps({
@@ -521,26 +533,34 @@ const closeAllFiltersDrawer = () => {
 }
 
 // Search filter state (for SearchFilterBar)
-const searchFilters = ref({
-  category: null,
-  priceMin: null,
-  priceMax: null,
-  styles: []
-})
+const searchFilters = ref({ ...INITIAL_SEARCH_FILTERS })
 
 // Handle search filter updates from SearchFilterBar
 const handleSearchFilterUpdate = (newFilters) => {
   searchFilters.value = { ...newFilters }
+
+  // Track search filter updates in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'search_filters_updated',
+      category: 'Search Filters',
+      action: 'Update',
+      searchQuery: props.searchQuery || '',
+      selectedCategory: props.selectedCategory || 'search',
+      isSingleProductSearchMode: isSingleProductSearchMode.value,
+      filters: {
+        category: newFilters.category,
+        priceMin: newFilters.priceMin,
+        priceMax: newFilters.priceMax,
+        stylesCount: newFilters.styles?.length || 0
+      }
+    })
+  }
 }
 
 // Clear search filters
 const clearSearchFilters = () => {
-  searchFilters.value = {
-    category: null,
-    priceMin: null,
-    priceMax: null,
-    styles: []
-  }
+  searchFilters.value = { ...INITIAL_SEARCH_FILTERS }
 }
 
 // Check if search filters are active
@@ -855,12 +875,7 @@ watch(() => props.searchTriggered, (newValue, oldValue) => {
     selectedVariant.value = '';
     selectedColor.value = '';
     // Reset search filters for new search
-    searchFilters.value = {
-      category: null,
-      priceMin: null,
-      priceMax: null,
-      styles: []
-    };
+    searchFilters.value = { ...INITIAL_SEARCH_FILTERS };
   }
 });
 
@@ -879,12 +894,7 @@ watch(() => props.isOpen, (isOpen) => {
     isAllFiltersOpen.value = false;
     productPreloading.value.clear();
     // Reset search filters when drawer closes
-    searchFilters.value = {
-      category: null,
-      priceMin: null,
-      priceMax: null,
-      styles: []
-    };
+    searchFilters.value = { ...INITIAL_SEARCH_FILTERS };
   }
 });
 
