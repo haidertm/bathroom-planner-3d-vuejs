@@ -144,10 +144,12 @@ export function extractRangeBounds(
 /**
  * Check if a price is within the filter range
  * Returns false for null prices (treat as non-match when price filter is active)
+ * Uses epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
  */
+const PRICE_EPS = 0.01
 function isPriceInRange(price: number | null, minPrice: number, maxPrice: number): boolean {
   if (price === null) return false // No valid price = treat as non-match when price filter is active
-  return price >= minPrice && price <= maxPrice
+  return price + PRICE_EPS >= minPrice && price - PRICE_EPS <= maxPrice
 }
 
 /**
@@ -324,6 +326,33 @@ export function filterProducts(
 
     return true
   }
+
+  // Debug: Log price range being used (always log to debug)
+  const minPriceUsed = filters.priceMin ?? 0
+  const maxPriceUsed = filters.priceMax ?? Infinity
+
+  // Find highest prices in dataset for debugging
+  const allPrices: number[] = []
+  products.forEach(p => {
+    if (p.variants) {
+      p.variants.forEach(v => {
+        const price = parsePrice(v.price ?? p.price)
+        if (price !== null) allPrices.push(price)
+      })
+    } else {
+      const price = parsePrice(p.price)
+      if (price !== null) allPrices.push(price)
+    }
+  })
+  allPrices.sort((a, b) => b - a)
+  console.log('[filterProducts Debug]', {
+    hasPriceFilter,
+    priceFilterRange: { min: minPriceUsed, max: maxPriceUsed },
+    top5Prices: allPrices.slice(0, 5),
+    wouldMatchWithEpsilon: allPrices.filter(p => p + PRICE_EPS >= minPriceUsed && p - PRICE_EPS <= maxPriceUsed),
+    activeRangeFilters: activeRangeFilters,
+    activeFilterKeys: activeFilterKeys
+  })
 
   return products.filter(product => {
     const minPrice = filters.priceMin ?? 0
