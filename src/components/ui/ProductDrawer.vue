@@ -1193,10 +1193,11 @@ const readyProducts = computed(() => {
     }
 
     // Filter by price range
+    // Use ceil/floor to handle floating point prices like 419.99 when slider shows 420
     if (searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null) {
       filteredResults = filteredResults.filter(item => {
         const price = parseFloat(item.price) || 0
-        return price >= searchFilters.value.priceMin && price <= searchFilters.value.priceMax
+        return Math.ceil(price) >= searchFilters.value.priceMin && Math.floor(price) <= searchFilters.value.priceMax
       })
     }
 

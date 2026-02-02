@@ -333,7 +333,9 @@ const getResultsFilteredByAllFilters = (excludeFilter = null) => {
   if (excludeFilter !== 'price' && hasPriceFilter.value) {
     filtered = filtered.filter(result => {
       const price = getProductPrice(result)
-      return price >= effectivePriceMin.value && price <= effectivePriceMax.value
+      // Use Math.floor for min comparison and Math.ceil for max comparison
+      // to handle floating point prices like 419.99 when slider shows 420
+      return Math.ceil(price) >= effectivePriceMin.value && Math.floor(price) <= effectivePriceMax.value
     })
   }
 
@@ -447,7 +449,17 @@ const priceRange = computed(() => {
   if (min === Infinity) min = fullPriceRange.value.min
   if (max === 0) max = fullPriceRange.value.max
 
-  return { min: Math.floor(min), max: Math.ceil(max) }
+  let floorMin = Math.floor(min)
+  let ceilMax = Math.ceil(max)
+
+  // Ensure there's at least a £1 range for the slider to be usable
+  // This handles single-product or same-price scenarios
+  if (ceilMax <= floorMin) {
+    floorMin = Math.max(0, floorMin - 1)
+    ceilMax = floorMin + 1
+  }
+
+  return { min: floorMin, max: ceilMax }
 })
 
 // Price step calculation
@@ -584,34 +596,20 @@ watch(() => props.searchResults, (newResults, oldResults) => {
   }
 }, { immediate: true })
 
-// Auto-clear category if it becomes invalid (no items match)
-watch(availableCategories, (newCategories) => {
-  if (localSelectedCategory.value) {
-    const stillValid = newCategories.some(c => c.value === localSelectedCategory.value)
-    if (!stillValid) {
-      localSelectedCategory.value = null
-      emitFilterUpdate()
-    }
-  }
+// Note: We intentionally do NOT auto-clear category/style when they become "invalid"
+// due to price filter changes. This prevents the frustrating behavior where adjusting
+// the price slider causes your category selection to disappear.
+// Users can see "0 results" and adjust their filters manually if needed.
+
+// Reset price slider when category changes
+watch(localSelectedCategory, () => {
+  // Reset price to the new range based on the selected category
+  // Use nextTick to ensure priceRange has recalculated
+  nextTick(() => {
+    localPriceMin.value = priceRange.value.min
+    localPriceMax.value = priceRange.value.max
+  })
 })
-
-// Auto-clear styles that become invalid
-watch(availableStyles, (newStyles) => {
-  if (localSelectedStyles.value.length > 0) {
-    const validStyleValues = newStyles.map(s => s.value)
-    const validSelectedStyles = localSelectedStyles.value.filter(s => validStyleValues.includes(s))
-
-    if (validSelectedStyles.length !== localSelectedStyles.value.length) {
-      localSelectedStyles.value = validSelectedStyles
-      emitFilterUpdate()
-    }
-  }
-})
-
-// Note: We intentionally do NOT auto-adjust price values when priceRange changes
-// (due to category/style change). If user selected a price range and then selects
-// a category with different prices, they should see 0 results and can adjust manually.
-// This preserves the user's explicit price selection.
 
 // Watch for external filter changes
 watch(() => props.selectedFilters, (newFilters) => {
