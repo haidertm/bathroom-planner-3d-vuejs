@@ -1209,14 +1209,15 @@ const readyProducts = computed(() => {
     }
 
     // Filter by price range
-    // Use ceil/floor to handle floating point prices like 419.99 when slider shows 420
+    // Use epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
     // Only apply if user has actually set a price filter (not just default range)
     if (searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null) {
+      const EPS = 0.01
       filteredResults = filteredResults.filter(item => {
         const price = parseFloat(item.price) || 0
         // Include items with no valid price (price = 0) - don't filter them out
         if (price === 0) return true
-        return Math.ceil(price) >= searchFilters.value.priceMin && Math.floor(price) <= searchFilters.value.priceMax
+        return price + EPS >= searchFilters.value.priceMin && price - EPS <= searchFilters.value.priceMax
       })
     }
 
