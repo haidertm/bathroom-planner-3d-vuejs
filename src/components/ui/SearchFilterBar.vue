@@ -249,6 +249,7 @@ const localPriceMin = ref(null)
 const localPriceMax = ref(null)
 const localSelectedStyles = ref([...(props.selectedFilters.styles || [])])
 const lastSearchResultsLength = ref(0)
+const userHasSetPriceFilter = ref(false) // Track if user manually changed price
 
 // Category display labels
 const categoryDisplayLabels = {
@@ -333,6 +334,8 @@ const getResultsFilteredByAllFilters = (excludeFilter = null) => {
   if (excludeFilter !== 'price' && hasPriceFilter.value) {
     filtered = filtered.filter(result => {
       const price = getProductPrice(result)
+      // Include items with no valid price (price = 0) - don't filter them out
+      if (price === 0) return true
       // Use Math.floor for min comparison and Math.ceil for max comparison
       // to handle floating point prices like 419.99 when slider shows 420
       return Math.ceil(price) >= effectivePriceMin.value && Math.floor(price) <= effectivePriceMax.value
@@ -587,6 +590,7 @@ watch(() => props.searchResults, (newResults, oldResults) => {
     // Reset filters for new search
     localSelectedCategory.value = null
     localSelectedStyles.value = []
+    userHasSetPriceFilter.value = false // Reset the manual price flag
 
     // Initialize price values from the new price range
     localPriceMin.value = priceRange.value.min
@@ -602,13 +606,26 @@ watch(() => props.searchResults, (newResults, oldResults) => {
 // Users can see "0 results" and adjust their filters manually if needed.
 
 // Reset price slider when category changes
-watch(localSelectedCategory, () => {
-  // Reset price to the new range based on the selected category
-  // Use nextTick to ensure priceRange has recalculated
-  nextTick(() => {
-    localPriceMin.value = priceRange.value.min
-    localPriceMax.value = priceRange.value.max
-  })
+watch(localSelectedCategory, (newCategory, oldCategory) => {
+  // When category is cleared, always reset price to full range
+  if (newCategory === null) {
+    nextTick(() => {
+      localPriceMin.value = priceRange.value.min
+      localPriceMax.value = priceRange.value.max
+      userHasSetPriceFilter.value = false
+      emitFilterUpdate() // Notify parent of the reset
+    })
+    return
+  }
+
+  // When selecting a category, only reset price if user hasn't manually set a filter
+  if (!userHasSetPriceFilter.value) {
+    nextTick(() => {
+      localPriceMin.value = priceRange.value.min
+      localPriceMax.value = priceRange.value.max
+      emitFilterUpdate() // Notify parent of the reset
+    })
+  }
 })
 
 // Watch for external filter changes
@@ -667,12 +684,14 @@ const closeAllDropdowns = () => {
   isStyleDropdownOpen.value = false
 }
 
-// Apply filters - always emit effective values (never null)
+// Apply filters - only emit price values when there's an active price filter
 const emitFilterUpdate = () => {
   emit('update:filters', {
     category: localSelectedCategory.value,
-    priceMin: effectivePriceMin.value,
-    priceMax: effectivePriceMax.value,
+    // Only emit price values if user has actively filtered by price
+    // Otherwise emit null so ProductDrawer doesn't apply a price filter
+    priceMin: hasPriceFilter.value ? effectivePriceMin.value : null,
+    priceMax: hasPriceFilter.value ? effectivePriceMax.value : null,
     styles: [...localSelectedStyles.value]
   })
 }
@@ -704,6 +723,7 @@ const clampAndApplyPrice = () => {
   if (localPriceMin.value > localPriceMax.value) {
     localPriceMin.value = localPriceMax.value
   }
+  userHasSetPriceFilter.value = true // User manually changed price
   emitFilterUpdate()
 }
 
@@ -734,6 +754,7 @@ const handleMinSliderInput = (event) => {
     // Ensure min doesn't exceed max
     const maxVal = effectivePriceMax.value
     localPriceMin.value = Math.min(newValue, maxVal)
+    userHasSetPriceFilter.value = true // User manually changed price
     emitFilterUpdate()
   }
 }
@@ -744,6 +765,7 @@ const handleMaxSliderInput = (event) => {
     // Ensure max doesn't go below min
     const minVal = effectivePriceMin.value
     localPriceMax.value = Math.max(newValue, minVal)
+    userHasSetPriceFilter.value = true // User manually changed price
     emitFilterUpdate()
   }
 }
@@ -757,6 +779,7 @@ const clearCategory = () => {
 const clearPrice = () => {
   localPriceMin.value = priceRange.value.min
   localPriceMax.value = priceRange.value.max
+  userHasSetPriceFilter.value = false // Reset the manual price flag
   emitFilterUpdate()
 }
 

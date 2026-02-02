@@ -1187,16 +1187,20 @@ const readyProducts = computed(() => {
 
     // Filter by category
     if (searchFilters.value.category) {
-      filteredResults = filteredResults.filter(item =>
-        item.category === searchFilters.value.category
-      )
+      filteredResults = filteredResults.filter(item => {
+        const itemCategory = item.category || item.searchContext?.category
+        return itemCategory === searchFilters.value.category
+      })
     }
 
     // Filter by price range
     // Use ceil/floor to handle floating point prices like 419.99 when slider shows 420
+    // Only apply if user has actually set a price filter (not just default range)
     if (searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null) {
       filteredResults = filteredResults.filter(item => {
         const price = parseFloat(item.price) || 0
+        // Include items with no valid price (price = 0) - don't filter them out
+        if (price === 0) return true
         return Math.ceil(price) >= searchFilters.value.priceMin && Math.floor(price) <= searchFilters.value.priceMax
       })
     }
