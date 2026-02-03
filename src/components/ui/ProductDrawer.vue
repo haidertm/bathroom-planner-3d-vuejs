@@ -119,10 +119,13 @@
       >
         <FilterChips
             :category="props.selectedCategory"
-            :products="props.categoryProducts"
+            :products="props.allCategoryProducts.length > 0 ? props.allCategoryProducts : props.filteredProducts"
             :selected-filters="props.selectedFilters"
+            :background-filter-count="backgroundFilterCount"
+            :background-filters="backgroundFilters"
             @update:filters="handleFilterUpdate"
             @open-all-filters="openAllFiltersDrawer"
+            @clear-background-filters="clearBackgroundFilters"
         />
       </div>
 
@@ -137,6 +140,7 @@
             :selected-filters="searchFilters"
             :search-query="props.searchQuery"
             @update:filters="handleSearchFilterUpdate"
+            @category-transition="handleCategoryTransition"
         />
       </div>
 
@@ -145,10 +149,12 @@
           v-if="props.selectedCategory !== 'search'"
           :is-open="isAllFiltersOpen"
           :category="props.selectedCategory"
-          :products="props.categoryProducts"
+          :products="props.allCategoryProducts.length > 0 ? props.allCategoryProducts : props.filteredProducts"
           :selected-filters="props.selectedFilters"
+          :background-filters="backgroundFilters"
           @close="closeAllFiltersDrawer"
           @update:filters="handleFilterUpdate"
+          @clear-background-filters="clearBackgroundFilters"
       />
 
       <!-- PROGRESSIVE LOADING: Show ready products + skeletons for loading ones -->
@@ -485,6 +491,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  allCategoryProducts: {
+    type: Array,
+    default: () => []
+  },
   // Constraint checking props
   roomWidth: {
     type: Number,
@@ -509,10 +519,17 @@ const props = defineProps({
 })
 
 // Emits - ADD 'back' event for better control
-const emit = defineEmits(['close', 'add-to-room', 'retry-loading', 'update:filters'])
+const emit = defineEmits(['close', 'add-to-room', 'retry-loading', 'update:filters', 'category-transition', 'clear-background-filters', 'expand-search-constraint'])
 
 // Handle filter updates from FilterChips component
 const handleFilterUpdate = (newFilters) => {
+  // If we have search result constraint active and user is changing filters,
+  // expand to show all category products
+  if (searchResultProductIds.value.size > 0) {
+    emit('expand-search-constraint')
+    searchResultProductIds.value = new Set()
+  }
+
   emit('update:filters', newFilters)
 }
 
@@ -535,6 +552,18 @@ const closeAllFiltersDrawer = () => {
 // Search filter state (for SearchFilterBar)
 const searchFilters = ref({ ...INITIAL_SEARCH_FILTERS })
 
+// Background filters state - preserved from search view when transitioning to category
+// These filters (style, price) remain active but are hidden from the main chip row
+const backgroundFilters = ref({
+  style: [],
+  priceMin: null,
+  priceMax: null
+})
+
+// Store search result product IDs when transitioning from search to category
+// This limits the category view to only show products that were in the search results
+const searchResultProductIds = ref(new Set())
+
 // Handle search filter updates from SearchFilterBar
 const handleSearchFilterUpdate = (newFilters) => {
   searchFilters.value = { ...newFilters }
@@ -556,6 +585,69 @@ const handleSearchFilterUpdate = (newFilters) => {
       }
     })
   }
+}
+
+// Handle category transition from search view - preserves style/price as background filters
+const handleCategoryTransition = (transitionData) => {
+  const { category, preservedFilters } = transitionData
+
+  // Use preservedFilters from the event - SearchFilterBar computes these at click time
+  // Store the preserved filters (style, price) as background filters
+  backgroundFilters.value = {
+    style: preservedFilters.styles || [],
+    priceMin: preservedFilters.priceMin,
+    priceMax: preservedFilters.priceMax
+  }
+
+  // CRITICAL: Capture the product IDs from current search results for the selected category
+  // This ensures category view only shows products that were in the search results
+  const productIds = new Set()
+  const currentSearchResults = readyProducts.value || []
+
+  currentSearchResults.forEach(item => {
+    // Extract product ID from search context
+    const productId = item.searchContext?.originalProduct?.id || item.id
+    if (productId) {
+      productIds.add(productId)
+    }
+  })
+
+  searchResultProductIds.value = productIds
+
+  // Emit to parent to handle the category change
+  emit('category-transition', {
+    category,
+    backgroundFilters: backgroundFilters.value,
+    searchResultProductIds: Array.from(productIds) // Send as array for easier handling
+  })
+}
+
+// Get count of active background filters (for badge display)
+const backgroundFilterCount = computed(() => {
+  let count = 0
+
+  // Count style filters
+  if (backgroundFilters.value.style && backgroundFilters.value.style.length > 0) {
+    count += backgroundFilters.value.style.length
+  }
+
+  // Count price filter (as 1 if either min or max is set)
+  if (backgroundFilters.value.priceMin !== null || backgroundFilters.value.priceMax !== null) {
+    count += 1
+  }
+
+  return count
+})
+
+// Clear background filters
+const clearBackgroundFilters = () => {
+  backgroundFilters.value = {
+    style: [],
+    priceMin: null,
+    priceMax: null
+  }
+  // Emit to parent (sidebar) to also clear the filters from selectedFilters
+  emit('clear-background-filters')
 }
 
 // Clear search filters
@@ -895,6 +987,12 @@ watch(() => props.isOpen, (isOpen) => {
     productPreloading.value.clear();
     // Reset search filters when drawer closes
     searchFilters.value = { ...INITIAL_SEARCH_FILTERS };
+    // Reset background filters when drawer closes
+    backgroundFilters.value = {
+      style: [],
+      priceMin: null,
+      priceMax: null
+    };
   }
 });
 
@@ -1249,8 +1347,16 @@ const readyProducts = computed(() => {
     // If filteredProducts is empty but filters are active, show "no results" message
     // If filteredProducts has items, show them
 
+    const filtersActive = hasActiveFilters(props.selectedFilters)
+    console.log('🔍 readyProducts - Category view:', {
+      category: props.selectedCategory,
+      hasActiveFilters: filtersActive,
+      selectedFilters: props.selectedFilters,
+      filteredProductsCount: props.filteredProducts.length
+    })
+
     // When filters are active, show each matching variant as a direct-add item
-    if (hasActiveFilters(props.selectedFilters)) {
+    if (filtersActive) {
       const directAddItems = []
 
       for (const product of props.filteredProducts) {

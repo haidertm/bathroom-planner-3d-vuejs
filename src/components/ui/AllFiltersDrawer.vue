@@ -292,6 +292,44 @@
             </div>
           </div>
 
+          <!-- Background Filters Section (preserved from search view) -->
+          <div v-if="hasBackgroundFilters" class="filter-section background-filters-section">
+            <div class="background-filters-header">
+              <span class="background-filters-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                Filters from Search
+              </span>
+              <button class="background-filters-clear" @click="handleClearBackgroundFilters">
+                Clear
+              </button>
+            </div>
+            <div class="background-filters-content">
+              <!-- Style filters -->
+              <div v-if="backgroundFilters.style && backgroundFilters.style.length > 0" class="background-filter-item">
+                <span class="background-filter-label">Style:</span>
+                <span class="background-filter-values">{{ backgroundFilters.style.join(', ') }}</span>
+              </div>
+              <!-- Price filter -->
+              <div v-if="backgroundFilters.priceMin !== null || backgroundFilters.priceMax !== null" class="background-filter-item">
+                <span class="background-filter-label">Price:</span>
+                <span class="background-filter-values">
+                  <template v-if="backgroundFilters.priceMin !== null && backgroundFilters.priceMax !== null">
+                    £{{ backgroundFilters.priceMin }} - £{{ backgroundFilters.priceMax }}
+                  </template>
+                  <template v-else-if="backgroundFilters.priceMin !== null">
+                    From £{{ backgroundFilters.priceMin }}
+                  </template>
+                  <template v-else>
+                    Up to £{{ backgroundFilters.priceMax }}
+                  </template>
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- Empty state when no filters available -->
           <div v-if="primaryFilters.length === 0 && secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
             <p>No filters available for this category.</p>
@@ -313,10 +351,15 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive } from 'vue'
+import { ref, computed, watch, reactive, defineOptions } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters, isRangeFilter, RANGE_FILTERS } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds } from '../../utils/filters'
+
+// Disable attribute inheritance since we use Teleport as root
+defineOptions({
+  inheritAttrs: false
+})
 
 const gtm = useGtm()
 
@@ -336,10 +379,19 @@ const props = defineProps({
   selectedFilters: {
     type: Object,
     default: () => createEmptyFilters()
+  },
+  // Background filters preserved from search view transition
+  backgroundFilters: {
+    type: Object,
+    default: () => ({
+      style: [],
+      priceMin: null,
+      priceMax: null
+    })
   }
 })
 
-const emit = defineEmits(['close', 'update:filters'])
+const emit = defineEmits(['close', 'update:filters', 'clear-background-filters'])
 
 // Compute min price from products
 const minPrice = computed(() => {
@@ -794,6 +846,37 @@ const hasProductsWithPrices = computed(() => {
   })
 })
 
+// Background filters - check if any are active
+const hasBackgroundFilters = computed(() => {
+  const bg = props.backgroundFilters
+  if (!bg) return false
+
+  const hasStyle = bg.style && bg.style.length > 0
+  const hasPrice = bg.priceMin !== null || bg.priceMax !== null
+
+  return hasStyle || hasPrice
+})
+
+// Get background filter count for display
+const backgroundFilterCount = computed(() => {
+  const bg = props.backgroundFilters
+  if (!bg) return 0
+
+  let count = 0
+  if (bg.style && bg.style.length > 0) {
+    count += bg.style.length
+  }
+  if (bg.priceMin !== null || bg.priceMax !== null) {
+    count += 1
+  }
+  return count
+})
+
+// Clear background filters handler
+const handleClearBackgroundFilters = () => {
+  emit('clear-background-filters')
+}
+
 // Count of filtered results - count matching VARIANTS, not just products
 const filteredCount = computed(() => {
   const filteredProducts = filterProducts(props.products, localFilters.value)
@@ -949,20 +1032,38 @@ const applyFilters = () => {
   // Create a copy of localFilters for emission
   const filtersToEmit = { ...localFilters.value }
 
+  // Check if we have background filters for price
+  const hasBackgroundPrice = props.backgroundFilters &&
+    (props.backgroundFilters.priceMin !== null || props.backgroundFilters.priceMax !== null)
+
   // If price values match the dynamic bounds (user didn't change them),
   // normalize to EMPTY_FILTERS values so they're not treated as active filters
-  if (localFilters.value.priceMin === minPrice.value && localFilters.value.priceMax === maxPrice.value) {
+  // EXCEPTION: Don't clear if the price came from background filters (preserve them)
+  if (!hasBackgroundPrice &&
+      localFilters.value.priceMin === minPrice.value &&
+      localFilters.value.priceMax === maxPrice.value) {
     filtersToEmit.priceMin = EMPTY_FILTERS.priceMin
     filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
+    console.log('🧹 Clearing price filter as it matches bounds (no background filters)')
   }
 
-// If dimension range values match the dynamic bounds, normalize to undefined
+  // If dimension range values match the dynamic bounds, normalize to undefined
+  // FIXED: Also clear if values are undefined (user never set them)
   for (const rangeKey of RANGE_FILTERS) {
     const bounds = rangeBounds.value[rangeKey]
     if (bounds) {
       const minKey = `${rangeKey}Min`
       const maxKey = `${rangeKey}Max`
-      if (localFilters.value[minKey] === bounds.min && localFilters.value[maxKey] === bounds.max) {
+      const minValue = localFilters.value[minKey]
+      const maxValue = localFilters.value[maxKey]
+
+      // Clear range filter if:
+      // 1. Values are undefined (never set), OR
+      // 2. Values match the bounds exactly
+      const minMatchesBounds = minValue === undefined || minValue === bounds.min
+      const maxMatchesBounds = maxValue === undefined || maxValue === bounds.max
+
+      if (minMatchesBounds && maxMatchesBounds) {
         filtersToEmit[minKey] = undefined
         filtersToEmit[maxKey] = undefined
       }
@@ -1314,6 +1415,81 @@ const closeDrawer = () => {
 /* Dynamic z-index for overlapping slider handles */
 .range-input.on-top {
   z-index: 2;
+}
+
+/* Background Filters Section - preserved from search view */
+.background-filters-section {
+  background-color: #fef3f8;
+  border: 1px solid #f9d5e7;
+  border-radius: 8px;
+  margin: 0 16px 16px 16px;
+  padding: 0;
+}
+
+.background-filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f9d5e7;
+}
+
+.background-filters-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #EC048C;
+  font-family: Arial, sans-serif;
+}
+
+.background-filters-title svg {
+  flex-shrink: 0;
+}
+
+.background-filters-clear {
+  padding: 4px 10px;
+  background-color: #ffffff;
+  border: 1px solid #EC048C;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #EC048C;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  transition: all 0.15s ease;
+}
+
+.background-filters-clear:hover {
+  background-color: #EC048C;
+  color: #ffffff;
+}
+
+.background-filters-content {
+  padding: 12px 16px;
+}
+
+.background-filter-item {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  font-family: Arial, sans-serif;
+  margin-bottom: 8px;
+}
+
+.background-filter-item:last-child {
+  margin-bottom: 0;
+}
+
+.background-filter-label {
+  font-weight: 500;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.background-filter-values {
+  color: #374151;
 }
 
 .no-filters-message {
