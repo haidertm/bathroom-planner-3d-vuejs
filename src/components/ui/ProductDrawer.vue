@@ -993,6 +993,8 @@ watch(() => props.isOpen, (isOpen) => {
       priceMin: null,
       priceMax: null
     };
+    // Clear search result constraint to avoid stale constraints
+    searchResultProductIds.value = new Set();
   }
 });
 

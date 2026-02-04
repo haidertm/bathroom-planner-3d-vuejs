@@ -149,9 +149,6 @@ const secondaryActiveCount = computed(() => {
     }
   }
 
-  // Add background filters count (preserved from search view transition)
-  count += props.backgroundFilterCount
-
   return count
 })
 

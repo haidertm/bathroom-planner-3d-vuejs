@@ -874,6 +874,17 @@ const backgroundFilterCount = computed(() => {
 
 // Clear background filters handler
 const handleClearBackgroundFilters = () => {
+  // Track clear background filters in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'clear_background_filters',
+      category: 'Filters',
+      action: 'Clear Background Filters',
+      label: 'Background Filters from Search',
+      value: backgroundFilterCount.value
+    })
+  }
+
   emit('clear-background-filters')
 }
 
@@ -1044,7 +1055,6 @@ const applyFilters = () => {
       localFilters.value.priceMax === maxPrice.value) {
     filtersToEmit.priceMin = EMPTY_FILTERS.priceMin
     filtersToEmit.priceMax = EMPTY_FILTERS.priceMax
-    console.log('🧹 Clearing price filter as it matches bounds (no background filters)')
   }
 
   // If dimension range values match the dynamic bounds, normalize to undefined
