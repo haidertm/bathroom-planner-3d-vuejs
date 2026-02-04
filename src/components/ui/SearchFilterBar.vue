@@ -57,7 +57,7 @@
         </div>
         <div class="dropdown-options">
           <label
-            v-for="category in availableCategories"
+            v-for="(category, index) in availableCategories"
             :key="category.value"
             class="dropdown-option"
           >
@@ -66,6 +66,7 @@
               :value="category.value"
               v-model="localSelectedCategory"
               @change="applyCategory"
+              :ref="index === 0 ? 'firstCategoryOption' : undefined"
             />
             <span class="option-label">{{ category.label }}</span>
             <span class="option-count">({{ category.count }})</span>
@@ -91,6 +92,7 @@
               <div class="price-input-wrapper">
                 <span class="currency">£</span>
                 <input
+                  ref="firstPriceOption"
                   type="number"
                   :value="displayPriceMin"
                   :min="priceRange.min"
@@ -178,7 +180,7 @@
         </div>
         <div class="dropdown-options">
           <label
-            v-for="style in availableStyles"
+            v-for="(style, index) in availableStyles"
             :key="style.value"
             class="dropdown-option"
           >
@@ -187,6 +189,7 @@
               :value="style.value"
               v-model="localSelectedStyles"
               @change="applyStyle"
+              :ref="index === 0 ? 'firstStyleOption' : undefined"
             />
             <span class="option-label">{{ style.label }}</span>
             <span class="option-count">({{ style.count }})</span>
@@ -239,6 +242,14 @@ const emit = defineEmits(['update:filters', 'category-transition'])
 const categoryChipRef = ref(null)
 const priceChipRef = ref(null)
 const styleChipRef = ref(null)
+
+// Dropdown first option refs for focus management
+const firstCategoryOption = ref(null)
+const firstPriceOption = ref(null)
+const firstStyleOption = ref(null)
+
+// Focus restoration - track which element opened the dropdown
+const lastFocusedElement = ref(null)
 
 // Dropdown positions
 const categoryDropdownPos = ref({ top: 0, left: 0 })
@@ -666,6 +677,11 @@ watch(() => props.selectedFilters, (newFilters) => {
 
 // Toggle dropdowns
 const toggleCategoryDropdown = async () => {
+  // Store the current focused element for restoration
+  if (!isCategoryDropdownOpen.value) {
+    lastFocusedElement.value = document.activeElement
+  }
+
   isPriceDropdownOpen.value = false
   isStyleDropdownOpen.value = false
   isCategoryDropdownOpen.value = !isCategoryDropdownOpen.value
@@ -673,10 +689,20 @@ const toggleCategoryDropdown = async () => {
   if (isCategoryDropdownOpen.value) {
     await nextTick()
     categoryDropdownPos.value = getDropdownPosition(categoryChipRef.value)
+
+    // Focus first option for accessibility
+    if (firstCategoryOption.value) {
+      firstCategoryOption.value.focus()
+    }
   }
 }
 
 const togglePriceDropdown = async () => {
+  // Store the current focused element for restoration
+  if (!isPriceDropdownOpen.value) {
+    lastFocusedElement.value = document.activeElement
+  }
+
   isCategoryDropdownOpen.value = false
   isStyleDropdownOpen.value = false
   isPriceDropdownOpen.value = !isPriceDropdownOpen.value
@@ -684,10 +710,20 @@ const togglePriceDropdown = async () => {
   if (isPriceDropdownOpen.value) {
     await nextTick()
     priceDropdownPos.value = getDropdownPosition(priceChipRef.value)
+
+    // Focus first input for accessibility
+    if (firstPriceOption.value) {
+      firstPriceOption.value.focus()
+    }
   }
 }
 
 const toggleStyleDropdown = async () => {
+  // Store the current focused element for restoration
+  if (!isStyleDropdownOpen.value) {
+    lastFocusedElement.value = document.activeElement
+  }
+
   isCategoryDropdownOpen.value = false
   isPriceDropdownOpen.value = false
   isStyleDropdownOpen.value = !isStyleDropdownOpen.value
@@ -695,13 +731,28 @@ const toggleStyleDropdown = async () => {
   if (isStyleDropdownOpen.value) {
     await nextTick()
     styleDropdownPos.value = getDropdownPosition(styleChipRef.value)
+
+    // Focus first checkbox for accessibility
+    if (firstStyleOption.value) {
+      firstStyleOption.value.focus()
+    }
   }
 }
 
 const closeAllDropdowns = () => {
+  const wasOpen = isCategoryDropdownOpen.value || isPriceDropdownOpen.value || isStyleDropdownOpen.value
+
   isCategoryDropdownOpen.value = false
   isPriceDropdownOpen.value = false
   isStyleDropdownOpen.value = false
+
+  // Restore focus to the element that opened the dropdown
+  if (wasOpen && lastFocusedElement.value) {
+    nextTick(() => {
+      lastFocusedElement.value?.focus()
+      lastFocusedElement.value = null
+    })
+  }
 }
 
 // Apply filters - only emit price values when there's an active price filter
@@ -871,10 +922,50 @@ const clearStyle = () => {
   emitFilterUpdate()
 }
 
-// Close dropdowns on escape key
+// Handle keyboard navigation and focus trapping
 const handleKeydown = (e) => {
+  // Close dropdowns on escape key
   if (e.key === 'Escape') {
     closeAllDropdowns()
+    return
+  }
+
+  // Focus trap: Handle Tab and Shift+Tab within open dropdowns
+  if (e.key === 'Tab') {
+    const isAnyDropdownOpen = isCategoryDropdownOpen.value || isPriceDropdownOpen.value || isStyleDropdownOpen.value
+
+    if (isAnyDropdownOpen) {
+      // Get all focusable elements in the open dropdown
+      let dropdownSelector = ''
+      if (isCategoryDropdownOpen.value) {
+        dropdownSelector = '.sf-filter-dropdown-portal:has(input[type="radio"])'
+      } else if (isPriceDropdownOpen.value) {
+        dropdownSelector = '.sf-price-dropdown'
+      } else if (isStyleDropdownOpen.value) {
+        dropdownSelector = '.sf-filter-dropdown-portal:has(input[type="checkbox"])'
+      }
+
+      const dropdown = document.querySelector(dropdownSelector)
+      if (dropdown) {
+        const focusableElements = dropdown.querySelectorAll(
+          'input, button, [tabindex]:not([tabindex="-1"])'
+        )
+        const focusableArray = Array.from(focusableElements)
+        const firstElement = focusableArray[0]
+        const lastElement = focusableArray[focusableArray.length - 1]
+
+        // If we're at the last element and Tab is pressed (forward), loop to first
+        if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault()
+          firstElement?.focus()
+        }
+        // If we're at the first element and Shift+Tab is pressed (backward), loop to last
+        else if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault()
+          lastElement?.focus()
+        }
+      }
+    }
   }
 }
 
