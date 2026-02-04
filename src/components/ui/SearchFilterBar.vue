@@ -232,7 +232,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:filters'])
+const emit = defineEmits(['update:filters', 'category-transition'])
 
 // Chip refs for positioning
 const categoryChipRef = ref(null)
@@ -713,6 +713,30 @@ const applyCategory = () => {
       label: localSelectedCategory.value || 'cleared'
     })
   }
+
+  // If a category is selected, emit the transition event with preserved filters
+  // This triggers the transition from generic search view to category-specific view
+  if (localSelectedCategory.value) {
+    // FIXED: Use userHasSetPriceFilter to determine if price should be preserved
+    // The hasPriceFilter computed can be false when the filtered results have a narrow price range
+    // but the user still manually set a price filter that should be preserved
+    const shouldPreservePrice = userHasSetPriceFilter.value
+
+    const preservedFilters = {
+      priceMin: shouldPreservePrice ? localPriceMin.value : null,
+      priceMax: shouldPreservePrice ? localPriceMax.value : null,
+      styles: [...localSelectedStyles.value]
+    }
+
+    emit('category-transition', {
+      category: localSelectedCategory.value,
+      preservedFilters
+    })
+    // Don't emit filter update or close dropdown - the parent will handle the transition
+    isCategoryDropdownOpen.value = false
+    return
+  }
+
   emitFilterUpdate()
   isCategoryDropdownOpen.value = false
 }
