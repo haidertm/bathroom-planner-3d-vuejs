@@ -14,11 +14,11 @@
     <button
       class="all-filters-btn"
       :class="{
-        'has-filters': totalActiveFilters > 0 || hasBackgroundFilters,
-        'has-background-filters': hasBackgroundFilters
+        'has-filters': totalActiveFilters > 0 || props.backgroundFilterCount > 0,
+        'has-background-filters': props.backgroundFilterCount > 0
       }"
       @click="openAllFiltersModal"
-      :title="hasBackgroundFilters ? `${props.backgroundFilterCount} filter(s) from search still applied` : ''"
+      :title="props.backgroundFilterCount > 0 ? `${props.backgroundFilterCount} filter(s) from search still applied` : ''"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -150,11 +150,6 @@ const secondaryActiveCount = computed(() => {
   }
 
   return count
-})
-
-// Check if there are any active background filters
-const hasBackgroundFilters = computed(() => {
-  return props.backgroundFilterCount > 0
 })
 
 // Update a specific filter

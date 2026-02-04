@@ -614,6 +614,27 @@ const handleCategoryTransition = (transitionData) => {
 
   searchResultProductIds.value = productIds
 
+  // Track category transition in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'category_transition',
+      category: 'Search Filters',
+      action: 'Category Transition',
+      selectedCategory: category,
+      searchResultCount: productIds.size,
+      backgroundFilters: {
+        stylesCount: backgroundFilters.value.style?.length || 0,
+        priceMin: backgroundFilters.value.priceMin,
+        priceMax: backgroundFilters.value.priceMax
+      },
+      preservedFilters: {
+        styles: preservedFilters.styles || [],
+        priceMin: preservedFilters.priceMin,
+        priceMax: preservedFilters.priceMax
+      }
+    })
+  }
+
   // Emit to parent to handle the category change
   emit('category-transition', {
     category,
@@ -1350,12 +1371,6 @@ const readyProducts = computed(() => {
     // If filteredProducts has items, show them
 
     const filtersActive = hasActiveFilters(props.selectedFilters)
-    console.log('🔍 readyProducts - Category view:', {
-      category: props.selectedCategory,
-      hasActiveFilters: filtersActive,
-      selectedFilters: props.selectedFilters,
-      filteredProductsCount: props.filteredProducts.length
-    })
 
     // When filters are active, show each matching variant as a direct-add item
     if (filtersActive) {
