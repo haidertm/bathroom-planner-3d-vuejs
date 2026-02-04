@@ -207,6 +207,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
+import { PRICE_EPS } from '../../utils/filters'
 
 // Initialize GTM
 const gtm = useGtm()
@@ -302,15 +303,28 @@ const styleDropdownStyle = computed(() => ({
   left: `${styleDropdownPos.value.left}px`
 }))
 
+// Helper: Normalize price string by removing currency symbols, commas, and whitespace
+const normalizePrice = (price) => {
+  if (typeof price === 'number') return price
+  if (typeof price === 'string') {
+    // Remove currency symbols (£, $, €, etc.), commas, and whitespace
+    // Keep only digits, decimal point, and optional leading minus sign
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
+    return isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
 // Helper: Get product price for filtering
 const getProductPrice = (result) => {
-  const price = parseFloat(result.price) || 0
+  const price = normalizePrice(result.price)
   if (price > 0) return price
 
   // Check variant price
   const variant = result.searchContext?.matchingVariant
   if (variant?.price) {
-    const variantPrice = parseFloat(variant.price) || 0
+    const variantPrice = normalizePrice(variant.price)
     if (variantPrice > 0) return variantPrice
   }
   return 0
@@ -341,13 +355,12 @@ const getResultsFilteredByAllFilters = (excludeFilter = null) => {
 
   // Apply price filter (if not excluded and user has modified the price)
   if (excludeFilter !== 'price' && hasPriceFilter.value) {
-    const EPS = 0.01
     filtered = filtered.filter(result => {
       const price = getProductPrice(result)
       // Include items with no valid price (price = 0) - don't filter them out
       if (price === 0) return true
       // Use epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
-      return price + EPS >= effectivePriceMin.value && price - EPS <= effectivePriceMax.value
+      return price + PRICE_EPS >= effectivePriceMin.value && price - PRICE_EPS <= effectivePriceMax.value
     })
   }
 
@@ -417,7 +430,7 @@ const fullPriceRange = computed(() => {
   let max = 0
 
   props.searchResults.forEach(result => {
-    const price = parseFloat(result.price) || 0
+    const price = normalizePrice(result.price)
     if (price > 0) {
       min = Math.min(min, price)
       max = Math.max(max, price)
@@ -426,7 +439,7 @@ const fullPriceRange = computed(() => {
     // Also check variants for price range
     const variant = result.searchContext?.matchingVariant
     if (variant?.price) {
-      const variantPrice = parseFloat(variant.price) || 0
+      const variantPrice = normalizePrice(variant.price)
       if (variantPrice > 0) {
         min = Math.min(min, variantPrice)
         max = Math.max(max, variantPrice)
@@ -450,7 +463,7 @@ const priceRange = computed(() => {
   let max = 0
 
   filteredResults.forEach(result => {
-    const price = parseFloat(result.price) || 0
+    const price = normalizePrice(result.price)
     if (price > 0) {
       min = Math.min(min, price)
       max = Math.max(max, price)
