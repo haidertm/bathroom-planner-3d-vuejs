@@ -266,11 +266,15 @@ const activeSlider = ref(null)
 
 // Local filter values
 const localSelectedCategory = ref(props.selectedFilters.category || null)
-const localPriceMin = ref(null)
-const localPriceMax = ref(null)
+const localPriceMin = ref(props.selectedFilters.priceMin ?? null)
+const localPriceMax = ref(props.selectedFilters.priceMax ?? null)
 const localSelectedStyles = ref([...(props.selectedFilters.styles || [])])
 const lastSearchQuery = ref(props.searchQuery || '') // Track search query to detect new searches
-const userHasSetPriceFilter = ref(false) // Track if user manually changed price
+// Track if user manually changed price - initialize based on whether props have price filters
+const userHasSetPriceFilter = ref(
+  props.selectedFilters.priceMin !== null && props.selectedFilters.priceMin !== undefined &&
+  props.selectedFilters.priceMax !== null && props.selectedFilters.priceMax !== undefined
+)
 
 // Category display labels
 const categoryDisplayLabels = {
@@ -673,7 +677,13 @@ watch(() => props.selectedFilters, (newFilters) => {
   if (JSON.stringify(newFilters.styles) !== JSON.stringify(localSelectedStyles.value)) {
     localSelectedStyles.value = [...(newFilters.styles || [])]
   }
-}, { deep: true })
+
+  // Update userHasSetPriceFilter based on whether external filters have price values
+  // This prevents external changes from being overwritten during category transitions
+  const hasPriceFilters = newFilters.priceMin !== null && newFilters.priceMin !== undefined &&
+                          newFilters.priceMax !== null && newFilters.priceMax !== undefined
+  userHasSetPriceFilter.value = hasPriceFilters
+}, { deep: true, immediate: true })
 
 // Toggle dropdowns
 const toggleCategoryDropdown = async () => {
@@ -790,6 +800,24 @@ const applyCategory = () => {
       priceMin: shouldPreservePrice ? localPriceMin.value : null,
       priceMax: shouldPreservePrice ? localPriceMax.value : null,
       styles: [...localSelectedStyles.value]
+    }
+
+    // Track category transition as navigation event
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'navigation',
+        category: 'Navigation',
+        action: 'category_transition',
+        label: localSelectedCategory.value,
+        fromView: 'search',
+        toView: 'category',
+        preservedFilters: {
+          hasPriceFilter: shouldPreservePrice,
+          priceMin: preservedFilters.priceMin,
+          priceMax: preservedFilters.priceMax,
+          stylesCount: preservedFilters.styles?.length || 0
+        }
+      })
     }
 
     emit('category-transition', {
@@ -971,11 +999,12 @@ const handleKeydown = (e) => {
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
-  // Initialize price values if not already set
-  if (localPriceMin.value === null) {
+  // Initialize price values if not already set from props
+  // Only set to range defaults if props didn't provide values
+  if (localPriceMin.value === null && !userHasSetPriceFilter.value) {
     localPriceMin.value = priceRange.value.min
   }
-  if (localPriceMax.value === null) {
+  if (localPriceMax.value === null && !userHasSetPriceFilter.value) {
     localPriceMax.value = priceRange.value.max
   }
 })
