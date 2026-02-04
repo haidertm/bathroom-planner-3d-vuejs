@@ -165,7 +165,6 @@ class TextureManager {
       },
       (progress: ProgressEvent<EventTarget>) => {
         if (progress.lengthComputable) {
-          console.log(`Loading texture: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
         }
       },
       (error: unknown) => {
@@ -347,7 +346,6 @@ class TextureManager {
     });
 
     await Promise.all(promises);
-    console.log(`Preloaded ${promises.length} textures`);
   }
 
   // Method to update material quality based on performance

@@ -164,8 +164,6 @@ const loadDesign = (design) => {
       preview: null
     }
 
-    console.log('💾 Design data to load:', designToLoad)
-
     // Store the design to load in localStorage
     localStorage.setItem('design-to-load', JSON.stringify(designToLoad))
     // Try router navigation first

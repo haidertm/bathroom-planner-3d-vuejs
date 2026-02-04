@@ -100,11 +100,9 @@ const DEFAULT_MOVEMENT_CONFIGS: Record<ComponentType, MovementConfig> = {
 
 // ✅ NEW: Enhanced function to get movement config with proper hierarchy
 export const getMovementConfig = (objectType: ComponentType, item?: BathroomItem): MovementConfig => {
-  console.log('🔧 Getting movement config for:', objectType, item?.sku);
 
   // Priority 1: Check if specific product variant has movement config
   if (item?.model?.movement) {
-    console.log('✅ Using product-specific movement config:', item.model.movement);
     return item.model.movement;
   }
 
@@ -112,7 +110,6 @@ export const getMovementConfig = (objectType: ComponentType, item?: BathroomItem
   if (item?.sku) {
     const productMovement = getMovementFromProductData(item.sku, objectType);
     if (productMovement) {
-      console.log('✅ Using productData movement config for SKU:', item.sku, productMovement);
       return productMovement;
     }
   }
@@ -145,7 +142,6 @@ const getMovementFromProductData = (sku: string, objectType: ComponentType): Mov
     if (product.variants) {
       for (const variant of product.variants) {
         if (variant.sku === sku && variant.movement) {
-          console.log('📦 Found movement config in productData:', variant.movement);
           return variant.movement;
         }
       }
@@ -215,7 +211,6 @@ export const getWallSnappingObjectTypes = (): ComponentType[] => {
 
 // 🆕 NEW: Helper method to get orientation for an item (unchanged)
 export const getOrientationForItem = (item: BathroomItem): OrientationConfig => {
-  console.log('getTheOrientationForItem called with item:', item);
   // If orientation is stored directly on the item
   if (item.model?.orientation) {
     return item.model?.orientation as OrientationConfig;
@@ -225,13 +220,11 @@ export const getOrientationForItem = (item: BathroomItem): OrientationConfig => 
   if (item.sku) {
     const orientation = getOrientationFromProductData(item.sku, item.type);
     if (orientation) {
-      console.log('Using orientation from product data:', orientation);
       return orientation;
     }
   }
 
   // Priority 3: Fall back to default configuration
-  console.log('⚠️ Using DEFAULT_ORIENTATION fallback:', DEFAULT_ORIENTATION);
   return { ...DEFAULT_ORIENTATION };
 }
 
@@ -267,7 +260,6 @@ export const getObjectRotationForWall = (
   wallType: 'north' | 'south' | 'east' | 'west',
   orientation?: OrientationConfig
 ): number => {
-  console.log('selectedOrientationWouldBe>>>:::', orientation);
   if (!orientation) {
     console.warn(`No orientation config found for ${objectType}, using default face_into_room`);
     return WALL_ROTATIONS.face_into_room[wallType];

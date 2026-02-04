@@ -1083,7 +1083,6 @@ const handleProductDrawerClose = () => {
 }
 
 const handleAddToRoom = (product) => {
-  console.log('🔍 Adding product to room:', product)
 
   // ENHANCED: Validate item structure before emitting
   if (!product) {
@@ -1109,12 +1108,6 @@ const handleAddToRoom = (product) => {
   const componentType = product.type || 'Unknown'
 
   // ENHANCED: Pass the complete item structure
-  console.log('✅ Adding item with complete product data:', {
-    type: product.type,
-    hasSelectedVariant: !!product.selectedVariant,
-    selectedVariantSku: product.selectedVariant?.sku,
-    selectedVariantName: product.selectedVariant?.name
-  })
 
   // Emit to parent component to add the item
   emit('add', componentType, product)

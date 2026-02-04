@@ -116,11 +116,6 @@ const bathHasTowelRailNearby = (
     const maxZ = ((bathDimensions.depth || 70) / 2) + threshold;
 
     if (dx < maxX && dz < maxZ) {
-      console.log('🔥 Bath already has towel rail nearby:', {
-        bathPosition: [bathX, bathZ],
-        railPosition: [railX, railZ],
-        distance: { dx, dz }
-      });
       return true;
     }
   }
@@ -259,14 +254,9 @@ const hasSpaceAtPosition = (
       );
 
       if (wallCollision) {
-        console.log(`🚫 Wall collision detected for ${objectType} at`, {
-          x: position.x.toFixed(1),
-          z: position.z.toFixed(1)
-        });
         return false;
       }
     } else {
-      console.log(`✅ Skipping wall collision for corner-install ${objectType}`);
     }
   }
 
@@ -293,10 +283,6 @@ const hasSpaceAtPosition = (
   );
 
   if (itemCollision) {
-    console.log(`🚫 Item collision detected for ${objectType} at`, {
-      x: position.x.toFixed(1),
-      z: position.z.toFixed(1)
-    });
     return false;
   }
 
@@ -459,17 +445,13 @@ export const positionMirror = (
         const [selectedVanity] = sortedVanities.splice(selectedVanityIndex, 1);
         sortedVanities.unshift(selectedVanity);
       }
-      console.log('🪞 Prioritizing selected vanity for mirror placement:', selectedItemId);
     }
   }
 
   // If no vanity is selected, reverse to prioritize last added
   if (!selectedVanityFound) {
     sortedVanities.reverse();
-    console.log('🪞 Prioritizing last added vanity for mirror placement (reversed order)');
   }
-
-  console.log('🪞 Vanity order for mirror placement:', sortedVanities.map(v => v.id));
 
   // Primary: Find vanity without a mirror above it
   for (const vanity of sortedVanities) {
@@ -527,14 +509,6 @@ export const positionMirror = (
       notchWidth,
       notchHeight
     )) {
-      console.log('🪞 Auto-position: Mirror placed above vanity', {
-        vanityTopY,
-        mirrorFloorOffset,
-        desiredVisualBottom,
-        mirrorSceneY: mirrorY,
-        actualVisualBottom: mirrorY + mirrorFloorOffset,
-        note: 'Mirror floorOffset is subtracted so visual bottom aligns with vanityTop + 20cm gap'
-      });
       return {
         position: mirrorPosition,
         rotation: vanity.rotation || 0,
@@ -610,7 +584,6 @@ export const positionMirror = (
     notchWidth,
     notchHeight
   )) {
-    console.log('🪞 Auto-position: Mirror placed on', targetWall, 'wall at eye level (fallback)');
     return {
       position: fallbackPosition,
       rotation: fallbackRotation,
@@ -694,7 +667,6 @@ export const positionToilet = (
       notchWidth,
       notchHeight
     )) {
-      console.log('🚽 Auto-position: Toilet placed to right of vanity');
       return {
         position: rightPosition,
         rotation: vanity.rotation || 0,
@@ -716,7 +688,6 @@ export const positionToilet = (
       notchWidth,
       notchHeight
     )) {
-      console.log('🚽 Auto-position: Toilet placed to left of vanity');
       return {
         position: leftPosition,
         rotation: vanity.rotation || 0,
@@ -731,7 +702,6 @@ export const positionToilet = (
 
   if (wallResult) {
     const position = { ...wallResult.position, y: spawnHeight };
-    console.log('🚽 Auto-position: Toilet placed on', wallResult.wall, 'wall (fallback)');
     return {
       position,
       rotation: wallResult.rotation,
@@ -764,17 +734,9 @@ export const positionBath = (
   const spawnHeight = bathVariant?.spawnHeight || 0;
 
   // Debug logging for bath placement
-  console.log('🛁 positionBath called with:', {
-    sku: bathVariant?.sku,
-    hasMovement: !!movement,
-    movement: movement,
-    cornerInstallOnly: movement?.cornerInstallOnly,
-    preferredCorner: movement?.cornerInstallOnly?.preferredCorner
-  });
 
   // Check if this is a corner-install bath
   const isCornerInstall = movement?.cornerInstallOnly?.enabled === true;
-  console.log('🛁 isCornerInstall:', isCornerInstall);
 
   // Find the door to determine the "back wall" (opposite to door)
   // Note: Doors can be typed as 'Door' or 'WindowAndDoor' depending on source
@@ -797,9 +759,7 @@ export const positionBath = (
       'notch-east': 'west'
     };
     backWall = oppositeWalls[doorWall] || 'south';
-    console.log('🚪 Door found on', doorWall, 'wall -> Back wall is', backWall);
   } else {
-    console.log('🚪 No door found, defaulting back wall to south');
   }
 
   // Get all available corners
@@ -845,11 +805,8 @@ export const positionBath = (
     return getCornerPriority(a.type) - getCornerPriority(b.type);
   });
 
-  console.log('🛁 Corner priority order:', sortedCorners.map(c => c.type).join(' -> '));
-
   // For corner-install baths, use constrainToCorner for proper placement
   if (isCornerInstall) {
-    console.log('🛁 Bath is corner-install, using constrainToCorner for placement');
 
     // Check if there's a preferred corner specified in the product data
     const preferredCorner = movement?.cornerInstallOnly?.preferredCorner;
@@ -874,8 +831,6 @@ export const positionBath = (
           c.type !== preferredCorner && c.type !== 'north-east'
         );
         cornersToTry = [...priorityCorners, ...remainingCorners];
-
-        console.log('🛁 Corner priority order:', cornersToTry.map(c => c.type).join(' -> '));
       }
     }
 
@@ -906,7 +861,6 @@ export const positionBath = (
         notchWidth,
         notchHeight
       )) {
-        console.log('🛁 Auto-position: Corner-install bath placed in', corner.type, 'corner');
         return {
           position,
           rotation: result.rotation,
@@ -916,7 +870,6 @@ export const positionBath = (
     }
 
     // No free corner found for corner-install bath
-    console.log('🛁 No free corner available for corner-install bath');
     return null;
   }
 
@@ -941,8 +894,6 @@ export const positionBath = (
   const eastWallLength = interior.maxZ - interior.minZ;  // Full height of room
   const westWallLength = notch ? (notch.maxZ - interior.minZ) : (interior.maxZ - interior.minZ);
 
-  console.log('🛁 Room wall lengths:', { south: southWallLength, north: northWallLength, east: eastWallLength, west: westWallLength });
-
   // Helper to create corner config based on which wall is longer
   const createCornerConfig = (
     cornerName: string,
@@ -956,8 +907,6 @@ export const positionBath = (
     // Determine which wall the bath should snap against (the longer one)
     const snapToWall1 = wall1Length >= wall2Length;
     const snapWall = snapToWall1 ? wall1 : wall2;
-
-    console.log(`🛁 Corner ${cornerName}: wall1=${wall1}(${wall1Length.toFixed(0)}cm) vs wall2=${wall2}(${wall2Length.toFixed(0)}cm) -> snap to ${snapWall}`);
 
     let position: Position;
     let rotation: number;
@@ -1077,8 +1026,6 @@ export const positionBath = (
   // Sort by priority (back wall corners first, then clockwise)
   cornerConfigs.sort((a, b) => a.priority - b.priority);
 
-  console.log('🛁 Freestanding bath corner priority:', cornerConfigs.map(c => `${c.name}(${c.priority})`).join(' -> '));
-
   // Try each corner
   for (const config of cornerConfigs) {
     if (hasSpaceAtPosition(
@@ -1093,7 +1040,6 @@ export const positionBath = (
       notchWidth,
       notchHeight
     )) {
-      console.log('🛁 Auto-position: Bath placed in', config.name, 'corner');
       return {
         position: config.position,
         rotation: config.rotation,
@@ -1144,7 +1090,6 @@ export const positionShower = (
       );
       return distB - distA; // Furthest from camera first (= in camera's view)
     });
-    console.log('🚿 Shower corner priority (furthest from camera = in view):', sortedCorners.map(c => c.type).join(' -> '));
   }
 
   // Use constrainToCorner for positioning (tested/working logic)
@@ -1162,8 +1107,6 @@ export const positionShower = (
 
     const position = { ...result.position, y: spawnHeight };
 
-    console.log(`🚿 Trying ${corner.type} corner: position=(${position.x.toFixed(1)}, ${position.z.toFixed(1)}), rotation=${(result.rotation * 180 / Math.PI).toFixed(0)}°`);
-
     if (hasSpaceAtPosition(
       position,
       'Shower',
@@ -1176,7 +1119,6 @@ export const positionShower = (
       notchWidth,
       notchHeight
     )) {
-      console.log('🚿 Auto-position: Shower placed in', corner.type, 'corner');
       return {
         position,
         rotation: result.rotation,
@@ -1274,7 +1216,6 @@ export const positionVanity = (
     notchWidth,
     notchHeight
   )) {
-    console.log('🪥 Auto-position: Vanity placed centered on', targetWall, 'wall');
     return {
       position,
       rotation,
@@ -1327,7 +1268,6 @@ export const positionVanity = (
       notchWidth,
       notchHeight
     )) {
-      console.log('🪥 Auto-position: Vanity placed offset on', targetWall, 'wall');
       return {
         position: offsetPosition,
         rotation,
@@ -1341,7 +1281,6 @@ export const positionVanity = (
 
   if (wallResult) {
     const pos = { ...wallResult.position, y: spawnHeight };
-    console.log('🪥 Auto-position: Vanity placed on', wallResult.wall, 'wall (fallback)');
     return {
       position: pos,
       rotation: wallResult.rotation,
@@ -1451,14 +1390,12 @@ export const positionTowelRail = (
     // with at least MIN_WALL_SPACE_FOR_TOWEL_RAIL total wall length
     const wallLength = wallEnd - wallStart;
     if (wallLength < MIN_WALL_SPACE_FOR_TOWEL_RAIL) {
-      console.log(`🔥 Wall ${wall} too short: ${wallLength.toFixed(1)}cm < ${MIN_WALL_SPACE_FOR_TOWEL_RAIL}cm`);
       return false;
     }
 
     // Check if candidate position is within wall bounds (with rail width margin)
     const railHalf = railWidth / 2;
     if (candidatePos - railHalf < wallStart || candidatePos + railHalf > wallEnd) {
-      console.log(`🔥 Candidate position ${candidatePos.toFixed(1)} out of wall bounds [${wallStart.toFixed(1)}, ${wallEnd.toFixed(1)}]`);
       return false;
     }
 
@@ -1468,27 +1405,16 @@ export const positionTowelRail = (
   // Check for existing towel rails to prevent stacking
   const existingTowelRails = findTowelRails(existingItems);
 
-  console.log('🔥 Towel Rail Auto-Position: Starting...', {
-    spawnHeight,
-    spawnHeightClamped: { min: minHeight, max: maxHeight },
-    floorOffset: radiatorVariant?.floorOffset || 0,
-    visualBottom: spawnHeight + (radiatorVariant?.floorOffset || 0),
-    dimensions: radiatorDimensions,
-    existingTowelRails: existingTowelRails.length
-  });
-
   const halfDepth = radiatorDimensions.depth * scale / 2;
   const halfWidth = radiatorDimensions.width * scale / 2;
   const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;
 
   // Primary: Find bath and place at foot end
   const baths = findBaths(existingItems);
-  console.log('🔥 Looking for baths to place towel rail near. Found:', baths.length);
 
   for (const bath of baths) {
     // Skip baths that already have a towel rail nearby
     if (bathHasTowelRailNearby(bath, existingItems)) {
-      console.log('🔥 Skipping bath - already has towel rail nearby');
       continue;
     }
     const bathDimensions = getItemDimensions(bath);
@@ -1502,14 +1428,6 @@ export const positionTowelRail = (
     // PI/2 or 3PI/2 = bath length along Z axis (facing east or west)
     const isBathAlongX = Math.abs(normalizedRotation) < 0.3 || Math.abs(normalizedRotation - Math.PI) < 0.3;
 
-    console.log('🛁 Bath analysis:', {
-      position: bath.position,
-      rotation: bathRotation.toFixed(2),
-      normalizedRotation: normalizedRotation.toFixed(2),
-      isBathAlongX,
-      dimensions: bathDimensions
-    });
-
     // For corner baths, determine which corner they're in
     const bathX = bath.position[0];
     const bathZ = bath.position[2];
@@ -1519,13 +1437,6 @@ export const positionTowelRail = (
     const distToWest = bathX - wallFaces.west;
     const distToSouth = wallFaces.south - bathZ;
     const distToNorth = bathZ - wallFaces.north;
-
-    console.log('🛁 Bath distances to walls:', {
-      east: distToEast.toFixed(1),
-      west: distToWest.toFixed(1),
-      south: distToSouth.toFixed(1),
-      north: distToNorth.toFixed(1)
-    });
 
     // STRATEGY: Place towel rail on a wall that the bath is AGAINST (or near),
     // positioned at the FOOT END of the bath (the end sticking into the room).
@@ -1556,13 +1467,6 @@ export const positionTowelRail = (
     const westEdgeDist = (bathX - xHalfExtent) - wallFaces.west;
     const southEdgeDist = wallFaces.south - (bathZ + zHalfExtent);
     const northEdgeDist = (bathZ - zHalfExtent) - wallFaces.north;
-
-    console.log('🛁 Bath edge distances to walls:', {
-      eastEdge: eastEdgeDist.toFixed(1),
-      westEdge: westEdgeDist.toFixed(1),
-      southEdge: southEdgeDist.toFixed(1),
-      northEdge: northEdgeDist.toFixed(1)
-    });
 
     // Determine which walls the bath is AGAINST (edge within 20cm of wall)
     const bathAgainstNorth = northEdgeDist < 20;
@@ -1595,27 +1499,7 @@ export const positionTowelRail = (
       const bathWestEdgeX = bathX - xHalfExtent;
       const bathOverlapsNotchSouthX = bathWestEdgeX <= notchEastWall; // Bath's west edge is at or west of notch-east
       bathAgainstNotchSouth = notchSouthEdgeDist < 20 && bathOverlapsNotchSouthX;
-
-      console.log('🛁 Notch detection:', {
-        notchEastWall: notchEastWall.toFixed(1),
-        notchSouthWall: notchSouthWall.toFixed(1),
-        notchEastEdgeDist: notchEastEdgeDist.toFixed(1),
-        notchSouthEdgeDist: notchSouthEdgeDist.toFixed(1),
-        bathNorthEdge: bathNorthEdge.toFixed(1),
-        bathWestEdgeX: bathWestEdgeX.toFixed(1),
-        bathOverlapsNotchEastZ,
-        bathOverlapsNotchSouthX
-      });
     }
-
-    console.log('🛁 Bath wall proximity:', {
-      againstNorth: bathAgainstNorth,
-      againstSouth: bathAgainstSouth,
-      againstEast: bathAgainstEast,
-      againstWest: bathAgainstWest,
-      againstNotchEast: bathAgainstNotchEast,
-      againstNotchSouth: bathAgainstNotchSouth
-    });
 
     const footEndCandidates: Array<{ position: Position; rotation: number; wall: string; priority: number }> = [];
 
@@ -1645,16 +1529,6 @@ export const positionTowelRail = (
       // Foot end is the edge that's further from wall (sticking into room)
       const footEndX = eastEdgeDistToWall > westEdgeDistToWall ? bathEastEdge : bathWestEdge;
       const footEndIsEast = eastEdgeDistToWall > westEdgeDistToWall;
-
-      console.log('🛁 Bath foot end (along X):', {
-        bathEastEdge: bathEastEdge.toFixed(1),
-        bathWestEdge: bathWestEdge.toFixed(1),
-        eastEdgeDistToWall: eastEdgeDistToWall.toFixed(1),
-        westEdgeDistToWall: westEdgeDistToWall.toFixed(1),
-        footEndX: footEndX.toFixed(1),
-        footEndIsEast,
-        bathAgainstNotchEast
-      });
 
       // For bath along X axis:
       // - Bath's LENGTH (long side) is along X axis
@@ -1697,7 +1571,6 @@ export const positionTowelRail = (
         } else if (bathAgainstNotchEast) {
           // notch-east-north corner: bath is against notch-east wall, foot end is EAST
           railX = bathX + bathHalfLength + offsetX;  // Place east of bath (foot end)
-          console.log('🔥 North wall towel rail for notch-east-north corner - placing at EAST (foot end)');
         } else {
           railX = footEndX + (footEndIsEast ? offsetX : -offsetX); // Not in corner, use foot end
         }
@@ -1717,12 +1590,6 @@ export const positionTowelRail = (
       if (bathAgainstEast) {
         const railZ = bathZ + (bathAgainstSouth ? -(bathHalfWidth + railGap + halfWidth) : (bathHalfWidth + railGap + halfWidth));
         const railX = wallFaces.east - halfDepth - wallBuffer;
-        console.log('🔥 East wall towel rail (bath along X):', {
-          bathZ: bathZ.toFixed(1),
-          bathHalfWidth: bathHalfWidth.toFixed(1),
-          bathAgainstSouth,
-          calculatedRailZ: railZ.toFixed(1)
-        });
         if (hasMinWallSpace(railX, railZ, 'east', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
             position: { x: railX, y: spawnHeight, z: railZ },
@@ -1756,11 +1623,6 @@ export const positionTowelRail = (
             : footEndX + (footEndIsEast ? offsetX : -offsetX);
 
         const railZ = notchSouthWall + halfDepth + wallBuffer;
-        console.log('🔥 Notch-south wall towel rail (bath along X):', {
-          bathX: bathX.toFixed(1),
-          notchSouthWall: notchSouthWall.toFixed(1),
-          calculatedRailX: railX.toFixed(1)
-        });
 
         if (hasMinWallSpace(railX, railZ, 'notch-south', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
@@ -1776,12 +1638,6 @@ export const positionTowelRail = (
         // Bath against notch-east wall (vertical edge) - like east/west walls
         const railZ = bathZ + (bathAgainstNotchSouth ? (bathHalfWidth + railGap + halfWidth) : -(bathHalfWidth + railGap + halfWidth));
         const railX = notchEastWall + halfDepth + wallBuffer;
-
-        console.log('🔥 Notch-east wall towel rail (bath along X):', {
-          bathZ: bathZ.toFixed(1),
-          notchEastWall: notchEastWall.toFixed(1),
-          calculatedRailZ: railZ.toFixed(1)
-        });
 
         if (hasMinWallSpace(railX, railZ, 'notch-east', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
@@ -1803,15 +1659,6 @@ export const positionTowelRail = (
       const footEndZ = southEdgeDistToWall > northEdgeDistToWall ? bathSouthEdge : bathNorthEdge;
       const footEndIsSouth = southEdgeDistToWall > northEdgeDistToWall;
 
-      console.log('🛁 Bath foot end (along Z):', {
-        bathSouthEdge: bathSouthEdge.toFixed(1),
-        bathNorthEdge: bathNorthEdge.toFixed(1),
-        southEdgeDistToWall: southEdgeDistToWall.toFixed(1),
-        northEdgeDistToWall: northEdgeDistToWall.toFixed(1),
-        footEndZ: footEndZ.toFixed(1),
-        footEndIsSouth
-      });
-
       // For bath along Z axis (length north-south):
       // - FOOT END is at one of the Z extremes (north or south edge)
       // - PRIMARY: Place on south/north wall (the wall bath is against) WEST/EAST of the bath
@@ -1830,12 +1677,6 @@ export const positionTowelRail = (
       if (bathAgainstEast) {
         const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
         const railX = wallFaces.east - halfDepth - wallBuffer;
-        console.log('🔥 East wall towel rail (bath along Z) - FOOT END:', {
-          bathZ: bathZ.toFixed(1),
-          footEndZ: footEndZ.toFixed(1),
-          footEndIsSouth,
-          calculatedRailZ: railZ.toFixed(1)
-        });
         if (hasMinWallSpace(railX, railZ, 'east', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
             position: { x: railX, y: spawnHeight, z: railZ },
@@ -1849,12 +1690,6 @@ export const positionTowelRail = (
       if (bathAgainstWest) {
         const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
         const railX = wallFaces.west + halfDepth + wallBuffer;
-        console.log('🔥 West wall towel rail (bath along Z) - FOOT END:', {
-          bathZ: bathZ.toFixed(1),
-          footEndZ: footEndZ.toFixed(1),
-          footEndIsSouth,
-          calculatedRailZ: railZ.toFixed(1)
-        });
         if (hasMinWallSpace(railX, railZ, 'west', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
             position: { x: railX, y: spawnHeight, z: railZ },
@@ -1872,13 +1707,6 @@ export const positionTowelRail = (
           ? bathX - perpOffset  // SE corner: place west of bath
           : bathX + perpOffset; // SW corner: place east of bath
         const railZ = wallFaces.south - halfDepth - wallBuffer;
-
-        console.log('🔥 South wall towel rail (bath along Z) - beside bath:', {
-          bathX: bathX.toFixed(1),
-          perpOffset: perpOffset.toFixed(1),
-          bathAgainstEast,
-          calculatedRailX: railX.toFixed(1)
-        });
 
         if (hasMinWallSpace(railX, railZ, 'south', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
@@ -1917,12 +1745,6 @@ export const positionTowelRail = (
             : bathX + perpOffset; // Default: place east of bath
         const railZ = notchSouthWall + halfDepth + wallBuffer;
 
-        console.log('🔥 Notch-south wall towel rail (bath along Z):', {
-          bathX: bathX.toFixed(1),
-          notchSouthWall: notchSouthWall.toFixed(1),
-          calculatedRailX: railX.toFixed(1)
-        });
-
         if (hasMinWallSpace(railX, railZ, 'notch-south', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
             position: { x: railX, y: spawnHeight, z: railZ },
@@ -1938,12 +1760,6 @@ export const positionTowelRail = (
         const railZ = footEndZ + (footEndIsSouth ? offset : -offset);
         const railX = notchEastWall + halfDepth + wallBuffer;
 
-        console.log('🔥 Notch-east wall towel rail (bath along Z):', {
-          bathZ: bathZ.toFixed(1),
-          notchEastWall: notchEastWall.toFixed(1),
-          calculatedRailZ: railZ.toFixed(1)
-        });
-
         if (hasMinWallSpace(railX, railZ, 'notch-east', radiatorDimensions.width * scale)) {
           footEndCandidates.push({
             position: { x: railX, y: spawnHeight, z: railZ },
@@ -1958,7 +1774,6 @@ export const positionTowelRail = (
     // FALLBACK: If bath isn't against any wall (freestanding in middle),
     // try placing on nearest wall at the foot end position
     if (footEndCandidates.length === 0) {
-      console.log('🛁 Bath not against any wall, using fallback placement');
 
       // Find the nearest wall and place there
       const wallDistances = [
@@ -1987,11 +1802,8 @@ export const positionTowelRail = (
     // Sort candidates by priority (lower is better)
     footEndCandidates.sort((a, b) => a.priority - b.priority);
 
-    console.log('🔥 Towel rail foot end candidates:', footEndCandidates.length);
-
     // Try each candidate position
     for (const candidate of footEndCandidates) {
-      console.log('🔥 Trying towel rail position on', candidate.wall, 'wall:', candidate.position);
 
       if (hasSpaceAtPosition(
         candidate.position,
@@ -2005,7 +1817,6 @@ export const positionTowelRail = (
         notchWidth,
         notchHeight
       )) {
-        console.log(`🔥 Auto-position: ${itemType} placed at bath foot end on`, candidate.wall, 'wall');
         return {
           position: candidate.position,
           rotation: candidate.rotation,
@@ -2013,7 +1824,6 @@ export const positionTowelRail = (
           placementMethod: 'anchor'
         };
       } else {
-        console.log('🔥 Position blocked, trying next candidate');
       }
     }
   }
@@ -2074,7 +1884,6 @@ export const positionTowelRail = (
       notchWidth,
       notchHeight
     )) {
-      console.log(`🔥 Auto-position: ${itemType} placed beside vanity (opposite toilet)`);
       return {
         position,
         rotation,
@@ -2089,7 +1898,6 @@ export const positionTowelRail = (
 
   if (wallResult) {
     const position = { ...wallResult.position, y: spawnHeight };
-    console.log('🔥 Auto-position: Towel rail placed on', wallResult.wall, 'wall (fallback)');
     return {
       position,
       rotation: wallResult.rotation,
@@ -2120,7 +1928,6 @@ export const positionSink = (
 
   if (wallResult) {
     const position = { ...wallResult.position, y: spawnHeight };
-    console.log('🚰 Auto-position: Sink placed on', wallResult.wall, 'wall');
     return {
       position,
       rotation: wallResult.rotation,
@@ -2145,7 +1952,6 @@ export const autoPositionItem = (
   variant: any,
   scale: number = 1.0
 ): AutoPositionResult => {
-  console.log(`🎯 Auto-positioning ${itemType}...`);
 
   let result: AutoPositionResult | null = null;
 
@@ -2183,7 +1989,6 @@ export const autoPositionItem = (
       break;
 
     default:
-      console.log(`⚠️ No auto-position logic for ${itemType}, using default placement`);
       break;
   }
 

@@ -878,8 +878,6 @@ const handleDirectAddToRoom = async (product) => {
     searchQuery: props.searchQuery,
     useProgressiveLoading: !alreadyLoaded
   })
-
-  console.log('✅ Product added directly from search:', variantKey)
   emit('close')
 }
 
@@ -1177,11 +1175,6 @@ const isAnythingLoading = () => {
 
 // Methods - Original functionality
 const selectProduct = async (product) => {
-  console.log('🔍 ====== PRODUCT SELECTED ======')
-  console.log('🔍 Product name:', product.name)
-  console.log('🔍 Product has', product.variants?.length || 0, 'variants')
-  console.log('🔍 Variant SKUs:', product.variants?.map(v => v.sku))
-  console.log('🔍 Current selectedFilters prop:', JSON.stringify(props.selectedFilters))
 
   // If it's a direct add product (exact SKU match), add directly
   if (product.searchContext?.showDirectAdd) {
@@ -1195,32 +1188,24 @@ const selectProduct = async (product) => {
   // Determine which variant to pre-select
   if (product.searchContext?.highlightedVariant) {
     // If there's a highlighted variant from search, pre-select it
-    console.log('🔍 Pre-selecting highlighted variant from search')
     selectedVariant.value = product.searchContext.highlightedVariant
   } else if (hasActiveFilters(props.selectedFilters) && product.variants) {
     // If filters are active, get filtered variants and select appropriately
-    console.log('🔍 Filters are active, filtering variants...')
     const filtered = filterProductVariants(product, props.selectedFilters)
-    console.log('🔍 Filtered variants:', filtered.map(v => ({ sku: v.sku, name: v.name })))
     if (filtered.length === 1) {
       // Only one variant matches filters - select it directly
-      console.log('🔍 Single variant match, selecting:', filtered[0].sku)
       selectedVariant.value = filtered[0]
     } else if (filtered.length > 0) {
       // Multiple variants match - select the first filtered one
-      console.log('🔍 Multiple matches, selecting first:', filtered[0].sku)
       selectedVariant.value = filtered[0]
     } else {
       // No variants match (shouldn't happen if product was shown) - fallback to first
-      console.log('🔍 No variants match filters, falling back to first variant')
       selectedVariant.value = product.variants?.[0] || ''
     }
   } else {
     // No filters active - default to first variant
-    console.log('🔍 No active filters, selecting first variant')
     selectedVariant.value = product.variants?.[0] || ''
   }
-  console.log('🔍 ====== END PRODUCT SELECTED ======')
 
   selectedColor.value = product.colors?.[0]?.id || ''
   currentView.value = 'variants'
@@ -1259,7 +1244,6 @@ const selectProduct = async (product) => {
             variantKey: fullCacheKey,
             status: 'loaded'
           })
-          console.log('✅ First variant preloaded:', fullCacheKey)
         },
         onError: (error) => {
           console.error('❌ Failed to preload first variant:', error)
@@ -1292,12 +1276,10 @@ const goBackToProductList = () => {
 const selectVariant = async (variant) => {
   // Don't allow selection of variants that are too large
   if (isVariantTooLarge(variant)) {
-    console.log('⚠️ Cannot select variant - too large for available space')
     return
   }
 
   const variantKey = variant.id || variant.sku || variant.name
-  console.log('🔄 Selecting variant...', variant.name || variant.sku)
 
   // Always select immediately - no blocking
   selectedVariant.value = variant
@@ -1309,7 +1291,6 @@ const selectVariant = async (variant) => {
 
   // Check if model is already cached - no need to load
   if (isModelCached(variant, componentType)) {
-    console.log('✅ Model already cached')
     return
   }
 
@@ -1318,23 +1299,19 @@ const selectVariant = async (variant) => {
       selectedProduct.value.variants &&
       selectedProduct.value.variants[0] === variant &&
       firstVariantPreloaded.value.has(selectedProduct.value.id)) {
-    console.log('✅ First variant already preloaded')
     return
   }
 
   // Check if already loaded
   const isLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded.value)
   if (isLoaded) {
-    console.log('✅ Model already loaded')
     return
   }
 
   // Preload in background (non-blocking) for faster add-to-room later
   // Pass the type for consistent cache keys
-  console.log('🔄 Preloading variant in background')
   loadVariantModelProgressively(variant, {
     onFullModelReady: () => {
-      console.log('✅ Background preload completed:', componentType ? `${componentType}-${variantKey}` : variantKey)
     },
     onError: (error) => {
       console.error('❌ Background preload error:', error)
@@ -1399,7 +1376,6 @@ const selectColor = (colorId) => {
 }
 
 const toggleHardwareChange = (hardwareId) => {
-  console.log('Toggle hardware change for:', hardwareId)
 }
 
 const calculateTotalPrice = () => {
@@ -1418,13 +1394,11 @@ const calculateTotalPrice = () => {
 
 const confirmAddToRoom = async () => {
   if (!selectedProduct.value || !selectedVariant.value) {
-    console.log('No product or variant selected')
     return
   }
 
   // Hard stop - prevent adding if variant is too large
   if (isVariantTooLarge(selectedVariant.value)) {
-    console.log('⚠️ Cannot add - variant too large for room')
     return
   }
 
@@ -1446,35 +1420,20 @@ const confirmAddToRoom = async () => {
   // Determine if progressive loading is needed
   const needsProgressiveLoading = !isCached && !isLoaded
 
-  console.log('🔍 Add to Room - Loading Status:', {
-    variantKey,
-    fullCacheKey,
-    componentType,
-    isCached,
-    isLoaded,
-    needsProgressiveLoading,
-    message: needsProgressiveLoading
-      ? '🔲 Will use progressive loading with placeholder'
-      : '⚡ Model ready - instant add (no placeholder needed)'
-  })
-
   // Add to room - progressive loading shows placeholder if model isn't ready
   addProductToRoom(needsProgressiveLoading)
 }
 
 const addProductToRoom = (useProgressiveLoading = false) => {
   if (!selectedProduct.value) {
-    console.log('No Product has been selected')
     return
   }
 
   if (!selectedVariant.value) {
-    console.log('No Variant for the product has been selected')
     return
   }
 
   if (typeof selectedVariant.value === 'string') {
-    console.log('select variant type is string')
     return
   }
 
@@ -1501,12 +1460,6 @@ const addProductToRoom = (useProgressiveLoading = false) => {
     totalPrice: calculateTotalPrice(),
     useProgressiveLoading: useProgressiveLoading
   }
-
-  console.log('📦 ProductDrawer - Emitting add-to-room:', {
-    type: componentType,
-    useProgressiveLoading: useProgressiveLoading,
-    variantSku: selectedVariant.value?.sku
-  })
 
   // Emit the add-to-room event
   emit('add-to-room', productData)

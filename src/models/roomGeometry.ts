@@ -33,22 +33,14 @@ const createGridMaterials = () => {
     linewidth: 2
   });
 
-  console.log('📐 Grid materials created:', {
-    floorMaterial: floorGridMaterial,
-    wallMaterial: wallGridMaterial
-  });
-
   return { floorGridMaterial, wallGridMaterial };
 };
 
 // FIXED: Simplified to return only the floor grid group
 export const createCustomGrid = (width: number, height: number): THREE.Group => {
-  console.log('🏗️ Creating custom grid with dimensions:', { width, height });
 
   const floorGridGroup = new THREE.Group();
   const { GRID_SPACING } = CONSTRAINTS;
-
-  console.log('📏 Grid spacing:', GRID_SPACING);
 
   // Use single material creation
   const { floorGridMaterial } = createGridMaterials();
@@ -207,7 +199,6 @@ export const createWallGridLines = (
   notchWidth?: number,
   notchHeight?: number
 ): THREE.Line[] => {
-  console.log(`🧱 Creating wall grid for ${wallDirection} wall (interior system)`);
 
   const { GRID_SPACING } = CONSTRAINTS;
   const wallHeight = WALL_SETTINGS.HEIGHT;
@@ -416,7 +407,6 @@ export const createFloor = (
   roomHeight: number,
   floorMaterial: THREE.Material
 ): THREE.Mesh => {
-  console.log('🏗️ Creating floor with dimensions:', { roomWidth, roomHeight });
 
   const floorThickness = 1; // Thin floor for better appearance
   const floorGeometry = new THREE.BoxGeometry(roomWidth, floorThickness, roomHeight);
@@ -427,8 +417,6 @@ export const createFloor = (
   floor.receiveShadow = true;
   floor.userData.isFloor = true;
   floor.name = 'Floor';
-
-  console.log('✅ Floor created - perfectly aligned with interior walls');
 
   return floor;
 }
@@ -517,8 +505,6 @@ export const createLShapeWalls = (
       wallMaterial
     )
   );
-
-  console.log('✅ L-shaped walls created: 6 walls');
   return walls;
 };
 
@@ -553,7 +539,6 @@ export const createLShapeFloor = (
   notchHeight: number,
   floorMaterial: THREE.Material
 ): THREE.Mesh => {
-  console.log('🏗️ Creating L-shaped floor with dimensions:', { totalWidth, totalHeight, notchWidth, notchHeight });
 
   const floorThickness = 1;
 
@@ -618,8 +603,6 @@ export const createLShapeFloor = (
   floor.userData.isFloor = true;
   floor.userData.isLShape = true;
   floor.name = 'LShapeFloor';
-
-  console.log('✅ L-shaped floor created');
 
   return floor;
 };
