@@ -68,34 +68,12 @@
     <!-- Product Drawer -->
     <div :style="drawerStyle">
       <!-- Header -->
-      <div :style="headerStyle">
-        <button
-            v-if="currentView === 'variants'"
-            @click="goBackToProductList"
-            :style="backButtonStyle"
-            class="back-button"
-        >
-          ← Back to Products
-        </button>
-        <button
-            v-else
-            @click="closeDrawer"
-            :style="backButtonStyle"
-            class="back-button"
-        >
-          ← Go back
-        </button>
-
-        <h2 :style="titleStyle" v-html="drawerTitle" />
-
-        <button
-            @click="closeDrawer"
-            :style="closeButtonStyle"
-            class="close-button"
-        >
-          ✕
-        </button>
-      </div>
+      <DrawerHeader
+        :current-view="currentView"
+        :title="drawerTitle"
+        @go-back="goBackToProductList"
+        @close="closeDrawer"
+      />
 
       <!-- Loading Error Display -->
       <div v-if="loadingError" :style="errorBannerStyle">
@@ -161,99 +139,40 @@
       <div v-if="currentView === 'products'" :style="contentStyle">
 
         <!-- Empty state when no products match filters (category mode) -->
-        <div v-if="readyProducts.length === 0 && hasActiveFilters(props.selectedFilters) && !isAnythingLoading() && props.selectedCategory !== 'search'" class="no-products-state">
-          <div class="no-products-icon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-              <path d="M8 8l6 6"></path>
-              <path d="M14 8l-6 6"></path>
-            </svg>
-          </div>
-          <p class="no-products-message">No products found matching these filters.</p>
-          <button class="clear-filters-btn" @click="clearAllFilters">
-            Clear All Filters
-          </button>
-        </div>
+        <EmptyState
+          v-if="readyProducts.length === 0 && hasActiveFilters(props.selectedFilters) && !isAnythingLoading() && props.selectedCategory !== 'search'"
+          message="No products found matching these filters."
+          size="large"
+          :show-button="true"
+          button-text="Clear All Filters"
+          @action="clearAllFilters"
+        />
 
         <!-- Empty state when no products match search filters (search mode) -->
-        <div v-if="readyProducts.length === 0 && hasActiveSearchFilters && props.selectedCategory === 'search'" class="no-products-state">
-          <div class="no-products-icon">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-              <path d="M8 8l6 6"></path>
-              <path d="M14 8l-6 6"></path>
-            </svg>
-          </div>
-          <p class="no-products-message">No results match the selected filters.</p>
-          <button class="clear-filters-btn" @click="clearSearchFilters">
-            Clear Filters
-          </button>
-        </div>
+        <EmptyState
+          v-if="readyProducts.length === 0 && hasActiveSearchFilters && props.selectedCategory === 'search'"
+          message="No results match the selected filters."
+          size="large"
+          :show-button="true"
+          button-text="Clear Filters"
+          @action="clearSearchFilters"
+        />
 
         <!-- Show products that are ready (models loaded) -->
-        <div
-            v-for="product in readyProducts"
-            :key="product.id"
-            :style="productCardStyle"
-            class="product-card"
-        >
-          <!-- Product Image -->
-          <div :style="productImageStyle">
-            <img :src="product.image" :alt="product.name" :style="imageStyle" />
-          </div>
-
-          <!-- Product Info -->
-          <div :style="productInfoStyle">
-            <h3 :style="productNameStyle" v-html="getHighlightedName(product)">
-            </h3>
-            <div v-if="product.searchContext" :style="searchContextStyle">
-              <div v-if="product.searchContext.matchingVariant" :style="searchVariantStyle">
-                SKU: {{ product.searchContext.matchingVariant.sku }}
-              </div>
-            </div>
-            <div :style="priceStyle">
-              <span v-if="hasMultiplePrices(product)" style="font-size: 18px; font-weight: normal; color: #666; margin-right: 4px;">From</span>£{{ getLowestVariantPrice(product) }}
-            </div>
-
-            <!-- More Info Link -->
-            <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
-              More info ↗
-            </a>
-
-            <!-- SELECT Button (original functionality) -->
-            <button
-                @click="selectProduct(product)"
-                :style="getSearchAwareButtonStyle(product)"
-                class="select-button"
-            >
-              {{ getButtonText(product) }}
-            </button>
-          </div>
-        </div>
+        <ProductCard
+          v-for="product in readyProducts"
+          :key="product.id"
+          :product="product"
+          :search-query="props.searchQuery"
+          :is-search-mode="props.selectedCategory === 'search'"
+          @select="selectProduct"
+        />
 
         <!-- Show skeleton loaders for products still loading -->
-        <div
-            v-for="n in getLoadingProductCount()"
-            :key="`skeleton-${n}`"
-            :style="skeletonCardStyle"
-            class="skeleton-card"
-        >
-          <!-- Skeleton Image -->
-          <div :style="skeletonImageStyle">
-            <div :style="skeletonShimmerStyle"></div>
-          </div>
-
-          <!-- Skeleton Content -->
-          <div :style="skeletonContentStyle">
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonButtonStyle"></div>
-          </div>
-        </div>
+        <SkeletonCard
+          v-for="n in getLoadingProductCount()"
+          :key="`skeleton-${n}`"
+        />
 
         <!-- Loading progress indicator (optional) -->
         <div v-if="isAnythingLoading()" :style="loadingProgressStyle">
@@ -282,77 +201,20 @@
         </div>
 
         <!-- Variants Selection (if product has variants) -->
-        <div v-if="selectedProduct.variants && selectedProduct.variants.length > 0" :style="sectionStyle">
-          <!-- Single filtered variant - show simplified view -->
-          <template v-if="hasOnlyOneFilteredVariant">
-            <h4 :style="sectionTitleStyle">Selected {{ selectedProduct.variantType || 'Size' }}</h4>
-            <div :style="singleVariantInfoStyle">
-              <span :style="singleVariantNameStyle">{{ selectedVariant?.name }}</span>
-              <span v-if="isVariantTooLarge(selectedVariant)" :style="tooLargeBadgeStyle">
-                ⚠ Too Large
-              </span>
-            </div>
-          </template>
+        <VariantSelector
+          v-if="selectedProduct.variants && selectedProduct.variants.length > 0"
+          :product="selectedProduct"
+          :selected-variant="selectedVariant"
+          :selected-filters="props.selectedFilters"
+          :room-width="props.roomWidth"
+          :room-height="props.roomHeight"
+          :existing-items="props.existingItems"
+          :notch-width="props.notchWidth"
+          :notch-height="props.notchHeight"
+          :selected-category="props.selectedCategory"
+          @select-variant="selectVariant"
+        />
 
-          <!-- Multiple variants - show selection buttons -->
-          <template v-else>
-            <h4 :style="sectionTitleStyle">{{ selectedProduct.variantType || 'Size' }}</h4>
-            <div :style="variantOptionsStyle">
-              <button
-                  v-for="(variant, index) in displayedVariants"
-                  :key="variant.id || variant.sku || variant.name || index"
-                  @click="selectVariant(variant)"
-                  :style="getVariantButtonStyle(variant)"
-                  class="variant-button"
-                  :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
-              >
-                <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
-                  <span>{{ variant.name }}</span>
-                  <!-- Show too large badge for variants that don't fit -->
-                  <span v-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
-                    ⚠ Too Large
-                  </span>
-                </span>
-              </button>
-            </div>
-
-            <!-- See More / See Less Button -->
-            <div
-                v-if="shouldShowSeeMoreButton"
-                :style="seeMoreContainerStyle"
-            >
-              <button
-                  @click="toggleShowAllVariants"
-                  :style="seeMoreButtonStyle"
-                  class="see-more-button"
-              >
-                {{ showAllVariants ? 'See Less' : `See More (${filteredVariants.length - 5} more)` }}
-                <span :style="{ marginLeft: '8px' }">
-              {{ showAllVariants ? '↑' : '↓' }}
-            </span>
-              </button>
-            </div>
-          </template>
-
-        </div>
-
-        <!-- Color Selection (if product has colors) -->
-        <div v-if="selectedProduct.colors && selectedProduct.colors.length > 0" :style="sectionStyle">
-          <h4 :style="sectionTitleStyle">Color: {{ getSelectedColorName() }}</h4>
-          <div :style="colorOptionsStyle">
-            <div
-                v-for="color in selectedProduct.colors"
-                :key="color.id"
-                @click="selectColor(color.id)"
-                :style="getColorSwatchStyle(color)"
-                class="color-swatch"
-                :title="color.name"
-            >
-              <div :style="colorInnerStyle(color)"></div>
-              <span :style="colorNameStyle">{{ color.name }}</span>
-            </div>
-          </div>
-        </div>
 
         <!-- Hardware Section (if product has hardware) -->
         <div v-if="selectedProduct.hardware && selectedProduct.hardware.length > 0" :style="sectionStyle">
@@ -402,6 +264,11 @@ import productData from '../../mocks/productData'
 import FilterChips from './FilterChips.vue'
 import AllFiltersDrawer from './AllFiltersDrawer.vue'
 import SearchFilterBar from './SearchFilterBar.vue'
+import ProductCard from './ProductCard.vue'
+import SkeletonCard from './SkeletonCard.vue'
+import VariantSelector from './VariantSelector.vue'
+import DrawerHeader from './DrawerHeader.vue'
+import EmptyState from './EmptyState.vue'
 import { ModelManager } from '../../models/bathroomFixtures'
 import {
   isVariantModelLoaded,
@@ -837,87 +704,6 @@ const selectedColor = ref('')
 const firstVariantPreloaded = ref(new Map()) // Track which products have preloaded first variants
 const productPreloading = ref(new Map()) // Track which products are currently preloading
 
-const showAllVariants = ref(false)
-
-// Get filtered variants based on selected filters
-const filteredVariants = computed(() => {
-  if (!selectedProduct.value?.variants) return []
-
-  // Debug: Log all filter details
-  const allVariants = selectedProduct.value.variants
-  const lengthFilter = props.selectedFilters?.length
-  const hasActive = hasActiveFilters(props.selectedFilters)
-
-  console.log('🔍 ====== FILTERING VARIANTS ======')
-  console.log('🔍 Product:', selectedProduct.value.name)
-  console.log('🔍 Total variants:', allVariants.length)
-  console.log('🔍 All variant lengths:', allVariants.map(v => ({
-    name: v.name,
-    sku: v.sku,
-    filterLength: v.filterAttributes?.length
-  })))
-  console.log('🔍 Selected filters:', JSON.stringify(props.selectedFilters, null, 2))
-  console.log('🔍 Length filter array:', lengthFilter)
-  console.log('🔍 hasActiveFilters result:', hasActive)
-
-  // If no active filters, return all variants
-  if (!hasActive) {
-    console.log('🔍 ❌ No active filters detected, returning ALL variants')
-    return allVariants
-  }
-
-  // Filter variants based on selected filters
-  const filtered = filterProductVariants(selectedProduct.value, props.selectedFilters)
-  console.log('🔍 ✅ Active filters detected!')
-  console.log('🔍 Filtered result:', filtered.map(v => ({
-    name: v.name,
-    sku: v.sku,
-    filterLength: v.filterAttributes?.length
-  })))
-  console.log('🔍 ====== END FILTERING ======')
-  return filtered
-})
-
-// Check if we have only one filtered variant (for direct add-to-room)
-const hasOnlyOneFilteredVariant = computed(() => {
-  return filteredVariants.value.length === 1 && hasActiveFilters(props.selectedFilters)
-})
-
-// Add this computed property for displayed variants (with pagination)
-const displayedVariants = computed(() => {
-  const variants = filteredVariants.value
-
-  if (variants.length === 0) return []
-
-  // If we have 5 or fewer variants, show all
-  if (variants.length <= 5) {
-    return variants
-  }
-
-  // If "See More" hasn't been clicked, show only first 5
-  if (!showAllVariants.value) {
-    return variants.slice(0, 5)
-  }
-
-  // Otherwise show all variants
-  return variants
-})
-
-// Check if we should show the "See More" button (based on filtered variants)
-const shouldShowSeeMoreButton = computed(() => {
-  return filteredVariants.value.length > 5
-})
-
-// Function to toggle showing all variants
-const toggleShowAllVariants = () => {
-  showAllVariants.value = !showAllVariants.value
-}
-
-// Reset showAllVariants when product changes
-watch(() => selectedProduct.value, () => {
-  showAllVariants.value = false
-})
-
 // Check if variant is too large or would collide with existing items
 const isVariantTooLarge = (variant) => {
   if (!variant?.dimensions) return false
@@ -1003,20 +789,6 @@ const isVariantTooLarge = (variant) => {
 
   // If no valid position found, variant is too large/no space
   return freePosition === null
-}
-
-const getTooLargeTooltip = (variant) => {
-  if (!variant?.dimensions) return ''
-  if (!isVariantTooLarge(variant)) return ''
-
-  const maxVariantDim = Math.max(variant.dimensions.width || 0, variant.dimensions.depth || 0)
-  const maxWallLength = Math.max(props.roomWidth, props.roomHeight)
-
-  if (maxVariantDim > maxWallLength) {
-    return `Item exceeds room size (Requires ${maxVariantDim * 10}mm, Available ${maxWallLength * 10}mm).`
-  }
-
-  return 'Not enough space - room is too crowded with existing items.'
 }
 
 watch(() => props.searchTriggered, (newValue, oldValue) => {
@@ -1125,103 +897,6 @@ const categoryDisplayLabels = {
 }
 
 
-
-// 4. FIXED search result highlighting that properly handles Vue refs
-const getHighlightedName = (product) => {
-  const escapeHtml = (s = '') =>
-      String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-  if (props.selectedCategory === 'search') {
-    let searchQuery = props.searchQuery
-
-    if (searchQuery && typeof searchQuery === 'object' && 'value' in searchQuery) {
-      searchQuery = searchQuery.value
-    }
-
-    if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
-      const rawName = product.name || ''
-      let result = escapeHtml(rawName)
-
-      const searchTerms = query.split(/\s+/).filter(term => term.length > 0)
-
-      if (searchTerms.length === 1) {
-        // Single word - highlight normally
-        const term = searchTerms[0]
-        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const regex = new RegExp(`(${escapedTerm})`, 'gi')
-
-        result = result.replace(regex, (match) => {
-          return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
-        })
-      } else {
-        // Multiple words - look for phrase patterns
-
-        // Try exact phrase first
-        const exactPhrase = query
-        const exactRegex = new RegExp(`(${exactPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-
-        if (rawName.toLowerCase().includes(exactPhrase.toLowerCase())) {
-          result = result.replace(exactRegex, (match) => {
-            return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
-          })
-        } else {
-          // Try phrase with up to 2 words between search terms
-          const firstWord = searchTerms[0]
-          const lastWord = searchTerms[searchTerms.length - 1]
-
-          // Pattern: word1 (0-2 words) word2
-          const flexiblePattern = `(${firstWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+\\w+){0,2}\\s+${lastWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
-          const flexibleRegex = new RegExp(flexiblePattern, 'gi')
-
-          const flexibleMatch = rawName.match(flexibleRegex)
-          if (flexibleMatch) {
-            result = result.replace(flexibleRegex, (match) => {
-              return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
-            })
-          }
-          // If no flexible match found, don't highlight individual scattered words
-        }
-      }
-
-      return result
-    }
-  }
-
-  return escapeHtml(product.name || '')
-}
-
-
-// Get the lowest price from all variants
-const getLowestVariantPrice = (product) => {
-  if (!product.variants || product.variants.length === 0) {
-    return product.price
-  }
-
-  const prices = product.variants
-      .map(variant => normalizePrice(variant.price))
-      .filter(price => price > 0)
-
-  if (prices.length === 0) {
-    return product.price
-  }
-
-  return Math.min(...prices).toFixed(2)
-}
-
-// Check if product has multiple different prices across variants
-const hasMultiplePrices = (product) => {
-  if (!product.variants || product.variants.length <= 1) {
-    return false
-  }
-
-  const prices = product.variants
-      .map(variant => normalizePrice(variant.price))
-      .filter(price => price > 0)
-
-  const uniquePrices = [...new Set(prices)]
-  return uniquePrices.length > 1
-}
 
 // Initialize selections when product changes
 watch(() => selectedProduct.value, (newProduct) => {
@@ -1723,12 +1398,6 @@ const selectColor = (colorId) => {
   selectedColor.value = colorId
 }
 
-const getSelectedColorName = () => {
-  if (!selectedProduct.value || !selectedProduct.value.colors) return ''
-  const color = selectedProduct.value.colors.find(c => c.id === selectedColor.value)
-  return color?.name || ''
-}
-
 const toggleHardwareChange = (hardwareId) => {
   console.log('Toggle hardware change for:', hardwareId)
 }
@@ -1843,151 +1512,11 @@ const addProductToRoom = (useProgressiveLoading = false) => {
   emit('add-to-room', productData)
 }
 
-const getButtonText = (product) => {
-  if (product.searchContext?.showDirectAdd) {
-    return 'Add to Room'
-  }
-  return 'SELECT'
-}
-
-const getSearchAwareButtonStyle = (product) => {
-  const baseStyle = addToRoomButtonStyle.value
-
-  if (product.searchContext?.showDirectAdd) {
-    return {
-      ...baseStyle,
-      backgroundColor: '#29275B',
-    }
-  }
-
-  return baseStyle // Regular purple for SELECT
-}
-
-
 const closeDrawer = () => {
   // Close the AllFiltersDrawer when going back
   isAllFiltersOpen.value = false
   emit('close')
 }
-
-// Add these styles to your existing styles object
-const seeMoreContainerStyle = {
-  marginTop: '16px',
-  display: 'flex',
-  justifyContent: 'center',
-  width: '100%'
-}
-
-const seeMoreButtonStyle = {
-  padding: '12px 24px',
-  backgroundColor: '#f5f5f5',
-  border: '1px solid #e0e0e0',
-  borderRadius: '8px',
-  fontSize: '14px',
-  fontWeight: '500',
-  color: '#333',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-}
-
-// Style for variants that are too large to fit
-const tooLargeBadgeStyle = computed(() => ({
-  fontSize: '11px',
-  fontWeight: '600',
-  color: '#dc2626',
-  backgroundColor: '#fef2f2',
-  padding: '2px 8px',
-  borderRadius: '4px',
-  border: '1px solid #fecaca'
-}))
-
-// Dynamic styles methods for variants
-const getVariantButtonStyle = (variant) => {
-  const isSelected = selectedVariant.value === variant
-  const isCached = isModelCached(variant)
-  const isTooLarge = isVariantTooLarge(variant)
-
-  // Disabled style for variants that are too large
-  if (isTooLarge) {
-    return {
-      padding: '12px 16px',
-      border: '1px solid #e5e7eb',
-      borderRadius: '6px',
-      backgroundColor: '#f3f4f6',
-      color: '#9ca3af',
-      fontSize: '14px',
-      fontWeight: '400',
-      transition: 'all 0.2s ease',
-      position: 'relative',
-      overflow: 'hidden',
-      fontFamily: 'Arial, sans-serif',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      minHeight: '44px',
-      minWidth: '60px',
-      boxShadow: 'none',
-      transform: 'none',
-      cursor: 'not-allowed',
-      opacity: '0.7'
-    }
-  }
-
-  return {
-    padding: '12px 16px',
-    border: isSelected
-        ? '2px solid #29275B'
-        : (isCached ? '1px solid #10b981' : '2px solid #e0e0e0'),
-    borderRadius: '6px',
-    backgroundColor: isSelected
-        ? '#29275B'
-        : '#ffffff',
-    color: isSelected
-        ? '#ffffff'
-        : '#333',
-    fontSize: '14px',
-    fontWeight: isSelected ? '600' : '500',
-    transition: 'all 0.2s ease',
-    position: 'relative',
-    overflow: 'hidden',
-    fontFamily: 'Arial, sans-serif',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: '44px',
-    minWidth: '60px',
-    boxShadow: isSelected
-        ? '0 2px 8px rgba(41, 39, 91, 0.3)'
-        : 'none',
-    transform: isSelected ? 'translateY(-1px)' : 'translateY(0px)',
-    cursor: 'pointer'
-  }
-}
-
-const getColorSwatchStyle = (color) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '8px',
-  padding: '12px',
-  border: selectedColor.value === color.id ? '2px solid #29275B' : '2px solid #e0e0e0',
-  borderRadius: '8px',
-  backgroundColor: selectedColor.value === color.id ? '#f0f8f0' : '#ffffff',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease'
-})
-
-const colorInnerStyle = (color) => ({
-  width: '40px',
-  height: '40px',
-  borderRadius: '50%',
-  backgroundColor: color.color,
-  border: '2px solid #e0e0e0',
-  boxShadow: selectedColor.value === color.id ? '0 0 0 2px rgba(76, 175, 80, 0.2)' : 'none'
-})
 
 // ORIGINAL STYLES - Keeping your exact design
 const overlayStyle = computed(() => ({
@@ -2022,20 +1551,6 @@ const drawerStyle = computed(() => ({
   paddingBottom: isMobileDevice.value ? '20px' : '40px'
 }))
 
-const headerStyle = computed(() => ({
-  backgroundColor: currentView.value === 'variants' ? '#29275B' : '#ffffff',
-  color: currentView.value === 'variants' ? 'white' : '#333',
-  padding: '20px',
-  borderBottom: currentView.value === 'variants' ? 'none' : '1px solid #e0e0e0',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  flexShrink: 0,
-  position: 'sticky',
-  top: 0,
-  zIndex: 10
-}))
-
 const filterChipsContainerStyle = computed(() => ({
   padding: '12px 0',
   backgroundColor: '#ffffff',
@@ -2062,46 +1577,6 @@ const searchFilterBarContainerStyle = computed(() => ({
   zIndex: 100
 }))
 
-const backButtonStyle = computed(() => ({
-  backgroundColor: 'transparent',
-  border: currentView.value === 'variants' ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
-  color: currentView.value === 'variants' ? 'white' : '#666',
-  fontSize: '14px',
-  cursor: 'pointer',
-  padding: '8px 12px',
-  borderRadius: '4px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '5px',
-  transition: 'background-color 0.2s ease',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const titleStyle = computed(() => ({
-  margin: '0',
-  fontSize: isMobileDevice.value ? '18px' : '20px',
-  fontWeight: 'bold',
-  color: currentView.value === 'variants' ? 'white' : '#333',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const closeButtonStyle = computed(() => ({
-  backgroundColor: 'transparent',
-  border: currentView.value === 'variants' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #e0e0e0',
-  color: currentView.value === 'variants' ? 'white' : '#666',
-  fontSize: '18px',
-  cursor: 'pointer',
-  padding: '8px',
-  borderRadius: '4px',
-  transition: 'background-color 0.2s ease',
-  width: '36px',
-  height: '36px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontFamily: 'Arial, sans-serif'
-}))
-
 const contentStyle = computed(() => ({
   flex: 1,
   overflowY: 'auto',
@@ -2111,19 +1586,7 @@ const contentStyle = computed(() => ({
   gap: currentView.value === 'variants' ? '25px' : '20px'
 }))
 
-// Product List Styles
-const productCardStyle = computed(() => ({
-  backgroundColor: '#ffffff',
-  borderRadius: '8px',
-  padding: '20px',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-  display: 'flex',
-  gap: '15px',
-  position: 'relative',
-  transition: 'box-shadow 0.2s ease',
-  flexDirection: isMobileDevice.value ? 'column' : 'row'
-}))
-
+// Product Summary Styles (Variants View)
 const productImageStyle = computed(() => ({
   width: isMobileDevice.value ? '100%' : currentView.value === 'variants' ? '120px' : '200px',
   height: isMobileDevice.value ? '150px' : currentView.value === 'variants' ? '120px' : '150px',
@@ -2180,75 +1643,6 @@ const moreInfoStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-const addToRoomButtonStyle = computed(() => ({
-  backgroundColor: '#29275B',
-  color: 'white',
-  border: 'none',
-  padding: '12px 24px',
-  borderRadius: '6px',
-  fontSize: '14px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s ease',
-  marginTop: '10px',
-  alignSelf: 'flex-start',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const skeletonCardStyle = computed(() => ({
-  backgroundColor: '#ffffff',
-  borderRadius: '8px',
-  padding: '20px',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-  display: 'flex',
-  flexDirection: isMobileDevice.value ? 'column' : 'row',
-  gap: '15px',
-  position: 'relative',
-  overflow: 'hidden'
-}))
-
-const skeletonImageStyle = computed(() => ({
-  width: isMobileDevice.value ? '100%' : '200px',
-  height: '150px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '8px',
-  position: 'relative',
-  overflow: 'hidden'
-}))
-
-const skeletonShimmerStyle = computed(() => ({
-  position: 'absolute',
-  top: '0',
-  left: '-100%',
-  width: '100%',
-  height: '100%',
-  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-  animation: 'shimmer 1.5s infinite'
-}))
-
-const skeletonContentStyle = computed(() => ({
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '12px'
-}))
-
-const skeletonLineStyle = computed(() => ({
-  height: '20px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '6px',
-  width: isMobileDevice.value ? '70%' : '90%',
-  marginTop: '8px'
-}))
-
-const skeletonButtonStyle = computed(() => ({
-  height: '36px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '4px',
-  width: '135px',
-  marginTop: '8px'
-}))
-
 const loadingSpinnerStyle = computed(() => ({
   width: '20px',
   height: '20px',
@@ -2269,36 +1663,6 @@ const loadingProgressStyle = computed(() => ({
   color: '#666',
   justifyContent: 'center',
   marginTop: '10px'
-}))
-
-// No Results Styles (for when filters have no matches)
-const noResultsStyle = computed(() => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '60px 20px',
-  textAlign: 'center'
-}))
-
-const noResultsIconStyle = computed(() => ({
-  color: '#9ca3af',
-  marginBottom: '16px'
-}))
-
-const noResultsTitleStyle = computed(() => ({
-  fontSize: '18px',
-  fontWeight: '600',
-  color: '#374151',
-  margin: '0 0 8px 0',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const noResultsTextStyle = computed(() => ({
-  fontSize: '14px',
-  color: '#6b7280',
-  margin: '0',
-  fontFamily: 'Arial, sans-serif'
 }))
 
 // Error Styles
@@ -2352,44 +1716,6 @@ const sectionTitleStyle = computed(() => ({
   fontWeight: 'bold',
   color: '#333',
   margin: '0 0 15px 0',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const variantOptionsStyle = computed(() => ({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px'
-}))
-
-// Styles for single filtered variant display
-const singleVariantInfoStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '14px 16px',
-  backgroundColor: '#f0f9f0',
-  borderRadius: '8px',
-  border: '2px solid #29275B'
-}))
-
-const singleVariantNameStyle = computed(() => ({
-  fontSize: '15px',
-  fontWeight: '600',
-  color: '#29275B',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const colorOptionsStyle = computed(() => ({
-  display: 'grid',
-  gridTemplateColumns: isMobileDevice.value ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-  gap: '12px'
-}))
-
-const colorNameStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#333',
-  fontWeight: '500',
-  textAlign: 'center',
   fontFamily: 'Arial, sans-serif'
 }))
 
@@ -2496,37 +1822,6 @@ const confirmAddButtonStyle = computed(() => {
   }
 })
 
-const modalOverlayStyle = computed(() => ({
-  position: 'fixed',
-  top: '0',
-  left: '0',
-  right: '0',
-  bottom: '0',
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  zIndex: '9999',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-}))
-
-// 6. Add these styles for search results
-const searchContextStyle = computed(() => ({
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'center',
-  marginTop: '8px',
-  flexWrap: 'wrap'
-}))
-
-const searchVariantStyle = computed(() => ({
-  backgroundColor: '#f0f0f0',
-  color: '#666',
-  padding: '4px 8px',
-  borderRadius: '12px',
-  fontSize: '11px',
-  fontWeight: '500'
-}))
-
 
 </script>
 
@@ -2537,42 +1832,6 @@ const searchVariantStyle = computed(() => ({
 }
 
 /* Hover effects */
-.product-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
-}
-
-.back-button:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.close-button:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.select-button:hover {
-  background-color: #1e1a4a !important;
-}
-
-.variant-button:hover {
-  border-color: #29275B !important;
-  background-color: #29275B !important;
-  color: #ffffff !important;
-}
-
-/* Prevent hover effects on disabled (too large) variants */
-.variant-button[style*="not-allowed"]:hover {
-  border-color: #e5e7eb !important;
-  background-color: #f3f4f6 !important;
-  color: #9ca3af !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.color-swatch:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
 .hardware-change-button:hover {
   background-color: #29275B !important;
   color: white !important;
@@ -2589,16 +1848,7 @@ const searchVariantStyle = computed(() => ({
 }
 
 
-.more-info-link:hover {
-  text-decoration: underline !important;
-}
-
 /* Loading animations */
-@keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -2621,48 +1871,6 @@ const searchVariantStyle = computed(() => ({
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
-}
-
-/* Empty state - No products found */
-.no-products-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-  min-height: 300px;
-}
-
-.no-products-icon {
-  margin-bottom: 20px;
-  opacity: 0.6;
-}
-
-.no-products-message {
-  font-size: 16px;
-  font-weight: 500;
-  color: #6b7280;
-  margin: 0 0 24px 0;
-  font-family: Arial, sans-serif;
-  line-height: 1.5;
-}
-
-.clear-filters-btn {
-  padding: 12px 24px;
-  background-color: #29275B;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-  cursor: pointer;
-  font-family: Arial, sans-serif;
-  transition: background-color 0.15s ease;
-}
-
-.clear-filters-btn:hover {
-  background-color: #1e1b47;
 }
 
 </style>

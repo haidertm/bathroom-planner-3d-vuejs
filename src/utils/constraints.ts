@@ -64,7 +64,7 @@ export type ObjectModel = {
         depth?: string;
         // Toilet filters
         projection?: string;
-        shape?: string;
+        shape?: string;c
         rimless?: boolean;
         cisternEntry?: string;
         softCloseSeat?: boolean;

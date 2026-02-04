@@ -331,9 +331,12 @@
           </div>
 
           <!-- Empty state when no filters available -->
-          <div v-if="primaryFilters.length === 0 && secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
-            <p>No filters available for this category.</p>
-          </div>
+          <EmptyState
+            v-if="primaryFilters.length === 0 && secondaryFilters.length === 0 && !hasProductsWithPrices"
+            message="No filters available for this category."
+            size="compact"
+            :show-icon="false"
+          />
         </div>
 
         <!-- Footer -->
@@ -355,6 +358,7 @@ import { ref, computed, watch, reactive, defineOptions } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters, isRangeFilter, RANGE_FILTERS } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds } from '../../utils/filters'
+import EmptyState from './EmptyState.vue'
 
 // Disable attribute inheritance since we use Teleport as root
 defineOptions({
@@ -1500,14 +1504,6 @@ const closeDrawer = () => {
 
 .background-filter-values {
   color: #374151;
-}
-
-.no-filters-message {
-  padding: 40px 20px;
-  text-align: center;
-  color: #6b7280;
-  font-size: 14px;
-  font-family: Arial, sans-serif;
 }
 
 .filters-footer {
