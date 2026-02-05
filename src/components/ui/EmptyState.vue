@@ -19,7 +19,7 @@
     <p class="empty-state-message">{{ message }}</p>
 
     <!-- Action button (optional) -->
-    <button v-if="showButton" class="empty-state-btn" @click="$emit('action')">
+    <button v-if="showButton" type="button" class="empty-state-btn" @click="$emit('action')">
       {{ buttonText }}
     </button>
 

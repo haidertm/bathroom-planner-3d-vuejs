@@ -345,11 +345,22 @@ const getProductPrice = (result) => {
   return 0
 }
 
+// Helper: Safely get search results as array
+const getSearchResultsArray = () => {
+  if (!props.searchResults) return []
+  if (Array.isArray(props.searchResults)) return props.searchResults
+  // Handle reactive ref objects that might have a .value property
+  if (typeof props.searchResults === 'object' && 'value' in props.searchResults) {
+    return Array.isArray(props.searchResults.value) ? props.searchResults.value : []
+  }
+  return []
+}
+
 // Helper: Filter results by all active filters - used for Zero Results Prevention
 // When calculating available options, we apply ALL other filters (including price)
 // to ensure no option would result in 0 products
 const getResultsFilteredByAllFilters = (excludeFilter = null) => {
-  let filtered = [...props.searchResults]
+  let filtered = [...getSearchResultsArray()]
 
   // Apply category filter (if not excluded)
   if (excludeFilter !== 'category' && localSelectedCategory.value) {
@@ -385,7 +396,7 @@ const getResultsFilteredByAllFilters = (excludeFilter = null) => {
 // Helper: Filter results by discrete filters only (Category, Style) - used for price range calculation
 // Price should NOT affect what price range is available (would cause circular dependency)
 const getResultsFilteredByDiscreteFilters = () => {
-  let filtered = [...props.searchResults]
+  let filtered = [...getSearchResultsArray()]
 
   // Apply category filter
   if (localSelectedCategory.value) {
@@ -444,7 +455,7 @@ const fullPriceRange = computed(() => {
   let min = Infinity
   let max = 0
 
-  props.searchResults.forEach(result => {
+  getSearchResultsArray().forEach(result => {
     const price = normalizePrice(result.price)
     if (price > 0) {
       min = Math.min(min, price)
@@ -466,7 +477,13 @@ const fullPriceRange = computed(() => {
   if (min === Infinity) min = 0
   if (max === 0) max = 1000
 
-  return { min: Math.floor(min), max: Math.ceil(max) }
+  // Ensure we always return finite numbers for .toFixed() compatibility
+  const floorMin = Math.floor(min)
+  const ceilMax = Math.ceil(max)
+  return {
+    min: Number.isFinite(floorMin) ? floorMin : 0,
+    max: Number.isFinite(ceilMax) ? ceilMax : 1000
+  }
 })
 
 // Computed: Dynamic price range based on discrete filters (Category, Style)
@@ -499,7 +516,11 @@ const priceRange = computed(() => {
     ceilMax = floorMin + 1
   }
 
-  return { min: floorMin, max: ceilMax }
+  // Ensure we always return finite numbers for .toFixed() compatibility
+  return {
+    min: Number.isFinite(floorMin) ? floorMin : 0,
+    max: Number.isFinite(ceilMax) ? ceilMax : 1000
+  }
 })
 
 // Price step calculation
@@ -701,8 +722,12 @@ const toggleCategoryDropdown = async () => {
     categoryDropdownPos.value = getDropdownPosition(categoryChipRef.value)
 
     // Focus first option for accessibility
-    if (firstCategoryOption.value) {
-      firstCategoryOption.value.focus()
+    try {
+      if (firstCategoryOption.value && typeof firstCategoryOption.value.focus === 'function') {
+        firstCategoryOption.value.focus()
+      }
+    } catch (e) {
+      // Silently handle focus errors
     }
   }
 }
@@ -722,8 +747,12 @@ const togglePriceDropdown = async () => {
     priceDropdownPos.value = getDropdownPosition(priceChipRef.value)
 
     // Focus first input for accessibility
-    if (firstPriceOption.value) {
-      firstPriceOption.value.focus()
+    try {
+      if (firstPriceOption.value && typeof firstPriceOption.value.focus === 'function') {
+        firstPriceOption.value.focus()
+      }
+    } catch (e) {
+      // Silently handle focus errors
     }
   }
 }
@@ -743,8 +772,12 @@ const toggleStyleDropdown = async () => {
     styleDropdownPos.value = getDropdownPosition(styleChipRef.value)
 
     // Focus first checkbox for accessibility
-    if (firstStyleOption.value) {
-      firstStyleOption.value.focus()
+    try {
+      if (firstStyleOption.value && typeof firstStyleOption.value.focus === 'function') {
+        firstStyleOption.value.focus()
+      }
+    } catch (e) {
+      // Silently handle focus errors
     }
   }
 }
@@ -759,7 +792,13 @@ const closeAllDropdowns = () => {
   // Restore focus to the element that opened the dropdown
   if (wasOpen && lastFocusedElement.value) {
     nextTick(() => {
-      lastFocusedElement.value?.focus()
+      try {
+        if (lastFocusedElement.value && typeof lastFocusedElement.value.focus === 'function') {
+          lastFocusedElement.value.focus()
+        }
+      } catch (e) {
+        // Silently handle focus errors
+      }
       lastFocusedElement.value = null
     })
   }

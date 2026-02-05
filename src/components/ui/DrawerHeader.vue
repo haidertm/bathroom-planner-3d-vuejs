@@ -2,7 +2,7 @@
   <div :style="headerStyle">
     <button
       v-if="currentView === 'variants'"
-      @click="$emit('go-back')"
+      @click="handleGoBack"
       :style="backButtonStyle"
       class="back-button"
     >
@@ -10,17 +10,19 @@
     </button>
     <button
       v-else
-      @click="$emit('close')"
+      @click="handleClose"
       :style="backButtonStyle"
       class="back-button"
     >
       ← Go back
     </button>
 
-    <h2 :style="titleStyle" v-html="title" />
+    <h2 :style="titleStyle">
+      <span v-if="titleHighlight" :style="{ color: titleHighlightColor }">{{ titleHighlight }} </span>{{ title }}
+    </h2>
 
     <button
-      @click="$emit('close')"
+      @click="handleClose"
       :style="closeButtonStyle"
       class="close-button"
     >
@@ -31,7 +33,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
+
+const gtm = useGtm()
 
 const props = defineProps({
   currentView: {
@@ -41,10 +46,40 @@ const props = defineProps({
   title: {
     type: String,
     default: 'Products'
+  },
+  titleHighlight: {
+    type: [String, Number],
+    default: null
+  },
+  titleHighlightColor: {
+    type: String,
+    default: '#EC048C'
   }
 })
 
-defineEmits(['go-back', 'close'])
+const emit = defineEmits(['go-back', 'close'])
+
+const handleGoBack = () => {
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'drawer_back',
+      category: 'Navigation',
+      action: 'drawer_back'
+    })
+  }
+  emit('go-back')
+}
+
+const handleClose = () => {
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'drawer_close',
+      category: 'Navigation',
+      action: 'drawer_close'
+    })
+  }
+  emit('close')
+}
 
 const isMobileDevice = computed(() => isMobile())
 

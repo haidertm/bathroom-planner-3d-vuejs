@@ -1,12 +1,18 @@
 <template>
-  <div :style="cardStyle" class="skeleton-card">
+  <div
+    :style="cardStyle"
+    class="skeleton-card"
+    role="status"
+    aria-busy="true"
+    aria-label="Loading content"
+  >
     <!-- Skeleton Image -->
-    <div :style="imageStyle">
+    <div :style="imageStyle" aria-hidden="true">
       <div :style="shimmerStyle"></div>
     </div>
 
     <!-- Skeleton Content -->
-    <div :style="contentStyle">
+    <div :style="contentStyle" aria-hidden="true">
       <div :style="lineStyle"></div>
       <div :style="lineStyle"></div>
       <div :style="lineStyle"></div>
@@ -17,10 +23,23 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { isMobile } from '../../utils/helpers.js'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-const isMobileDevice = computed(() => isMobile())
+// Reactive mobile detection with resize listener
+const isMobileDevice = ref(false)
+
+const checkIsMobile = () => {
+  isMobileDevice.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  checkIsMobile()
+  window.addEventListener('resize', checkIsMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkIsMobile)
+})
 
 const cardStyle = computed(() => ({
   backgroundColor: '#ffffff',

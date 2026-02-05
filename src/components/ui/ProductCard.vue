@@ -27,7 +27,7 @@
 
       <!-- Action Button -->
       <button
-        @click="$emit('select', product)"
+        @click="onSelectProduct"
         :style="buttonStyle"
         class="select-button"
       >
@@ -39,7 +39,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
+
+const gtm = useGtm()
 
 const props = defineProps({
   product: {
@@ -56,7 +59,28 @@ const props = defineProps({
   }
 })
 
-defineEmits(['select'])
+const emit = defineEmits(['select'])
+
+const onSelectProduct = () => {
+  if (gtm?.enabled()) {
+    // Get SKU from first variant if available
+    const sku = props.product.variants?.[0]?.sku || props.product.sku || null
+
+    gtm.trackEvent({
+      event: 'product_select',
+      category: 'Product',
+      action: 'Select',
+      label: props.product.name,
+      product_id: props.product.id,
+      product_name: props.product.name,
+      product_sku: sku,
+      product_category: props.product.category || null,
+      is_search_mode: props.isSearchMode,
+      is_direct_add: props.product.searchContext?.showDirectAdd || false
+    })
+  }
+  emit('select', props.product)
+}
 
 const isMobileDevice = computed(() => isMobile())
 
@@ -74,7 +98,7 @@ const normalizePrice = (price) => {
 // Get the lowest price from all variants
 const lowestPrice = computed(() => {
   if (!props.product.variants || props.product.variants.length === 0) {
-    return props.product.price
+    return normalizePrice(props.product.price).toFixed(2)
   }
 
   const prices = props.product.variants
@@ -82,7 +106,7 @@ const lowestPrice = computed(() => {
     .filter(price => price > 0)
 
   if (prices.length === 0) {
-    return props.product.price
+    return normalizePrice(props.product.price).toFixed(2)
   }
 
   return Math.min(...prices).toFixed(2)

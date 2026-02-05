@@ -51,10 +51,14 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
 import { isModelCached } from '../../utils/modelLoader'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
+
+// Initialize GTM
+const gtm = useGtm()
 
 const props = defineProps({
   product: {
@@ -143,8 +147,13 @@ watch(() => props.product, () => {
   showAllVariants.value = false
 })
 
-// Check if variant is too large
-const isVariantTooLarge = (variant) => {
+// Helper: Get unique key for a variant
+const getVariantKey = (variant) => {
+  return variant?.sku || variant?.id || variant?.name || ''
+}
+
+// Helper: Compute if a single variant is too large (used by the memoized map)
+const computeIsVariantTooLarge = (variant) => {
   if (!variant?.dimensions) return false
 
   const variantWidth = variant.dimensions.width || 0
@@ -214,6 +223,32 @@ const isVariantTooLarge = (variant) => {
   return freePosition === null
 }
 
+// Memoized map of variant "too large" status - recomputes when any relevant prop changes
+// This avoids calling the expensive findFreeWallPosition multiple times per render
+const variantTooLargeMap = computed(() => {
+  const map = new Map()
+  const variants = props.product?.variants || []
+
+  for (const variant of variants) {
+    const key = getVariantKey(variant)
+    if (key) {
+      map.set(key, computeIsVariantTooLarge(variant))
+    }
+  }
+
+  return map
+})
+
+// Check if variant is too large - reads from memoized map
+const isVariantTooLarge = (variant) => {
+  if (!variant) return false
+  const key = getVariantKey(variant)
+  if (!key) return false
+
+  // Return cached result from the computed map
+  return variantTooLargeMap.value.get(key) ?? false
+}
+
 const getTooLargeTooltip = (variant) => {
   if (!variant?.dimensions) return ''
   if (!isVariantTooLarge(variant)) return ''
@@ -232,6 +267,25 @@ const handleVariantSelect = (variant) => {
   if (isVariantTooLarge(variant)) {
     return
   }
+
+  // Track variant selection in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'variant_select',
+      category: 'Product',
+      action: 'Select Variant',
+      label: variant.name || variant.sku,
+      variant_id: variant.id || null,
+      variant_sku: variant.sku || null,
+      variant_name: variant.name || null,
+      variant_price: variant.price || null,
+      product_id: props.product?.id || null,
+      product_name: props.product?.name || null,
+      product_category: props.product?.category || props.selectedCategory || null,
+      variant_type: props.product?.variantType || 'Size'
+    })
+  }
+
   emit('select-variant', variant)
 }
 

@@ -71,6 +71,7 @@
       <DrawerHeader
         :current-view="currentView"
         :title="drawerTitle"
+        :title-highlight="drawerTitleHighlight"
         @go-back="goBackToProductList"
         @close="closeDrawer"
       />
@@ -848,6 +849,25 @@ const handleDirectAddToRoom = async (product) => {
     console.warn('No matching variant to add')
     return
   }
+
+  // Track fixture addition in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'fixture_add',
+      category: 'Fixture',
+      action: 'Direct Add to Room',
+      label: product.name,
+      product_id: product.id,
+      product_name: product.name,
+      product_sku: variant.sku || variant.id || null,
+      product_category: product.category || product.searchContext?.category || props.selectedCategory,
+      variant_name: variant.name || variant.title || null,
+      is_search_mode: props.selectedCategory === 'search',
+      match_type: product.searchContext?.matchType || 'direct_add',
+      search_query: props.searchQuery || null
+    })
+  }
+
   const variantKey = variant.id || variant.sku || variant.name
   const modelManager = ModelManager.getInstance()
   const alreadyLoaded = modelManager.isModelLoaded(variantKey)
@@ -1141,13 +1161,20 @@ const readyProducts = computed(() => {
 
 const drawerTitle = computed(() => {
   if (props.selectedCategory === 'search') {
-    // UPDATED: Count the FLATTENED results (readyProducts) to match what is displayed
-    const count = readyProducts.value ? readyProducts.value.length : 0
-    return `<span style="color:#EC048C">${count} </span> Results Found`
+    return 'Results Found'
   }
 
   // Use display label mapping, fallback to category name
   return categoryDisplayLabels[props.selectedCategory] || props.selectedCategory || 'Products'
+})
+
+// Highlight portion of the title (the count for search results)
+const drawerTitleHighlight = computed(() => {
+  if (props.selectedCategory === 'search') {
+    // Count the FLATTENED results (readyProducts) to match what is displayed
+    return readyProducts.value ? readyProducts.value.length : 0
+  }
+  return null
 })
 
 const isSingleProductSearchMode = computed(() => {
@@ -1175,6 +1202,27 @@ const isAnythingLoading = () => {
 
 // Methods - Original functionality
 const selectProduct = async (product) => {
+  // Track product selection in GTM
+  if (gtm?.enabled()) {
+    const sku = product.searchContext?.matchingVariant?.sku ||
+                product.variants?.[0]?.sku ||
+                product.sku ||
+                null
+
+    gtm.trackEvent({
+      event: 'product_select',
+      category: 'Product',
+      action: product.searchContext?.showDirectAdd ? 'Direct Add' : 'Select',
+      label: product.name,
+      product_id: product.id,
+      product_name: product.name,
+      product_sku: sku,
+      product_category: product.category || product.searchContext?.category || props.selectedCategory,
+      is_search_mode: props.selectedCategory === 'search',
+      is_direct_add: product.searchContext?.showDirectAdd || false,
+      match_type: product.searchContext?.matchType || null
+    })
+  }
 
   // If it's a direct add product (exact SKU match), add directly
   if (product.searchContext?.showDirectAdd) {
@@ -1269,6 +1317,19 @@ const selectProduct = async (product) => {
 
 
 const goBackToProductList = () => {
+  // Track navigation back in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'navigation_back',
+      category: 'Navigation',
+      action: 'Drawer Back',
+      label: 'Back to Product List',
+      from_view: 'variants',
+      to_view: 'products',
+      product_name: selectedProduct.value?.name || null
+    })
+  }
+
   currentView.value = 'products'
   selectedProduct.value = null
 }
@@ -1461,11 +1522,40 @@ const addProductToRoom = (useProgressiveLoading = false) => {
     useProgressiveLoading: useProgressiveLoading
   }
 
+  // Track fixture addition in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'fixture_add',
+      category: 'Fixture',
+      action: 'Add to Room',
+      label: selectedProduct.value.name,
+      product_id: selectedProduct.value.id,
+      product_name: selectedProduct.value.name,
+      product_sku: selectedVariant.value.sku || selectedVariant.value.id || null,
+      product_category: componentType,
+      variant_name: selectedVariant.value.name || selectedVariant.value.title || null,
+      is_search_mode: props.selectedCategory === 'search',
+      total_price: calculateTotalPrice()
+    })
+  }
+
   // Emit the add-to-room event
   emit('add-to-room', productData)
 }
 
 const closeDrawer = () => {
+  // Track drawer close in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'navigation_close',
+      category: 'Navigation',
+      action: 'Drawer Close',
+      label: 'Close Product Drawer',
+      current_view: currentView.value,
+      selected_category: props.selectedCategory || null
+    })
+  }
+
   // Close the AllFiltersDrawer when going back
   isAllFiltersOpen.value = false
   emit('close')
