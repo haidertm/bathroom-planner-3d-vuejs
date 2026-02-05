@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
 
@@ -82,7 +82,20 @@ const onSelectProduct = () => {
   emit('select', props.product)
 }
 
-const isMobileDevice = computed(() => isMobile())
+// Reactive mobile detection with resize listener
+const isMobileDevice = ref(isMobile())
+
+const checkIsMobile = () => {
+  isMobileDevice.value = isMobile()
+}
+
+onMounted(() => {
+  window.addEventListener('resize', checkIsMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkIsMobile)
+})
 
 // Helper: Normalize price string
 const normalizePrice = (price) => {
