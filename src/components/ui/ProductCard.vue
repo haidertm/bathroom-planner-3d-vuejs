@@ -262,7 +262,6 @@ const moreInfoStyle = computed(() => ({
 }))
 
 const buttonStyle = computed(() => {
-  const isDirectAdd = props.product.searchContext?.showDirectAdd
 
   return {
     backgroundColor: '#29275B',
