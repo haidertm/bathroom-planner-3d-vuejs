@@ -406,11 +406,6 @@ export const createModel = async (
     const model = await fixture.create();
 
 
-    // Calculate the model's bounding box to find its actual center
-    const box = new THREE.Box3().setFromObject(model);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-
     model.rotation.y = rotation;
     model.scale.set(scale, scale, scale);
     model.userData.type = type;

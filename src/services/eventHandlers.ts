@@ -32,8 +32,7 @@ import {
   type GroupConstraint,
   ConstraintPriority,
   analyzeGroupConstraints,
-  snapRotationTo90Degrees,
-  describeGroupConstraint
+  snapRotationTo90Degrees
 } from '../utils/groupConstraints';
 
 interface IntersectionResult {
@@ -377,9 +376,8 @@ export class EventHandlers {
     });
 
 
-    this.rotationArrows.setRotationCompleteCallback((rotation: number) => {
+    this.rotationArrows.setRotationCompleteCallback((_rotation: number) => {
       if (this.selectedObject) {
-        const itemId = this.selectedObject.userData.itemId as number;
         this.applyPendingUpdates();
         this.isDragOperation = false;
       }

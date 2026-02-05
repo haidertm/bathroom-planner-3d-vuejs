@@ -1402,9 +1402,6 @@ export const positionTowelRail = (
     return true;
   };
 
-  // Check for existing towel rails to prevent stacking
-  const existingTowelRails = findTowelRails(existingItems);
-
   const halfDepth = radiatorDimensions.depth * scale / 2;
   const halfWidth = radiatorDimensions.width * scale / 2;
   const wallBuffer = orientation?.wallBuffer !== undefined ? orientation.wallBuffer * scale : 0;

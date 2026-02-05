@@ -823,7 +823,7 @@ export class SceneManager {
    */
   private adjustTallObjectsForBlueprintView(): void {
 
-    this.existingItems.forEach((model, itemId) => {
+    this.existingItems.forEach((model, _itemId) => {
       const dimensions = model.userData.dimensions;
       if (!dimensions) return;
 
@@ -1898,9 +1898,6 @@ export class SceneManager {
           this.existingItems.set(item.id, placeholder);
           placeholderInScene = placeholder;
 
-          // Calculate placeholder world bounds for logging
-          const placeholderBox = new THREE.Box3().setFromObject(placeholder);
-          const placeholderSize = placeholderBox.getSize(new THREE.Vector3());
           callbacks?.onPlaceholderAdded?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
@@ -1929,11 +1926,6 @@ export class SceneManager {
             wrapper.userData.orientation = getOrientationForItem(item);
             wrapper.userData.sku = item.sku;
             wrapper.userData.model = item.model;
-
-            // Calculate model bounds for debugging
-            const modelBox = new THREE.Box3().setFromObject(wrapper);
-            const modelSize = modelBox.getSize(new THREE.Vector3());
-            const modelCenter = modelBox.getCenter(new THREE.Vector3());
 
             // Add wrapper (containing full model) and remove placeholder
             this.bathroomItemsGroup.add(wrapper);
@@ -2117,7 +2109,6 @@ export class SceneManager {
         onFullModelReady: (fullModel) => {
           // Get positioning parameters from new variant
           const spawnHeight = newVariant.spawnHeight || 0;
-          const floorOffset = newVariant.floorOffset || 0;
 
           // Get the current model in the scene (could be placeholder or original)
           const currentModel = this.existingItems.get(itemId);
@@ -2651,10 +2642,6 @@ export class SceneManager {
         // Visibility will be set by updateGridVisibility() at the end
 
         this.scene.add(this.gridRef);
-
-        // Verify it's in the scene
-        const gridInScene = this.scene.children.find(child => child === this.gridRef);
-
       } catch (error) {
         console.error('❌ Error creating floor grid:', error);
       }
@@ -2750,10 +2737,9 @@ export class SceneManager {
     return this.wallGridVisible;
   }
 
-  private debugModelVisibility(model: THREE.Object3D, item: any): void {
+  private debugModelVisibility(model: THREE.Object3D, _item: any): void {
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
 
     // Check if model is too small
     const maxSize = Math.max(size.x, size.y, size.z);
@@ -2866,16 +2852,6 @@ export class SceneManager {
     } finally {
       this.isUpdatingItems = false;
     }
-  }
-
-  private getModelBoundingBox(model: THREE.Object3D): any {
-    const box = new THREE.Box3().setFromObject(model);
-    return {
-      min: box.min,
-      max: box.max,
-      size: box.getSize(new THREE.Vector3()),
-      center: box.getCenter(new THREE.Vector3())
-    };
   }
 
   private enhanceModelMaterials(model: THREE.Object3D): void {

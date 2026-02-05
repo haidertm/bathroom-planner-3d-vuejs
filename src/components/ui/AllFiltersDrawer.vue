@@ -354,7 +354,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive, defineOptions } from 'vue'
+import { ref, computed, watch, reactive } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import { getPrimaryFilters, getSecondaryFilters, getFilterLabel as getLabel, EMPTY_FILTERS, createEmptyFilters, isRangeFilter, RANGE_FILTERS } from '../../constants/filters'
 import { extractFilterOptions, filterProducts, filterProductVariants, extractRangeBounds } from '../../utils/filters'

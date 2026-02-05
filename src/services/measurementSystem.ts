@@ -511,12 +511,6 @@ export class MeasurementSystem {
       const frontDistance = Math.abs(currentMinZ - itemBounds.maxZ);  // Current's front edge to item's back edge
       const backDistance = Math.abs(currentMaxZ - itemBounds.minZ);   // Current's back edge to item's front edge
 
-      // Calculate centers for logging and direction comparison
-      const currentCenterXLog = (currentMinX + currentMaxX) / 2;
-      const currentCenterZLog = (currentMinZ + currentMaxZ) / 2;
-      const itemCenterXLog = (itemBounds.minX + itemBounds.maxX) / 2;
-      const itemCenterZLog = (itemBounds.minZ + itemBounds.maxZ) / 2;
-
       // Debug logging
       // ✅ FIX: Use bounding-box-overlap test instead of center/position math
       // For X-axis alignment (left/right distance): check if Z ranges overlap
@@ -1091,13 +1085,10 @@ export class MeasurementSystem {
   ): void {
     const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack } = measurements;
 
-    // ✅ CRITICAL: Calculate object center height for lines and label positions
-    const objectCenterY = this.getObjectCenterY(measurements, position);
+    // ✅ CRITICAL: Calculate object top height for label positions
     const objectTopY = this.getObjectTopY(measurements, position);
-    const objectBottomY = this.getObjectBottomY(measurements, position);
 
-    // ✅ Position labels ABOVE the object, but lines at object center
-    const labelHeightOffset = 50; // 50cm above top of object for main labels
+    // ✅ Position labels ABOVE the object
     const spaceHeightOffset = 30; // 30cm above top of object for space labels
 
     // Show space in all four directions
