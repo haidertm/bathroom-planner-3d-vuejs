@@ -32,9 +32,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
-import { isMobile } from '../../utils/helpers.js'
+import { useIsMobile } from '../../composables/useIsMobile'
 
 const gtm = useGtm()
 
@@ -81,20 +81,7 @@ const handleClose = () => {
   emit('close')
 }
 
-// Reactive mobile detection with resize listener
-const isMobileDevice = ref(isMobile())
-
-const checkIsMobile = () => {
-  isMobileDevice.value = isMobile()
-}
-
-onMounted(() => {
-  window.addEventListener('resize', checkIsMobile)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkIsMobile)
-})
+const isMobileDevice = useIsMobile()
 
 const headerStyle = computed(() => ({
   backgroundColor: props.currentView === 'variants' ? '#29275B' : '#ffffff',

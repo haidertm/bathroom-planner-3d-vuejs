@@ -23,23 +23,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
+import { useIsMobile } from '../../composables/useIsMobile'
 
-// Reactive mobile detection with resize listener
-const isMobileDevice = ref(false)
-
-const checkIsMobile = () => {
-  isMobileDevice.value = window.innerWidth <= 768
-}
-
-onMounted(() => {
-  checkIsMobile()
-  window.addEventListener('resize', checkIsMobile)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkIsMobile)
-})
+const isMobileDevice = useIsMobile()
 
 const cardStyle = computed(() => ({
   backgroundColor: '#ffffff',

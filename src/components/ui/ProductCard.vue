@@ -2,7 +2,22 @@
   <div :style="cardStyle" class="product-card">
     <!-- Product Image -->
     <div :style="imageContainerStyle">
-      <img :src="product.image" :alt="product.name" :style="imageStyle" />
+      <!-- Skeleton placeholder while loading -->
+      <div v-if="!imageLoaded && !imageError" :style="imageSkeletonStyle" class="image-skeleton"></div>
+      <!-- Actual image with lazy loading -->
+      <img
+        :src="product.image"
+        :alt="product.name"
+        :style="{ ...imageStyle, opacity: imageLoaded ? 1 : 0 }"
+        loading="lazy"
+        decoding="async"
+        @load="onImageLoad"
+        @error="onImageError"
+      />
+      <!-- Error fallback -->
+      <div v-if="imageError" :style="imageErrorStyle">
+        <span>Image unavailable</span>
+      </div>
     </div>
 
     <!-- Product Info -->
@@ -38,9 +53,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
-import { isMobile } from '../../utils/helpers.js'
+import { useIsMobile } from '../../composables/useIsMobile'
 
 const gtm = useGtm()
 
@@ -82,19 +97,24 @@ const onSelectProduct = () => {
   emit('select', props.product)
 }
 
-// Reactive mobile detection with resize listener
-const isMobileDevice = ref(isMobile())
+const isMobileDevice = useIsMobile()
 
-const checkIsMobile = () => {
-  isMobileDevice.value = isMobile()
+// Image lazy loading state
+const imageLoaded = ref(false)
+const imageError = ref(false)
+
+const onImageLoad = () => {
+  imageLoaded.value = true
 }
 
-onMounted(() => {
-  window.addEventListener('resize', checkIsMobile)
-})
+const onImageError = () => {
+  imageError.value = true
+}
 
-onUnmounted(() => {
-  window.removeEventListener('resize', checkIsMobile)
+// Reset image state when product changes
+watch(() => props.product?.image, () => {
+  imageLoaded.value = false
+  imageError.value = false
 })
 
 // Helper: Normalize price string
@@ -215,6 +235,7 @@ const cardStyle = computed(() => ({
 }))
 
 const imageContainerStyle = computed(() => ({
+  position: 'relative',
   width: isMobileDevice.value ? '100%' : '200px',
   height: isMobileDevice.value ? '150px' : '150px',
   flexShrink: 0,
@@ -226,7 +247,34 @@ const imageContainerStyle = computed(() => ({
 const imageStyle = computed(() => ({
   width: '100%',
   height: '100%',
-  objectFit: 'cover'
+  objectFit: 'cover',
+  transition: 'opacity 0.3s ease'
+}))
+
+const imageSkeletonStyle = computed(() => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  backgroundColor: '#f0f0f0',
+  borderRadius: '8px'
+}))
+
+const imageErrorStyle = computed(() => ({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  backgroundColor: '#f5f5f5',
+  borderRadius: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#999',
+  fontSize: '12px',
+  fontFamily: 'Arial, sans-serif'
 }))
 
 const infoStyle = computed(() => ({
@@ -308,5 +356,26 @@ const searchVariantStyle = computed(() => ({
 
 .more-info-link:hover {
   text-decoration: underline !important;
+}
+
+/* Image skeleton shimmer animation */
+.image-skeleton {
+  overflow: hidden;
+}
+
+.image-skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
 }
 </style>
