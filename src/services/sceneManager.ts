@@ -5,8 +5,7 @@ import { markRaw } from 'vue';
 import { type MeasurementData, MeasurementSystem } from './measurementSystem';
 import { createModel, ModelManager } from '../models/bathroomFixtures';
 import { ProgressiveModelLoader } from './progressiveModelLoader';
-import { WallLabelsDebug } from '../utils/wallLabelsDebug.js';
-import { AxisIndicatorsDebug } from '../utils/axisIndicatorsDebug.js';
+import { WallLabelsDebug, AxisIndicatorsDebug } from '../debug';
 import {
   createFloor,
   createWalls,
@@ -2499,16 +2498,18 @@ export class SceneManager {
       });
     }
 
-    this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
-    // NEW: Add axis indicators with notch support for L-shaped rooms
-    this.axisIndicatorsDebug.createAxisIndicators(
-      this.scene,
-      roomWidth,
-      roomHeight,
-      notchWidth || 0,
-      notchHeight || 0,
-      this.debugLabelsEnabled
-    );
+    if (this.scene) {
+      this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+      // NEW: Add axis indicators with notch support for L-shaped rooms
+      this.axisIndicatorsDebug?.createAxisIndicators(
+        this.scene,
+        roomWidth,
+        roomHeight,
+        notchWidth || 0,
+        notchHeight || 0,
+        this.debugLabelsEnabled
+      );
+    }
 
     // 🔥 UPDATE: Reposition lights when room dimensions change
     this.setupEnhancedLighting();
@@ -2522,7 +2523,9 @@ export class SceneManager {
   }
 
   updateLabels(roomWidth: number, roomHeight: number): void {
-    this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+    if (this.scene) {
+      this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+    }
   }
 
   private createEnhancedWallMaterial(wallTexture: TextureConfig): THREE.MeshStandardMaterial {

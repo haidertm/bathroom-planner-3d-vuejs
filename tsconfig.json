@@ -22,7 +22,20 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@services/*": ["src/services/*"],
+      "@utils/*": ["src/utils/*"],
+      "@composables/*": ["src/composables/*"],
+      "@constants/*": ["src/constants/*"],
+      "@debug/*": ["src/debug/*"],
+      "@models/*": ["src/models/*"],
+      "@pages/*": ["src/pages/*"]
+    }
   },
   "include": [
     "src/**/*.ts",
