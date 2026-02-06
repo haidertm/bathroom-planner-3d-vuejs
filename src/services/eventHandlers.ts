@@ -34,6 +34,7 @@ import {
   analyzeGroupConstraints,
   snapRotationTo90Degrees
 } from '../utils/groupConstraints';
+import { type SceneEventBus } from './sceneEventBus';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -146,7 +147,13 @@ export class EventHandlers {
   // 2D/3D View Mode
   private viewMode: ViewMode = '3d';
   public orthographicCamera: THREE.OrthographicCamera | null = null; // Public for SceneManager access
-  private sceneManager: any = null; // Reference to SceneManager for 2D zoom
+
+  // @deprecated - Use event bus instead. Kept for backward compatibility during migration.
+  private sceneManager: any = null;
+
+  // Event bus for decoupled communication with SceneManager
+  private eventBus: SceneEventBus | null = null;
+  private eventBusUnsubscribers: (() => void)[] = [];
 
   /**
    * Toggle multi-selection mode
@@ -368,9 +375,7 @@ export class EventHandlers {
           this.rotationArrows?.updateArrowPositions();
 
           // Update schematic overlay rotation in 2D mode
-          if (this.sceneManager?.updateSchematicPosition) {
-            this.sceneManager.updateSchematicPosition(itemId);
-          }
+          this.emitSchematicUpdateEvent(itemId);
         }
       }
     });
@@ -503,7 +508,8 @@ export class EventHandlers {
   }
 
   /**
-   * Set reference to SceneManager for 2D zoom control
+   * @deprecated Use setEventBus() instead. This method creates a circular dependency.
+   * Kept for backward compatibility during migration.
    */
   public setSceneManager(sceneManager: any): void {
     this.sceneManager = sceneManager;
@@ -517,6 +523,83 @@ export class EventHandlers {
    */
   public setOrthographicCamera(camera: THREE.OrthographicCamera): void {
     this.orthographicCamera = camera;
+  }
+
+  /**
+   * Connect to the event bus for decoupled communication with SceneManager.
+   * This replaces the circular dependency pattern.
+   */
+  public setEventBus(eventBus: SceneEventBus): void {
+    // Clean up previous subscriptions
+    this.eventBusUnsubscribers.forEach(unsub => unsub());
+    this.eventBusUnsubscribers = [];
+
+    this.eventBus = eventBus;
+    this.subscribeToEventBusEvents();
+  }
+
+  /**
+   * Subscribe to events from SceneManager via the event bus.
+   */
+  private subscribeToEventBusEvents(): void {
+    if (!this.eventBus) return;
+
+    // Listen for view mode changes from SceneManager
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('view:modeChanged', ({ mode }) => {
+        this.setViewMode(mode);
+      })
+    );
+
+    // Listen for orthographic camera ready events
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:orthographicReady', ({ camera }) => {
+        this.setOrthographicCamera(camera);
+      })
+    );
+
+    // Listen for camera sync requests
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:syncPosition', () => {
+        this.syncTargetCameraPosition();
+      })
+    );
+  }
+
+  /**
+   * Emit schematic update event via event bus (replaces direct sceneManager.updateSchematicPosition() call)
+   */
+  private emitSchematicUpdateEvent(itemId: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('schematic:update', { itemId });
+    } else if (this.sceneManager?.updateSchematicPosition) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.updateSchematicPosition(itemId);
+    }
+  }
+
+  /**
+   * Emit 2D pan event via event bus (replaces direct sceneManager.pan2D() call)
+   */
+  private emitPan2DEvent(deltaX: number, deltaZ: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('camera:pan2d', { deltaX, deltaZ });
+    } else if (this.sceneManager) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.pan2D(deltaX, deltaZ);
+    }
+  }
+
+  /**
+   * Emit 2D zoom event via event bus (replaces direct sceneManager.zoom2D() call)
+   */
+  private emitZoom2DEvent(delta: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('camera:zoom2d', { delta });
+    } else if (this.sceneManager) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.zoom2D(delta);
+    }
   }
 
   /**
@@ -926,9 +1009,7 @@ export class EventHandlers {
               }
 
               // Update schematic overlay position in 2D mode
-              if (this.sceneManager?.updateSchematicPosition) {
-                this.sceneManager.updateSchematicPosition(itemId);
-              }
+              this.emitSchematicUpdateEvent(itemId);
 
               // Update the item data and save to history using queueUpdate
               // Since isDragOperation is false at this point, queueUpdate will apply immediately and save to history
@@ -2040,8 +2121,8 @@ export class EventHandlers {
         });
 
         // ✅ Update schematic overlay position in 2D mode for multi-selected objects
-        if (this.viewMode === '2d' && this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(id);
+        if (this.viewMode === '2d') {
+          this.emitSchematicUpdateEvent(id);
         }
       }
     });
@@ -2103,9 +2184,7 @@ export class EventHandlers {
         });
 
         // Update schematic overlay position if in 2D mode toggle
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(id);
-        }
+        this.emitSchematicUpdateEvent(id);
       }
     });
 
@@ -2338,9 +2417,7 @@ export class EventHandlers {
         setOutlineColor(isColliding);
 
         // Update schematic overlay position in 2D mode
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
 
         // Apply bulk move to other selected objects
         this.applyBulkMove(this.selectedObject, idealPosition, objectRotation);
@@ -2577,9 +2654,7 @@ export class EventHandlers {
           this.selectedObject.rotation.y = constrainedRotation;
 
           // Update schematic overlay position in 2D mode
-          if (this.sceneManager?.updateSchematicPosition) {
-            this.sceneManager.updateSchematicPosition(itemId);
-          }
+          this.emitSchematicUpdateEvent(itemId);
 
           // Queue update
           this.queueUpdate(itemId, {
@@ -3352,9 +3427,7 @@ export class EventHandlers {
       }
 
       // Update schematic overlay position in 2D mode
-      if (this.sceneManager?.updateSchematicPosition) {
-        this.sceneManager.updateSchematicPosition(itemId);
-      }
+      this.emitSchematicUpdateEvent(itemId);
 
       // Queue update
       const updateData: UpdateData = {
@@ -3377,10 +3450,8 @@ export class EventHandlers {
         const deltaY = event.clientY - this.mouseY;
 
         // Pan the orthographic camera
-        if (this.sceneManager) {
-          // Invert deltaY because screen Y is opposite to world Z in top-down view
-          this.sceneManager.pan2D(-deltaX, -deltaY);
-        }
+        // Invert deltaY because screen Y is opposite to world Z in top-down view
+        this.emitPan2DEvent(-deltaX, -deltaY);
 
         this.mouseX = event.clientX;
         this.mouseY = event.clientY;
@@ -3646,14 +3717,10 @@ export class EventHandlers {
         }
 
         // Update schematic overlay position after snap-back (for 2D mode)
-        if (this.sceneManager?.updateSchematicPosition) {
-          // Update for all selected objects (primary + others)
-          this.selectedObjects.forEach((_, id) => {
-            if (this.sceneManager?.updateSchematicPosition) {
-              this.sceneManager.updateSchematicPosition(id);
-            }
-          });
-        }
+        // Update for all selected objects (primary + others)
+        this.selectedObjects.forEach((_, id) => {
+          this.emitSchematicUpdateEvent(id);
+        });
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
@@ -3716,10 +3783,8 @@ export class EventHandlers {
 
     // 📐 2D MODE: Use orthographic zoom
     if (this.viewMode === '2d') {
-      if (this.sceneManager) {
-        const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
-        this.sceneManager.zoom2D(zoomDelta);
-      }
+      const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
+      this.emitZoom2DEvent(zoomDelta);
       return;
     }
 
@@ -4051,9 +4116,7 @@ export class EventHandlers {
         }
 
         // Update schematic overlay position in 2D mode
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
 
         const updateData: UpdateData = {
           position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z]
@@ -4114,10 +4177,8 @@ export class EventHandlers {
       if (scale > 1.02 || scale < 0.98) {
         // 📐 2D MODE: Use orthographic zoom (same as wheel zoom)
         if (this.viewMode === '2d') {
-          if (this.sceneManager) {
-            const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
-            this.sceneManager.zoom2D(zoomDelta);
-          }
+          const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
+          this.emitZoom2DEvent(zoomDelta);
           this.lastTouchDistance = distance;
           return;
         }
@@ -4223,9 +4284,7 @@ export class EventHandlers {
         setOutlineColor(false);
 
         // Update schematic overlay position after snap-back (for 2D mode)
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);

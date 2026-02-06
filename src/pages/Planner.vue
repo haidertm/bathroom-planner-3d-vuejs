@@ -169,6 +169,7 @@ import { getTemplateById } from '../constants/templates'
 // Services
 import { SceneManager } from '../services/sceneManager'
 import { EventHandlers } from '../services/eventHandlers'
+import { createSceneEventBus } from '../services/sceneEventBus'
 
 // Analytics
 import { useGtm } from '@gtm-support/vue-gtm'
@@ -202,6 +203,7 @@ const gtm = useGtm()
 const mountRef = ref(null)
 const sceneManagerRef = shallowRef(null)
 const eventHandlersRef = shallowRef(null)
+const eventBusRef = shallowRef(null)
 const roomWidthRef = ref(ROOM_DEFAULTS.WIDTH)
 const roomHeightRef = ref(ROOM_DEFAULTS.HEIGHT)
 const hasUnsavedChanges = ref(false)
@@ -2100,7 +2102,10 @@ onMounted(async () => {
     eventHandlersRef.value.onShowToast = showToast
   }
 
-  sceneManagerRef.value.setEventHandlers(eventHandlersRef.value);
+  // Create and connect event bus for decoupled communication
+  eventBusRef.value = createSceneEventBus();
+  sceneManagerRef.value.setEventBus(eventBusRef.value);
+  eventHandlersRef.value.setEventBus(eventBusRef.value);
 
   // Apply pending camera position BEFORE rendering starts (to avoid visual jump)
   if (pendingCameraPosition) {
@@ -2277,6 +2282,11 @@ onUnmounted(() => {
 
   if (sceneManagerRef.value) {
     sceneManagerRef.value.dispose()
+  }
+
+  // Dispose event bus
+  if (eventBusRef.value) {
+    eventBusRef.value.dispose()
   }
 })
 
