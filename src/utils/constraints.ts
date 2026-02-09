@@ -772,9 +772,11 @@ export const checkCollision = (
             const tolerance = 30; // 30cm tolerance for notch wall detection
 
             // Check if on notch-east wall (vertical edge of notch) - needs dimension swap (like east/west walls)
+            // FIXED: notch-east wall only exists from notchMinZ to notchMaxZ (not all the way to roomHalfHeight)
+            // Use same tolerance strategy as checkWallCollision for consistent behavior near notchMaxZ
             if (Math.abs(pos.x - notchMaxX) < tolerance &&
                 pos.z >= notchMinZ &&
-                pos.z <= roomHalfHeight - wallThickness) {
+                pos.z <= notchMaxZ + tolerance) {
                 console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall (needs swap)', {
                     position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
                     notchMaxX: notchMaxX.toFixed(1),
@@ -921,8 +923,45 @@ export const checkCollision = (
         const distToEast = Math.abs(pos.x - eastWall);
         const distToWest = Math.abs(pos.x - westWall);
 
-        const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
         const wallTolerance = 10; // 10cm tolerance for wall detection
+
+        // Check notch walls FIRST for L-shaped rooms (they take priority)
+        if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+            const notchMaxX = -rw / 2 + notchWidth - wallThickness;
+            const notchMaxZ = -rh / 2 + notchHeight - wallThickness;
+            const notchMinX = -rw / 2 + wallThickness;
+            const notchMinZ = -rh / 2 + wallThickness;
+
+            const distToNotchEast = Math.abs(pos.x - notchMaxX);
+            const distToNotchSouth = Math.abs(pos.z - notchMaxZ);
+
+            // Check if on notch-east wall (vertical edge at x = notchMaxX)
+            // Only valid if z is within the notch's z range
+            if (distToNotchEast <= wallTolerance &&
+                pos.z >= notchMinZ &&
+                pos.z <= notchMaxZ) {
+                const adjustedPos = { ...pos };
+                // Notch-east wall - item extends in +x direction (into room, away from notch void)
+                // This matches constrainToWalls behavior: notch.maxX + halfDepth + wallBuffer
+                const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
+                adjustedPos.x = pos.x + effectiveHalfDepth;
+                return adjustedPos;
+            }
+
+            // Check if on notch-south wall (horizontal edge at z = notchMaxZ)
+            // Only valid if x is within the notch's x range
+            if (distToNotchSouth <= wallTolerance &&
+                pos.x >= notchMinX &&
+                pos.x <= notchMaxX) {
+                const adjustedPos = { ...pos };
+                // Notch-south wall - item extends in +z direction (into room)
+                const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
+                adjustedPos.z = pos.z + effectiveHalfDepth;
+                return adjustedPos;
+            }
+        }
+
+        const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
 
         // Only adjust if item is very close to a wall (within tolerance)
         if (minDist > wallTolerance) return pos;
@@ -1749,12 +1788,15 @@ export const findFreeWallPosition = (
     console.log(`🔧 Initial placement flush check: ${isFlushMounted ? 'FLUSH-MOUNTED' : 'OFFSET'} (wallBuffer: ${wallBuffer})`);
 
     // Define walls with proper interior positioning
+    // For L-shaped rooms, north and west walls are shortened to exclude the notch area
     const walls = [
         {
             name: 'north',
             getPosition: (t: number) => {
                 // Calculate position along wall
-                const minX = interior.minX + halfWidth;  // Don't go past west corner
+                // For L-shaped rooms, north wall starts at notch.maxX + wall thickness (notch cuts off northwest corner)
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+                const minX = notch ? (notch.maxX + wallThickness + halfWidth) : (interior.minX + halfWidth);
                 const maxX = interior.maxX - halfWidth;  // Don't go past east corner
                 return {
                     x: minX + t * (maxX - minX),
@@ -1796,7 +1838,9 @@ export const findFreeWallPosition = (
         {
             name: 'west',
             getPosition: (t: number) => {
-                const minZ = interior.minZ + halfWidth;
+                // For L-shaped rooms, west wall starts at notch.maxZ + wall thickness (notch cuts off northwest corner)
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+                const minZ = notch ? (notch.maxZ + wallThickness + halfWidth) : (interior.minZ + halfWidth);
                 const maxZ = interior.maxZ - halfWidth;
                 return {
                     // ✅ FIX: Flush-mounted objects go directly at wall
