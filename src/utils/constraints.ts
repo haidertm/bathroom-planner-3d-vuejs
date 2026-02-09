@@ -772,9 +772,10 @@ export const checkCollision = (
             const tolerance = 30; // 30cm tolerance for notch wall detection
 
             // Check if on notch-east wall (vertical edge of notch) - needs dimension swap (like east/west walls)
+            // FIXED: notch-east wall only exists from notchMinZ to notchMaxZ (not all the way to roomHalfHeight)
             if (Math.abs(pos.x - notchMaxX) < tolerance &&
                 pos.z >= notchMinZ &&
-                pos.z <= roomHalfHeight - wallThickness) {
+                pos.z <= notchMaxZ) {
                 console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall (needs swap)', {
                     position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
                     notchMaxX: notchMaxX.toFixed(1),
@@ -921,8 +922,44 @@ export const checkCollision = (
         const distToEast = Math.abs(pos.x - eastWall);
         const distToWest = Math.abs(pos.x - westWall);
 
-        const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
         const wallTolerance = 10; // 10cm tolerance for wall detection
+
+        // Check notch walls FIRST for L-shaped rooms (they take priority)
+        if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+            const notchMaxX = -rw / 2 + notchWidth - wallThickness;
+            const notchMaxZ = -rh / 2 + notchHeight - wallThickness;
+            const notchMinX = -rw / 2 + wallThickness;
+            const notchMinZ = -rh / 2 + wallThickness;
+
+            const distToNotchEast = Math.abs(pos.x - notchMaxX);
+            const distToNotchSouth = Math.abs(pos.z - notchMaxZ);
+
+            // Check if on notch-east wall (vertical edge at x = notchMaxX)
+            // Only valid if z is within the notch's z range
+            if (distToNotchEast <= wallTolerance &&
+                pos.z >= notchMinZ &&
+                pos.z <= notchMaxZ) {
+                const adjustedPos = { ...pos };
+                // Notch-east wall - item extends in -x direction (into room)
+                const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
+                adjustedPos.x = pos.x - effectiveHalfDepth;
+                return adjustedPos;
+            }
+
+            // Check if on notch-south wall (horizontal edge at z = notchMaxZ)
+            // Only valid if x is within the notch's x range
+            if (distToNotchSouth <= wallTolerance &&
+                pos.x >= notchMinX &&
+                pos.x <= notchMaxX) {
+                const adjustedPos = { ...pos };
+                // Notch-south wall - item extends in +z direction (into room)
+                const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
+                adjustedPos.z = pos.z + effectiveHalfDepth;
+                return adjustedPos;
+            }
+        }
+
+        const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
 
         // Only adjust if item is very close to a wall (within tolerance)
         if (minDist > wallTolerance) return pos;
