@@ -5,8 +5,7 @@ import { markRaw } from 'vue';
 import { type MeasurementData, MeasurementSystem } from './measurementSystem';
 import { createModel, ModelManager } from '../models/bathroomFixtures';
 import { ProgressiveModelLoader } from './progressiveModelLoader';
-import { WallLabelsDebug } from '../utils/wallLabelsDebug.js';
-import { AxisIndicatorsDebug } from '../utils/axisIndicatorsDebug.js';
+import { WallLabelsDebug, AxisIndicatorsDebug } from '../debug';
 import {
   createFloor,
   createWalls,
@@ -24,6 +23,7 @@ import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
 import { CameraTransition, Easing } from './cameraTransition';
 import { getSchematicTypeFromSku, type SchematicType } from '../constants/schematicPatterns';
+import { type SceneEventBus } from './sceneEventBus';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -51,7 +51,13 @@ export class SceneManager {
   // Cameras are wrapped with markRaw() during initialization to prevent Vue reactivity overhead
   public camera: THREE.PerspectiveCamera | null = null;
   public renderer: THREE.WebGLRenderer | null = null;
+
+  // @deprecated - Use event bus instead. Kept for backward compatibility during migration.
   private eventHandlers: any = null;
+
+  // Event bus for decoupled communication with EventHandlers
+  private eventBus: SceneEventBus | null = null;
+  private eventBusUnsubscribers: (() => void)[] = [];
 
   // 2D Blueprint View - Orthographic camera (marked raw to prevent Vue reactivity)
   public orthographicCamera: THREE.OrthographicCamera | null = null;
@@ -200,11 +206,89 @@ export class SceneManager {
     }
   }
 
+  /**
+   * @deprecated Use setEventBus() instead. This method creates a circular dependency.
+   * Kept for backward compatibility during migration.
+   */
   public setEventHandlers(eventHandlers: any): void {
     this.eventHandlers = eventHandlers;
     // Set the reverse reference so EventHandlers can call SceneManager methods (e.g., updateSchematicPosition)
     if (eventHandlers?.setSceneManager) {
       eventHandlers.setSceneManager(this);
+    }
+  }
+
+  /**
+   * Connect to the event bus for decoupled communication with EventHandlers.
+   * This replaces the circular dependency pattern.
+   */
+  public setEventBus(eventBus: SceneEventBus): void {
+    // Clean up previous subscriptions
+    this.eventBusUnsubscribers.forEach(unsub => unsub());
+    this.eventBusUnsubscribers = [];
+
+    this.eventBus = eventBus;
+    this.subscribeToEventBusEvents();
+  }
+
+  /**
+   * Subscribe to events from EventHandlers via the event bus.
+   */
+  private subscribeToEventBusEvents(): void {
+    if (!this.eventBus) return;
+
+    // Listen for schematic position updates (high-frequency during drag)
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('schematic:update', ({ itemId }) => {
+        this.updateSchematicPosition(itemId);
+      })
+    );
+
+    // Listen for 2D pan requests
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:pan2d', ({ deltaX, deltaZ }) => {
+        this.pan2D(deltaX, deltaZ);
+      })
+    );
+
+    // Listen for 2D zoom requests
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:zoom2d', ({ delta }) => {
+        this.zoom2D(delta);
+      })
+    );
+  }
+
+  /**
+   * Emit camera sync event via event bus (replaces direct eventHandlers.syncTargetCameraPosition() call)
+   */
+  private emitCameraSyncEvent(): void {
+    if (this.eventBus) {
+      this.eventBus.emit('camera:syncPosition', {});
+    } else if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
+      // Fallback to direct call for backward compatibility
+      this.eventHandlers.syncTargetCameraPosition();
+    }
+  }
+
+  /**
+   * Emit view mode change event via event bus (replaces direct eventHandlers.setViewMode() call)
+   */
+  private emitViewModeChangeEvent(mode: ViewMode): void {
+    if (this.eventBus) {
+      this.eventBus.emit('view:modeChanged', { mode });
+      // Also emit orthographic camera ready event when switching to 2D
+      if (mode === '2d' && this.orthographicCamera) {
+        this.eventBus.emit('camera:orthographicReady', { camera: this.orthographicCamera });
+      }
+    } else if (this.eventHandlers) {
+      // Fallback to direct calls for backward compatibility
+      if (typeof this.eventHandlers.setViewMode === 'function') {
+        this.eventHandlers.setViewMode(mode);
+      }
+      if (mode === '2d' && typeof this.eventHandlers.setOrthographicCamera === 'function' && this.orthographicCamera) {
+        this.eventHandlers.setOrthographicCamera(this.orthographicCamera);
+      }
     }
   }
 
@@ -232,9 +316,7 @@ export class SceneManager {
     );
 
     // Sync with EventHandlers target position to prevent animation loop from resetting
-    if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
-      this.eventHandlers.syncTargetCameraPosition();
-    }
+    this.emitCameraSyncEvent();
   }
 
   setCustomCameraPosition(position: { x: number; y: number; z: number }): void {
@@ -244,9 +326,7 @@ export class SceneManager {
     this.camera.lookAt(LOOK_AT.x, LOOK_AT.y, LOOK_AT.z);
 
     // Sync with EventHandlers target position to prevent animation loop from resetting
-    if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
-      this.eventHandlers.syncTargetCameraPosition();
-    }
+    this.emitCameraSyncEvent();
   }
 
   // ADD: Method to get camera info for debugging
@@ -493,14 +573,7 @@ export class SceneManager {
       this.create2DSchematicOverlays();
 
       // Notify event handlers of mode change and pass orthographic camera
-      if (this.eventHandlers) {
-        if (typeof this.eventHandlers.setViewMode === 'function') {
-          this.eventHandlers.setViewMode('2d');
-        }
-        if (typeof this.eventHandlers.setOrthographicCamera === 'function' && this.orthographicCamera) {
-          this.eventHandlers.setOrthographicCamera(this.orthographicCamera);
-        }
-      }
+      this.emitViewModeChangeEvent('2d');
 
       // Apply transparency to tall objects to prevent obscuring shorter items
       this.adjustTallObjectsForBlueprintView();
@@ -569,9 +642,7 @@ export class SceneManager {
       this.updateGridVisibility();
 
       // Notify event handlers of mode change
-      if (this.eventHandlers && typeof this.eventHandlers.setViewMode === 'function') {
-        this.eventHandlers.setViewMode('3d');
-      }
+      this.emitViewModeChangeEvent('3d');
 
       // Restore full opacity to tall objects
       this.restoreTallObjectsOpacity();
@@ -612,9 +683,7 @@ export class SceneManager {
       );
 
       // Sync with EventHandlers target position after animation completes
-      if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
-        this.eventHandlers.syncTargetCameraPosition();
-      }
+      this.emitCameraSyncEvent();
     } catch (error) {
       console.error('❌ Error during 3D view transition:', error);
       throw error;
@@ -2499,16 +2568,18 @@ export class SceneManager {
       });
     }
 
-    this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
-    // NEW: Add axis indicators with notch support for L-shaped rooms
-    this.axisIndicatorsDebug.createAxisIndicators(
-      this.scene,
-      roomWidth,
-      roomHeight,
-      notchWidth || 0,
-      notchHeight || 0,
-      this.debugLabelsEnabled
-    );
+    if (this.scene) {
+      this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+      // NEW: Add axis indicators with notch support for L-shaped rooms
+      this.axisIndicatorsDebug?.createAxisIndicators(
+        this.scene,
+        roomWidth,
+        roomHeight,
+        notchWidth || 0,
+        notchHeight || 0,
+        this.debugLabelsEnabled
+      );
+    }
 
     // 🔥 UPDATE: Reposition lights when room dimensions change
     this.setupEnhancedLighting();
@@ -2522,7 +2593,9 @@ export class SceneManager {
   }
 
   updateLabels(roomWidth: number, roomHeight: number): void {
-    this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+    if (this.scene) {
+      this.wallLabelsDebug?.createWallLabels(this.scene, roomWidth, roomHeight, this.debugLabelsEnabled);
+    }
   }
 
   private createEnhancedWallMaterial(wallTexture: TextureConfig): THREE.MeshStandardMaterial {

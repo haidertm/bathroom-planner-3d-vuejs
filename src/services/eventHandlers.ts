@@ -34,6 +34,7 @@ import {
   analyzeGroupConstraints,
   snapRotationTo90Degrees
 } from '../utils/groupConstraints';
+import { type SceneEventBus } from './sceneEventBus';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -146,7 +147,13 @@ export class EventHandlers {
   // 2D/3D View Mode
   private viewMode: ViewMode = '3d';
   public orthographicCamera: THREE.OrthographicCamera | null = null; // Public for SceneManager access
-  private sceneManager: any = null; // Reference to SceneManager for 2D zoom
+
+  // @deprecated - Use event bus instead. Kept for backward compatibility during migration.
+  private sceneManager: any = null;
+
+  // Event bus for decoupled communication with SceneManager
+  private eventBus: SceneEventBus | null = null;
+  private eventBusUnsubscribers: (() => void)[] = [];
 
   /**
    * Toggle multi-selection mode
@@ -368,9 +375,7 @@ export class EventHandlers {
           this.rotationArrows?.updateArrowPositions();
 
           // Update schematic overlay rotation in 2D mode
-          if (this.sceneManager?.updateSchematicPosition) {
-            this.sceneManager.updateSchematicPosition(itemId);
-          }
+          this.emitSchematicUpdateEvent(itemId);
         }
       }
     });
@@ -503,7 +508,8 @@ export class EventHandlers {
   }
 
   /**
-   * Set reference to SceneManager for 2D zoom control
+   * @deprecated Use setEventBus() instead. This method creates a circular dependency.
+   * Kept for backward compatibility during migration.
    */
   public setSceneManager(sceneManager: any): void {
     this.sceneManager = sceneManager;
@@ -517,6 +523,83 @@ export class EventHandlers {
    */
   public setOrthographicCamera(camera: THREE.OrthographicCamera): void {
     this.orthographicCamera = camera;
+  }
+
+  /**
+   * Connect to the event bus for decoupled communication with SceneManager.
+   * This replaces the circular dependency pattern.
+   */
+  public setEventBus(eventBus: SceneEventBus): void {
+    // Clean up previous subscriptions
+    this.eventBusUnsubscribers.forEach(unsub => unsub());
+    this.eventBusUnsubscribers = [];
+
+    this.eventBus = eventBus;
+    this.subscribeToEventBusEvents();
+  }
+
+  /**
+   * Subscribe to events from SceneManager via the event bus.
+   */
+  private subscribeToEventBusEvents(): void {
+    if (!this.eventBus) return;
+
+    // Listen for view mode changes from SceneManager
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('view:modeChanged', ({ mode }) => {
+        this.setViewMode(mode);
+      })
+    );
+
+    // Listen for orthographic camera ready events
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:orthographicReady', ({ camera }) => {
+        this.setOrthographicCamera(camera);
+      })
+    );
+
+    // Listen for camera sync requests
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:syncPosition', () => {
+        this.syncTargetCameraPosition();
+      })
+    );
+  }
+
+  /**
+   * Emit schematic update event via event bus (replaces direct sceneManager.updateSchematicPosition() call)
+   */
+  private emitSchematicUpdateEvent(itemId: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('schematic:update', { itemId });
+    } else if (this.sceneManager?.updateSchematicPosition) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.updateSchematicPosition(itemId);
+    }
+  }
+
+  /**
+   * Emit 2D pan event via event bus (replaces direct sceneManager.pan2D() call)
+   */
+  private emitPan2DEvent(deltaX: number, deltaZ: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('camera:pan2d', { deltaX, deltaZ });
+    } else if (this.sceneManager) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.pan2D(deltaX, deltaZ);
+    }
+  }
+
+  /**
+   * Emit 2D zoom event via event bus (replaces direct sceneManager.zoom2D() call)
+   */
+  private emitZoom2DEvent(delta: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('camera:zoom2d', { delta });
+    } else if (this.sceneManager) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.zoom2D(delta);
+    }
   }
 
   /**
@@ -926,9 +1009,7 @@ export class EventHandlers {
               }
 
               // Update schematic overlay position in 2D mode
-              if (this.sceneManager?.updateSchematicPosition) {
-                this.sceneManager.updateSchematicPosition(itemId);
-              }
+              this.emitSchematicUpdateEvent(itemId);
 
               // Update the item data and save to history using queueUpdate
               // Since isDragOperation is false at this point, queueUpdate will apply immediately and save to history
@@ -1318,6 +1399,14 @@ export class EventHandlers {
   ): { x: number; y: number; z: number; rotation: number } | null {
     const testItem = currentItem ? { ...currentItem } : undefined;
 
+    // Get notch info for L-shaped rooms
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       // Try alternating left and right from base position
       // Pattern: +step, -step, +2*step, -2*step, +3*step, -3*step...
@@ -1333,12 +1422,19 @@ export class EventHandlers {
       if (wall === 'north' || wall === 'south') {
         testX = basePosition.x + offset;
 
+        // Both walls need wall thickness on both ends (west and east walls)
+        // For north wall with notch, minimum X starts after the notch
+        const minX = (wall === 'north' && notch)
+          ? (notch.maxX + WALL_SETTINGS.THICKNESS + halfWidth)
+          : (-roomHalfWidth + WALL_SETTINGS.THICKNESS + halfWidth);
+        const maxX = roomHalfWidth - WALL_SETTINGS.THICKNESS - halfWidth;
+
         // Clamp to wall boundaries with proper half-width
-        testX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, testX));
+        testX = Math.max(minX, Math.min(maxX, testX));
 
         // Skip if we've hit the wall boundary and can't move further
-        if ((direction > 0 && testX >= roomHalfWidth - halfWidth) ||
-          (direction < 0 && testX <= -roomHalfWidth + halfWidth)) {
+        if ((direction > 0 && testX >= maxX) ||
+          (direction < 0 && testX <= minX)) {
           continue;
         }
 
@@ -1351,12 +1447,19 @@ export class EventHandlers {
       } else { // east or west
         testZ = basePosition.z + offset;
 
+        // Both walls need wall thickness on both ends (north and south walls)
+        // For west wall with notch, minimum Z starts after the notch
+        const minZ = (wall === 'west' && notch)
+          ? (notch.maxZ + WALL_SETTINGS.THICKNESS + halfWidth)
+          : (-roomHalfHeight + WALL_SETTINGS.THICKNESS + halfWidth);
+        const maxZ = roomHalfHeight - WALL_SETTINGS.THICKNESS - halfWidth;
+
         // For east/west walls, the object rotates, so we need to use halfWidth for Z constraint
-        testZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, testZ));
+        testZ = Math.max(minZ, Math.min(maxZ, testZ));
 
         // Skip if we've hit the wall boundary and can't move further
-        if ((direction > 0 && testZ >= roomHalfHeight - halfWidth) ||
-          (direction < 0 && testZ <= -roomHalfHeight + halfWidth)) {
+        if ((direction > 0 && testZ >= maxZ) ||
+          (direction < 0 && testZ <= minZ)) {
           continue;
         }
 
@@ -1368,21 +1471,23 @@ export class EventHandlers {
         };
       }
 
-      // Check if this position is collision-free with proper rotation (with room dimensions)
-      const wouldCollide = wouldCollideWithExisting(
+      // Check if this position is collision-free with proper rotation (with room dimensions AND notch)
+      const wouldCollide = wouldCollideWithExistingOrWalls(
         { x: testPosition.x, y: testPosition.y, z: testPosition.z },
         objectType,
         objectScale,
         itemId,
         currentItems,
-        testItem,
         this.roomWidthRef.value,
-        this.roomHeightRef.value
+        this.roomHeightRef.value,
+        testItem,
+        testPosition.rotation,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       if (!wouldCollide) {
         return testPosition;
-      } else {
       }
     }
 
@@ -1421,6 +1526,14 @@ export class EventHandlers {
     // ✅ CRITICAL: Get valid height constraints to prevent going through ceiling/floor
     const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
 
+    // Get notch info for L-shaped rooms (computed once, reused in loop)
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     // Try different heights: spawn height, then heights above and below
     const heightAttempts = [
       spawnHeight, // Try default spawn height
@@ -1442,15 +1555,19 @@ export class EventHandlers {
         rotation: basePosition.rotation
       };
 
-      let wouldCollide = wouldCollideWithExisting(
+      // Use wouldCollideWithExistingOrWalls to check both object and wall/notch collisions
+      let wouldCollide = wouldCollideWithExistingOrWalls(
         { x: testPositionAtNewHeight.x, y: testPositionAtNewHeight.y, z: testPositionAtNewHeight.z },
         objectType,
         objectScale,
         itemId,
         currentItems,
-        testItem,
         this.roomWidthRef.value,
-        this.roomHeightRef.value
+        this.roomHeightRef.value,
+        testItem,
+        basePosition.rotation,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       if (!wouldCollide) {
@@ -1458,6 +1575,7 @@ export class EventHandlers {
       }
 
       // If still colliding, try horizontal search at this new Y position
+      // (notch info already computed outside the loop)
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const direction = (attempt % 2 === 0) ? 1 : -1;
         const magnitude = Math.ceil(attempt / 2);
@@ -1468,18 +1586,32 @@ export class EventHandlers {
 
         if (wall === 'north' || wall === 'south') {
           testX = basePosition.x + offset;
-          testX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, testX));
 
-          if ((direction > 0 && testX >= roomHalfWidth - halfWidth) ||
-            (direction < 0 && testX <= -roomHalfWidth + halfWidth)) {
+          // Account for notch on north wall
+          const minX = (wall === 'north' && notch)
+            ? (notch.maxX + WALL_SETTINGS.THICKNESS + halfWidth)
+            : (-roomHalfWidth + WALL_SETTINGS.THICKNESS + halfWidth);
+          const maxX = roomHalfWidth - WALL_SETTINGS.THICKNESS - halfWidth;
+
+          testX = Math.max(minX, Math.min(maxX, testX));
+
+          if ((direction > 0 && testX >= maxX) ||
+            (direction < 0 && testX <= minX)) {
             continue;
           }
         } else { // east or west
           testZ = basePosition.z + offset;
-          testZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, testZ));
 
-          if ((direction > 0 && testZ >= roomHalfHeight - halfWidth) ||
-            (direction < 0 && testZ <= -roomHalfHeight + halfWidth)) {
+          // Account for notch on west wall
+          const minZ = (wall === 'west' && notch)
+            ? (notch.maxZ + WALL_SETTINGS.THICKNESS + halfWidth)
+            : (-roomHalfHeight + WALL_SETTINGS.THICKNESS + halfWidth);
+          const maxZ = roomHalfHeight - WALL_SETTINGS.THICKNESS - halfWidth;
+
+          testZ = Math.max(minZ, Math.min(maxZ, testZ));
+
+          if ((direction > 0 && testZ >= maxZ) ||
+            (direction < 0 && testZ <= minZ)) {
             continue;
           }
         }
@@ -1491,15 +1623,19 @@ export class EventHandlers {
           rotation: basePosition.rotation
         };
 
-        wouldCollide = wouldCollideWithExisting(
+        // Use wouldCollideWithExistingOrWalls to check both object and wall/notch collisions
+        wouldCollide = wouldCollideWithExistingOrWalls(
           { x: testPosition.x, y: testPosition.y, z: testPosition.z },
           objectType,
           objectScale,
           itemId,
           currentItems,
-          testItem,
           this.roomWidthRef.value,
-          this.roomHeightRef.value
+          this.roomHeightRef.value,
+          testItem,
+          testPosition.rotation,
+          this.notchWidthRef.value,
+          this.notchHeightRef.value
         );
 
         if (!wouldCollide) {
@@ -1532,16 +1668,19 @@ export class EventHandlers {
     // Create a temporary test item with the target wall's rotation to check collisions accurately
     const testItem = currentItem ? { ...currentItem } : undefined;
 
-    // ✅ CRITICAL FIX: Check vertical collision at base position (with room dimensions)
-    let isColliding = wouldCollideWithExisting(
+    // ✅ CRITICAL FIX: Check collision with both existing objects AND walls/notch
+    let isColliding = wouldCollideWithExistingOrWalls(
       { x: basePosition.x, y: basePosition.y, z: basePosition.z },
       objectType,
       objectScale,
       itemId,
       currentItems,
-      testItem,
       this.roomWidthRef.value,
-      this.roomHeightRef.value
+      this.roomHeightRef.value,
+      testItem,
+      basePosition.rotation,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
     );
 
     if (!isColliding) {
@@ -2040,8 +2179,8 @@ export class EventHandlers {
         });
 
         // ✅ Update schematic overlay position in 2D mode for multi-selected objects
-        if (this.viewMode === '2d' && this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(id);
+        if (this.viewMode === '2d') {
+          this.emitSchematicUpdateEvent(id);
         }
       }
     });
@@ -2103,9 +2242,7 @@ export class EventHandlers {
         });
 
         // Update schematic overlay position if in 2D mode toggle
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(id);
-        }
+        this.emitSchematicUpdateEvent(id);
       }
     });
 
@@ -2338,9 +2475,7 @@ export class EventHandlers {
         setOutlineColor(isColliding);
 
         // Update schematic overlay position in 2D mode
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
 
         // Apply bulk move to other selected objects
         this.applyBulkMove(this.selectedObject, idealPosition, objectRotation);
@@ -2577,9 +2712,7 @@ export class EventHandlers {
           this.selectedObject.rotation.y = constrainedRotation;
 
           // Update schematic overlay position in 2D mode
-          if (this.sceneManager?.updateSchematicPosition) {
-            this.sceneManager.updateSchematicPosition(itemId);
-          }
+          this.emitSchematicUpdateEvent(itemId);
 
           // Queue update
           this.queueUpdate(itemId, {
@@ -3352,9 +3485,7 @@ export class EventHandlers {
       }
 
       // Update schematic overlay position in 2D mode
-      if (this.sceneManager?.updateSchematicPosition) {
-        this.sceneManager.updateSchematicPosition(itemId);
-      }
+      this.emitSchematicUpdateEvent(itemId);
 
       // Queue update
       const updateData: UpdateData = {
@@ -3377,10 +3508,8 @@ export class EventHandlers {
         const deltaY = event.clientY - this.mouseY;
 
         // Pan the orthographic camera
-        if (this.sceneManager) {
-          // Invert deltaY because screen Y is opposite to world Z in top-down view
-          this.sceneManager.pan2D(-deltaX, -deltaY);
-        }
+        // Invert deltaY because screen Y is opposite to world Z in top-down view
+        this.emitPan2DEvent(-deltaX, -deltaY);
 
         this.mouseX = event.clientX;
         this.mouseY = event.clientY;
@@ -3646,14 +3775,10 @@ export class EventHandlers {
         }
 
         // Update schematic overlay position after snap-back (for 2D mode)
-        if (this.sceneManager?.updateSchematicPosition) {
-          // Update for all selected objects (primary + others)
-          this.selectedObjects.forEach((_, id) => {
-            if (this.sceneManager?.updateSchematicPosition) {
-              this.sceneManager.updateSchematicPosition(id);
-            }
-          });
-        }
+        // Update for all selected objects (primary + others)
+        this.selectedObjects.forEach((_, id) => {
+          this.emitSchematicUpdateEvent(id);
+        });
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
@@ -3716,10 +3841,8 @@ export class EventHandlers {
 
     // 📐 2D MODE: Use orthographic zoom
     if (this.viewMode === '2d') {
-      if (this.sceneManager) {
-        const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
-        this.sceneManager.zoom2D(zoomDelta);
-      }
+      const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
+      this.emitZoom2DEvent(zoomDelta);
       return;
     }
 
@@ -4051,9 +4174,7 @@ export class EventHandlers {
         }
 
         // Update schematic overlay position in 2D mode
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
 
         const updateData: UpdateData = {
           position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z]
@@ -4114,10 +4235,8 @@ export class EventHandlers {
       if (scale > 1.02 || scale < 0.98) {
         // 📐 2D MODE: Use orthographic zoom (same as wheel zoom)
         if (this.viewMode === '2d') {
-          if (this.sceneManager) {
-            const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
-            this.sceneManager.zoom2D(zoomDelta);
-          }
+          const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
+          this.emitZoom2DEvent(zoomDelta);
           this.lastTouchDistance = distance;
           return;
         }
@@ -4223,9 +4342,7 @@ export class EventHandlers {
         setOutlineColor(false);
 
         // Update schematic overlay position after snap-back (for 2D mode)
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
