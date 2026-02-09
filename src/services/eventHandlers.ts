@@ -32,9 +32,9 @@ import {
   type GroupConstraint,
   ConstraintPriority,
   analyzeGroupConstraints,
-  snapRotationTo90Degrees,
-  describeGroupConstraint
+  snapRotationTo90Degrees
 } from '../utils/groupConstraints';
+import { type SceneEventBus } from './sceneEventBus';
 
 interface IntersectionResult {
   object: THREE.Object3D;
@@ -147,14 +147,19 @@ export class EventHandlers {
   // 2D/3D View Mode
   private viewMode: ViewMode = '3d';
   public orthographicCamera: THREE.OrthographicCamera | null = null; // Public for SceneManager access
-  private sceneManager: any = null; // Reference to SceneManager for 2D zoom
+
+  // @deprecated - Use event bus instead. Kept for backward compatibility during migration.
+  private sceneManager: any = null;
+
+  // Event bus for decoupled communication with SceneManager
+  private eventBus: SceneEventBus | null = null;
+  private eventBusUnsubscribers: (() => void)[] = [];
 
   /**
    * Toggle multi-selection mode
    */
   public setMultiSelectMode(enabled: boolean): void {
     this.isMultiSelectMode = enabled;
-    console.log('🔄 Multi-select mode:', enabled ? 'ENABLED' : 'DISABLED');
   }
 
   /**
@@ -172,7 +177,6 @@ export class EventHandlers {
     });
 
     this.updateMultiSelectionHighlight();
-    console.log('🎯 Selected all items:', this.selectedObjects.size);
   }
 
   /**
@@ -371,18 +375,14 @@ export class EventHandlers {
           this.rotationArrows?.updateArrowPositions();
 
           // Update schematic overlay rotation in 2D mode
-          if (this.sceneManager?.updateSchematicPosition) {
-            this.sceneManager.updateSchematicPosition(itemId);
-          }
+          this.emitSchematicUpdateEvent(itemId);
         }
       }
     });
 
 
-    this.rotationArrows.setRotationCompleteCallback((rotation: number) => {
+    this.rotationArrows.setRotationCompleteCallback((_rotation: number) => {
       if (this.selectedObject) {
-        const itemId = this.selectedObject.userData.itemId as number;
-        console.log('🎯 Arrow rotation completed for item:', itemId, 'rotation:', rotation);
         this.applyPendingUpdates();
         this.isDragOperation = false;
       }
@@ -489,7 +489,6 @@ export class EventHandlers {
    * Called by SceneManager when switching views
    */
   public setViewMode(mode: ViewMode): void {
-    console.log('📐 EventHandlers: View mode set to', mode);
     this.viewMode = mode;
 
     // Update rotation arrows camera for proper raycasting in 2D/3D mode
@@ -509,7 +508,8 @@ export class EventHandlers {
   }
 
   /**
-   * Set reference to SceneManager for 2D zoom control
+   * @deprecated Use setEventBus() instead. This method creates a circular dependency.
+   * Kept for backward compatibility during migration.
    */
   public setSceneManager(sceneManager: any): void {
     this.sceneManager = sceneManager;
@@ -523,6 +523,83 @@ export class EventHandlers {
    */
   public setOrthographicCamera(camera: THREE.OrthographicCamera): void {
     this.orthographicCamera = camera;
+  }
+
+  /**
+   * Connect to the event bus for decoupled communication with SceneManager.
+   * This replaces the circular dependency pattern.
+   */
+  public setEventBus(eventBus: SceneEventBus): void {
+    // Clean up previous subscriptions
+    this.eventBusUnsubscribers.forEach(unsub => unsub());
+    this.eventBusUnsubscribers = [];
+
+    this.eventBus = eventBus;
+    this.subscribeToEventBusEvents();
+  }
+
+  /**
+   * Subscribe to events from SceneManager via the event bus.
+   */
+  private subscribeToEventBusEvents(): void {
+    if (!this.eventBus) return;
+
+    // Listen for view mode changes from SceneManager
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('view:modeChanged', ({ mode }) => {
+        this.setViewMode(mode);
+      })
+    );
+
+    // Listen for orthographic camera ready events
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:orthographicReady', ({ camera }) => {
+        this.setOrthographicCamera(camera);
+      })
+    );
+
+    // Listen for camera sync requests
+    this.eventBusUnsubscribers.push(
+      this.eventBus.on('camera:syncPosition', () => {
+        this.syncTargetCameraPosition();
+      })
+    );
+  }
+
+  /**
+   * Emit schematic update event via event bus (replaces direct sceneManager.updateSchematicPosition() call)
+   */
+  private emitSchematicUpdateEvent(itemId: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('schematic:update', { itemId });
+    } else if (this.sceneManager?.updateSchematicPosition) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.updateSchematicPosition(itemId);
+    }
+  }
+
+  /**
+   * Emit 2D pan event via event bus (replaces direct sceneManager.pan2D() call)
+   */
+  private emitPan2DEvent(deltaX: number, deltaZ: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('camera:pan2d', { deltaX, deltaZ });
+    } else if (this.sceneManager) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.pan2D(deltaX, deltaZ);
+    }
+  }
+
+  /**
+   * Emit 2D zoom event via event bus (replaces direct sceneManager.zoom2D() call)
+   */
+  private emitZoom2DEvent(delta: number): void {
+    if (this.eventBus) {
+      this.eventBus.emit('camera:zoom2d', { delta });
+    } else if (this.sceneManager) {
+      // Fallback to direct call for backward compatibility
+      this.sceneManager.zoom2D(delta);
+    }
   }
 
   /**
@@ -769,7 +846,6 @@ export class EventHandlers {
       // This handles non-drag operations like keyboard shortcuts
       setTimeout(() => {
         const currentItems = this.getItems();
-        console.log('💾 Immediate save to history for item', itemId);
         this.saveToHistory({
           items: currentItems,
           roomWidth: this.roomWidthRef.value,
@@ -791,8 +867,6 @@ export class EventHandlers {
       // FIXED: Use clearSelection method to properly clean up measurements
       this.clearSelection();
 
-      console.log('itemToBeDeleted>>>', itemId);
-
       // Delete the item
       if (this.deleteItem && itemId) {
         this.deleteItem(itemId);
@@ -806,7 +880,6 @@ export class EventHandlers {
     // ✅ FIX: If we're already dragging, ignore any mousedown events (especially right-click)
     // This prevents right-click from deselecting the object or interfering with the drag
     if (this.isDragging || this.isDragOperation) {
-      console.log('🚫 Ignoring mousedown during active drag operation');
       return;
     }
 
@@ -833,7 +906,6 @@ export class EventHandlers {
         // Multi-select logic: Toggle selection
         if (!this.wasAlreadySelected) {
           this.selectedObjects.set(itemId, intersected.object);
-          console.log('➕ Selected item:', itemId);
           this.updateMultiSelectionHighlight();
         }
         // If already selected, we keep it for dragging and might deselect in mouseUp
@@ -852,8 +924,6 @@ export class EventHandlers {
       }
 
       if (!this.selectedObject) return;
-
-      console.log('selectedObject >>>', this.selectedObject);
 
       // 🚀 FIXED: Get fresh items before updating measurement system
       const currentItems = this.getCurrentItems();
@@ -914,13 +984,9 @@ export class EventHandlers {
 
           // If object is on a hidden wall, move it to the opposite visible wall
           if (!visibleWalls.has(currentWall)) {
-            console.log(`🔄 Object is on hidden ${currentWall} wall, moving to visible wall`);
-            console.log(`📊 Visible walls:`, Array.from(visibleWalls));
-            console.log(`📍 Current position:`, this.selectedObject.position);
 
             // Determine the best visible wall (usually opposite wall)
             const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
-            console.log(`🎯 Target wall selected: ${targetWall}`);
 
             // Find an empty space on the target wall (collision-aware)
             const newPosition = this.findEmptySpaceOnWall(
@@ -931,8 +997,6 @@ export class EventHandlers {
               itemId,
               currentItem
             );
-
-            console.log(`📍 New position calculated:`, newPosition);
 
             // Only move if a collision-free position was found
             if (newPosition) {
@@ -945,9 +1009,7 @@ export class EventHandlers {
               }
 
               // Update schematic overlay position in 2D mode
-              if (this.sceneManager?.updateSchematicPosition) {
-                this.sceneManager.updateSchematicPosition(itemId);
-              }
+              this.emitSchematicUpdateEvent(itemId);
 
               // Update the item data and save to history using queueUpdate
               // Since isDragOperation is false at this point, queueUpdate will apply immediately and save to history
@@ -955,10 +1017,7 @@ export class EventHandlers {
                 position: [newPosition.x, newPosition.y, newPosition.z],
                 rotation: newPosition.rotation
               });
-
-              console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall at collision-free position`);
             } else {
-              console.log(`⚠️ No space available on ${targetWall} wall - keeping object on hidden ${currentWall} wall`);
             }
           }
         }
@@ -1010,7 +1069,6 @@ export class EventHandlers {
             this.notchWidthRef.value,
             this.notchHeightRef.value
           );
-          console.log('📊 Group constraint calculated:', describeGroupConstraint(this.groupConstraint));
         } else {
           this.groupConstraint = null;
         }
@@ -1068,8 +1126,6 @@ export class EventHandlers {
             // Actually move the object to the wall
             this.selectedObject.position.copy(primaryPos);
             this.selectedObject.rotation.y = primaryRot;
-
-            console.log('📊 Snapped freestanding primary to wall:', targetWall, primaryPos);
           }
         }
 
@@ -1186,7 +1242,6 @@ export class EventHandlers {
   }
 
   private selectObject(object: THREE.Object3D): void {
-    console.log('🎯 Selecting object:', object.userData.itemId);
 
     // Clear previous selection first
     if (this.selectedObject && this.selectedObject !== object) {
@@ -1212,8 +1267,6 @@ export class EventHandlers {
     if (this.onItemSelected && itemId !== undefined) {
       this.onItemSelected(itemId);
     }
-
-    console.log('✅ Object selected successfully');
   }
 
   /**
@@ -1232,8 +1285,6 @@ export class EventHandlers {
     const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
     const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
     const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
-
-    console.log('111>> object wallBuffer', wallBuffer);
 
     let x = currentPosition.x;
     let y = currentPosition.y; // Preserve height
@@ -1257,7 +1308,6 @@ export class EventHandlers {
         if (notch && x >= notch.minX && x <= notch.maxX) {
           // Object would be in notch void - move it to notch.maxX boundary
           x = notch.maxX + halfWidth;
-          console.log(`🔷 North wall: Adjusted X from notch area to ${x.toFixed(1)}`);
         }
         rotation = 0;
         break;
@@ -1270,7 +1320,6 @@ export class EventHandlers {
         // But check anyway for flexibility
         if (notch && x >= notch.minX && x <= notch.maxX && z < notch.maxZ) {
           x = notch.maxX + halfWidth;
-          console.log(`🔷 South wall: Adjusted X from notch area to ${x.toFixed(1)}`);
         }
         rotation = Math.PI;
         break;
@@ -1283,7 +1332,6 @@ export class EventHandlers {
         if (notch && z >= notch.minZ && z <= notch.maxZ) {
           // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
           z = notch.maxZ + halfWidth;
-          console.log(`🔷 East wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
         }
         rotation = -Math.PI / 2;
         break;
@@ -1296,7 +1344,6 @@ export class EventHandlers {
         if (notch && z >= notch.minZ && z <= notch.maxZ) {
           // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
           z = notch.maxZ + halfWidth;
-          console.log(`🔷 West wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
         }
         rotation = Math.PI / 2;
         break;
@@ -1415,10 +1462,8 @@ export class EventHandlers {
       );
 
       if (!wouldCollide) {
-        console.log(`✅ Found empty space on ${wall} wall at offset ${offset.toFixed(0)}cm (attempt ${attempt})`);
         return testPosition;
       } else {
-        console.log(`❌ Position at offset ${offset.toFixed(0)}cm still collides (attempt ${attempt})`);
       }
     }
 
@@ -1466,13 +1511,9 @@ export class EventHandlers {
       spawnHeight - (objectHeight * 2) - 20, // Try two object-heights below
     ].filter(testY => testY >= heightConstraints.min && testY <= heightConstraints.max); // ✅ Filter to valid range
 
-    console.log(`🔍 Valid height range: ${heightConstraints.min.toFixed(1)}cm to ${heightConstraints.max.toFixed(1)}cm`);
-
     for (const testY of heightAttempts) {
       // Skip if Y is same as base position (already tested)
       if (Math.abs(testY - basePosition.y) < 5) continue;
-
-      console.log(`🔍 Trying vertical position: y=${testY.toFixed(1)}cm`);
 
       // Check if this Y position alone is collision-free
       const testPositionAtNewHeight = {
@@ -1494,7 +1535,6 @@ export class EventHandlers {
       );
 
       if (!wouldCollide) {
-        console.log(`✅ Found empty space at different height: y=${testY.toFixed(1)}cm`);
         return testPositionAtNewHeight;
       }
 
@@ -1544,7 +1584,6 @@ export class EventHandlers {
         );
 
         if (!wouldCollide) {
-          console.log(`✅ Found empty space at y=${testY.toFixed(1)}cm, offset=${offset.toFixed(0)}cm`);
           return testPosition;
         }
       }
@@ -1587,11 +1626,8 @@ export class EventHandlers {
     );
 
     if (!isColliding) {
-      console.log(`✅ Base position on ${wall} wall is free (x:${basePosition.x.toFixed(1)}, y:${basePosition.y.toFixed(1)}, z:${basePosition.z.toFixed(1)})`);
       return basePosition; // Base position is fine
     }
-
-    console.log(`🔍 Base position on ${wall} wall has collision, searching for empty space (horizontal and vertical)...`);
 
     // Calculate dimensions for spacing
     const roomHalfWidth = this.roomWidthRef.value / 2;
@@ -1631,7 +1667,6 @@ export class EventHandlers {
     }
 
     // ✅ NEW: If horizontal search failed, try different Y positions (vertical search)
-    console.log(`🔍 Horizontal search exhausted, trying vertical search...`);
 
     const verticalResult = this.searchVertically(
       basePosition,
@@ -1763,28 +1798,24 @@ export class EventHandlers {
         objectPosition.z >= notch.minZ &&
         objectPosition.z <= notch.maxZ) {
         oppositeWall = 'notch-east';
-        console.log(`🔷 East → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
       }
       // If moving from west to east, but object Z is in notch range, use notch-east instead
       else if (currentWall === 'west' &&
         objectPosition.z >= notch.minZ &&
         objectPosition.z <= notch.maxZ) {
         oppositeWall = 'notch-east';
-        console.log(`🔷 West → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
       }
       // If moving from north to south, but object X is in notch range, use notch-south instead
       else if (currentWall === 'north' &&
         objectPosition.x >= notch.minX &&
         objectPosition.x <= notch.maxX) {
         oppositeWall = 'notch-south';
-        console.log(`🔷 North → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
       }
       // If moving from south to north, but object X is in notch range, use notch-south instead
       else if (currentWall === 'south' &&
         objectPosition.x >= notch.minX &&
         objectPosition.x <= notch.maxX) {
         oppositeWall = 'notch-south';
-        console.log(`🔷 South → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
       }
     }
 
@@ -1957,7 +1988,6 @@ export class EventHandlers {
           );
           constrainedPosition = result.position;
           constrainedRotation = result.rotation;
-          console.log('📊 Corner item re-snapped to corner:', id);
         } else if (isCornerOnlyGroup && isWallSnapItem) {
           // ✅ FIX: CORNER_ONLY group with WALL_SNAP item - re-snap to appropriate wall
           // Use targetPos which already has the correct offset from primary object applied
@@ -1985,7 +2015,6 @@ export class EventHandlers {
 
           constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
           constrainedRotation = result.rotation;
-          console.log('📊 Wall-snap item in corner group re-snapped:', id, 'target wall:', targetItemWall);
         } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
           // 3D MODE: Individual wall constraints (when no group constraint)
           // Determine the target wall for THIS secondary object based on its targetPos
@@ -2092,8 +2121,8 @@ export class EventHandlers {
         });
 
         // ✅ Update schematic overlay position in 2D mode for multi-selected objects
-        if (this.viewMode === '2d' && this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(id);
+        if (this.viewMode === '2d') {
+          this.emitSchematicUpdateEvent(id);
         }
       }
     });
@@ -2155,9 +2184,7 @@ export class EventHandlers {
         });
 
         // Update schematic overlay position if in 2D mode toggle
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(id);
-        }
+        this.emitSchematicUpdateEvent(id);
       }
     });
 
@@ -2196,7 +2223,6 @@ export class EventHandlers {
     // Safety check - if no mouse buttons are pressed, stop dragging
     if (event.buttons === 0) {
       if (this.isDragging || this.isRotating || this.isObjectRotating || this.isHeightAdjusting || this.isScaling) {
-        console.log('🛑 No mouse buttons pressed, stopping drag operations');
         this.stopAllDragOperations();
         return;
       }
@@ -2231,19 +2257,16 @@ export class EventHandlers {
 
       // 📐 2D MODE: Disable height adjustment in 2D mode
       if (!this.canAdjustHeight()) {
-        console.log('📐 Height adjustment disabled in 2D mode');
         return;
       }
 
       // 📊 GROUP CONSTRAINT: Block height adjustment for entire group if ANY item has fixed height
       if (this.selectedObjects.size > 1 && this.groupConstraint?.heightRestriction === 'locked') {
-        console.log('⚠️ Height adjustment blocked for group - mixed height-adjustable/fixed items');
         return;
       }
 
       // Check if vertical movement is allowed
       if (!canMoveVertically(objectType, currentItem)) {
-        console.log('⚠️ Vertical movement not allowed for', objectType);
         return; // Don't allow height adjustment
       }
 
@@ -2280,7 +2303,6 @@ export class EventHandlers {
 
       // Check if free rotation is allowed
       if (!canRotateFreely(objectType, currentItem)) {
-        console.log('⚠️ Free rotation not allowed for', objectType);
         return; // Don't allow free rotation
       }
 
@@ -2395,9 +2417,7 @@ export class EventHandlers {
         setOutlineColor(isColliding);
 
         // Update schematic overlay position in 2D mode
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
 
         // Apply bulk move to other selected objects
         this.applyBulkMove(this.selectedObject, idealPosition, objectRotation);
@@ -2615,12 +2635,6 @@ export class EventHandlers {
                   constrainedPosition.z = effectiveMinZ - groupMinZ;
                 }
               }
-
-              console.log('📐 2D Multi-select group bounds applied:', {
-                wall: isOnNorthSouthWall ? 'north/south' : 'east/west',
-                groupBounds: { minX: groupMinX.toFixed(1), maxX: groupMaxX.toFixed(1), minZ: groupMinZ.toFixed(1), maxZ: groupMaxZ.toFixed(1) },
-                adjustedPosition: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) }
-              });
             }
           }
 
@@ -2640,9 +2654,7 @@ export class EventHandlers {
           this.selectedObject.rotation.y = constrainedRotation;
 
           // Update schematic overlay position in 2D mode
-          if (this.sceneManager?.updateSchematicPosition) {
-            this.sceneManager.updateSchematicPosition(itemId);
-          }
+          this.emitSchematicUpdateEvent(itemId);
 
           // Queue update
           this.queueUpdate(itemId, {
@@ -2818,7 +2830,6 @@ export class EventHandlers {
 
                 if (isPressing) {
                   effectiveStickiness = -20; // Penalty to encourage switching
-                  console.log(`🚀 Group pressing against ${currentWall} corner, reducing stickiness`);
                 }
               }
 
@@ -2973,7 +2984,6 @@ export class EventHandlers {
                   closestWall = wall as WallType;
                   closestPoint.copy(intersectPoint);
                   foundValidIntersection = true;
-                  console.log(`🔄 Emergency switch to ${wall} (current wall invalid, rayDist: ${rayDistance.toFixed(0)}cm)`);
                 }
               } else {
                 // Current wall is valid - use simple ray distance comparison
@@ -3048,15 +3058,6 @@ export class EventHandlers {
           const effectiveMinZ = notch ? notch.maxZ + WALL_SETTINGS.THICKNESS : interior.minZ;
 
           if (notch) {
-            console.log('🔷 Notch boundaries:', {
-              notchMaxX: notch.maxX.toFixed(1),
-              notchMaxZ: notch.maxZ.toFixed(1),
-              effectiveMinX: effectiveMinX.toFixed(1),
-              effectiveMinZ: effectiveMinZ.toFixed(1),
-              cursorNewX: newX.toFixed(1),
-              cursorNewZ: newZ.toFixed(1),
-              wall: closestWall
-            });
           }
 
           // Adjust position based on which wall and apply constraints
@@ -3177,10 +3178,6 @@ export class EventHandlers {
               Math.min(heightConstraints.max, constrainedPosition.y)
             );
           }
-
-          console.log(`📍 Cursor on ${closestWall} wall at (${newX.toFixed(0)}, ${newZ.toFixed(0)})`);
-          console.log(`🔍 Debug - closestPoint: (${closestPoint.x.toFixed(0)}, ${closestPoint.z.toFixed(0)}), dragOffset: (${this.dragOffset.x.toFixed(0)}, ${this.dragOffset.z.toFixed(0)})`);
-          console.log(`🔍 Debug - Final position: (${constrainedPosition.x.toFixed(0)}, ${constrainedPosition.z.toFixed(0)}), Current wall: ${currentWall}`);
         }
 
       } else if (effectiveCornerOnly) {
@@ -3323,14 +3320,12 @@ export class EventHandlers {
             constrainedPosition.y = rawPrimaryY;
             constrainedRotation = wallResult.rotation;
             rotationChanged = true;
-            console.log('📊 Corner anchor moved, primary preserved relative position:', relativePosition.toFixed(2));
           } else {
             constrainedPosition.x = rawPrimaryX;
             constrainedPosition.z = rawPrimaryZ;
             constrainedPosition.y = rawPrimaryY;
             constrainedRotation = cornerRot;
             rotationChanged = true;
-            console.log('📊 Corner anchor is item', cornerAnchorId, '- primary positioned relative to it');
           }
         } else {
           constrainedPosition.x = cornerPos.x;
@@ -3432,9 +3427,7 @@ export class EventHandlers {
       }
 
       // Update schematic overlay position in 2D mode
-      if (this.sceneManager?.updateSchematicPosition) {
-        this.sceneManager.updateSchematicPosition(itemId);
-      }
+      this.emitSchematicUpdateEvent(itemId);
 
       // Queue update
       const updateData: UpdateData = {
@@ -3457,10 +3450,8 @@ export class EventHandlers {
         const deltaY = event.clientY - this.mouseY;
 
         // Pan the orthographic camera
-        if (this.sceneManager) {
-          // Invert deltaY because screen Y is opposite to world Z in top-down view
-          this.sceneManager.pan2D(-deltaX, -deltaY);
-        }
+        // Invert deltaY because screen Y is opposite to world Z in top-down view
+        this.emitPan2DEvent(-deltaX, -deltaY);
 
         this.mouseX = event.clientX;
         this.mouseY = event.clientY;
@@ -3644,7 +3635,6 @@ export class EventHandlers {
 
           if (objColliding) {
             isColliding = true;
-            console.log(`⚠️ Multiselect collision detected for item ${id}`);
             break; // One collision is enough to trigger snap-back
           }
         }
@@ -3727,24 +3717,15 @@ export class EventHandlers {
         }
 
         // Update schematic overlay position after snap-back (for 2D mode)
-        if (this.sceneManager?.updateSchematicPosition) {
-          // Update for all selected objects (primary + others)
-          this.selectedObjects.forEach((_, id) => {
-            if (this.sceneManager?.updateSchematicPosition) {
-              this.sceneManager.updateSchematicPosition(id);
-            }
-          });
-        }
-
-        console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
+        // Update for all selected objects (primary + others)
+        this.selectedObjects.forEach((_, id) => {
+          this.emitSchematicUpdateEvent(id);
+        });
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
 
-        console.log('🎯 Final drag position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
-
         if (isColliding && this.preventCollisionPlacementRef.value) {
-          console.log('⚠️ Collision detected but placement allowed (prevention disabled)');
         }
 
         this.snapWallStandingItemsOnDrop();
@@ -3755,14 +3736,12 @@ export class EventHandlers {
     if (this.isMultiSelectMode && this.wasAlreadySelected && !this.hasMouseMoved && this.selectedObject) {
       const itemId = this.selectedObject.userData.itemId;
       this.selectedObjects.delete(itemId);
-      console.log('➖ Deselected item (click):', itemId);
       this.updateMultiSelectionHighlight();
       this.selectedObject = null;
     }
 
     // Only deselect if empty space was clicked AND it was a click (not drag)
     if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
-      console.log('🎯 Deselecting object - was click on empty space, not drag');
       this.updateHighlight(false);
       this.selectedObject = null;
       this.clearSelection();
@@ -3804,16 +3783,12 @@ export class EventHandlers {
 
     // 📐 2D MODE: Use orthographic zoom
     if (this.viewMode === '2d') {
-      if (this.sceneManager) {
-        const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
-        this.sceneManager.zoom2D(zoomDelta);
-        console.log('📐 2D zoom applied');
-      }
+      const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
+      this.emitZoom2DEvent(zoomDelta);
       return;
     }
 
     // 3D MODE: Original perspective zoom behavior
-    console.log('🎯 Directional zoom started');
 
     // Simple zoom: move 30cm forward or backward along viewing direction
     const zoomStep = event.deltaY > 0 ? -50 : 50; // positive = zoom out, negative = zoom in
@@ -3833,10 +3808,7 @@ export class EventHandlers {
       // ✅ Update camera position - direction stays exactly the same
       this.camera.position.copy(newPosition);
       this.targetCameraPosition.copy(newPosition);
-
-      console.log(`🎯 Zoomed to ${distanceFromCenter.toFixed(0)}cm - direction unchanged`);
     } else {
-      console.log('🚫 Zoom blocked by distance limit');
     }
 
     // ✅ CRITICAL: NO camera.lookAt() call here!
@@ -3948,7 +3920,6 @@ export class EventHandlers {
             this.notchWidthRef.value,
             this.notchHeightRef.value
           );
-          console.log('📊 Group constraint calculated (touch):', describeGroupConstraint(this.groupConstraint));
         } else {
           this.groupConstraint = null;
         }
@@ -4145,9 +4116,7 @@ export class EventHandlers {
         }
 
         // Update schematic overlay position in 2D mode
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
+        this.emitSchematicUpdateEvent(itemId);
 
         const updateData: UpdateData = {
           position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z]
@@ -4208,11 +4177,8 @@ export class EventHandlers {
       if (scale > 1.02 || scale < 0.98) {
         // 📐 2D MODE: Use orthographic zoom (same as wheel zoom)
         if (this.viewMode === '2d') {
-          if (this.sceneManager) {
-            const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
-            this.sceneManager.zoom2D(zoomDelta);
-            console.log('📐 2D pinch zoom applied');
-          }
+          const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
+          this.emitZoom2DEvent(zoomDelta);
           this.lastTouchDistance = distance;
           return;
         }
@@ -4234,8 +4200,6 @@ export class EventHandlers {
         if (distanceFromCenter >= 100 && distanceFromCenter <= 1200) {
           this.camera.position.copy(newPosition);
           this.targetCameraPosition.copy(newPosition);
-
-          console.log(`📱 Touch zoom: ${distanceFromCenter.toFixed(0)}cm - direction unchanged`);
         }
 
         this.lastTouchDistance = distance;
@@ -4273,16 +4237,8 @@ export class EventHandlers {
         this.notchHeightRef.value
       );
 
-      console.log('🎯 Touch final position collision check:', {
-        position: { x: finalPosition.x.toFixed(1), z: finalPosition.z.toFixed(1) },
-        isColliding,
-        preventionEnabled: this.preventCollisionPlacementRef.value,
-        willSnapBack: this.preventCollisionPlacementRef.value && isColliding
-      });
-
       // Check if collision prevention is enabled and object is colliding
       if (this.preventCollisionPlacementRef.value && isColliding) {
-        console.log('🔄 TOUCH SNAP BACK: Collision detected, returning to original position');
         // Snap back to original position
         this.selectedObject.position.copy(this.originalDragPosition);
         this.selectedObject.rotation.y = this.originalDragRotation;
@@ -4328,16 +4284,10 @@ export class EventHandlers {
         setOutlineColor(false);
 
         // Update schematic overlay position after snap-back (for 2D mode)
-        if (this.sceneManager?.updateSchematicPosition) {
-          this.sceneManager.updateSchematicPosition(itemId);
-        }
-
-        console.log('✅ Touch snap back completed - outline set to CYAN');
+        this.emitSchematicUpdateEvent(itemId);
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
-
-        console.log('🎯 Final touch position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
 
         this.snapWallStandingItemsOnDrop();
       }
@@ -4347,14 +4297,12 @@ export class EventHandlers {
     if (this.isMultiSelectMode && this.wasAlreadySelected && !this.hasMouseMoved && this.selectedObject) {
       const itemId = this.selectedObject.userData.itemId;
       this.selectedObjects.delete(itemId);
-      console.log('➖ Deselected item (tap):', itemId);
       this.updateMultiSelectionHighlight();
       this.selectedObject = null;
     }
 
     // NEW: Only deselect if empty space was tapped AND it was a tap (not drag)
     if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
-      console.log('🎯 Deselecting object - was tap on empty space, not drag');
       this.updateHighlight(false);
       this.selectedObject = null;
       this.clearSelection();
@@ -4431,7 +4379,6 @@ export class EventHandlers {
     }
 
     // Log for debugging
-    console.log('🛑 All drag operations stopped');
   }
 
   public addEventListeners(): void {
@@ -4491,7 +4438,6 @@ export class EventHandlers {
   }
 
   public clearSelection(): void {
-    console.log('🧹 Clearing selection, selectedObjects count:', this.selectedObjects.size);
 
     if (this.selectedObject || this.selectedObjects.size > 0) {
       import('../utils/helpers').then(helpers => {
@@ -4520,8 +4466,6 @@ export class EventHandlers {
     if (this.measurementSystem) {
       this.measurementSystem.setSelectedObject(null);
     }
-
-    console.log('🧹 clearSelection completed');
   }
 
   public getSelectedItemIds(): number[] {
@@ -4529,12 +4473,9 @@ export class EventHandlers {
   }
 
   public setRotationArrowsEnabled(enabled: boolean): void {
-    console.log('setRotationArrowsEnabled called:', enabled);
     if (this.rotationArrows) {
       this.rotationArrows.setEnabled(enabled);
-      console.log('✅ Rotation arrows enabled state set to:', enabled);
     } else {
-      console.log('⚠️ Rotation arrows not initialized');
     }
   }
 
@@ -4668,7 +4609,6 @@ export class EventHandlers {
       if (isPressing) {
         // Make current wall appear "farther" to encourage switching
         wallDistances[currentWall] += 100;
-        console.log(`🚀 Touch: Group pressing against ${currentWall} corner, encouraging switch`);
       }
     }
 
@@ -4687,8 +4627,6 @@ export class EventHandlers {
           .filter(status => status.visible)
           .map(status => status.direction)
       );
-
-      console.log('📊 Using actual wall visibility:', Array.from(visibleWalls));
     } else {
       // Fallback: all walls are visible if culling is disabled
       visibleWalls = new Set(['north', 'south', 'east', 'west']);
@@ -4807,8 +4745,6 @@ export class EventHandlers {
         break;
     }
 
-    console.log(`🎯 Wall: ${nearestWall}, Pos: (${position.x.toFixed(0)}, ${position.z.toFixed(0)})`);
-
     return {
       wall: nearestWall,
       position: position
@@ -4825,8 +4761,6 @@ export class EventHandlers {
       cameraDir.clone().negate(),
       object.position
     );
-
-    console.log('✅ Using camera-facing plane for stable dragging in all views');
 
     // ✅ ADD: Update the visual representation
     this.updateDragPlaneVisualization();
@@ -4914,18 +4848,6 @@ export class EventHandlers {
     // If maxHeight is undefined or -1, use ceiling constraint only
     // Ensure min doesn't exceed max
     minY = Math.min(minY, maxY);
-
-    console.log(`📏 Height constraints for ${objectType}:`, {
-      objectHeight: objectHeight + 'cm',
-      floorOffset: floorOffset + 'cm',
-      actualBottomWhenAtMinY: (minY + floorOffset) + 'cm from floor',
-      actualBottomWhenAtMaxY: (maxY + floorOffset) + 'cm from floor',
-      actualTopWhenAtMaxY: (maxY + floorOffset + objectHeight) + 'cm from floor',
-      positionYRange: `${minY.toFixed(1)} to ${maxY.toFixed(1)}cm`,
-      configMinHeight: movementConfig.minHeight || 0,
-      configMaxHeight: movementConfig.maxHeight === -1 ? 'ceiling' : (movementConfig.maxHeight || 'ceiling'),
-      sku: currentItem?.sku
-    });
 
     return { min: minY, max: maxY };
   }

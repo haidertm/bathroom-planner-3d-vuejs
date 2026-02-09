@@ -70,7 +70,6 @@ export function setupOpenReplay(_app: App, router: Router) {
                     // Use the same host as ingest point, ensure HTTPS
                     finalAssistSocketHost = `https://${ingestURL.host}`
                     if (import.meta.env.DEV) {
-                        console.log('🔗 Derived assist URL from ingest point:', finalAssistSocketHost)
                     }
                 } catch (error) {
                     console.warn('⚠️ Failed to derive assist URL from ingest point:', error)
@@ -90,7 +89,6 @@ export function setupOpenReplay(_app: App, router: Router) {
                 const wsHost = finalAssistSocketHost.replace('http://', 'https://')
                 assistOptions.socketHost = wsHost
                 if (import.meta.env.DEV) {
-                    console.log('🔌 Assist WebSocket host:', wsHost)
                 }
             }
             tracker.use(trackerAssist(assistOptions))
@@ -169,14 +167,12 @@ export function setupOpenReplay(_app: App, router: Router) {
                                         console.info('🎬 OpenReplay:', finalSessionURL)
 
                                         if (import.meta.env.DEV) {
-                                            console.log('✅ Clarity tags set (attempt ' + attempt + ')')
                                         }
                                     } catch (error) {
                                         console.error('❌ Clarity integration error:', error)
                                     }
                                 } else if (attempt < maxAttempts) {
                                     if (import.meta.env.DEV && attempt === 1) {
-                                        console.log('⏳ Clarity not ready, waiting... (attempt ' + attempt + '/' + maxAttempts + ')')
                                     }
                                     setTimeout(() => sendToClarityWithRetry(attempt + 1, maxAttempts), 500)
                                 } else {
@@ -187,9 +183,6 @@ export function setupOpenReplay(_app: App, router: Router) {
                             sendToClarityWithRetry()
 
                             if (import.meta.env.DEV) {
-                                console.log('📊 OpenReplay session:', sessionID)
-                                console.log('   URL:', sessionURL)
-                                console.log('📝 Metadata set for Session Info section')
                             }
                         }
                     } else if (import.meta.env.DEV) {
@@ -211,7 +204,6 @@ export function setupOpenReplay(_app: App, router: Router) {
 
             if (import.meta.env.DEV) {
                 (window as any).__OPENREPLAY__ = tracker
-                console.log('✅ OpenReplay loaded')
                 console.info('🎥 Session recording started')
                 console.info('🖼️ Canvas recording enabled')
             }
@@ -254,7 +246,6 @@ export function forceCanvasRestart() {
     if (tracker?.restartCanvasTracking) {
         tracker.restartCanvasTracking()
         if (import.meta.env.DEV) {
-            console.log('🔁 [Manual] Canvas tracking restart triggered')
         }
     } else if (import.meta.env.DEV) {
         console.warn('⚠️ OpenReplay tracker not ready')
@@ -308,7 +299,6 @@ function setupCanvasMonitoring() {
                     if (node instanceof HTMLCanvasElement ||
                         (node instanceof Element && node.querySelector('canvas'))) {
                         if (import.meta.env.DEV) {
-                            console.log('🔍 Canvas element detected - restarting tracking')
                         }
                         // Delay to ensure canvas is fully initialized
                         setTimeout(() => {
@@ -321,7 +311,6 @@ function setupCanvasMonitoring() {
             // Check for attribute changes on canvas (e.g., size changes)
             if (mutation.type === 'attributes' && mutation.target instanceof HTMLCanvasElement) {
                 if (import.meta.env.DEV) {
-                    console.log('🔍 Canvas attribute changed - restarting tracking')
                 }
                 setTimeout(() => {
                     tracker?.restartCanvasTracking()
@@ -338,7 +327,6 @@ function setupCanvasMonitoring() {
     })
 
     if (import.meta.env.DEV) {
-        console.log('👁️ Canvas monitoring active')
     }
 }
 
@@ -358,7 +346,6 @@ function startPeriodicCanvasRestart() {
         if (canvases.length > 0 && tracker) {
             tracker.restartCanvasTracking()
             if (import.meta.env.DEV) {
-                console.log('🔁 [Periodic] Canvas tracking refresh')
             }
         }
     }, intervalMs)
@@ -371,7 +358,6 @@ function startPeriodicCanvasRestart() {
     visibilityChangeHandler = () => {
         if (document.visibilityState === 'visible' && tracker) {
             if (import.meta.env.DEV) {
-                console.log('👁️ Tab visible - restarting canvas tracking')
             }
             setTimeout(() => tracker?.restartCanvasTracking(), 100)
             setTimeout(() => tracker?.restartCanvasTracking(), 500)
@@ -384,7 +370,6 @@ function startPeriodicCanvasRestart() {
     window.addEventListener('focus', () => {
         if (tracker) {
             if (import.meta.env.DEV) {
-                console.log('🎯 Window focused - restarting canvas tracking')
             }
             setTimeout(() => tracker?.restartCanvasTracking(), 100)
             setTimeout(() => tracker?.restartCanvasTracking(), 500)
@@ -392,7 +377,6 @@ function startPeriodicCanvasRestart() {
     })
 
     if (import.meta.env.DEV) {
-        console.log(`⏰ Periodic canvas restart active (every ${intervalMs / 1000}s)`)
     }
 }
 
@@ -402,7 +386,6 @@ function startPeriodicCanvasRestart() {
  */
 export function handleWebGLContextLost() {
     if (import.meta.env.DEV) {
-        console.log('⚠️ WebGL context lost - will restart canvas tracking on restore')
     }
 }
 
@@ -412,7 +395,6 @@ export function handleWebGLContextLost() {
  */
 export function handleWebGLContextRestored() {
     if (import.meta.env.DEV) {
-        console.log('✅ WebGL context restored - restarting canvas tracking')
     }
     // Delay to ensure context is fully restored
     setTimeout(() => {
@@ -442,7 +424,6 @@ export function cleanupOpenReplay() {
         tracker = null
     }
     if (import.meta.env.DEV) {
-        console.log('🧹 OpenReplay cleaned up')
     }
 }
 

@@ -57,7 +57,7 @@
         </div>
         <div class="dropdown-options">
           <label
-            v-for="category in availableCategories"
+            v-for="(category, index) in availableCategories"
             :key="category.value"
             class="dropdown-option"
           >
@@ -66,6 +66,7 @@
               :value="category.value"
               v-model="localSelectedCategory"
               @change="applyCategory"
+              :ref="index === 0 ? 'firstCategoryOption' : undefined"
             />
             <span class="option-label">{{ category.label }}</span>
             <span class="option-count">({{ category.count }})</span>
@@ -91,6 +92,7 @@
               <div class="price-input-wrapper">
                 <span class="currency">£</span>
                 <input
+                  ref="firstPriceOption"
                   type="number"
                   :value="displayPriceMin"
                   :min="priceRange.min"
@@ -178,7 +180,7 @@
         </div>
         <div class="dropdown-options">
           <label
-            v-for="style in availableStyles"
+            v-for="(style, index) in availableStyles"
             :key="style.value"
             class="dropdown-option"
           >
@@ -187,6 +189,7 @@
               :value="style.value"
               v-model="localSelectedStyles"
               @change="applyStyle"
+              :ref="index === 0 ? 'firstStyleOption' : undefined"
             />
             <span class="option-label">{{ style.label }}</span>
             <span class="option-count">({{ style.count }})</span>
@@ -207,6 +210,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
+import { PRICE_EPS } from '../../utils/filters'
 
 // Initialize GTM
 const gtm = useGtm()
@@ -239,6 +243,14 @@ const categoryChipRef = ref(null)
 const priceChipRef = ref(null)
 const styleChipRef = ref(null)
 
+// Dropdown first option refs for focus management
+const firstCategoryOption = ref(null)
+const firstPriceOption = ref(null)
+const firstStyleOption = ref(null)
+
+// Focus restoration - track which element opened the dropdown
+const lastFocusedElement = ref(null)
+
 // Dropdown positions
 const categoryDropdownPos = ref({ top: 0, left: 0 })
 const priceDropdownPos = ref({ top: 0, left: 0 })
@@ -254,11 +266,15 @@ const activeSlider = ref(null)
 
 // Local filter values
 const localSelectedCategory = ref(props.selectedFilters.category || null)
-const localPriceMin = ref(null)
-const localPriceMax = ref(null)
+const localPriceMin = ref(props.selectedFilters.priceMin ?? null)
+const localPriceMax = ref(props.selectedFilters.priceMax ?? null)
 const localSelectedStyles = ref([...(props.selectedFilters.styles || [])])
 const lastSearchQuery = ref(props.searchQuery || '') // Track search query to detect new searches
-const userHasSetPriceFilter = ref(false) // Track if user manually changed price
+// Track if user manually changed price - initialize based on whether props have price filters
+const userHasSetPriceFilter = ref(
+  props.selectedFilters.priceMin !== null && props.selectedFilters.priceMin !== undefined &&
+  props.selectedFilters.priceMax !== null && props.selectedFilters.priceMax !== undefined
+)
 
 // Category display labels
 const categoryDisplayLabels = {
@@ -302,25 +318,49 @@ const styleDropdownStyle = computed(() => ({
   left: `${styleDropdownPos.value.left}px`
 }))
 
+// Helper: Normalize price string by removing currency symbols, commas, and whitespace
+const normalizePrice = (price) => {
+  if (typeof price === 'number') return price
+  if (typeof price === 'string') {
+    // Remove currency symbols (£, $, €, etc.), commas, and whitespace
+    // Keep only digits, decimal point, and optional leading minus sign
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
+    return isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
 // Helper: Get product price for filtering
 const getProductPrice = (result) => {
-  const price = parseFloat(result.price) || 0
+  const price = normalizePrice(result.price)
   if (price > 0) return price
 
   // Check variant price
   const variant = result.searchContext?.matchingVariant
   if (variant?.price) {
-    const variantPrice = parseFloat(variant.price) || 0
+    const variantPrice = normalizePrice(variant.price)
     if (variantPrice > 0) return variantPrice
   }
   return 0
+}
+
+// Helper: Safely get search results as array
+const getSearchResultsArray = () => {
+  if (!props.searchResults) return []
+  if (Array.isArray(props.searchResults)) return props.searchResults
+  // Handle reactive ref objects that might have a .value property
+  if (typeof props.searchResults === 'object' && 'value' in props.searchResults) {
+    return Array.isArray(props.searchResults.value) ? props.searchResults.value : []
+  }
+  return []
 }
 
 // Helper: Filter results by all active filters - used for Zero Results Prevention
 // When calculating available options, we apply ALL other filters (including price)
 // to ensure no option would result in 0 products
 const getResultsFilteredByAllFilters = (excludeFilter = null) => {
-  let filtered = [...props.searchResults]
+  let filtered = [...getSearchResultsArray()]
 
   // Apply category filter (if not excluded)
   if (excludeFilter !== 'category' && localSelectedCategory.value) {
@@ -341,13 +381,12 @@ const getResultsFilteredByAllFilters = (excludeFilter = null) => {
 
   // Apply price filter (if not excluded and user has modified the price)
   if (excludeFilter !== 'price' && hasPriceFilter.value) {
-    const EPS = 0.01
     filtered = filtered.filter(result => {
       const price = getProductPrice(result)
       // Include items with no valid price (price = 0) - don't filter them out
       if (price === 0) return true
       // Use epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
-      return price + EPS >= effectivePriceMin.value && price - EPS <= effectivePriceMax.value
+      return price + PRICE_EPS >= effectivePriceMin.value && price - PRICE_EPS <= effectivePriceMax.value
     })
   }
 
@@ -357,7 +396,7 @@ const getResultsFilteredByAllFilters = (excludeFilter = null) => {
 // Helper: Filter results by discrete filters only (Category, Style) - used for price range calculation
 // Price should NOT affect what price range is available (would cause circular dependency)
 const getResultsFilteredByDiscreteFilters = () => {
-  let filtered = [...props.searchResults]
+  let filtered = [...getSearchResultsArray()]
 
   // Apply category filter
   if (localSelectedCategory.value) {
@@ -416,8 +455,8 @@ const fullPriceRange = computed(() => {
   let min = Infinity
   let max = 0
 
-  props.searchResults.forEach(result => {
-    const price = parseFloat(result.price) || 0
+  getSearchResultsArray().forEach(result => {
+    const price = normalizePrice(result.price)
     if (price > 0) {
       min = Math.min(min, price)
       max = Math.max(max, price)
@@ -426,7 +465,7 @@ const fullPriceRange = computed(() => {
     // Also check variants for price range
     const variant = result.searchContext?.matchingVariant
     if (variant?.price) {
-      const variantPrice = parseFloat(variant.price) || 0
+      const variantPrice = normalizePrice(variant.price)
       if (variantPrice > 0) {
         min = Math.min(min, variantPrice)
         max = Math.max(max, variantPrice)
@@ -438,7 +477,13 @@ const fullPriceRange = computed(() => {
   if (min === Infinity) min = 0
   if (max === 0) max = 1000
 
-  return { min: Math.floor(min), max: Math.ceil(max) }
+  // Ensure we always return finite numbers for .toFixed() compatibility
+  const floorMin = Math.floor(min)
+  const ceilMax = Math.ceil(max)
+  return {
+    min: Number.isFinite(floorMin) ? floorMin : 0,
+    max: Number.isFinite(ceilMax) ? ceilMax : 1000
+  }
 })
 
 // Computed: Dynamic price range based on discrete filters (Category, Style)
@@ -450,7 +495,7 @@ const priceRange = computed(() => {
   let max = 0
 
   filteredResults.forEach(result => {
-    const price = parseFloat(result.price) || 0
+    const price = normalizePrice(result.price)
     if (price > 0) {
       min = Math.min(min, price)
       max = Math.max(max, price)
@@ -471,7 +516,11 @@ const priceRange = computed(() => {
     ceilMax = floorMin + 1
   }
 
-  return { min: floorMin, max: ceilMax }
+  // Ensure we always return finite numbers for .toFixed() compatibility
+  return {
+    min: Number.isFinite(floorMin) ? floorMin : 0,
+    max: Number.isFinite(ceilMax) ? ceilMax : 1000
+  }
 })
 
 // Price step calculation
@@ -649,10 +698,21 @@ watch(() => props.selectedFilters, (newFilters) => {
   if (JSON.stringify(newFilters.styles) !== JSON.stringify(localSelectedStyles.value)) {
     localSelectedStyles.value = [...(newFilters.styles || [])]
   }
-}, { deep: true })
+
+  // Update userHasSetPriceFilter based on whether external filters have price values
+  // This prevents external changes from being overwritten during category transitions
+  const hasPriceFilters = newFilters.priceMin !== null && newFilters.priceMin !== undefined &&
+                          newFilters.priceMax !== null && newFilters.priceMax !== undefined
+  userHasSetPriceFilter.value = hasPriceFilters
+}, { deep: true, immediate: true })
 
 // Toggle dropdowns
 const toggleCategoryDropdown = async () => {
+  // Store the current focused element for restoration
+  if (!isCategoryDropdownOpen.value) {
+    lastFocusedElement.value = document.activeElement
+  }
+
   isPriceDropdownOpen.value = false
   isStyleDropdownOpen.value = false
   isCategoryDropdownOpen.value = !isCategoryDropdownOpen.value
@@ -660,10 +720,24 @@ const toggleCategoryDropdown = async () => {
   if (isCategoryDropdownOpen.value) {
     await nextTick()
     categoryDropdownPos.value = getDropdownPosition(categoryChipRef.value)
+
+    // Focus first option for accessibility
+    try {
+      if (firstCategoryOption.value && typeof firstCategoryOption.value.focus === 'function') {
+        firstCategoryOption.value.focus()
+      }
+    } catch (e) {
+      // Silently handle focus errors
+    }
   }
 }
 
 const togglePriceDropdown = async () => {
+  // Store the current focused element for restoration
+  if (!isPriceDropdownOpen.value) {
+    lastFocusedElement.value = document.activeElement
+  }
+
   isCategoryDropdownOpen.value = false
   isStyleDropdownOpen.value = false
   isPriceDropdownOpen.value = !isPriceDropdownOpen.value
@@ -671,10 +745,24 @@ const togglePriceDropdown = async () => {
   if (isPriceDropdownOpen.value) {
     await nextTick()
     priceDropdownPos.value = getDropdownPosition(priceChipRef.value)
+
+    // Focus first input for accessibility
+    try {
+      if (firstPriceOption.value && typeof firstPriceOption.value.focus === 'function') {
+        firstPriceOption.value.focus()
+      }
+    } catch (e) {
+      // Silently handle focus errors
+    }
   }
 }
 
 const toggleStyleDropdown = async () => {
+  // Store the current focused element for restoration
+  if (!isStyleDropdownOpen.value) {
+    lastFocusedElement.value = document.activeElement
+  }
+
   isCategoryDropdownOpen.value = false
   isPriceDropdownOpen.value = false
   isStyleDropdownOpen.value = !isStyleDropdownOpen.value
@@ -682,13 +770,38 @@ const toggleStyleDropdown = async () => {
   if (isStyleDropdownOpen.value) {
     await nextTick()
     styleDropdownPos.value = getDropdownPosition(styleChipRef.value)
+
+    // Focus first checkbox for accessibility
+    try {
+      if (firstStyleOption.value && typeof firstStyleOption.value.focus === 'function') {
+        firstStyleOption.value.focus()
+      }
+    } catch (e) {
+      // Silently handle focus errors
+    }
   }
 }
 
 const closeAllDropdowns = () => {
+  const wasOpen = isCategoryDropdownOpen.value || isPriceDropdownOpen.value || isStyleDropdownOpen.value
+
   isCategoryDropdownOpen.value = false
   isPriceDropdownOpen.value = false
   isStyleDropdownOpen.value = false
+
+  // Restore focus to the element that opened the dropdown
+  if (wasOpen && lastFocusedElement.value) {
+    nextTick(() => {
+      try {
+        if (lastFocusedElement.value && typeof lastFocusedElement.value.focus === 'function') {
+          lastFocusedElement.value.focus()
+        }
+      } catch (e) {
+        // Silently handle focus errors
+      }
+      lastFocusedElement.value = null
+    })
+  }
 }
 
 // Apply filters - only emit price values when there's an active price filter
@@ -726,6 +839,24 @@ const applyCategory = () => {
       priceMin: shouldPreservePrice ? localPriceMin.value : null,
       priceMax: shouldPreservePrice ? localPriceMax.value : null,
       styles: [...localSelectedStyles.value]
+    }
+
+    // Track category transition as navigation event
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'navigation',
+        category: 'Navigation',
+        action: 'category_transition',
+        label: localSelectedCategory.value,
+        fromView: 'search',
+        toView: 'category',
+        preservedFilters: {
+          hasPriceFilter: shouldPreservePrice,
+          priceMin: preservedFilters.priceMin,
+          priceMax: preservedFilters.priceMax,
+          stylesCount: preservedFilters.styles?.length || 0
+        }
+      })
     }
 
     emit('category-transition', {
@@ -858,20 +989,61 @@ const clearStyle = () => {
   emitFilterUpdate()
 }
 
-// Close dropdowns on escape key
+// Handle keyboard navigation and focus trapping
 const handleKeydown = (e) => {
+  // Close dropdowns on escape key
   if (e.key === 'Escape') {
     closeAllDropdowns()
+    return
+  }
+
+  // Focus trap: Handle Tab and Shift+Tab within open dropdowns
+  if (e.key === 'Tab') {
+    const isAnyDropdownOpen = isCategoryDropdownOpen.value || isPriceDropdownOpen.value || isStyleDropdownOpen.value
+
+    if (isAnyDropdownOpen) {
+      // Get all focusable elements in the open dropdown
+      let dropdownSelector = ''
+      if (isCategoryDropdownOpen.value) {
+        dropdownSelector = '.sf-filter-dropdown-portal:has(input[type="radio"])'
+      } else if (isPriceDropdownOpen.value) {
+        dropdownSelector = '.sf-price-dropdown'
+      } else if (isStyleDropdownOpen.value) {
+        dropdownSelector = '.sf-filter-dropdown-portal:has(input[type="checkbox"])'
+      }
+
+      const dropdown = document.querySelector(dropdownSelector)
+      if (dropdown) {
+        const focusableElements = dropdown.querySelectorAll(
+          'input, button, [tabindex]:not([tabindex="-1"])'
+        )
+        const focusableArray = Array.from(focusableElements)
+        const firstElement = focusableArray[0]
+        const lastElement = focusableArray[focusableArray.length - 1]
+
+        // If we're at the last element and Tab is pressed (forward), loop to first
+        if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault()
+          firstElement?.focus()
+        }
+        // If we're at the first element and Shift+Tab is pressed (backward), loop to last
+        else if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault()
+          lastElement?.focus()
+        }
+      }
+    }
   }
 }
 
 onMounted(() => {
   document.addEventListener('keydown', handleKeydown)
-  // Initialize price values if not already set
-  if (localPriceMin.value === null) {
+  // Initialize price values if not already set from props
+  // Only set to range defaults if props didn't provide values
+  if (localPriceMin.value === null && !userHasSetPriceFilter.value) {
     localPriceMin.value = priceRange.value.min
   }
-  if (localPriceMax.value === null) {
+  if (localPriceMax.value === null && !userHasSetPriceFilter.value) {
     localPriceMax.value = priceRange.value.max
   }
 })

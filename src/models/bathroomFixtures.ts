@@ -79,11 +79,8 @@ class ModelManager {
   // NEW: Preload models for specific category only
     async preloadCategoryModels(category: ComponentType, onModelLoaded?: (modelName: string) => void): Promise<void> {
         if (this.preloadedCategories.has(category)) {
-            console.log(`✅ ${category} models already preloaded, skipping...`);
             return;
         }
-
-        console.log(`🚀 Starting selective preload for ${category} models...`);
         const categoryModels = getCategoryModelPaths(category);
 
         if (categoryModels.length === 0) {
@@ -98,7 +95,6 @@ class ModelManager {
                 const tempObjectModel: ObjectModel = { name, path, scale, dimensions: { width: 50, height: 50, depth: 50 } };
 
                 await this.loadModel(name, tempObjectModel);
-                console.log(`✅ Individual model loaded: ${name}`);
 
                 // Notify parent component that this specific model is ready
                 if (onModelLoaded) {
@@ -114,17 +110,13 @@ class ModelManager {
         await Promise.allSettled(preloadPromises);
 
         this.preloadedCategories.add(category);
-        console.log(`🎉 ${category} preloading complete!`);
     }
 
   // Existing preloadModels method (keep for backward compatibility)
   async preloadModels (): Promise<void> {
     if (this.preloadComplete) {
-      console.log('✅ Models already preloaded, skipping...');
       return;
     }
-
-    console.log('🚀 Starting model preloading from productData...');
 
     const allModelPaths = getAllModelPathsFromProductData();
 
@@ -133,8 +125,6 @@ class ModelManager {
       this.preloadComplete = true;
       return;
     }
-
-    console.log(`📦 Preloading ${allModelPaths.length} models...`);
 
     // Track preloading progress
     let loadedCount = 0;
@@ -155,7 +145,6 @@ class ModelManager {
 
         await this.loadModel(name, tempObjectModel);
         loadedCount++;
-        console.log(`Preloaded: ${name}`);
       } catch (error) {
         failedCount++;
         console.warn(`Failed to preload: ${name}`, error);
@@ -164,7 +153,6 @@ class ModelManager {
 
     await Promise.all(preloadPromises);
     this.preloadComplete = true;
-    console.log(`🎉 Global preloading complete! Loaded: ${loadedCount}, Failed: ${failedCount}`);
   }
 
   // NEW: Check if category is preloaded
@@ -205,14 +193,12 @@ class ModelManager {
     private async performModelLoad(modelName: string, modelConfig: ObjectModel, onProgress?: ModelProgressCallback): Promise<THREE.Group> {
         // Return cached model if available
         if (this.cache[modelName]) {
-            console.log(`🎯 Using cached model: ${modelName}`);
             onProgress?.(100); // Immediately report 100% for cached models
             return this.cloneModelWithMaterials(this.cache[modelName]);
         }
 
         // Return existing loading promise if already loading
         if (modelName in this.loadingPromises) {
-            console.log(`⏳ Waiting for existing load: ${modelName}`);
             const loaded = await this.loadingPromises[modelName];
             const cloned = loaded.clone(true);
             cloned.traverse(n => { if ((n as any).isMesh && (n as any).material) (n as any).material = Array.isArray((n as any).material) ? (n as any).material.map((m:any)=>m.clone()) : (n as any).material.clone(); });
@@ -221,12 +207,10 @@ class ModelManager {
 
         // Create new loading promise
         this.loadingPromises[modelName] = new Promise((resolve, reject) => {
-            console.log(`📦 Starting to load model: ${modelName} from ${modelConfig.path}`);
 
             this.loader.load(
                 modelConfig.path,
                 (gltf) => {
-                    console.log(`✅ GLTF loaded successfully: ${modelName}`);
 
                     const model = gltf.scene;
                     model.name = modelName;
@@ -234,7 +218,6 @@ class ModelManager {
                     // Apply scale if provided
                     if (modelConfig.scale) {
                         model.scale.setScalar(modelConfig.scale);
-                        console.log(`🔧 Applied scale ${modelConfig.scale} to ${modelName}`);
                     }
 
                     // Optimize model for smooth rendering
@@ -248,8 +231,6 @@ class ModelManager {
 
                     // Report 100% complete
                     onProgress?.(100);
-
-                    console.log(`🎉 Model ${modelName} loaded and cached successfully`);
                     resolve(model);
                 },
                 (progress) => {
@@ -259,7 +240,6 @@ class ModelManager {
                     if (progress.lengthComputable) {
                         // Scale download progress to 0-90% range (leave 10% for parsing)
                         const downloadPercent = (progress.loaded / progress.total) * 90;
-                        console.log(`📈 Downloading ${modelName}: ${downloadPercent.toFixed(1)}%`);
                         onProgress?.(downloadPercent);
                     } else {
                         // If length not computable, estimate based on loaded bytes
@@ -308,8 +288,6 @@ class ModelManager {
         }
       }
     });
-
-    console.log(`✅ Model processed for smooth rendering: ${model.name || 'unnamed'}`);
   }
 
     // Add this to ModelManager class after the loadModel method:
@@ -428,23 +406,6 @@ export const createModel = async (
     const model = await fixture.create();
 
 
-    // Calculate the model's bounding box to find its actual center
-    const box = new THREE.Box3().setFromObject(model);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-
-    console.log('📦 Model geometry analysis:', {
-      type,
-      boundingBoxCenter: center,
-      boundingBoxSize: size,
-      expectedDimensions: productModel.dimensions,
-      pivotOffset: {
-        x: center.x - model.position.x,
-        y: center.y - model.position.y,
-        z: center.z - model.position.z
-      }
-    });
-
     model.rotation.y = rotation;
     model.scale.set(scale, scale, scale);
     model.userData.type = type;
@@ -493,8 +454,6 @@ const getCategoryModelPaths = (category: ComponentType): ObjectModelWithCategory
       }
     });
   }
-
-  console.log(`📦 Found ${categoryModels.length} models for ${category} category`);
   return categoryModels;
 };
 
@@ -514,8 +473,6 @@ const getAllModelPathsFromProductData = (): ObjectModelWithCategory[] => {
       }
     });
   });
-
-  console.log(`📦 Found ${modelPaths.length} models across ${Object.keys(productData).length} categories`);
   return modelPaths;
 };
 

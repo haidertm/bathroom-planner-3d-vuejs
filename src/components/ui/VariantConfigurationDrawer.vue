@@ -200,12 +200,7 @@ const isCurrentVariant = (variant) => {
 const itemsChangeCounter = ref(0)
 
 // Watch for changes to existingItems and force re-render
-watch(() => props.existingItems, (newItems, oldItems) => {
-  console.log('🔄 existingItems changed:', {
-    oldCount: oldItems?.length || 0,
-    newCount: newItems?.length || 0,
-    newIds: newItems?.map(i => i.id)
-  })
+watch(() => props.existingItems, () => {
   itemsChangeCounter.value++
 
   // Clear collision preview when items change (e.g., colliding item removed)
@@ -236,8 +231,6 @@ const variantFitMap = computed(() => {
     return fitMap
   }
 
-  console.log('🔄 Recalculating variant fit map, itemsVersion:', version, 'existingItems:', props.existingItems?.length)
-
   for (const variant of variants.value) {
     if (!variant?.dimensions) {
       fitMap.set(variant.sku, { fits: true, availableWidth: Infinity, requiredWidth: 0 })
@@ -258,7 +251,6 @@ const variantFitMap = computed(() => {
     const fitsOrientation2 = variantWidth <= availableRoomDepth && variantDepth <= availableRoomWidth
 
     if (!fitsOrientation1 && !fitsOrientation2) {
-      console.log('🔍 Variant', variant.sku, 'too large for room - dimensions:', variantWidth, 'x', variantDepth, 'room:', availableRoomWidth, 'x', availableRoomDepth)
       fitMap.set(variant.sku, {
         fits: false,
         availableWidth: Math.min(availableRoomWidth, availableRoomDepth),
@@ -299,7 +291,6 @@ const variantFitMap = computed(() => {
     )
 
     if (itemCollision) {
-      console.log('🔍 Variant', variant.sku, 'would collide with other items')
       fitMap.set(variant.sku, {
         fits: false,
         availableWidth: 0,
@@ -308,8 +299,6 @@ const variantFitMap = computed(() => {
       })
       continue
     }
-
-    console.log('🔍 Variant', variant.sku, 'fits')
     fitMap.set(variant.sku, { fits: true, availableWidth: Infinity, requiredWidth: 0 })
   }
 
@@ -377,11 +366,9 @@ const getTooLargeTooltip = (variant) => {
 // Methods
 const selectVariant = async (variant) => {
   const variantKey = variant.id || variant.sku || variant.name
-  console.log('🔄 Variant clicked:', variant.name || variant.sku)
 
   // Allow selection of "Too Large" variants for preview purposes
   if (isVariantTooLarge(variant)) {
-    console.log('⚠️ Variant too large - showing collision preview')
     selectedVariant.value = variant
     // Emit preview event to show red collision outline in 3D view
     emit('preview-collision', {
@@ -398,27 +385,22 @@ const selectVariant = async (variant) => {
 
   // Check if model is already cached (instant availability)
   if (isModelCached(variant)) {
-    console.log('✅ Model already cached, instant availability')
     return
   }
 
   // Check if model is already loaded
   if (isVariantModelLoaded(variant)) {
-    console.log('✅ Model already loaded')
     return
   }
 
   // Start PROGRESSIVE loading in background - preload for faster swap
   // Note: The actual swap will use progressive loading with placeholder
-  console.log('🔄 Pre-loading variant model in background')
 
   try {
     await loadVariantModelProgressively(variant, {
       onPlaceholderReady: () => {
-        console.log('🔲 Placeholder ready for variant:', variantKey)
       },
       onFullModelReady: () => {
-        console.log('✅ Full model ready for variant:', variantKey)
       },
       onProgress: () => {
         // Progress tracked internally
@@ -427,7 +409,6 @@ const selectVariant = async (variant) => {
         console.error('❌ Progressive loading error:', error)
       }
     })
-    console.log('✅ Background loading completed')
   } catch (error) {
     console.error('❌ Failed to pre-load variant model:', error)
   }
@@ -438,7 +419,6 @@ const confirmSwap = async () => {
 
   // AC4: Hard stop - prevent swap if variant is too large
   if (isVariantTooLarge(selectedVariant.value)) {
-    console.log('⚠️ Cannot swap - variant too large for available space')
     return
   }
 
@@ -450,7 +430,6 @@ const confirmSwap = async () => {
 
   // If model is already cached, proceed directly - INSTANT swap
   if (isCached) {
-    console.log('✅ Model cached, swapping immediately (instant)')
     emit('swap-variant', {
       itemId: props.itemId,
       newVariant: selectedVariant.value,
@@ -465,7 +444,6 @@ const confirmSwap = async () => {
 
   // If model is already loaded, proceed directly
   if (isLoaded) {
-    console.log('✅ Model already loaded, swapping immediately')
     emit('swap-variant', {
       itemId: props.itemId,
       newVariant: selectedVariant.value,
@@ -477,7 +455,6 @@ const confirmSwap = async () => {
 
   // Model is NOT loaded - use PROGRESSIVE loading for better UX
   // This will show a placeholder immediately while the model loads
-  console.log('🔄 Model not loaded, using progressive loading with placeholder')
 
   // Emit swap with progressive loading flag - scene will show placeholder first
   emit('swap-variant', {

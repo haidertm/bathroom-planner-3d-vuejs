@@ -52,7 +52,6 @@ export class SimpleWallCulling {
    * UPDATED: Wall identification for interior walls system with notch support
    */
   private identifyWalls (): void {
-    console.log('🔍 Identifying walls for interior wall system...');
     this.wallMap.clear();
 
     const roomHalfWidth: number = this.roomSize.width / 2;
@@ -82,12 +81,9 @@ export class SimpleWallCulling {
       };
     }
 
-    console.log('Expected wall positions (interior system):', expectedPositions);
-
     // Identify each wall by its position with updated logic
     this.walls.forEach((wall: THREE.Mesh, index) => {
       const pos = wall.position;
-      console.log(`Wall ${index} position:`, { x: pos.x.toFixed(2), z: pos.z.toFixed(2) });
 
       const tolerance = wallThickness; // Use wall thickness as tolerance
 
@@ -101,7 +97,6 @@ export class SimpleWallCulling {
             Math.abs(pos.x - notchSouthPos.x!) < tolerance &&
             Math.abs(pos.z - notchSouthPos.z!) < tolerance) {
           this.wallMap.set(wall, 'notch-south');
-          console.log(`✅ Wall ${index} identified as NOTCH-SOUTH wall`);
           return;
         }
         // Notch-east wall (vertical edge at right of notch)
@@ -109,7 +104,6 @@ export class SimpleWallCulling {
                  Math.abs(pos.x - notchEastPos.x!) < tolerance &&
                  Math.abs(pos.z - notchEastPos.z!) < tolerance) {
           this.wallMap.set(wall, 'notch-east');
-          console.log(`✅ Wall ${index} identified as NOTCH-EAST wall`);
           return;
         }
       }
@@ -117,31 +111,23 @@ export class SimpleWallCulling {
       // North wall (negative Z, interior position)
       if (Math.abs(pos.z - expectedPositions.north.z!) < tolerance) {
         this.wallMap.set(wall, 'north');
-        console.log(`✅ Wall ${index} identified as NORTH wall`);
       }
       // South wall (positive Z, interior position)
       else if (Math.abs(pos.z - expectedPositions.south.z!) < tolerance) {
         this.wallMap.set(wall, 'south');
-        console.log(`✅ Wall ${index} identified as SOUTH wall`);
       }
       // East wall (positive X, interior position)
       else if (Math.abs(pos.x - expectedPositions.east.x!) < tolerance) {
         this.wallMap.set(wall, 'east');
-        console.log(`✅ Wall ${index} identified as EAST wall`);
       }
       // West wall (negative X, interior position)
       else if (Math.abs(pos.x - expectedPositions.west.x!) < tolerance) {
         this.wallMap.set(wall, 'west');
-        console.log(`✅ Wall ${index} identified as WEST wall`);
       }
       else {
         console.warn(`⚠️ Wall ${index} could not be identified! Position: (${pos.x.toFixed(2)}, ${pos.z.toFixed(2)})`);
       }
     });
-
-    console.log('Wall identification complete:', Array.from(this.wallMap.entries()).map(([wall, direction]) =>
-      `${direction}: (${wall.position.x.toFixed(1)}, ${wall.position.z.toFixed(1)})`
-    ));
   }
 
   setEnabled (enabled: boolean): void {
