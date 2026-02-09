@@ -773,9 +773,10 @@ export const checkCollision = (
 
             // Check if on notch-east wall (vertical edge of notch) - needs dimension swap (like east/west walls)
             // FIXED: notch-east wall only exists from notchMinZ to notchMaxZ (not all the way to roomHalfHeight)
+            // Use same tolerance strategy as checkWallCollision for consistent behavior near notchMaxZ
             if (Math.abs(pos.x - notchMaxX) < tolerance &&
                 pos.z >= notchMinZ &&
-                pos.z <= notchMaxZ) {
+                pos.z <= notchMaxZ + tolerance) {
                 console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall (needs swap)', {
                     position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
                     notchMaxX: notchMaxX.toFixed(1),
@@ -940,9 +941,10 @@ export const checkCollision = (
                 pos.z >= notchMinZ &&
                 pos.z <= notchMaxZ) {
                 const adjustedPos = { ...pos };
-                // Notch-east wall - item extends in -x direction (into room)
+                // Notch-east wall - item extends in +x direction (into room, away from notch void)
+                // This matches constrainToWalls behavior: notch.maxX + halfDepth + wallBuffer
                 const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
-                adjustedPos.x = pos.x - effectiveHalfDepth;
+                adjustedPos.x = pos.x + effectiveHalfDepth;
                 return adjustedPos;
             }
 

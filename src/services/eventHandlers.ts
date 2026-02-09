@@ -1472,6 +1472,14 @@ export class EventHandlers {
     // ✅ CRITICAL: Get valid height constraints to prevent going through ceiling/floor
     const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
 
+    // Get notch info for L-shaped rooms (computed once, reused in loop)
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     // Try different heights: spawn height, then heights above and below
     const heightAttempts = [
       spawnHeight, // Try default spawn height
@@ -1517,15 +1525,8 @@ export class EventHandlers {
         return testPositionAtNewHeight;
       }
 
-      // Get notch info for L-shaped rooms
-      const { notch } = getInteriorBoundaries(
-        this.roomWidthRef.value,
-        this.roomHeightRef.value,
-        this.notchWidthRef.value,
-        this.notchHeightRef.value
-      );
-
       // If still colliding, try horizontal search at this new Y position
+      // (notch info already computed outside the loop)
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const direction = (attempt % 2 === 0) ? 1 : -1;
         const magnitude = Math.ceil(attempt / 2);
