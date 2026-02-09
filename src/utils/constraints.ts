@@ -1786,12 +1786,15 @@ export const findFreeWallPosition = (
     console.log(`🔧 Initial placement flush check: ${isFlushMounted ? 'FLUSH-MOUNTED' : 'OFFSET'} (wallBuffer: ${wallBuffer})`);
 
     // Define walls with proper interior positioning
+    // For L-shaped rooms, north and west walls are shortened to exclude the notch area
     const walls = [
         {
             name: 'north',
             getPosition: (t: number) => {
                 // Calculate position along wall
-                const minX = interior.minX + halfWidth;  // Don't go past west corner
+                // For L-shaped rooms, north wall starts at notch.maxX + wall thickness (notch cuts off northwest corner)
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+                const minX = notch ? (notch.maxX + wallThickness + halfWidth) : (interior.minX + halfWidth);
                 const maxX = interior.maxX - halfWidth;  // Don't go past east corner
                 return {
                     x: minX + t * (maxX - minX),
@@ -1833,7 +1836,9 @@ export const findFreeWallPosition = (
         {
             name: 'west',
             getPosition: (t: number) => {
-                const minZ = interior.minZ + halfWidth;
+                // For L-shaped rooms, west wall starts at notch.maxZ + wall thickness (notch cuts off northwest corner)
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+                const minZ = notch ? (notch.maxZ + wallThickness + halfWidth) : (interior.minZ + halfWidth);
                 const maxZ = interior.maxZ - halfWidth;
                 return {
                     // ✅ FIX: Flush-mounted objects go directly at wall
