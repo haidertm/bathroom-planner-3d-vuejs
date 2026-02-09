@@ -16,6 +16,7 @@
 import * as THREE from 'three';
 import type { Ref } from 'vue';
 import type { ViewMode } from '../../constants/camera';
+import type { ComponentType } from '../../constants/components';
 import type { BathroomPlannerState } from '../../composables/useUndoRedo';
 import type { BathroomItem } from '../../utils/constraints';
 import type { MeasurementSystem } from '../measurementSystem';
@@ -30,6 +31,16 @@ import { DragHandler } from './handlers/DragHandler';
 import { RotationHandler } from './handlers/RotationHandler';
 import { HeightScaleHandler } from './handlers/HeightScaleHandler';
 import type { HandlerContext } from './types';
+
+// Drag constraint logic
+import {
+  determineCurrentWall,
+  applyWallSnapConstraint,
+  checkCollisionState,
+} from '../dragConstraints';
+import { constrainToRoom } from '../../utils/constraints';
+import { getMovementConfig } from '../../utils/models';
+import { setOutlineColor } from '../../utils/helpers';
 
 /**
  * Constructor options matching the original EventHandlers signature.
@@ -122,6 +133,24 @@ export class InteractionCoordinator {
   /** Orthographic camera reference (for SceneManager access) */
   public get orthographicCamera(): THREE.OrthographicCamera | null {
     return this.state.orthographicCamera;
+  }
+
+  /** Currently selected object (for direct access) */
+  public get selectedObject(): THREE.Object3D | null {
+    return this.state.selectedObject;
+  }
+  public set selectedObject(object: THREE.Object3D | null) {
+    this.state.selectedObject = object;
+  }
+
+  /** Rotation arrows instance (for direct access) */
+  public get rotationArrows(): RotationArrows | null {
+    return this.state.rotationArrows;
+  }
+
+  /** Measurement system instance (for direct access) */
+  public get measurementSystem(): MeasurementSystem | null {
+    return this.state.measurementSystem;
   }
 
   // ============================================================================
@@ -477,17 +506,157 @@ export class InteractionCoordinator {
     const intersection = this.dragHandler.getDragIntersection(this.state.mouse);
     if (!intersection) return;
 
-    // Note: Complex constraint logic is still in the original EventHandlers.ts
-    // For now, just update position directly (without constraints)
-    // Full constraint logic should be migrated to DragHandler incrementally
-    this.state.selectedObject.position.x = intersection.x;
-    this.state.selectedObject.position.z = intersection.z;
+    const objectType = this.state.selectedObject.userData.type as ComponentType;
+    const objectScale = this.state.selectedObject.scale.x;
+    const itemId = this.state.selectedObject.userData.itemId as number;
+    const currentItem = this.dragHandler.getCurrentItemData(itemId);
+    const movementConfig = getMovementConfig(objectType, currentItem);
+
+    // Get target position
+    const targetPosition = {
+      x: intersection.x,
+      y: this.state.selectedObject.position.y,
+      z: intersection.z
+    };
+
+    let constrainedPosition = targetPosition;
+    let constrainedRotation = this.state.selectedObject.rotation.y;
+
+    // Check if this is a corner-only item
+    const isCornerOnly = movementConfig.cornerInstallOnly &&
+      (typeof movementConfig.cornerInstallOnly === 'boolean'
+        ? movementConfig.cornerInstallOnly
+        : movementConfig.cornerInstallOnly.enabled);
+
+    // Apply wall snap constraint if needed
+    if (movementConfig.snapToWall && !isCornerOnly) {
+      const currentWall = determineCurrentWall(
+        this.state.selectedObject.position,
+        this.state.roomWidthRef.value,
+        this.state.roomHeightRef.value,
+        this.state.notchWidthRef.value,
+        this.state.notchHeightRef.value
+      );
+
+      const result = applyWallSnapConstraint(
+        targetPosition,
+        objectType,
+        objectScale,
+        currentItem,
+        this.state.roomWidthRef.value,
+        this.state.roomHeightRef.value,
+        this.state.notchWidthRef.value,
+        this.state.notchHeightRef.value,
+        currentWall,
+        this.state.selectedObject.userData.orientation
+      );
+
+      constrainedPosition = result.position;
+      constrainedRotation = result.rotation;
+    } else {
+      // For free-standing objects, constrain to room boundaries
+      const result = constrainToRoom(
+        targetPosition,
+        this.state.roomWidthRef.value,
+        this.state.roomHeightRef.value,
+        {
+          type: objectType,
+          scale: objectScale,
+          orientation: this.state.selectedObject.userData.orientation,
+          item: currentItem,
+          notchWidth: this.state.notchWidthRef.value,
+          notchHeight: this.state.notchHeightRef.value
+        }
+      );
+      constrainedPosition = result.position;
+    }
+
+    // Check for collisions
+    const isColliding = checkCollisionState(
+      constrainedPosition,
+      objectType,
+      objectScale,
+      itemId,
+      currentItem,
+      constrainedRotation,
+      this.state.getItems,
+      this.state.roomWidthRef.value,
+      this.state.roomHeightRef.value,
+      this.state.notchWidthRef.value,
+      this.state.notchHeightRef.value
+    );
+
+    // Update outline color based on collision state
+    setOutlineColor(isColliding);
+
+    // Apply position to object
+    this.state.selectedObject.position.set(
+      constrainedPosition.x,
+      constrainedPosition.y,
+      constrainedPosition.z
+    );
+    this.state.selectedObject.rotation.y = constrainedRotation;
+
+    // Queue update
+    this.dragHandler.queueUpdate(itemId, {
+      position: [constrainedPosition.x, constrainedPosition.y, constrainedPosition.z],
+      rotation: constrainedRotation
+    });
 
     // Emit schematic update for 2D mode
-    const itemId = this.state.selectedObject.userData.itemId;
     if (this.state.eventBus) {
       this.state.eventBus.emit('schematic:update', { itemId });
     }
+
+    // Apply bulk move to other selected objects
+    if (this.state.selectedObjects.size > 1) {
+      this.applyBulkMove(constrainedRotation);
+    }
+  }
+
+  /**
+   * Apply bulk move to all selected objects except the primary.
+   */
+  private applyBulkMove(primaryRotation: number): void {
+    if (!this.state.selectedObject) return;
+
+    const primaryPos = this.state.selectedObject.position;
+
+    this.state.selectedObjects.forEach((obj, id) => {
+      if (obj === this.state.selectedObject) return;
+
+      const localOffset = this.state.multiSelectLocalOffsets.get(id);
+      const rotOffset = this.state.multiSelectLocalRotations.get(id);
+
+      if (localOffset) {
+        // Apply offset rotated by primary rotation
+        const worldOffset = localOffset.clone().applyAxisAngle(
+          new THREE.Vector3(0, 1, 0),
+          primaryRotation
+        );
+
+        obj.position.set(
+          primaryPos.x + worldOffset.x,
+          obj.position.y,
+          primaryPos.z + worldOffset.z
+        );
+
+        if (rotOffset !== undefined) {
+          obj.rotation.y = primaryRotation + rotOffset;
+        }
+
+        // Queue update for this object
+        this.dragHandler.queueUpdate(id, {
+          position: [obj.position.x, obj.position.y, obj.position.z],
+          rotation: obj.rotation.y
+        });
+
+        // Update schematic
+        if (this.state.eventBus) {
+          this.state.eventBus.emit('schematic:update', { itemId: id });
+        }
+      }
+    });
   }
 
   private handleMouseUp(_event: MouseEvent): void {
@@ -503,9 +672,45 @@ export class InteractionCoordinator {
         this.rotationHandler.endObjectRotation();
         this.applyPendingUpdates();
       } else if (this.state.isDragging) {
+        // Check for collision before ending drag
+        if (this.state.selectedObject && this.state.preventCollisionPlacementRef.value) {
+          const objectType = this.state.selectedObject.userData.type as ComponentType;
+          const objectScale = this.state.selectedObject.scale.x;
+          const itemId = this.state.selectedObject.userData.itemId as number;
+          const currentItem = this.dragHandler.getCurrentItemData(itemId);
+          const position = {
+            x: this.state.selectedObject.position.x,
+            y: this.state.selectedObject.position.y,
+            z: this.state.selectedObject.position.z
+          };
+
+          const isColliding = checkCollisionState(
+            position,
+            objectType,
+            objectScale,
+            itemId,
+            currentItem,
+            this.state.selectedObject.rotation.y,
+            this.state.getItems,
+            this.state.roomWidthRef.value,
+            this.state.roomHeightRef.value,
+            this.state.notchWidthRef.value,
+            this.state.notchHeightRef.value
+          );
+
+          if (isColliding) {
+            // Snap back to original position
+            this.dragHandler.snapBackToOriginalPosition();
+            this.dragHandler.endDrag();
+            setOutlineColor(false); // Reset outline color
+            return;
+          }
+        }
+
         this.dragHandler.endDrag();
         this.dragHandler.queueAllSelectedUpdates();
         this.applyPendingUpdates();
+        setOutlineColor(false); // Reset outline color
       }
 
       // Handle click (no movement) on empty space - deselect
@@ -670,18 +875,18 @@ export class InteractionCoordinator {
 
   private updateMousePosition(event: MouseEvent): void {
     const rect = this.state.renderer.domElement.getBoundingClientRect();
+    // Only update normalized coordinates for raycasting
+    // mouseX/mouseY are updated separately in handleMouseDown and handleCameraDrag
     this.state.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.state.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    this.state.mouseX = event.clientX;
-    this.state.mouseY = event.clientY;
   }
 
   private updateTouchPosition(touch: Touch): void {
     const rect = this.state.renderer.domElement.getBoundingClientRect();
+    // Only update normalized coordinates for raycasting
+    // mouseX/mouseY are updated separately in touch handlers
     this.state.mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
     this.state.mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
-    this.state.mouseX = touch.clientX;
-    this.state.mouseY = touch.clientY;
   }
 
   private getTouchDistance(touch1: Touch, touch2: Touch): number {

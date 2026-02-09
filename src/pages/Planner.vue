@@ -168,7 +168,7 @@ import { getTemplateById } from '../constants/templates'
 
 // Services
 import { SceneManager } from '../services/sceneManager'
-import { EventHandlers } from '../services/eventHandlers'
+import { InteractionCoordinator } from '../services/eventHandlers/InteractionCoordinator'
 import { createSceneEventBus } from '../services/sceneEventBus'
 
 // Analytics
@@ -2074,24 +2074,24 @@ onMounted(async () => {
   const { scene, camera, renderer } = sceneManager.initializeScene()
 
   // Initialize event handlers and mark as raw to prevent reactivity
-  eventHandlersRef.value = markRaw(new EventHandlers(
+  eventHandlersRef.value = markRaw(new InteractionCoordinator({
       scene,
       camera,
       renderer,
       roomWidthRef,
       roomHeightRef,
-      notchWidth,                  // For L-shaped rooms
-      notchHeight,                 // For L-shaped rooms
-      setItems, // Use our custom setItems function
-      getItems, // Use our custom getItems function
+      notchWidthRef: notchWidth,
+      notchHeightRef: notchHeight,
+      setItems,
+      getItems,
       deleteItem,
-      preventCollisionPlacement,
-      saveToHistory,               // ADD THIS LINE
-      currentFloorTexture,         // ADD THIS LINE
-      currentWallTexture          // ADD THIS LINE
-  ))
+      preventCollisionPlacementRef: preventCollisionPlacement,
+      saveToHistory,
+      currentFloorTextureRef: currentFloorTexture,
+      currentWallTextureRef: currentWallTexture
+  }))
 
-// ADD THESE LINES RIGHT AFTER THE ABOVE CODE:
+  // Set up event handlers callbacks
   if (eventHandlersRef.value) {
     eventHandlersRef.value.onItemSelected = handleItemSelection
     eventHandlersRef.value.onItemDeselected = handleItemDeselection
