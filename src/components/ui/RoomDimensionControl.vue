@@ -141,10 +141,46 @@ const handleBlur = (event) => {
 .dimension-control__slider {
   flex: 1;
   margin-top: 0;
-  accent-color: #29275B;
   height: 6px;
   border-radius: 4px;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #e5e7eb;
+}
+
+.dimension-control__slider::-webkit-slider-track {
+  height: 6px;
+  border-radius: 4px;
+  background: #e5e7eb;
+}
+
+.dimension-control__slider::-moz-range-track {
+  height: 6px;
+  border-radius: 4px;
+  background: #e5e7eb;
+}
+
+.dimension-control__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #29275B;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dimension-control__slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #29275B;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Mobile adjustments */

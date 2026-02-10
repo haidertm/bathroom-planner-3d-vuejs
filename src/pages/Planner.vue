@@ -306,6 +306,13 @@ const handleDragEnd = () => {
   isDraggingObject.value = false
 }
 
+// Handler for window resize (needs stable reference for cleanup)
+const handleWindowResize = () => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateComposerSize()
+  }
+}
+
 const handleRotationToggleFromOverlay = (enabled) => {
   rotationArrowsEnabled.value = enabled;
 
@@ -2127,11 +2134,7 @@ onMounted(async () => {
   eventHandlersRef.value.addEventListeners()
 
   // Add window resize handler for post-processing
-  window.addEventListener('resize', () => {
-    if (sceneManagerRef.value) {
-      sceneManagerRef.value.updateComposerSize();
-    }
-  })
+  window.addEventListener('resize', handleWindowResize)
 
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
@@ -2256,11 +2259,7 @@ onUnmounted(() => {
   window.removeEventListener('object-moved', handleMeasurementUpdate)
 
   // Remove resize listener
-  window.removeEventListener('resize', () => {
-    if (sceneManagerRef.value) {
-      sceneManagerRef.value.updateComposerSize();
-    }
-  })
+  window.removeEventListener('resize', handleWindowResize)
 
   if (mountRef.value && sceneManagerRef.value) {
     const renderer = sceneManagerRef.value.renderer
