@@ -96,7 +96,6 @@ export function setupGTM(app: App, router: Router) {
     )
 
     if (import.meta.env.DEV) {
-      console.log('✅ GTM loaded successfully:', gtmId)
       console.info('🔍 GTM Debug mode enabled - check console for tracking events')
     }
   }
@@ -105,9 +104,6 @@ export function setupGTM(app: App, router: Router) {
    * Handler for user interaction events
    */
   const handleUserInteraction = () => {
-    if (import.meta.env.DEV) {
-      console.log('👆 User interaction detected - loading GTM')
-    }
     loadGTM()
   }
 
@@ -124,9 +120,6 @@ export function setupGTM(app: App, router: Router) {
   let idleCallbackId: number | undefined
   idleCallbackId = requestIdleCallbackPolyfill(
     () => {
-      if (import.meta.env.DEV) {
-        console.log('⏰ Browser idle detected - loading GTM')
-      }
       loadGTM()
     },
     { timeout: IDLE_TIMEOUT }
@@ -134,9 +127,6 @@ export function setupGTM(app: App, router: Router) {
 
   // Fallback timeout to ensure GTM loads even if user is completely idle
   const fallbackTimeout = setTimeout(() => {
-    if (import.meta.env.DEV) {
-      console.log('⏱️ Fallback timeout reached - loading GTM')
-    }
     loadGTM()
   }, FALLBACK_TIMEOUT)
 }

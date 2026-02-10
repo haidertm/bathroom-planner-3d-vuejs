@@ -911,22 +911,20 @@ const handleProductDrawerClose = () => {
 }
 
 const handleAddToRoom = (product) => {
-  console.log('🔍 Adding product to room:', product)
-
   // ENHANCED: Validate item structure before emitting
   if (!product) {
-    console.error('❌ No product provided to handleAddToRoom')
+    console.error('No product provided to handleAddToRoom')
     return
   }
 
   if (!product.type) {
-    console.error('❌ Product missing required type property:', product)
+    console.error('Product missing required type property:', product)
     return
   }
 
   // ENHANCED: Ensure selectedVariant exists if productData is provided
   if (product.selectedVariant === null || product.selectedVariant === undefined) {
-    console.warn('⚠️ Product missing selectedVariant, adding as basic item:', product)
+    console.warn('Product missing selectedVariant, adding as basic item:', product)
     // For basic items without product data, just pass the type
     emit('add', product.type)
     handleProductDrawerClose()
@@ -935,14 +933,6 @@ const handleAddToRoom = (product) => {
 
   // Extract component type from product data
   const componentType = product.type || 'Unknown'
-
-  // ENHANCED: Pass the complete item structure
-  console.log('✅ Adding item with complete product data:', {
-    type: product.type,
-    hasSelectedVariant: !!product.selectedVariant,
-    selectedVariantSku: product.selectedVariant?.sku,
-    selectedVariantName: product.selectedVariant?.name
-  })
 
   // Emit to parent component to add the item
   emit('add', componentType, product)

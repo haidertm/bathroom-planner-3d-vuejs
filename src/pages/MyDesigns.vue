@@ -164,19 +164,17 @@ const loadDesign = (design) => {
       preview: null
     }
 
-    console.log('💾 Design data to load:', designToLoad)
-
     // Store the design to load in localStorage
     localStorage.setItem('design-to-load', JSON.stringify(designToLoad))
     // Try router navigation first
     router.push('/planner').catch((error) => {
-      console.error('❌ Router navigation failed:', error)
+      console.error('Router navigation failed:', error)
       // Use router's base URL for better SPA compatibility
       window.location.href = router.resolve('/planner').href
     })
 
   } catch (error) {
-    console.error('❌ Error loading design:', error)
+    console.error('Error loading design:', error)
     alert('Failed to load design. Please try again.')
   }
 }
