@@ -1,74 +1,23 @@
 <template>
   <div>
-    <div v-if="(isSidebarVisible || !isMobileDevice) && !(isMobileDevice && isTextureDrawerOpen)" :style="searchSectionStyle">
-      <div :style="searchContainerStyle">
-        <!-- Search Icon -->
-        <div :style="searchIconStyle" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" role="img">
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="M21 21l-4.35-4.35"></path>
-          </svg>
-        </div>
-
-        <!-- Search Input -->
-        <input
-            ref="searchInput"
-            v-model="searchQuery"
-            :style="searchInputStyle"
-            type="text"
-            placeholder="Search by name or SKU..."
-            aria-label="Search products by name or SKU"
-            @input="handleSearchInput"
-            @keydown.enter="handleSearchEnter"
-            @focus="handleSearchFocus"
-            @blur="handleSearchBlur"
-            class="search-input"
-            autocomplete="off"
-        />
-
-        <!-- Clear Button (show when there's text) -->
-        <button
-            v-if="searchQuery"
-            @click="clearSearch"
-            :style="clearButtonStyle"
-            class="clear-search-button"
-            type="button"
-            aria-label="Clear search"
-            title="Clear search"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-
-        <!-- Optional: Small loading indicator while typing -->
-        <div v-if="isSearching" :style="searchLoadingStyle">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="32">
-              <animate attributeName="stroke-dashoffset" dur="1s" values="32;0" repeatCount="indefinite"/>
-            </circle>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Optional: Quick search tips -->
-      <div v-if="!searchQuery && searchFocused" :style="searchTipsStyle">
-        <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
-          💡 Try product names or SKU codes
-        </div>
-      </div>
-    </div>
     <!-- Mobile Floating + Button -->
-    <button
-        v-if="isMobileDevice && !isSidebarVisible"
+    <MobileFloatingButton
+        :visible="isMobileDevice && !isSidebarVisible"
         @click="showSidebar"
-        :style="mobileFloatingButtonStyle"
-        @touchstart="handleTouchStart"
-        @touchend="handleTouchEnd"
-    >
-      <span :style="plusIconStyle">+</span>
-    </button>
+    />
+
+    <!-- Search Input - positioned outside panel -->
+    <SearchInput
+        v-if="!isMobileDevice || isSidebarVisible"
+        v-model="searchQuery"
+        :is-searching="isSearching"
+        :show-tips="searchFocused"
+        @update:modelValue="handleSearchInput"
+        @search="handleSearchEnter"
+        @clear="clearSearch"
+        @focus="handleSearchFocus"
+        @blur="handleSearchBlur"
+    />
 
     <!-- Mobile Sidebar Overlay -->
     <div
@@ -87,9 +36,6 @@
       >
         ✕
       </button>
-
-      <!-- Search Input Section -->
-
 
       <!-- Bathroom Items Accordion -->
       <div :style="accordionSectionStyle">
@@ -198,65 +144,23 @@
             ref="roomSettingsContent"
         >
           <div :style="roomSettingsContentStyle">
-            <div :style="controlGroupStyle">
-              <label :style="labelStyle">
-                Width: {{ safeToFixed(localRoomWidth, 0) }}cm
-                <div :style="inputSliderContainerStyle">
-                  <input
-                      type="number"
-                      :min="minRoomWidth"
-                      :max="ROOM_DEFAULTS.MAX_SIZE"
-                      :step="ROOM_DEFAULTS.STEP"
-                      :value="localRoomWidth"
-                      @input="updateWidthFromInput"
-                      @blur="validateAndUpdateWidth"
-                      :style="numberInputStyle"
-                      placeholder="Width"
-                      class="modern-number-input"
-                  />
-                  <input
-                      type="range"
-                      :min="minRoomWidth"
-                      :max="ROOM_DEFAULTS.MAX_SIZE"
-                      :step="ROOM_DEFAULTS.STEP"
-                      :value="localRoomWidth"
-                      @input="updateWidthFromSlider"
-                      :style="sliderStyle"
-                      class="modern-slider"
-                  />
-                </div>
-              </label>
-            </div>
+            <RoomDimensionControl
+                v-model="localRoomWidth"
+                label="Width"
+                :min="minRoomWidth"
+                :max="ROOM_DEFAULTS.MAX_SIZE"
+                :step="ROOM_DEFAULTS.STEP"
+                @change="handleWidthChange"
+            />
 
-            <div :style="controlGroupStyle">
-              <label :style="labelStyle">
-                Length: {{ safeToFixed(localRoomHeight, 0) }}cm
-                <div :style="inputSliderContainerStyle">
-                  <input
-                      type="number"
-                      :min="minRoomHeight"
-                      :max="ROOM_DEFAULTS.MAX_SIZE"
-                      :step="ROOM_DEFAULTS.STEP"
-                      :value="localRoomHeight"
-                      @input="updateHeightFromInput"
-                      @blur="validateAndUpdateHeight"
-                      :style="numberInputStyle"
-                      placeholder="Height"
-                      class="modern-number-input"
-                  />
-                  <input
-                      type="range"
-                      :min="minRoomHeight"
-                      :max="ROOM_DEFAULTS.MAX_SIZE"
-                      :step="ROOM_DEFAULTS.STEP"
-                      :value="localRoomHeight"
-                      @input="updateHeightFromSlider"
-                      :style="sliderStyle"
-                      class="modern-slider"
-                  />
-                </div>
-              </label>
-            </div>
+            <RoomDimensionControl
+                v-model="localRoomHeight"
+                label="Length"
+                :min="minRoomHeight"
+                :max="ROOM_DEFAULTS.MAX_SIZE"
+                :step="ROOM_DEFAULTS.STEP"
+                @change="handleHeightChange"
+            />
 
             <!-- L-Shape Notch Controls (only visible for L-shaped rooms) -->
             <template v-if="isLShape">
@@ -264,65 +168,23 @@
                 <span>L-Shape Notch Dimensions</span>
               </div>
 
-              <div :style="controlGroupStyle">
-                <label :style="labelStyle">
-                  Notch Width: {{ safeToFixed(localNotchWidth, 0) }}cm
-                  <div :style="inputSliderContainerStyle">
-                    <input
-                        type="number"
-                        :min="ROOM_DEFAULTS.MIN_SIZE"
-                        :max="maxNotchWidth"
-                        :step="ROOM_DEFAULTS.STEP"
-                        :value="localNotchWidth"
-                        @input="updateNotchWidthFromInput"
-                        @blur="validateAndUpdateNotchWidth"
-                        :style="numberInputStyle"
-                        placeholder="Notch Width"
-                        class="modern-number-input"
-                    />
-                    <input
-                        type="range"
-                        :min="ROOM_DEFAULTS.MIN_SIZE"
-                        :max="maxNotchWidth"
-                        :step="ROOM_DEFAULTS.STEP"
-                        :value="localNotchWidth"
-                        @input="updateNotchWidthFromSlider"
-                        :style="sliderStyle"
-                        class="modern-slider"
-                    />
-                  </div>
-                </label>
-              </div>
+              <RoomDimensionControl
+                  v-model="localNotchWidth"
+                  label="Notch Width"
+                  :min="ROOM_DEFAULTS.MIN_SIZE"
+                  :max="maxNotchWidth"
+                  :step="ROOM_DEFAULTS.STEP"
+                  @change="handleNotchWidthChange"
+              />
 
-              <div :style="controlGroupStyle">
-                <label :style="labelStyle">
-                  Notch Length: {{ safeToFixed(localNotchHeight, 0) }}cm
-                  <div :style="inputSliderContainerStyle">
-                    <input
-                        type="number"
-                        :min="ROOM_DEFAULTS.MIN_SIZE"
-                        :max="maxNotchHeight"
-                        :step="ROOM_DEFAULTS.STEP"
-                        :value="localNotchHeight"
-                        @input="updateNotchHeightFromInput"
-                        @blur="validateAndUpdateNotchHeight"
-                        :style="numberInputStyle"
-                        placeholder="Notch Height"
-                        class="modern-number-input"
-                    />
-                    <input
-                        type="range"
-                        :min="ROOM_DEFAULTS.MIN_SIZE"
-                        :max="maxNotchHeight"
-                        :step="ROOM_DEFAULTS.STEP"
-                        :value="localNotchHeight"
-                        @input="updateNotchHeightFromSlider"
-                        :style="sliderStyle"
-                        class="modern-slider"
-                    />
-                  </div>
-                </label>
-              </div>
+              <RoomDimensionControl
+                  v-model="localNotchHeight"
+                  label="Notch Length"
+                  :min="ROOM_DEFAULTS.MIN_SIZE"
+                  :max="maxNotchHeight"
+                  :step="ROOM_DEFAULTS.STEP"
+                  @change="handleNotchHeightChange"
+              />
             </template>
           </div>
         </div>
@@ -435,6 +297,9 @@ import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
+import SearchInput from './SearchInput.vue'
+import MobileFloatingButton from './MobileFloatingButton.vue'
+import RoomDimensionControl from './RoomDimensionControl.vue'
 import { filterProducts, getActiveFilterCount } from '../../utils/filters'
 import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 
@@ -499,7 +364,6 @@ const isTextureDrawerOpen = ref(false)
 const isFloorExpanded = ref(true)
 const isWallExpanded = ref(false)
 const isSidebarVisible = ref(false)
-const isButtonPressed = ref(false)
 const searchTriggered = ref(0)
 
 let searchTimeout = null;
@@ -756,20 +620,11 @@ const loadingCategories = ref(new Set())
 const isLoading = ref(false)
 const errorMessage = ref('')
 const loadedProducts = ref(new Set())
-const loadedProductsCount = computed(() => loadedProducts.value.size)
 const productLoadingStates = ref(new Map()) // Track loading state per product
 
 // Reactive state
 const isBathroomItemsExpanded = ref(true)
 const isRoomSettingsExpanded = ref(true)
-
-const addLoadedProduct = (productId) => {
-  if (!loadedProducts.value.has(productId)) {
-    const next = new Set(loadedProducts.value)
-    next.add(productId)
-    loadedProducts.value = next
-  }
-}
 
 // FIXED: Add missing helper functions
 const getProductsForCategory = (category) => {
@@ -916,29 +771,6 @@ const isLShape = computed(() => {
   return localNotchWidth.value > 0 && localNotchHeight.value > 0
 })
 
-// FIXED: Get model paths for category
-const getCategoryModelPaths = (category) => {
-  const categoryModels = []
-
-  if (productData[category]) {
-    productData[category].forEach(product => {
-      if (product.variants && Array.isArray(product.variants)) {
-        product.variants.forEach(variant => {
-          if (variant.path && variant.sku) {
-            categoryModels.push({
-              name: variant.sku || variant.name,
-              path: variant.path,
-              scale: variant.scale || 1.0
-            })
-          }
-        })
-      }
-    })
-  }
-
-  return categoryModels
-}
-
 const failedProducts = ref(new Set())
 
 // NEW: Enhanced category click handler with selective preloading
@@ -1022,10 +854,6 @@ const isCategoryLoading = (category) => {
 
 const isCategoryReady = (category) => {
   return isCategoryPreloaded(category) && !isCategoryLoading(category)
-}
-
-const clearError = () => {
-  errorMessage.value = ''
 }
 
 // Update the watch functions - props are in centimeters, no conversion needed
@@ -1130,24 +958,6 @@ const handleAddToRoom = (product) => {
   }
 }
 
-// Safe toFixed function
-const safeToFixed = (value, decimals) => {
-  const num = Number(value)
-  return isNaN(num) ? '0.0' : num.toFixed(decimals)
-}
-
-// Watch for external prop changes
-watch(() => props.roomWidth, (newWidth) => {
-  if (!isInternalUpdate.value) {
-    localRoomWidth.value = Number(newWidth) || ROOM_DEFAULTS.WIDTH
-  }
-})
-
-watch(() => props.roomHeight, (newHeight) => {
-  if (!isInternalUpdate.value) {
-    localRoomHeight.value = Number(newHeight) || ROOM_DEFAULTS.HEIGHT
-  }
-})
 
 // Computed
 const isMobileDevice = computed(() => isMobile())
@@ -1168,14 +978,6 @@ const hideSidebar = () => {
   if (isTextureDrawerOpen.value) {
     closeTextureDrawer()
   }
-}
-
-const handleTouchStart = () => {
-  isButtonPressed.value = true
-}
-
-const handleTouchEnd = () => {
-  isButtonPressed.value = false
 }
 
 const toggleBathroomItemsSection = () => {
@@ -1206,146 +1008,28 @@ const toggleWallSection = () => {
   isWallExpanded.value = !isWallExpanded.value
 }
 
-// Room settings methods
-const validateValue = (value, min, max) => {
-  const num = Number(value)
-  if (isNaN(num)) return min
-  return Math.max(min, Math.min(max, num))
-}
-
-const updateWidthFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    localRoomWidth.value = newValue
-    // Use minRoomWidth to prevent room from shrinking below notch size + buffer
-    if (newValue >= minRoomWidth.value && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
-      isInternalUpdate.value = true
-      emit('room-size-change', newValue, localRoomHeight.value)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateHeightFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    localRoomHeight.value = newValue
-    // Use minRoomHeight to prevent room from shrinking below notch size + buffer
-    if (newValue >= minRoomHeight.value && newValue <= ROOM_DEFAULTS.MAX_SIZE) {
-      isInternalUpdate.value = true
-      emit('room-size-change', localRoomWidth.value, newValue)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateWidthFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localRoomWidth.value = newValue
-  isInternalUpdate.value = true
-  emit('room-size-change', newValue, localRoomHeight.value)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-const updateHeightFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localRoomHeight.value = newValue
-  isInternalUpdate.value = true
-  emit('room-size-change', localRoomWidth.value, newValue)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-const validateAndUpdateWidth = (event) => {
-  // Use minRoomWidth to prevent room from shrinking below notch size + buffer
-  const newValue = validateValue(event.target.value, minRoomWidth.value, ROOM_DEFAULTS.MAX_SIZE)
-  localRoomWidth.value = newValue
-  isInternalUpdate.value = true
-  // Emit values in centimeters (no conversion needed)
-  emit('room-size-change', newValue, localRoomHeight.value)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-const validateAndUpdateHeight = (event) => {
-  // Use minRoomHeight to prevent room from shrinking below notch size + buffer
-  const newValue = validateValue(event.target.value, minRoomHeight.value, ROOM_DEFAULTS.MAX_SIZE)
-  localRoomHeight.value = newValue
-  isInternalUpdate.value = true
-  // Emit values in centimeters (no conversion needed)
-  emit('room-size-change', localRoomWidth.value, newValue)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-// Notch dimension update methods (for L-shaped rooms)
-const updateNotchWidthFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    localNotchWidth.value = newValue
-    // Notch must be at least MIN_SIZE and leave at least 50cm gap to prevent walls touching
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= maxNotchWidth.value) {
-      isInternalUpdate.value = true
-      emit('notch-size-change', newValue, localNotchHeight.value)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateNotchHeightFromInput = (event) => {
-  const newValue = Number(event.target.value)
-  if (!isNaN(newValue)) {
-    localNotchHeight.value = newValue
-    // Notch must be at least MIN_SIZE and leave at least 50cm gap to prevent walls touching
-    if (newValue >= ROOM_DEFAULTS.MIN_SIZE && newValue <= maxNotchHeight.value) {
-      isInternalUpdate.value = true
-      emit('notch-size-change', localNotchWidth.value, newValue)
-      setTimeout(() => {
-        isInternalUpdate.value = false
-      }, 100)
-    }
-  }
-}
-
-const updateNotchWidthFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localNotchWidth.value = newValue
-  isInternalUpdate.value = true
-  emit('notch-size-change', newValue, localNotchHeight.value)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
-const updateNotchHeightFromSlider = (event) => {
-  const newValue = Number(event.target.value)
-  localNotchHeight.value = newValue
-  isInternalUpdate.value = true
-  emit('notch-size-change', localNotchWidth.value, newValue)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
-}
-
 // Computed max values for notch sliders (must leave at least 50cm gap to prevent walls touching)
 const maxNotchWidth = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomWidth.value - 50))
 const maxNotchHeight = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomHeight.value - 50))
 
-const validateAndUpdateNotchWidth = (event) => {
-  // Use computed maxNotchWidth to ensure 50cm gap
-  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, maxNotchWidth.value)
-  localNotchWidth.value = newValue
+// Handler functions for RoomDimensionControl component
+const handleWidthChange = (newValue) => {
+  isInternalUpdate.value = true
+  emit('room-size-change', newValue, localRoomHeight.value)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const handleHeightChange = (newValue) => {
+  isInternalUpdate.value = true
+  emit('room-size-change', localRoomWidth.value, newValue)
+  setTimeout(() => {
+    isInternalUpdate.value = false
+  }, 100)
+}
+
+const handleNotchWidthChange = (newValue) => {
   isInternalUpdate.value = true
   emit('notch-size-change', newValue, localNotchHeight.value)
   setTimeout(() => {
@@ -1353,10 +1037,7 @@ const validateAndUpdateNotchWidth = (event) => {
   }, 100)
 }
 
-const validateAndUpdateNotchHeight = (event) => {
-  // Use computed maxNotchHeight to ensure 50cm gap
-  const newValue = validateValue(event.target.value, ROOM_DEFAULTS.MIN_SIZE, maxNotchHeight.value)
-  localNotchHeight.value = newValue
+const handleNotchHeightChange = (newValue) => {
   isInternalUpdate.value = true
   emit('notch-size-change', localNotchWidth.value, newValue)
   setTimeout(() => {
@@ -1413,26 +1094,6 @@ const getEnhancedCategoryItemStyle = (category) => {
 
   return baseStyle
 }
-
-const searchingTextStyle = computed(() => ({
-  color: '#29275B',
-  fontStyle: 'italic'
-}));
-
-const searchLoadingStyle = computed(() => ({
-  padding: '8px 12px',
-  color: '#29275B',
-  display: 'flex',
-  alignItems: 'center'
-}));
-
-const searchTipsStyle = computed(() => ({
-  marginTop: '8px',
-  padding: '8px 12px',
-  backgroundColor: '#f8fafc',
-  borderRadius: '6px',
-  border: '1px solid #e5e7eb'
-}));
 
 // NEW: Tiny loading spinner style (barely visible)
 const tinyLoadingSpinnerStyle = {
@@ -1522,37 +1183,6 @@ const getTexturePreviewStyle = (texture) => ({
   backgroundPosition: 'center'
 })
 
-// All your existing style computed properties go here...
-// (I'll keep them the same as in your original code)
-const mobileFloatingButtonStyle = computed(() => ({
-  position: 'fixed',
-  bottom: '130px',
-  left: '16px',
-  width: '50px',
-  height: '50px',
-  borderRadius: '50%',
-  backgroundColor: isButtonPressed.value ? '#29275B' : '#29275B',
-  color: 'white',
-  border: 'none',
-  cursor: 'pointer',
-  zIndex: 1000,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  transition: 'all 0.2s ease',
-  transform: isButtonPressed.value ? 'scale(0.95)' : 'scale(1)',
-  fontSize: '24px',
-  fontWeight: 'bold',
-  backdropFilter: 'blur(10px)',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-}))
-
-const plusIconStyle = computed(() => ({
-  fontSize: '28px',
-  fontWeight: 'bold',
-  lineHeight: '1'
-}))
-
 const mobileSidebarOverlayStyle = computed(() => ({
   position: 'fixed',
   top: '0',
@@ -1587,17 +1217,17 @@ const mobileCloseButtonStyle = computed(() => ({
 // Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '70px' : '130px',
+  top: isMobileDevice.value ? '130px' : '130px',
   left: '0',
   backgroundColor: 'rgba(255, 255, 255, 0.98)',
-  padding: isMobileDevice.value ? '50px 20px 20px 20px' : '20px',
+  padding: isMobileDevice.value ? '20px' : '20px',
   boxShadow: isMobileDevice.value ? 'none' : '0 8px 32px rgba(0, 0, 0, 0.15)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? 'calc(100vh - 60px)' : 'calc(100vh - 130px)',
-  height: isMobileDevice.value ? 'calc(100vh - 60px)' : 'calc(100vh - 130px)',
+  maxHeight: isMobileDevice.value ? 'calc(100vh - 130px)' : 'calc(100vh - 130px)',
+  height: isMobileDevice.value ? 'calc(100vh - 130px)' : 'calc(100vh - 130px)',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
@@ -1654,88 +1284,6 @@ const notchSectionHeaderStyle = computed(() => ({
   fontSize: isMobileDevice.value ? '13px' : '14px',
   fontWeight: '600',
   color: '#29275B',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const controlGroupStyle = computed(() => ({
-  marginBottom: '20px',
-  padding: '20px',
-  backgroundColor: '#ffffff',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-  transition: 'all 0.2s ease'
-}))
-
-const labelStyle = computed(() => ({
-  display: 'block',
-  fontSize: isMobileDevice.value ? '14px' : '15px',
-  color: '#1f2937',
-  marginBottom: '8px',
-  fontFamily: 'Arial, sans-serif',
-  fontWeight: '600'
-}))
-
-const inputSliderContainerStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '15px',
-  marginTop: '12px'
-}))
-
-const numberInputStyle = computed(() => ({
-  width: isMobileDevice.value ? '80px' : '90px',
-  padding: '12px 16px',
-  border: '2px solid #e5e7eb',
-  borderRadius: '10px',
-  fontSize: isMobileDevice.value ? '14px' : '15px',
-  fontFamily: 'Arial, sans-serif',
-  backgroundColor: '#ffffff',
-  color: '#1f2937',
-  outline: 'none',
-  transition: 'all 0.3s ease',
-  textAlign: 'center',
-  fontWeight: '600',
-  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
-  position: 'relative'
-}))
-
-const sliderStyle = computed(() => ({
-  flex: 1,
-  marginTop: '0',
-  accentColor: '#29275B',
-  height: isMobileDevice.value ? '8px' : '6px',
-  borderRadius: '4px',
-  cursor: 'pointer'
-}))
-
-const checkboxLabelStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  fontSize: isMobileDevice.value ? '12px' : '14px',
-  color: '#666',
-  cursor: 'pointer',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const checkboxStyle = computed(() => ({
-  accentColor: '#29275B',
-  width: isMobileDevice.value ? '18px' : '16px',
-  height: isMobileDevice.value ? '18px' : '16px'
-}))
-
-const buttonStyle = computed(() => ({
-  width: '100%',
-  padding: isMobileDevice.value ? '12px' : '10px',
-  backgroundColor: '#29275B',
-  color: 'white',
-  border: 'none',
-  borderRadius: '4px',
-  cursor: 'pointer',
-  fontSize: isMobileDevice.value ? '12px' : '14px',
-  fontWeight: '500',
-  transition: 'background-color 0.2s ease',
   fontFamily: 'Arial, sans-serif'
 }))
 
@@ -1899,15 +1447,6 @@ const categoryIconStyle = computed(() => ({
   color: '#29275B',
   flexShrink: 0,
   position: 'relative'
-}))
-
-//For measurement
-const helpTextStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#6c757d',
-  lineHeight: '1.4',
-  margin: '0',
-  fontStyle: 'italic'
 }))
 
 const categoryLabelStyle = computed(() => ({
@@ -2138,86 +1677,20 @@ const openProductDrawerWithFilteredResults = () => {
   }
 };
 
-// Computed styles - matching your existing design patterns
-const searchSectionStyle = computed(() => ({
-  padding: '15px 20px',
-  borderBottom: '1px solid #e0e0e0',
-  backgroundColor: '#ffffff',
-  // Removed sticky positioning to prevent z-index conflicts
-  marginBottom: '5px',
-  zIndex: '9999999',
-  position: 'absolute',
-  top: isMobileDevice.value ? '0' : '60px',
-  width: isMobileDevice.value ? '100vw' : '480px',
-  maxWidth: isMobileDevice.value ? '100vw' : '500px',
-}))
-
-const searchContainerStyle = computed(() => ({
-  position: 'relative',
-  display: 'flex',
-  alignItems: 'center',
-  backgroundColor: '#f8fafc',
-  border: `2px solid ${searchFocused.value ? '#29275B' : '#e5e7eb'}`,
-  borderRadius: '10px',
-  padding: '0',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  boxShadow: searchFocused.value
-      ? '0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15)'
-      : '0 2px 6px rgba(0, 0, 0, 0.08)',
-  transform: searchFocused.value ? 'translateY(-1px)' : 'translateY(0)'
-}))
-
-const searchIconStyle = computed(() => ({
-  padding: '12px 16px',
-  color: searchFocused.value ? '#29275B' : '#9ca3af',
-  transition: 'color 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  flexShrink: 0
-}))
-
-const searchInputStyle = computed(() => ({
-  flex: 1,
-  border: 'none',
-  outline: 'none',
-  backgroundColor: 'transparent',
-  padding: '12px 8px',
-  fontSize: '14px',
-  fontWeight: '500',
-  color: '#333',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const clearButtonStyle = computed(() => ({
-  padding: '8px 12px',
-  backgroundColor: 'transparent',
-  border: 'none',
-  color: '#9ca3af',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  borderRadius: '4px',
-  transition: 'all 0.2s ease',
-  flexShrink: 0
-}))
 </script>
 
 <style scoped>
-/* NEW: Keyframe animation for tiny loading spinner */
+/* Keyframe animation for tiny loading spinner */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-/* Category item hover effects (keeping your exact original styles) */
+/* Category item hover effects */
 .category-item:hover {
   background-color: #f9fafb !important;
   border-color: #29275B !important;
   transform: translateY(-1px);
-}
-
-.category-item:hover .category-icon {
-  color: #29275B !important;
 }
 
 /* Scrollbar styling */
@@ -2237,124 +1710,5 @@ const clearButtonStyle = computed(() => ({
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
-}
-
-/* Enhanced modern input styles */
-.modern-number-input {
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
-  border: 2px solid #e5e7eb !important;
-  border-radius: 10px !important;
-  padding: 12px 16px !important;
-  font-weight: 600 !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
-}
-
-.modern-number-input:hover {
-  border-color: #9ca3af !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-  transform: translateY(-1px) !important;
-}
-
-.modern-number-input:focus {
-  border-color: #29275B !important;
-  box-shadow: 0 0 0 4px rgba(41, 39, 91, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  transform: translateY(-1px) !important;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
-}
-
-.modern-number-input::-webkit-outer-spin-button,
-.modern-number-input::-webkit-inner-spin-button {
-  -webkit-appearance: none !important;
-  margin: 0 !important;
-}
-
-.modern-number-input {
-  -moz-appearance: textfield !important;
-}
-
-/* Enhanced slider styles */
-.modern-slider {
-  appearance: none !important;
-  height: 8px !important;
-  border-radius: 4px !important;
-  background: linear-gradient(to right, #e5e7eb 0%, #e5e7eb 100%) !important;
-  outline: none !important;
-  transition: all 0.2s ease !important;
-}
-
-.modern-slider:hover {
-  background: linear-gradient(to right, #d1d5db 0%, #d1d5db 100%) !important;
-}
-
-.modern-slider::-webkit-slider-thumb {
-  appearance: none !important;
-  width: 24px !important;
-  height: 24px !important;
-  border-radius: 50% !important;
-  background: linear-gradient(135deg, #29275B 0%, #1e1b47 100%) !important;
-  cursor: pointer !important;
-  box-shadow: 0 3px 10px rgba(41, 39, 91, 0.3) !important;
-  transition: all 0.2s ease !important;
-  border: 3px solid #ffffff !important;
-}
-
-.modern-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.1) !important;
-  box-shadow: 0 5px 15px rgba(41, 39, 91, 0.4) !important;
-}
-
-.modern-slider::-moz-range-thumb {
-  width: 24px !important;
-  height: 24px !important;
-  border-radius: 50% !important;
-  background: linear-gradient(135deg, #29275B 0%, #1e1b47 100%) !important;
-  cursor: pointer !important;
-  border: 3px solid #ffffff !important;
-  box-shadow: 0 3px 10px rgba(41, 39, 91, 0.3) !important;
-  transition: all 0.2s ease !important;
-}
-
-.modern-slider::-moz-range-thumb:hover {
-  transform: scale(1.1) !important;
-  box-shadow: 0 5px 15px rgba(41, 39, 91, 0.4) !important;
-}
-
-@media (max-width: 768px) {
-  .modern-slider::-webkit-slider-thumb {
-    width: 26px !important;
-    height: 26px !important;
-  }
-
-  .modern-slider::-moz-range-thumb {
-    width: 26px !important;
-    height: 26px !important;
-  }
-
-  .modern-number-input {
-    font-size: 14px !important;
-    padding: 10px 14px !important;
-  }
-}
-/* Search input specific styles */
-.search-input::placeholder {
-  color: #9ca3af;
-  opacity: 1;
-}
-
-.search-input:focus::placeholder {
-  color: #d1d5db;
-}
-
-.clear-search-button:hover {
-  background-color: #f3f4f6 !important;
-  color: #6b7280 !important;
-}
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .search-input {
-    font-size: 16px !important; /* Prevents zoom on iOS */
-  }
 }
 </style>

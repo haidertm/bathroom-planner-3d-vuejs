@@ -145,8 +145,9 @@ const highlightedName = computed(() => {
             return `<span class="highlight">${match}</span>`
           })
         } else {
-          // Highlight individual terms
+          // Highlight individual terms (only terms with 2+ characters to avoid random single char matches)
           for (const term of searchTerms) {
+            if (term.length < 2) continue // Skip single character terms
             const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
             const regex = new RegExp(`(${escapedTerm})`, 'gi')
             result = result.replace(regex, (match) => {
