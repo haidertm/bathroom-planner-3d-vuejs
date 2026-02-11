@@ -71,7 +71,7 @@ const handleActivate = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease;
   transform: scale(1);
   font-size: 24px;
   font-weight: bold;

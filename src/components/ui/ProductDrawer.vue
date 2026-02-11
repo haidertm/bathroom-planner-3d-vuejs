@@ -239,7 +239,7 @@
             :has-only-one-variant="hasOnlyOneFilteredVariant"
             :product-id="selectedProduct.id || ''"
             :product-name="selectedProduct.name || ''"
-            :category="selectedProduct.category || selectedProduct.searchContext?.category || ''"
+            :category="resolvedCategory"
             :check-too-large="isVariantTooLarge"
             @select="selectVariant"
         />
@@ -928,6 +928,14 @@ watch(() => selectedProduct.value, (newProduct) => {
 // Computed
 const isMobileDevice = computed(() => isMobile())
 
+// Resolved category - consistent logic for both VariantSelector prop and cache key lookups
+// Uses selectedCategory directly when not in search mode, otherwise falls back to product's category
+const resolvedCategory = computed(() => {
+  return props.selectedCategory !== 'search'
+    ? props.selectedCategory
+    : (selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || '')
+})
+
 // Methods
 const getProductsForCategory = (category) => {
   return productData[category] || []
@@ -1232,10 +1240,8 @@ const selectProduct = async (product) => {
     const firstVariant = selectedVariant.value
     const variantKey = firstVariant.id || firstVariant.sku || firstVariant.name
 
-    // Get the component type for consistent cache key checking
-    const componentType = props.selectedCategory !== 'search'
-      ? props.selectedCategory
-      : (product.category || product.searchContext?.category || '')
+    // Use resolvedCategory for consistent cache key checking
+    const componentType = resolvedCategory.value
 
     // Check if already loaded/cached - use full key format
     const isAlreadyLoaded = isVariantModelLoaded(firstVariant) || isModelCached(firstVariant, componentType)
@@ -1301,10 +1307,8 @@ const selectVariant = async (variant) => {
   // Always select immediately - no blocking
   selectedVariant.value = variant
 
-  // Get the component type for consistent cache key checking
-  const componentType = props.selectedCategory !== 'search'
-    ? props.selectedCategory
-    : (selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || '')
+  // Use resolvedCategory for consistent cache key checking
+  const componentType = resolvedCategory.value
 
   // Check if model is already cached - no need to load
   if (isModelCached(variant, componentType)) {
@@ -1435,10 +1439,8 @@ const confirmAddToRoom = async () => {
   const variant = selectedVariant.value
   const variantKey = variant.id || variant.sku || variant.name
 
-  // Get the component type for consistent cache key checking
-  const componentType = props.selectedCategory !== 'search'
-    ? props.selectedCategory
-    : (selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || '')
+  // Use resolvedCategory for consistent cache key checking
+  const componentType = resolvedCategory.value
   const fullCacheKey = componentType ? `${componentType}-${variantKey}` : variantKey
 
   // Check if model is cached (instant add) - use type for full key check

@@ -150,9 +150,10 @@ const hasMultiplePrices = computed<boolean>(() => {
     return false
   }
 
+  // Filter out undefined/null, NaN, zero and negative values (mirrors getLowestVariantPrice)
   const prices = props.product.variants
-    .map(variant => parseFloat(String(variant.price ?? 0)))
-    .filter(price => !isNaN(price))
+    .map(variant => parseFloat(String(variant.price)))
+    .filter(price => !isNaN(price) && price > 0)
 
   const uniquePrices = [...new Set(prices)]
   return uniquePrices.length > 1
@@ -225,15 +226,10 @@ const highlightedName = computed<string>(() => {
   }
 
   if (props.isSearchMode && props.searchQuery) {
-    let searchQuery: string = props.searchQuery
+    const searchQuery = props.searchQuery.trim()
 
-    // Handle case where searchQuery might be a ref object (defensive check)
-    if (searchQuery && typeof searchQuery === 'object' && 'value' in (searchQuery as object)) {
-      searchQuery = (searchQuery as { value: string }).value
-    }
-
-    if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
       const rawName = props.product.name || ''
       const searchTerms = query.split(/\s+/).filter(term => term.length > 0)
 
