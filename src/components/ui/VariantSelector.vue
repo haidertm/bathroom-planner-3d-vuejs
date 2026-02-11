@@ -18,7 +18,7 @@
         <button
           v-for="(variant, index) in displayedVariants"
           :key="variant.id || variant.sku || variant.name || index"
-          @click="!isTooLarge(variant) && $emit('select', variant)"
+          @click="handleVariantSelect(variant)"
           class="variant-selector__button"
           :class="{
             'variant-selector__button--selected': isSelected(variant),
@@ -50,6 +50,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { isModelCached } from '../../utils/modelLoader'
+import { useGtm } from '@gtm-support/vue-gtm'
 
 const props = defineProps({
   variants: {
@@ -75,10 +76,49 @@ const props = defineProps({
   hasOnlyOneVariant: {
     type: Boolean,
     default: false
+  },
+  productId: {
+    type: String,
+    default: ''
+  },
+  productName: {
+    type: String,
+    default: ''
   }
 })
 
-defineEmits(['select'])
+const emit = defineEmits(['select'])
+
+// Initialize GTM
+const gtm = useGtm()
+
+// Handle variant selection with GTM tracking
+const handleVariantSelect = (variant) => {
+  if (isTooLarge(variant)) return
+
+  // Track variant selection in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'variant_selected',
+      category: 'Product Configuration',
+      action: 'Variant Selected',
+      variantId: variant.id || variant.sku || '',
+      variantName: variant.name || '',
+      variantSku: variant.sku || '',
+      variantPrice: variant.price || '',
+      selectorTitle: props.title,
+      productId: props.productId,
+      productName: props.productName,
+      roomDimensions: {
+        width: props.roomWidth,
+        height: props.roomHeight
+      }
+    })
+  }
+
+  // Emit select event for parent component handling
+  emit('select', variant)
+}
 
 const showAll = ref(false)
 const MAX_VISIBLE = 5

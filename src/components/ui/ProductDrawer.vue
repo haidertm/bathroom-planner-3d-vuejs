@@ -237,6 +237,8 @@
             :room-width="props.roomWidth"
             :room-height="props.roomHeight"
             :has-only-one-variant="hasOnlyOneFilteredVariant"
+            :product-id="selectedProduct.id || ''"
+            :product-name="selectedProduct.name || ''"
             @select="selectVariant"
         />
 
@@ -248,7 +250,7 @@
             @select="selectColor"
         />
 
-        <!-- Hardware Section (if product has hardware) -->
+        <!-- Hardware Section (if product has hardware) - Display only, no change functionality -->
         <div v-if="selectedProduct.hardware && selectedProduct.hardware.length > 0" :style="sectionStyle">
           <h4 :style="sectionTitleStyle">Included Hardware</h4>
           <div
@@ -261,13 +263,6 @@
               <h5 :style="hardwareNameStyle">{{ hardware.name }}</h5>
               <div :style="hardwareBrandStyle">{{ hardware.brand }}</div>
               <div :style="hardwarePriceStyle">£{{ hardware.price }}</div>
-              <button
-                  @click="toggleHardwareChange(hardware.id)"
-                  :style="hardwareChangeButtonStyle"
-                  class="hardware-change-button"
-              >
-                🔄 Change
-              </button>
             </div>
           </div>
         </div>
@@ -1393,10 +1388,22 @@ const getLink = () => {
 
 const selectColor = (colorId) => {
   selectedColor.value = colorId
-}
 
-const toggleHardwareChange = (hardwareId) => {
-  // Hardware change functionality
+  // Track color selection in GTM
+  if (gtm?.enabled()) {
+    const colorName = selectedProduct.value?.colors?.find(c => c.id === colorId)?.name || ''
+    gtm.trackEvent({
+      event: 'product_color_selected',
+      category: 'Product Configuration',
+      action: 'Color Selected',
+      colorId: colorId,
+      colorName: colorName,
+      productId: selectedProduct.value?.id || '',
+      productName: selectedProduct.value?.name || '',
+      productSku: selectedVariant.value?.sku || '',
+      productCategory: selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || ''
+    })
+  }
 }
 
 const calculateTotalPrice = () => {
@@ -1726,21 +1733,6 @@ const hardwarePriceStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-const hardwareChangeButtonStyle = computed(() => ({
-  backgroundColor: 'transparent',
-  border: '1px solid #29275B',
-  color: '#29275B',
-  padding: '4px 8px',
-  borderRadius: '4px',
-  fontSize: '11px',
-  fontWeight: '500',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  alignSelf: 'flex-start',
-  marginTop: '5px',
-  fontFamily: 'Arial, sans-serif'
-}))
-
 const actionButtonsStyle = computed(() => ({
   display: 'flex',
   gap: '10px',
@@ -1826,11 +1818,6 @@ const confirmAddButtonStyle = computed(() => {
 .color-swatch:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
-.hardware-change-button:hover {
-  background-color: #29275B !important;
-  color: white !important;
 }
 
 .confirm-add-button:hover:not(:disabled) {

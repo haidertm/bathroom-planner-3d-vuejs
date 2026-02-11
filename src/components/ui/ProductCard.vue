@@ -42,13 +42,50 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
-import { isMobile as isMobileUtil } from '../../utils/helpers.js'
+import type { PropType } from 'vue'
+import { isMobile as isMobileUtil } from '../../utils/helpers'
+
+// Type definitions for ProductCard
+interface ProductVariant {
+  id?: string
+  name?: string
+  sku?: string
+  price?: number | string
+  image?: string
+  title?: string
+  dimensions?: {
+    width: number
+    height: number
+    depth: number
+  }
+}
+
+interface SearchContext {
+  matchingVariant?: ProductVariant
+  highlightedVariant?: ProductVariant
+  showDirectAdd?: boolean
+  category?: string
+  originalProduct?: Product
+}
+
+interface Product {
+  id: string
+  name: string
+  image: string
+  price?: number | string
+  link?: string
+  category?: string
+  variants?: ProductVariant[]
+  colors?: Array<{ id: string | number; name: string; color: string }>
+  hardware?: Array<{ id: string; name: string; price: string }>
+  searchContext?: SearchContext
+}
 
 const props = defineProps({
   product: {
-    type: Object,
+    type: Object as PropType<Product>,
     required: true
   },
   searchQuery: {
@@ -61,103 +98,159 @@ const props = defineProps({
   }
 })
 
-defineEmits(['select'])
+defineEmits<{
+  (e: 'select', product: Product): void
+}>()
 
-const isMobile = computed(() => isMobileUtil())
+const isMobile = computed<boolean>(() => isMobileUtil())
 
-const showDirectAdd = computed(() => props.product.searchContext?.showDirectAdd)
+const showDirectAdd = computed<boolean | undefined>(() => props.product.searchContext?.showDirectAdd)
 
-const buttonText = computed(() => {
+const buttonText = computed<string>(() => {
   if (props.product.searchContext?.showDirectAdd) {
     return 'Add to Room'
   }
   return 'SELECT'
 })
 
-const getLowestVariantPrice = (product) => {
+const getLowestVariantPrice = (product: Product): number | string => {
   if (!product.variants || product.variants.length === 0) {
-    return product.price
+    return product.price ?? 0
   }
 
   const prices = product.variants
-    .map(variant => parseFloat(variant.price))
+    .map(variant => parseFloat(String(variant.price ?? 0)))
     .filter(price => !isNaN(price))
 
   if (prices.length === 0) {
-    return product.price
+    return product.price ?? 0
   }
 
   return Math.min(...prices)
 }
 
-const hasMultiplePrices = computed(() => {
+const hasMultiplePrices = computed<boolean>(() => {
   if (!props.product.variants || props.product.variants.length <= 1) {
     return false
   }
 
   const prices = props.product.variants
-    .map(variant => parseFloat(variant.price))
+    .map(variant => parseFloat(String(variant.price ?? 0)))
     .filter(price => !isNaN(price))
 
   const uniquePrices = [...new Set(prices)]
   return uniquePrices.length > 1
 })
 
-const formattedPrice = computed(() => {
+const formattedPrice = computed<string>(() => {
   const lowestPrice = getLowestVariantPrice(props.product)
-  const price = typeof lowestPrice === 'number' ? lowestPrice : parseFloat(lowestPrice) || 0
+  const price = typeof lowestPrice === 'number' ? lowestPrice : parseFloat(String(lowestPrice)) || 0
   return `£${price.toFixed(2)}`
 })
 
-const highlightedName = computed(() => {
-  const escapeHtml = (s = '') =>
-    String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+const highlightedName = computed<string>(() => {
+  const htmlEscapeMap: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }
+  const escapeHtml = (s: string = ''): string =>
+    String(s).replace(/[&<>"']/g, c => htmlEscapeMap[c] || c)
+
+  // Collect all match ranges from raw text using a regex
+  const findMatchRanges = (text: string, regex: RegExp): Array<{ start: number; end: number }> => {
+    const ranges: Array<{ start: number; end: number }> = []
+    let match: RegExpExecArray | null
+    while ((match = regex.exec(text)) !== null) {
+      ranges.push({ start: match.index, end: match.index + match[0].length })
+    }
+    return ranges
+  }
+
+  // Merge overlapping ranges and sort by start position
+  const mergeRanges = (ranges: Array<{ start: number; end: number }>): Array<{ start: number; end: number }> => {
+    if (ranges.length === 0) return []
+    const sorted = [...ranges].sort((a, b) => a.start - b.start)
+    const merged: Array<{ start: number; end: number }> = [sorted[0]]
+    for (let i = 1; i < sorted.length; i++) {
+      const last = merged[merged.length - 1]
+      const current = sorted[i]
+      if (current.start <= last.end) {
+        last.end = Math.max(last.end, current.end)
+      } else {
+        merged.push(current)
+      }
+    }
+    return merged
+  }
+
+  // Build HTML from raw text and match ranges
+  const buildHighlightedHtml = (rawText: string, ranges: Array<{ start: number; end: number }>): string => {
+    if (ranges.length === 0) return escapeHtml(rawText)
+
+    let result = ''
+    let lastEnd = 0
+    for (const range of ranges) {
+      // Add escaped non-matching segment before this match
+      if (range.start > lastEnd) {
+        result += escapeHtml(rawText.slice(lastEnd, range.start))
+      }
+      // Add highlighted match (escape the matched text too)
+      result += `<span class="highlight">${escapeHtml(rawText.slice(range.start, range.end))}</span>`
+      lastEnd = range.end
+    }
+    // Add remaining text after last match
+    if (lastEnd < rawText.length) {
+      result += escapeHtml(rawText.slice(lastEnd))
+    }
+    return result
+  }
 
   if (props.isSearchMode && props.searchQuery) {
-    let searchQuery = props.searchQuery
+    let searchQuery: string = props.searchQuery
 
-    if (searchQuery && typeof searchQuery === 'object' && 'value' in searchQuery) {
-      searchQuery = searchQuery.value
+    // Handle case where searchQuery might be a ref object (defensive check)
+    if (searchQuery && typeof searchQuery === 'object' && 'value' in (searchQuery as object)) {
+      searchQuery = (searchQuery as { value: string }).value
     }
 
     if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       const rawName = props.product.name || ''
-      let result = escapeHtml(rawName)
-
       const searchTerms = query.split(/\s+/).filter(term => term.length > 0)
 
+      let matchRanges: Array<{ start: number; end: number }> = []
+
       if (searchTerms.length === 1) {
+        // Single term matching
         const term = searchTerms[0]
         const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const regex = new RegExp(`(${escapedTerm})`, 'gi')
-
-        result = result.replace(regex, (match) => {
-          return `<span class="highlight">${match}</span>`
-        })
+        const regex = new RegExp(escapedTerm, 'gi')
+        matchRanges = findMatchRanges(rawName, regex)
       } else {
         // Try exact phrase first
         const exactPhrase = query
-        const exactRegex = new RegExp(`(${exactPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-
-        if (rawName.toLowerCase().includes(exactPhrase.toLowerCase())) {
-          result = result.replace(exactRegex, (match) => {
-            return `<span class="highlight">${match}</span>`
-          })
+        if (rawName.toLowerCase().includes(exactPhrase)) {
+          const escapedPhrase = exactPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const regex = new RegExp(escapedPhrase, 'gi')
+          matchRanges = findMatchRanges(rawName, regex)
         } else {
           // Highlight individual terms (only terms with 2+ characters to avoid random single char matches)
           for (const term of searchTerms) {
             if (term.length < 2) continue // Skip single character terms
             const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-            const regex = new RegExp(`(${escapedTerm})`, 'gi')
-            result = result.replace(regex, (match) => {
-              return `<span class="highlight">${match}</span>`
-            })
+            const regex = new RegExp(escapedTerm, 'gi')
+            const termRanges = findMatchRanges(rawName, regex)
+            matchRanges.push(...termRanges)
           }
+          // Merge overlapping ranges from multiple terms
+          matchRanges = mergeRanges(matchRanges)
         }
       }
 
-      return result
+      return buildHighlightedHtml(rawName, matchRanges)
     }
   }
 

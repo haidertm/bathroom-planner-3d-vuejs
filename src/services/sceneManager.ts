@@ -1725,7 +1725,9 @@ export class SceneManager {
     }
     if (mesh.material) {
       if (Array.isArray(mesh.material)) {
-        mesh.material.forEach(mat => this.disposeMaterial(mat));
+        mesh.material.forEach((mat) => {
+          this.disposeMaterial(mat);
+        });
       } else {
         this.disposeMaterial(mesh.material);
       }
@@ -1744,7 +1746,9 @@ export class SceneManager {
         }
         if (child.material) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(mat => this.disposeMaterial(mat));
+            child.material.forEach((mat) => {
+              this.disposeMaterial(mat);
+            });
           } else {
             this.disposeMaterial(child.material);
           }
@@ -1768,7 +1772,9 @@ export class SceneManager {
         }
         if (child.material) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(material => this.disposeMaterial(material));
+            child.material.forEach((material) => {
+              this.disposeMaterial(material);
+            });
           } else {
             this.disposeMaterial(child.material);
           }
@@ -1781,7 +1787,9 @@ export class SceneManager {
         }
         if (child.material) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(material => this.disposeMaterial(material));
+            child.material.forEach((material) => {
+              this.disposeMaterial(material);
+            });
           } else {
             this.disposeMaterial(child.material);
           }

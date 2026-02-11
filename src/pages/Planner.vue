@@ -1285,17 +1285,7 @@ const addItem = async (type, productData = null) => {
       const useProgressive = productData?.useProgressiveLoading === true
 
       if (useProgressive) {
-        await sceneManagerRef.value.addSingleItemProgressively(newItem, {
-          onPlaceholderAdded: (placeholder) => {
-            // Placeholder added to scene
-          },
-          onFullModelAdded: (model) => {
-            // Full model replaced placeholder
-          },
-          onProgress: (progress) => {
-            // Progress tracking available if needed
-          }
-        })
+        await sceneManagerRef.value.addSingleItemProgressively(newItem)
       } else {
         await sceneManagerRef.value.addSingleItem(newItem)
       }

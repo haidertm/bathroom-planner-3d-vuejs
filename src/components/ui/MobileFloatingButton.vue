@@ -6,6 +6,7 @@
       @touchend="isPressed = false"
       class="mobile-floating-button"
       :class="{ 'mobile-floating-button--pressed': isPressed }"
+      :aria-label="ariaLabel"
   >
     <span class="mobile-floating-button__icon">+</span>
   </button>
@@ -18,6 +19,10 @@ defineProps({
   visible: {
     type: Boolean,
     default: true
+  },
+  ariaLabel: {
+    type: String,
+    default: 'Open product menu'
   }
 })
 
