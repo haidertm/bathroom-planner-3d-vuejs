@@ -1698,7 +1698,68 @@ export class SceneManager {
     }
   }
 
-  // Helper method to properly dispose of models
+  // Helper method to properly dispose of a single material and its textures
+  private disposeMaterial(material: THREE.Material): void {
+    // Dispose all texture maps on the material
+    const textureProps = [
+      'map', 'lightMap', 'bumpMap', 'normalMap', 'specularMap',
+      'envMap', 'alphaMap', 'aoMap', 'displacementMap',
+      'emissiveMap', 'gradientMap', 'metalnessMap', 'roughnessMap'
+    ];
+
+    for (const prop of textureProps) {
+      const texture = (material as any)[prop];
+      if (texture instanceof THREE.Texture) {
+        texture.dispose();
+      }
+    }
+
+    // Dispose the material itself
+    material.dispose();
+  }
+
+  // Helper method to dispose a single mesh (geometry + material + textures)
+  private disposeMesh(mesh: THREE.Mesh): void {
+    if (mesh.geometry) {
+      mesh.geometry.dispose();
+    }
+    if (mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach(mat => this.disposeMaterial(mat));
+      } else {
+        this.disposeMaterial(mesh.material);
+      }
+    }
+  }
+
+  // Helper method to dispose a group and all its children
+  private disposeGroup(group: THREE.Group | THREE.Object3D): void {
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        this.disposeMesh(child);
+      }
+      if (child instanceof THREE.Line || child instanceof THREE.LineSegments) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(mat => this.disposeMaterial(mat));
+          } else {
+            this.disposeMaterial(child.material);
+          }
+        }
+      }
+      if (child instanceof THREE.Sprite) {
+        if (child.material.map) {
+          child.material.map.dispose();
+        }
+        child.material.dispose();
+      }
+    });
+  }
+
+  // Helper method to properly dispose of models (geometry, materials, and textures)
   private disposeModel(model: THREE.Object3D): void {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -1707,11 +1768,31 @@ export class SceneManager {
         }
         if (child.material) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(material => material.dispose());
+            child.material.forEach(material => this.disposeMaterial(material));
           } else {
-            child.material.dispose();
+            this.disposeMaterial(child.material);
           }
         }
+      }
+      // Also handle Line and LineSegments (used in grids/schematics)
+      if (child instanceof THREE.Line || child instanceof THREE.LineSegments) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(material => this.disposeMaterial(material));
+          } else {
+            this.disposeMaterial(child.material);
+          }
+        }
+      }
+      // Handle Sprites (used in labels)
+      if (child instanceof THREE.Sprite) {
+        if (child.material.map) {
+          child.material.map.dispose();
+        }
+        child.material.dispose();
       }
     });
   }
@@ -2402,8 +2483,11 @@ export class SceneManager {
     this.roomWidth = roomWidth;
     this.roomHeight = roomHeight;
 
+    // Dispose old floor geometry and materials before creating new
     if (this.floorRef) {
       this.scene.remove(this.floorRef);
+      this.disposeMesh(this.floorRef);
+      this.floorRef = null;
     }
 
     // FIX: Pass room dimensions to material creation
@@ -2457,9 +2541,10 @@ export class SceneManager {
     this.roomWidth = roomWidth;
     this.roomHeight = roomHeight;
 
-    // Remove existing walls
+    // Dispose and remove existing walls
     this.wallRefs.forEach(wall => {
       if (wall.parent) wall.parent.remove(wall);
+      this.disposeMesh(wall);
     });
     this.wallRefs = [];
 
@@ -2597,21 +2682,24 @@ export class SceneManager {
     this.showGridEnabled = showGrid;
     this.wallGridVisible = showWallGrid;
 
-    // Remove existing grid
+    // Dispose and remove existing grid
     if (this.gridRef) {
       this.scene.remove(this.gridRef);
+      this.disposeGroup(this.gridRef);
       this.gridRef = null;
     }
 
-    // Remove existing blueprint grid
+    // Dispose and remove existing blueprint grid
     if (this.blueprintGridRef) {
       this.scene.remove(this.blueprintGridRef);
+      this.disposeGroup(this.blueprintGridRef);
       this.blueprintGridRef = null;
     }
 
-    // Remove existing wall grid group
+    // Dispose and remove existing wall grid group
     if (this.wallGridGroup) {
       this.scene.remove(this.wallGridGroup);
+      this.disposeGroup(this.wallGridGroup);
       this.wallGridGroup = null;
     }
 
@@ -2916,7 +3004,7 @@ export class SceneManager {
     return this.wallCullingManager.enabled;
   }
 
-  // Cleanup method - enhanced
+  // Cleanup method - enhanced with full disposal of geometries, materials, and textures
   dispose(): void {
     // Restore original material states before clearing (prevents leak if disposed while in 2D mode)
     this.originalMaterialStates.forEach((originalState, material) => {
@@ -2926,7 +3014,7 @@ export class SceneManager {
     });
     this.originalMaterialStates.clear();
 
-    // Clear all items first
+    // Clear all items first (disposes models, schematics, etc.)
     this.clearAllItems();
 
     // Stop animation loop
@@ -2942,13 +3030,61 @@ export class SceneManager {
     }
 
     if (this.bathroomItemsGroup) {
+      this.disposeGroup(this.bathroomItemsGroup);
       this.bathroomItemsGroup.clear();
+    }
+
+    // Dispose floor geometry and materials
+    if (this.floorRef) {
+      if (this.scene) this.scene.remove(this.floorRef);
+      this.disposeMesh(this.floorRef);
+      this.floorRef = null;
+    }
+
+    // Dispose original floor material if stored (for 2D/3D switching)
+    if (this.originalFloorMaterial) {
+      this.disposeMaterial(this.originalFloorMaterial);
+      this.originalFloorMaterial = null;
+    }
+
+    // Dispose wall geometries and materials
+    this.wallRefs.forEach(wall => {
+      if (this.scene) this.scene.remove(wall);
+      this.disposeMesh(wall);
+    });
+    this.wallRefs = [];
+
+    // Dispose grid
+    if (this.gridRef) {
+      if (this.scene) this.scene.remove(this.gridRef);
+      this.disposeGroup(this.gridRef);
+      this.gridRef = null;
+    }
+
+    // Dispose blueprint grid
+    if (this.blueprintGridRef) {
+      if (this.scene) this.scene.remove(this.blueprintGridRef);
+      this.disposeGroup(this.blueprintGridRef);
+      this.blueprintGridRef = null;
+    }
+
+    // Dispose wall grid group
+    if (this.wallGridGroup) {
+      if (this.scene) this.scene.remove(this.wallGridGroup);
+      this.disposeGroup(this.wallGridGroup);
+      this.wallGridGroup = null;
     }
 
     // Clean up lights
     this.lights.forEach(light => {
       if (light.parent) {
         light.parent.remove(light);
+      }
+      // Dispose shadow map if present
+      if (light instanceof THREE.DirectionalLight || light instanceof THREE.SpotLight) {
+        if (light.shadow?.map) {
+          light.shadow.map.dispose();
+        }
       }
     });
     this.lights = [];
@@ -2959,17 +3095,17 @@ export class SceneManager {
 
     if (this.renderer) {
       this.renderer.dispose();
+      this.renderer.forceContextLoss();
     }
 
     // Clear references
     this.scene = null;
     this.camera = null;
+    this.orthographicCamera = null;
     this.renderer = null;
     this.composer = null;
     this.outlinePass = null;
-    this.floorRef = null;
-    this.wallRefs = [];
-    this.gridRef = null;
+    this.ssaoPass = null;
 
     if (this.measurementSystem) {
       this.measurementSystem.dispose();
