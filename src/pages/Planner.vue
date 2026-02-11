@@ -652,9 +652,6 @@ const handleVariantSwap = async (swapConfig) => {
                   handleObjectSelectionChange()
                 }
                 lastUpdateSource.value = 'variantSwap-complete'
-              },
-              onProgress: (progress) => {
-                // Progress tracking available if needed
               }
             },
             { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
@@ -2357,7 +2354,9 @@ const handleSmartUpdate = async (newItems, updateSource) => {
         break
 
       default:
-        // Unexpected source - skip to avoid duplication
+        // Unexpected source - log warning and update scene to prevent stale 3D state
+        console.warn(`⚠️ Unknown updateSource "${updateSource}" - falling back to full scene update`)
+        await sceneManagerRef.value.updateBathroomItems(newItems)
         break
     }
 

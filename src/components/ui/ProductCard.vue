@@ -20,8 +20,9 @@
         {{ formattedPrice }}
       </div>
 
-      <!-- More Info Link -->
+      <!-- More Info Link (only render when link is available) -->
       <a
+        v-if="product.link"
         :href="product.link"
         class="product-card__more-info"
         target="_blank"
@@ -43,9 +44,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { PropType } from 'vue'
-import { isMobile as isMobileUtil } from '../../utils/helpers'
 
 // Type definitions for ProductCard
 interface ProductVariant {
@@ -102,7 +102,22 @@ defineEmits<{
   (e: 'select', product: Product): void
 }>()
 
-const isMobile = computed<boolean>(() => isMobileUtil())
+// Reactive window width for responsive behavior
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
+
+const isMobile = computed<boolean>(() => windowWidth.value <= 768)
 
 const showDirectAdd = computed<boolean | undefined>(() => props.product.searchContext?.showDirectAdd)
 
@@ -118,9 +133,10 @@ const getLowestVariantPrice = (product: Product): number | string => {
     return product.price ?? 0
   }
 
+  // Parse prices and filter out NaN, zero, and negative values
   const prices = product.variants
-    .map(variant => parseFloat(String(variant.price ?? 0)))
-    .filter(price => !isNaN(price))
+    .map(variant => parseFloat(String(variant.price)))
+    .filter(price => !isNaN(price) && price > 0)
 
   if (prices.length === 0) {
     return product.price ?? 0

@@ -239,6 +239,8 @@
             :has-only-one-variant="hasOnlyOneFilteredVariant"
             :product-id="selectedProduct.id || ''"
             :product-name="selectedProduct.name || ''"
+            :category="selectedProduct.category || selectedProduct.searchContext?.category || ''"
+            :check-too-large="isVariantTooLarge"
             @select="selectVariant"
         />
 

@@ -978,6 +978,10 @@ export class SceneManager {
 
     // Restore original material
     this.floorRef.material = this.originalFloorMaterial;
+
+    // Clear reference to prevent double-disposal in dispose()
+    // (floorRef.material and originalFloorMaterial would be the same object)
+    this.originalFloorMaterial = null;
   }
 
   /**
@@ -1843,7 +1847,6 @@ export class SceneManager {
           model.userData.model = item.model;
         }
 
-        this.debugModelVisibility(model, item);
         this.enhanceModelMaterials(model);
 
         this.bathroomItemsGroup.add(model);
@@ -2791,10 +2794,6 @@ export class SceneManager {
     return this.wallGridVisible;
   }
 
-  private debugModelVisibility(_model: THREE.Object3D, _item: any): void {
-    // Debug method - logging removed for production
-  }
-
   // Replace the current updateBathroomItems method with this optimized version
   async updateBathroomItems(items: BathroomItem[]): Promise<void> {
     if (!this.scene || this.isUpdatingItems) return;
@@ -2820,7 +2819,7 @@ export class SceneManager {
       }
 
       // 2. ADD new items or UPDATE existing ones
-      const updatePromises = items.map(async (item, index) => {
+      const updatePromises = items.map(async (item) => {
         const existingModel = this.existingItems.get(item.id);
 
         if (existingModel) {
@@ -2848,8 +2847,6 @@ export class SceneManager {
 
               // NEW: Add orientation data directly to userData
               model.userData.orientation = getOrientationForItem(item);
-
-              this.debugModelVisibility(model, items[index]);
 
               // Enhance model materials
               this.enhanceModelMaterials(model);

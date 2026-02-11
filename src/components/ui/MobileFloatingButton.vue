@@ -1,9 +1,10 @@
 <template>
   <button
       v-if="visible"
-      @click="$emit('click')"
-      @touchstart="isPressed = true"
-      @touchend="isPressed = false"
+      @click="handleActivate"
+      @touchstart.passive="isPressed = true"
+      @touchend.passive="isPressed = false"
+      @touchcancel.passive="isPressed = false"
       class="mobile-floating-button"
       :class="{ 'mobile-floating-button--pressed': isPressed }"
       :aria-label="ariaLabel"
@@ -14,6 +15,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 
 defineProps({
   visible: {
@@ -26,21 +28,43 @@ defineProps({
   }
 })
 
-defineEmits(['click'])
+const emit = defineEmits(['click'])
 
 const isPressed = ref(false)
+const gtm = useGtm()
+
+const handleActivate = () => {
+  // Track sidebar open in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'sidebar_open',
+      category: 'Navigation',
+      action: 'Open Sidebar',
+      source: 'mobile_fab'
+    })
+  }
+
+  // Emit click event for parent handling
+  emit('click')
+}
 </script>
 
 <style scoped>
+/* CSS custom properties for theming */
 .mobile-floating-button {
+  --color-primary: #29275B;
+  --color-primary-hover: #3d3a7a;
+  --color-text-on-primary: white;
+  --shadow-elevation: 0 4px 12px rgba(0, 0, 0, 0.2);
+
   position: fixed;
   bottom: 130px;
   left: 16px;
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-color: #29275B;
-  color: white;
+  background-color: var(--color-primary);
+  color: var(--color-text-on-primary);
   border: none;
   cursor: pointer;
   z-index: 1000;
@@ -52,7 +76,7 @@ const isPressed = ref(false)
   font-size: 24px;
   font-weight: bold;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-elevation);
 }
 
 .mobile-floating-button--pressed {
@@ -60,7 +84,7 @@ const isPressed = ref(false)
 }
 
 .mobile-floating-button:hover {
-  background-color: #3d3a7a;
+  background-color: var(--color-primary-hover);
 }
 
 .mobile-floating-button__icon {

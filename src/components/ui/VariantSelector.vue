@@ -84,6 +84,14 @@ const props = defineProps({
   productName: {
     type: String,
     default: ''
+  },
+  category: {
+    type: String,
+    default: ''
+  },
+  checkTooLarge: {
+    type: Function,
+    default: null
   }
 })
 
@@ -140,9 +148,14 @@ const isSelected = (variant) => {
     props.selectedVariant?.id === variant.id
 }
 
-const isCached = (variant) => isModelCached(variant)
+const isCached = (variant) => isModelCached(variant, props.category)
 
 const isTooLarge = (variant) => {
+  // Use the comprehensive check from parent if provided
+  if (props.checkTooLarge) {
+    return props.checkTooLarge(variant)
+  }
+  // Fallback to simple dimension check
   if (!variant?.dimensions) return false
   const { width, depth } = variant.dimensions
   const buffer = 10
