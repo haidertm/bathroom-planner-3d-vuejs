@@ -21,8 +21,6 @@ export class WallLabelsDebug {
     // Clear existing labels first
     this.clearLabels(scene);
 
-    console.log('createWalls,:>>>', scene, enabled);
-
     if (!enabled) {
       this.enabled = false;
       return;
@@ -95,17 +93,6 @@ export class WallLabelsDebug {
     axesHelper.userData.isDebugLabel = true;
     scene.add(axesHelper);
     this.labels.push(axesHelper);
-
-    console.log('🏷️ Wall direction debug labels created:', {
-      roomDimensions: `${roomWidth} × ${roomHeight}cm`,
-      labelCount: this.labels.length,
-      wallPositions: {
-        north: `z = ${(-roomHalfHeight + wallOffset).toFixed(1)}cm`,
-        south: `z = ${(roomHalfHeight - wallOffset).toFixed(1)}cm`,
-        east: `x = ${(roomHalfWidth - wallOffset).toFixed(1)}cm`,
-        west: `x = ${(-roomHalfWidth + wallOffset).toFixed(1)}cm`
-      }
-    });
   }
 
   /**

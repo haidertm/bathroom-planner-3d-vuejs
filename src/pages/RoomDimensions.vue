@@ -864,7 +864,6 @@ const addGlobalMouseListeners = () => {
 }
 
 const preventSelection = () => {
-  console.log('>>> inside the room', isInsideRoom(dragStartPos))
   document.body.style.userSelect = 'none'
   document.body.style.webkitUserSelect = 'none'
 }
@@ -956,8 +955,6 @@ const handleGlobalMouseUp = (e) => {
 }
 
 const endDrag = () => {
-  console.log('>>> end drag functions', isDragging.value)
-
   if (!isDragging.value) return
 
   isDragging.value = null
@@ -1373,11 +1370,6 @@ const loadExistingDimensions = () => {
     roomDimensions.width = dimensions.width
     roomDimensions.height = dimensions.height
 
-    console.log('Existing dimensions loaded:', {
-      width: dimensions.width + 'cm',
-      height: dimensions.height + 'cm'
-    })
-
     return true
   }
 
@@ -1403,7 +1395,6 @@ const setShapeBasedDefaults = () => {
         const savedCorner = localStorage.getItem('l-shape-corner')
         if (savedCorner && ['nw', 'ne', 'sw', 'se'].includes(savedCorner)) {
           lShapeCorner.value = savedCorner
-          console.log('📐 L-shape corner loaded:', savedCorner)
         }
       } else {
         // For square and rectangular, explicitly set notch to 0
@@ -1414,7 +1405,6 @@ const setShapeBasedDefaults = () => {
       try {
         localStorage.removeItem('selected-room-shape')
         // Note: l-shape-corner is preserved for Planner.vue to set camera angle
-        console.log('✅ Shape selection consumed and removed from localStorage')
       } catch (storageError) {
         console.warn('Failed to remove selected-room-shape from localStorage:', storageError)
         // Continue execution even if cleanup fails
@@ -1434,16 +1424,10 @@ onMounted(() => {
 
     const shapeDefaultsApplied = setShapeBasedDefaults()
 
-    if (shapeDefaultsApplied) {
-      console.log('Applied shape-specific default dimensions')
-    } else {
+    if (!shapeDefaultsApplied) {
       // Fall back to standard defaults
       roomDimensions.width = ROOM_DEFAULTS.WIDTH  // 300cm
       roomDimensions.height = ROOM_DEFAULTS.HEIGHT // 250cm
-      console.log('Using standard default room dimensions:', {
-        width: ROOM_DEFAULTS.WIDTH + 'cm',
-        height: ROOM_DEFAULTS.HEIGHT + 'cm'
-      })
     }
 
   initCanvas()
