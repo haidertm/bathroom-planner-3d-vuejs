@@ -431,13 +431,28 @@ const handlePreviewCollision = (previewConfig) => {
     return
   }
 
+  // Calculate expected Y position after swap (matching collision detection logic)
+  const oldSpawnHeight = currentItem.model?.spawnHeight ?? 0
+  const newSpawnHeight = variant.spawnHeight ?? 0
+  const oldFloorOffset = currentItem.model?.floorOffset ?? 0
+  const newFloorOffset = variant.floorOffset ?? 0
+  const wasAtDefaultHeight = Math.abs(currentItem.position[1] - oldSpawnHeight) < 1
+
+  let expectedY = currentItem.position[1]
+  if (wasAtDefaultHeight && oldSpawnHeight !== newSpawnHeight) {
+    expectedY = newSpawnHeight
+  } else if (oldFloorOffset !== newFloorOffset) {
+    expectedY = currentItem.position[1] + oldFloorOffset - newFloorOffset
+  }
+
   // Use sceneManager to show collision preview with red outline
   sceneManagerRef.value.showCollisionPreview({
     itemId,
-    currentPosition: currentItem.position,
+    currentPosition: [currentItem.position[0], expectedY, currentItem.position[2]],
     currentRotation: currentItem.rotation,
     newDimensions: variant.dimensions,
     currentDimensions: currentItem.model?.dimensions,
+    newFloorOffset: newFloorOffset,
     reason: fitInfo?.reason || 'collision',
     roomWidth: roomWidth.value,
     roomHeight: roomHeight.value
@@ -544,10 +559,12 @@ const handleVariantSwap = async (swapConfig) => {
     }
 
     // Calculate the correct Y position based on new variant's spawnHeight
+    // BUT skip this for mirrors since they already have Y adjustment logic above
     const oldSpawnHeight = currentItem.model?.spawnHeight || 0
     const newSpawnHeight = newVariant.spawnHeight || 0
     const wasAtDefaultHeight = Math.abs(currentItem.position[1] - oldSpawnHeight) < 1
-    const shouldUseNewSpawnHeight = wasAtDefaultHeight && oldSpawnHeight !== newSpawnHeight
+    // Don't override Y for mirrors - they already have their own Y adjustment logic
+    const shouldUseNewSpawnHeight = currentItem.type !== 'Mirror' && wasAtDefaultHeight && oldSpawnHeight !== newSpawnHeight
 
     // RE-CONSTRAIN: Ensure the new variant fits within walls/room
     const movementConfig = getMovementConfig(swappedItem.type, swappedItem)
@@ -568,7 +585,11 @@ const handleVariantSwap = async (swapConfig) => {
           }
       )
 
-      const finalY = shouldUseNewSpawnHeight ? newSpawnHeight : constraintResult.position.y
+      // For mirrors, preserve the Y position calculated earlier (visual bottom alignment)
+      // For other items, use spawnHeight if at default height, otherwise use constrained Y
+      const finalY = currentItem.type === 'Mirror'
+        ? swappedItem.position[1]  // Keep the mirror's calculated Y
+        : (shouldUseNewSpawnHeight ? newSpawnHeight : constraintResult.position.y)
 
       swappedItem.position = [
         constraintResult.position.x,
@@ -626,18 +647,37 @@ const handleVariantSwap = async (swapConfig) => {
                 // Update selection to placeholder for immediate visual feedback
                 if (eventHandlersRef.value) {
                   eventHandlersRef.value.selectedObject = placeholder
-                  highlightObject(placeholder, true)
                   selectedItemId.value = swappedItem.id
                   selectedObjectId.value = swappedItem.id
+
+                  // IMPORTANT: Also update selectedObjects Map for drag handling
+                  eventHandlersRef.value.selectedObjects.clear()
+                  eventHandlersRef.value.selectedObjects.set(swappedItem.id, placeholder)
+
+                  // Clear outline first, then set new selection after a frame
+                  highlightObject(null, false)
+                  requestAnimationFrame(() => {
+                    highlightObject(placeholder, true)
+                  })
                 }
               },
               onFullModelSwapped: (fullModel) => {
                 // Update selection to full model
                 if (eventHandlersRef.value) {
                   eventHandlersRef.value.selectedObject = fullModel
-                  highlightObject(fullModel, true)
                   selectedItemId.value = swappedItem.id
                   selectedObjectId.value = swappedItem.id
+
+                  // IMPORTANT: Also update selectedObjects Map for drag handling
+                  eventHandlersRef.value.selectedObjects.clear()
+                  eventHandlersRef.value.selectedObjects.set(swappedItem.id, fullModel)
+
+                  // Clear outline first, then set new selection after a frame
+                  // This ensures the old meshes are cleared before setting new ones
+                  highlightObject(null, false)
+                  requestAnimationFrame(() => {
+                    highlightObject(fullModel, true)
+                  })
 
                   // Update measurements if enabled
                   if (eventHandlersRef.value.measurementSystem) {
@@ -674,20 +714,23 @@ const handleVariantSwap = async (swapConfig) => {
               // CRITICAL: Reselect the new object in the event handler
               if (eventHandlersRef.value) {
 
-                // Clear current selection first
-                if (eventHandlersRef.value.selectedObject) {
-                  eventHandlersRef.value.clearSelection()
-                }
-
-                // Set the new object as selected
+                // Set the new object as selected (don't call clearSelection - it has async race condition)
                 eventHandlersRef.value.selectedObject = addedModel
-
-                // Highlight the new object
-                highlightObject(addedModel, true)
 
                 // Update selectedItemId to maintain UI state
                 selectedItemId.value = swappedItem.id
                 selectedObjectId.value = swappedItem.id
+
+                // IMPORTANT: Also update selectedObjects Map for drag handling
+                eventHandlersRef.value.selectedObjects.clear()
+                eventHandlersRef.value.selectedObjects.set(swappedItem.id, addedModel)
+
+                // Clear outline first, then set new selection after a frame
+                // This ensures the old meshes are cleared before setting new ones
+                highlightObject(null, false)
+                requestAnimationFrame(() => {
+                  highlightObject(addedModel, true)
+                })
 
                 // Update measurements if enabled
                 if (eventHandlersRef.value.measurementSystem) {

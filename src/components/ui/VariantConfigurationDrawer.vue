@@ -261,9 +261,29 @@ const variantFitMap = computed(() => {
     }
 
     // 2. Check: Would the variant collide with other items?
+    // Calculate the expected Y position after swap (matching the swap logic in Planner.vue)
+    const oldSpawnHeight = props.currentItem.model?.spawnHeight ?? 0
+    const newSpawnHeight = variant.spawnHeight ?? 0
+    const oldFloorOffset = props.currentItem.model?.floorOffset ?? 0
+    const newFloorOffset = variant.floorOffset ?? 0
+
+    // Check if item is at its default spawn height
+    const wasAtDefaultHeight = Math.abs(props.currentItem.position[1] - oldSpawnHeight) < 1
+
+    // Calculate expected Y position after swap:
+    // - If at default height and spawnHeight differs, use new spawnHeight
+    // - Otherwise, adjust to maintain visual bottom position
+    let expectedY = props.currentItem.position[1]
+    if (wasAtDefaultHeight && oldSpawnHeight !== newSpawnHeight) {
+      expectedY = newSpawnHeight
+    } else if (oldFloorOffset !== newFloorOffset) {
+      // Maintain visual bottom: newY = oldY + oldFloorOffset - newFloorOffset
+      expectedY = props.currentItem.position[1] + oldFloorOffset - newFloorOffset
+    }
+
     const currentPosition = {
       x: props.currentItem.position[0],
-      y: props.currentItem.position[1],
+      y: expectedY,
       z: props.currentItem.position[2]
     }
 
@@ -272,7 +292,10 @@ const variantFitMap = computed(() => {
       sku: variant.sku,
       model: {
         ...props.currentItem.model,
-        dimensions: variant.dimensions
+        dimensions: variant.dimensions,
+        // Use the NEW variant's floorOffset and spawnHeight for accurate collision detection
+        floorOffset: newFloorOffset,
+        spawnHeight: newSpawnHeight
       }
     }
 

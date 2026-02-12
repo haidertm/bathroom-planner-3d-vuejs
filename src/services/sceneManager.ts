@@ -3186,6 +3186,7 @@ export class SceneManager {
     currentRotation?: number;
     newDimensions: { width: number; height: number; depth: number };
     currentDimensions?: { width: number; height: number; depth: number };
+    newFloorOffset?: number;
     reason: string;
     roomWidth?: number;
     roomHeight?: number;
@@ -3196,22 +3197,30 @@ export class SceneManager {
     this.clearCollisionPreview();
 
     const { itemId, currentPosition, currentRotation, newDimensions } = config;
+    const newFloorOffset = config.newFloorOffset ?? 0;
 
-    // Try to get actual position from Three.js object (more accurate than stored data)
+    // Use the passed position (which already has the expected Y calculated)
     let posX = currentPosition[0];
     let posZ = currentPosition[2];
     let rotation = currentRotation;
 
-    // Find the actual object in the scene to get its real position
+    // Find the actual object in the scene to get accurate X, Z and rotation
     const actualObject = this.bathroomItemsGroup.children.find(
       child => child.userData.itemId === itemId || child.userData.itemId === Number(itemId)
     );
 
     if (actualObject) {
+      // Use actual X, Z from the object (more accurate for horizontal position)
       posX = actualObject.position.x;
       posZ = actualObject.position.z;
       rotation = actualObject.rotation.y;
     }
+
+    // Calculate the visual center Y for the collision preview box
+    // The box should be centered at: expectedY + floorOffset + height/2
+    const expectedY = currentPosition[1];
+    const visualCenterY = expectedY + newFloorOffset + newDimensions.height / 2;
+    console.log('🔴 Collision preview Y calculation:', { expectedY, newFloorOffset, height: newDimensions.height, visualCenterY });
 
     // Get room dimensions (passed from Planner or use defaults)
     const roomWidth = config.roomWidth || 300;
@@ -3256,8 +3265,6 @@ export class SceneManager {
     posX = constrainedX;
     posZ = constrainedZ;
 
-    const posY = newDimensions.height / 2;  // Center the box vertically (sitting on floor)
-
     // Create a wireframe box showing the new size
     const geometry = new THREE.BoxGeometry(
       newDimensions.width,
@@ -3283,7 +3290,7 @@ export class SceneManager {
 
     // Create wireframe mesh
     const wireframeMesh = new THREE.Mesh(geometry, material);
-    wireframeMesh.position.set(posX, posY, posZ);
+    wireframeMesh.position.set(posX, visualCenterY, posZ);
     if (rotation !== undefined) {
       wireframeMesh.rotation.y = rotation;
     }
@@ -3296,7 +3303,7 @@ export class SceneManager {
       newDimensions.depth
     );
     const solidMesh = new THREE.Mesh(solidGeometry, solidMaterial);
-    solidMesh.position.set(posX, posY, posZ);
+    solidMesh.position.set(posX, visualCenterY, posZ);
     if (rotation !== undefined) {
       solidMesh.rotation.y = rotation;
     }
