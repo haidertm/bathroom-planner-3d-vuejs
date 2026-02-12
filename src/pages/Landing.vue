@@ -153,7 +153,6 @@ const selectTemplate = (templateId) => {
   }
 
   const actualTemplateId = templateMap[templateId] || templateId
-  console.log('Selected template:', templateId, '-> Loading:', actualTemplateId)
 
   // Get template config to extract room shape
   const templateConfig = getTemplateById(actualTemplateId)

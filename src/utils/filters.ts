@@ -144,10 +144,12 @@ export function extractRangeBounds(
 /**
  * Check if a price is within the filter range
  * Returns false for null prices (treat as non-match when price filter is active)
+ * Uses epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
  */
+const PRICE_EPS = 0.01
 function isPriceInRange(price: number | null, minPrice: number, maxPrice: number): boolean {
   if (price === null) return false // No valid price = treat as non-match when price filter is active
-  return price >= minPrice && price <= maxPrice
+  return price + PRICE_EPS >= minPrice && price - PRICE_EPS <= maxPrice
 }
 
 /**
