@@ -144,7 +144,6 @@ const textureLabelStyle = computed(() => ({
 
 // Methods
 const handleClose = () => {
-  console.log('Close button clicked')
   emit('close')
 }
 

@@ -72,25 +72,15 @@ export class ProgressiveModelLoader {
   ): Promise<THREE.Group> {
     const { onPlaceholderReady, onFullModelReady, onProgress, onError } = callbacks;
 
-    console.log('🔄 ProgressiveLoader.loadProgressively called:', {
-      sku,
-      dimensions: modelConfig.dimensions,
-      path: modelConfig.path
-    });
-
     // Check if model is already cached - return immediately
     const isLoaded = this.modelManager.isModelLoaded(sku);
-    console.log('🔍 ProgressiveLoader - isModelLoaded check:', { sku, isLoaded });
 
     if (isLoaded) {
-      console.log(`✅ Progressive: Model ${sku} already loaded, returning immediately (NO PLACEHOLDER)`);
       const cachedModel = await this.modelManager.loadModel(sku, modelConfig);
       onFullModelReady?.(cachedModel);
       onProgress?.(100);
       return cachedModel;
     }
-
-    console.log(`🔲 ProgressiveLoader - Model ${sku} NOT loaded, CREATING PLACEHOLDER`);
 
     // Create abort controller for this load operation
     const abortController = new AbortController();
@@ -109,11 +99,8 @@ export class ProgressiveModelLoader {
     this.activePlaceholders.set(sku, placeholder);
 
     // Notify that placeholder is ready
-    console.log(`🔲 Progressive: Calling onPlaceholderReady for ${sku}`);
     onPlaceholderReady?.(placeholder);
     onProgress?.(5);
-
-    console.log(`🔲 Progressive: Placeholder CREATED and notified for ${sku}`);
 
     // Step 2: Load full model in background with REAL progress tracking
     try {
@@ -133,7 +120,6 @@ export class ProgressiveModelLoader {
 
       // Check if loading was aborted
       if (abortController.signal.aborted) {
-        console.log(`⚠️ Progressive: Loading aborted for ${sku}`);
         return placeholder;
       }
 
@@ -144,8 +130,6 @@ export class ProgressiveModelLoader {
       // Clean up placeholder tracking
       this.activePlaceholders.delete(sku);
       this.loadingAbortControllers.delete(sku);
-
-      console.log(`✅ Progressive: Full model loaded for ${sku}`);
 
       // Notify that full model is ready
       onFullModelReady?.(fullModel);
@@ -405,7 +389,6 @@ export class ProgressiveModelLoader {
     parent.remove(placeholder);
     this.disposePlaceholder(placeholder);
 
-    console.log(`🔄 Progressive: Swapped placeholder with full model`);
     return true;
   }
 
