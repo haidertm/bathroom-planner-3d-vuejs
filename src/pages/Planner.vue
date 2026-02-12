@@ -436,13 +436,20 @@ const handlePreviewCollision = (previewConfig) => {
   const newSpawnHeight = variant.spawnHeight ?? 0
   const oldFloorOffset = currentItem.model?.floorOffset ?? 0
   const newFloorOffset = variant.floorOffset ?? 0
+
+  // Scale floor offsets by item scale for correct positioning of resized items
+  const currentScale = currentItem.scale ?? 1
+  const newScale = variant.scale ?? 1
+  const scaledOldFloorOffset = oldFloorOffset * currentScale
+  const scaledNewFloorOffset = newFloorOffset * newScale
+
   const wasAtDefaultHeight = Math.abs(currentItem.position[1] - oldSpawnHeight) < 1
 
   let expectedY = currentItem.position[1]
   if (wasAtDefaultHeight && oldSpawnHeight !== newSpawnHeight) {
     expectedY = newSpawnHeight
-  } else if (oldFloorOffset !== newFloorOffset) {
-    expectedY = currentItem.position[1] + oldFloorOffset - newFloorOffset
+  } else if (scaledOldFloorOffset !== scaledNewFloorOffset) {
+    expectedY = currentItem.position[1] + scaledOldFloorOffset - scaledNewFloorOffset
   }
 
   // Use sceneManager to show collision preview with red outline
@@ -452,7 +459,7 @@ const handlePreviewCollision = (previewConfig) => {
     currentRotation: currentItem.rotation,
     newDimensions: variant.dimensions,
     currentDimensions: currentItem.model?.dimensions,
-    newFloorOffset: newFloorOffset,
+    newFloorOffset: scaledNewFloorOffset,
     reason: fitInfo?.reason || 'collision',
     roomWidth: roomWidth.value,
     roomHeight: roomHeight.value
