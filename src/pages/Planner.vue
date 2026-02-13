@@ -677,7 +677,26 @@ const handleVariantSwap = async (swapConfig) => {
 
                   // Update measurements if enabled
                   if (eventHandlersRef.value.measurementSystem) {
+                    // Update existing items first so measurements use new variant's dimensions
+                    eventHandlersRef.value.measurementSystem.updateExistingItems(items.value)
                     eventHandlersRef.value.measurementSystem.setSelectedObject(fullModel)
+                  }
+
+                  // Track variant swap in GTM
+                  if (gtm?.enabled()) {
+                    gtm.trackEvent({
+                      event: 'variant_swap',
+                      category: 'Bathroom Planner',
+                      action: 'Swap Variant',
+                      label: `${currentItem.type} - ${currentItem.sku} to ${newVariant.sku}`,
+                      item_type: currentItem.type,
+                      old_variant_sku: currentItem.sku,
+                      old_variant_name: currentItem.name,
+                      new_variant_sku: newVariant.sku,
+                      new_variant_name: newVariant.name,
+                      product_name: product?.name || currentItem.name,
+                      loading_method: 'progressive'
+                    })
                   }
 
                   // Update rotation arrows if enabled
@@ -730,7 +749,26 @@ const handleVariantSwap = async (swapConfig) => {
 
                 // Update measurements if enabled
                 if (eventHandlersRef.value.measurementSystem) {
+                  // Update existing items first so measurements use new variant's dimensions
+                  eventHandlersRef.value.measurementSystem.updateExistingItems(items.value)
                   eventHandlersRef.value.measurementSystem.setSelectedObject(addedModel)
+                }
+
+                // Track variant swap in GTM
+                if (gtm?.enabled()) {
+                  gtm.trackEvent({
+                    event: 'variant_swap',
+                    category: 'Bathroom Planner',
+                    action: 'Swap Variant',
+                    label: `${currentItem.type} - ${currentItem.sku} to ${newVariant.sku}`,
+                    item_type: currentItem.type,
+                    old_variant_sku: currentItem.sku,
+                    old_variant_name: currentItem.name,
+                    new_variant_sku: newVariant.sku,
+                    new_variant_name: newVariant.name,
+                    product_name: product?.name || currentItem.name,
+                    loading_method: 'standard'
+                  })
                 }
 
                 // Update rotation arrows if enabled and object can rotate

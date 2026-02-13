@@ -902,7 +902,8 @@ export class EventHandlers {
           // If object is on a hidden wall, move it to the opposite visible wall
           if (!visibleWalls.has(currentWall)) {
             // Determine the best visible wall (usually opposite wall)
-            const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
+            // Pass object position for L-shaped room notch wall logic
+            const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls, this.selectedObject.position);
 
             // Find an empty space on the target wall (collision-aware)
             const newPosition = this.findEmptySpaceOnWall(
@@ -935,6 +936,12 @@ export class EventHandlers {
                 position: [newPosition.x, newPosition.y, newPosition.z],
                 rotation: newPosition.rotation
               });
+
+               // Force measurement system to recalculate based on new position
+              if (this.measurementSystem && this.selectedObject) {
+                this.measurementSystem.forceUpdateMeasurements();
+              }
+
             }
           }
         }
@@ -1187,6 +1194,7 @@ export class EventHandlers {
 
   /**
    * Calculate position on a specific wall
+   * ✅ FIXED: Now uses wallFaces and isFlushMounted logic to match constrainToWalls behavior
    */
   private getPositionOnWall(
     wall: string,
@@ -1195,20 +1203,21 @@ export class EventHandlers {
     objectScale: number,
     currentItem?: BathroomItem
   ): { x: number; y: number; z: number; rotation: number } {
-    const roomHalfWidth = this.roomWidthRef.value / 2;
-    const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
     const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
     const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
     const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+
+    // ✅ FIX: Use isFlushMounted logic to match constrainToWalls
+    const isFlushMounted = wallBuffer === 0;
 
     let x = currentPosition.x;
     let y = currentPosition.y; // Preserve height
     let z = currentPosition.z;
     let rotation = 0;
 
-    // ✅ Get notch boundaries for L-shaped rooms
-    const { interior, notch } = getInteriorBoundaries(
+    // ✅ FIX: Get wallFaces from getInteriorBoundaries (same as constrainToWalls)
+    const { wallFaces, interior, notch } = getInteriorBoundaries(
       this.roomWidthRef.value,
       this.roomHeightRef.value,
       this.notchWidthRef.value,
@@ -1217,7 +1226,12 @@ export class EventHandlers {
 
     switch (wall) {
       case 'north':
-        z = -roomHalfHeight + halfDepth + wallBuffer;
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          z = wallFaces.north;
+        } else {
+          z = wallFaces.north + halfDepth + wallBuffer;
+        }
         // Use interior boundaries which account for wall thickness
         x = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, x));
 
@@ -1230,21 +1244,36 @@ export class EventHandlers {
         break;
 
       case 'south':
-        z = roomHalfHeight - halfDepth - wallBuffer;
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          z = wallFaces.south;
+        } else {
+          z = wallFaces.south - halfDepth - wallBuffer;
+        }
         // Use interior boundaries which account for wall thickness
         x = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, x));
         rotation = Math.PI;
         break;
 
       case 'east':
-        x = roomHalfWidth - halfDepth - wallBuffer;
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          x = wallFaces.east;
+        } else {
+          x = wallFaces.east - halfDepth - wallBuffer;
+        }
         // Use interior boundaries which account for wall thickness
         z = Math.max(interior.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, z));
         rotation = -Math.PI / 2;
         break;
 
       case 'west':
-        x = -roomHalfWidth + halfDepth + wallBuffer;
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          x = wallFaces.west;
+        } else {
+          x = wallFaces.west + halfDepth + wallBuffer;
+        }
         // Use interior boundaries which account for wall thickness
         z = Math.max(interior.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, z));
 
@@ -1256,15 +1285,20 @@ export class EventHandlers {
         rotation = Math.PI / 2;
         break;
 
-      // ✅ NEW: Handle notch walls for L-shaped rooms
+      // ✅ Handle notch walls for L-shaped rooms
       case 'notch-east':
         if (notch) {
-          // Position on the vertical notch edge (runs north-south at X = notch.maxX)
-          x = notch.maxX + halfDepth + wallBuffer + 5;
-          // Constrain Z to be within notch bounds and room bounds
+          // ✅ FIX: Use isFlushMounted logic + wall thickness offset (matching 3D drag behavior)
+          // Notch walls need extra offset to prevent objects from being inside the notch void
+          if (isFlushMounted) {
+            x = notch.maxX + WALL_SETTINGS.THICKNESS;
+          } else {
+            x = notch.maxX + halfDepth + wallBuffer + WALL_SETTINGS.THICKNESS;
+          }
+          // Constrain Z to be within notch bounds
           z = Math.max(
             notch.minZ + halfWidth,
-            Math.min(interior.maxZ - halfWidth, z)
+            Math.min(notch.maxZ - halfWidth, z)
           );
           rotation = Math.PI / 2; // Face away from notch (toward east)
         }
@@ -1272,12 +1306,17 @@ export class EventHandlers {
 
       case 'notch-south':
         if (notch) {
-          // Position on the horizontal notch edge (runs east-west at Z = notch.maxZ)
-          z = notch.maxZ + halfDepth + wallBuffer + 5;
-          // Constrain X to be within notch bounds and room bounds
+          // ✅ FIX: Use isFlushMounted logic + wall thickness offset (matching 3D drag behavior)
+          // Notch walls need extra offset to prevent objects from being inside the notch void
+          if (isFlushMounted) {
+            z = notch.maxZ + WALL_SETTINGS.THICKNESS;
+          } else {
+            z = notch.maxZ + halfDepth + wallBuffer + WALL_SETTINGS.THICKNESS;
+          }
+          // Constrain X to be within notch bounds
           x = Math.max(
             notch.minX + halfWidth,
-            Math.min(interior.maxX - halfWidth, x)
+            Math.min(notch.maxX - halfWidth, x)
           );
           rotation = 0; // Face away from notch (toward south)
         }
@@ -1727,12 +1766,21 @@ export class EventHandlers {
 
   /**
    * Get the opposite wall or best visible wall
+   * For L-shaped rooms, considers object position to determine if notch wall is the true opposite
    */
-  // Get the opposite wall or best visible wall
   private getOppositeOrBestWall(
     currentWall: WallType,
-    visibleWalls: Set<string>
+    visibleWalls: Set<string>,
+    objectPosition?: THREE.Vector3
   ): WallType {
+    // Get notch boundaries for L-shaped room logic
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     // Define opposite walls
     const opposites: { [key in WallType]: WallType } = {
       north: 'south',
@@ -1745,22 +1793,47 @@ export class EventHandlers {
 
     let oppositeWall = opposites[currentWall];
 
-    // ✅ FIXED: For auto-jump from hidden walls, NEVER send objects to notch walls
-    // Notch walls (notch-east, notch-south) are small interior walls inside the L-shape cutout
-    // Objects should always go to main walls, and position adjustment will handle avoiding the notch
+    // ✅ POSITION-AWARE NOTCH WALL LOGIC:
+    // If object is positioned where a notch wall is the geometrically correct opposite,
+    // allow jumping to that notch wall instead of forcing a main wall
+    if (notch && objectPosition) {
+      // When on SOUTH wall: check if object's X is in notch range
+      // If so, notch-south is directly opposite (north wall doesn't exist there)
+      if (currentWall === 'south') {
+        if (objectPosition.x >= notch.minX && objectPosition.x <= notch.maxX) {
+          // Object is in the X range where notch-south is opposite
+          oppositeWall = 'notch-south';
+        }
+      }
+      // When on EAST wall: check if object's Z is in notch range
+      // If so, notch-east is directly opposite (west wall doesn't exist there)
+      else if (currentWall === 'east') {
+        if (objectPosition.z >= notch.minZ && objectPosition.z <= notch.maxZ) {
+          // Object is in the Z range where notch-east is opposite
+          oppositeWall = 'notch-east';
+        }
+      }
+      // When on a notch wall, redirect to appropriate main wall
+      else if (currentWall === 'notch-east') {
+        oppositeWall = 'west'; // Object on notch-east should go to west wall
+      } else if (currentWall === 'notch-south') {
+        oppositeWall = 'north'; // Object on notch-south should go to north wall (valid part)
+      }
+    } else {
+      // No notch or no position provided - use original logic
+      // If current wall is a notch wall, redirect to appropriate main wall
+      if (currentWall === 'notch-east') {
+        oppositeWall = 'west';
+      } else if (currentWall === 'notch-south') {
+        oppositeWall = 'north';
+      }
 
-    // If current wall is a notch wall, redirect to appropriate main wall
-    if (currentWall === 'notch-east') {
-      oppositeWall = 'west'; // Object on notch-east should go to west wall (opposite side of room)
-    } else if (currentWall === 'notch-south') {
-      oppositeWall = 'north'; // Object on notch-south should go to north wall (but valid part)
-    }
-
-    // If the calculated opposite is a notch wall, redirect to main wall
-    if (oppositeWall === 'notch-east') {
-      oppositeWall = 'west';
-    } else if (oppositeWall === 'notch-south') {
-      oppositeWall = 'north';
+      // If the calculated opposite is a notch wall, redirect to main wall
+      if (oppositeWall === 'notch-east') {
+        oppositeWall = 'west';
+      } else if (oppositeWall === 'notch-south') {
+        oppositeWall = 'north';
+      }
     }
 
     // If opposite wall is visible, use it
@@ -1768,8 +1841,7 @@ export class EventHandlers {
       return oppositeWall;
     }
 
-    // Otherwise, return any visible MAIN wall (prefer front-facing walls based on camera)
-    // NEVER return notch walls for auto-jump - they're small interior walls
+    // Otherwise, return any visible wall (prefer front-facing walls based on camera)
     const cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
 
@@ -1784,7 +1856,13 @@ export class EventHandlers {
       if (cameraDirection.x < 0 && visibleWalls.has('west')) return 'west';
     }
 
-    // Fallback: return first available MAIN wall (exclude notch walls)
+    // Try notch walls if they are visible (for L-shaped rooms)
+    if (notch) {
+      if (visibleWalls.has('notch-south')) return 'notch-south';
+      if (visibleWalls.has('notch-east')) return 'notch-east';
+    }
+
+    // Fallback: return first available main wall
     const mainWalls: WallType[] = ['north', 'south', 'east', 'west'];
     for (const wall of mainWalls) {
       if (visibleWalls.has(wall)) return wall;
