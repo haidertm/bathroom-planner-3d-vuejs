@@ -129,11 +129,15 @@ export class SceneManager {
     this.initializeOrthographicCamera();
 
     // Create renderer with enhanced settings
+    // preserveDrawingBuffer is needed for canvas captureStream()/toDataURL()
+    // used by session recording tools (e.g. PostHog). Disabled by default for
+    // better GPU/memory performance; enable when session recording is active.
+    const needsBufferPreservation = Boolean(import.meta.env.VITE_POSTHOG_KEY);
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
       logarithmicDepthBuffer: true,
-      preserveDrawingBuffer: true,
+      preserveDrawingBuffer: needsBufferPreservation,
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

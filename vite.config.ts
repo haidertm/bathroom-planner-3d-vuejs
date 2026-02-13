@@ -23,7 +23,8 @@ export default defineConfig({
           }
           // Analytics/tracking - separate chunk (lazy loaded anyway)
           if (
-            id.includes('node_modules/@gtm-support/')
+            id.includes('node_modules/@gtm-support/') ||
+            id.includes('node_modules/posthog-js/')
           ) {
             return 'analytics';
           }

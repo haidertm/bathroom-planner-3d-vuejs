@@ -14,6 +14,6 @@ app.use(router);
 setupGTM(app, router);
 
 // Initialize PostHog product analytics and error tracking
-setupPostHog(app, router);
+setupPostHog(app);
 
 app.mount("#app");
