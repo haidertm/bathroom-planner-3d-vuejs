@@ -1223,6 +1223,7 @@ export class EventHandlers {
 
   /**
    * Calculate position on a specific wall
+   * ✅ FIXED: Now uses wallFaces and isFlushMounted logic to match constrainToWalls behavior
    */
   private getPositionOnWall(
     wall: string,
@@ -1231,22 +1232,23 @@ export class EventHandlers {
     objectScale: number,
     currentItem?: BathroomItem
   ): { x: number; y: number; z: number; rotation: number } {
-    const roomHalfWidth = this.roomWidthRef.value / 2;
-    const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
     const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
     const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
     const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
 
-    console.log('111>> object wallBuffer', wallBuffer);
+    // ✅ FIX: Use isFlushMounted logic to match constrainToWalls
+    const isFlushMounted = wallBuffer === 0;
+
+    console.log('111>> object wallBuffer', wallBuffer, 'isFlushMounted', isFlushMounted);
 
     let x = currentPosition.x;
     let y = currentPosition.y; // Preserve height
     let z = currentPosition.z;
     let rotation = 0;
 
-    // ✅ Get notch boundaries for L-shaped rooms
-    const { interior, notch } = getInteriorBoundaries(
+    // ✅ FIX: Get wallFaces from getInteriorBoundaries (same as constrainToWalls)
+    const { wallFaces, interior, notch } = getInteriorBoundaries(
       this.roomWidthRef.value,
       this.roomHeightRef.value,
       this.notchWidthRef.value,
@@ -1255,8 +1257,13 @@ export class EventHandlers {
 
     switch (wall) {
       case 'north':
-        z = -roomHalfHeight + halfDepth + wallBuffer;
-        x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          z = wallFaces.north;
+        } else {
+          z = wallFaces.north + halfDepth + wallBuffer;
+        }
+        x = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, x));
 
         // ✅ CRITICAL: Check if X position is inside notch area
         if (notch && x >= notch.minX && x <= notch.maxX) {
@@ -1268,8 +1275,13 @@ export class EventHandlers {
         break;
 
       case 'south':
-        z = roomHalfHeight - halfDepth - wallBuffer;
-        x = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, x));
+        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          z = wallFaces.south;
+        } else {
+          z = wallFaces.south - halfDepth - wallBuffer;
+        }
+        x = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, x));
 
         // ✅ South wall typically doesn't need notch adjustment (notch is usually in north area)
         // But check anyway for flexibility
@@ -1281,8 +1293,13 @@ export class EventHandlers {
         break;
 
       case 'east':
-        x = roomHalfWidth - halfDepth - wallBuffer;
-        z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          x = wallFaces.east;
+        } else {
+          x = wallFaces.east - halfDepth - wallBuffer;
+        }
+        z = Math.max(interior.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, z));
 
         // ✅ CRITICAL FIX: Check if Z position is inside notch area
         if (notch && z >= notch.minZ && z <= notch.maxZ) {
@@ -1294,8 +1311,13 @@ export class EventHandlers {
         break;
 
       case 'west':
-        x = -roomHalfWidth + halfDepth + wallBuffer;
-        z = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, z));
+        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+        if (isFlushMounted) {
+          x = wallFaces.west;
+        } else {
+          x = wallFaces.west + halfDepth + wallBuffer;
+        }
+        z = Math.max(interior.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, z));
 
         // ✅ CRITICAL FIX: Check if Z position is inside notch area
         if (notch && z >= notch.minZ && z <= notch.maxZ) {
@@ -1306,15 +1328,19 @@ export class EventHandlers {
         rotation = Math.PI / 2;
         break;
 
-      // ✅ NEW: Handle notch walls for L-shaped rooms
+      // ✅ Handle notch walls for L-shaped rooms
       case 'notch-east':
         if (notch) {
-          // Position on the vertical notch edge (runs north-south at X = notch.maxX)
-          x = notch.maxX + halfDepth + wallBuffer + 5;
-          // Constrain Z to be within notch bounds and room bounds
+          // ✅ FIX: Use isFlushMounted logic (matching constrainToWalls)
+          if (isFlushMounted) {
+            x = notch.maxX;
+          } else {
+            x = notch.maxX + halfDepth + wallBuffer;
+          }
+          // Constrain Z to be within notch bounds
           z = Math.max(
             notch.minZ + halfWidth,
-            Math.min(interior.maxZ - halfWidth, z)
+            Math.min(notch.maxZ - halfWidth, z)
           );
           rotation = Math.PI / 2; // Face away from notch (toward east)
         }
@@ -1322,12 +1348,16 @@ export class EventHandlers {
 
       case 'notch-south':
         if (notch) {
-          // Position on the horizontal notch edge (runs east-west at Z = notch.maxZ)
-          z = notch.maxZ + halfDepth + wallBuffer + 5;
-          // Constrain X to be within notch bounds and room bounds
+          // ✅ FIX: Use isFlushMounted logic (matching constrainToWalls)
+          if (isFlushMounted) {
+            z = notch.maxZ;
+          } else {
+            z = notch.maxZ + halfDepth + wallBuffer;
+          }
+          // Constrain X to be within notch bounds
           x = Math.max(
             notch.minX + halfWidth,
-            Math.min(interior.maxX - halfWidth, x)
+            Math.min(notch.maxX - halfWidth, x)
           );
           rotation = 0; // Face away from notch (toward south)
         }
