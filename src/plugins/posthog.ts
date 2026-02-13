@@ -24,6 +24,9 @@ export function setupPostHog(app: App, router: Router): void {
 
   posthog.init(apiKey, {
     api_host: 'https://us.i.posthog.com',
+    autocapture: true,
+    rageclick: true,
+    capture_dead_clicks: true,
     capture_performance: true,
     capture_exceptions: true,
     enable_recording_console_log: true,
