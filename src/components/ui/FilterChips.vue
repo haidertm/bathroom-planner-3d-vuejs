@@ -10,11 +10,15 @@
       @update="updateFilter(filterKey, $event)"
     />
 
-    <!-- All Filters Button -->
+    <!-- All Filters Button with background filter count badge -->
     <button
       class="all-filters-btn"
-      :class="{ 'has-filters': totalActiveFilters > 0 }"
+      :class="{
+        'has-filters': totalActiveFilters > 0 || props.backgroundFilterCount > 0,
+        'has-background-filters': props.backgroundFilterCount > 0
+      }"
       @click="openAllFiltersModal"
+      :title="props.backgroundFilterCount > 0 ? `${props.backgroundFilterCount} filter(s) from search still applied` : ''"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <line x1="4" y1="21" x2="4" y2="14"></line>
@@ -54,10 +58,23 @@ const props = defineProps({
   selectedFilters: {
     type: Object,
     default: () => ({})
+  },
+  // Background filters preserved from search view transition
+  backgroundFilterCount: {
+    type: Number,
+    default: 0
+  },
+  backgroundFilters: {
+    type: Object,
+    default: () => ({
+      style: [],
+      priceMin: null,
+      priceMax: null
+    })
   }
 })
 
-const emit = defineEmits(['update:filters', 'open-all-filters'])
+const emit = defineEmits(['update:filters', 'open-all-filters', 'clear-background-filters'])
 
 // Get primary filters for this category
 const primaryFilters = computed(() => {
@@ -235,6 +252,21 @@ watch(() => props.category, () => {
 .all-filters-btn.has-filters .secondary-filter-badge {
   background-color: #ffffff;
   color: #29275B;
+}
+
+/* Background filters indicator - subtle visual cue when filters from search are preserved */
+.all-filters-btn.has-background-filters {
+  box-shadow: 0 0 0 2px rgba(41, 39, 91, 0.2);
+}
+
+.all-filters-btn.has-background-filters .secondary-filter-badge {
+  background-color: #EC048C;
+  color: #ffffff;
+}
+
+.all-filters-btn.has-filters.has-background-filters .secondary-filter-badge {
+  background-color: #EC048C;
+  color: #ffffff;
 }
 
 /* Mobile responsiveness */

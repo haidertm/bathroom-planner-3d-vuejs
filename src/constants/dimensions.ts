@@ -101,7 +101,6 @@ export const MEASUREMENT_SETTINGS = {
 // Helper function to get default dimensions for a shape
 export const getShapeDefaultDimensions = (shape: RoomShape | string): ShapeDimensions => {
     if (shape === 'square' || shape === 'rectangular' || shape === 'l-shape') {
-        console.log('>>> room shape default', SHAPE_DEFAULTS[shape]);
         return SHAPE_DEFAULTS[shape];
     }
 
@@ -133,13 +132,6 @@ export const saveRoomDimensionsToStorage = (
     }
 
     localStorage.setItem('room-dimensions', JSON.stringify(roomDimensionsInMeters));
-    console.log('Room dimensions saved to localStorage:', roomDimensionsInMeters);
-    console.log('Original values in CM:', {
-      width: widthCm + 'cm',
-      height: heightCm + 'cm',
-      notchWidth: notchWidthCm ? notchWidthCm + 'cm' : 'N/A',
-      notchHeight: notchHeightCm ? notchHeightCm + 'cm' : 'N/A'
-    });
   } catch (error) {
     console.warn('Failed to save room dimensions:', error);
   }
@@ -171,7 +163,6 @@ export const loadRoomDimensionsFromStorage = (): {
           dimensions.notchHeight = Math.round(parsed.notchHeight * 100);
         }
 
-        console.log('📂 Room dimensions loaded from localStorage (converted to cm):', dimensions);
         return dimensions;
     } catch (error) {
         console.error('❌ Failed to load room dimensions:', error);
