@@ -956,6 +956,11 @@ export class EventHandlers {
                 rotation: newPosition.rotation
               });
 
+              // Force measurement system to recalculate based on new position
+              if (this.measurementSystem && this.selectedObject) {
+                this.measurementSystem.forceUpdateMeasurements();
+              }
+
               console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall at collision-free position`);
             } else {
               console.log(`⚠️ No space available on ${targetWall} wall - keeping object on hidden ${currentWall} wall`);
