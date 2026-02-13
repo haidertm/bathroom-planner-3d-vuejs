@@ -32,8 +32,7 @@ import {
   type GroupConstraint,
   ConstraintPriority,
   analyzeGroupConstraints,
-  snapRotationTo90Degrees,
-  describeGroupConstraint
+  snapRotationTo90Degrees
 } from '../utils/groupConstraints';
 
 interface IntersectionResult {
@@ -154,7 +153,6 @@ export class EventHandlers {
    */
   public setMultiSelectMode(enabled: boolean): void {
     this.isMultiSelectMode = enabled;
-    console.log('🔄 Multi-select mode:', enabled ? 'ENABLED' : 'DISABLED');
   }
 
   /**
@@ -172,7 +170,6 @@ export class EventHandlers {
     });
 
     this.updateMultiSelectionHighlight();
-    console.log('🎯 Selected all items:', this.selectedObjects.size);
   }
 
   /**
@@ -379,10 +376,8 @@ export class EventHandlers {
     });
 
 
-    this.rotationArrows.setRotationCompleteCallback((rotation: number) => {
+    this.rotationArrows.setRotationCompleteCallback(() => {
       if (this.selectedObject) {
-        const itemId = this.selectedObject.userData.itemId as number;
-        console.log('🎯 Arrow rotation completed for item:', itemId, 'rotation:', rotation);
         this.applyPendingUpdates();
         this.isDragOperation = false;
       }
@@ -489,7 +484,6 @@ export class EventHandlers {
    * Called by SceneManager when switching views
    */
   public setViewMode(mode: ViewMode): void {
-    console.log('📐 EventHandlers: View mode set to', mode);
     this.viewMode = mode;
 
     // Update rotation arrows camera for proper raycasting in 2D/3D mode
@@ -769,7 +763,6 @@ export class EventHandlers {
       // This handles non-drag operations like keyboard shortcuts
       setTimeout(() => {
         const currentItems = this.getItems();
-        console.log('💾 Immediate save to history for item', itemId);
         this.saveToHistory({
           items: currentItems,
           roomWidth: this.roomWidthRef.value,
@@ -791,8 +784,6 @@ export class EventHandlers {
       // FIXED: Use clearSelection method to properly clean up measurements
       this.clearSelection();
 
-      console.log('itemToBeDeleted>>>', itemId);
-
       // Delete the item
       if (this.deleteItem && itemId) {
         this.deleteItem(itemId);
@@ -806,7 +797,6 @@ export class EventHandlers {
     // ✅ FIX: If we're already dragging, ignore any mousedown events (especially right-click)
     // This prevents right-click from deselecting the object or interfering with the drag
     if (this.isDragging || this.isDragOperation) {
-      console.log('🚫 Ignoring mousedown during active drag operation');
       return;
     }
 
@@ -833,7 +823,6 @@ export class EventHandlers {
         // Multi-select logic: Toggle selection
         if (!this.wasAlreadySelected) {
           this.selectedObjects.set(itemId, intersected.object);
-          console.log('➕ Selected item:', itemId);
           this.updateMultiSelectionHighlight();
         }
         // If already selected, we keep it for dragging and might deselect in mouseUp
@@ -852,8 +841,6 @@ export class EventHandlers {
       }
 
       if (!this.selectedObject) return;
-
-      console.log('selectedObject >>>', this.selectedObject);
 
       // 🚀 FIXED: Get fresh items before updating measurement system
       const currentItems = this.getCurrentItems();
@@ -914,13 +901,8 @@ export class EventHandlers {
 
           // If object is on a hidden wall, move it to the opposite visible wall
           if (!visibleWalls.has(currentWall)) {
-            console.log(`🔄 Object is on hidden ${currentWall} wall, moving to visible wall`);
-            console.log(`📊 Visible walls:`, Array.from(visibleWalls));
-            console.log(`📍 Current position:`, this.selectedObject.position);
-
             // Determine the best visible wall (usually opposite wall)
             const targetWall = this.getOppositeOrBestWall(currentWall, visibleWalls);
-            console.log(`🎯 Target wall selected: ${targetWall}`);
 
             // Find an empty space on the target wall (collision-aware)
             const newPosition = this.findEmptySpaceOnWall(
@@ -931,8 +913,6 @@ export class EventHandlers {
               itemId,
               currentItem
             );
-
-            console.log(`📍 New position calculated:`, newPosition);
 
             // Only move if a collision-free position was found
             if (newPosition) {
@@ -956,14 +936,11 @@ export class EventHandlers {
                 rotation: newPosition.rotation
               });
 
-              // Force measurement system to recalculate based on new position
+               // Force measurement system to recalculate based on new position
               if (this.measurementSystem && this.selectedObject) {
                 this.measurementSystem.forceUpdateMeasurements();
               }
 
-              console.log(`✅ Moved object from hidden ${currentWall} to visible ${targetWall} wall at collision-free position`);
-            } else {
-              console.log(`⚠️ No space available on ${targetWall} wall - keeping object on hidden ${currentWall} wall`);
             }
           }
         }
@@ -1015,7 +992,6 @@ export class EventHandlers {
             this.notchWidthRef.value,
             this.notchHeightRef.value
           );
-          console.log('📊 Group constraint calculated:', describeGroupConstraint(this.groupConstraint));
         } else {
           this.groupConstraint = null;
         }
@@ -1073,8 +1049,6 @@ export class EventHandlers {
             // Actually move the object to the wall
             this.selectedObject.position.copy(primaryPos);
             this.selectedObject.rotation.y = primaryRot;
-
-            console.log('📊 Snapped freestanding primary to wall:', targetWall, primaryPos);
           }
         }
 
@@ -1191,8 +1165,6 @@ export class EventHandlers {
   }
 
   private selectObject(object: THREE.Object3D): void {
-    console.log('🎯 Selecting object:', object.userData.itemId);
-
     // Clear previous selection first
     if (this.selectedObject && this.selectedObject !== object) {
       highlightObject(this.selectedObject, false);
@@ -1217,8 +1189,6 @@ export class EventHandlers {
     if (this.onItemSelected && itemId !== undefined) {
       this.onItemSelected(itemId);
     }
-
-    console.log('✅ Object selected successfully');
   }
 
   /**
@@ -1240,8 +1210,6 @@ export class EventHandlers {
     // ✅ FIX: Use isFlushMounted logic to match constrainToWalls
     const isFlushMounted = wallBuffer === 0;
 
-    console.log('111>> object wallBuffer', wallBuffer, 'isFlushMounted', isFlushMounted);
-
     let x = currentPosition.x;
     let y = currentPosition.y; // Preserve height
     let z = currentPosition.z;
@@ -1257,73 +1225,61 @@ export class EventHandlers {
 
     switch (wall) {
       case 'north':
-        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
         if (isFlushMounted) {
           z = wallFaces.north;
         } else {
           z = wallFaces.north + halfDepth + wallBuffer;
         }
+        // Use interior boundaries which account for wall thickness
         x = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, x));
 
-        // ✅ CRITICAL: Check if X position is inside notch area
-        if (notch && x >= notch.minX && x <= notch.maxX) {
-          // Object would be in notch void - move it to notch.maxX boundary
-          x = notch.maxX + halfWidth;
-          console.log(`🔷 North wall: Adjusted X from notch area to ${x.toFixed(1)}`);
+        // ✅ CRITICAL: For L-shaped rooms, north wall doesn't exist in notch area
+        // Object must be placed at x >= notch.maxX + wallThickness
+        if (notch && (x - halfWidth) < (notch.maxX + WALL_SETTINGS.THICKNESS)) {
+          x = notch.maxX + WALL_SETTINGS.THICKNESS + halfWidth;
         }
         rotation = 0;
         break;
 
       case 'south':
-        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
         if (isFlushMounted) {
           z = wallFaces.south;
         } else {
           z = wallFaces.south - halfDepth - wallBuffer;
         }
+        // Use interior boundaries which account for wall thickness
         x = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, x));
-
-        // ✅ South wall typically doesn't need notch adjustment (notch is usually in north area)
-        // But check anyway for flexibility
-        if (notch && x >= notch.minX && x <= notch.maxX && z < notch.maxZ) {
-          x = notch.maxX + halfWidth;
-          console.log(`🔷 South wall: Adjusted X from notch area to ${x.toFixed(1)}`);
-        }
         rotation = Math.PI;
         break;
 
       case 'east':
-        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
         if (isFlushMounted) {
           x = wallFaces.east;
         } else {
           x = wallFaces.east - halfDepth - wallBuffer;
         }
+        // Use interior boundaries which account for wall thickness
         z = Math.max(interior.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, z));
-
-        // ✅ CRITICAL FIX: Check if Z position is inside notch area
-        if (notch && z >= notch.minZ && z <= notch.maxZ) {
-          // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
-          z = notch.maxZ + halfWidth;
-          console.log(`🔷 East wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
-        }
         rotation = -Math.PI / 2;
         break;
 
       case 'west':
-        // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
+                // ✅ FIX: Use wallFaces and isFlushMounted logic (matching constrainToWalls)
         if (isFlushMounted) {
           x = wallFaces.west;
         } else {
           x = wallFaces.west + halfDepth + wallBuffer;
         }
+        // Use interior boundaries which account for wall thickness
         z = Math.max(interior.minZ + halfWidth, Math.min(interior.maxZ - halfWidth, z));
 
-        // ✅ CRITICAL FIX: Check if Z position is inside notch area
-        if (notch && z >= notch.minZ && z <= notch.maxZ) {
-          // Object would be in notch void - move it to notch.maxZ boundary (south of notch)
-          z = notch.maxZ + halfWidth;
-          console.log(`🔷 West wall: Adjusted Z from ${currentPosition.z.toFixed(1)} to ${z.toFixed(1)} (was in notch area)`);
+        // ✅ CRITICAL: For L-shaped rooms, west wall doesn't exist in notch area
+        // Object must be placed at z >= notch.maxZ + wallThickness
+        if (notch && (z - halfWidth) < (notch.maxZ + WALL_SETTINGS.THICKNESS)) {
+          z = notch.maxZ + WALL_SETTINGS.THICKNESS + halfWidth;
         }
         rotation = Math.PI / 2;
         break;
@@ -1389,6 +1345,14 @@ export class EventHandlers {
   ): { x: number; y: number; z: number; rotation: number } | null {
     const testItem = currentItem ? { ...currentItem } : undefined;
 
+    // Get notch info for L-shaped rooms
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       // Try alternating left and right from base position
       // Pattern: +step, -step, +2*step, -2*step, +3*step, -3*step...
@@ -1404,12 +1368,19 @@ export class EventHandlers {
       if (wall === 'north' || wall === 'south') {
         testX = basePosition.x + offset;
 
+        // Both walls need wall thickness on both ends (west and east walls)
+        // For north wall with notch, minimum X starts after the notch
+        const minX = (wall === 'north' && notch)
+          ? (notch.maxX + WALL_SETTINGS.THICKNESS + halfWidth)
+          : (-roomHalfWidth + WALL_SETTINGS.THICKNESS + halfWidth);
+        const maxX = roomHalfWidth - WALL_SETTINGS.THICKNESS - halfWidth;
+
         // Clamp to wall boundaries with proper half-width
-        testX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, testX));
+        testX = Math.max(minX, Math.min(maxX, testX));
 
         // Skip if we've hit the wall boundary and can't move further
-        if ((direction > 0 && testX >= roomHalfWidth - halfWidth) ||
-          (direction < 0 && testX <= -roomHalfWidth + halfWidth)) {
+        if ((direction > 0 && testX >= maxX) ||
+          (direction < 0 && testX <= minX)) {
           continue;
         }
 
@@ -1422,12 +1393,19 @@ export class EventHandlers {
       } else { // east or west
         testZ = basePosition.z + offset;
 
+        // Both walls need wall thickness on both ends (north and south walls)
+        // For west wall with notch, minimum Z starts after the notch
+        const minZ = (wall === 'west' && notch)
+          ? (notch.maxZ + WALL_SETTINGS.THICKNESS + halfWidth)
+          : (-roomHalfHeight + WALL_SETTINGS.THICKNESS + halfWidth);
+        const maxZ = roomHalfHeight - WALL_SETTINGS.THICKNESS - halfWidth;
+
         // For east/west walls, the object rotates, so we need to use halfWidth for Z constraint
-        testZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, testZ));
+        testZ = Math.max(minZ, Math.min(maxZ, testZ));
 
         // Skip if we've hit the wall boundary and can't move further
-        if ((direction > 0 && testZ >= roomHalfHeight - halfWidth) ||
-          (direction < 0 && testZ <= -roomHalfHeight + halfWidth)) {
+        if ((direction > 0 && testZ >= maxZ) ||
+          (direction < 0 && testZ <= minZ)) {
           continue;
         }
 
@@ -1439,23 +1417,23 @@ export class EventHandlers {
         };
       }
 
-      // Check if this position is collision-free with proper rotation (with room dimensions)
-      const wouldCollide = wouldCollideWithExisting(
+      // Check if this position is collision-free with proper rotation (with room dimensions AND notch)
+      const wouldCollide = wouldCollideWithExistingOrWalls(
         { x: testPosition.x, y: testPosition.y, z: testPosition.z },
         objectType,
         objectScale,
         itemId,
         currentItems,
-        testItem,
         this.roomWidthRef.value,
-        this.roomHeightRef.value
+        this.roomHeightRef.value,
+        testItem,
+        testPosition.rotation,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       if (!wouldCollide) {
-        console.log(`✅ Found empty space on ${wall} wall at offset ${offset.toFixed(0)}cm (attempt ${attempt})`);
         return testPosition;
-      } else {
-        console.log(`❌ Position at offset ${offset.toFixed(0)}cm still collides (attempt ${attempt})`);
       }
     }
 
@@ -1494,6 +1472,14 @@ export class EventHandlers {
     // ✅ CRITICAL: Get valid height constraints to prevent going through ceiling/floor
     const heightConstraints = this.getProperHeightConstraints(objectType, currentItem);
 
+    // Get notch info for L-shaped rooms (computed once, reused in loop)
+    const { notch } = getInteriorBoundaries(
+      this.roomWidthRef.value,
+      this.roomHeightRef.value,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
+    );
+
     // Try different heights: spawn height, then heights above and below
     const heightAttempts = [
       spawnHeight, // Try default spawn height
@@ -1503,13 +1489,9 @@ export class EventHandlers {
       spawnHeight - (objectHeight * 2) - 20, // Try two object-heights below
     ].filter(testY => testY >= heightConstraints.min && testY <= heightConstraints.max); // ✅ Filter to valid range
 
-    console.log(`🔍 Valid height range: ${heightConstraints.min.toFixed(1)}cm to ${heightConstraints.max.toFixed(1)}cm`);
-
     for (const testY of heightAttempts) {
       // Skip if Y is same as base position (already tested)
       if (Math.abs(testY - basePosition.y) < 5) continue;
-
-      console.log(`🔍 Trying vertical position: y=${testY.toFixed(1)}cm`);
 
       // Check if this Y position alone is collision-free
       const testPositionAtNewHeight = {
@@ -1519,23 +1501,27 @@ export class EventHandlers {
         rotation: basePosition.rotation
       };
 
-      let wouldCollide = wouldCollideWithExisting(
+      // Use wouldCollideWithExistingOrWalls to check both object and wall/notch collisions
+      let wouldCollide = wouldCollideWithExistingOrWalls(
         { x: testPositionAtNewHeight.x, y: testPositionAtNewHeight.y, z: testPositionAtNewHeight.z },
         objectType,
         objectScale,
         itemId,
         currentItems,
-        testItem,
         this.roomWidthRef.value,
-        this.roomHeightRef.value
+        this.roomHeightRef.value,
+        testItem,
+        basePosition.rotation,
+        this.notchWidthRef.value,
+        this.notchHeightRef.value
       );
 
       if (!wouldCollide) {
-        console.log(`✅ Found empty space at different height: y=${testY.toFixed(1)}cm`);
         return testPositionAtNewHeight;
       }
 
       // If still colliding, try horizontal search at this new Y position
+      // (notch info already computed outside the loop)
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const direction = (attempt % 2 === 0) ? 1 : -1;
         const magnitude = Math.ceil(attempt / 2);
@@ -1546,18 +1532,32 @@ export class EventHandlers {
 
         if (wall === 'north' || wall === 'south') {
           testX = basePosition.x + offset;
-          testX = Math.max(-roomHalfWidth + halfWidth, Math.min(roomHalfWidth - halfWidth, testX));
 
-          if ((direction > 0 && testX >= roomHalfWidth - halfWidth) ||
-            (direction < 0 && testX <= -roomHalfWidth + halfWidth)) {
+          // Account for notch on north wall
+          const minX = (wall === 'north' && notch)
+            ? (notch.maxX + WALL_SETTINGS.THICKNESS + halfWidth)
+            : (-roomHalfWidth + WALL_SETTINGS.THICKNESS + halfWidth);
+          const maxX = roomHalfWidth - WALL_SETTINGS.THICKNESS - halfWidth;
+
+          testX = Math.max(minX, Math.min(maxX, testX));
+
+          if ((direction > 0 && testX >= maxX) ||
+            (direction < 0 && testX <= minX)) {
             continue;
           }
         } else { // east or west
           testZ = basePosition.z + offset;
-          testZ = Math.max(-roomHalfHeight + halfWidth, Math.min(roomHalfHeight - halfWidth, testZ));
 
-          if ((direction > 0 && testZ >= roomHalfHeight - halfWidth) ||
-            (direction < 0 && testZ <= -roomHalfHeight + halfWidth)) {
+          // Account for notch on west wall
+          const minZ = (wall === 'west' && notch)
+            ? (notch.maxZ + WALL_SETTINGS.THICKNESS + halfWidth)
+            : (-roomHalfHeight + WALL_SETTINGS.THICKNESS + halfWidth);
+          const maxZ = roomHalfHeight - WALL_SETTINGS.THICKNESS - halfWidth;
+
+          testZ = Math.max(minZ, Math.min(maxZ, testZ));
+
+          if ((direction > 0 && testZ >= maxZ) ||
+            (direction < 0 && testZ <= minZ)) {
             continue;
           }
         }
@@ -1569,19 +1569,22 @@ export class EventHandlers {
           rotation: basePosition.rotation
         };
 
-        wouldCollide = wouldCollideWithExisting(
+        // Use wouldCollideWithExistingOrWalls to check both object and wall/notch collisions
+        wouldCollide = wouldCollideWithExistingOrWalls(
           { x: testPosition.x, y: testPosition.y, z: testPosition.z },
           objectType,
           objectScale,
           itemId,
           currentItems,
-          testItem,
           this.roomWidthRef.value,
-          this.roomHeightRef.value
+          this.roomHeightRef.value,
+          testItem,
+          testPosition.rotation,
+          this.notchWidthRef.value,
+          this.notchHeightRef.value
         );
 
         if (!wouldCollide) {
-          console.log(`✅ Found empty space at y=${testY.toFixed(1)}cm, offset=${offset.toFixed(0)}cm`);
           return testPosition;
         }
       }
@@ -1611,24 +1614,24 @@ export class EventHandlers {
     // Create a temporary test item with the target wall's rotation to check collisions accurately
     const testItem = currentItem ? { ...currentItem } : undefined;
 
-    // ✅ CRITICAL FIX: Check vertical collision at base position (with room dimensions)
-    let isColliding = wouldCollideWithExisting(
+    // ✅ CRITICAL FIX: Check collision with both existing objects AND walls/notch
+    let isColliding = wouldCollideWithExistingOrWalls(
       { x: basePosition.x, y: basePosition.y, z: basePosition.z },
       objectType,
       objectScale,
       itemId,
       currentItems,
-      testItem,
       this.roomWidthRef.value,
-      this.roomHeightRef.value
+      this.roomHeightRef.value,
+      testItem,
+      basePosition.rotation,
+      this.notchWidthRef.value,
+      this.notchHeightRef.value
     );
 
     if (!isColliding) {
-      console.log(`✅ Base position on ${wall} wall is free (x:${basePosition.x.toFixed(1)}, y:${basePosition.y.toFixed(1)}, z:${basePosition.z.toFixed(1)})`);
       return basePosition; // Base position is fine
     }
-
-    console.log(`🔍 Base position on ${wall} wall has collision, searching for empty space (horizontal and vertical)...`);
 
     // Calculate dimensions for spacing
     const roomHalfWidth = this.roomWidthRef.value / 2;
@@ -1668,8 +1671,6 @@ export class EventHandlers {
     }
 
     // ✅ NEW: If horizontal search failed, try different Y positions (vertical search)
-    console.log(`🔍 Horizontal search exhausted, trying vertical search...`);
-
     const verticalResult = this.searchVertically(
       basePosition,
       wall,
@@ -1770,17 +1771,6 @@ export class EventHandlers {
     currentWall: WallType,
     visibleWalls: Set<string>
   ): WallType {
-    // ✅ CRITICAL FIX: For L-shaped rooms, check if object position is in notch area
-    const { notch } = getInteriorBoundaries(
-      this.roomWidthRef.value,
-      this.roomHeightRef.value,
-      this.notchWidthRef.value,
-      this.notchHeightRef.value
-    );
-
-    // Get object's current position if available
-    const objectPosition = this.selectedObject?.position;
-
     // Define opposite walls
     const opposites: { [key in WallType]: WallType } = {
       north: 'south',
@@ -1793,36 +1783,22 @@ export class EventHandlers {
 
     let oppositeWall = opposites[currentWall];
 
-    // ✅ NEW: For L-shaped rooms, check if we need to use a notch wall instead
-    if (notch && objectPosition) {
-      // If moving from east to west, but object Z is in notch range, use notch-east instead
-      if (currentWall === 'east' &&
-        objectPosition.z >= notch.minZ &&
-        objectPosition.z <= notch.maxZ) {
-        oppositeWall = 'notch-east';
-        console.log(`🔷 East → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
-      }
-      // If moving from west to east, but object Z is in notch range, use notch-east instead
-      else if (currentWall === 'west' &&
-        objectPosition.z >= notch.minZ &&
-        objectPosition.z <= notch.maxZ) {
-        oppositeWall = 'notch-east';
-        console.log(`🔷 West → Notch-east (object Z=${objectPosition.z.toFixed(1)} in notch range)`);
-      }
-      // If moving from north to south, but object X is in notch range, use notch-south instead
-      else if (currentWall === 'north' &&
-        objectPosition.x >= notch.minX &&
-        objectPosition.x <= notch.maxX) {
-        oppositeWall = 'notch-south';
-        console.log(`🔷 North → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
-      }
-      // If moving from south to north, but object X is in notch range, use notch-south instead
-      else if (currentWall === 'south' &&
-        objectPosition.x >= notch.minX &&
-        objectPosition.x <= notch.maxX) {
-        oppositeWall = 'notch-south';
-        console.log(`🔷 South → Notch-south (object X=${objectPosition.x.toFixed(1)} in notch range)`);
-      }
+    // ✅ FIXED: For auto-jump from hidden walls, NEVER send objects to notch walls
+    // Notch walls (notch-east, notch-south) are small interior walls inside the L-shape cutout
+    // Objects should always go to main walls, and position adjustment will handle avoiding the notch
+
+    // If current wall is a notch wall, redirect to appropriate main wall
+    if (currentWall === 'notch-east') {
+      oppositeWall = 'west'; // Object on notch-east should go to west wall (opposite side of room)
+    } else if (currentWall === 'notch-south') {
+      oppositeWall = 'north'; // Object on notch-south should go to north wall (but valid part)
+    }
+
+    // If the calculated opposite is a notch wall, redirect to main wall
+    if (oppositeWall === 'notch-east') {
+      oppositeWall = 'west';
+    } else if (oppositeWall === 'notch-south') {
+      oppositeWall = 'north';
     }
 
     // If opposite wall is visible, use it
@@ -1830,7 +1806,8 @@ export class EventHandlers {
       return oppositeWall;
     }
 
-    // Otherwise, return any visible wall (prefer front-facing walls based on camera)
+    // Otherwise, return any visible MAIN wall (prefer front-facing walls based on camera)
+    // NEVER return notch walls for auto-jump - they're small interior walls
     const cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
 
@@ -1839,20 +1816,20 @@ export class EventHandlers {
       // Looking north/south
       if (cameraDirection.z < 0 && visibleWalls.has('north')) return 'north';
       if (cameraDirection.z > 0 && visibleWalls.has('south')) return 'south';
-      // ✅ NEW: Check for notch-south wall
-      if (visibleWalls.has('notch-south')) return 'notch-south';
     } else {
       // Looking east/west
       if (cameraDirection.x > 0 && visibleWalls.has('east')) return 'east';
       if (cameraDirection.x < 0 && visibleWalls.has('west')) return 'west';
-      // ✅ NEW: Check for notch-east wall
-      if (visibleWalls.has('notch-east')) return 'notch-east';
     }
 
-    // ✅ CRITICAL FIX: Return first available visible wall WITHOUT restricting to only 4 walls
-    // This allows notch walls to be returned
-    const firstVisibleWall = Array.from(visibleWalls)[0];
-    return (firstVisibleWall || 'north') as WallType;
+    // Fallback: return first available MAIN wall (exclude notch walls)
+    const mainWalls: WallType[] = ['north', 'south', 'east', 'west'];
+    for (const wall of mainWalls) {
+      if (visibleWalls.has(wall)) return wall;
+    }
+
+    // Last resort: return north
+    return 'north';
   }
 
 
@@ -1994,7 +1971,6 @@ export class EventHandlers {
           );
           constrainedPosition = result.position;
           constrainedRotation = result.rotation;
-          console.log('📊 Corner item re-snapped to corner:', id);
         } else if (isCornerOnlyGroup && isWallSnapItem) {
           // ✅ FIX: CORNER_ONLY group with WALL_SNAP item - re-snap to appropriate wall
           // Use targetPos which already has the correct offset from primary object applied
@@ -2022,7 +1998,6 @@ export class EventHandlers {
 
           constrainedPosition = { x: result.position.x, y: originalY, z: result.position.z };
           constrainedRotation = result.rotation;
-          console.log('📊 Wall-snap item in corner group re-snapped:', id, 'target wall:', targetItemWall);
         } else if (movementConfig.snapToWall && !movementConfig.cornerInstallOnly) {
           // 3D MODE: Individual wall constraints (when no group constraint)
           // Determine the target wall for THIS secondary object based on its targetPos
@@ -2233,7 +2208,6 @@ export class EventHandlers {
     // Safety check - if no mouse buttons are pressed, stop dragging
     if (event.buttons === 0) {
       if (this.isDragging || this.isRotating || this.isObjectRotating || this.isHeightAdjusting || this.isScaling) {
-        console.log('🛑 No mouse buttons pressed, stopping drag operations');
         this.stopAllDragOperations();
         return;
       }
@@ -2268,19 +2242,16 @@ export class EventHandlers {
 
       // 📐 2D MODE: Disable height adjustment in 2D mode
       if (!this.canAdjustHeight()) {
-        console.log('📐 Height adjustment disabled in 2D mode');
         return;
       }
 
       // 📊 GROUP CONSTRAINT: Block height adjustment for entire group if ANY item has fixed height
       if (this.selectedObjects.size > 1 && this.groupConstraint?.heightRestriction === 'locked') {
-        console.log('⚠️ Height adjustment blocked for group - mixed height-adjustable/fixed items');
         return;
       }
 
       // Check if vertical movement is allowed
       if (!canMoveVertically(objectType, currentItem)) {
-        console.log('⚠️ Vertical movement not allowed for', objectType);
         return; // Don't allow height adjustment
       }
 
@@ -2317,7 +2288,6 @@ export class EventHandlers {
 
       // Check if free rotation is allowed
       if (!canRotateFreely(objectType, currentItem)) {
-        console.log('⚠️ Free rotation not allowed for', objectType);
         return; // Don't allow free rotation
       }
 
@@ -2652,12 +2622,6 @@ export class EventHandlers {
                   constrainedPosition.z = effectiveMinZ - groupMinZ;
                 }
               }
-
-              console.log('📐 2D Multi-select group bounds applied:', {
-                wall: isOnNorthSouthWall ? 'north/south' : 'east/west',
-                groupBounds: { minX: groupMinX.toFixed(1), maxX: groupMaxX.toFixed(1), minZ: groupMinZ.toFixed(1), maxZ: groupMaxZ.toFixed(1) },
-                adjustedPosition: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) }
-              });
             }
           }
 
@@ -2855,7 +2819,6 @@ export class EventHandlers {
 
                 if (isPressing) {
                   effectiveStickiness = -20; // Penalty to encourage switching
-                  console.log(`🚀 Group pressing against ${currentWall} corner, reducing stickiness`);
                 }
               }
 
@@ -3010,7 +2973,6 @@ export class EventHandlers {
                   closestWall = wall as WallType;
                   closestPoint.copy(intersectPoint);
                   foundValidIntersection = true;
-                  console.log(`🔄 Emergency switch to ${wall} (current wall invalid, rayDist: ${rayDistance.toFixed(0)}cm)`);
                 }
               } else {
                 // Current wall is valid - use simple ray distance comparison
@@ -3083,18 +3045,6 @@ export class EventHandlers {
           // notch.maxX/maxZ represent the INNER surface of notch walls, so we add thickness to get the OUTER edge
           const effectiveMinX = notch ? notch.maxX + WALL_SETTINGS.THICKNESS : interior.minX;
           const effectiveMinZ = notch ? notch.maxZ + WALL_SETTINGS.THICKNESS : interior.minZ;
-
-          if (notch) {
-            console.log('🔷 Notch boundaries:', {
-              notchMaxX: notch.maxX.toFixed(1),
-              notchMaxZ: notch.maxZ.toFixed(1),
-              effectiveMinX: effectiveMinX.toFixed(1),
-              effectiveMinZ: effectiveMinZ.toFixed(1),
-              cursorNewX: newX.toFixed(1),
-              cursorNewZ: newZ.toFixed(1),
-              wall: closestWall
-            });
-          }
 
           // Adjust position based on which wall and apply constraints
           switch (closestWall) {
@@ -3214,10 +3164,6 @@ export class EventHandlers {
               Math.min(heightConstraints.max, constrainedPosition.y)
             );
           }
-
-          console.log(`📍 Cursor on ${closestWall} wall at (${newX.toFixed(0)}, ${newZ.toFixed(0)})`);
-          console.log(`🔍 Debug - closestPoint: (${closestPoint.x.toFixed(0)}, ${closestPoint.z.toFixed(0)}), dragOffset: (${this.dragOffset.x.toFixed(0)}, ${this.dragOffset.z.toFixed(0)})`);
-          console.log(`🔍 Debug - Final position: (${constrainedPosition.x.toFixed(0)}, ${constrainedPosition.z.toFixed(0)}), Current wall: ${currentWall}`);
         }
 
       } else if (effectiveCornerOnly) {
@@ -3360,14 +3306,12 @@ export class EventHandlers {
             constrainedPosition.y = rawPrimaryY;
             constrainedRotation = wallResult.rotation;
             rotationChanged = true;
-            console.log('📊 Corner anchor moved, primary preserved relative position:', relativePosition.toFixed(2));
           } else {
             constrainedPosition.x = rawPrimaryX;
             constrainedPosition.z = rawPrimaryZ;
             constrainedPosition.y = rawPrimaryY;
             constrainedRotation = cornerRot;
             rotationChanged = true;
-            console.log('📊 Corner anchor is item', cornerAnchorId, '- primary positioned relative to it');
           }
         } else {
           constrainedPosition.x = cornerPos.x;
@@ -3681,7 +3625,6 @@ export class EventHandlers {
 
           if (objColliding) {
             isColliding = true;
-            console.log(`⚠️ Multiselect collision detected for item ${id}`);
             break; // One collision is enough to trigger snap-back
           }
         }
@@ -3772,17 +3715,9 @@ export class EventHandlers {
             }
           });
         }
-
-        console.log('🔄 SNAP BACK: Object returned to original position due to collision prevention');
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
-
-        console.log('🎯 Final drag position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
-
-        if (isColliding && this.preventCollisionPlacementRef.value) {
-          console.log('⚠️ Collision detected but placement allowed (prevention disabled)');
-        }
 
         this.snapWallStandingItemsOnDrop();
       }
@@ -3792,14 +3727,12 @@ export class EventHandlers {
     if (this.isMultiSelectMode && this.wasAlreadySelected && !this.hasMouseMoved && this.selectedObject) {
       const itemId = this.selectedObject.userData.itemId;
       this.selectedObjects.delete(itemId);
-      console.log('➖ Deselected item (click):', itemId);
       this.updateMultiSelectionHighlight();
       this.selectedObject = null;
     }
 
     // Only deselect if empty space was clicked AND it was a click (not drag)
     if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
-      console.log('🎯 Deselecting object - was click on empty space, not drag');
       this.updateHighlight(false);
       this.selectedObject = null;
       this.clearSelection();
@@ -3844,14 +3777,11 @@ export class EventHandlers {
       if (this.sceneManager) {
         const zoomDelta = event.deltaY > 0 ? -0.1 : 0.1; // Invert for natural feel
         this.sceneManager.zoom2D(zoomDelta);
-        console.log('📐 2D zoom applied');
       }
       return;
     }
 
     // 3D MODE: Original perspective zoom behavior
-    console.log('🎯 Directional zoom started');
-
     // Simple zoom: move 30cm forward or backward along viewing direction
     const zoomStep = event.deltaY > 0 ? -50 : 50; // positive = zoom out, negative = zoom in
 
@@ -3870,10 +3800,6 @@ export class EventHandlers {
       // ✅ Update camera position - direction stays exactly the same
       this.camera.position.copy(newPosition);
       this.targetCameraPosition.copy(newPosition);
-
-      console.log(`🎯 Zoomed to ${distanceFromCenter.toFixed(0)}cm - direction unchanged`);
-    } else {
-      console.log('🚫 Zoom blocked by distance limit');
     }
 
     // ✅ CRITICAL: NO camera.lookAt() call here!
@@ -3985,7 +3911,6 @@ export class EventHandlers {
             this.notchWidthRef.value,
             this.notchHeightRef.value
           );
-          console.log('📊 Group constraint calculated (touch):', describeGroupConstraint(this.groupConstraint));
         } else {
           this.groupConstraint = null;
         }
@@ -4248,7 +4173,6 @@ export class EventHandlers {
           if (this.sceneManager) {
             const zoomDelta = scale > 1.02 ? 0.1 : -0.1; // pinch out = zoom in
             this.sceneManager.zoom2D(zoomDelta);
-            console.log('📐 2D pinch zoom applied');
           }
           this.lastTouchDistance = distance;
           return;
@@ -4271,8 +4195,6 @@ export class EventHandlers {
         if (distanceFromCenter >= 100 && distanceFromCenter <= 1200) {
           this.camera.position.copy(newPosition);
           this.targetCameraPosition.copy(newPosition);
-
-          console.log(`📱 Touch zoom: ${distanceFromCenter.toFixed(0)}cm - direction unchanged`);
         }
 
         this.lastTouchDistance = distance;
@@ -4310,16 +4232,8 @@ export class EventHandlers {
         this.notchHeightRef.value
       );
 
-      console.log('🎯 Touch final position collision check:', {
-        position: { x: finalPosition.x.toFixed(1), z: finalPosition.z.toFixed(1) },
-        isColliding,
-        preventionEnabled: this.preventCollisionPlacementRef.value,
-        willSnapBack: this.preventCollisionPlacementRef.value && isColliding
-      });
-
       // Check if collision prevention is enabled and object is colliding
       if (this.preventCollisionPlacementRef.value && isColliding) {
-        console.log('🔄 TOUCH SNAP BACK: Collision detected, returning to original position');
         // Snap back to original position
         this.selectedObject.position.copy(this.originalDragPosition);
         this.selectedObject.rotation.y = this.originalDragRotation;
@@ -4368,13 +4282,9 @@ export class EventHandlers {
         if (this.sceneManager?.updateSchematicPosition) {
           this.sceneManager.updateSchematicPosition(itemId);
         }
-
-        console.log('✅ Touch snap back completed - outline set to CYAN');
       } else {
         // Normal behavior: set outline color based on final collision state
         setOutlineColor(isColliding);
-
-        console.log('🎯 Final touch position collision check:', isColliding ? 'RED (collision)' : 'CYAN (safe)');
 
         this.snapWallStandingItemsOnDrop();
       }
@@ -4384,14 +4294,12 @@ export class EventHandlers {
     if (this.isMultiSelectMode && this.wasAlreadySelected && !this.hasMouseMoved && this.selectedObject) {
       const itemId = this.selectedObject.userData.itemId;
       this.selectedObjects.delete(itemId);
-      console.log('➖ Deselected item (tap):', itemId);
       this.updateMultiSelectionHighlight();
       this.selectedObject = null;
     }
 
     // NEW: Only deselect if empty space was tapped AND it was a tap (not drag)
     if (this.wasEmptySpaceClicked && !this.hasMouseMoved && this.selectedObject) {
-      console.log('🎯 Deselecting object - was tap on empty space, not drag');
       this.updateHighlight(false);
       this.selectedObject = null;
       this.clearSelection();
@@ -4466,9 +4374,6 @@ export class EventHandlers {
       this.scene.remove(this.dragPlaneHelper);
       this.dragPlaneHelper = null;
     }
-
-    // Log for debugging
-    console.log('🛑 All drag operations stopped');
   }
 
   public addEventListeners(): void {
@@ -4528,8 +4433,6 @@ export class EventHandlers {
   }
 
   public clearSelection(): void {
-    console.log('🧹 Clearing selection, selectedObjects count:', this.selectedObjects.size);
-
     if (this.selectedObject || this.selectedObjects.size > 0) {
       import('../utils/helpers').then(helpers => {
         helpers.highlightObjects([], false);
@@ -4557,8 +4460,6 @@ export class EventHandlers {
     if (this.measurementSystem) {
       this.measurementSystem.setSelectedObject(null);
     }
-
-    console.log('🧹 clearSelection completed');
   }
 
   public getSelectedItemIds(): number[] {
@@ -4566,12 +4467,8 @@ export class EventHandlers {
   }
 
   public setRotationArrowsEnabled(enabled: boolean): void {
-    console.log('setRotationArrowsEnabled called:', enabled);
     if (this.rotationArrows) {
       this.rotationArrows.setEnabled(enabled);
-      console.log('✅ Rotation arrows enabled state set to:', enabled);
-    } else {
-      console.log('⚠️ Rotation arrows not initialized');
     }
   }
 
@@ -4705,7 +4602,6 @@ export class EventHandlers {
       if (isPressing) {
         // Make current wall appear "farther" to encourage switching
         wallDistances[currentWall] += 100;
-        console.log(`🚀 Touch: Group pressing against ${currentWall} corner, encouraging switch`);
       }
     }
 
@@ -4724,8 +4620,6 @@ export class EventHandlers {
           .filter(status => status.visible)
           .map(status => status.direction)
       );
-
-      console.log('📊 Using actual wall visibility:', Array.from(visibleWalls));
     } else {
       // Fallback: all walls are visible if culling is disabled
       visibleWalls = new Set(['north', 'south', 'east', 'west']);
@@ -4844,8 +4738,6 @@ export class EventHandlers {
         break;
     }
 
-    console.log(`🎯 Wall: ${nearestWall}, Pos: (${position.x.toFixed(0)}, ${position.z.toFixed(0)})`);
-
     return {
       wall: nearestWall,
       position: position
@@ -4862,8 +4754,6 @@ export class EventHandlers {
       cameraDir.clone().negate(),
       object.position
     );
-
-    console.log('✅ Using camera-facing plane for stable dragging in all views');
 
     // ✅ ADD: Update the visual representation
     this.updateDragPlaneVisualization();
@@ -4951,18 +4841,6 @@ export class EventHandlers {
     // If maxHeight is undefined or -1, use ceiling constraint only
     // Ensure min doesn't exceed max
     minY = Math.min(minY, maxY);
-
-    console.log(`📏 Height constraints for ${objectType}:`, {
-      objectHeight: objectHeight + 'cm',
-      floorOffset: floorOffset + 'cm',
-      actualBottomWhenAtMinY: (minY + floorOffset) + 'cm from floor',
-      actualBottomWhenAtMaxY: (maxY + floorOffset) + 'cm from floor',
-      actualTopWhenAtMaxY: (maxY + floorOffset + objectHeight) + 'cm from floor',
-      positionYRange: `${minY.toFixed(1)} to ${maxY.toFixed(1)}cm`,
-      configMinHeight: movementConfig.minHeight || 0,
-      configMaxHeight: movementConfig.maxHeight === -1 ? 'ceiling' : (movementConfig.maxHeight || 'ceiling'),
-      sku: currentItem?.sku
-    });
 
     return { min: minY, max: maxY };
   }

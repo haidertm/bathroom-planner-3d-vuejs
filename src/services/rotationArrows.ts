@@ -160,6 +160,7 @@ export class RotationArrows {
             return false;
         }
 
+
         const objectType = object.userData.type as ComponentType;
         const itemId = object.userData.itemId as number;
 
@@ -168,14 +169,6 @@ export class RotationArrows {
 
         // Use the canRotateFreely utility function to check movement.allowFreeRotation
         const canRotate = canRotateFreely(objectType, currentItem);
-
-        console.log('🔄 Rotation check:', {
-            objectType,
-            itemId,
-            sku: currentItem?.sku,
-            canRotate,
-            hasMovement: !!currentItem?.model?.movement
-        });
 
         return canRotate;
     }

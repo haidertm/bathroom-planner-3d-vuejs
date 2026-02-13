@@ -60,8 +60,6 @@ export const getVariantProgress = (variant) => {
 export const loadVariantModel = async (variant, progressCallback = null) => {
     const variantKey = variant.id || variant.sku || variant.name
 
-    console.log('🔄 loadVariantModel called:', variantKey)
-
     // CRITICAL: Set loading state IMMEDIATELY
     variantLoadingStates.value.set(variantKey, true)
     variantProgress.value.set(variantKey, 0)
@@ -95,7 +93,6 @@ export const loadVariantModel = async (variant, progressCallback = null) => {
         const loadedModel = await modelManager.loadModel(variantKey, modelConfig)
 
         if (loadedModel) {
-            console.log('✅ Model loaded successfully:', variantKey)
             variantProgress.value.set(variantKey, 100)
 
             if (progressCallback) {
@@ -148,7 +145,6 @@ export const isVariantModelLoadedWithCache = (variant, product = null, firstVari
                 // Check both key formats - the preloadInfo.variantKey might be full (type-sku) or simple (sku)
                 const preloadedKey = preloadInfo.variantKey
                 if (preloadedKey === baseSku || preloadedKey.endsWith(`-${baseSku}`)) {
-                    console.log('✅ Found preloaded first variant:', preloadedKey)
                     return true
                 }
             }
@@ -169,7 +165,6 @@ export const isVariantModelLoadedWithCache = (variant, product = null, firstVari
  */
 export const clearVariantLoadingState = (productId, variantId) => {
     const variantKey = variantId // variantId is already the sku/id/name
-    console.log('🧹 Clearing loading state for variant:', variantKey)
 
     if (variantLoadingStates.value.has(variantKey)) {
         variantLoadingStates.value.delete(variantKey)
@@ -261,8 +256,6 @@ export const loadVariantModelProgressively = async (variant, callbacks = {}, typ
     // Use full key format (type-sku) if type is provided, for consistency with actual loading
     const variantKey = type ? `${type}-${baseSku}` : baseSku
 
-    console.log('🔄 Progressive loading started for:', variantKey, type ? `(with type: ${type})` : '(no type)')
-
     // Set loading state
     variantLoadingStates.value.set(variantKey, true)
     variantProgress.value.set(variantKey, 0)
@@ -287,7 +280,6 @@ export const loadVariantModelProgressively = async (variant, callbacks = {}, typ
             modelConfig,
             {
                 onPlaceholderReady: (placeholder) => {
-                    console.log('🔲 Placeholder ready for:', variantKey)
                     progressiveLoadingStates.value.set(variantKey, {
                         isLoading: true,
                         placeholder
@@ -295,7 +287,6 @@ export const loadVariantModelProgressively = async (variant, callbacks = {}, typ
                     callbacks.onPlaceholderReady?.(placeholder)
                 },
                 onFullModelReady: (model) => {
-                    console.log('✅ Full model ready for:', variantKey)
                     variantProgress.value.set(variantKey, 100)
 
                     // Small delay to show 100% before clearing
