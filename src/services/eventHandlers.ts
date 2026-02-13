@@ -1331,11 +1331,12 @@ export class EventHandlers {
       // ✅ Handle notch walls for L-shaped rooms
       case 'notch-east':
         if (notch) {
-          // ✅ FIX: Use isFlushMounted logic (matching constrainToWalls)
+          // ✅ FIX: Use isFlushMounted logic + wall thickness offset (matching 3D drag behavior)
+          // Notch walls need extra offset to prevent objects from being inside the notch void
           if (isFlushMounted) {
-            x = notch.maxX;
+            x = notch.maxX + WALL_SETTINGS.THICKNESS;
           } else {
-            x = notch.maxX + halfDepth + wallBuffer;
+            x = notch.maxX + halfDepth + wallBuffer + WALL_SETTINGS.THICKNESS;
           }
           // Constrain Z to be within notch bounds
           z = Math.max(
@@ -1348,11 +1349,12 @@ export class EventHandlers {
 
       case 'notch-south':
         if (notch) {
-          // ✅ FIX: Use isFlushMounted logic (matching constrainToWalls)
+          // ✅ FIX: Use isFlushMounted logic + wall thickness offset (matching 3D drag behavior)
+          // Notch walls need extra offset to prevent objects from being inside the notch void
           if (isFlushMounted) {
-            z = notch.maxZ;
+            z = notch.maxZ + WALL_SETTINGS.THICKNESS;
           } else {
-            z = notch.maxZ + halfDepth + wallBuffer;
+            z = notch.maxZ + halfDepth + wallBuffer + WALL_SETTINGS.THICKNESS;
           }
           // Constrain X to be within notch bounds
           x = Math.max(
