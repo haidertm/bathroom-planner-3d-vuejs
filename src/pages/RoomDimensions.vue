@@ -14,7 +14,6 @@
           <div class="canvas-container" ref="canvasContainer">
             <canvas
                 ref="canvas"
-                data-sl="canvas-mq"
                 @mousedown="handleCanvasMouseDown"
                 @mousemove="handleCanvasMouseMove"
                 @mouseup="handleCanvasMouseUp"

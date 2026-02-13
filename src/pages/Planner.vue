@@ -2191,7 +2191,6 @@ onMounted(async () => {
 
   // Add canvas to DOM
   if (mountRef.value instanceof HTMLElement && renderer.domElement) {
-    renderer.domElement.setAttribute('data-sl', 'canvas-mq')
     mountRef.value.appendChild(renderer.domElement)
   }
 
