@@ -188,7 +188,12 @@ export class MeasurementSystem {
     const scaledSpawnHeight = dimensions.spawnHeight * objectScale; // ✅ CRITICAL: Scale the floor offset too
 
     // ✅ FIX: Account for current object's rotation - at 90° or 270°, width and depth are swapped
-    const objectRotation = currentItem?.rotation || this.selectedObject.rotation.y || 0;
+    // ✅ CRITICAL: Use selectedObject.rotation.y as the PRIMARY source for live rotation during drag
+    // The existingItems array may have stale rotation data that hasn't been updated yet
+    // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+    // The || operator treats 0 as falsy, causing it to fall back to stale rotation data
+    // This caused the "extra 17cm line" bug when dragging corner objects between corners
+    const objectRotation = this.selectedObject.rotation.y ?? currentItem?.rotation ?? 0;
     // Normalize rotation to [0, 2π) range
     const normalizedObjectRotation = ((objectRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
     const rotationEpsilon = 0.01;
@@ -202,13 +207,34 @@ export class MeasurementSystem {
     const isWallBound = this.isObjectWallBound(objectPosition, scaledWidth, scaledDepth);
     const wallDirection = this.getWallDirection(objectPosition, scaledWidth, scaledDepth);
 
-    // Calculate available space
+    // ✅ CRITICAL FIX: Calculate bounding box FIRST, then pass to calculateAvailableSpace
+    // This ensures space calculations use the same bounding box edges as measurement lines
+    let boundingBox: { minX: number; maxX: number; minZ: number; maxZ: number };
+    if (currentItem) {
+      // Create a modified item with live rotation for accurate bounding box calculation
+      const itemWithLiveRotation = {
+        ...currentItem,
+        rotation: this.selectedObject.rotation.y
+      };
+      boundingBox = this.getItemBoundingBoxEdges(itemWithLiveRotation, objectPosition, scaledWidth, scaledDepth);
+    } else {
+      // Fallback to center-pivot calculation if item not found
+      boundingBox = {
+        minX: objectPosition.x - scaledWidth / 2,
+        maxX: objectPosition.x + scaledWidth / 2,
+        minZ: objectPosition.z - scaledDepth / 2,
+        maxZ: objectPosition.z + scaledDepth / 2
+      };
+    }
+
+    // Calculate available space - now passing bounding box for accurate edge calculations
     const spaceCalculations = this.calculateAvailableSpace(
       objectPosition,
       scaledWidth,
-      scaledDepth,  // ✅ FIX: Pass depth for Z-axis calculations
+      scaledDepth,
       scaledHeight,
-      this.selectedObject.userData.itemId
+      this.selectedObject.userData.itemId,
+      boundingBox  // ✅ NEW: Pass bounding box for corner object accuracy
     );
 
     // ✅ Adjust space calculations for notch walls - limit by wall boundaries
@@ -262,23 +288,12 @@ export class MeasurementSystem {
       }
     }
 
-    // ✅ Calculate current object's bounding box edges for accurate line positioning
-    let boundingBox: { minX: number; maxX: number; minZ: number; maxZ: number };
-    if (currentItem) {
-      boundingBox = this.getItemBoundingBoxEdges(currentItem, objectPosition, scaledWidth, scaledDepth);
-    } else {
-      // Fallback to center-pivot calculation if item not found
-      boundingBox = {
-        minX: objectPosition.x - scaledWidth / 2,
-        maxX: objectPosition.x + scaledWidth / 2,
-        minZ: objectPosition.z - scaledDepth / 2,
-        maxZ: objectPosition.z + scaledDepth / 2
-      };
-    }
-
     return {
-      objectWidth: scaledWidth,
-      objectDepth: scaledDepth,
+      // ✅ FIX: Return ORIGINAL product dimensions for UI display
+      // On east/west walls (90°/270° rotation), effective dimensions are swapped for bounding box calculations,
+      // but users expect to see the actual product specs (width/depth) in the measurement panel
+      objectWidth: scaledBaseWidth,
+      objectDepth: scaledBaseDepth,
       objectHeight: scaledHeight,
       floorOffset: scaledFloorOffset, // ✅ NEW: Include floorOffset in measurement data
       spawnHeight: scaledSpawnHeight, // ✅ NEW: Include spawnHeight in measurement data
@@ -431,41 +446,56 @@ export class MeasurementSystem {
       width: number,
       depth: number, // ✅ FIX: Added depth parameter for Z-axis calculations
       height: number,
-      excludeItemId: number
+      excludeItemId: number,
+      boundingBox?: { minX: number; maxX: number; minZ: number; maxZ: number } // ✅ NEW: Pass bounding box for accurate edge calculation
   ): SpaceCalculations {
-    const roomHalfWidth = this.roomWidth / 2;
-    const roomHalfHeight = this.roomHeight / 2;
-    const wallThickness = WALL_SETTINGS.THICKNESS + 1; // Use wall width from WALL_SETTINGS
+    // ✅ CRITICAL FIX: Use getInteriorBoundaries for consistent wall face calculation
+    // This ensures measurement system uses same wall positions as constraint system
+    const { wallFaces, notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
 
-    // Get interior boundaries including notch information
-    const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+    // ✅ CRITICAL FIX: Use bounding box edges for corner objects instead of center-pivot assumptions
+    // For corner-install objects, position is NOT at center, so we must use actual bounding box
+    const leftEdge = boundingBox ? boundingBox.minX : (position.x - width / 2);
+    const rightEdge = boundingBox ? boundingBox.maxX : (position.x + width / 2);
+    const frontEdge = boundingBox ? boundingBox.minZ : (position.z - depth / 2);
+    const backEdge = boundingBox ? boundingBox.maxZ : (position.z + depth / 2);
 
-    // ✅ FIX: Use width for X-axis (left/right) and depth for Z-axis (front/back)
-    let spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallThickness;
-    let spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallThickness;
-    let spaceToNorthWall = (position.z + roomHalfHeight) - depth / 2 - wallThickness;
-    let spaceToSouthWall = (roomHalfHeight - position.z) - depth / 2 - wallThickness;
+    // ✅ Use consistent wall faces from getInteriorBoundaries (same as constraint system)
+    const westWallFace = wallFaces.west;
+    const eastWallFace = wallFaces.east;
+    const northWallFace = wallFaces.north;
+    const southWallFace = wallFaces.south;
+
+    // Calculate space from object edges to wall faces
+    let spaceToWestWall = leftEdge - westWallFace;
+    let spaceToEastWall = eastWallFace - rightEdge;
+    let spaceToNorthWall = frontEdge - northWallFace;
+    let spaceToSouthWall = southWallFace - backEdge;
 
     // ✅ NEW: Consider notch walls as boundaries for L-shaped rooms
     if (notch) {
+      const wallThickness = WALL_SETTINGS.THICKNESS; // Consistent with getInteriorBoundaries
+
       // Check if object is near the notch-east wall (vertical wall at notch.maxX)
       // This wall blocks movement to the LEFT (west direction) for objects east of it
       // ✅ CRITICAL FIX: Only apply if object Z is within notch Z range (actually near the notch wall)
       if (position.x > notch.maxX && position.z >= notch.minZ && position.z <= notch.maxZ) {
+        // ✅ CRITICAL FIX: Use bounding box leftEdge instead of center-pivot math
         // notch.maxX is interior face - add wallThickness to get exterior face
-        const spaceToNotchEastWall = position.x - width / 2 - notch.maxX - wallThickness;
+        const spaceToNotchEastWall = leftEdge - notch.maxX - wallThickness;
         spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
-        console.log(`📏 Object near notch-east wall: spaceToNotchEastWall=${spaceToNotchEastWall.toFixed(1)}cm (interior face at ${notch.maxX.toFixed(1)}, exterior at ${(notch.maxX + wallThickness).toFixed(1)})`);
+        console.log(`📏 Object near notch-east wall: spaceToNotchEastWall=${spaceToNotchEastWall.toFixed(1)}cm (leftEdge at ${leftEdge.toFixed(1)}, notch exterior at ${(notch.maxX + wallThickness).toFixed(1)})`);
       }
 
       // Check if object is near the notch-south wall (horizontal wall at notch.maxZ)
       // This wall blocks movement to the FRONT (north direction) for objects south of it
       // ✅ CRITICAL FIX: Only apply if object X is within notch X range (actually near the notch wall)
       if (position.z > notch.maxZ && position.x >= notch.minX && position.x <= notch.maxX) {
+        // ✅ CRITICAL FIX: Use bounding box frontEdge instead of center-pivot math
         // notch.maxZ is interior face - add wallThickness to get exterior face
-        const spaceToNotchSouthWall = position.z - depth / 2 - notch.maxZ - wallThickness;
+        const spaceToNotchSouthWall = frontEdge - notch.maxZ - wallThickness;
         spaceToNorthWall = Math.min(spaceToNorthWall, spaceToNotchSouthWall);
-        console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm (interior face at ${notch.maxZ.toFixed(1)}, exterior at ${(notch.maxZ + wallThickness).toFixed(1)})`);
+        console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm (frontEdge at ${frontEdge.toFixed(1)}, notch exterior at ${(notch.maxZ + wallThickness).toFixed(1)})`);
       }
     }
 
@@ -555,10 +585,17 @@ export class MeasurementSystem {
 
       // Calculate current object's bounding box edges
       // Also check if current object is corner-installed
+      // ✅ CRITICAL FIX: Use live rotation from selectedObject, not stale rotation from existingItems
       let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
 
       if (currentItem) {
-        const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, width, depth);
+        // Create a modified item with live rotation for accurate bounding box calculation
+        // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+        const itemWithLiveRotation = {
+          ...currentItem,
+          rotation: this.selectedObject?.rotation.y ?? currentItem.rotation ?? 0
+        };
+        const currentBounds = this.getItemBoundingBoxEdges(itemWithLiveRotation, position, width, depth);
         currentMinX = currentBounds.minX;
         currentMaxX = currentBounds.maxX;
         currentMinZ = currentBounds.minZ;
@@ -822,11 +859,18 @@ export class MeasurementSystem {
     let nearestObjectBelowTopY = 0; // Start from floor level (Y=0)
 
     // Get current object's horizontal bounds using getItemBoundingBoxEdges for accurate corner object handling
+    // ✅ CRITICAL FIX: Use live rotation from selectedObject, not stale rotation from existingItems
     const currentItem = this.existingItems.find(item => item.id === excludeItemId);
     let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
 
     if (currentItem) {
-      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      // Create a modified item with live rotation for accurate bounding box calculation
+      // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+      const itemWithLiveRotation = {
+        ...currentItem,
+        rotation: this.selectedObject?.rotation.y ?? currentItem.rotation ?? 0
+      };
+      const currentBounds = this.getItemBoundingBoxEdges(itemWithLiveRotation, position, measurements.objectWidth, measurements.objectDepth);
       currentMinX = currentBounds.minX;
       currentMaxX = currentBounds.maxX;
       currentMinZ = currentBounds.minZ;
@@ -909,7 +953,14 @@ export class MeasurementSystem {
     let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
 
     if (currentItem) {
-      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      // Create a modified item with live rotation for accurate bounding box calculation
+      // existingItems array may have stale rotation data during drag operations
+      // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+      const itemWithLiveRotation = {
+        ...currentItem,
+        rotation: this.selectedObject?.rotation.y ?? currentItem.rotation ?? 0
+      };
+      const currentBounds = this.getItemBoundingBoxEdges(itemWithLiveRotation, position, measurements.objectWidth, measurements.objectDepth);
       currentMinX = currentBounds.minX;
       currentMaxX = currentBounds.maxX;
       currentMinZ = currentBounds.minZ;
@@ -1008,10 +1059,17 @@ export class MeasurementSystem {
     position: THREE.Vector3,
     labels: MeasurementLabel[]
   ): void {
-    const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection } = measurements;
+    const { objectWidth, objectDepth: _objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection, boundingBox } = measurements;
 
     // Calculate object center height for lines and label positions
     const objectTopY = this.getObjectTopY(measurements, position);
+
+    // ✅ CRITICAL: Use bounding box edges for label positioning (not center-pivot math)
+    // This ensures labels are positioned correctly for corner-install objects
+    const leftEdge = boundingBox.minX;
+    const rightEdge = boundingBox.maxX;
+    const frontEdge = boundingBox.minZ;
+    const backEdge = boundingBox.maxZ;
 
     // Position labels ABOVE the object
     // const labelHeightOffset = 40; // 40cm above top of object
@@ -1049,7 +1107,7 @@ export class MeasurementSystem {
           id: 'space-left',
           text: `${Math.round(spaceLeft)} cm`,
           position: new THREE.Vector3(
-            position.x - objectWidth / 2 - spaceLeft / 2,
+            leftEdge - spaceLeft / 2,  // ✅ Use bounding box edge, not center-pivot
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1064,7 +1122,7 @@ export class MeasurementSystem {
           id: 'space-right',
           text: `${Math.round(spaceRight)} cm`,
           position: new THREE.Vector3(
-            position.x + objectWidth / 2 + spaceRight / 2,
+            rightEdge + spaceRight / 2,  // ✅ Use bounding box edge, not center-pivot
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1097,7 +1155,7 @@ export class MeasurementSystem {
           id: 'space-left',
           text: `${Math.round(spaceLeft)} cm`,
           position: new THREE.Vector3(
-            position.x - objectWidth / 2 - spaceLeft / 2,
+            leftEdge - spaceLeft / 2,  // ✅ Use bounding box edge
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1113,7 +1171,7 @@ export class MeasurementSystem {
           id: 'space-right',
           text: `${Math.round(spaceRight)} cm`,
           position: new THREE.Vector3(
-            position.x + objectWidth / 2 + spaceRight / 2,
+            rightEdge + spaceRight / 2,  // ✅ Use bounding box edge
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1150,7 +1208,7 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z - objectDepth / 2 - spaceFront / 2
+            frontEdge - spaceFront / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
@@ -1165,7 +1223,7 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z + objectDepth / 2 + spaceBack / 2
+            backEdge + spaceBack / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
@@ -1198,7 +1256,7 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z - objectDepth / 2 - spaceFront / 2
+            frontEdge - spaceFront / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
@@ -1214,7 +1272,7 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z + objectDepth / 2 + spaceBack / 2
+            backEdge + spaceBack / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
