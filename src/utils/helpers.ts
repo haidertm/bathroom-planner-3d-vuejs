@@ -59,11 +59,9 @@ export const highlightObjects = (objects: THREE.Object3D[], highlight: boolean):
 
     // Set selected objects for OutlinePass
     outlinePassRef.selectedObjects = allMeshes;
-    console.log('🎯 OutlinePass selected objects:', allMeshes.length, 'meshes found from', objects.length, 'objects');
   } else {
     // Clear selection
     outlinePassRef.selectedObjects = [];
-    console.log('⭕ OutlinePass selection cleared');
   }
 };
 
@@ -83,20 +81,11 @@ export const setOutlineColor = (isColliding: boolean): void => {
     // Red outline for collision - bright and visible
     outlinePassRef.visibleEdgeColor.set('#ff0000');
     outlinePassRef.hiddenEdgeColor.set('#cc0000'); // Brighter dark red
-    console.log('🔴 Outline color set to RED (collision detected)');
   } else {
     // Bright cyan/turquoise outline for normal selection - much more visible
     outlinePassRef.visibleEdgeColor.set('#00ffff'); // Brighter cyan
     outlinePassRef.hiddenEdgeColor.set('#0088aa'); // Brighter dark cyan
-    console.log('🟢 Outline color set to CYAN (no collision)');
   }
-
-  // Debug: Log the actual color values that were set
-  console.log('🎨 Outline colors after setting:', {
-    visible: outlinePassRef.visibleEdgeColor.getHexString(),
-    hidden: outlinePassRef.hiddenEdgeColor.getHexString(),
-    selectedObjects: outlinePassRef.selectedObjects.length
-  });
 };
 
 // TEST: Function to force a very bright outline for debugging
@@ -109,5 +98,4 @@ export const testBrightOutline = (): void => {
   // Set extremely bright, visible colors
   outlinePassRef.visibleEdgeColor.set('#ffffff'); // Pure white
   outlinePassRef.hiddenEdgeColor.set('#888888'); // Gray
-  console.log('🧪 TEST: Set outline to bright white for visibility test');
 };

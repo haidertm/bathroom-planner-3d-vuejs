@@ -1078,28 +1078,6 @@ const productData: ProductData = {
                     filterAttributes: { width: '400mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '252mm', style: 'Modern' }
                 },
                 {
-                    id: 'C79848',
-                    name: '400mm',
-                    image: 'assets/productImages/furniture/c79848-1000-bermuda-inky-blue-cloakroom-basin-vanity-400mm.webp',
-                    link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-cloakroom-basin-vanity-400mm-c79848',
-                    path: '../../models/furniture/basin/C79848.glb',
-                    dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
-                    orientation: {
-                        type: 'face_into_room',
-                        wallBuffer: 0, // Flush with wall - no gap
-                        description: 'Item is part of wall opening'
-                    },
-                    movement: { // NEW: Sink movement configuration
-                        snapToWall: true,
-                        allowVerticalMovement: false,
-                        allowFreeRotation: false
-                    },
-                    sku: 'C79848',
-                    price: '189.99',
-                    title: 'Bermuda Inky Blue Cloakroom Basin Vanity 400mm',
-                    filterAttributes: { width: '400mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '252mm', style: 'Modern' }
-                },
-                {
                     id: 'C78620',
                     name: '800mm',
                     image: 'assets/productImages/furniture/c78620-1000-bermuda-inky-blue-basin-vanity-800mm.webp',
