@@ -9,6 +9,7 @@ let trackerLoading = false
 let canvasObserver: MutationObserver | null = null
 let canvasRestartInterval: ReturnType<typeof setInterval> | null = null
 let visibilityChangeHandler: (() => void) | null = null
+let windowFocusHandler: (() => void) | null = null
 
 
 /**
@@ -165,7 +166,9 @@ export function initOpenReplay(_app: App, router: Router) {
                                     window.clarity('set', 'OpenReplay_URL', finalSessionURL)
                                     window.clarity('set', 'OpenReplay_ID', sessionID)
 
-                                    console.info('🎬 OpenReplay:', finalSessionURL)
+                                    if (import.meta.env.DEV) {
+                                        console.info('🎬 OpenReplay:', finalSessionURL)
+                                    }
 
                                     if (import.meta.env.DEV) {
                                         console.log('✅ Clarity tags set (attempt ' + attempt + ')')
@@ -362,7 +365,11 @@ function startPeriodicCanvasRestart() {
     document.addEventListener('visibilitychange', visibilityChangeHandler)
 
     // Also restart on window focus
-    window.addEventListener('focus', () => {
+    if (windowFocusHandler) {
+        window.removeEventListener('focus', windowFocusHandler)
+    }
+
+    windowFocusHandler = () => {
         if (tracker) {
             if (import.meta.env.DEV) {
                 console.log('🎯 Window focused - restarting canvas tracking')
@@ -370,7 +377,8 @@ function startPeriodicCanvasRestart() {
             setTimeout(() => tracker?.restartCanvasTracking(), 100)
             setTimeout(() => tracker?.restartCanvasTracking(), 500)
         }
-    })
+    }
+    window.addEventListener('focus', windowFocusHandler)
 
     if (import.meta.env.DEV) {
         console.log(`⏰ Periodic canvas restart active (every ${intervalMs / 1000}s)`)
@@ -417,6 +425,10 @@ export function cleanupOpenReplay() {
     if (visibilityChangeHandler) {
         document.removeEventListener('visibilitychange', visibilityChangeHandler)
         visibilityChangeHandler = null
+    }
+    if (windowFocusHandler) {
+        window.removeEventListener('focus', windowFocusHandler)
+        windowFocusHandler = null
     }
     if (tracker) {
         tracker.stop()
