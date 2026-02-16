@@ -9,6 +9,7 @@ let trackerLoading = false
 let canvasObserver: MutationObserver | null = null
 let canvasRestartInterval: ReturnType<typeof setInterval> | null = null
 let visibilityChangeHandler: (() => void) | null = null
+let windowFocusHandler: (() => void) | null = null
 
 
 /**
@@ -381,7 +382,11 @@ function startPeriodicCanvasRestart() {
     document.addEventListener('visibilitychange', visibilityChangeHandler)
 
     // Also restart on window focus
-    window.addEventListener('focus', () => {
+    if (windowFocusHandler) {
+        window.removeEventListener('focus', windowFocusHandler)
+    }
+
+    windowFocusHandler = () => {
         if (tracker) {
             if (import.meta.env.DEV) {
                 console.log('🎯 Window focused - restarting canvas tracking')
@@ -389,7 +394,8 @@ function startPeriodicCanvasRestart() {
             setTimeout(() => tracker?.restartCanvasTracking(), 100)
             setTimeout(() => tracker?.restartCanvasTracking(), 500)
         }
-    })
+    }
+    window.addEventListener('focus', windowFocusHandler)
 
     if (import.meta.env.DEV) {
         console.log(`⏰ Periodic canvas restart active (every ${intervalMs / 1000}s)`)
@@ -436,6 +442,10 @@ export function cleanupOpenReplay() {
     if (visibilityChangeHandler) {
         document.removeEventListener('visibilitychange', visibilityChangeHandler)
         visibilityChangeHandler = null
+    }
+    if (windowFocusHandler) {
+        window.removeEventListener('focus', windowFocusHandler)
+        windowFocusHandler = null
     }
     if (tracker) {
         tracker.stop()
