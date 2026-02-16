@@ -1051,15 +1051,16 @@ export class MeasurementSystem {
     return position.y + measurements.floorOffset + measurements.objectHeight;
   }
 
-// REPLACE your entire createWallBoundMeasurements method with this version
-// This completely eliminates room-extension measurements for wall-mounted objects
+// Wall-bound measurement creation
+// Corner-install objects show distances to BOTH opposite walls
+// Regular wall-mounted objects show only parallel-to-wall measurements
 
   private createWallBoundMeasurements (
     measurements: MeasurementData,
     position: THREE.Vector3,
     labels: MeasurementLabel[]
   ): void {
-    const { objectWidth, objectDepth: _objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection, boundingBox } = measurements;
+    const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection, boundingBox } = measurements;
 
     // Calculate object center height for lines and label positions
     const objectTopY = this.getObjectTopY(measurements, position);
@@ -1072,10 +1073,207 @@ export class MeasurementSystem {
     const backEdge = boundingBox.maxZ;
 
     // Position labels ABOVE the object
-    // const labelHeightOffset = 40; // 40cm above top of object
     const spaceHeightOffset = 20; // 20cm above top of object for space labels
 
-    console.log(`📏 RESTRICTIVE wall-mounted measurements for ${wallDirection} wall:`, {
+    // ✅ CHECK: Is this a corner-install object?
+    const itemId = this.selectedObject?.userData.itemId;
+    const currentItem = this.existingItems.find(item => item.id === itemId);
+    const movementConfig = getMovementConfig(currentItem?.type || 'Furniture', currentItem);
+    const isCornerInstall = movementConfig.cornerInstallOnly &&
+      typeof movementConfig.cornerInstallOnly === 'object' &&
+      movementConfig.cornerInstallOnly.enabled;
+
+    // ✅ CORNER-INSTALL OBJECTS: Show distances to BOTH opposite walls
+    if (isCornerInstall) {
+      // Determine corner based on rotation
+      const rotation = this.selectedObject?.rotation.y ?? currentItem?.rotation ?? 0;
+      const rotationDeg = Math.round((rotation * 180 / Math.PI + 360) % 360);
+
+      console.log(`📐 CORNER-INSTALL object measurements:`, {
+        rotationDeg: rotationDeg + '°',
+        corner: rotationDeg === 0 ? 'NW' : rotationDeg === 90 ? 'SW' : rotationDeg === 180 ? 'SE' : 'NE',
+        boundingBox: {
+          minX: leftEdge.toFixed(1), maxX: rightEdge.toFixed(1),
+          minZ: frontEdge.toFixed(1), maxZ: backEdge.toFixed(1)
+        },
+        spaces: {
+          left: spaceLeft.toFixed(1), right: spaceRight.toFixed(1),
+          front: spaceFront.toFixed(1), back: spaceBack.toFixed(1)
+        }
+      });
+
+      // Corner objects show:
+      // - Object width dimension (horizontal, along the wall)
+      // - Object depth dimension (vertical, perpendicular to wall)
+      // - Distance to both opposite walls
+
+      // Add object WIDTH label (horizontal dimension along wall)
+      labels.push({
+        id: 'object-width',
+        text: `${objectWidth} cm`,
+        position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), frontEdge),
+        direction: 'horizontal',
+        color: '#ff6b35',
+        isObjectDimension: true
+      });
+
+      // Add object DEPTH label (vertical dimension perpendicular to wall)
+      labels.push({
+        id: 'object-depth',
+        text: `${objectDepth} cm`,
+        position: new THREE.Vector3(leftEdge, this.getObjectCenterY(measurements, position), position.z),
+        direction: 'vertical',
+        color: '#ff6b35',
+        isObjectDimension: true
+      });
+
+      // Based on corner, show distances to the TWO opposite walls:
+      // NW (0°): touches North + West → show East (space-right) + South (space-back)
+      // NE (270°): touches North + East → show West (space-left) + South (space-back)
+      // SW (90°): touches South + West → show East (space-right) + North (space-front)
+      // SE (180°): touches South + East → show West (space-left) + North (space-front)
+
+      switch (rotationDeg) {
+        case 0: // NW corner
+          // Show distance to East wall (space-right)
+          if (spaceRight > 5) {
+            labels.push({
+              id: 'space-right',
+              text: `${Math.round(spaceRight)} cm`,
+              position: new THREE.Vector3(
+                rightEdge + spaceRight / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to South wall (space-back)
+          if (spaceBack > 5) {
+            labels.push({
+              id: 'space-back',
+              text: `${Math.round(spaceBack)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                backEdge + spaceBack / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+
+        case 270: // NE corner (or -90°)
+        case -90:
+          // Show distance to West wall (space-left)
+          if (spaceLeft > 5) {
+            labels.push({
+              id: 'space-left',
+              text: `${Math.round(spaceLeft)} cm`,
+              position: new THREE.Vector3(
+                leftEdge - spaceLeft / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to South wall (space-back)
+          if (spaceBack > 5) {
+            labels.push({
+              id: 'space-back',
+              text: `${Math.round(spaceBack)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                backEdge + spaceBack / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+
+        case 90: // SW corner
+          // Show distance to East wall (space-right)
+          if (spaceRight > 5) {
+            labels.push({
+              id: 'space-right',
+              text: `${Math.round(spaceRight)} cm`,
+              position: new THREE.Vector3(
+                rightEdge + spaceRight / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to North wall (space-front)
+          if (spaceFront > 5) {
+            labels.push({
+              id: 'space-front',
+              text: `${Math.round(spaceFront)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                frontEdge - spaceFront / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+
+        case 180: // SE corner
+          // Show distance to West wall (space-left)
+          if (spaceLeft > 5) {
+            labels.push({
+              id: 'space-left',
+              text: `${Math.round(spaceLeft)} cm`,
+              position: new THREE.Vector3(
+                leftEdge - spaceLeft / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to North wall (space-front)
+          if (spaceFront > 5) {
+            labels.push({
+              id: 'space-front',
+              text: `${Math.round(spaceFront)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                frontEdge - spaceFront / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+      }
+
+      console.log(`✅ Corner-install object: Created ${labels.length} labels (width + depth + 2 wall distances)`);
+      return; // Exit early - corner objects handled separately
+    }
+
+    // ✅ REGULAR WALL-MOUNTED OBJECTS: Show only parallel-to-wall measurements
+    console.log(`📏 Wall-mounted measurements for ${wallDirection} wall:`, {
       wallDirection,
       position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
       availableSpaces: {
@@ -1087,7 +1285,6 @@ export class MeasurementSystem {
       labelsToCreate: 'ONLY parallel-to-wall measurements'
     });
 
-    // ✅ RESTRICTIVE APPROACH: Wall-mounted objects show ONLY parallel-to-wall measurements
     if (wallDirection === 'north' || wallDirection === 'south') {
       // Object against north/south wall - show ONLY width and left/right clearances
       // ❌ NO front/back measurements (no room extension lines)
@@ -1473,8 +1670,17 @@ export class MeasurementSystem {
   private createMeasurementLine (label: MeasurementLabel, measurements: MeasurementData): void {
     if (!this.selectedObject) return;
 
+    // ✅ CHECK: Is this a corner-install object?
+    const itemId = this.selectedObject.userData.itemId;
+    const currentItem = this.existingItems.find(item => item.id === itemId);
+    const movementConfig = getMovementConfig(currentItem?.type || 'Furniture', currentItem);
+    const isCornerInstall = movementConfig.cornerInstallOnly &&
+      typeof movementConfig.cornerInstallOnly === 'object' &&
+      movementConfig.cornerInstallOnly.enabled;
+
     // ✅ SAFEGUARD: For wall-bound objects, don't create lines going into walls
-    if (measurements.isWallBound && measurements.wallDirection) {
+    // ✅ EXCEPTION: Corner-install objects show lines to BOTH opposite walls, so don't skip for them
+    if (measurements.isWallBound && measurements.wallDirection && !isCornerInstall) {
       const shouldSkipLine = this.shouldSkipWallFacingLine(label.id, measurements.wallDirection);
       if (shouldSkipLine) {
         console.log(`🚫 Skipping wall-facing line: ${label.id} for ${measurements.wallDirection} wall`);
@@ -1494,6 +1700,14 @@ export class MeasurementSystem {
     });
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
       // ✅ FIX: Use bounding box edges for accurate line positioning (especially for corner objects)
+
+      // ✅ For corner objects, determine the corner rotation for proper line positioning
+      let cornerRotationDeg = 0;
+      if (isCornerInstall) {
+        const rotation = this.selectedObject?.rotation.y ?? currentItem?.rotation ?? 0;
+        cornerRotationDeg = Math.round((rotation * 180 / Math.PI + 360) % 360);
+      }
+
       if (label.id === 'space-left') {
         const startX = measurements.boundingBox.minX;  // Left edge of object
         let endX = startX - measurements.spaceLeft;
@@ -1502,7 +1716,18 @@ export class MeasurementSystem {
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
         let lineY = objectCenterY;
 
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // NE (270°) shows space-left - line should be at NORTH wall face (minZ) where object touches
+        // SE (180°) shows space-left - line should be at SOUTH wall face (maxZ) where object touches
         let lineZ = position.z;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 270 || cornerRotationDeg === -90) {
+            lineZ = measurements.boundingBox.minZ; // NE corner: line at north wall face (where object touches)
+          } else if (cornerRotationDeg === 180) {
+            lineZ = measurements.boundingBox.maxZ; // SE corner: line at south wall face (where object touches)
+          }
+        }
+
         let notchLineAdjusted = false;
 
         console.log(`📏 space-left DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
@@ -1524,14 +1749,14 @@ export class MeasurementSystem {
           }
 
           // ✅ NEW: Check if object is near notch-south wall - offset horizontal lines away from wall
-          if (position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
+          if (!isCornerInstall && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
             lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
             console.log(`📏 ✅ APPLYING space-left Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)} (20cm from wall at ${notch.maxZ.toFixed(1)})`);
           }
         }
 
-        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
-        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
+        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch and not corner)
+        if (!notchLineAdjusted && !isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5; // 5cm away from wall face
 
@@ -1554,13 +1779,24 @@ export class MeasurementSystem {
 
         // ✅ Check if object is near notch-south wall
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // NW (0°) shows space-right - line should be at NORTH wall face (minZ) where object touches
+        // SW (90°) shows space-right - line should be at SOUTH wall face (maxZ) where object touches
         let lineZ = position.z;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 0) {
+            lineZ = measurements.boundingBox.minZ; // NW corner: line at north wall face (where object touches)
+          } else if (cornerRotationDeg === 90) {
+            lineZ = measurements.boundingBox.maxZ; // SW corner: line at south wall face (where object touches)
+          }
+        }
 
         if (notch && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
           lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
           console.log(`📏 ✅ APPLYING space-right Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)}`);
-        } else if (measurements.isWallBound && measurements.wallDirection) {
-          // Apply standard wall offset
+        } else if (!isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
+          // Apply standard wall offset (only for non-corner objects)
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
@@ -1584,7 +1820,19 @@ export class MeasurementSystem {
         // ✅ Check if object is in notch-affected area
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
         let lineY = objectCenterY;
+
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // SW (90°) shows space-front - line should be at WEST wall face (minX) where object touches
+        // SE (180°) shows space-front - line should be at EAST wall face (maxX) where object touches
         let lineX = position.x;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 90) {
+            lineX = measurements.boundingBox.minX; // SW corner: line at west wall face (where object touches)
+          } else if (cornerRotationDeg === 180) {
+            lineX = measurements.boundingBox.maxX; // SE corner: line at east wall face (where object touches)
+          }
+        }
+
         let notchLineAdjusted = false;
 
         console.log(`📏 space-front DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
@@ -1599,21 +1847,21 @@ export class MeasurementSystem {
             if (distanceToNotchWall < 20) {
               // Don't override endZ - let the space calculation handle it
               lineY = objectCenterY + 5;
-              lineX = position.x + 20;
+              if (!isCornerInstall) lineX = position.x + 20;
               notchLineAdjusted = true;
               console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm, endZ=${endZ.toFixed(1)}`);
             }
           }
 
           // ✅ NEW: Check if object is near notch-east wall - offset vertical lines away from wall
-          if (position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+          if (!isCornerInstall && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
             lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
             console.log(`📏 ✅ APPLYING space-front X-offset for notch-east wall: lineX=${lineX.toFixed(1)} (20cm from wall at ${notch.maxX.toFixed(1)})`);
           }
         }
 
-        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
-        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
+        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch and not corner)
+        if (!notchLineAdjusted && !isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
@@ -1636,13 +1884,24 @@ export class MeasurementSystem {
 
         // ✅ Check if object is near notch-east wall - offset vertical lines away from wall
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // NW (0°) shows space-back - line should be at WEST wall face (minX) where object touches
+        // NE (270°) shows space-back - line should be at EAST wall face (maxX) where object touches
         let lineX = position.x;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 0) {
+            lineX = measurements.boundingBox.minX; // NW corner: line at west wall face (where object touches)
+          } else if (cornerRotationDeg === 270 || cornerRotationDeg === -90) {
+            lineX = measurements.boundingBox.maxX; // NE corner: line at east wall face (where object touches)
+          }
+        }
 
         if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
           lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
           console.log(`📏 ✅ APPLYING space-back X-offset for notch-east wall: lineX=${lineX.toFixed(1)}`);
-        } else if (measurements.isWallBound && measurements.wallDirection) {
-          // Apply standard wall offset
+        } else if (!isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
+          // Apply standard wall offset (only for non-corner objects)
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
