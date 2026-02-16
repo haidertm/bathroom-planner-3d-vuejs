@@ -10,6 +10,12 @@
 
     <!-- Hero Section -->
     <section class="hero-section">
+      <img
+          src="/assets/home-banner.webp"
+          alt="Build Your Dream Bathroom in Minutes. Start New Project"
+          class="hero-bg"
+          fetchpriority="high"
+      />
       <div class="hero-content">
         <div class="hero-overlay">
           <h1 class="hero-title">Build Your Dream<br>Bathroom in<br>Minutes.</h1>
@@ -189,7 +195,6 @@ const selectTemplate = (templateId) => {
 .hero-section {
   position: relative;
   height: 340px;
-  background: url('/assets/home-banner.webp') center center / cover no-repeat;
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -198,9 +203,20 @@ const selectTemplate = (templateId) => {
   max-width: 1400px;
   top: 70px;
   margin: 0 auto;
+  overflow: hidden;
 }
-
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+}
 .hero-content {
+  position: relative;
+  z-index: 1;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
