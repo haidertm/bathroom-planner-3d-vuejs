@@ -1060,7 +1060,7 @@ export class MeasurementSystem {
     position: THREE.Vector3,
     labels: MeasurementLabel[]
   ): void {
-    const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection, boundingBox } = measurements;
+    const { objectWidth, objectDepth: _objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection, boundingBox } = measurements;
 
     // Calculate object center height for lines and label positions
     const objectTopY = this.getObjectTopY(measurements, position);
@@ -1103,8 +1103,7 @@ export class MeasurementSystem {
       });
 
       // Corner objects show:
-      // - Object width dimension (horizontal, along the wall)
-      // - Object depth dimension (vertical, perpendicular to wall)
+      // - Object width dimension ONLY (not depth - user requested)
       // - Distance to both opposite walls
 
       // Add object WIDTH label (horizontal dimension along wall)
@@ -1117,15 +1116,7 @@ export class MeasurementSystem {
         isObjectDimension: true
       });
 
-      // Add object DEPTH label (vertical dimension perpendicular to wall)
-      labels.push({
-        id: 'object-depth',
-        text: `${objectDepth} cm`,
-        position: new THREE.Vector3(leftEdge, this.getObjectCenterY(measurements, position), position.z),
-        direction: 'vertical',
-        color: '#ff6b35',
-        isObjectDimension: true
-      });
+      // ❌ REMOVED: Object depth label - user requested only width for corner objects
 
       // Based on corner, show distances to the TWO opposite walls:
       // NW (0°): touches North + West → show East (space-right) + South (space-back)
