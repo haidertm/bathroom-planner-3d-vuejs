@@ -9,12 +9,14 @@ let trackerLoading = false
 let canvasObserver: MutationObserver | null = null
 let canvasRestartInterval: ReturnType<typeof setInterval> | null = null
 let visibilityChangeHandler: (() => void) | null = null
+let windowFocusHandler: (() => void) | null = null
 
 
 /**
- * Initialize OpenReplay with canvas capture support
+ * Initialize OpenReplay immediately.
+ * Called from main.ts on first user interaction.
  */
-export function setupOpenReplay(_app: App, router: Router) {
+export function initOpenReplay(_app: App, router: Router) {
     const projectKey = import.meta.env.VITE_OPENREPLAY_PROJECT_KEY
     const projectId = import.meta.env.VITE_OPENREPLAY_PROJECT_ID
     const ingestPoint = import.meta.env.VITE_OPENREPLAY_INGEST_POINT
@@ -28,190 +30,197 @@ export function setupOpenReplay(_app: App, router: Router) {
         return
     }
 
-    // Simple lazy loading - wait for user interaction
-    const loadOpenReplay = () => {
-        if (tracker || trackerLoading) {
-            if (import.meta.env.DEV) {
-                console.warn('⚠️ OpenReplay already initialised or in progress. Skipping duplicate load.')
-            }
-            return
+    if (tracker || trackerLoading) {
+        if (import.meta.env.DEV) {
+            console.warn('⚠️ OpenReplay already initialised or in progress. Skipping duplicate load.')
         }
-        trackerLoading = true
-        try {
-            const trackerOptions: ConstructorParameters<typeof OpenReplay>[0] = {
-                projectKey,
-                obscureTextEmails: true,
-                obscureInputEmails: true,
-                respectDoNotTrack: false,
-                __DISABLE_SECURE_MODE: import.meta.env.DEV, // Only disable in dev, not production
-                consoleMethods: ['error', 'warn'],
-                canvas: {
-                    useAnimationFrame: true,
-                },
-            }
+        return
+    }
+    trackerLoading = true
+    try {
+        const trackerOptions: ConstructorParameters<typeof OpenReplay>[0] = {
+            projectKey,
+            obscureTextEmails: true,
+            obscureInputEmails: true,
+            respectDoNotTrack: false,
+            __DISABLE_SECURE_MODE: import.meta.env.DEV, // Only disable in dev, not production
+            consoleMethods: ['error', 'warn'],
+            canvas: {
+                useAnimationFrame: true,
+            },
+        }
 
-            if (ingestPoint) {
-                trackerOptions.ingestPoint = ingestPoint
-            }
+        if (ingestPoint) {
+            trackerOptions.ingestPoint = ingestPoint
+        }
 
-            // Determine assist socket host
-            let finalAssistSocketHost: string | undefined
-            if (assistSocketHost) {
-                try {
-                    const normalizedAssistURL = new URL(assistSocketHost)
-                    finalAssistSocketHost = normalizedAssistURL.origin
-                } catch (error) {
-                    console.warn('⚠️ Invalid VITE_OPENREPLAY_ASSIST_URL value. Expected a full URL.', error)
+        // Determine assist socket host
+        let finalAssistSocketHost: string | undefined
+        if (assistSocketHost) {
+            try {
+                const normalizedAssistURL = new URL(assistSocketHost)
+                finalAssistSocketHost = normalizedAssistURL.origin
+            } catch (error) {
+                console.warn('⚠️ Invalid VITE_OPENREPLAY_ASSIST_URL value. Expected a full URL.', error)
+            }
+        } else if (ingestPoint) {
+            // Derive assist URL from ingest point for self-hosted deployments
+            try {
+                const ingestURL = new URL(ingestPoint)
+                // Use the same host as ingest point, ensure HTTPS
+                finalAssistSocketHost = `https://${ingestURL.host}`
+                if (import.meta.env.DEV) {
+                    console.log('🔗 Derived assist URL from ingest point:', finalAssistSocketHost)
                 }
-            } else if (ingestPoint) {
-                // Derive assist URL from ingest point for self-hosted deployments
-                try {
-                    const ingestURL = new URL(ingestPoint)
-                    // Use the same host as ingest point, ensure HTTPS
-                    finalAssistSocketHost = `https://${ingestURL.host}`
-                } catch (error) {
-                    console.warn('⚠️ Failed to derive assist URL from ingest point:', error)
-                }
+            } catch (error) {
+                console.warn('⚠️ Failed to derive assist URL from ingest point:', error)
             }
+        }
 
-            if (finalAssistSocketHost) {
-                trackerOptions.assistSocketHost = finalAssistSocketHost
+        if (finalAssistSocketHost) {
+            trackerOptions.assistSocketHost = finalAssistSocketHost
+        }
+
+        tracker = new OpenReplay(trackerOptions)
+
+        // Configure tracker-assist with secure WebSocket
+        const assistOptions: Parameters<typeof trackerAssist>[0] = {}
+        if (finalAssistSocketHost) {
+            // Ensure we use secure WebSocket (wss://)
+            const wsHost = finalAssistSocketHost.replace('http://', 'https://')
+            assistOptions.socketHost = wsHost
+            if (import.meta.env.DEV) {
+                console.log('🔌 Assist WebSocket host:', wsHost)
             }
+        }
+        tracker.use(trackerAssist(assistOptions))
 
-            tracker = new OpenReplay(trackerOptions)
+        tracker.start()
+            .then((result) => {
+                trackerLoading = false
+                if (result?.success) {
+                    // Initial canvas restart sequence
+                    setTimeout(() => {
+                        tracker?.restartCanvasTracking()
+                        if (import.meta.env.DEV) console.log('🔁 [Stage 1] Canvas restart at 500ms')
+                    }, 500)
 
-            // Configure tracker-assist with secure WebSocket
-            const assistOptions: Parameters<typeof trackerAssist>[0] = {}
-            if (finalAssistSocketHost) {
-                // Ensure we use secure WebSocket (wss://)
-                const wsHost = finalAssistSocketHost.replace('http://', 'https://')
-                assistOptions.socketHost = wsHost
-            }
-            tracker.use(trackerAssist(assistOptions))
+                    setTimeout(() => {
+                        tracker?.restartCanvasTracking()
+                        if (import.meta.env.DEV) console.log('🔁 [Stage 2] Canvas restart at 1500ms')
+                    }, 1500)
 
-            tracker.start()
-                .then((result) => {
-                    trackerLoading = false
-                    if (result?.success) {
-                        // Initial canvas restart sequence
-                        setTimeout(() => {
-                            tracker?.restartCanvasTracking()
-                        }, 500)
+                    setTimeout(() => {
+                        tracker?.restartCanvasTracking()
+                        if (import.meta.env.DEV) console.log('🔁 [Stage 3] Canvas restart at 3000ms')
+                    }, 3000)
 
-                        setTimeout(() => {
-                            tracker?.restartCanvasTracking()
-                        }, 1500)
+                    // Setup continuous canvas monitoring
+                    setupCanvasMonitoring()
 
-                        setTimeout(() => {
-                            tracker?.restartCanvasTracking()
-                        }, 3000)
+                    // Periodic canvas restart to handle WebGL context issues
+                    startPeriodicCanvasRestart()
 
-                        // Setup continuous canvas monitoring
-                        setupCanvasMonitoring()
+                    const sessionID = tracker?.getSessionID()
+                    if (sessionID && typeof window !== 'undefined') {
+                        const sessionInfo = tracker?.getSessionInfo()
+                        const urlProjectIdentifier =
+                            sessionInfo?.projectID ||
+                            projectId ||
+                            trackerOptions.projectKey
 
-                        // Periodic canvas restart to handle WebGL context issues
-                        startPeriodicCanvasRestart()
-
-                        const sessionID = tracker?.getSessionID()
-                        if (sessionID && typeof window !== 'undefined') {
-                            const sessionInfo = tracker?.getSessionInfo()
-                            const urlProjectIdentifier =
-                                sessionInfo?.projectID ||
-                                projectId ||
-                                trackerOptions.projectKey
-
-                            let baseURL = 'https://app.openreplay.com'
-                            if (ingestPoint && ingestPoint.includes('ingest')) {
-                                baseURL = ingestPoint.replace('/ingest', '')
-                            }
-
-                            const sessionURL = `${baseURL}/${urlProjectIdentifier}/session/${sessionID}`
-
-                            // Set metadata in OpenReplay - this will show in Session Info section
-                            tracker?.setMetadata('sessionURL', sessionURL)
-                            tracker?.setMetadata('sessionID', sessionID)
-                            tracker?.setMetadata('projectID', urlProjectIdentifier)
-
-                            if (window.dataLayer) {
-                                window.dataLayer.push({
-                                    event: 'openreplay_session_started',
-                                    openreplay_session_id: sessionID,
-                                    openreplay_session_url: sessionURL,
-                                })
-                            }
-
-                            // Send OpenReplay session data to Clarity for Events tab filtering
-                            const sendToClarityWithRetry = (attempt = 1, maxAttempts = 10) => {
-                                if (window.clarity) {
-                                    try {
-                                        // Force production URL if it's localhost
-                                        let finalSessionURL = sessionURL;
-                                        if (sessionURL.includes('localhost')) {
-                                            const sessionIdMatch = sessionURL.match(/\/session\/([a-zA-Z0-9]+)/);
-                                            if (sessionIdMatch) {
-                                                finalSessionURL = `https://app.openreplay.com/${urlProjectIdentifier}/session/${sessionIdMatch[1]}`;
-                                            }
-                                        }
-
-                                        // Set custom tags for Clarity Events tab filtering only
-                                        window.clarity('set', 'OpenReplay_URL', finalSessionURL)
-                                        window.clarity('set', 'OpenReplay_ID', sessionID)
-
-                                        console.info('🎬 OpenReplay:', finalSessionURL)
-                                    } catch (error) {
-                                        console.error('❌ Clarity integration error:', error)
-                                    }
-                                } else if (attempt < maxAttempts) {
-                                    setTimeout(() => sendToClarityWithRetry(attempt + 1, maxAttempts), 500)
-                                } else {
-                                    console.warn('⚠️ Clarity not available after ' + maxAttempts + ' attempts.')
-                                }
-                            }
-
-                            sendToClarityWithRetry()
+                        let baseURL = 'https://app.openreplay.com'
+                        if (ingestPoint && ingestPoint.includes('ingest')) {
+                            baseURL = ingestPoint.replace('/ingest', '')
                         }
-                    } else if (import.meta.env.DEV) {
-                        console.warn('⚠️ OpenReplay start did not succeed:', result?.reason)
-                    }
-                })
-                .catch((error) => {
-                    trackerLoading = false
-                    console.error('❌ OpenReplay start failed:', error)
-                })
 
-            // Track route changes
-            router.afterEach((to) => {
-                if (tracker) {
-                    tracker.setMetadata('route', to.path)
-                    tracker.setMetadata('routeName', to.name?.toString() || 'unknown')
+                        const sessionURL = `${baseURL}/${urlProjectIdentifier}/session/${sessionID}`
+
+                        // Set metadata in OpenReplay - this will show in Session Info section
+                        tracker?.setMetadata('sessionURL', sessionURL)
+                        tracker?.setMetadata('sessionID', sessionID)
+                        tracker?.setMetadata('projectID', urlProjectIdentifier)
+
+                        if (window.dataLayer) {
+                            window.dataLayer.push({
+                                event: 'openreplay_session_started',
+                                openreplay_session_id: sessionID,
+                                openreplay_session_url: sessionURL,
+                            })
+                        }
+
+                        // Send OpenReplay session data to Clarity for Events tab filtering
+                        const sendToClarityWithRetry = (attempt = 1, maxAttempts = 10) => {
+                            if (window.clarity) {
+                                try {
+                                    // Force production URL if it's localhost
+                                    let finalSessionURL = sessionURL;
+                                    if (sessionURL.includes('localhost')) {
+                                        const sessionIdMatch = sessionURL.match(/\/session\/([a-zA-Z0-9]+)/);
+                                        if (sessionIdMatch) {
+                                            finalSessionURL = `https://app.openreplay.com/${urlProjectIdentifier}/session/${sessionIdMatch[1]}`;
+                                        }
+                                    }
+
+                                    // Set custom tags for Clarity Events tab filtering only
+                                    window.clarity('set', 'OpenReplay_URL', finalSessionURL)
+                                    window.clarity('set', 'OpenReplay_ID', sessionID)
+
+                                    if (import.meta.env.DEV) {
+                                        console.info('🎬 OpenReplay:', finalSessionURL)
+                                    }
+
+                                    if (import.meta.env.DEV) {
+                                        console.log('✅ Clarity tags set (attempt ' + attempt + ')')
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Clarity integration error:', error)
+                                }
+                            } else if (attempt < maxAttempts) {
+                                if (import.meta.env.DEV && attempt === 1) {
+                                    console.log('⏳ Clarity not ready, waiting... (attempt ' + attempt + '/' + maxAttempts + ')')
+                                }
+                                setTimeout(() => sendToClarityWithRetry(attempt + 1, maxAttempts), 500)
+                            } else {
+                                console.warn('⚠️ Clarity not available after ' + maxAttempts + ' attempts.')
+                            }
+                        }
+
+                        sendToClarityWithRetry()
+
+                        if (import.meta.env.DEV) {
+                            console.log('📊 OpenReplay session:', sessionID)
+                            console.log('   URL:', sessionURL)
+                            console.log('📝 Metadata set for Session Info section')
+                        }
+                    }
+                } else if (import.meta.env.DEV) {
+                    console.warn('⚠️ OpenReplay start did not succeed:', result?.reason)
                 }
             })
+            .catch((error) => {
+                trackerLoading = false
+                console.error('❌ OpenReplay start failed:', error)
+            })
 
-            if (import.meta.env.DEV) {
-                (window as any).__OPENREPLAY__ = tracker
-                console.info('🎥 Session recording started')
-                console.info('🖼️ Canvas recording enabled')
+        // Track route changes
+        router.afterEach((to) => {
+            if (tracker) {
+                tracker.setMetadata('route', to.path)
+                tracker.setMetadata('routeName', to.name?.toString() || 'unknown')
             }
-        } catch (error) {
-            trackerLoading = false
-            console.error('❌ Failed to initialize OpenReplay:', error)
+        })
+
+        if (import.meta.env.DEV) {
+            (window as any).__OPENREPLAY__ = tracker
+            console.log('✅ OpenReplay loaded after user interaction')
+            console.info('🎥 Session recording started')
+            console.info('🖼️ Canvas recording enabled')
         }
+    } catch (error) {
+        trackerLoading = false
+        console.error('❌ Failed to initialize OpenReplay:', error)
     }
-
-    // Load on first user interaction
-    const handleInteraction = () => {
-        loadOpenReplay()
-    }
-
-    const eventOptions: AddEventListenerOptions = { passive: true, once: true }
-    window.addEventListener('scroll', handleInteraction, eventOptions)
-    window.addEventListener('mousemove', handleInteraction, eventOptions)
-    window.addEventListener('click', handleInteraction, eventOptions)
-
-    // Fallback timeout
-    setTimeout(() => {
-        loadOpenReplay()
-    }, 5000)
 }
 
 /**
@@ -228,6 +237,9 @@ export function getOpenReplayTracker(): OpenReplay | null {
 export function forceCanvasRestart() {
     if (tracker?.restartCanvasTracking) {
         tracker.restartCanvasTracking()
+        if (import.meta.env.DEV) {
+            console.log('🔁 [Manual] Canvas tracking restart triggered')
+        }
     } else if (import.meta.env.DEV) {
         console.warn('⚠️ OpenReplay tracker not ready')
     }
@@ -279,6 +291,9 @@ function setupCanvasMonitoring() {
                 mutation.addedNodes.forEach((node) => {
                     if (node instanceof HTMLCanvasElement ||
                         (node instanceof Element && node.querySelector('canvas'))) {
+                        if (import.meta.env.DEV) {
+                            console.log('🔍 Canvas element detected - restarting tracking')
+                        }
                         // Delay to ensure canvas is fully initialized
                         setTimeout(() => {
                             tracker?.restartCanvasTracking()
@@ -289,6 +304,9 @@ function setupCanvasMonitoring() {
 
             // Check for attribute changes on canvas (e.g., size changes)
             if (mutation.type === 'attributes' && mutation.target instanceof HTMLCanvasElement) {
+                if (import.meta.env.DEV) {
+                    console.log('🔍 Canvas attribute changed - restarting tracking')
+                }
                 setTimeout(() => {
                     tracker?.restartCanvasTracking()
                 }, 100)
@@ -302,6 +320,10 @@ function setupCanvasMonitoring() {
         attributes: true,
         attributeFilter: ['width', 'height']
     })
+
+    if (import.meta.env.DEV) {
+        console.log('👁️ Canvas monitoring active')
+    }
 }
 
 /**
@@ -319,6 +341,9 @@ function startPeriodicCanvasRestart() {
         const canvases = document.querySelectorAll('canvas')
         if (canvases.length > 0 && tracker) {
             tracker.restartCanvasTracking()
+            if (import.meta.env.DEV) {
+                console.log('🔁 [Periodic] Canvas tracking refresh')
+            }
         }
     }, intervalMs)
 
@@ -329,6 +354,9 @@ function startPeriodicCanvasRestart() {
 
     visibilityChangeHandler = () => {
         if (document.visibilityState === 'visible' && tracker) {
+            if (import.meta.env.DEV) {
+                console.log('👁️ Tab visible - restarting canvas tracking')
+            }
             setTimeout(() => tracker?.restartCanvasTracking(), 100)
             setTimeout(() => tracker?.restartCanvasTracking(), 500)
             setTimeout(() => tracker?.restartCanvasTracking(), 1000)
@@ -337,12 +365,24 @@ function startPeriodicCanvasRestart() {
     document.addEventListener('visibilitychange', visibilityChangeHandler)
 
     // Also restart on window focus
-    window.addEventListener('focus', () => {
+    if (windowFocusHandler) {
+        window.removeEventListener('focus', windowFocusHandler)
+    }
+
+    windowFocusHandler = () => {
         if (tracker) {
+            if (import.meta.env.DEV) {
+                console.log('🎯 Window focused - restarting canvas tracking')
+            }
             setTimeout(() => tracker?.restartCanvasTracking(), 100)
             setTimeout(() => tracker?.restartCanvasTracking(), 500)
         }
-    })
+    }
+    window.addEventListener('focus', windowFocusHandler)
+
+    if (import.meta.env.DEV) {
+        console.log(`⏰ Periodic canvas restart active (every ${intervalMs / 1000}s)`)
+    }
 }
 
 /**
@@ -350,7 +390,9 @@ function startPeriodicCanvasRestart() {
  * Call this from your Three.js setup
  */
 export function handleWebGLContextLost() {
-    // WebGL context lost - will restart canvas tracking on restore
+    if (import.meta.env.DEV) {
+        console.log('⚠️ WebGL context lost - will restart canvas tracking on restore')
+    }
 }
 
 /**
@@ -358,6 +400,9 @@ export function handleWebGLContextLost() {
  * Call this from your Three.js setup
  */
 export function handleWebGLContextRestored() {
+    if (import.meta.env.DEV) {
+        console.log('✅ WebGL context restored - restarting canvas tracking')
+    }
     // Delay to ensure context is fully restored
     setTimeout(() => {
         tracker?.restartCanvasTracking()
@@ -381,9 +426,16 @@ export function cleanupOpenReplay() {
         document.removeEventListener('visibilitychange', visibilityChangeHandler)
         visibilityChangeHandler = null
     }
+    if (windowFocusHandler) {
+        window.removeEventListener('focus', windowFocusHandler)
+        windowFocusHandler = null
+    }
     if (tracker) {
         tracker.stop()
         tracker = null
+    }
+    if (import.meta.env.DEV) {
+        console.log('🧹 OpenReplay cleaned up')
     }
 }
 

@@ -3,54 +3,12 @@ import type { App } from 'vue'
 import type { Router } from 'vue-router'
 
 /**
- * Polyfill for requestIdleCallback (Safari compatibility)
+ * Initialize GTM plugin immediately.
+ * Called from main.ts on first user interaction.
  */
-const requestIdleCallbackPolyfill = (
-  callback: IdleRequestCallback,
-  options?: IdleRequestOptions
-) => {
-  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-    return window.requestIdleCallback(callback, options)
-  }
-  // Fallback: use setTimeout with a reasonable delay
-  const start = Date.now()
-  return setTimeout(() => {
-    callback({
-      didTimeout: false,
-      timeRemaining: () => Math.max(0, 50 - (Date.now() - start)),
-    })
-  }, 1) as unknown as number
-}
-
-/**
- * Cancel idle callback (with polyfill support)
- */
-const cancelIdleCallbackPolyfill = (id: number) => {
-  if (typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
-    window.cancelIdleCallback(id)
-  } else {
-    clearTimeout(id)
-  }
-}
-
-/**
- * Initialize GTM with advanced lazy loading strategy
- *
- * Performance Strategy:
- * 1. Waits for user interaction (scroll, mousemove, touchstart, click)
- * 2. OR uses requestIdleCallback to load during browser idle time
- * 3. Fallback timeout of 5 seconds if neither occurs
- *
- * This ensures GTM never blocks critical rendering or user interactions,
- * which is crucial for 3D applications like the bathroom planner.
- *
- * @param app - Vue application instance
- * @param router - Vue Router instance for automatic page tracking
- */
-export function setupGTM(app: App, router: Router) {
+export function initGTM(app: App, router: Router) {
   const gtmId = import.meta.env.VITE_GTM_ID
 
-  // Skip GTM initialization if no ID provided
   if (!gtmId) {
     if (import.meta.env.DEV) {
       console.warn('⚠️ GTM ID not provided. Skipping GTM initialization.')
@@ -59,74 +17,19 @@ export function setupGTM(app: App, router: Router) {
     return
   }
 
-  let gtmLoaded = false
-  const FALLBACK_TIMEOUT = 5000 // 5 seconds
-  const IDLE_TIMEOUT = 3000 // 3 seconds for requestIdleCallback
-
-  /**
-   * Loads GTM script and initializes the plugin
-   */
-  const loadGTM = () => {
-    if (gtmLoaded) return
-    gtmLoaded = true
-
-    // Clean up event listeners
-    window.removeEventListener('scroll', handleUserInteraction)
-    window.removeEventListener('mousemove', handleUserInteraction)
-    window.removeEventListener('touchstart', handleUserInteraction)
-    window.removeEventListener('click', handleUserInteraction)
-
-    // Clear timeouts
-    clearTimeout(fallbackTimeout)
-    if (idleCallbackId !== undefined) {
-      cancelIdleCallbackPolyfill(idleCallbackId)
-    }
-
-    // Initialize GTM plugin
-    app.use(
-      createGtm({
-        id: gtmId,
-        defer: true, // Use defer attribute for better performance
-        enabled: true,
-        debug: import.meta.env.DEV, // Enable debug mode in development
-        loadScript: true, // Let the plugin load the script
-        vueRouter: router, // Auto-track page views
-        trackOnNextTick: false, // Track immediately for better accuracy
-      })
-    )
-
-    if (import.meta.env.DEV) {
-      console.info('🔍 GTM Debug mode enabled - check console for tracking events')
-    }
-  }
-
-  /**
-   * Handler for user interaction events
-   */
-  const handleUserInteraction = () => {
-    loadGTM()
-  }
-
-  // Set up event listeners for user interaction
-  // { passive: true } improves scroll performance
-  // { once: true } auto-removes listener after first trigger
-  const eventOptions: AddEventListenerOptions = { passive: true, once: true }
-  window.addEventListener('scroll', handleUserInteraction, eventOptions)
-  window.addEventListener('mousemove', handleUserInteraction, eventOptions)
-  window.addEventListener('touchstart', handleUserInteraction, eventOptions)
-  window.addEventListener('click', handleUserInteraction, eventOptions)
-
-  // Use requestIdleCallback to load during idle time
-  let idleCallbackId: number | undefined
-  idleCallbackId = requestIdleCallbackPolyfill(
-    () => {
-      loadGTM()
-    },
-    { timeout: IDLE_TIMEOUT }
+  app.use(
+    createGtm({
+      id: gtmId,
+      defer: true,
+      enabled: true,
+      debug: import.meta.env.DEV,
+      loadScript: true,
+      vueRouter: router,
+      trackOnNextTick: false,
+    })
   )
 
-  // Fallback timeout to ensure GTM loads even if user is completely idle
-  const fallbackTimeout = setTimeout(() => {
-    loadGTM()
-  }, FALLBACK_TIMEOUT)
+  if (import.meta.env.DEV) {
+    console.info('🔍 GTM loaded after user interaction')
+  }
 }
