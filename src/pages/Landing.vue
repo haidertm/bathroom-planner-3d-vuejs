@@ -75,7 +75,7 @@
       <div class="templates-container">
         <div class="template-card" @click="selectTemplate('small-ensuite')">
           <div class="template-image">
-            <img src="/assets/ensuite.webp" alt="Small Ensuite" width="400" height="190" loading="lazy" />
+            <img src="/assets/ensuite.webp" alt="Small Ensuite" width="340" height="190" loading="lazy" />
           </div>
           <div class="template-info">
             <h3>Small Ensuite</h3>
@@ -87,7 +87,7 @@
 
         <div class="template-card" @click="selectTemplate('family-bathroom')">
           <div class="template-image">
-            <img src="/assets/family-bathroom.webp" alt="Family Bathroom" width="400" height="190" loading="lazy" />
+            <img src="/assets/family-bathroom.webp" alt="Family Bathroom" width="380" height="190" loading="lazy" />
           </div>
           <div class="template-info">
             <h3>Family Bathroom</h3>
@@ -99,7 +99,7 @@
 
         <div class="template-card" @click="selectTemplate('cloak-room')">
           <div class="template-image">
-            <img src="/assets/cloakroom.webp" alt="Cloakroom" width="400" height="190" loading="lazy" />
+            <img src="/assets/cloakroom.webp" alt="Cloakroom" width="380" height="190" loading="lazy" />
           </div>
           <div class="template-info">
             <h3>Cloakroom</h3>
