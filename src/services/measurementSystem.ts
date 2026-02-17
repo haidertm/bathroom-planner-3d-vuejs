@@ -485,6 +485,23 @@ export class MeasurementSystem {
         const spaceToNotchEastWall = leftEdge - notch.maxX - wallThickness;
         spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
         console.log(`📏 Object near notch-east wall: spaceToNotchEastWall=${spaceToNotchEastWall.toFixed(1)}cm (leftEdge at ${leftEdge.toFixed(1)}, notch exterior at ${(notch.maxX + wallThickness).toFixed(1)})`);
+
+        // ✅ KEY FIX: For objects ON the notch-east wall, limit spaceBack to the END of that wall
+        // The notch-east wall ends at notch.maxZ, so spaceBack should not extend past it to the main south wall
+        // This fixes the 318cm line issue - it should end at the notch corner, not the south wall
+        // ⚠️ IMPORTANT: Only apply this if object is actually NEAR the notch-east wall, not on the main east wall
+        // Check if object's left edge is close to the notch-east wall (within tolerance)
+        const notchEastWallExterior = notch.maxX + wallThickness;
+        const distanceToNotchEastWall = Math.abs(leftEdge - notchEastWallExterior);
+        const proximityTolerance = 50; // 50cm tolerance to consider object "on" the notch-east wall
+
+        if (distanceToNotchEastWall < proximityTolerance) {
+          const notchSouthWallFace = notch.maxZ + wallThickness;
+          const spaceToNotchSouthWall = notchSouthWallFace - backEdge;
+          if (spaceToNotchSouthWall >= 0) {
+            spaceToSouthWall = Math.min(spaceToSouthWall, spaceToNotchSouthWall);
+          }
+        }
       }
 
       // Check if object is near the notch-south wall (horizontal wall at notch.maxZ)
@@ -496,6 +513,36 @@ export class MeasurementSystem {
         const spaceToNotchSouthWall = frontEdge - notch.maxZ - wallThickness;
         spaceToNorthWall = Math.min(spaceToNorthWall, spaceToNotchSouthWall);
         console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm (frontEdge at ${frontEdge.toFixed(1)}, notch exterior at ${(notch.maxZ + wallThickness).toFixed(1)})`);
+      }
+
+      // ✅ NEW: Handle interior corner case - object is SOUTH of notch but near notch-east wall
+      // When object extends south past the notch area (position.z > notch.maxZ),
+      // the spaceLeft (west) measurement line would visually pass through the notch cut-out area
+      // The line should stop at the notch-east wall, not extend to the main west wall
+      // This is the KEY FIX for the 318cm line issue shown in screenshot
+      // ⚠️ IMPORTANT: Only apply if object is close to the notch area (within notch Z range + tolerance)
+      // Objects far south (like on the south wall) should NOT be affected
+      const notchProximityTolerance = 50; // 50cm tolerance beyond notch.maxZ
+      const isNearNotchZRange = position.z <= notch.maxZ + notchProximityTolerance;
+
+      if (position.z > notch.maxZ && isNearNotchZRange) {
+        // Object's center is south of the notch-south wall but close to the notch area
+        // The notch-east wall exterior face (facing into main room)
+        const notchEastWallFace = notch.maxX + wallThickness;
+
+        // Calculate space from left edge to the notch-east wall
+        const spaceToNotchEastWall = leftEdge - notchEastWallFace;
+
+
+        if (spaceToNotchEastWall >= 0) {
+          // leftEdge is EAST of the notch-east wall - limit to that distance
+          spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
+        } else {
+          // leftEdge is WEST of the notch-east wall - object already extends past the reference point
+          // The user wants the line to END at the notch corner, so set spaceToWestWall to 0
+          // This will prevent the 318cm line from appearing
+          spaceToWestWall = 0;
+        }
       }
     }
 
@@ -1719,30 +1766,43 @@ export class MeasurementSystem {
           }
         }
 
+        // ✅ FIX: For corner objects at the notch-east + notch-south corner,
+        // the line's Z position (boundingBox.minZ) is flush against the notch-south wall,
+        // causing the horizontal line to render inside the notch-east wall.
+        // Offset the line south (into the room) so it's visible.
+        //
+        // IMPORTANT: Don't rely on wallDirection - it uses position (pivot) which for corner objects
+        // can be far from the actual edge. Instead, check if the object's LEFT EDGE (minX) is
+        // close to the notch-east wall (notch.maxX).
+        if (isCornerInstall && notch) {
+          const wallThickness = WALL_SETTINGS.THICKNESS;
+          const notchEastWallExterior = notch.maxX + wallThickness;
+          const distanceFromLeftEdgeToNotchEast = Math.abs(measurements.boundingBox.minX - notchEastWallExterior);
+
+          // If object's left edge is within 15cm of the notch-east wall exterior
+          if (distanceFromLeftEdgeToNotchEast < 15) {
+            lineZ = notch.maxZ + wallThickness + 15; // 15cm past notch-south wall exterior
+          }
+        }
+
         let notchLineAdjusted = false;
 
-        console.log(`📏 space-left DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
         if (notch) {
-          console.log(`📏 space-left DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
-
           // Check if line ends at notch-east wall (object is east of it)
           if (position.x > notch.maxX) {
             const distanceToNotchWall = Math.abs(endX - notch.maxX);
-            console.log(`📏 space-left: Object east of notch-east wall! endX=${endX.toFixed(1)}, notch.maxX=${notch.maxX.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
 
             if (distanceToNotchWall < 20) {
               // Don't override endX - let the space calculation handle it
               lineY = objectCenterY + 5;
               lineZ = position.z + 20;
               notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-left adjustment for notch-east wall: lineZ offset by 20cm, endX=${endX.toFixed(1)}`);
             }
           }
 
           // ✅ NEW: Check if object is near notch-south wall - offset horizontal lines away from wall
           if (!isCornerInstall && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
-            lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
-            console.log(`📏 ✅ APPLYING space-left Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)} (20cm from wall at ${notch.maxZ.toFixed(1)})`);
+            lineZ = notch.maxZ + 10; // Move south of notch-south wall
           }
         }
 
@@ -1784,8 +1844,7 @@ export class MeasurementSystem {
         }
 
         if (notch && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
-          lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
-          console.log(`📏 ✅ APPLYING space-right Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)}`);
+          lineZ = notch.maxZ + 10; // Move south of notch-south wall
         } else if (!isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
           // Apply standard wall offset (only for non-corner objects)
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
@@ -1826,28 +1885,22 @@ export class MeasurementSystem {
 
         let notchLineAdjusted = false;
 
-        console.log(`📏 space-front DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
         if (notch) {
-          console.log(`📏 space-front DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
-
           // Check if line ends at notch-south wall (object is south of it)
           if (position.z > notch.maxZ) {
             const distanceToNotchWall = Math.abs(endZ - notch.maxZ);
-            console.log(`📏 space-front: Object south of notch-south wall! endZ=${endZ.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
 
             if (distanceToNotchWall < 20) {
               // Don't override endZ - let the space calculation handle it
               lineY = objectCenterY + 5;
               if (!isCornerInstall) lineX = position.x + 20;
               notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm, endZ=${endZ.toFixed(1)}`);
             }
           }
 
-          // ✅ NEW: Check if object is near notch-east wall - offset vertical lines away from wall
+          // Check if object is near notch-east wall - offset vertical lines away from wall
           if (!isCornerInstall && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
-            lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
-            console.log(`📏 ✅ APPLYING space-front X-offset for notch-east wall: lineX=${lineX.toFixed(1)} (20cm from wall at ${notch.maxX.toFixed(1)})`);
+            lineX = notch.maxX + 10; // Move east of notch-east wall
           }
         }
 
@@ -1888,9 +1941,33 @@ export class MeasurementSystem {
           }
         }
 
-        if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
-          lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
-          console.log(`📏 ✅ APPLYING space-back X-offset for notch-east wall: lineX=${lineX.toFixed(1)}`);
+        // ✅ CRITICAL FIX: For corner objects at the notch corner, offset the line into the room
+        // The line would otherwise be drawn inside the wall
+        // Use bounding box edge distance check instead of wallDirection (wallDirection uses pivot which is far from wall)
+        if (isCornerInstall && notch) {
+          const wallThickness = WALL_SETTINGS.THICKNESS;
+          const notchEastWallExterior = notch.maxX + wallThickness;
+
+          // For different rotations, the space-back line is at different edges:
+          // - NW (0°): line is at minX (left edge, where object touches west/notch-east wall)
+          // - NE (270°): line is at maxX (right edge, where object touches east/notch-east wall)
+          let edgeToCheck: number;
+          if (cornerRotationDeg === 0) {
+            edgeToCheck = measurements.boundingBox.minX;
+          } else if (cornerRotationDeg === 270 || cornerRotationDeg === -90) {
+            edgeToCheck = measurements.boundingBox.maxX;
+          } else {
+            edgeToCheck = lineX;
+          }
+
+          const distanceToNotchEast = Math.abs(edgeToCheck - notchEastWallExterior);
+
+          if (distanceToNotchEast < 15) {
+            // Object's edge is at/near the notch-east wall - offset line into the room
+            lineX = notchEastWallExterior + 15; // 15cm into the room (east of the wall)
+          }
+        } else if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+          lineX = notch.maxX + 10; // Move 10cm east of notch-east wall
         } else if (!isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
           // Apply standard wall offset (only for non-corner objects)
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
