@@ -31,9 +31,6 @@ const interactionEvents = [
   "pointermove",
   "pointerup",
   "pointercancel",
-  "resize",
-  "focus",
-  "blur",
   "contextmenu",
   "mouseleave",
   "mouseover",
@@ -44,10 +41,9 @@ const interactionEvents = [
   "input",
   "change",
   "submit",
-  "orientationchange",
 ] as const;
 
-const windowEvents = new Set(["scroll", "resize", "orientationchange"]);
+const windowEvents = new Set(["scroll"]);
 
 let analyticsLoaded = false;
 let eventListeners: {
