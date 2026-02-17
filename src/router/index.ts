@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import Landing from '../pages/Landing.vue'
 
 const routes = [
     {
         path: '/',
         name: 'Landing',
-        component: () => import('../pages/Landing.vue')
+        component: Landing
     },
     {
         path: '/room-shape',
