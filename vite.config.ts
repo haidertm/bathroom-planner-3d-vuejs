@@ -19,7 +19,9 @@ function inlineEntryCSS(): Plugin {
             fileName.endsWith('.css') &&
             /index-[^/]+\.css$/.test(fileName)
           ) {
-            const css = chunk.source as string;
+            const css = typeof chunk.source === 'string'
+              ? chunk.source
+              : new TextDecoder('utf-8').decode(chunk.source);
             // Only inline if under 16 KiB
             if (css.length <= 16384) {
               const linkRegex = new RegExp(
