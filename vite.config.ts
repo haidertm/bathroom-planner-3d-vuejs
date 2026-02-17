@@ -44,6 +44,12 @@ export default defineConfig({
   build: {
     // Target modern browsers for smaller bundle
     target: 'es2020',
+    // Exclude analytics chunks from modulepreload hints
+    modulePreload: {
+      resolveDependencies: (_filename, deps) => {
+        return deps.filter(dep => !dep.includes('analytics') && !dep.includes('gtm') && !dep.includes('openreplay'));
+      },
+    },
     // Warn if chunks exceed 1MB
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
