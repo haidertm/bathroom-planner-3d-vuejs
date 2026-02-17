@@ -524,8 +524,10 @@ export class MeasurementSystem {
       // Objects far south (like on the south wall) should NOT be affected
       const notchProximityTolerance = 50; // 50cm tolerance beyond notch.maxZ
       const isNearNotchZRange = position.z <= notch.maxZ + notchProximityTolerance;
+      // ✅ FIX: Exclude objects ON the notch-south wall (within notch X range) - they should measure to main west wall
+      const isOnNotchSouthWall = position.x >= notch.minX && position.x <= notch.maxX;
 
-      if (position.z > notch.maxZ && isNearNotchZRange) {
+      if (position.z > notch.maxZ && isNearNotchZRange && !isOnNotchSouthWall) {
         // Object's center is south of the notch-south wall but close to the notch area
         // The notch-east wall exterior face (facing into main room)
         const notchEastWallFace = notch.maxX + wallThickness;
