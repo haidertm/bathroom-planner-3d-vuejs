@@ -2,7 +2,7 @@
   <div class="product-card" :class="{ 'product-card--mobile': isMobile }">
     <!-- Product Image -->
     <div class="product-card__image">
-      <img :src="product.image" :alt="product.name" loading="lazy" />
+      <img :src="product.image" :alt="product.name" width="200" height="150" loading="lazy" />
     </div>
 
     <!-- Product Info -->
