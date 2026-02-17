@@ -7,19 +7,16 @@ export class ModelCache {
   static async getModel(modelPath: string): Promise<THREE.Object3D> {
     // Return cached model if available
     if (this.cache.has(modelPath)) {
-      console.log(`🎯 Using cached model: ${modelPath}`);
       return this.cache.get(modelPath)!.clone();
     }
 
     // Return existing loading promise if already loading
     if (this.loadingPromises.has(modelPath)) {
-      console.log(`⏳ Waiting for existing load: ${modelPath}`);
       const loadedModel = await this.loadingPromises.get(modelPath)!;
       return loadedModel.clone();
     }
 
     // Start new loading process
-    console.log(`📦 Loading new model: ${modelPath}`);
     const loadingPromise = this.loadModelFromFile(modelPath);
     this.loadingPromises.set(modelPath, loadingPromise);
 

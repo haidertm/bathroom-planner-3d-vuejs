@@ -1,9 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Landing from '../pages/Landing.vue'
-import RoomShapeSelector from '../pages/RoomShapeSelector.vue'
-import Planner from '../pages/Planner.vue' // Renamed from Home
-import MyDesigns from '../pages/MyDesigns.vue'
-import RoomDimensions from '../pages/RoomDimensions.vue'
 
 const routes = [
     {
@@ -14,22 +10,22 @@ const routes = [
     {
         path: '/room-shape',
         name: 'RoomShapeSelector',
-        component: RoomShapeSelector
+        component: () => import('../pages/RoomShapeSelector.vue')
     },
     {
         path: '/room-dimensions',
         name: 'RoomDimensions',
-        component: RoomDimensions
+        component: () => import('../pages/RoomDimensions.vue')
     },
     {
         path: '/planner',
         name: 'Planner',
-        component: Planner
+        component: () => import('../pages/Planner.vue')
     },
     {
         path: '/my-designs',
         name: 'MyDesigns',
-        component: MyDesigns
+        component: () => import('../pages/MyDesigns.vue')
     }
 ]
 
