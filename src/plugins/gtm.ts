@@ -24,7 +24,7 @@ export function initGTM(app: App, router: Router) {
       enabled: true,
       debug: import.meta.env.DEV,
       loadScript: true,
-      vueRouter: router,
+      vueRouter: router as any,
       trackOnNextTick: false,
     })
   )
