@@ -90,7 +90,7 @@ export function setupGTM(app: App, router: Router) {
         enabled: true,
         debug: import.meta.env.DEV, // Enable debug mode in development
         loadScript: true, // Let the plugin load the script
-        vueRouter: router, // Auto-track page views
+        vueRouter: router as any, // Auto-track page views (cast to any due to vue-router version mismatch)
         trackOnNextTick: false, // Track immediately for better accuracy
       })
     )

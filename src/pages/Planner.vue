@@ -668,6 +668,8 @@ const handleVariantSwap = async (swapConfig) => {
 
                   // Update measurements if enabled
                   if (eventHandlersRef.value.measurementSystem) {
+                    // Update existing items first so measurements use new variant's dimensions
+                    eventHandlersRef.value.measurementSystem.updateExistingItems(items.value)
                     eventHandlersRef.value.measurementSystem.setSelectedObject(fullModel)
                   }
 
@@ -728,6 +730,8 @@ const handleVariantSwap = async (swapConfig) => {
 
                 // Update measurements if enabled
                 if (eventHandlersRef.value.measurementSystem) {
+                  // Update existing items first so measurements use new variant's dimensions
+                  eventHandlersRef.value.measurementSystem.updateExistingItems(items.value)
                   eventHandlersRef.value.measurementSystem.setSelectedObject(addedModel)
                 }
 
