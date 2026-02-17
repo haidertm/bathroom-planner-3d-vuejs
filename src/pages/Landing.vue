@@ -10,6 +10,14 @@
 
     <!-- Hero Section -->
     <section class="hero-section">
+      <img
+          src="/assets/home-banner.webp"
+          alt="Build Your Dream Bathroom in Minutes. Start New Project"
+          class="hero-bg"
+          width="1400"
+          height="340"
+          fetchpriority="high"
+      />
       <div class="hero-content">
         <div class="hero-overlay">
           <h1 class="hero-title">Build Your Dream<br>Bathroom in<br>Minutes.</h1>
@@ -67,7 +75,7 @@
       <div class="templates-container">
         <div class="template-card" @click="selectTemplate('small-ensuite')">
           <div class="template-image">
-            <img src="/assets/ensuite.webp" alt="Small Ensuite" />
+            <img src="/assets/ensuite.webp" alt="Small Ensuite" width="400" height="190" loading="lazy" />
           </div>
           <div class="template-info">
             <h3>Small Ensuite</h3>
@@ -79,7 +87,7 @@
 
         <div class="template-card" @click="selectTemplate('family-bathroom')">
           <div class="template-image">
-            <img src="/assets/family-bathroom.webp" alt="Family Bathroom" />
+            <img src="/assets/family-bathroom.webp" alt="Family Bathroom" width="400" height="190" loading="lazy" />
           </div>
           <div class="template-info">
             <h3>Family Bathroom</h3>
@@ -91,7 +99,7 @@
 
         <div class="template-card" @click="selectTemplate('cloak-room')">
           <div class="template-image">
-            <img src="/assets/cloakroom.webp" alt="Cloakroom" />
+            <img src="/assets/cloakroom.webp" alt="Cloakroom" width="400" height="190" loading="lazy" />
           </div>
           <div class="template-info">
             <h3>Cloakroom</h3>

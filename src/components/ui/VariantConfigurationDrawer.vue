@@ -38,6 +38,8 @@
               :src="selectedVariant?.image || product?.image"
               :alt="selectedVariant?.name || product?.name || 'Product image'"
               :style="productImageStyle"
+              width="100"
+              height="100"
               @error="handleImageError"
           />
           <div v-else :style="imagePlaceholderStyle">
