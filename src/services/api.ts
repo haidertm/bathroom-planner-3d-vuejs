@@ -475,6 +475,7 @@ function transformVariantToApi(variant: ProductVariant): ApiProductVariant {
     },
     orientation: variant.orientation,
     movement: variant.movement,
+    filterAttributes: variant.filterAttributes,
   };
 }
 

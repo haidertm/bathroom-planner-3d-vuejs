@@ -29,13 +29,14 @@ async function generateMigration() {
     sql += `\n-- Category: ${category}\n`;
 
     for (const product of products) {
-      const productId = product.id;
+      const productId = escapeSql(product.id);
+      const categoryEscaped = escapeSql(category);
       const name = escapeSql(product.name);
-      const price = product.price || '0';
+      const price = parseFloat(product.price) || 0;
       const link = escapeSql(product.link || '');
       const image = escapeSql(product.image || '');
       const variantType = escapeSql(product.variantType || '');
-      const features = JSON.stringify(product.features || []);
+      const features = escapeSql(JSON.stringify(product.features || []));
 
       // Process variants - keep all data including filterAttributes
       const variants = (product.variants || []).map(variant => ({
@@ -56,9 +57,9 @@ async function generateMigration() {
         filterAttributes: variant.filterAttributes
       }));
 
-      const variantsJson = JSON.stringify(variants);
+      const variantsJson = escapeSql(JSON.stringify(variants));
 
-      sql += `INSERT INTO products (product_id, category, name, price, link, image, variant_type, features, variants, enabled) VALUES ('${productId}', '${category}', '${name}', ${parseFloat(price) || 0}, '${link}', '${image}', '${variantType}', '${features}'::jsonb, '${escapeSql(variantsJson)}'::jsonb, true) ON CONFLICT (product_id) DO UPDATE SET category = EXCLUDED.category, name = EXCLUDED.name, price = EXCLUDED.price, link = EXCLUDED.link, image = EXCLUDED.image, variant_type = EXCLUDED.variant_type, features = EXCLUDED.features, variants = EXCLUDED.variants, updated_at = CURRENT_TIMESTAMP;\n`;
+      sql += `INSERT INTO products (product_id, category, name, price, link, image, variant_type, features, variants, enabled) VALUES ('${productId}', '${categoryEscaped}', '${name}', ${price}, '${link}', '${image}', '${variantType}', '${features}'::jsonb, '${variantsJson}'::jsonb, true) ON CONFLICT (product_id) DO UPDATE SET category = EXCLUDED.category, name = EXCLUDED.name, price = EXCLUDED.price, link = EXCLUDED.link, image = EXCLUDED.image, variant_type = EXCLUDED.variant_type, features = EXCLUDED.features, variants = EXCLUDED.variants, updated_at = CURRENT_TIMESTAMP;\n`;
     }
   }
 

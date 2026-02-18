@@ -2001,13 +2001,27 @@ export const findFreeCornerPosition = (
     // Try each corner
     for (const corner of cornersToTry) {
 
+        // Create temporary item with SKU and model for proper dimension lookup
+        const tempItem: BathroomItem = {
+            id: -1,
+            type: objectType,
+            position: [corner.position.x, corner.position.y, corner.position.z] as [number, number, number],
+            scale: scale,
+            sku: sku,
+            model: model
+        };
+
         const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
             type: objectType,
             scale: 1.0,
             orientation,
             movement,
-            sku
+            sku,
+            item: tempItem  // Pass tempItem so constrainToCorner can use model for dimensions
         });
+
+        // Update tempItem position with constrained result
+        tempItem.position = [result.position.x, result.position.y, result.position.z] as [number, number, number];
 
         console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
         console.log(`🔍 Existing items count:`, existingItems.length);
@@ -2017,15 +2031,6 @@ export const findFreeCornerPosition = (
             position: item.position
         })));
 
-        // Create temporary item with SKU for proper collision detection
-        const tempItem: BathroomItem = {
-            id: -1,
-            type: objectType,
-            position: [result.position.x, result.position.y, result.position.z] as [number, number, number],
-            scale: scale,
-            sku: sku
-        };
-
         // Check if this corner position would collide with existing items
         const wouldCollide = wouldCollideWithExisting(
             result.position,
@@ -2033,7 +2038,7 @@ export const findFreeCornerPosition = (
             scale,
             -1, // New item, no ID yet
             existingItems,
-            tempItem // Pass temporary item for proper dimension lookup
+            tempItem // Pass temporary item with model for proper dimension lookup
         );
 
         console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
@@ -2103,13 +2108,14 @@ const findFreeStandingPosition = (
 
         const rotation = 0;
 
-        // Create temporary item for collision detection with SKU
+        // Create temporary item for collision detection with SKU and model
         const tempItem: BathroomItem = {
             id: -1,
             type: objectType,
             position: [position.x, position.y, position.z] as [number, number, number],
             scale: scale,
-            sku: sku
+            sku: sku,
+            model: model
         };
 
         // Check for collisions
@@ -2152,13 +2158,14 @@ const findFreeStandingPosition = (
         z: (interior.minZ + interior.maxZ) / 2
     };
 
-    // Create temporary item for collision detection
+    // Create temporary item for collision detection with model
     const fallbackTempItem: BathroomItem = {
         id: -1,
         type: objectType,
         position: [fallbackPosition.x, fallbackPosition.y, fallbackPosition.z] as [number, number, number],
         scale: scale,
-        sku: sku
+        sku: sku,
+        model: model
     };
 
     // Check if fallback position collides
