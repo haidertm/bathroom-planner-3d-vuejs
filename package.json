@@ -10,6 +10,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "glb:scan": "tsx ./scripts/get-glb-dimensions.ts",
+    "generate:migration": "tsx ./scripts/generateMigration.js",
     "structure": "tree -a -I 'node_modules|.git|dist|build|.idea|.vscode|.codesandbox|.devcontainer' > project-structure.txt"
   },
   "dependencies": {

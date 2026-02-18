@@ -2,7 +2,7 @@
  * Script to generate migration.sql from productData.ts
  * This transfers all product data including filterAttributes to the database
  *
- * Usage: node scripts/generateMigration.js
+ * Usage: yarn generate:migration
  */
 
 import fs from 'fs';
