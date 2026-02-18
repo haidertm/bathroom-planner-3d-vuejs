@@ -36,6 +36,10 @@ export interface ApiProductVariant {
     minHeight?: number;
     maxHeight?: number;
   };
+  // Filter attributes for product filtering
+  filterAttributes?: {
+    [key: string]: string | number | boolean;
+  };
 }
 
 // API Product (snake_case as returned from backend)

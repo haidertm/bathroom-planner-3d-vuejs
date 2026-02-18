@@ -421,20 +421,30 @@
     <ProductDrawer
         v-bind="productDrawerProps"
         :search-triggered="searchTriggered"
+        :category-products="categoryProducts"
         @close="handleProductDrawerClose"
         @add-to-room="handleAddToRoom"
         @retry-loading="retryLoadingCategory"
+        @update:filters="handleFilterUpdate"
+        @category-transition="handleCategoryTransition"
+        @clear-background-filters="handleClearBackgroundFilters"
+        @expand-search-constraint="handleExpandSearchConstraint"
     />
   </div>
 </template>
 
 <script setup>
-import {computed, ref, watch, onBeforeUnmount, onMounted, nextTick} from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
 import { ROOM_DEFAULTS } from '../../constants/dimensions.js'
 import { isMobile } from '../../utils/helpers.js'
 import ProductDrawer from './ProductDrawer.vue'
+import { filterProducts, getActiveFilterCount } from '../../utils/filters'
+import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
+
+const gtm = useGtm()
 
 // NEW: Import selective preloading functions
 import localProductData from '../../mocks/productData.js'
@@ -800,7 +810,6 @@ const addLoadedProduct = (productId) => {
     next.add(productId)
     loadedProducts.value = next
   }
-  console.log(`✅ UI REACTIVE UPDATE - Product ${productId} added, total: ${loadedProductsCount.value}`)
 }
 
 // FIXED: Add missing helper functions
@@ -811,6 +820,121 @@ const getProductsForCategory = (category) => {
 // Product drawer state
 const isProductDrawerOpen = ref(false)
 const selectedCategory = ref('')
+
+// Filter state
+const selectedFilters = ref(createEmptyFilters())
+
+// Search result product IDs - limits category view to products from search
+const searchResultProductIds = ref(null)
+
+// Computed: Get products for current category
+const categoryProducts = computed(() => {
+  if (!selectedCategory.value || selectedCategory.value === 'search') return []
+
+  const allCategoryProducts = getProductsForCategory(selectedCategory.value)
+
+  // If coming from search, only show products that were in search results
+  if (searchResultProductIds.value && searchResultProductIds.value.length > 0) {
+    return allCategoryProducts.filter(product =>
+      searchResultProductIds.value.includes(product.id)
+    )
+  }
+
+  return allCategoryProducts
+})
+
+// Computed: Get filtered products based on selected filters
+const filteredCategoryProducts = computed(() => {
+  if (!categoryProducts.value.length) return []
+  return filterProducts(categoryProducts.value, selectedFilters.value)
+})
+
+// Handle filter updates
+const handleFilterUpdate = (newFilters) => {
+  selectedFilters.value = newFilters
+
+  // Track filter change in GTM
+  if (gtm?.enabled()) {
+    const activeCount = getActiveFilterCount(newFilters)
+    gtm.trackEvent({
+      event: 'filter_change',
+      category: 'Filters',
+      action: 'Update Filters',
+      label: `${selectedCategory.value || 'All'} - ${activeCount} active`,
+      filterCount: activeCount
+    })
+  }
+}
+
+// Reset filters when category changes
+const resetFilters = () => {
+  selectedFilters.value = createEmptyFilters()
+}
+
+// Handle category transition from search view
+// This is triggered when user selects a specific category from SearchFilterBar
+// Background filters (style, price) are preserved and passed to the category view
+const handleCategoryTransition = (transitionData) => {
+  const { category, backgroundFilters, searchResultProductIds: productIds } = transitionData
+
+  // Store the search result product IDs to limit category products
+  searchResultProductIds.value = productIds || null
+
+  // Reset current filters for the new category
+  resetFilters()
+
+  // Apply background filters to selectedFilters so they are actually used in filtering
+  if (backgroundFilters) {
+    // Apply style filters
+    if (backgroundFilters.style && backgroundFilters.style.length > 0) {
+      selectedFilters.value.style = [...backgroundFilters.style]
+    }
+
+    // Apply price filters
+    if (backgroundFilters.priceMin !== null && backgroundFilters.priceMin !== undefined) {
+      selectedFilters.value.priceMin = backgroundFilters.priceMin
+    }
+    if (backgroundFilters.priceMax !== null && backgroundFilters.priceMax !== undefined) {
+      selectedFilters.value.priceMax = backgroundFilters.priceMax
+    }
+  }
+
+  // Track in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'category_transition_from_search',
+      category: 'Navigation',
+      action: 'Category Transition',
+      label: category,
+      backgroundFiltersCount: (backgroundFilters?.style?.length || 0) +
+                               ((backgroundFilters?.priceMin !== null || backgroundFilters?.priceMax !== null) ? 1 : 0)
+    })
+  }
+
+  // Trigger the category selection (this opens the category view with category-specific filters)
+  // Pass true to indicate this is from a search transition (don't clear searchResultProductIds)
+  handleCategoryClick(category, true)
+}
+
+// Handle clearing background filters
+// This is triggered when user clicks "Clear" in the "Filters from Search" section
+const handleClearBackgroundFilters = () => {
+  // Clear style filters
+  selectedFilters.value.style = []
+
+  // Reset price filters to default (0 and undefined means no price filter)
+  selectedFilters.value.priceMin = 0
+  selectedFilters.value.priceMax = undefined
+
+  // Clear search result product IDs - this allows all category products to be shown
+  searchResultProductIds.value = null
+}
+
+// Handle expanding search constraint
+// This is triggered when user changes filters in category view after transitioning from search
+const handleExpandSearchConstraint = () => {
+  searchResultProductIds.value = null
+}
 
 // NEW: Selective preloading state
 let progressCheckIntervalId = null
@@ -859,8 +983,16 @@ const getCategoryModelPaths = (category) => {
 const failedProducts = ref(new Set())
 
 // NEW: Enhanced category click handler with selective preloading
-const handleCategoryClick = async (category) => {
-  console.log(`🖱️ Category clicked: ${category}`)
+const handleCategoryClick = async (category, fromSearchTransition = false) => {
+  // Clear search query when navigating to a category to avoid UX confusion
+  searchQuery.value = ''
+  searchResults.value = []
+  hasSearched.value = false
+
+  // Clear search result product IDs when directly clicking category (not from search transition)
+  if (!fromSearchTransition) {
+    searchResultProductIds.value = null
+  }
 
   // GTM tracking for category selection
     if (window.dataLayer) {
@@ -891,7 +1023,6 @@ const handleCategoryClick = async (category) => {
   // No longer loading
   isLoading.value = false
 
-  console.log(`✅ All ${categoryProducts.length} products in ${category} ready immediately`)
 }
 
 // Pass the loading states to ProductDrawer
@@ -902,6 +1033,14 @@ const productDrawerProps = computed(() => ({
   loadingError: errorMessage.value,
   searchResults: searchResults,
   searchQuery: searchQuery.value,
+  // Filter-related props
+  filteredProducts: filteredCategoryProducts.value,
+  selectedFilters: selectedFilters.value,
+  // Pass both filtered products AND all category products
+  // allCategoryProducts needed for calculating full price/filter ranges
+  allCategoryProducts: selectedCategory.value && selectedCategory.value !== 'search'
+    ? getProductsForCategory(selectedCategory.value)
+    : [],
   // Constraint checking props
   roomWidth: props.roomWidth,
   roomHeight: props.roomHeight,
@@ -961,23 +1100,29 @@ watch(() => props.notchHeight, (newNotchHeight) => {
 
 // FIXED: Product drawer methods
 const openProductDrawer = (category) => {
-  console.log('🔍 Opening product drawer for category:', category)
   selectedCategory.value = category
   isProductDrawerOpen.value = true
 
   // On mobile, keep sidebar visible when opening product drawer
   // Don't auto-hide it - let user control it
-  console.log('🔍 Product drawer opened, sidebar remains visible')
 }
 
 const handleProductDrawerClose = () => {
-  console.log('🔍 Product drawer close event received')
   isProductDrawerOpen.value = false
   selectedCategory.value = ''
 
+  // Clear search query when closing the drawer to avoid UX confusion
+  searchQuery.value = ''
+  searchResults.value = []
+  hasSearched.value = false
+  // Reset filters when closing the drawer
+  resetFilters()
+
+  // Clear search result product IDs when closing drawer
+  searchResultProductIds.value = null
+
   // IMPORTANT: Don't hide the main sidebar when closing product drawer
   // The sidebar should stay open for the user to access other features
-  console.log('🔍 Product drawer closed, sidebar remains visible')
 }
 
 const handleAddToRoom = (product) => {
@@ -1052,7 +1197,6 @@ const isMobileDevice = computed(() => isMobile())
 
 // Mobile sidebar methods
 const showSidebar = () => {
-  console.log('🔍 Showing sidebar')
   isSidebarVisible.value = true
 }
 
@@ -1061,12 +1205,10 @@ const hideSidebar = () => {
 
   // Also close any open drawers when hiding sidebar
   if (isProductDrawerOpen.value) {
-    console.log('🔍 Also closing product drawer when hiding sidebar')
     handleProductDrawerClose()
   }
 
   if (isTextureDrawerOpen.value) {
-    console.log('🔍 Also closing texture drawer when hiding sidebar')
     closeTextureDrawer()
   }
 }
@@ -1452,10 +1594,10 @@ const getTexturePreviewStyle = (texture) => ({
 // (I'll keep them the same as in your original code)
 const mobileFloatingButtonStyle = computed(() => ({
   position: 'fixed',
-  bottom: '30px',
-  left: '20px',
-  width: '60px',
-  height: '60px',
+  bottom: '130px',
+  left: '16px',
+  width: '50px',
+  height: '50px',
   borderRadius: '50%',
   backgroundColor: isButtonPressed.value ? '#29275B' : '#29275B',
   color: 'white',
@@ -1469,7 +1611,8 @@ const mobileFloatingButtonStyle = computed(() => ({
   transform: isButtonPressed.value ? 'scale(0.95)' : 'scale(1)',
   fontSize: '24px',
   fontWeight: 'bold',
-  backdropFilter: 'blur(10px)'
+  backdropFilter: 'blur(10px)',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
 }))
 
 const plusIconStyle = computed(() => ({
@@ -1975,7 +2118,6 @@ const performSearch = (query) => {
   const results = [];
   const lowerQuery = query.toLowerCase();
 
-  console.log('🔍 Starting live search for:', query);
 
   // Your existing search logic (exact SKU match first)
   let exactSkuMatch = null;
@@ -1985,7 +2127,6 @@ const performSearch = (query) => {
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach((variant) => {
           if (variant.sku && variant.sku.toLowerCase() === lowerQuery) {
-            console.log('✅ EXACT SKU MATCH FOUND:', variant.sku);
             exactSkuMatch = {
               category,
               product: { ...product },
@@ -2000,7 +2141,6 @@ const performSearch = (query) => {
   });
 
   if (exactSkuMatch) {
-    console.log('🎯 Returning single exact SKU match:', exactSkuMatch);
     searchResults.value = [exactSkuMatch];
     return;
   }
@@ -2033,7 +2173,6 @@ const performSearch = (query) => {
     });
   });
 
-  console.log(`🔍 Live search completed. Found ${results.length} results:`, results);
   searchResults.value = results;
 };
 
@@ -2048,7 +2187,6 @@ const openProductDrawerWithFilteredResults = () => {
     return;
   }
 
-  console.log(`🔍 Opening live search results:`, searchResults.value);
 
   // FIXED: Force drawer to close and reopen to reset internal state
   if (isProductDrawerOpen.value && selectedCategory.value !== 'search') {

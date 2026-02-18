@@ -47,6 +47,10 @@ export interface ProductVariant {
     minHeight?: number;
     maxHeight?: number;
   };
+  // Filter attributes for product filtering
+  filterAttributes?: {
+    [key: string]: string | number | boolean;
+  };
 }
 
 // Product Group (contains variants)

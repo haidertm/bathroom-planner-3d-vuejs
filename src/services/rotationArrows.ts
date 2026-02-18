@@ -295,7 +295,7 @@ export class RotationArrows {
 
         if (intersectedArrow && this.selectedObject) {
             event.preventDefault();
-            event.stopPropagation();
+            event.stopImmediatePropagation();
 
             this.isDragging = true;
             this.draggedArrow = intersectedArrow;

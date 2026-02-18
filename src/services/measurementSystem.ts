@@ -6,6 +6,16 @@ import { getDimensions, getInteriorBoundaries } from '../utils/constraints';
 import { getMovementConfig } from '../utils/models';
 import {WALL_SETTINGS} from "../constants/dimensions.ts";
 
+// Return type for calculateAvailableSpace (without boundingBox)
+interface SpaceCalculations {
+  spaceLeft: number;
+  spaceRight: number;
+  spaceFront: number;
+  spaceBack: number;
+  spaceAbove: number;
+  spaceBelow: number;
+}
+
 export interface MeasurementData {
   objectWidth: number;
   objectDepth: number;
@@ -20,6 +30,13 @@ export interface MeasurementData {
   spaceBelow: number;
   isWallBound: boolean;
   wallDirection?: 'north' | 'south' | 'east' | 'west' | 'notch-south' | 'notch-east';
+  // ✅ Bounding box edges for accurate line positioning (especially for corner objects)
+  boundingBox: {
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+  };
 }
 
 export interface MeasurementLabel {
@@ -164,11 +181,22 @@ export class MeasurementSystem {
     }
 
     // Apply scale to the product-specific dimensions
-    const scaledWidth = dimensions.width * objectScale;
-    const scaledDepth = dimensions.depth * objectScale;
+    const scaledBaseWidth = dimensions.width * objectScale;
+    const scaledBaseDepth = dimensions.depth * objectScale;
     const scaledHeight = dimensions.height * objectScale;
     const scaledFloorOffset = dimensions.floorOffset * objectScale; // ✅ CRITICAL: Scale the floor offset too
     const scaledSpawnHeight = dimensions.spawnHeight * objectScale; // ✅ CRITICAL: Scale the floor offset too
+
+    // ✅ FIX: Account for current object's rotation - at 90° or 270°, width and depth are swapped
+    const objectRotation = currentItem?.rotation || this.selectedObject.rotation.y || 0;
+    // Normalize rotation to [0, 2π) range
+    const normalizedObjectRotation = ((objectRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+    const rotationEpsilon = 0.01;
+    const isCurrentObjectRotated90 =
+      Math.abs(normalizedObjectRotation - Math.PI / 2) < rotationEpsilon ||      // 90°
+      Math.abs(normalizedObjectRotation - (3 * Math.PI / 2)) < rotationEpsilon;  // 270°
+    const scaledWidth = isCurrentObjectRotated90 ? scaledBaseDepth : scaledBaseWidth;  // Effective X-axis dimension
+    const scaledDepth = isCurrentObjectRotated90 ? scaledBaseWidth : scaledBaseDepth;  // Effective Z-axis dimension
 
     // Check if object is wall-bound
     const isWallBound = this.isObjectWallBound(objectPosition, scaledWidth, scaledDepth);
@@ -178,6 +206,7 @@ export class MeasurementSystem {
     const spaceCalculations = this.calculateAvailableSpace(
       objectPosition,
       scaledWidth,
+      scaledDepth,  // ✅ FIX: Pass depth for Z-axis calculations
       scaledHeight,
       this.selectedObject.userData.itemId
     );
@@ -233,6 +262,20 @@ export class MeasurementSystem {
       }
     }
 
+    // ✅ Calculate current object's bounding box edges for accurate line positioning
+    let boundingBox: { minX: number; maxX: number; minZ: number; maxZ: number };
+    if (currentItem) {
+      boundingBox = this.getItemBoundingBoxEdges(currentItem, objectPosition, scaledWidth, scaledDepth);
+    } else {
+      // Fallback to center-pivot calculation if item not found
+      boundingBox = {
+        minX: objectPosition.x - scaledWidth / 2,
+        maxX: objectPosition.x + scaledWidth / 2,
+        minZ: objectPosition.z - scaledDepth / 2,
+        maxZ: objectPosition.z + scaledDepth / 2
+      };
+    }
+
     return {
       objectWidth: scaledWidth,
       objectDepth: scaledDepth,
@@ -241,7 +284,8 @@ export class MeasurementSystem {
       spawnHeight: scaledSpawnHeight, // ✅ NEW: Include spawnHeight in measurement data
       ...adjustedSpaceCalculations,
       isWallBound,
-      wallDirection
+      wallDirection,
+      boundingBox
     };
   }
 
@@ -385,9 +429,10 @@ export class MeasurementSystem {
   private calculateAvailableSpace (
       position: THREE.Vector3,
       width: number,
+      depth: number, // ✅ FIX: Added depth parameter for Z-axis calculations
       height: number,
       excludeItemId: number
-  ): Omit<MeasurementData, 'objectWidth' | 'objectDepth' | 'objectHeight' | 'floorOffset' | 'isWallBound' | 'wallDirection' | 'spawnHeight'> {
+  ): SpaceCalculations {
     const roomHalfWidth = this.roomWidth / 2;
     const roomHalfHeight = this.roomHeight / 2;
     const wallThickness = WALL_SETTINGS.THICKNESS + 1; // Use wall width from WALL_SETTINGS
@@ -395,11 +440,11 @@ export class MeasurementSystem {
     // Get interior boundaries including notch information
     const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
 
-    // Calculate space to main room boundaries
+    // ✅ FIX: Use width for X-axis (left/right) and depth for Z-axis (front/back)
     let spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallThickness;
     let spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallThickness;
-    let spaceToNorthWall = (position.z + roomHalfHeight) - width / 2 - wallThickness;
-    let spaceToSouthWall = (roomHalfHeight - position.z) - width / 2 - wallThickness;
+    let spaceToNorthWall = (position.z + roomHalfHeight) - depth / 2 - wallThickness;
+    let spaceToSouthWall = (roomHalfHeight - position.z) - depth / 2 - wallThickness;
 
     // ✅ NEW: Consider notch walls as boundaries for L-shaped rooms
     if (notch) {
@@ -418,7 +463,7 @@ export class MeasurementSystem {
       // ✅ CRITICAL FIX: Only apply if object X is within notch X range (actually near the notch wall)
       if (position.z > notch.maxZ && position.x >= notch.minX && position.x <= notch.maxX) {
         // notch.maxZ is interior face - add wallThickness to get exterior face
-        const spaceToNotchSouthWall = position.z - width / 2 - notch.maxZ - wallThickness;
+        const spaceToNotchSouthWall = position.z - depth / 2 - notch.maxZ - wallThickness;
         spaceToNorthWall = Math.min(spaceToNorthWall, spaceToNotchSouthWall);
         console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm (interior face at ${notch.maxZ.toFixed(1)}, exterior at ${(notch.maxZ + wallThickness).toFixed(1)})`);
       }
@@ -426,7 +471,7 @@ export class MeasurementSystem {
 
     // Calculate space to other objects
     const spaceToObjects = this.calculateSpaceToOtherObjects(
-        position, width, height, excludeItemId
+        position, width, depth, height, excludeItemId
     );
 
     return {
@@ -442,7 +487,8 @@ export class MeasurementSystem {
   private calculateSpaceToOtherObjects (
     position: THREE.Vector3,
     width: number,
-    height: number, // ✅ Now we use the height parameter
+    depth: number, // ✅ FIX: Added depth parameter for Z-axis calculations
+    height: number,
     excludeItemId: number
   ): { left: number; right: number; front: number; back: number } {
     let minLeft = Infinity;
@@ -459,7 +505,6 @@ export class MeasurementSystem {
     // Calculate current object's actual vertical range
     const currentBottomY = position.y + currentFloorOffset;
     const currentTopY = currentBottomY + height;
-    console.log('>>> who is here', currentBottomY, currentTopY)
 
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return;
@@ -473,10 +518,21 @@ export class MeasurementSystem {
       }
 
       const itemScale = item.scale || 1.0;
-      const itemWidth = itemDimensions.width * itemScale;
-      // const itemDepth = itemDimensions.depth * itemScale;
+      const itemBaseWidth = itemDimensions.width * itemScale;
+      const itemBaseDepth = itemDimensions.depth * itemScale;
       const itemHeight = itemDimensions.height * itemScale;
       const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      // ✅ FIX: Account for item rotation - at 90° or 270°, width and depth are swapped
+      const itemRotation = item.rotation || 0;
+      // Normalize rotation to [0, 2π) range
+      const normalizedItemRotation = ((itemRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      const itemRotationEpsilon = 0.01;
+      const isItemRotated90 =
+        Math.abs(normalizedItemRotation - Math.PI / 2) < itemRotationEpsilon ||      // 90°
+        Math.abs(normalizedItemRotation - (3 * Math.PI / 2)) < itemRotationEpsilon;  // 270°
+      const itemEffectiveWidth = isItemRotated90 ? itemBaseDepth : itemBaseWidth;  // X-axis dimension
+      const itemEffectiveDepth = isItemRotated90 ? itemBaseWidth : itemBaseDepth;  // Z-axis dimension
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
 
@@ -485,30 +541,96 @@ export class MeasurementSystem {
       const itemTopY = itemBottomY + itemHeight;
 
       // ✅ KEY FIX: Only measure distance if objects have height overlap
-      const verticalOverlapBuffer = 5; // 20cm buffer
+      const verticalOverlapBuffer = 5; // 5cm buffer
       const hasVerticalOverlap = !(currentTopY + verticalOverlapBuffer < itemBottomY ||
         itemTopY + verticalOverlapBuffer < currentBottomY);
       if (!hasVerticalOverlap) {
         // Objects are at different heights - skip this object
         console.log(`⏭️ Skipping ${item.type} - different height level (${Math.abs(currentBottomY - itemBottomY).toFixed(1)}cm apart)`);
-        return; // ✅ This is the key fix - return early for objects at different heights
+        return;
       }
 
-      // Rest of the method remains exactly the same
-      const leftDistance = Math.abs(position.x - width / 2 - (itemPos.x + itemWidth / 2));
-      const rightDistance = Math.abs(position.x + width / 2 - (itemPos.x - itemWidth / 2));
-      const frontDistance = Math.abs(position.z - width / 2 - (itemPos.z + itemWidth / 2));
-      const backDistance = Math.abs(position.z + width / 2 - (itemPos.z - itemWidth / 2));
+      // ✅ FIX: Get actual bounding box edges (accounts for corner-install pivot positioning)
+      const itemBounds = this.getItemBoundingBoxEdges(item, itemPos, itemEffectiveWidth, itemEffectiveDepth);
 
-      // Update minimum distances (considering object alignment)
-      if (this.objectsAlignedOnAxis(position, itemPos, 'x')) {
-        if (itemPos.x < position.x) minLeft = Math.min(minLeft, leftDistance);
-        if (itemPos.x > position.x) minRight = Math.min(minRight, rightDistance);
+      // Calculate current object's bounding box edges
+      // Also check if current object is corner-installed
+      let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
+
+      if (currentItem) {
+        const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, width, depth);
+        currentMinX = currentBounds.minX;
+        currentMaxX = currentBounds.maxX;
+        currentMinZ = currentBounds.minZ;
+        currentMaxZ = currentBounds.maxZ;
+      } else {
+        // Fallback to center-pivot if current item not found
+        currentMinX = position.x - width / 2;
+        currentMaxX = position.x + width / 2;
+        currentMinZ = position.z - depth / 2;
+        currentMaxZ = position.z + depth / 2;
       }
 
-      if (this.objectsAlignedOnAxis(position, itemPos, 'z')) {
-        if (itemPos.z < position.z) minFront = Math.min(minFront, frontDistance);
-        if (itemPos.z > position.z) minBack = Math.min(minBack, backDistance);
+      // Distance calculations: gap between nearest edges
+      const leftDistance = Math.abs(currentMinX - itemBounds.maxX);   // Current's left edge to item's right edge
+      const rightDistance = Math.abs(currentMaxX - itemBounds.minX);  // Current's right edge to item's left edge
+      const frontDistance = Math.abs(currentMinZ - itemBounds.maxZ);  // Current's front edge to item's back edge
+      const backDistance = Math.abs(currentMaxZ - itemBounds.minZ);   // Current's back edge to item's front edge
+
+      // Calculate centers for logging and direction comparison
+      const currentCenterXLog = (currentMinX + currentMaxX) / 2;
+      const currentCenterZLog = (currentMinZ + currentMaxZ) / 2;
+      const itemCenterXLog = (itemBounds.minX + itemBounds.maxX) / 2;
+      const itemCenterZLog = (itemBounds.minZ + itemBounds.maxZ) / 2;
+
+      // Debug logging
+      // ✅ FIX: Use bounding-box-overlap test instead of center/position math
+      // For X-axis alignment (left/right distance): check if Z ranges overlap
+      // For Z-axis alignment (front/back distance): check if X ranges overlap
+      const alignmentTolerance = 10; // 10cm tolerance for alignment checks
+      const xAligned = (currentMaxZ + alignmentTolerance) >= itemBounds.minZ &&
+                       (itemBounds.maxZ + alignmentTolerance) >= currentMinZ;
+      const zAligned = (currentMaxX + alignmentTolerance) >= itemBounds.minX &&
+                       (itemBounds.maxX + alignmentTolerance) >= currentMinX;
+      console.log(`📐 Distance to ${item.type}:`, {
+        currentPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
+        currentBounds: {
+          minX: currentMinX.toFixed(1), maxX: currentMaxX.toFixed(1),
+          minZ: currentMinZ.toFixed(1), maxZ: currentMaxZ.toFixed(1),
+          centerX: currentCenterXLog.toFixed(1), centerZ: currentCenterZLog.toFixed(1)
+        },
+        itemPos: { x: itemPos.x.toFixed(1), z: itemPos.z.toFixed(1) },
+        itemBounds: {
+          minX: itemBounds.minX.toFixed(1), maxX: itemBounds.maxX.toFixed(1),
+          minZ: itemBounds.minZ.toFixed(1), maxZ: itemBounds.maxZ.toFixed(1),
+          centerX: itemCenterXLog.toFixed(1), centerZ: itemCenterZLog.toFixed(1)
+        },
+        itemRotation: (itemRotation * 180 / Math.PI).toFixed(1) + '°',
+        xAligned,
+        zAligned,
+        distances: {
+          left: leftDistance.toFixed(1),
+          right: rightDistance.toFixed(1),
+          front: frontDistance.toFixed(1),
+          back: backDistance.toFixed(1)
+        }
+      });
+
+      // Update minimum distances (using bounding box centers for direction comparison)
+      // Use actual bounding box centers for both objects
+      const currentCenterX = (currentMinX + currentMaxX) / 2;
+      const currentCenterZ = (currentMinZ + currentMaxZ) / 2;
+      const itemCenterX = (itemBounds.minX + itemBounds.maxX) / 2;
+      const itemCenterZ = (itemBounds.minZ + itemBounds.maxZ) / 2;
+
+      if (xAligned) {
+        if (itemCenterX < currentCenterX) minLeft = Math.min(minLeft, leftDistance);
+        if (itemCenterX > currentCenterX) minRight = Math.min(minRight, rightDistance);
+      }
+
+      if (zAligned) {
+        if (itemCenterZ < currentCenterZ) minFront = Math.min(minFront, frontDistance);
+        if (itemCenterZ > currentCenterZ) minBack = Math.min(minBack, backDistance);
       }
     });
 
@@ -520,13 +642,95 @@ export class MeasurementSystem {
     };
   }
 
-  private objectsAlignedOnAxis (pos1: THREE.Vector3, pos2: THREE.Vector3, axis: 'x' | 'z'): boolean {
-    const tolerance = 20; // 2cm tolerance
-    if (axis === 'x') {
-      return Math.abs(pos1.z - pos2.z) < tolerance;
-    } else {
-      return Math.abs(pos1.x - pos2.x) < tolerance;
+  /**
+   * Get the actual bounding box edges for an item, accounting for corner-install pivot positioning.
+   * Corner-installed objects have their position at the corner edge, not the center.
+   *
+   * @returns { minX, maxX, minZ, maxZ } - The actual bounding box edges in world coordinates
+   */
+  private getItemBoundingBoxEdges (
+    item: BathroomItem,
+    itemPos: THREE.Vector3,
+    effectiveWidth: number,  // X-axis dimension after rotation
+    effectiveDepth: number   // Z-axis dimension after rotation
+  ): { minX: number; maxX: number; minZ: number; maxZ: number } {
+    const movementConfig = getMovementConfig(item.type, item);
+    const isCornerInstall = movementConfig.cornerInstallOnly &&
+      typeof movementConfig.cornerInstallOnly === 'object' &&
+      movementConfig.cornerInstallOnly.enabled;
+
+    if (!isCornerInstall) {
+      // Center-pivot object: position is at center
+      return {
+        minX: itemPos.x - effectiveWidth / 2,
+        maxX: itemPos.x + effectiveWidth / 2,
+        minZ: itemPos.z - effectiveDepth / 2,
+        maxZ: itemPos.z + effectiveDepth / 2
+      };
     }
+
+    // Corner-installed object: position has one axis at edge (pivot), other axis centered
+    // Determine which corner based on rotation
+    const rotation = item.rotation || 0;
+    const rotationDeg = Math.round((rotation * 180 / Math.PI + 360) % 360);
+
+    // Based on constraints.ts positioning logic:
+    // NW (0°): X centered, Z at north edge (pivot at minZ), geometry extends south (positive Z)
+    // NE (-90°/270°): X at east edge (pivot at maxX), Z centered, geometry extends west (negative X)
+    // SE (180°): X centered, Z at south edge (pivot at maxZ), geometry extends north (negative Z)
+    // SW (90°): X at west edge (pivot at minX), Z centered, geometry extends east (positive X)
+
+    let minX: number, maxX: number, minZ: number, maxZ: number;
+
+    switch (rotationDeg) {
+      case 0:
+        // NW corner: X centered, Z at north edge (pivot), extends south into room
+        minX = itemPos.x - effectiveWidth / 2;
+        maxX = itemPos.x + effectiveWidth / 2;
+        minZ = itemPos.z;                        // pivot at north wall
+        maxZ = itemPos.z + effectiveDepth;       // extends south (positive Z)
+        break;
+      case 90:
+        // SW corner: X at west edge (pivot), Z centered, extends east into room
+        minX = itemPos.x;                        // pivot at west wall
+        maxX = itemPos.x + effectiveWidth;       // extends east (positive X)
+        minZ = itemPos.z - effectiveDepth / 2;
+        maxZ = itemPos.z + effectiveDepth / 2;
+        break;
+      case 180:
+        // SE corner: X centered, Z at south edge (pivot), extends north into room
+        minX = itemPos.x - effectiveWidth / 2;
+        maxX = itemPos.x + effectiveWidth / 2;
+        minZ = itemPos.z - effectiveDepth;       // extends north (negative Z)
+        maxZ = itemPos.z;                        // pivot at south wall
+        break;
+      case 270:
+      case -90:
+        // NE corner: X at east edge (pivot), Z centered, extends west into room
+        minX = itemPos.x - effectiveWidth;       // extends west (negative X)
+        maxX = itemPos.x;                        // pivot at east wall
+        minZ = itemPos.z - effectiveDepth / 2;
+        maxZ = itemPos.z + effectiveDepth / 2;
+        break;
+      default:
+        // Fallback to center-pivot for non-standard rotations
+        console.warn(`⚠️ Unexpected corner rotation ${rotationDeg}°, using center-pivot fallback`);
+        minX = itemPos.x - effectiveWidth / 2;
+        maxX = itemPos.x + effectiveWidth / 2;
+        minZ = itemPos.z - effectiveDepth / 2;
+        maxZ = itemPos.z + effectiveDepth / 2;
+    }
+
+    console.log(`🔧 Corner object ${item.type} bounding box:`, {
+      rotation: rotationDeg + '°',
+      position: { x: itemPos.x.toFixed(1), z: itemPos.z.toFixed(1) },
+      boundingBox: {
+        minX: minX.toFixed(1), maxX: maxX.toFixed(1),
+        minZ: minZ.toFixed(1), maxZ: maxZ.toFixed(1)
+      }
+    });
+
+    return { minX, maxX, minZ, maxZ };
   }
 
   private createMeasurementVisuals(measurements: MeasurementData): void {
@@ -617,9 +821,23 @@ export class MeasurementSystem {
     const excludeItemId = this.selectedObject.userData.itemId;
     let nearestObjectBelowTopY = 0; // Start from floor level (Y=0)
 
-    // Get current object's horizontal bounds for overlap detection
-    const objectWidth = measurements.objectWidth;
-    const objectDepth = measurements.objectDepth;
+    // Get current object's horizontal bounds using getItemBoundingBoxEdges for accurate corner object handling
+    const currentItem = this.existingItems.find(item => item.id === excludeItemId);
+    let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
+
+    if (currentItem) {
+      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      currentMinX = currentBounds.minX;
+      currentMaxX = currentBounds.maxX;
+      currentMinZ = currentBounds.minZ;
+      currentMaxZ = currentBounds.maxZ;
+    } else {
+      // Fallback to center-pivot if current item not found
+      currentMinX = position.x - measurements.objectWidth / 2;
+      currentMaxX = position.x + measurements.objectWidth / 2;
+      currentMinZ = position.z - measurements.objectDepth / 2;
+      currentMaxZ = position.z + measurements.objectDepth / 2;
+    }
 
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return; // Skip current object
@@ -629,10 +847,20 @@ export class MeasurementSystem {
       if (!itemDimensions) return;
 
       const itemScale = item.scale || 1.0;
-      const itemWidth = itemDimensions.width * itemScale;
-      const itemDepth = itemDimensions.depth * itemScale;
+      const itemBaseWidth = itemDimensions.width * itemScale;
+      const itemBaseDepth = itemDimensions.depth * itemScale;
       const itemHeight = itemDimensions.height * itemScale;
       const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      // Account for item rotation - at 90° or 270°, width and depth are swapped
+      const itemRotation = item.rotation || 0;
+      const normalizedItemRotation = ((itemRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      const itemRotationEpsilon = 0.01;
+      const isItemRotated90 =
+        Math.abs(normalizedItemRotation - Math.PI / 2) < itemRotationEpsilon ||
+        Math.abs(normalizedItemRotation - (3 * Math.PI / 2)) < itemRotationEpsilon;
+      const itemEffectiveWidth = isItemRotated90 ? itemBaseDepth : itemBaseWidth;
+      const itemEffectiveDepth = isItemRotated90 ? itemBaseWidth : itemBaseDepth;
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
       const itemBottomY = itemPos.y + itemFloorOffset;
@@ -641,24 +869,13 @@ export class MeasurementSystem {
       // Check if other object is BELOW current object
       if (itemTopY >= objectBottomY - 10) return; // Not below (with 10cm buffer)
 
-      // Check horizontal overlap (XZ plane)
+      // Check horizontal overlap (XZ plane) using getItemBoundingBoxEdges for accurate bounds
       const horizontalBuffer = 10; // 10cm buffer
-
-      // Current object bounds
-      const currentMinX = position.x - objectWidth / 2;
-      const currentMaxX = position.x + objectWidth / 2;
-      const currentMinZ = position.z - objectDepth / 2;
-      const currentMaxZ = position.z + objectDepth / 2;
-
-      // Other object bounds
-      const itemMinX = itemPos.x - itemWidth / 2;
-      const itemMaxX = itemPos.x + itemWidth / 2;
-      const itemMinZ = itemPos.z - itemDepth / 2;
-      const itemMaxZ = itemPos.z + itemDepth / 2;
+      const itemBounds = this.getItemBoundingBoxEdges(item, itemPos, itemEffectiveWidth, itemEffectiveDepth);
 
       // Check for horizontal overlap
-      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
-      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+      const overlapX = !(currentMaxX + horizontalBuffer < itemBounds.minX || itemBounds.maxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemBounds.minZ || itemBounds.maxZ + horizontalBuffer < currentMinZ);
 
       if (overlapX && overlapZ) {
         // Objects overlap horizontally and other object is below
@@ -687,9 +904,23 @@ export class MeasurementSystem {
     const excludeItemId = this.selectedObject.userData.itemId;
     let nearestObjectAboveBottomY = ceilingHeight; // Start from ceiling level
 
-    // Get current object's horizontal bounds for overlap detection
-    const objectWidth = measurements.objectWidth;
-    const objectDepth = measurements.objectDepth;
+    // Get current object's horizontal bounds using getItemBoundingBoxEdges for accurate corner object handling
+    const currentItem = this.existingItems.find(item => item.id === excludeItemId);
+    let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
+
+    if (currentItem) {
+      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      currentMinX = currentBounds.minX;
+      currentMaxX = currentBounds.maxX;
+      currentMinZ = currentBounds.minZ;
+      currentMaxZ = currentBounds.maxZ;
+    } else {
+      // Fallback to center-pivot if current item not found
+      currentMinX = position.x - measurements.objectWidth / 2;
+      currentMaxX = position.x + measurements.objectWidth / 2;
+      currentMinZ = position.z - measurements.objectDepth / 2;
+      currentMaxZ = position.z + measurements.objectDepth / 2;
+    }
 
     this.existingItems.forEach(item => {
       if (item.id === excludeItemId) return; // Skip current object
@@ -699,36 +930,33 @@ export class MeasurementSystem {
       if (!itemDimensions) return;
 
       const itemScale = item.scale || 1.0;
-      const itemWidth = itemDimensions.width * itemScale;
-      const itemDepth = itemDimensions.depth * itemScale;
-      // const itemHeight = itemDimensions.height * itemScale;
+      const itemBaseWidth = itemDimensions.width * itemScale;
+      const itemBaseDepth = itemDimensions.depth * itemScale;
       const itemFloorOffset = itemDimensions.floorOffset * itemScale;
+
+      // Account for item rotation - at 90° or 270°, width and depth are swapped
+      const itemRotation = item.rotation || 0;
+      const normalizedItemRotation = ((itemRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+      const itemRotationEpsilon = 0.01;
+      const isItemRotated90 =
+        Math.abs(normalizedItemRotation - Math.PI / 2) < itemRotationEpsilon ||
+        Math.abs(normalizedItemRotation - (3 * Math.PI / 2)) < itemRotationEpsilon;
+      const itemEffectiveWidth = isItemRotated90 ? itemBaseDepth : itemBaseWidth;
+      const itemEffectiveDepth = isItemRotated90 ? itemBaseWidth : itemBaseDepth;
 
       const itemPos = new THREE.Vector3(item.position[0], item.position[1], item.position[2]);
       const itemBottomY = itemPos.y + itemFloorOffset;
-      // const itemTopY = itemBottomY + itemHeight;
 
       // Check if other object is ABOVE current object
       if (itemBottomY <= objectTopY + 10) return; // Not above (with 10cm buffer)
 
-      // Check horizontal overlap (XZ plane)
+      // Check horizontal overlap (XZ plane) using getItemBoundingBoxEdges for accurate bounds
       const horizontalBuffer = 10; // 10cm buffer
-
-      // Current object bounds
-      const currentMinX = position.x - objectWidth / 2;
-      const currentMaxX = position.x + objectWidth / 2;
-      const currentMinZ = position.z - objectDepth / 2;
-      const currentMaxZ = position.z + objectDepth / 2;
-
-      // Other object bounds
-      const itemMinX = itemPos.x - itemWidth / 2;
-      const itemMaxX = itemPos.x + itemWidth / 2;
-      const itemMinZ = itemPos.z - itemDepth / 2;
-      const itemMaxZ = itemPos.z + itemDepth / 2;
+      const itemBounds = this.getItemBoundingBoxEdges(item, itemPos, itemEffectiveWidth, itemEffectiveDepth);
 
       // Check for horizontal overlap
-      const overlapX = !(currentMaxX + horizontalBuffer < itemMinX || itemMaxX + horizontalBuffer < currentMinX);
-      const overlapZ = !(currentMaxZ + horizontalBuffer < itemMinZ || itemMaxZ + horizontalBuffer < currentMinZ);
+      const overlapX = !(currentMaxX + horizontalBuffer < itemBounds.minX || itemBounds.maxX + horizontalBuffer < currentMinX);
+      const overlapZ = !(currentMaxZ + horizontalBuffer < itemBounds.minZ || itemBounds.maxZ + horizontalBuffer < currentMinZ);
 
       if (overlapX && overlapZ) {
         // Objects overlap horizontally and other object is above
@@ -1207,8 +1435,9 @@ export class MeasurementSystem {
       labelType: label.isObjectDimension ? 'OBJECT DIMENSION' : 'SPACE'
     });
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
+      // ✅ FIX: Use bounding box edges for accurate line positioning (especially for corner objects)
       if (label.id === 'space-left') {
-        const startX = position.x - measurements.objectWidth / 2;
+        const startX = measurements.boundingBox.minX;  // Left edge of object
         let endX = startX - measurements.spaceLeft;
 
         // ✅ Check if object is in notch-affected area
@@ -1262,7 +1491,7 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(endX, lineY, lineZ), 'vertical');
 
       } else if (label.id === 'space-right') {
-        const startX = position.x + measurements.objectWidth / 2;
+        const startX = measurements.boundingBox.maxX;  // Right edge of object
         const endX = startX + measurements.spaceRight;
 
         // ✅ Check if object is near notch-south wall
@@ -1291,7 +1520,7 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(endX, objectCenterY, lineZ), 'vertical');
 
       } else if (label.id === 'space-front') {
-        const startZ = position.z - measurements.objectWidth / 2;
+        const startZ = measurements.boundingBox.minZ;  // Front edge of object
         let endZ = startZ - measurements.spaceFront;
 
         // ✅ Check if object is in notch-affected area
@@ -1344,7 +1573,7 @@ export class MeasurementSystem {
         this.createEndMarker(new THREE.Vector3(lineX, lineY, endZ), 'vertical');
 
       } else if (label.id === 'space-back') {
-        const startZ = position.z + measurements.objectWidth / 2;
+        const startZ = measurements.boundingBox.maxZ;  // Back edge of object
         const endZ = startZ + measurements.spaceBack;
 
         // ✅ Check if object is near notch-east wall - offset vertical lines away from wall

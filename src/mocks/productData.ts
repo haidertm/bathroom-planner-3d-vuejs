@@ -1,4366 +1,7007 @@
 import { ObjectModel } from '../utils/constraints';
 
 type ProductData = {
-  [key: string]: {
-    id: string;
-    link: string;
-    name: string;
-    price: string;
-    image: string;
-    variants: ObjectModel[];
-    variantType: string;
-    features: string[];
-  }[];
+    [key: string]: {
+        id: string;
+        link: string;
+        name: string;
+        price: string;
+        image: string;
+        variants: ObjectModel[];
+        variantType: string;
+        features: string[];
+    }[];
 }
 
 const productData: ProductData = {
-  Furniture: [
-    // Furniture Variant 1 (2 variants)
-    {
-      id: 'furniture_variant_1',
-      link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-short-projection-basin-drawer-vanity-600mm-c76236',
-      name: 'Corsica Gloss White Basin Drawer Vanity 600mm',
-      price: '179.00',
-      image: 'assets/productImages/furniture/C76237-1000-White-Basin-Drawer-Vanity-600mm_1.webp',
-      variants: [
+    Furniture: [
+        // Furniture Variant 1 (2 variants)
         {
-          id: 'C76236',
-          name: 'Wall Hung Slimline Basin Drawer Vanity 600mm',
-          image: 'assets/productImages/furniture/C76236-1000-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-short-projection-basin-drawer-vanity-600mm-c76236',
-          path: '../../models/furniture/basin/C76236.glb',
-          dimensions: { width: 60.4, height: 55, depth: 34.7 },
-          floorOffset: 0,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false,
-          },
-          sku: 'C76236',
-          price: '179.00',
-          title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm'
+            id: 'furniture_variant_1',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-short-projection-basin-drawer-vanity-600mm-c76236',
+            name: 'Corsica Gloss White Basin Drawer Vanity 600mm',
+            price: '179.00',
+            image: 'assets/productImages/furniture/C76237-1000-White-Basin-Drawer-Vanity-600mm_1.webp',
+            variants: [
+                {
+                    id: 'C76236',
+                    name: 'Wall Hung Slimline Basin Drawer Vanity 600mm',
+                    image: 'assets/productImages/furniture/C76236-1000-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-short-projection-basin-drawer-vanity-600mm-c76236',
+                    path: '../../models/furniture/basin/C76236.glb',
+                    dimensions: { width: 60.4, height: 55, depth: 34.7 },
+                    floorOffset: 0,
+                    spawnHeight: 32,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C76236',
+                    price: '179.00',
+                    title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76237',
+                    name: 'Slimline Basin Drawer Vanity 600mm',
+                    image: 'assets/productImages/furniture/C76237-1000-White-Basin-Drawer-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-short-projection-basin-drawer-vanity-600mm-c76237',
+                    path: '../../models/furniture/basin/C76237.glb',
+                    dimensions: { width: 60.4, height: 85, depth: 34.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C76237',
+                    price: '219.00',
+                    title: 'Corsica Gloss White Slimline Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                }
+            ],
+            variantType: 'Style Options',
+            features: ['Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        // Furniture Variant 2 (4 variants)
+        {
+            id: 'furniture_variant_2',
+            link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
+            name: 'Bali Gloss White Basin Drawer Vanity 600mm',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+            variants: [
+                {
+                    id: 'C77605',
+                    name: '600mm Floorstanding',
+                    image: 'assets/productImages/furniture/C77605-1000-Bali-Gloss-White-Basin-Drawer_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
+                    path: '../../models/furniture/basin/C77605.glb',
+                    dimensions: { width: 61, height: 95.6, depth: 44 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77605',
+                    price: '399.99',
+                    title: 'Bali Gloss White Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '440mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77606',
+                    name: '800mm Wall Hung',
+                    sku: 'C77606',
+                    image: 'assets/productImages/furniture/C77606-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-800mm',
+                    path: '../../models/furniture/basin/C77606.glb',
+                    dimensions: { width: 81.3, height: 65.4, depth: 44 },
+                    floorOffset: 32,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    price: '429.99',
+                    title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '440mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77607',
+                    name: '800mm Floorstanding',
+                    sku: 'C77607',
+                    image: 'assets/productImages/furniture/C77607-1000-Bali-Gloss-White-Basin-Drawer-_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-800mm',
+                    path: '../../models/furniture/basin/C77607.glb',
+                    dimensions: { width: 81.3, height: 95.9, depth: 44 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    price: '415.00',
+                    title: 'Bali Gloss White Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '440mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77608',
+                    name: '1000mm Wall Hung',
+                    sku: 'C77608',
+                    image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-1000mm',
+                    path: '../../models/furniture/basin/C77608.glb',
+                    dimensions: { width: 100.08, height: 63.8, depth: 43.9 },
+                    floorOffset: 32,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    price: '431.00',
+                    title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm',
+                    filterAttributes: { width: '1000mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '439mm', style: 'Modern' }
+                }
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_3',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
+            name: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm',
+            price: '183.99',
+            image: 'assets/productImages/furniture/c76234-1000-white-wall-hung-basin-drawer-vanity-500mm.webp',
+            variants: [
+                {
+                    id: 'C76234',
+                    name: '500mm Wall Hung',
+                    image: 'assets/productImages/furniture/c76234-1000-white-wall-hung-basin-drawer-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
+                    path: '../../models/furniture/basin/C76234.glb',
+                    dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+                    floorOffset: 0,
+                    spawnHeight: 32,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C76234',
+                    price: '183.99',
+                    title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76235',
+                    name: '500mm Floor Standing',
+                    image: 'assets/productImages/furniture/c76235-1000-white-basin-drawer-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-short-projection-basin-drawer-vanity-500mm-c76235',
+                    path: '../../models/furniture/basin/C76235.glb',
+                    dimensions: { width: 50.4, height: 85, depth: 34.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C76235',
+                    price: '269.99',
+                    title: 'Corsica Gloss White Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_4',
+            link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
+            name: 'Bermuda Chalk White Basin Vanity 600mm',
+            price: '231.99',
+            image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
+            variants: [
+                {
+                    id: 'C76304',
+                    name: '600mm Width',
+                    image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
+                    path: '../../models/furniture/basin/C76304.glb',
+                    dimensions: { width: 61.4, height: 84, depth: 41.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: false, // Vertical placement allowed (0..ceiling)
+                        allowFreeRotation: false,
+                    },
+                    sku: 'C76304',
+                    price: '231.99',
+                    title: 'Bermuda Chalk White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '415mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76305',
+                    name: '800mm Width',
+                    image: 'assets/productImages/furniture/C76305-1000-Bermuda-Chalk-White-Basin-Vanity-800mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-800mm',
+                    path: '../../models/furniture/basin/C76305.glb',
+                    dimensions: { width: 81.3, height: 84, depth: 41.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76305',
+                    price: '287.00',
+                    title: 'Bermuda Chalk White Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '415mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76306',
+                    name: '1200mm Width',
+                    image: 'assets/productImages/furniture/C76306-1000-Bermuda-Chalk-White-Double-Basin-Vanity-1200mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-double-basin-vanity-1200mm',
+                    path: '../../models/furniture/basin/C76306.glb',
+                    dimensions: { width: 121, height: 98.2, depth: 41.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76306',
+                    price: '499.00',
+                    title: 'Bermuda Chalk White Double Basin Vanity 1200mm',
+                    filterAttributes: { width: '1200mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '416mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76302',
+                    name: '400mm Width',
+                    image: 'assets/productImages/furniture/c76302-1000-bermuda-chalk-white-cloakroom-basin-vanity-400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cloakroom-basin-vanity-400mm',
+                    path: '../../models/furniture/basin/C76302.glb',
+                    dimensions: { width: 40.4, height: 85.1, depth: 25.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76302',
+                    price: '149.00',
+                    title: 'Bermuda Chalk White Cloakroom Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '255mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76303',
+                    name: '500mm Width',
+                    image: 'assets/productImages/furniture/c76303-1000-bermuda-chalk-white-basin-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-clalk-white-basin-vanity-500mm-c76303',
+                    path: '../../models/furniture/basin/C76303.glb',
+                    dimensions: { width: 51.3, height: 84, depth: 41.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76303',
+                    price: '269.99',
+                    title: 'Bermuda Chalk White Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '414mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_5',
+            link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-600mm-c76473',
+            name: 'Avon Gloss White Basin Vanity 600mm',
+            price: '167.99',
+            image: 'assets/productImages/furniture/c76473-1000-avon-gloss-white-basin-vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C76473',
+                    name: '600mm Cabinet',
+                    image: 'assets/productImages/furniture/c76473-1000-avon-gloss-white-basin-vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-600mm-c76473',
+                    path: '../../models/furniture/basin/C76473.glb',
+                    dimensions: { width: 61.4, height: 85, depth: 42.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76473',
+                    price: '167.99',
+                    title: 'Avon Gloss White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '421mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76472',
+                    name: '500mm Cabinet',
+                    image: 'assets/productImages/furniture/c76472-1000-avon-gloss-white-basin-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-500mm-c76472',
+                    path: '../../models/furniture/basin/C76472.glb',
+                    dimensions: { width: 51.6, height: 85, depth: 42.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76472',
+                    price: '159.00',
+                    title: 'Avon Gloss White Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '429mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76476',
+                    name: '800mm Cabinet',
+                    image: 'assets/productImages/furniture/c76476-1000-avon-gloss-white-basin-vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-800mm-c76476',
+                    path: '../../models/furniture/basin/C76476.glb',
+                    dimensions: { width: 81.6, height: 85, depth: 42.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76476',
+                    price: '199.99',
+                    title: 'Avon Gloss White Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '429mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76475',
+                    name: '600mm Wall Hung',
+                    image: 'assets/productImages/furniture/C76475-1000-Avon-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-gloss-white-wall-hung-basin-drawer-vanity-600mm',
+                    path: '../../models/furniture/basin/C76475.glb',
+                    dimensions: { width: 61.4, height: 45.3, depth: 42.3 },
+                    floorOffset: 39.7,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76475',
+                    price: '189.99',
+                    title: 'Avon Gloss White Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '423mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76474',
+                    name: '600mm Drawer',
+                    image: 'assets/productImages/furniture/c76474-1000-avon-gloss-white-basin-drawer-vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-drawer-vanity-600mm-c76474',
+                    path: '../../models/furniture/basin/C76474.glb',
+                    dimensions: { width: 61.4, height: 85, depth: 42.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76474',
+                    price: '259.99',
+                    title: 'Avon Gloss White Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '427mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77113',
+                    name: '450mm Cabinet',
+                    image: 'assets/productImages/furniture/c77113-1000-avon-gloss-white-basin-vanity-450mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-450mm',
+                    path: '../../models/furniture/basin/C77113.glb',
+                    dimensions: { width: 45.8, height: 85.1, depth: 34 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77113',
+                    price: '179.99',
+                    title: 'Avon Gloss White Basin Vanity 450mm',
+                    filterAttributes: { width: '450mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '340mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76471',
+                    name: '400mm Cabinet',
+                    image: 'assets/productImages/furniture/c76471-1000-gloss-white-cloakroom-floor-standing-basin-vanity-400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-gloss-white-cloakroom-floor-standing-basin-vanity-400mm',
+                    path: '../../models/furniture/basin/C76471.glb',
+                    dimensions: { width: 40.4, height: 85.1, depth: 26.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76471',
+                    price: '105.00',
+                    title: 'Avon Gloss White Cloakroom Floor Standing Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '264mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_6',
+            link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-630mm-c76349',
+            name: 'Lucia Chalk White Basin Vanity 630mm',
+            price: '359.00',
+            image: 'assets/productImages/furniture/c76349-1000-lucia-chalk-white-basin-vanity-630mm_1.webp',
+            variants: [
+                {
+                    id: 'C76349',
+                    name: 'Traditional Basin',
+                    image: 'assets/productImages/furniture/c76349-1000-lucia-chalk-white-basin-vanity-630mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-630mm-c76349',
+                    path: '../../models/furniture/basin/C76349.glb',
+                    dimensions: { width: 63, height: 86.2, depth: 47.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76349',
+                    price: '359.00',
+                    title: 'Lucia Chalk White Basin Vanity 630mm',
+                    filterAttributes: { width: '630mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '476mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76353',
+                    name: 'Curved Basin',
+                    image: 'assets/productImages/furniture/C76353-1000-Lucia-Chalk-White-Vanity-with-Oak-Top-and-Curved-Counter-Top-Basin-640mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-curved-counter-top-basin-640mm-c76353',
+                    path: '../../models/furniture/basin/C76353.glb',
+                    dimensions: { width: 64, height: 95.5, depth: 47.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76353',
+                    price: '399.00',
+                    title: 'Lucia Chalk White Vanity With Oak Effect Top & Curved Counter Top Basin 640mm',
+                    filterAttributes: { width: '640mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '474mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76448',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/c76448-1000-lucia-chalk-white-vanity-with-oak-top-640mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-cabinet-with-oak-top-640mm-excludes-counter-top-basin',
+                    path: '../../models/furniture/basin/C76448.glb',
+                    dimensions: { width: 64, height: 81.7, depth: 47.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76448',
+                    price: '479.99',
+                    title: 'Lucia Chalk White Cabinet with Oak Effect Top 640mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '640mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '474mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76352',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C76352-1000-Lucia-Chalk-White-Vanity-with-Oak-Top-and-Oval-Counter-Top-Basin-640mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-oval-counter-top-basin-640mm-c76352',
+                    path: '../../models/furniture/basin/C76352.glb',
+                    dimensions: { width: 64, height: 98.7, depth: 47.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76352',
+                    price: '499.99',
+                    title: 'Lucia Chalk White Vanity With Oak Effect Top & Oval Counter Top Basin 640mm',
+                    filterAttributes: { width: '640mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '475mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76351',
+                    name: 'Round Basin',
+                    image: 'assets/productImages/furniture/C76351-1000-Lucia-Chalk-White-Vanity-with-Oak-Top-and-Round-Counter-Top-Basin-640mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-round-counter-top-basin-640mm-c76351',
+                    path: '../../models/furniture/basin/C76351.glb',
+                    dimensions: { width: 64, height: 97.2, depth: 47.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76351',
+                    price: '499.99',
+                    title: 'Lucia Chalk White Vanity With Oak Effect Top & Round Counter Top Basin 640mm',
+                    filterAttributes: { width: '640mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '474mm', style: 'Traditional' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_7',
+            link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-600mm-c77096',
+            name: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 600mm',
+            price: '285.00',
+            image: 'assets/productImages/furniture/C77096-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
+            variants: [
+                {
+                    id: 'C77096',
+                    name: 'Curved Basin',
+                    image: 'assets/productImages/furniture/C77096-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-600mm-c77096',
+                    path: '../../models/furniture/basin/C77096.glb',
+                    dimensions: { width: 61, height: 95.3, depth: 41.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77096',
+                    price: '285.00',
+                    title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '412mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77095',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C77095-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-oval-counter-top-basin-600mm-c77095',
+                    path: '../../models/furniture/basin/C77095.glb',
+                    dimensions: { width: 61, height: 95.3, depth: 41.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77095',
+                    price: '275.00',
+                    title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '412mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77634',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/c77634-1000-chalk-white-cabinet-with-marble-top-exclude-counter-top-basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cabinet-with-marble-top-600mm-exclude-counter-top-basin-c77634',
+                    path: '../../models/furniture/basin/C77634.glb',
+                    dimensions: { width: 61, height: 95.3, depth: 41.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77634',
+                    price: '349.99',
+                    title: 'Bermuda Chalk White Cabinet with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '412mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_8',
+            link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-brushed-brass-accents-c78594',
+            name: 'Bermuda Chalk White Basin Vanity 600mm - Brushed Brass Accents',
+            price: '247.00',
+            image: 'assets/productImages/furniture/C78594-1000-Bermuda-Chalk-White-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C78594',
+                    name: '600mm',
+                    image: 'assets/productImages/furniture/C78594-1000-Bermuda-Chalk-White-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-brushed-brass-accents-c78594',
+                    path: '../../models/furniture/basin/C78594.glb',
+                    dimensions: { width: 61.4, height: 84, depth: 41.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78594',
+                    price: '247.00',
+                    title: 'Bermuda Chalk White Basin Vanity 600mm - Brushed Brass Accents',
+                    filterAttributes: { width: '600mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '417mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78592',
+                    name: '400mm',
+                    image: 'assets/productImages/furniture/c78592-1000-bermuda-chalk-white-cloakroom-basin-vanity-400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cloakroom-basin-vanity-400mm-brushed-brass-accents-c78592',
+                    path: '../../models/furniture/basin/C78592.glb',
+                    dimensions: { width: 40.4, height: 85.1, depth: 25.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78592',
+                    price: '199.99',
+                    title: 'Bermuda Chalk White Cloakroom Basin Vanity 400mm - Brushed Brass Accents',
+                    filterAttributes: { width: '400mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '256mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78593',
+                    name: '500mm',
+                    image: 'assets/productImages/furniture/c78593-1000-bermuda-chalk-white-basin-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-500mm-brushed-brass-accents-c78593',
+                    path: '../../models/furniture/basin/C78593.glb',
+                    dimensions: { width: 51.3, height: 84, depth: 41.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78593',
+                    price: '279.99',
+                    title: 'Bermuda Chalk White Basin Vanity 500mm - Brushed Brass Accents',
+                    filterAttributes: { width: '500mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '417mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78595',
+                    name: '800mm',
+                    image: 'assets/productImages/furniture/C78595-1000-Bermuda-Chalk-White-Basin-Vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-800mm-brushed-brass-accents-c78595',
+                    path: '../../models/furniture/basin/C78595.glb',
+                    dimensions: { width: 81.3, height: 84, depth: 41.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78595',
+                    price: '299.00',
+                    title: 'Bermuda Chalk White Basin Vanity 800mm - Brushed Brass Accents',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '418mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78596',
+                    name: '1200mm',
+                    image: 'assets/productImages/furniture/C78596-1000-Bermuda-Chalk-White-Double-Basin-Vanity-1200mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-double-basin-vanity-1200mm-brushed-brass-accents-c78596',
+                    path: '../../models/furniture/basin/C78596.glb',
+                    dimensions: { width: 121, height: 83.7, depth: 41.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78596',
+                    price: '689.99',
+                    title: 'Bermuda Chalk White Double Basin Vanity 1200mm - Brushed Brass Accents',
+                    filterAttributes: { width: '1200mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '419mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_9',
+            link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-830mm',
+            name: 'Lucia Chalk White Basin Vanity 830mm',
+            price: '431.99',
+            image: 'assets/productImages/furniture/C76354-1000-Lucia-Chalk-White-Basin-Vanity-830mm_2.webp',
+            variants: [
+                {
+                    id: 'C76354',
+                    name: 'Traditional Basin',
+                    image: 'assets/productImages/furniture/C76354-1000-Lucia-Chalk-White-Basin-Vanity-830mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-830mm',
+                    path: '../../models/furniture/basin/C76354.glb',
+                    dimensions: { width: 82.9, height: 86.1, depth: 47.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76354',
+                    price: '431.99',
+                    title: 'Lucia Chalk White Basin Vanity 830mm',
+                    filterAttributes: { width: '830mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '473mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76358',
+                    name: 'Curved Basin',
+                    image: 'assets/productImages/furniture/c76358-1000-lucia-chalk-white-vanity-with-oak-top-_-curved-counter-t.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-curved-counter-top-basin-840mm',
+                    path: '../../models/furniture/basin/C76358.glb',
+                    dimensions: { width: 84, height: 95.6, depth: 47.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76358',
+                    price: '479.00',
+                    title: 'Lucia Chalk White Vanity With Oak Effect Top & Curved Counter Top Basin 840mm',
+                    filterAttributes: { width: '840mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '471mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76449',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/c76449-1000-lucia-chalk-white-vanity-with-oak-top-840mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-cabinet-with-oak-top-840mm-excludes-counter-top-basin',
+                    path: '../../models/furniture/basin/C76449.glb',
+                    dimensions: { width: 84, height: 82, depth: 47.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76449',
+                    price: '569.99',
+                    title: 'Lucia Chalk White Cabinet with Oak Effect Top 840mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '840mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '471mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76357',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/c76357-1000-lucia-chalk-white-vanity-with-oak-top-_-oval-counter-top.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-oval-counter-top-basin-840mm',
+                    path: '../../models/furniture/basin/C76357.glb',
+                    dimensions: { width: 84, height: 99, depth: 47.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76357',
+                    price: '471.99',
+                    title: 'Lucia Chalk White Vanity With Oak Effect Top & Oval Counter Top Basin 840mm',
+                    filterAttributes: { width: '840mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '471mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76356',
+                    name: 'Traditional Basin',
+                    image: 'assets/productImages/furniture/c76356-1000-lucia-chalk-white-vanity-with-oak-top-_-round-counter-to.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-round-counter-top-basin-840mm-c76356',
+                    path: '../../models/furniture/basin/C76356.glb',
+                    dimensions: { width: 84, height: 97.6, depth: 47.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76356',
+                    price: '589.99',
+                    title: 'Lucia Chalk White Vanity With Oak Top & Round Counter Top Basin 840mm',
+                    filterAttributes: { width: '840mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '471mm', style: 'Traditional' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_10',
+            link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
+            name: 'Bermuda Dove Grey Basin Vanity 600mm',
+            price: '225.00',
+            image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C76285',
+                    name: '600mm Width',
+                    image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
+                    path: '../../models/furniture/basin/C76285.glb',
+                    dimensions: { width: 61.4, height: 84, depth: 41.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76285',
+                    price: '225.00',
+                    title: 'Bermuda Dove Grey Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Dove Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '415mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76286',
+                    name: '800mm Width',
+                    image: 'assets/productImages/furniture/C76286-1000-Bermuda-Dove-Grey-Basin-Vanity-800mm_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-800mm',
+                    path: '../../models/furniture/basin/C76286.glb',
+                    dimensions: { width: 81.3, height: 84, depth: 41.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76286',
+                    price: '285.00',
+                    title: 'Bermuda Dove Grey Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Dove Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '415mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76283',
+                    name: '400mm Width',
+                    image: 'assets/productImages/furniture/c76283-1000-bermuda-dove-grey-cloakroom-basin-vanity-400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-cloakroom-basin-vanity-400mm-c76283',
+                    path: '../../models/furniture/basin/C76283.glb',
+                    dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76283',
+                    price: '189.99',
+                    title: 'Bermuda Dove Grey Cloakroom Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Dove Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '252mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76284',
+                    name: '500mm Width',
+                    image: 'assets/productImages/furniture/c76284-1000-bermuda-dove-grey-basin-vanity-500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-500mm-c76284',
+                    path: '../../models/furniture/basin/C76284.glb',
+                    dimensions: { width: 51.3, height: 84, depth: 41.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76284',
+                    price: '269.99',
+                    title: 'Bermuda Dove Grey Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Dove Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '414mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76287',
+                    name: '1200mm Width',
+                    image: 'assets/productImages/furniture/c76287-1000-bermuda-dove-grey-double-basin-vanity-1200mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-800mm',
+                    path: '../../models/furniture/basin/C76287.glb',
+                    dimensions: { width: 120.1, height: 83.7, depth: 41.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76287',
+                    price: '649.99',
+                    title: 'Bermuda Dove Grey Double Basin Vanity 1200mm',
+                    filterAttributes: { width: '1200mm', colour: 'Dove Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '416mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_11',
+            link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
+            name: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles',
+            price: '207.00',
+            image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
+            variants: [
+                {
+                    id: 'C81232',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
+                    path: '../../models/furniture/basin/C81232.glb',
+                    dimensions: { width: 61.5, height: 81.8, depth: 49.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81232',
+                    price: '207.00',
+                    title: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '495mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81234',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C81234-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-600mm-chrome-handles-c81234',
+                    path: '../../models/furniture/basin/C81234.glb',
+                    dimensions: { width: 60.9, height: 96.5, depth: 47.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81234',
+                    price: '279.99',
+                    title: 'Milos Cotton White Vanity with Oval Basin 600mm - Chrome Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81235',
+                    name: 'Troy Basin',
+                    image: 'assets/productImages/furniture/C81235-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-600mm-chrome-handles-c81235',
+                    path: '../../models/furniture/basin/C81235.glb',
+                    dimensions: { width: 60.9, height: 95.1, depth: 47.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81235',
+                    price: '279.99',
+                    title: 'Milos Cotton White Vanity with Troy Basin 600mm - Chrome Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_12',
+            link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
+            name: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles',
+            price: '191.00',
+            image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+            variants: [
+                {
+                    id: 'C81206',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
+                    path: '../../models/furniture/basin/C81206.glb',
+                    dimensions: { width: 51, height: 96.5, depth: 42.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81206',
+                    price: '191.00',
+                    title: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles',
+                    filterAttributes: { width: '500mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '429mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81207',
+                    name: 'Mesa Basin',
+                    image: 'assets/productImages/furniture/C81207-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-brushed-handles-c81207',
+                    path: '../../models/furniture/basin/C81207.glb',
+                    dimensions: { width: 51, height: 97, depth: 46.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81207',
+                    price: '239.99',
+                    title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Brushed Handles',
+                    filterAttributes: { width: '500mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '465mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81204',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C81204-1000-Cotton-White-Basin-Vanity-500mm-Brushed-Handles_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-500mm-brushed-handles-c81204',
+                    path: '../../models/furniture/basin/C81204.glb',
+                    dimensions: { width: 51.8, height: 81.8, depth: 42.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81204',
+                    price: '219.99',
+                    title: 'Milos Cotton White Basin Vanity 500mm - Brushed Handles',
+                    filterAttributes: { width: '500mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '422mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_13',
+            link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
+            name: 'Bermuda Inky Blue Basin Vanity 600mm',
+            price: '225.00',
+            image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C78439',
+                    name: '600mm',
+                    image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
+                    path: '../../models/furniture/basin/C78439.glb',
+                    dimensions: { width: 61.4, height: 84.1, depth: 51.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C78439',
+                    price: '225',
+                    title: 'Bermuda Inky Blue Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '512mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79848',
+                    name: '400mm',
+                    image: 'assets/productImages/furniture/c79848-1000-bermuda-inky-blue-cloakroom-basin-vanity-400mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-cloakroom-basin-vanity-400mm-c79848',
+                    path: '../../models/furniture/basin/C79848.glb',
+                    dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C79848',
+                    price: '189.99',
+                    title: 'Bermuda Inky Blue Cloakroom Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '252mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78620',
+                    name: '800mm',
+                    image: 'assets/productImages/furniture/c78620-1000-bermuda-inky-blue-basin-vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-800mm-c78620',
+                    path: '../../models/furniture/basin/C78620.glb',
+                    dimensions: { width: 80.5, height: 84.1, depth: 41 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C78620',
+                    price: '287.00',
+                    title: 'Bermuda Inky Blue Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '410mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78440',
+                    name: '1200mm',
+                    image: 'assets/productImages/furniture/C78440-1000-Bermuda-Inky-Blue-Double-Basin-Vanity-1200mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-double-basin-vanity-1200mm-c78440',
+                    path: '../../models/furniture/basin/C78440.glb',
+                    dimensions: { width: 121, height: 90.6, depth: 57.7 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C78440',
+                    price: '499.00',
+                    title: 'Bermuda Inky Blue Double Basin Vanity 1200mm',
+                    filterAttributes: { width: '1200mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '577mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_14',
+            link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
+            name: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm',
+            price: '179.00',
+            image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C76246',
+                    name: '600mm Wall Hung',
+                    image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
+                    path: '../../models/furniture/basin/C76246.glb',
+                    dimensions: { width: 60.4, height: 55, depth: 34.7 },
+                    floorOffset: 30.1,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C76246',
+                    price: '179',
+                    title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Storm Grey', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76247',
+                    name: '600mm Floorstanding',
+                    image: 'assets/productImages/furniture/c76247-1000-corsica-storm-grey-basin-drawer-vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-basin-drawer-vanity-600mm-c76247',
+                    path: '../../models/furniture/basin/C76247.glb',
+                    dimensions: { width: 60.4, height: 85, depth: 34.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C76247',
+                    price: '219.00',
+                    title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Storm Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_15',
+            link: 'https://www.bathroommountain.co.uk/monaco-chalk-white-basin-vanity-600mm-c76328',
+            name: 'Monaco Chalk White Basin Vanity 600mm',
+            price: '299.99',
+            image: 'assets/productImages/furniture/c76328-1000-chalk-white-basin-vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C76328',
+                    name: 'Chalk White',
+                    image: 'assets/productImages/furniture/c76328-1000-chalk-white-basin-vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-chalk-white-basin-vanity-600mm-c76328',
+                    path: '../../models/furniture/basin/C76328.glb',
+                    dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76328',
+                    price: '299.99',
+                    title: 'Monaco Chalk White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77683',
+                    name: 'Dove Grey',
+                    image: 'assets/productImages/furniture/c77683-1000-dove-grey-basin-vanity-600mm-gold-accents_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-dove-grey-basin-vanity-600mm-c77683',
+                    path: '../../models/furniture/basin/C76283.glb',
+                    dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77683',
+                    price: '299.99',
+                    title: 'Monaco Dove Grey Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Dove Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77732',
+                    name: 'Graphite Grey',
+                    image: 'assets/productImages/furniture/c77732-1000-graphite-grey-basin-vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-graphite-grey-basin-vanity-600mm-c77732',
+                    path: '../../models/furniture/basin/C77732.glb',
+                    dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77732',
+                    price: '239.00',
+                    title: 'Monaco Graphite Grey Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Graphite Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78377',
+                    name: 'Inky Blue',
+                    image: 'assets/productImages/furniture/c78377-1000-inky-blue-basin-vanity-600mm-accents.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-basin-vanity-600mm-c78377',
+                    path: '../../models/furniture/basin/C78377.glb',
+                    dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78377',
+                    price: '299.99',
+                    title: 'Monaco Inky Blue Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78704',
+                    name: 'Midnight Green',
+                    image: 'assets/productImages/furniture/c78704-1000-monaco-topaz-green-basin-vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-midnight-green-basin-vanity-600mm-c78704',
+                    path: '../../models/furniture/basin/C78704.glb',
+                    dimensions: { width: 60, height: 83.9, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78704',
+                    price: '299.99',
+                    title: 'Monaco Midnight Green Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Midnight Green', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '413mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_16',
+            link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-miami-toilet-1050mm-c79932',
+            name: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm',
+            price: '319.99',
+            image: 'assets/productImages/furniture/C79932-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
+            variants: [
+                {
+                    id: 'C79932',
+                    name: 'Denver Toilet',
+                    image: 'assets/productImages/furniture/C79932-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-miami-toilet-1050mm-c79932',
+                    path: '../../models/furniture/basin/C79932.glb',
+                    dimensions: { width: 103.3, height: 86.5, depth: 80.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79932',
+                    price: '319.99',
+                    title: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '809mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79930',
+                    name: 'No Toilet & Cistern',
+                    image: 'assets/productImages/furniture/C79930-1000-White-Basin-Vanity-Back-To-Wall-Toilet-Unit-1050mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-basin-vanity-and-back-to-wall-toilet-unit-1050mm-excludes-toilet-c79930',
+                    path: '../../models/furniture/basin/C79930.glb',
+                    dimensions: { width: 103.3, height: 86.2, depth: 42.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79930',
+                    price: '219.99',
+                    title: 'Quartz Gloss White Basin Vanity and Back To Wall Toilet Unit 1050mm - Excludes Toilet',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '426mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79931',
+                    name: 'Austin Toilet',
+                    image: 'assets/productImages/furniture/C79931-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-austin-toilet-1050mm-c79931',
+                    path: '../../models/furniture/basin/C79931.glb',
+                    dimensions: { width: 103.3, height: 86.4, depth: 82 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79931',
+                    price: '289.99',
+                    title: 'Quartz Gloss White Combination Vanity Basin and Austin Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '820mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79933',
+                    name: 'Houston Toilet',
+                    image: 'assets/productImages/furniture/c79933-1000-gloss-white-combination-vanity-basin-toilet-1050mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-houston-toilet-1050mm-c79933',
+                    path: '../../models/furniture/basin/C79933.glb',
+                    dimensions: { width: 103.3, height: 86.5, depth: 84.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79933',
+                    price: '263.00',
+                    title: 'Quartz Gloss White Combination Vanity Basin and Houston Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '844mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+
+        {
+            id: 'furniture_variant_17',
+            link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-floor-standing-basin-vanity-400mm-c79921',
+            name: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm',
+            price: '99.99',
+            image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
+            variants: [
+                {
+                    id: 'C79921',
+                    name: 'Floor Standing',
+                    image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-floor-standing-basin-vanity-400mm-c79921',
+                    path: '../../models/furniture/basin/C79921.glb',
+                    dimensions: { width: 40, height: 88, depth: 24.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79921',
+                    price: '99.99',
+                    title: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '242mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79920',
+                    name: 'Wall Hung',
+                    image: 'assets/productImages/furniture/C79920-1000-Gloss-White-Cloakroom-Wall-Hung-Basin-Vanity-400mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-wall-hung-basin-vanity-400mm-c79920',
+                    path: '../../models/furniture/basin/C79920.glb',
+                    dimensions: { width: 40, height: 57.8, depth: 24.2 },
+                    floorOffset: 20,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79920',
+                    price: '89.99',
+                    title: 'Quartz Gloss White Cloakroom Wall Hung Basin Vanity 400mm',
+                    filterAttributes: { width: '400mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '242mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
         },
         {
-          id: 'C76237',
-          name: 'Slimline Basin Drawer Vanity 600mm',
-          image: 'assets/productImages/furniture/C76237-1000-White-Basin-Drawer-Vanity-600mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-short-projection-basin-drawer-vanity-600mm-c76237',
-          path: '../../models/furniture/basin/C76237.glb',
-          dimensions: { width: 60.4, height: 85, depth: 34.7 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false,
-          },
-          sku: 'C76237',
-          price: '219.00',
-          title: 'Corsica Gloss White Slimline Basin Drawer Vanity 600mm'
+            id: 'furniture_variant_18',
+            link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
+            name: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
+            price: '269.99',
+            image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
+            variants: [
+                {
+                    id: 'C79777',
+                    name: 'Floor Standing',
+                    image: 'assets/productImages/furniture/c79777-1000-inky-blue-basin-drawer-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
+                    path: '../../models/furniture/basin/C79777.glb',
+                    dimensions: { width: 40, height: 57.8, depth: 24.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79777',
+                    price: '269.99',
+                    title: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Inky Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '242mm', style: 'Modern' }
+                },
+                {
+                    id: 'C78548',
+                    name: 'Wall Hung',
+                    image: 'assets/productImages/furniture/c78548-1000-inky-blue-wall-hung-basin-drawer-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-wall-hung-short-projection-basin-drawer-vanity-500mm-c78548',
+                    path: '../../models/furniture/basin/C78548.glb',
+                    dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+                    floorOffset: 34.9,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78548',
+                    price: '229.99',
+                    title: 'Corsica Inky Blue Wall Hung Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Inky Blue', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_19',
+            link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
+            name: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm',
+            price: '529.99',
+            image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
+            variants: [
+                {
+                    id: 'C77185',
+                    name: 'Miami Toilet',
+                    image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
+                    path: '../../models/furniture/basin/C77185.glb',
+                    dimensions: { width: 45.8, height: 85.1, depth: 34 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77185',
+                    price: '529.99',
+                    title: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm',
+                    filterAttributes: { width: '1300mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '340mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_20',
+            link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-600mm-c77065',
+            name: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm',
+            price: '269.99',
+            image: 'assets/productImages/furniture/C77065-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+            variants: [
+                {
+                    id: 'C77065',
+                    name: '600mm Width',
+                    image: 'assets/productImages/furniture/C77065-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-600mm-c77065',
+                    path: '../../models/furniture/basin/C77065.glb',
+                    dimensions: { width: 61.4, height: 60.4, depth: 39.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77065',
+                    spawnHeight: 32,
+                    price: '269.99',
+                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '395mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77064',
+                    name: '500mm Width',
+                    image: 'assets/productImages/furniture/C77064-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-500mm-c77064',
+                    path: '../../models/furniture/basin/C77064.glb',
+                    dimensions: { width: 50.7, height: 60.4, depth: 39.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77064',
+                    spawnHeight: 32,
+                    price: '185.00',
+                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '395mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77066',
+                    name: '800mm Width',
+                    image: 'assets/productImages/furniture/C77066-1000-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-800mm-c77066',
+                    path: '../../models/furniture/basin/C77066.glb',
+                    dimensions: { width: 80.9, height: 60.5, depth: 39.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77066',
+                    spawnHeight: 32,
+                    price: '263.00',
+                    title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '396mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_21',
+            link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-600mm',
+            name: 'Avon Stone Grey Basin Vanity 600mm',
+            price: '209.99',
+            image: 'assets/productImages/furniture/C76504-1000-Avon-Pebble-Grey-Basin-Vanity-600mm_1.webp',
+            variants: [
+                {
+                    id: 'C76504',
+                    name: '600mm Cabinet',
+                    image: 'assets/productImages/furniture/C76504-1000-Avon-Pebble-Grey-Basin-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-600mm',
+                    path: '../../models/furniture/basin/C76504.glb',
+                    dimensions: { width: 61.4, height: 85, depth: 42.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76504',
+                    price: '209.99',
+                    title: 'Avon Stone Grey Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '421mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76503',
+                    name: '500mm Cabinet',
+                    image: 'assets/productImages/furniture/C76503-1000-Avon-Pebble-Grey-Basin-Vanity-500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-500mm',
+                    path: '../../models/furniture/basin/C76503.glb',
+                    dimensions: { width: 51.6, height: 85, depth: 42.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76503',
+                    price: '159.00',
+                    title: 'Avon Stone Grey Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '429mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_22',
+            link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-austin-toilet-1050mm-c76749',
+            name: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm',
+            price: '339.99',
+            image: 'assets/productImages/furniture/C76749-1000-Grey-Vanity-Basin-and-Austin-Toilet-1050mm_1.webp',
+            variants: [
+                {
+                    id: 'C76749',
+                    name: 'Austin Toilet',
+                    image: 'assets/productImages/furniture/C76749-1000-Grey-Vanity-Basin-and-Austin-Toilet-1050mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-austin-toilet-1050mm-c76749',
+                    path: '../../models/furniture/basin/C76749.glb',
+                    dimensions: { width: 104, height: 81.7, depth: 81.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76749',
+                    price: '339.99',
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '817mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76751',
+                    name: 'Denver Toilet',
+                    image: 'assets/productImages/furniture/C76751-1000-Grey-Vanity-Basin-and-Denver-Toilet-1050mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-denver-toilet-1050mm-c76751',
+                    path: '../../models/furniture/basin/C76751.glb',
+                    dimensions: { width: 104, height: 81.6, depth: 80.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76751',
+                    price: '389.99',
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '805mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77020',
+                    name: 'No Toilet & Cistern',
+                    image: 'assets/productImages/furniture/c77020-1000-pebble-grey-basin-vanity-and-back-to-wall-toilet-unit.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-basin-vanity-and-back-to-wall-toilet-unit-1050mm-c77020',
+                    path: '../../models/furniture/basin/C77020.glb',
+                    dimensions: { width: 104, height: 81.6, depth: 42.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77020',
+                    price: '259.99',
+                    title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '422mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76750',
+                    name: 'Seattle Toilet',
+                    image: 'assets/productImages/furniture/C76750-1000-Grey-Vanity-Basin-and-Seattle-Toilet-1050mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-seattle-toilet-1050mm-c76750',
+                    path: '../../models/furniture/basin/C76750.glb',
+                    dimensions: { width: 104, height: 81.6, depth: 80.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76750',
+                    price: '369.99',
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1050mm',
+                    filterAttributes: { width: '1050mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '804mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_23',
+            link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-brushed-handles-c81212',
+            name: 'Milos Cotton White Basin Vanity 800mm - Brushed Handles',
+            price: '299.99',
+            image: 'assets/productImages/furniture/C81212-1000-Cotton-White-Basin-Vanity-800mm-Brushed-Handles_1.webp',
+            variants: [
+                {
+                    id: 'C81212',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C81212-1000-Cotton-White-Basin-Vanity-800mm-Brushed-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-brushed-handles-c81212',
+                    path: '../../models/furniture/basin/C81212.glb',
+                    dimensions: { width: 82, height: 81.7, depth: 47.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81212',
+                    price: '299.99',
+                    title: 'Milos Cotton White Basin Vanity 800mm - Brushed Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '479mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81214',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C81214-1000-Cotton-White-Vanity-Basin-800mm-Brushed-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-800mm-brushed-handles-c81214',
+                    path: '../../models/furniture/basin/C81214.glb',
+                    dimensions: { width: 81.1, height: 96.1, depth: 47.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81214',
+                    price: '263.00',
+                    title: 'Milos Cotton White Vanity with Oval Basin 800mm - Brushed Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81215',
+                    name: 'Troy Basin',
+                    image: 'assets/productImages/furniture/c77020-1000-pebble-grey-basin-vanity-and-back-to-wall-toilet-unit.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-800mm-brushed-handles-c81215',
+                    path: '../../models/furniture/basin/C81215.glb',
+                    dimensions: { width: 81.1, height: 95.1, depth: 47.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81215',
+                    price: '329.99',
+                    title: 'Milos Cotton White Vanity with Troy Basin 800mm - Brushed Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_24',
+            link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-600mm-c79697',
+            name: 'Mersey Gloss White Basin Vanity 600mm',
+            price: '189.99',
+            image: 'assets/productImages/furniture/C79697-1000-Mersey-Gloss-White-Basin-Vanity-600mm_1.webp',
+            variants: [
+                {
+                    id: 'C79697',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C79697-1000-Mersey-Gloss-White-Basin-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-600mm-c79697',
+                    path: '../../models/furniture/basin/C79697.glb',
+                    dimensions: { width: 61.5, height: 81.8, depth: 48.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79697',
+                    price: '189.99',
+                    title: 'Mersey Gloss White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '485mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81184',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C81184-1000-Mersey-Gloss-White-Vanity-with-Oval-Basin-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-with-oval-basin-600mm-c81184',
+                    path: '../../models/furniture/basin/C81184.glb',
+                    dimensions: { width: 61, height: 95.1, depth: 48.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81184',
+                    price: '199.99',
+                    title: 'Mersey Gloss White Vanity with Oval Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '483mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81185',
+                    name: 'Troy Basin',
+                    image: 'assets/productImages/furniture/C81185-1000-Mersey-Gloss-White-Vanity-with-Troy-Basin-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-with-troy-basin-600mm-c81185',
+                    path: '../../models/furniture/basin/C81185.glb',
+                    dimensions: { width: 61.1, height: 95.1, depth: 48.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81185',
+                    price: '199.99',
+                    title: 'Mersey Gloss White Vanity with Troy Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '483mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_25',
+            link: 'https://www.bathroommountain.co.uk/capri-navy-blue-combination-vanity-basin-and-miami-toilet-1050mm-chrome-handles-c81113',
+            name: 'Capri Navy Blue Combination Vanity Basin and Denver Toilet 1050mm - Chrome Handles',
+            price: '189.99',
+            image: 'assets/productImages/furniture/c81113-1000-navy-blue-combination-vanity-basin-toilet-1050mm.webp',
+            variants: [
+                {
+                    id: 'C81113',
+                    name: 'Denver Toilet',
+                    image: 'assets/productImages/furniture/c81113-1000-navy-blue-combination-vanity-basin-toilet-1050mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/capri-navy-blue-combination-vanity-basin-and-miami-toilet-1050mm-chrome-handles-c81113',
+                    path: '../../models/furniture/basin/C81113.glb',
+                    dimensions: { width: 61, height: 81.6, depth: 48.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81113',
+                    price: '375.00',
+                    title: 'Capri Navy Blue Combination Vanity Basin and Denver Toilet 1050mm - Chrome Handles',
+                    filterAttributes: { width: '1050mm', colour: 'Navy Blue', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '483mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_26',
+            link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-vanity-with-semi-recessed-basin-550mm-c79923',
+            name: 'Quartz Gloss White Vanity with Semi Recessed Basin 550mm',
+            price: '124.99',
+            image: 'assets/productImages/furniture/C79923-1000-Gloss-White-Vanity-Semi-Recessed-Basin-550mm_1.webp',
+            variants: [
+                {
+                    id: 'C79923',
+                    name: '550mm',
+                    image: 'assets/productImages/furniture/C79923-1000-Gloss-White-Vanity-Semi-Recessed-Basin-550mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-vanity-with-semi-recessed-basin-550mm-c79923',
+                    path: '../../models/furniture/basin/C79923.glb',
+                    dimensions: { width: 54.8, height: 86.2, depth: 42.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79923',
+                    price: '124.99',
+                    title: 'Quartz Gloss White Vanity with Semi Recessed Basin 550mm',
+                    filterAttributes: { width: '550mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '426mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79922',
+                    name: '450mm',
+                    image: 'assets/productImages/furniture/C79922-1000-Gloss-White-Vanity-Semi-Recessed-Basin-450mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-vanity-with-semi-recessed-basin-450mm-c79922',
+                    path: '../../models/furniture/basin/C79922.glb',
+                    dimensions: { width: 44.8, height: 83.5, depth: 44.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79922',
+                    price: '119.99',
+                    title: 'Quartz Gloss White Cloakroom Vanity with Semi Recessed Basin 450mm',
+                    filterAttributes: { width: '450mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '446mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79924',
+                    name: '650mm',
+                    image: 'assets/productImages/furniture/C79924-1000-Gloss-White-Vanity-Semi-Recessed-Basin-650mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-vanity-with-semi-recessed-basin-650mm-c79924',
+                    path: '../../models/furniture/basin/C79924.glb',
+                    dimensions: { width: 64.3, height: 85.6, depth: 43.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79924',
+                    price: '149.99',
+                    title: 'Quartz Gloss White Vanity with Semi Recessed Basin 650mm',
+                    filterAttributes: { width: '650mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '435mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_27',
+            link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-austin-toilet-1150mm-c76752',
+            name: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1150mm',
+            price: '289.00',
+            image: 'assets/productImages/furniture/C76752-1000-Grey-Vanity-Basin-and-Austin-Toilet-1150mm_1.webp',
+            variants: [
+                {
+                    id: 'C76752',
+                    name: 'Austin Toilet',
+                    image: 'assets/productImages/furniture/C76752-1000-Grey-Vanity-Basin-and-Austin-Toilet-1150mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-austin-toilet-1150mm-c76752',
+                    path: '../../models/furniture/basin/C76752.glb',
+                    dimensions: { width: 112.6, height: 82, depth: 82.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76752',
+                    price: '289.00',
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '827mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76754',
+                    name: 'Denver Toilet',
+                    image: 'assets/productImages/furniture/C76754-1000-Grey-Vanity-Basin-and-Denver-Toilet-1150mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-denver-toilet-1150mm-c76754',
+                    path: '../../models/furniture/basin/C76754.glb',
+                    dimensions: { width: 112.6, height: 82, depth: 81.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76754',
+                    price: '335.00',
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '815mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77021',
+                    name: 'No Toilet & Cistern',
+                    image: 'assets/productImages/furniture/C77021-1000-Pebble-Grey-Basin-Vanity-and-Back-To-Wall-Toilet-Unit_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-basin-vanity-and-back-to-wall-toilet-unit-1150mm-c77021',
+                    path: '../../models/furniture/basin/C77021.glb',
+                    dimensions: { width: 112.6, height: 81.7, depth: 43.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77021',
+                    price: '289.99',
+                    title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '435mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76753',
+                    name: 'Seattle Toilet',
+                    image: 'assets/productImages/furniture/C76753-1000-Grey-Vanity-Basin-and-Seattle-Toilet-1150mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-seattle-toilet-1150mm-c76753',
+                    path: '../../models/furniture/basin/C76753.glb',
+                    dimensions: { width: 112.6, height: 81.7, depth: 81.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76753',
+                    price: '399.99',
+                    title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1150mm',
+                    filterAttributes: { width: '1150mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Combination Unit', basinType: 'Inset', depth: '814mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_28',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-drawer-vanity-600mm-c81581',
+            name: 'Corsica Gloss White Basin Drawer Vanity 600mm',
+            price: '263.00',
+            image: 'assets/productImages/furniture/C81581-1000-Gloss-White-Basin-Drawer-Vanity-600mm_1.webp',
+            variants: [
+                {
+                    id: 'C81581',
+                    name: 'Build-in Basin',
+                    image: 'assets/productImages/furniture/C81581-1000-Gloss-White-Basin-Drawer-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-drawer-vanity-600mm-c81581',
+                    path: '../../models/furniture/basin/C81581.glb',
+                    dimensions: { width: 61.3, height: 86.6, depth: 46.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81581',
+                    price: '263.00',
+                    title: 'Corsica Gloss White Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81584',
+                    name: 'Curved Basin',
+                    image: 'assets/productImages/furniture/C81584-1000-White-Vanity-Drawer-Marble-Top-Basin-600mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-drawer-with-marble-top-curved-counter-top-basin-600mm-c81584',
+                    path: '../../models/furniture/basin/C81584.glb',
+                    dimensions: { width: 60, height: 113.3, depth: 45.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81584',
+                    price: '379.99',
+                    title: 'Corsica Gloss White Vanity Drawer with Marble Top & Curved Counter Top Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81585',
+                    name: 'Marin Basin',
+                    image: 'assets/productImages/furniture/C81585-1000-Gloss-White-Vanity-Drawer-Marble-Top-Basin-600mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-drawer-with-marble-top-marin-basin-600mm-c81585',
+                    path: '../../models/furniture/basin/C81585.glb',
+                    dimensions: { width: 60, height: 113.3, depth: 45.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81585',
+                    price: '389.99',
+                    title: 'Corsica Gloss White Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81582',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/C81582-1000-White-Drawer-Vanity-Marble-600mm-Excludes-Basin_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c81582',
+                    path: '../../models/furniture/basin/C81582.glb',
+                    dimensions: { width: 60, height: 113.3, depth: 45.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81582',
+                    price: '349.99',
+                    title: 'Corsica Gloss White Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_29',
+            link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-miami-toilet-1100mm-chrome-handles-c81246',
+            name: 'Milos Cotton White Combination Vanity Basin and Denver Toilet 1100mm - Chrome Handles',
+            price: '519.99',
+            image: 'assets/productImages/furniture/C81246-1000-White-Combination-Vanity-Basin-Toilet-1100mm.webp',
+            variants: [
+                {
+                    id: 'C81246',
+                    name: 'Denver Toilet',
+                    image: 'assets/productImages/furniture/C81246-1000-White-Combination-Vanity-Basin-Toilet-1100mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-miami-toilet-1100mm-chrome-handles-c81246',
+                    path: '../../models/furniture/basin/C81246.glb',
+                    dimensions: { width: 101.2, height: 81.8, depth: 75.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81246',
+                    price: '519.99',
+                    title: 'Milos Cotton White Combination Vanity Basin and Denver Toilet 1100mm - Chrome Handles',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+                {
+                    id: 'C81247',
+                    name: 'Houston Toilet',
+                    image: 'assets/productImages/furniture/c81247-1000-white-combination-vanity-basin-toilet-1100mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-houston-toilet-1100mm-chrome-handles-c81247',
+                    path: '../../models/furniture/basin/C81247.glb',
+                    dimensions: { width: 101.2, height: 81.8, depth: 78.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81247',
+                    price: '431.00',
+                    title: 'Milos Cotton White Combination Vanity Basin and Houston Toilet 1100mm - Chrome Handles',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+                {
+                    id: 'C81245',
+                    name: 'Austin Toilet',
+                    image: 'assets/productImages/furniture/C81245-1000-White-Combination-Vanity-Basin-Toilet-1100mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-austin-toilet-1100mm-chrome-handles-c81245',
+                    path: '../../models/furniture/basin/C81245.glb',
+                    dimensions: { width: 101.2, height: 81.8, depth: 76.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81245',
+                    price: '499.99',
+                    title: 'Milos Cotton White Combination Vanity Basin and Austin Toilet 1100mm - Chrome Handles',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_30',
+            link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-chrome-handles-c81231',
+            name: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles',
+            price: '519.99',
+            image: 'assets/productImages/furniture/C81231-1000-Cotton-White-Vanity-Basin-500mm-Chrome-Handles_1.webp',
+            variants: [
+                {
+                    id: 'C81231',
+                    name: 'Mesa Basin',
+                    image: 'assets/productImages/furniture/C81231-1000-Cotton-White-Vanity-Basin-500mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-chrome-handles-c81231',
+                    path: '../../models/furniture/basin/C81231.glb',
+                    dimensions: { width: 51, height: 97, depth: 46.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81231',
+                    price: '191.99',
+                    title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles',
+                    filterAttributes: { width: '500mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '465mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81228',
+                    name: 'Build-in Basin',
+                    image: 'assets/productImages/furniture/C81228-1000-Cotton-White-Basin-Vanity-500mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-500mm-chrome-handles-c81228',
+                    path: '../../models/furniture/basin/C81228.glb',
+                    dimensions: { width: 51.8, height: 81.8, depth: 42.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81228',
+                    price: '175.00',
+                    title: 'Milos Cotton White Basin Vanity 500mm - Chrome Handles',
+                    filterAttributes: { width: '500mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '422mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_31',
+            link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-brushed-handles-c81208',
+            name: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles',
+            price: '259.99',
+            image: 'assets/productImages/furniture/C81208-1000-Cotton-White-Basin-Vanity-600mm-Brushed-Handles_3.webp',
+            variants: [
+                {
+                    id: 'C81208',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C81208-1000-Cotton-White-Basin-Vanity-600mm-Brushed-Handles_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-brushed-handles-c81208',
+                    path: '../../models/furniture/basin/C81208.glb',
+                    dimensions: { width: 61.5, height: 81.8, depth: 47.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81208',
+                    price: '259.99',
+                    title: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '478mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81210',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C81210-1000-Cotton-White-Vanity-Basin-600mm-Brushed-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-600mm-brushed-handles-c81210',
+                    path: '../../models/furniture/basin/C81210.glb',
+                    dimensions: { width: 60.9, height: 96.5, depth: 47.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81210',
+                    price: '223.00',
+                    title: 'Milos Cotton White Vanity with Oval Basin 600mm - Brushed Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81211',
+                    name: 'Troy Basin',
+                    image: 'assets/productImages/furniture/C81211-1000-Cotton-White-Vanity-Basin-600mm-Brushed-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-600mm-brushed-handles-c81211',
+                    path: '../../models/furniture/basin/C81211.glb',
+                    dimensions: { width: 60.9, height: 95.1, depth: 47.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81211',
+                    price: '279.99',
+                    title: 'Milos Cotton White Vanity with Troy Basin 600mm - Brushed Handles',
+                    filterAttributes: { width: '600mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_32',
+            link: 'https://www.bathroommountain.co.uk/harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm',
+            name: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm',
+            price: '179.00',
+            image: 'assets/productImages/furniture/c77479-1000-harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm.webp',
+            variants: [
+                {
+                    id: 'C77479',
+                    name: 'Charcoal Elm',
+                    image: 'assets/productImages/furniture/c77479-1000-harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm',
+                    path: '../../models/furniture/basin/C77479.glb',
+                    dimensions: { width: 50.1, height: 83.6, depth: 30 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77479',
+                    price: '179.00',
+                    title: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79614',
+                    name: 'Navy Blue',
+                    image: 'assets/productImages/furniture/C79614-1000-Navy-Blue-Vanity-Semi-Recessed-Basin-500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/harper-navy-blue-vanity-with-semi-recessed-basin-500mm-c79614',
+                    path: '../../models/furniture/basin/C79614.glb',
+                    dimensions: { width: 50.1, height: 83.6, depth: 30 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79614',
+                    price: '239.99',
+                    title: 'Harper Navy Blue Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Navy Blue', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77016',
+                    name: 'Stone Grey',
+                    image: 'assets/productImages/furniture/C77016-1000-Pebble-Grey-Vanity-with-Semi-Recessed-Basin-500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/harper-pebble-grey-vanity-with-semi-recessed-basin-marble-top-500mm-c77016',
+                    path: '../../models/furniture/basin/C77016.glb',
+                    dimensions: { width: 50, height: 83.6, depth: 30 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77016',
+                    price: '239.99',
+                    title: 'Harper Stone Grey Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Stone Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77012',
+                    name: 'Gloss White',
+                    image: 'assets/productImages/furniture/C77012-1000-Gloss-White-Vanity-500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/harper-gloss-white-vanity-with-semi-recessed-basin-marble-top-500mm-c77012',
+                    path: '../../models/furniture/basin/C77012.glb',
+                    dimensions: { width: 50, height: 83.6, depth: 30 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77012',
+                    price: '179.00',
+                    title: 'Harper Gloss White Vanity with Semi Recessed Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Semi Recessed', depth: '300mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_33',
+            link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-denver-toilet-500mm-c78423',
+            name: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Denver Toilet 500mm',
+            price: '271.99',
+            image: 'assets/productImages/furniture/C78423-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+            variants: [
+                {
+                    id: 'C78423',
+                    name: 'Denver Toilet',
+                    image: 'assets/productImages/furniture/C78423-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-denver-toilet-500mm-c78423',
+                    path: '../../models/furniture/basin/C78423.glb',
+                    dimensions: { width: 50.6, height: 89, depth: 85.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78423',
+                    price: '271.99',
+                    title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Denver Toilet 500mm',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+                {
+                    id: 'C78424',
+                    name: 'Atlanta Toilet',
+                    image: 'assets/productImages/furniture/C78424-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-atlanta-toilet-500mm-c78424',
+                    path: '../../models/furniture/basin/C78424.glb',
+                    dimensions: { width: 50.6, height: 89, depth: 85.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78424',
+                    price: '287.00',
+                    title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Atlanta Toilet 500mm',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+                {
+                    id: 'C78421',
+                    name: 'Austin Toilet',
+                    image: 'assets/productImages/furniture/C78421-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-austin-toilet-500mm-c78421',
+                    path: '../../models/furniture/basin/C78421.glb',
+                    dimensions: { width: 50.6, height: 89, depth: 87 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78421',
+                    price: '239.99',
+                    title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Austin Toilet 500mm',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+                {
+                    id: 'C78420',
+                    name: 'No Toilet',
+                    image: 'assets/productImages/furniture/C78420-1000-White-2-In-1-Combined-Wash-Basin-Back-To-Wall-Unit_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-back-to-wall-unit-500mm-c78420',
+                    path: '../../models/furniture/basin/C78420.glb',
+                    dimensions: { width: 50.6, height: 89, depth: 36 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78420',
+                    price: '151.99',
+                    title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Back To Wall Unit 500mm',
+                    filterAttributes: { composition: 'Vanity Unit', style: 'Modern', bathType: 'N/A', toiletType: 'N/A' }
+                },
+                {
+                    id: 'C78422',
+                    name: 'Seattle Toilet',
+                    image: 'assets/productImages/furniture/C78422-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-seattle-toilet-500mm-c78422',
+                    path: '../../models/furniture/basin/C78422.glb',
+                    dimensions: { width: 50.6, height: 89, depth: 86.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78422',
+                    price: '319.99',
+                    title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Seattle Toilet 500mm',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_34',
+            link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-boston-v2-toilet-1500mm-c78397',
+            name: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Boston Toilet 1500mm',
+            price: '999.99',
+            image: 'assets/productImages/furniture/C78397-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
+            variants: [
+                {
+                    id: 'C78397',
+                    name: 'Boston Toilet',
+                    image: 'assets/productImages/furniture/C78397-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-boston-v2-toilet-1500mm-c78397',
+                    path: '../../models/furniture/basin/C78397.glb',
+                    dimensions: { width: 150.2, height: 95.5, depth: 85.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78397',
+                    price: '999.99',
+                    title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Boston Toilet 1500mm',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+                {
+                    id: 'C78396',
+                    name: 'Hudson Toilet With Wooden Seat',
+                    image: 'assets/productImages/furniture/c78396-1000-inky-blue-vanity-basin-top-toilet-wooden-1500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-hudson-toilet-with-wooden-seat-1500mm-c78396',
+                    path: '../../models/furniture/basin/C78396.glb',
+                    dimensions: { width: 150.1, height: 95.1, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78396',
+                    price: '799.00',
+                    title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Hudson Toilet with Wooden Seat 1500mm',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+                {
+                    id: 'C78393',
+                    name: 'No Toilet',
+                    image: 'assets/productImages/furniture/c78393-1000-inky-blue-vanity-basin-marble-top-1500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-1500mm-excludes-pan-cistern-c78393',
+                    path: '../../models/furniture/basin/C78393.glb',
+                    dimensions: { width: 150.2, height: 95.5, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78393',
+                    price: '695.99',
+                    title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top 1500mm (Excludes Pan & Cistern)',
+                    filterAttributes: { composition: 'Vanity Unit', style: 'Modern', bathType: 'N/A', toiletType: 'N/A' }
+                },
+                {
+                    id: 'C78394',
+                    name: 'Seattle Toilet',
+                    image: 'assets/productImages/furniture/C78394-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-seattle-toilet-1500mm-c78394',
+                    path: '../../models/furniture/basin/C78394.glb',
+                    dimensions: { width: 150.2, height: 95.5, depth: 82.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C78394',
+                    price: '949.99',
+                    title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Seattle Toilet 1500mm',
+                    filterAttributes: { composition: 'Toilet & Basin', style: 'Modern', bathType: 'N/A', toiletType: 'Back to Wall' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_35',
+            link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-800mm-c77098',
+            name: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm',
+            price: '367.00',
+            image: 'assets/productImages/furniture/C77098-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
+            variants: [
+                {
+                    id: 'C77098',
+                    name: 'Boston Toilet',
+                    image: 'assets/productImages/furniture/C77098-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-800mm-c77098',
+                    path: '../../models/furniture/basin/C77098.glb',
+                    dimensions: { width: 81, height: 113.1, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77098',
+                    price: '367.00',
+                    title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '413mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77635',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/c77635-1000-chalk-white-cabinet-with-marble-top-exclude-counter-top-basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cabinet-with-marble-top-800mm-exclude-counter-top-basin-c77635',
+                    path: '../../models/furniture/basin/C77635.glb',
+                    dimensions: { width: 81.1, height: 81.8, depth: 41.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77635',
+                    price: '335.99',
+                    title: 'Bermuda Chalk White Cabinet with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '413mm', style: 'Modern' }
+                },
+                {
+                    id: 'C77097',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C77097-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-oval-counter-top-basin-800mm-c77097',
+                    path: '../../models/furniture/basin/C77097.glb',
+                    dimensions: { width: 81, height: 113.1, depth: 43 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77097',
+                    price: '449.99',
+                    title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '430mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_36',
+            link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm-c76244',
+            name: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm',
+            price: '229.99',
+            image: 'assets/productImages/furniture/c76244-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm.webp',
+            variants: [
+                {
+                    id: 'C76244',
+                    name: '500mm Wall Hung',
+                    image: 'assets/productImages/furniture/c76244-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm-c76244',
+                    path: '../../models/furniture/basin/C76244.glb',
+                    dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
+                    floorOffset: 35,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C77098',
+                    price: '229.99',
+                    title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Storm Grey', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+                {
+                    id: 'C76245',
+                    name: '500mm Floorstanding',
+                    image: 'assets/productImages/furniture/c76245-1000-corsica-storm-grey-basin-drawer-vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-short-projection-basin-drawer-vanity-500mm',
+                    path: '../../models/furniture/basin/C76245.glb',
+                    dimensions: { width: 50.4, height: 85, depth: 34.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76245',
+                    price: '199.00',
+                    title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Storm Grey', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_37',
+            link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-double-vanity-with-marble-top-undermount-basins-1200mm-c76359v2',
+            name: 'Lucia Chalk White Double Vanity with Marble Top & Undermount Basins 1200mm',
+            price: '791.00',
+            image: 'assets/productImages/furniture/C76359V2-1000-White-Vanity-Marble-Top-Undermount-Basins-1200mm.webp',
+            variants: [
+                {
+                    id: 'C76359V2',
+                    name: '1200mm',
+                    image: 'assets/productImages/furniture/C76359V2-1000-White-Vanity-Marble-Top-Undermount-Basins-1200mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-double-vanity-with-marble-top-undermount-basins-1200mm-c76359v2',
+                    path: '../../models/furniture/basin/C76359V2.glb',
+                    dimensions: { width: 122.2, height: 91.6, depth: 47.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76359V2',
+                    price: '791.00',
+                    title: 'Lucia Chalk White Double Vanity with Marble Top & Undermount Basins 1200mm',
+                    filterAttributes: { width: '1200mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Undermount', depth: '472mm', style: 'Traditional' }
+                },
+                {
+                    id: 'C76350V2',
+                    name: '630mm',
+                    image: 'assets/productImages/furniture/C76350V2-1000-White-Vanity-Marble-Top-Undermount-Basin-630mm_5.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-marble-top-undermount-basin-630mm-c76350v2',
+                    path: '../../models/furniture/basin/C76350V2.glb',
+                    dimensions: { width: 63.4, height: 91.6, depth: 47.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76350V2',
+                    price: '455.00',
+                    title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 630mm',
+                    filterAttributes: { width: '630mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Undermount', depth: '472mm', style: 'Traditional' }
+                },
+
+                {
+                    id: 'C76355V2',
+                    name: '830mm',
+                    image: 'assets/productImages/furniture/c76355v2-1000-white-vanity-marble-top-undermount-basin-830mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-marble-top-undermount-basin-830mm-c76355v2',
+                    path: '../../models/furniture/basin/C76355V2.glb',
+                    dimensions: { width: 83.1, height: 91.6, depth: 47.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C76355V2',
+                    price: '519.00',
+                    title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 830mm',
+                    filterAttributes: { width: '830mm', colour: 'Chalk White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Undermount', depth: '472mm', style: 'Traditional' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_38',
+            link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-500mm-c79696',
+            name: 'Mersey Gloss White Basin Vanity 500mm',
+            price: '159.99',
+            image: 'assets/productImages/furniture/C79696-1000-Mersey-Gloss-White-Basin-Vanity-500mm_1.webp',
+            variants: [
+                {
+                    id: 'C79696',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C79696-1000-Mersey-Gloss-White-Basin-Vanity-500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-500mm-c79696',
+                    path: '../../models/furniture/basin/C79696.glb',
+                    dimensions: { width: 51.8, height: 82.1, depth: 44 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79696',
+                    price: '159.99',
+                    title: 'Mersey Gloss White Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '440mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79944',
+                    name: 'Mesa Basin',
+                    image: 'assets/productImages/furniture/C79944-1000-Mersey-Gloss-White-Vanity-with-Mesa-Basin-500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-with-mesa-basin-500mm-c79944',
+                    path: '../../models/furniture/basin/C79944.glb',
+                    dimensions: { width: 51, height: 96.7, depth: 41.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79944',
+                    price: '179.99',
+                    title: 'Mersey Gloss White Vanity with Mesa Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '418mm', style: 'Modern' }
+                },
+
+                {
+                    id: 'C79925',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/C79925-1000-Gloss-White-Vanity-Excludes-Counter-Top-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-500mm-excludes-counter-top-basin-c79925',
+                    path: '../../models/furniture/basin/C79925.glb',
+                    dimensions: { width: 51, height: 81.9, depth: 41.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79925',
+                    price: '149.99',
+                    title: 'Mersey Gloss White Vanity 500mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '418mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_39',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-basin-drawer-vanity-800mm-c79823',
+            name: 'Crete Fluted Linen White Wall Hung Basin Drawer Vanity 800mm',
+            price: '351.00',
+            image: 'assets/productImages/furniture/c79823-1000-linen-white-wall-hung-basin-drawer-vanity-800mm.webp',
+            variants: [
+                {
+                    id: 'C79823',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/c79823-1000-linen-white-wall-hung-basin-drawer-vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-basin-drawer-vanity-800mm-c79823',
+                    path: '../../models/furniture/basin/C79823.glb',
+                    dimensions: { width: 81.3, height: 57, depth: 46.5 },
+                    floorOffset: 24.7,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79823',
+                    price: '351.00',
+                    title: 'Crete Fluted Linen White Wall Hung Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79827',
+                    name: 'Cody Basin',
+                    image: 'assets/productImages/furniture/c79827-1000-linen-white-wall-hung-drawer-vanity-basin-800mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-cody-basin-800mm-c79827',
+                    path: '../../models/furniture/basin/C79827.glb',
+                    dimensions: { width: 81, height: 64.8, depth: 45.5 },
+                    floorOffset: 27.9,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79827',
+                    price: '509.99',
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Cody Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79825',
+                    name: 'Curved Basin',
+                    image: 'assets/productImages/furniture/c79825-1000-white-wall-hung-anity-marble-top-basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-curved-basin-800mm-c79825',
+                    path: '../../models/furniture/basin/C79825.glb',
+                    dimensions: { width: 81, height: 67.2, depth: 45.2 },
+                    floorOffset: 27.7,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79825',
+                    price: '499.99',
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Curved Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '452mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79826',
+                    name: 'Marin Basin',
+                    image: 'assets/productImages/furniture/c79826-1000-linen-white-wall-hung-drawer-vanity-basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-marin-basin-800mm-c79826',
+                    path: '../../models/furniture/basin/C79826.glb',
+                    dimensions: { width: 81, height: 64.8, depth: 45.5 },
+                    floorOffset: 27.9,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79826',
+                    price: '407.99',
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
+                },
+                {
+                    id: 'C79824',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/c79824-1000-white-wall-hung-drawer-vanity-marble-top-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-800mm-excludes-counter-top-basin-c79824',
+                    path: '../../models/furniture/basin/C79824.glb',
+                    dimensions: { width: 81, height: 53.8, depth: 45.5 },
+                    floorOffset: 27.9,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C79824',
+                    price: '469.99',
+                    title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_40',
+            link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-chrome-handles-c81236',
+            name: 'Milos Cotton White Basin Vanity 800mm - Chrome Handles',
+            price: '239.00',
+            image: 'assets/productImages/furniture/C81236-1000-Cotton-White-Basin-Vanity-800mm-Chrome-Handles_1.webp',
+            variants: [
+                {
+                    id: 'C81236',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C81236-1000-Cotton-White-Basin-Vanity-800mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-chrome-handles-c81236',
+                    path: '../../models/furniture/basin/C81236.glb',
+                    dimensions: { width: 82, height: 81.9, depth: 47.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81236',
+                    price: '239.00',
+                    title: 'Milos Cotton White Basin Vanity 800mm - Chrome Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '479mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81238',
+                    name: 'Oval Basin',
+                    image: 'assets/productImages/furniture/C81238-1000-Cotton-White-Vanity-Basin-800mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-800mm-chrome-handles-c81238',
+                    path: '../../models/furniture/basin/C81238.glb',
+                    dimensions: { width: 81.1, height: 96.5, depth: 45.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81238',
+                    price: '329.99',
+                    title: 'Milos Cotton White Vanity with Oval Basin 800mm - Chrome Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81239',
+                    name: 'Troy Basin',
+                    image: 'assets/productImages/furniture/C81239-1000-Cotton-White-Vanity-Basin-800mm-Chrome-Handles_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-800mm-chrome-handles-c81239',
+                    path: '../../models/furniture/basin/C81239.glb',
+                    dimensions: { width: 81.1, height: 95.1, depth: 47.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81239',
+                    price: '263.99',
+                    title: 'Milos Cotton White Vanity with Troy Basin 800mm - Chrome Handles',
+                    filterAttributes: { width: '800mm', colour: 'Cotton White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '477mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_41',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-600mm-c81576',
+            name: 'Corsica Gloss White Wall Hung Basin Drawer Vanity 600mm',
+            price: '279.99',
+            image: 'assets/productImages/furniture/C81576-1000-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
+            variants: [
+                {
+                    id: 'C81576',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C81576-1000-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-600mm-c81576',
+                    path: '../../models/furniture/basin/C81576.glb',
+                    dimensions: { width: 61.3, height: 56.6, depth: 46.5 },
+                    floorOffset: 38.1,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81576',
+                    price: '279.99',
+                    title: 'Corsica Gloss White Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81579',
+                    name: 'Curved Basin',
+                    image: 'assets/productImages/furniture/C81579-1000-White-Wall-Hung-Drawer-Vanity-Marble-Basin-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-drawer-vanity-with-marble-top-curved-counter-top-basin-600mm-c81579',
+                    path: '../../models/furniture/basin/C81579.glb',
+                    dimensions: { width: 60, height: 65.4, depth: 45 },
+                    floorOffset: 38.4,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81579',
+                    price: '271.99',
+                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Curved Counter Top Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '450mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81580',
+                    name: 'Marin Basin',
+                    image: 'assets/productImages/furniture/C81580-1000-White-Wall-Hung-Drawer-Vanity-Marble-Basin-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-drawer-vanity-with-marble-top-marin-basin-600mm-c81580',
+                    path: '../../models/furniture/basin/C81580.glb',
+                    dimensions: { width: 60, height: 63, depth: 45 },
+                    floorOffset: 32.1,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81580',
+                    price: '279.00',
+                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '450mm', style: 'Modern' }
+                },
+                {
+                    id: 'C81577',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/C81577-1000-White-Wall-Hung-Drawer-Vanity-Marble-Top-600mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c81577',
+                    path: '../../models/furniture/basin/C81577.glb',
+                    dimensions: { width: 60, height: 51.9, depth: 45 },
+                    floorOffset: 38.4,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C81577',
+                    price: '309.99',
+                    title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '450mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_42',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-basin-drawer-vanity-600mm-c82105',
+            name: 'Crete Fluted Apex Oak Wall Hung Basin Drawer Vanity 600mm',
+            price: '159.99',
+            image: 'assets/productImages/furniture/C82105-1000-Fluted-Apex-Oak-Wall-Hung-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82105',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82105-1000-Fluted-Apex-Oak-Wall-Hung-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-basin-drawer-vanity-600mm-c82105',
+                    path: '../../models/furniture/basin/C82105.glb',
+                    dimensions: { width: 61, height: 57, depth: 46.5 },
+                    floorOffset: 37.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82105',
+                    price: '349.99',
+                    title: 'Crete Fluted Apex Oak Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+                {
+                    id: 'C82106',
+                    name: 'No Basin',
+                    image: 'assets/productImages/furniture/C82106-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82106',
+                    path: '../../models/furniture/basin/C82106.glb',
+                    dimensions: { width: 61, height: 53.8, depth: 45.5 },
+                    floorOffset: 37.4,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82106',
+                    price: '369.99',
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
+                },
+                {
+                    id: 'C82108',
+                    name: 'Marin Basin',
+                    image: 'assets/productImages/furniture/C82108-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-marin-basin-600mm-c82108',
+                    path: '../../models/furniture/basin/C82108.glb',
+                    dimensions: { width: 61, height: 64.8, depth: 45.5 },
+                    floorOffset: 39.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82108',
+                    price: '327.00',
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
+                },
+                {
+                    id: 'C82107',
+                    name: 'Curved Basin',
+                    image: 'assets/productImages/furniture/C82107-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-curved-basin-600mm-c82107',
+                    path: '../../models/furniture/basin/C82107.glb',
+                    dimensions: { width: 61, height: 67.2, depth: 45.5 },
+                    floorOffset: 37.5,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82107',
+                    price: '399.99',
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Curved Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
+                },
+                {
+                    id: 'C82109',
+                    name: 'Cody Basin',
+                    image: 'assets/productImages/furniture/C82109-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-cody-basin-600mm-c82109',
+                    path: '../../models/furniture/basin/C82109.glb',
+                    dimensions: { width: 61, height: 64.8, depth: 45.5 },
+                    floorOffset: 37.3,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82109',
+                    price: '409.99',
+                    title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Cody Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Countertop', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_43',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-tall-cabinet-1400x350mm-72144',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Tall Cabinet 1400x350mm',
+            price: '269.99',
+            image: 'assets/productImages/furniture/72144-1000-Charcoal-Elm-Wall-Hung-Tall-Cabinet-1400x350mm.webp',
+            variants: [
+                {
+                    id: '72144',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/72144-1000-Charcoal-Elm-Wall-Hung-Tall-Cabinet-1400x350mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-tall-cabinet-1400x350mm-72144',
+                    path: '../../models/furniture/basin/72144.glb',
+                    dimensions: { width: 35, height: 40.1, depth: 30 },
+                    floorOffset: 0,
+                    spawnHeight: 32,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: '72144',
+                    price: '269.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Tall Cabinet 1400x350mm',
+                    filterAttributes: { width: '350mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Tall Cabinet', basinType: 'N/A', depth: '300mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_44',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-slimline-back-to-wall-toilet-unit-500mm-74130',
+            name: 'Crete Fluted Charcoal Elm Slimline Back To Wall Toilet Unit 500mm',
+            price: '199.99',
+            image: 'assets/productImages/furniture/74130-1000-Charcoal-Elm-Back-To-Wall-Toilet-Unit-500mm.webp',
+            variants: [
+                {
+                    id: '74130',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/74130-1000-Charcoal-Elm-Back-To-Wall-Toilet-Unit-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-slimline-back-to-wall-toilet-unit-500mm-74130',
+                    path: '../../models/furniture/basin/74130.glb',
+                    dimensions: { width: 50.2, height: 80, depth: 25.3 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: '74130',
+                    price: '199.99',
+                    title: 'Crete Fluted Charcoal Elm Slimline Back To Wall Toilet Unit 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Toilet Unit', basinType: 'N/A', depth: '253mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_45',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-slimline-basin-vanity-500mm-c82714',
+            name: 'Corsica Gloss White Slimline Basin Vanity 500mm',
+            price: '249.99',
+            image: 'assets/productImages/furniture/C82714-1000-Corsica-Gloss-White-Slimline-Basin-Vanity-500mm.webp',
+            variants: [
+                {
+                    id: 'C82714',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82714-1000-Corsica-Gloss-White-Slimline-Basin-Vanity-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-slimline-basin-vanity-500mm-c82714',
+                    path: '../../models/furniture/basin/C82714.glb',
+                    dimensions: { width: 50.4, height: 85, depth: 34.7 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82714',
+                    price: '249.99',
+                    title: 'Corsica Gloss White Slimline Basin Vanity 500mm',
+                    filterAttributes: { width: '500mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_46',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-slimline-basin-vanity-600mm-c82715',
+            name: 'Corsica Gloss White Slimline Basin Vanity 600mm',
+            price: '279.99',
+            image: 'assets/productImages/furniture/C82715-1000-Corsica-Gloss-White-Slimline-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82715',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82715-1000-Corsica-Gloss-White-Slimline-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-slimline-basin-vanity-600mm-c82715',
+                    path: '../../models/furniture/basin/C82715.glb',
+                    dimensions: { width: 60.4, height: 84.9, depth: 34.7 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82715',
+                    price: '279.99',
+                    title: 'Corsica Gloss White Slimline Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '347mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_47',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-vanity-600mm-c82716',
+            name: 'Corsica Gloss White Basin Vanity 600mm',
+            price: '329.99',
+            image: 'assets/productImages/furniture/C82716-1000-Corsica-Gloss-White-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82716',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82716-1000-Corsica-Gloss-White-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-vanity-600mm-c82716',
+                    path: '../../models/furniture/basin/C82716.glb',
+                    dimensions: { width: 61.3, height: 86.4, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82716',
+                    price: '329.99',
+                    title: 'Corsica Gloss White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_48',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82717',
+            name: 'Corsica Gloss White Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '319.99',
+            image: 'assets/productImages/furniture/C82717-1000-White-Vanity-Marble-Top-600mm-Exclude-Basin.webp',
+            variants: [
+                {
+                    id: 'C82717',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82717-1000-White-Vanity-Marble-Top-600mm-Exclude-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82717',
+                    path: '../../models/furniture/basin/C82717.glb',
+                    dimensions: { width: 60.2, height: 81.8, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82717',
+                    price: '319.99',
+                    title: 'Corsica Gloss White Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_49',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-curved-basin-600mm-c82718',
+            name: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 600mm',
+            price: '359.99',
+            image: 'assets/productImages/furniture/C82718-1000-Gloss-White-Vanity-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82718',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82718-1000-Gloss-White-Vanity-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-curved-basin-600mm-c82718',
+                    path: '../../models/furniture/basin/C82718.glb',
+                    dimensions: { width: 60.2, height: 95.4, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82718',
+                    price: '359.99',
+                    title: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_50',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-marin-basin-600mm-c82719',
+            name: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 600mm',
+            price: '369.99',
+            image: 'assets/productImages/furniture/C82719-1000-Gloss-White-Vanity-Marble-Top-Marin-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82719',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82719-1000-Gloss-White-Vanity-Marble-Top-Marin-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-marin-basin-600mm-c82719',
+                    path: '../../models/furniture/basin/C82719.glb',
+                    dimensions: { width: 60.2, height: 93, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82719',
+                    price: '369.99',
+                    title: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_51',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-vanity-800mm-c82720',
+            name: 'Corsica Gloss White Basin Vanity 800mm',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82720-1000-Corsica-Gloss-White-Basin-Vanity-800mm.webp',
+            variants: [
+                {
+                    id: 'C82720',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82720-1000-Corsica-Gloss-White-Basin-Vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-vanity-800mm-c82720',
+                    path: '../../models/furniture/basin/C82720.glb',
+                    dimensions: { width: 81.4, height: 86.4, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82720',
+                    price: '399.99',
+                    title: 'Corsica Gloss White Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_52',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82721',
+            name: 'Corsica Gloss White Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82721-1000-White-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82721',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82721-1000-White-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82721',
+                    path: '../../models/furniture/basin/C82721.glb',
+                    dimensions: { width: 80.5, height: 81.8, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82721',
+                    price: '399.99',
+                    title: 'Corsica Gloss White Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_53',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-curved-basin-800mm-c82722',
+            name: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 800mm',
+            price: '439.99',
+            image: 'assets/productImages/furniture/C82722-1000-Gloss-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82722',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82722-1000-Gloss-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-curved-basin-800mm-c82722',
+                    path: '../../models/furniture/basin/C82722.glb',
+                    dimensions: { width: 80.5, height: 95.3, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82722',
+                    price: '439.99',
+                    title: 'Corsica Gloss White Vanity with Marble Top & Curved Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Countertop', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_54',
+            link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-marin-basin-800mm-c82723',
+            name: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 800mm',
+            price: '449.99',
+            image: 'assets/productImages/furniture/C82723-1000-Gloss-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82723',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82723-1000-Gloss-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-with-marble-top-and-marin-basin-800mm-c82723',
+                    path: '../../models/furniture/basin/C82723.glb',
+                    dimensions: { width: 80.5, height: 92.8, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82723',
+                    price: '449.99',
+                    title: 'Corsica Gloss White Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Gloss White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_55',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-drawer-600mm-c82724',
+            name: 'Crete Fluted Linen White Basin Vanity Drawer 600mm',
+            price: '419.99',
+            image: 'assets/productImages/furniture/C82724-1000-Crete-Fluted-Linen-White-Basin-Vanity-Drawer-600mm.webp',
+            variants: [
+                {
+                    id: 'C82724',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82724-1000-Crete-Fluted-Linen-White-Basin-Vanity-Drawer-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-drawer-600mm-c82724',
+                    path: '../../models/furniture/basin/C82724.glb',
+                    dimensions: { width: 61, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82724',
+                    price: '419.99',
+                    title: 'Crete Fluted Linen White Basin Vanity Drawer 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_56',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-600mm-excludes-counter-top-basin-c82725',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '419.99',
+            image: 'assets/productImages/furniture/C82725-1000-White-Vanity-Drawer-Marble-Top-600mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82725',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82725-1000-White-Vanity-Drawer-Marble-Top-600mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-600mm-excludes-counter-top-basin-c82725',
+                    path: '../../models/furniture/basin/C82725.glb',
+                    dimensions: { width: 61, height: 81.9, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82725',
+                    price: '419.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_57',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-nevis-basin-600mm-c82726',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 600mm',
+            price: '479.99',
+            image: 'assets/productImages/furniture/C82726-1000-White-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82726',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82726-1000-White-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-nevis-basin-600mm-c82726',
+                    path: '../../models/furniture/basin/C82726.glb',
+                    dimensions: { width: 61, height: 81.9, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82726',
+                    price: '479.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_58',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-marin-basin-600mm-c82727',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 600mm',
+            price: '479.99',
+            image: 'assets/productImages/furniture/C82727-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82727',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82727-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-marin-basin-600mm-c82727',
+                    path: '../../models/furniture/basin/C82727.glb',
+                    dimensions: { width: 61, height: 81.8, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82727',
+                    price: '479.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_59',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-reno-basin-600mm-c82728',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 600mm',
+            price: '489.99',
+            image: 'assets/productImages/furniture/C82728-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82728',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82728-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-reno-basin-600mm-c82728',
+                    path: '../../models/furniture/basin/C82728.glb',
+                    dimensions: { width: 61, height: 92.7, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82728',
+                    price: '489.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_60',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-600mm-c82729',
+            name: 'Crete Fluted Linen White Basin Vanity 600mm',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82729-1000-Crete-Fluted-Linen-White-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82729',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82729-1000-Crete-Fluted-Linen-White-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-600mm-c82729',
+                    path: '../../models/furniture/basin/C82729.glb',
+                    dimensions: { width: 61, height: 85, depth: 46.5 },
+                    floorOffset: 0.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82729',
+                    price: '399.99',
+                    title: 'Crete Fluted Linen White Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_61',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82730',
+            name: 'Crete Fluted Linen White Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82730-1000-Fluted-Linen-White-Vanity-Marble-Top-600mm.webp',
+            variants: [
+                {
+                    id: 'C82730',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82730-1000-Fluted-Linen-White-Vanity-Marble-Top-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82730',
+                    path: '../../models/furniture/basin/C82730.glb',
+                    dimensions: { width: 61, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82730',
+                    price: '399.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_62',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-nevis-basin-600mm-c82731',
+            name: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 600mm',
+            price: '449.99',
+            image: 'assets/productImages/furniture/C82731-1000-Fluted-Linen-White-Vanity-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82731',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82731-1000-Fluted-Linen-White-Vanity-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-nevis-basin-600mm-c82731',
+                    path: '../../models/furniture/basin/C82731.glb',
+                    dimensions: { width: 61, height: 93.4, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82731',
+                    price: '449.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_63',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-marin-basin-600mm-c82732',
+            name: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 600mm',
+            price: '459.99',
+            image: 'assets/productImages/furniture/C82732-1000-Fluted-Linen-White-Vanity-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82732',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82732-1000-Fluted-Linen-White-Vanity-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-marin-basin-600mm-c82732',
+                    path: '../../models/furniture/basin/C82732.glb',
+                    dimensions: { width: 61, height: 92.9, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82732',
+                    price: '459.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_64',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-reno-basin-600mm-c82733',
+            name: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 600mm',
+            price: '459.99',
+            image: 'assets/productImages/furniture/C82733-1000-Fluted-Linen-White-Vanity-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82733',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82733-1000-Fluted-Linen-White-Vanity-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-reno-basin-600mm-c82733',
+                    path: '../../models/furniture/basin/C82733.glb',
+                    dimensions: { width: 61, height: 92.7, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82733',
+                    price: '459.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_65',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-drawer-800mm-c82734',
+            name: 'Crete Fluted Linen White Basin Vanity Drawer 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82734-1000-Crete-Fluted-Linen-White-Basin-Vanity-Drawer-800mm.webp',
+            variants: [
+                {
+                    id: 'C82734',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82734-1000-Crete-Fluted-Linen-White-Basin-Vanity-Drawer-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-drawer-800mm-c82734',
+                    path: '../../models/furniture/basin/C82734.glb',
+                    dimensions: { width: 81.3, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82734',
+                    price: '549.99',
+                    title: 'Crete Fluted Linen White Basin Vanity Drawer 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_66',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-800mm-excludes-counter-top-basin-c82735',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82735-1000-Linen-White-Vanity-Drawer-Marble-Top-800mm.webp',
+            variants: [
+                {
+                    id: 'C82735',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82735-1000-Linen-White-Vanity-Drawer-Marble-Top-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-800mm-excludes-counter-top-basin-c82735',
+                    path: '../../models/furniture/basin/C82735.glb',
+                    dimensions: { width: 81, height: 81.9, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82735',
+                    price: '549.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_67',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-nevis-basin-800mm-c82736',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82736-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82736',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82736-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-nevis-basin-800mm-c82736',
+                    path: '../../models/furniture/basin/C82736.glb',
+                    dimensions: { width: 81, height: 93.4, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82736',
+                    price: '599.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_68',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-marin-basin-800mm-c82737',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82737-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82737',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82737-1000-Linen-White-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-marin-basin-800mm-c82737',
+                    path: '../../models/furniture/basin/C82737.glb',
+                    dimensions: { width: 81, height: 92.9, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82737',
+                    price: '599.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_69',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-reno-basin-800mm-c82738',
+            name: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82738-1000-White-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82738',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82738-1000-White-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-drawer-with-marble-top-and-reno-basin-800mm-c82738',
+                    path: '../../models/furniture/basin/C82738.glb',
+                    dimensions: { width: 81, height: 92.7, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82738',
+                    price: '599.99',
+                    title: 'Crete Fluted Linen White Vanity Drawer with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_70',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-800mm-c82739',
+            name: 'Crete Fluted Linen White Basin Vanity 800mm',
+            price: '499.99',
+            image: 'assets/productImages/furniture/C82739-1000-Crete-Fluted-Linen-White-Basin-Vanity-800mm.webp',
+            variants: [
+                {
+                    id: 'C82739',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82739-1000-Crete-Fluted-Linen-White-Basin-Vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-basin-vanity-800mm-c82739',
+                    path: '../../models/furniture/basin/C82739.glb',
+                    dimensions: { width: 81.3, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82739',
+                    price: '499.99',
+                    title: 'Crete Fluted Linen White Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_71',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82740',
+            name: 'Crete Fluted Linen White Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '499.99',
+            image: 'assets/productImages/furniture/C82740-1000-Linen-White-Vanity-with-Marble-Top-800mm.webp',
+            variants: [
+                {
+                    id: 'C82740',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82740-1000-Linen-White-Vanity-with-Marble-Top-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82740',
+                    path: '../../models/furniture/basin/C82740.glb',
+                    dimensions: { width: 81, height: 81.9, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82740',
+                    price: '499.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_72',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-nevis-basin-800mm-c82741',
+            name: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82741-1000-Linen-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82741',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82741-1000-Linen-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-nevis-basin-800mm-c82741',
+                    path: '../../models/furniture/basin/C82741.glb',
+                    dimensions: { width: 81, height: 93.4, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82741',
+                    price: '549.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_73',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-marin-basin-800mm-c82742',
+            name: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82742-1000-Linen-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82742',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82742-1000-Linen-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-marin-basin-800mm-c82742',
+                    path: '../../models/furniture/basin/C82742.glb',
+                    dimensions: { width: 81, height: 92.9, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82742',
+                    price: '549.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_74',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-reno-basin-800mm-c82743',
+            name: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82743-1000-Linen-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82743',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82743-1000-Linen-White-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-vanity-with-marble-top-and-reno-basin-800mm-c82743',
+                    path: '../../models/furniture/basin/C82743.glb',
+                    dimensions: { width: 86.4, height: 95, depth: 45.8 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82743',
+                    price: '549.99',
+                    title: 'Crete Fluted Linen White Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Linen White', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '458mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_75',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-drawer-600mm-c82744',
+            name: 'Crete Fluted Apex Oak Basin Vanity Drawer 600mm',
+            price: '419.99',
+            image: 'assets/productImages/furniture/C82744-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-Drawer-600mm.webp',
+            variants: [
+                {
+                    id: 'C82744',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82744-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-Drawer-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-drawer-600mm-c82744',
+                    path: '../../models/furniture/basin/C82744.glb',
+                    dimensions: { width: 61, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82744',
+                    price: '419.99',
+                    title: 'Crete Fluted Apex Oak Basin Vanity Drawer 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_76',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-600mm-excludes-counter-top-basin-c82745',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '419.99',
+            image: 'assets/productImages/furniture/C82745-1000-Oak-Vanity-Drawer-Marble-Top-600mm.webp',
+            variants: [
+                {
+                    id: 'C82745',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82745-1000-Oak-Vanity-Drawer-Marble-Top-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-600mm-excludes-counter-top-basin-c82745',
+                    path: '../../models/furniture/basin/C82745.glb',
+                    dimensions: { width: 61, height: 81.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82745',
+                    price: '419.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_77',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-nevis-basin-600mm-c82746',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 600mm',
+            price: '479.99',
+            image: 'assets/productImages/furniture/C82746-1000-Oak-Vanity-Drawer-with-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82746',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82746-1000-Oak-Vanity-Drawer-with-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-nevis-basin-600mm-c82746',
+                    path: '../../models/furniture/basin/C82746.glb',
+                    dimensions: { width: 61, height: 93.4, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82746',
+                    price: '479.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_78',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-marin-basin-600mm-c82747',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 600mm',
+            price: '479.99',
+            image: 'assets/productImages/furniture/C82747-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82747',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82747-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-marin-basin-600mm-c82747',
+                    path: '../../models/furniture/basin/C82747.glb',
+                    dimensions: { width: 61, height: 81.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82747',
+                    price: '479.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_79',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-reno-basin-600mm-c82748',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 600mm',
+            price: '489.99',
+            image: 'assets/productImages/furniture/C82748-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82748',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82748-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-reno-basin-600mm-c82748',
+                    path: '../../models/furniture/basin/C82748.glb',
+                    dimensions: { width: 61, height: 92.7, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82748',
+                    price: '489.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_80',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-600mm-c82749',
+            name: 'Crete Fluted Apex Oak Basin Vanity 600mm',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82749-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82749',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82749-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-600mm-c82749',
+                    path: '../../models/furniture/basin/C82749.glb',
+                    dimensions: { width: 61, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82749',
+                    price: '399.99',
+                    title: 'Crete Fluted Apex Oak Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_81',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82750',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82750-1000-Oak-Vanity-with-Marble-Top-600mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82750',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82750-1000-Oak-Vanity-with-Marble-Top-600mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82750',
+                    path: '../../models/furniture/basin/C82750.glb',
+                    dimensions: { width: 61, height: 81.8, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82750',
+                    price: '399.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_82',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-nevis-basin-600mm-c82751',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 600mm',
+            price: '449.99',
+            image: 'assets/productImages/furniture/C82751-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82751',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82751-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-nevis-basin-600mm-c82751',
+                    path: '../../models/furniture/basin/C82751.glb',
+                    dimensions: { width: 61, height: 93.4, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82751',
+                    price: '449.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_83',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-marin-basin-600mm-c82752',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 600mm',
+            price: '459.99',
+            image: 'assets/productImages/furniture/C82752-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82752',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82752-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-marin-basin-600mm-c82752',
+                    path: '../../models/furniture/basin/C82752.glb',
+                    dimensions: { width: 61, height: 92.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82752',
+                    price: '459.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_84',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-reno-basin-600mm-c82753',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 600mm',
+            price: '459.99',
+            image: 'assets/productImages/furniture/C82753-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82753',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82752-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/C82753-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-600mm.webp',
+                    path: '../../models/furniture/basin/C82753.glb',
+                    dimensions: { width: 61, height: 92.7, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82753',
+                    price: '459.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_85',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-drawer-800mm-c82754',
+            name: 'Crete Fluted Apex Oak Basin Vanity Drawer 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82754-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-Drawer-800mm.webp',
+            variants: [
+                {
+                    id: 'C82754',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82754-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-Drawer-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-drawer-800mm-c82754',
+                    path: '../../models/furniture/basin/C82754.glb',
+                    dimensions: { width: 81.3, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82754',
+                    price: '549.99',
+                    title: 'Crete Fluted Apex Oak Basin Vanity Drawer 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_86',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-800mm-excludes-counter-top-basin-c82755',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82755-1000-Oak-Vanity-Drawer-Marble-Top-800mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82755',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82755-1000-Oak-Vanity-Drawer-Marble-Top-800mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-800mm-excludes-counter-top-basin-c82755',
+                    path: '../../models/furniture/basin/C82755.glb',
+                    dimensions: { width: 81, height: 81.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82755',
+                    price: '549.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_87',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-nevis-basin-800mm-c82756',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82756-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82756',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82756-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-nevis-basin-800mm-c82756',
+                    path: '../../models/furniture/basin/C82756.glb',
+                    dimensions: { width: 81, height: 93.4, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82756',
+                    price: '599.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_88',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-marin-basin-800mm-c82757',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82757-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82757',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82757-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-marin-basin-800mm-c82757',
+                    path: '../../models/furniture/basin/C82757.glb',
+                    dimensions: { width: 81, height: 92.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82757',
+                    price: '599.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_89',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-reno-basin-800mm-c82758',
+            name: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82758-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82758',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82758-1000-Apex-Oak-Vanity-Drawer-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-drawer-with-marble-top-and-reno-basin-800mm-c82758',
+                    path: '../../models/furniture/basin/C82758.glb',
+                    dimensions: { width: 81, height: 92.7, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82758',
+                    price: '599.99',
+                    title: 'Crete Fluted Apex Oak Vanity Drawer with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_90',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-800mm-c82759',
+            name: 'Crete Fluted Apex Oak Basin Vanity 800mm',
+            price: '499.99',
+            image: 'assets/productImages/furniture/C82759-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-800mm.webp',
+            variants: [
+                {
+                    id: 'C82759',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82759-1000-Crete-Fluted-Apex-Oak-Basin-Vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-basin-vanity-800mm-c82759',
+                    path: '../../models/furniture/basin/C82759.glb',
+                    dimensions: { width: 81.3, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82759',
+                    price: '499.99',
+                    title: 'Crete Fluted Apex Oak Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_91',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82760',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '499.99',
+            image: 'assets/productImages/furniture/C82760-1000-Apex-Oak-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82760',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82760-1000-Apex-Oak-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82760',
+                    path: '../../models/furniture/basin/C82760.glb',
+                    dimensions: { width: 81.3, height: 81.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82760',
+                    price: '499.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_92',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-nevis-basin-800mm-c82761',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82761-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82761',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82761-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-nevis-basin-800mm-c82761',
+                    path: '../../models/furniture/basin/C82761.glb',
+                    dimensions: { width: 81, height: 93.4, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82761',
+                    price: '549.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_93',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-marin-basin-800mm-c82762',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82762-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82762',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82762-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-marin-basin-800mm-c82762',
+                    path: '../../models/furniture/basin/C82762.glb',
+                    dimensions: { width: 81, height: 92.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82762',
+                    price: '549.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_94',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-reno-basin-800mm-c82763',
+            name: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82763-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82763',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82763-1000-Fluted-Apex-Oak-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-vanity-with-marble-top-and-reno-basin-800mm-c82763',
+                    path: '../../models/furniture/basin/C82763.glb',
+                    dimensions: { width: 81, height: 92.7, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82763',
+                    price: '549.99',
+                    title: 'Crete Fluted Apex Oak Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Apex Oak', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_95',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-basin-drawer-vanity-600mm-c82764',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 600mm',
+            price: '349.99',
+            image: 'assets/productImages/furniture/C82764-1000-Charcoal-Elm-Wall-Hung-Basin-Drawer-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82764',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82764-1000-Charcoal-Elm-Wall-Hung-Basin-Drawer-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-basin-drawer-vanity-600mm-c82764',
+                    path: '../../models/furniture/basin/C82764.glb',
+                    dimensions: { width: 61, height: 56.9, depth: 46.5 },
+                    floorOffset: 28.4,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82764',
+                    price: '349.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_96',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82765',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '369.99',
+            image: 'assets/productImages/furniture/C82765-1000-Charcoal-Elm-Wall-Hung-Drawer-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82765',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82765-1000-Charcoal-Elm-Wall-Hung-Drawer-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82765',
+                    path: '../../models/furniture/basin/C82765.glb',
+                    dimensions: { width: 61, height: 53.8, depth: 45.5 },
+                    floorOffset: 32.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82765',
+                    price: '369.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_97',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-nevis-basin-600mm-c82766',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Nevis Basin 600mm',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82766-1000-Charcoal-Elm-Wall-Hung-Vanity-Marble-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82766',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82766-1000-Charcoal-Elm-Wall-Hung-Vanity-Marble-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-nevis-basin-600mm-c82766',
+                    path: '../../models/furniture/basin/C82766.glb',
+                    dimensions: { width: 61, height: 65.3, depth: 45.5 },
+                    floorOffset: 36,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82766',
+                    price: '399.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_98',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-marin-basin-600mm-c82767',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm',
+            price: '409.99',
+            image: 'assets/productImages/furniture/C82767-1000-Charcoal-Elm-Wall-Hung-Vanity-Marble-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82767',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82767-1000-Charcoal-Elm-Wall-Hung-Vanity-Marble-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-marin-basin-600mm-c82767',
+                    path: '../../models/furniture/basin/C82767.glb',
+                    dimensions: { width: 61, height: 64.8, depth: 45.5 },
+                    floorOffset: 36.1,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82767',
+                    price: '409.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_99',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-reno-basin-600mm-c82768',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 600mm',
+            price: '409.99',
+            image: 'assets/productImages/furniture/C82768-1000-Charcoal-Elm-Wall-Hung-Vanity-Marble-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82768',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82768-1000-Charcoal-Elm-Wall-Hung-Vanity-Marble-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-reno-basin-600mm-c82768',
+                    path: '../../models/furniture/basin/C82768.glb',
+                    dimensions: { width: 61, height: 64.6, depth: 45.5 },
+                    floorOffset: 38,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82768',
+                    price: '409.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_100',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-drawer-600mm-c82769',
+            name: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 600mm',
+            price: '419.99',
+            image: 'assets/productImages/furniture/C82769-1000-Fluted-Charcoal-Elm-Basin-Vanity-Drawer-600mm.webp',
+            variants: [
+                {
+                    id: 'C82769',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82769-1000-Fluted-Charcoal-Elm-Basin-Vanity-Drawer-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-drawer-600mm-c82769',
+                    path: '../../models/furniture/basin/C82769.glb',
+                    dimensions: { width: 61, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82769',
+                    price: '419.99',
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_101',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-600mm-excludes-counter-top-basin-c82770',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '419.99',
+            image: 'assets/productImages/furniture/C82770-1000-Charcoal-Elm-Vanity-Marble-Top-600mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82770',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82770-1000-Charcoal-Elm-Vanity-Marble-Top-600mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-600mm-excludes-counter-top-basin-c82770',
+                    path: '../../models/furniture/basin/C82770.glb',
+                    dimensions: { width: 61, height: 81.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82770',
+                    price: '419.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_102',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-nevis-basin-600mm-c82771',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 600mm',
+            price: '479.99',
+            image: 'assets/productImages/furniture/C82771-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82771',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82771-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-nevis-basin-600mm-c82771',
+                    path: '../../models/furniture/basin/C82771.glb',
+                    dimensions: { width: 61, height: 93.4, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82771',
+                    price: '479.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_103',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-marin-basin-600mm-c82772',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 600mm',
+            price: '479.99',
+            image: 'assets/productImages/furniture/C82772-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82772',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82772-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-marin-basin-600mm-c82772',
+                    path: '../../models/furniture/basin/C82772.glb',
+                    dimensions: { width: 61, height: 92.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82772',
+                    price: '479.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_104',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-reno-basin-600mm-c82773',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 600mm',
+            price: '489.99',
+            image: 'assets/productImages/furniture/C82773-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82773',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82773-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-reno-basin-600mm-c82773',
+                    path: '../../models/furniture/basin/C82773.glb',
+                    dimensions: { width: 61, height: 92.7, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82773',
+                    price: '489.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_105',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-600mm-c82774',
+            name: 'Crete Fluted Charcoal Elm Basin Vanity 600mm',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82774-1000-Crete-Fluted-Charcoal-Elm-Basin-Vanity-600mm.webp',
+            variants: [
+                {
+                    id: 'C82774',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82774-1000-Crete-Fluted-Charcoal-Elm-Basin-Vanity-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-600mm-c82774',
+                    path: '../../models/furniture/basin/C82774.glb',
+                    dimensions: { width: 61, height: 85, depth: 46.5 },
+                    floorOffset: 0.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82774',
+                    price: '399.99',
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_106',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82775',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+            price: '399.99',
+            image: 'assets/productImages/furniture/C82775-1000-Charcoal-Elm-Vanity-Marble-Top-600mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82775',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82775-1000-Charcoal-Elm-Vanity-Marble-Top-600mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82775',
+                    path: '../../models/furniture/basin/C82775.glb',
+                    dimensions: { width: 61, height: 81.8, depth: 45.5 },
+                    floorOffset: 0.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82775',
+                    price: '399.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top 600mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_107',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-nevis-basin-600mm-c82776',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 600mm',
+            price: '449.99',
+            image: 'assets/productImages/furniture/C82776-1000-Charcoal-Elm-Vanity-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82776',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82776-1000-Charcoal-Elm-Vanity-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-nevis-basin-600mm-c82776',
+                    path: '../../models/furniture/basin/C82776.glb',
+                    dimensions: { width: 61, height: 93.4, depth: 45.5 },
+                    floorOffset: 0.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82776',
+                    price: '449.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_108',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-marin-basin-600mm-c82777',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 600mm',
+            price: '459.99',
+            image: 'assets/productImages/furniture/C82777-1000-Charcoal-Elm-Vanity-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82777',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82777-1000-Charcoal-Elm-Vanity-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-marin-basin-600mm-c82777',
+                    path: '../../models/furniture/basin/C82777.glb',
+                    dimensions: { width: 61, height: 81.8, depth: 45.5 },
+                    floorOffset: 0.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82777',
+                    price: '459.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_109',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-reno-basin-600mm-c82778',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 600mm',
+            price: '459.99',
+            image: 'assets/productImages/furniture/C82778-1000-Charcoal-Elm-Vanity-Marble-Top-Basin-600mm.webp',
+            variants: [
+                {
+                    id: 'C82778',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82778-1000-Charcoal-Elm-Vanity-Marble-Top-Basin-600mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-reno-basin-600mm-c82778',
+                    path: '../../models/furniture/basin/C82778.glb',
+                    dimensions: { width: 61, height: 92.7, depth: 45.5 },
+                    floorOffset: 0.2,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82778',
+                    price: '459.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 600mm',
+                    filterAttributes: { width: '600mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_110',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-basin-drawer-vanity-800mm-c82779',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 800mm',
+            price: '439.99',
+            image: 'assets/productImages/furniture/C82779-1000-Charcoal-Elm-Wall-Hung-Basin-Drawer-Vanity-800mm.webp',
+            variants: [
+                {
+                    id: 'C82779',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82779-1000-Charcoal-Elm-Wall-Hung-Basin-Drawer-Vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-basin-drawer-vanity-800mm-c82779',
+                    path: '../../models/furniture/basin/C82779.glb',
+                    dimensions: { width: 81.3, height: 57, depth: 46.5 },
+                    floorOffset: 33,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82779',
+                    price: '439.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Basin Drawer Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_111',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82780',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '469.99',
+            image: 'assets/productImages/furniture/C82780-1000-Charcoal-Elm-Wall-Hung-Vanity-800mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82780',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82780-1000-Charcoal-Elm-Wall-Hung-Vanity-800mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82780',
+                    path: '../../models/furniture/basin/C82780.glb',
+                    dimensions: { width: 81, height: 53.8, depth: 45.5 },
+                    floorOffset: 35.7,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82780',
+                    price: '469.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_112',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-marin-basin-800mm-c82782',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm',
+            price: '509.99',
+            image: 'assets/productImages/furniture/C82782-1000-Charcoal-Elm-Wall-Hung-Drawer-Vanity-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82782',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82782-1000-Charcoal-Elm-Wall-Hung-Drawer-Vanity-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-marin-basin-800mm-c82782',
+                    path: '../../models/furniture/basin/C82782.glb',
+                    dimensions: { width: 81, height: 64.8, depth: 45.5 },
+                    floorOffset: 36.1,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82782',
+                    price: '509.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_113',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-reno-basin-800mm-c82783',
+            name: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 800mm',
+            price: '509.99',
+            image: 'assets/productImages/furniture/C82783-1000-Charcoal-Elm-Wall-Hung-Drawer-Vanity-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82783',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82783-1000-Charcoal-Elm-Wall-Hung-Drawer-Vanity-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-wall-hung-drawer-vanity-with-marble-top-and-reno-basin-800mm-c82783',
+                    path: '../../models/furniture/basin/C82783.glb',
+                    dimensions: { width: 81, height: 64.6, depth: 45.5 },
+                    floorOffset: 36,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82783',
+                    price: '509.99',
+                    title: 'Crete Fluted Charcoal Elm Wall Hung Drawer Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Wall Hung', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_114',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-drawer-800mm-c82784',
+            name: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82784-1000-Crete-Fluted-Charcoal-Elm-Basin-Vanity-Drawer-800mm.webp',
+            variants: [
+                {
+                    id: 'C82784',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82784-1000-Crete-Fluted-Charcoal-Elm-Basin-Vanity-Drawer-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-drawer-800mm-c82784',
+                    path: '../../models/furniture/basin/C82784.glb',
+                    dimensions: { width: 81.3, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82784',
+                    price: '549.99',
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity Drawer 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_115',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-800mm-excludes-counter-top-basin-c82785',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82785-1000-Charcoal-Elm-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82785',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82785-1000-Charcoal-Elm-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-800mm-excludes-counter-top-basin-c82785',
+                    path: '../../models/furniture/basin/C82785.glb',
+                    dimensions: { width: 81, height: 81.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82785',
+                    price: '549.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_116',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-nevis-basin-800mm-c82786',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82786-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82786',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82786-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-nevis-basin-800mm-c82786',
+                    path: '../../models/furniture/basin/C82786.glb',
+                    dimensions: { width: 81, height: 93.4, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82786',
+                    price: '599.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_117',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-marin-basin-800mm-c82787',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82787-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82787',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82787-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-marin-basin-800mm-c82787',
+                    path: '../../models/furniture/basin/C82787.glb',
+                    dimensions: { width: 81, height: 92.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82787',
+                    price: '599.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_118',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-reno-basin-800mm-c82788',
+            name: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 800mm',
+            price: '599.99',
+            image: 'assets/productImages/furniture/C82788-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82788',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82788-1000-Charcoal-Elm-Vanity-Drawer-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-drawer-with-marble-top-and-reno-basin-800mm-c82788',
+                    path: '../../models/furniture/basin/C82788.glb',
+                    dimensions: { width: 81, height: 92.7, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82788',
+                    price: '599.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity Drawer with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_119',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-800mm-c82789',
+            name: 'Crete Fluted Charcoal Elm Basin Vanity 800mm',
+            price: '499.99',
+            image: 'assets/productImages/furniture/C82789-1000-Crete-Fluted-Charcoal-Elm-Basin-Vanity-800mm.webp',
+            variants: [
+                {
+                    id: 'C82789',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82789-1000-Crete-Fluted-Charcoal-Elm-Basin-Vanity-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-basin-vanity-800mm-c82789',
+                    path: '../../models/furniture/basin/C82789.glb',
+                    dimensions: { width: 81.3, height: 85, depth: 46.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82789',
+                    price: '499.99',
+                    title: 'Crete Fluted Charcoal Elm Basin Vanity 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Inset', depth: '465mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_120',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82790',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+            price: '499.99',
+            image: 'assets/productImages/furniture/C82790-1000-Charcoal-Elm-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+            variants: [
+                {
+                    id: 'C82790',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82790-1000-Charcoal-Elm-Vanity-Marble-Top-800mm-Excludes-Basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-800mm-excludes-counter-top-basin-c82790',
+                    path: '../../models/furniture/basin/C82790.glb',
+                    dimensions: { width: 81, height: 81.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82790',
+                    price: '499.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top 800mm - Excludes Counter Top Basin',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_121',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-nevis-basin-800mm-c82791',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82791-1000-Charcoal-Elm-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82791',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82791-1000-Charcoal-Elm-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-nevis-basin-800mm-c82791',
+                    path: '../../models/furniture/basin/C82791.glb',
+                    dimensions: { width: 81, height: 93.4, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82791',
+                    price: '549.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Nevis Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_122',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-marin-basin-800mm-c82792',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82792-1000-Charcoal-Elm-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82792',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82792-1000-Charcoal-Elm-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-marin-basin-800mm-c82792',
+                    path: '../../models/furniture/basin/C82792.glb',
+                    dimensions: { width: 81, height: 92.9, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82792',
+                    price: '549.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Marin Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_123',
+            link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-reno-basin-800mm-c82793',
+            name: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 800mm',
+            price: '549.99',
+            image: 'assets/productImages/furniture/C82793-1000-Charcoal-Elm-Vanity-with-Marble-Top-Basin-800mm.webp',
+            variants: [
+                {
+                    id: 'C82793',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/C82793-1000-Charcoal-Elm-Vanity-with-Marble-Top-Basin-800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/crete-fluted-charcoal-elm-vanity-with-marble-top-and-reno-basin-800mm-c82793',
+                    path: '../../models/furniture/basin/C82793.glb',
+                    dimensions: { width: 81, height: 92.7, depth: 45.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C82793',
+                    price: '549.99',
+                    title: 'Crete Fluted Charcoal Elm Vanity with Marble Top & Reno Basin 800mm',
+                    filterAttributes: { width: '800mm', colour: 'Charcoal Elm', mounting: 'Floorstanding', type: 'Vanity Unit', basinType: 'Counter Top', depth: '455mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_124',
+            link: 'https://www.bathroommountain.co.uk/reno-pedestal-basin-500mm-c67010',
+            name: 'Reno Pedestal Basin 500mm',
+            price: '59.99',
+            image: 'assets/productImages/furniture/basin/c67010-1000-reno-pedestal-basin-500mm.webp',
+            variants: [
+                {
+                    id: 'C67010',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/basin/c67010-1000-reno-pedestal-basin-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/reno-pedestal-basin-500mm-c67010',
+                    path: '../../models/furniture/basin/C67010.glb',
+                    dimensions: { width: 50.3, height: 81.1, depth: 37.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C67010',
+                    price: '59.99',
+                    title: 'Reno Pedestal Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '375mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_125',
+            link: 'https://www.bathroommountain.co.uk/opel-pedestal-basin-500mm-c67011',
+            name: 'Opel Pedestal Basin 500mm',
+            price: '49.99',
+            image: 'assets/productImages/furniture/basin/c67011-1000-opel-pedestal-basin-500mm.webp',
+            variants: [
+                {
+                    id: 'C67011',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/basin/c67011-1000-opel-pedestal-basin-500mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/opel-pedestal-basin-500mm-c67011',
+                    path: '../../models/furniture/basin/C67011.glb',
+                    dimensions: { width: 49.9, height: 83.2, depth: 42.1 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C67011',
+                    price: '49.99',
+                    title: 'Opel Pedestal Basin 500mm',
+                    filterAttributes: { width: '500mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '421mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_126',
+            link: 'https://www.bathroommountain.co.uk/vail-pedestal-basin-520mm-c67012',
+            name: 'Vail Pedestal Basin 520mm',
+            price: '69.99',
+            image: 'assets/productImages/furniture/basin/c67012-1000-vail-pedestal-basin-520mm.webp',
+            variants: [
+                {
+                    id: 'C67012',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/basin/c67012-1000-vail-pedestal-basin-520mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/vail-pedestal-basin-520mm-c67012',
+                    path: '../../models/furniture/basin/C67012.glb',
+                    dimensions: { width: 53.8, height: 78.7, depth: 42.4 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C67012',
+                    price: '69.99',
+                    title: 'Vail Pedestal Basin 520mm',
+                    filterAttributes: { width: '520mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '424mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_127',
+            link: 'https://www.bathroommountain.co.uk/dunn-pedestal-basin-515mm-c67013',
+            name: 'Dunn Pedestal Basin 520mm',
+            price: '69.99',
+            image: 'assets/productImages/furniture/basin/c67013-1000-dunn-pedestal-basin.webp',
+            variants: [
+                {
+                    id: 'C67013',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/basin/c67013-1000-dunn-pedestal-basin.webp',
+                    link: 'https://www.bathroommountain.co.uk/dunn-pedestal-basin-515mm-c67013',
+                    path: '../../models/furniture/basin/C67013.glb',
+                    dimensions: { width: 51.9, height: 82.2, depth: 44.4 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C67013',
+                    price: '69.99',
+                    title: 'Dunn Pedestal Basin 520mm',
+                    filterAttributes: { width: '520mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '444mm', style: 'Modern' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+        {
+            id: 'furniture_variant_128',
+            link: 'https://www.bathroommountain.co.uk/enid-traditional-pedestal-basin-single-tap-hole-545mm-c67014',
+            name: 'Enid Traditional Pedestal Basin Single Tap Hole 545mm',
+            price: '79.99',
+            image: 'assets/productImages/furniture/basin/c67014-1000-enid-traditional-pedestal-basin-545mm-single_1.webp',
+            variants: [
+                {
+                    id: 'C67014',
+                    name: 'Built-in Basin',
+                    image: 'assets/productImages/furniture/basin/c67014-1000-enid-traditional-pedestal-basin-545mm-single_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/enid-traditional-pedestal-basin-single-tap-hole-545mm-c67014',
+                    path: '../../models/furniture/basin/C67014.glb',
+                    dimensions: { width: 53.9, height: 83.1, depth: 50.1 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: 'C67014',
+                    price: '79.99',
+                    title: 'Enid Traditional Pedestal Basin Single Tap Hole 545mm',
+                    filterAttributes: { width: '545mm', colour: 'White', mounting: 'Floorstanding', type: 'Pedestal Basin', basinType: 'Pedestal', depth: '501mm', style: 'Traditional' }
+                },
+            ],
+            variantType: 'Width Options',
+            features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
+        },
+    ],
+
+    Mirror: [
+        // Mirror Variant 1 (3 variants)
+        {
+            id: 'mirror_variant_1',
+            link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-650x1200mm',
+            name: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker',
+            price: '499.99',
+            image: 'assets/productImages/mirror/73104v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp',
+            variants: [
+                {
+                    id: '73189v2',
+                    name: '650x1200mm',
+                    image: 'assets/productImages/mirror/73189v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-650x1200mm',
+                    path: '../../models/mirror/73189V2.glb',
+                    dimensions: { width: 119.8, height: 64.8, depth: 13.8 },
+                    floorOffset: 110.1,
+                    spawnHeight: 41.9,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Vertical placement allowed (0..ceiling)
+                        allowFreeRotation: false,
+                        minHeight: 0, // Minimum height from floor
+                        maxHeight: -1
+                    },
+                    sku: '73189V2',
+                    price: '499.99',
+                    title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm',
+                    filterAttributes: { length: '1198mm', type: 'Bluetooth' }
+                },
+                {
+                    id: '73104v2',
+                    name: '600x600mm',
+                    image: 'assets/productImages/mirror/73104v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-600x600mm-73104v2',
+                    path: '../../models/mirror/73104V2.glb',
+                    dimensions: { width: 59, height: 59.9, depth: 13.5 },
+                    floorOffset: 110,
+                    spawnHeight: 41.9,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Fixed height
+                        allowFreeRotation: false,
+                        minHeight: 0, // Minimum height from floor
+                        maxHeight: -1
+                    },
+                    sku: '73104V2',
+                    price: '239.00',
+                    title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm',
+                    filterAttributes: { length: '590mm', type: 'Bluetooth' }
+                },
+                {
+                    id: '73103v2',
+                    name: '600x450mm',
+                    image: 'assets/productImages/mirror/73103v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_1_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-600x450mm',
+                    path: '../../models/mirror/73103V2.glb',
+                    dimensions: { width: 45, height: 60, depth: 13 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        allowVerticalMovement: true, // Fixed height
+                        allowFreeRotation: false,
+                    },
+                    floorOffset: 0,
+                    spawnHeight: 152,
+                    sku: '73103V2',
+                    price: '207.00',
+                    title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x450mm',
+                    filterAttributes: { length: '450mm', type: 'Bluetooth' }
+                }
+            ],
+            variantType: 'Size Options',
+            features: ['LED Lighting', 'Bluetooth Speaker', 'Touch Controls', 'Mirror Cabinet']
+        },
+
+        // Mirror Variant 2 (4 variants)
+        {
+            id: 'mirror_variant_2',
+            link: 'https://www.bathroommountain.co.uk/evelyn-large-illuminated-led-mirror-500x1200mm',
+            name: 'Evelyn Illuminated LED Mirror',
+            price: '139.99',
+            image: 'assets/productImages/mirror/73153v2-1000-evelyn-illuminated-led-mirror-600x400mm_1.webp',
+            variants: [
+                {
+                    id: '73035v2',
+                    name: '500x1200mm',
+                    image: 'assets/productImages/mirror/73035v2-1000-evelyn-large-illuminated-led-mirror-500x1200mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/evelyn-large-illuminated-led-mirror-500x1200mm',
+                    dimensions: { width: 119.5, height: 49.9, depth: 5.1 },
+                    floorOffset: 99.5,
+                    spawnHeight: 52.5,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    path: '../../models/mirror/73035V2.glb',
+                    sku: '73035V2',
+                    price: '139.99',
+                    title: 'Evelyn Large Illuminated LED Mirror 500x1200mm',
+                    filterAttributes: { length: '1195mm', type: 'LED' }
+                },
+                {
+                    id: '73154v2',
+                    name: '500x1000mm',
+                    image: 'assets/productImages/mirror/73154v2-1000-evelyn-illuminated-led-mirror-500x1000mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/evelyn-illuminated-led-mirror-500x1000mm-v2',
+                    path: '../../models/mirror/73154V2.glb',
+                    dimensions: { width: 100, height: 50, depth: 5.3 },
+                    floorOffset: 99.5,
+                    spawnHeight: 52.5,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: '73154V2',
+                    price: '125.99',
+                    title: 'Evelyn Illuminated LED Mirror 500x1000mm',
+                    filterAttributes: { length: '1000mm', type: 'LED' }
+                },
+                {
+                    id: '73153v2',
+                    name: '600x400mm',
+                    image: 'assets/productImages/mirror/73153v2-1000-evelyn-illuminated-led-mirror-600x400mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/evelyn-illuminated-led-mirror-600x400mm-73153v2',
+                    path: '../../models/mirror/73153V2.glb',
+                    dimensions: { width: 39.8, height: 59.9, depth: 5.3 },
+                    floorOffset: 0,
+                    spawnHeight: 152,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: '73153V2',
+                    price: '83.99',
+                    title: 'Evelyn Illuminated LED Mirror 600x400mm',
+                    filterAttributes: { length: '398mm', type: 'LED' }
+                },
+                {
+                    id: '73033v2',
+                    name: '700x500mm',
+                    image: 'assets/productImages/mirror/73033v2-1000-evelyn-illuminated-led-mirror-700x500mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/evelyn-illuminated-led-mirror-700x500mm-73033v2',
+                    path: '../../models/mirror/73033V2.glb',
+                    dimensions: { width: 50, height: 70, depth: 5.1 },
+                    floorOffset: 99.5,
+                    spawnHeight: 52.5,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    sku: '73033V2',
+                    price: '97.99',
+                    title: 'Evelyn Illuminated LED Mirror 700x500mm',
+                    filterAttributes: { length: '500mm', type: 'LED' }
+                }
+            ],
+            variantType: 'Size Options',
+            features: ['LED Lighting', 'Touch Controls', 'Energy Efficient']
         }
-      ],
-      variantType: 'Style Options',
-      features: ['Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
+    ],
 
-    // Furniture Variant 2 (4 variants)
-    {
-      id: 'furniture_variant_2',
-      link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
-      name: 'Bali Gloss White Basin Drawer Vanity 600mm',
-      price: '399.99',
-      image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
-      variants: [
+    Radiator: [
+        // Radiator Variant 1 (3 variants)
         {
-          id: 'C77605',
-          name: '600mm Floorstanding',
-          image: 'assets/productImages/furniture/C77605-1000-Bali-Gloss-White-Basin-Drawer_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-600mm',
-          path: '../../models/furniture/basin/C77605.glb',
-          dimensions: { width: 61, height: 95.6, depth: 44 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C77605',
-          price: '399.99',
-          title: 'Bali Gloss White Basin Drawer Vanity 600mm'
+            id: 'radiator_variant_1',
+            link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x560mm-31022',
+            name: 'Faro Anthracite Double Flat Panel Vertical Radiator',
+            price: '289.99',
+            image: 'assets/productImages/radiator/31019-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x350mm_1.webp',
+            variants: [
+                {
+                    id: '31022',
+                    name: '1600x560mm',
+                    image: 'assets/productImages/radiator/31022-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x560mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x560mm-31022',
+                    path: '../../models/radiator/31022.glb',
+                    dimensions: { width: 65.8, height: 163.2, depth: 11.3 },
+                    spawnHeight: -46,
+                    floorOffset:61,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: true,
+                        allowFreeRotation: false,
+                        minHeight: 0,
+                        maxHeight: 100
+                    },
+                    sku: '31022',
+                    price: '231.00',
+                    title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x560mm',
+                    filterAttributes: { height: '1600mm', width: '560mm', colour: 'Anthracite', type: 'Flat Panel', orientation: 'Vertical', style: 'Modern', panel: 'Double Flat Panel', btuOutput: '4500', pipeCentres: '560mm' }
+                },
+                {
+                    id: '31063',
+                    name: '1800x560mm',
+                    image: 'assets/productImages/radiator/31063-1000-anthracite-double-flat-panel-vertical-radiator-1800x560mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1800x560mm-31063',
+                    path: '../../models/radiator/31063.glb',
+                    dimensions: { width: 65.8, height: 183.2, depth: 11.3 },
+                    spawnHeight: -46,
+                    floorOffset: 61,
+                    sku: '31063',
+                    price: '339.99',
+                    title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1800x560mm',
+                    filterAttributes: { height: '1800mm', width: '560mm', colour: 'Anthracite', type: 'Flat Panel', orientation: 'Vertical', style: 'Modern', panel: 'Double Flat Panel', btuOutput: '5000', pipeCentres: '560mm' }
+                },
+                {
+                    id: '31019',
+                    name: '1600x350mm',
+                    image: 'assets/productImages/radiator/31019-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x350mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x350mm-31019',
+                    path: '../../models/radiator/31019.glb',
+                    dimensions: { width: 44.8, height: 163, depth: 11.3 },
+                    spawnHeight: -46,
+                    floorOffset: 61,
+                    sku: '31019',
+                    price: '209.99',
+                    title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x350mm',
+                    filterAttributes: { height: '1600mm', width: '350mm', colour: 'Anthracite', type: 'Flat Panel', orientation: 'Vertical', style: 'Modern', panel: 'Double Flat Panel', btuOutput: '3500', pipeCentres: '350mm' }
+                }
+            ],
+            variantType: 'Size Options',
+            features: ['Double Panel', 'Vertical Design', 'High Heat Output']
         },
+
+        // Radiator Variant 2 (2 variants)
         {
-          id: 'C77606',
-          name: '800mm Wall Hung',
-          sku: 'C77606',
-          image: 'assets/productImages/furniture/C77606-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-800mm',
-          path: '../../models/furniture/basin/C77606.glb',
-          dimensions: { width: 81.3, height: 65.4, depth: 44 },
-          floorOffset: 32,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          price: '429.99',
-          title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 800mm'
-        },
-        {
-          id: 'C77607',
-          name: '800mm Floorstanding',
-          sku: 'C77607',
-          image: 'assets/productImages/furniture/C77607-1000-Bali-Gloss-White-Basin-Drawer-_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bali-gloss-white-basin-drawer-vanity-800mm',
-          path: '../../models/furniture/basin/C77607.glb',
-          dimensions: { width: 81.3, height: 95.9, depth: 44 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          price: '415.00',
-          title: 'Bali Gloss White Basin Drawer Vanity 800mm'
-        },
-        {
-          id: 'C77608',
-          name: '1000mm Wall Hung',
-          sku: 'C77608',
-          image: 'assets/productImages/furniture/C77608-1000-Bali-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bali-gloss-white-wall-hung-basin-drawer-vanity-1000mm',
-          path: '../../models/furniture/basin/C77608.glb',
-          dimensions: { width: 100.08, height: 63.8, depth: 43.9 },
-          floorOffset: 32,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          price: '431.00',
-          title: 'Bali Gloss White Wall Hung Basin Drawer Vanity 1000mm'
+            id: 'radiator_variant_2',
+            link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x1190mm',
+            name: 'Faro Matt Black Double Flat Panel Horizontal Radiator',
+            price: '223.00',
+            image: 'assets/productImages/radiator/32124-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x420mm_1.webp',
+            variants: [
+                {
+                    id: '32128',
+                    name: '600x1190mm',
+                    image: 'assets/productImages/radiator/32128-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x1190mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x1190mm',
+                    path: '../../models/radiator/32128.glb',
+                    dimensions: { width: 128.5, height: 63, depth: 11.3 },
+                    spawnHeight: -16,
+                    floorOffset: 30.5,
+                    sku: '32128',
+                    price: '223.00',
+                    title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x1190mm',
+                    filterAttributes: { height: '600mm', width: '1190mm', colour: 'Matt Black', type: 'Flat Panel', orientation: 'Horizontal', style: 'Modern', panel: 'Double Flat Panel', btuOutput: '4000', pipeCentres: '1190mm' }
+                },
+                {
+                    id: '32124',
+                    name: '600x420mm',
+                    image: 'assets/productImages/radiator/32124-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x420mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x420mm',
+                    path: '../../models/radiator/32124.glb',
+                    dimensions: { width: 51.5, height: 63, depth: 11.3 },
+                    spawnHeight: -16,
+                    floorOffset: 30.5,
+                    sku: '32124',
+                    price: '87.00',
+                    title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x420mm',
+                    filterAttributes: { height: '600mm', width: '420mm', colour: 'Matt Black', type: 'Flat Panel', orientation: 'Horizontal', style: 'Modern', panel: 'Double Flat Panel', btuOutput: '2500', pipeCentres: '420mm' }
+                }
+            ],
+            variantType: 'Size Options',
+            features: ['Double Panel', 'Horizontal Design', 'Modern Styling']
         }
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
+    ],
 
-    {
-      id: 'furniture_variant_3',
-      link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
-      name: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm',
-      price: '183.99',
-      image: 'assets/productImages/furniture/c76234-1000-white-wall-hung-basin-drawer-vanity-500mm.webp',
-      variants: [
+    Shower: [
+        // Shower Variant 1 (4 variants)
         {
-          id: 'C76234',
-          name: '500mm Wall Hung',
-          image: 'assets/productImages/furniture/c76234-1000-white-wall-hung-basin-drawer-vanity-500mm.webp',
-          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-500mm-c76234',
-          path: '../../models/furniture/basin/C76234.glb',
-          dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
-          floorOffset: 0,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-            movement: {
-                snapToWall: true,
-                allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
-                allowFreeRotation: false,
-            },
-          sku: 'C76234',
-          price: '183.99',
-          title: 'Corsica Gloss White Wall Hung Slimline Basin Drawer Vanity 500mm'
-        },
-        {
-          id: 'C76235',
-          name: '500mm Floor Standing',
-          image: 'assets/productImages/furniture/c76235-1000-white-basin-drawer-vanity-500mm.webp',
-          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-short-projection-basin-drawer-vanity-500mm-c76235',
-          path: '../../models/furniture/basin/C76235.glb',
-          dimensions: { width: 50.4, height: 85, depth: 34.7 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-            movement: {
-                snapToWall: true,
-                allowVerticalMovement: false, // Vertical placement NOT allowed (fixed mount height)
-                allowFreeRotation: false,
-            },
-          sku: 'C76235',
-          price: '269.99',
-          title: 'Corsica Gloss White Slimline Basin Drawer Vanity 500mm'
-        },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_4',
-      link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
-      name: 'Bermuda Chalk White Basin Vanity 600mm',
-      price: '231.99',
-      image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
-      variants: [
-        {
-          id: 'C76304',
-          name: '600mm Width',
-          image: 'assets/productImages/furniture/C76304-1000-Bermuda-Chalk-White-Basin-Vanity-600mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-c76304',
-          path: '../../models/furniture/basin/C76304.glb',
-          dimensions: { width: 61.4, height: 84, depth: 41.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-            movement: {
-                snapToWall: true,
-                allowVerticalMovement: false, // Vertical placement allowed (0..ceiling)
-                allowFreeRotation: false,
-            },
-          sku: 'C76304',
-          price: '231.99',
-          title: 'Bermuda Chalk White Basin Vanity 600mm'
-        },
-        {
-          id: 'C76305',
-          name: '800mm Width',
-          image: 'assets/productImages/furniture/C76305-1000-Bermuda-Chalk-White-Basin-Vanity-800mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-800mm',
-          path: '../../models/furniture/basin/C76305.glb',
-          dimensions: { width: 81.3, height: 84, depth: 41.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76305',
-          price: '287.00',
-          title: 'Bermuda Chalk White Basin Vanity 800mm'
-        },
-        {
-          id: 'C76306',
-          name: '1200mm Width',
-          image: 'assets/productImages/furniture/C76306-1000-Bermuda-Chalk-White-Double-Basin-Vanity-1200mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-double-basin-vanity-1200mm',
-          path: '../../models/furniture/basin/C76306.glb',
-          dimensions: { width: 121, height: 98.2, depth: 41.6 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76306',
-          price: '499.00',
-          title: 'Bermuda Chalk White Double Basin Vanity 1200mm'
-        },
-        {
-          id: 'C76302',
-          name: '400mm Width',
-          image: 'assets/productImages/furniture/c76302-1000-bermuda-chalk-white-cloakroom-basin-vanity-400mm.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cloakroom-basin-vanity-400mm',
-          path: '../../models/furniture/basin/C76302.glb',
-          dimensions: { width: 40.4, height: 85.1, depth: 25.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76302',
-          price: '149.00',
-          title: 'Bermuda Chalk White Cloakroom Basin Vanity 400mm'
-        },
-        {
-          id: 'C76303',
-          name: '500mm Width',
-          image: 'assets/productImages/furniture/c76303-1000-bermuda-chalk-white-basin-vanity-500mm.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-clalk-white-basin-vanity-500mm-c76303',
-          path: '../../models/furniture/basin/C76303.glb',
-          dimensions: { width: 51.3, height: 84, depth: 41.4 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76303',
-          price: '269.99',
-          title: 'Bermuda Chalk White Basin Vanity 500mm'
-        },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_5',
-      link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-600mm-c76473',
-      name: 'Avon Gloss White Basin Vanity 600mm',
-      price: '167.99',
-      image: 'assets/productImages/furniture/c76473-1000-avon-gloss-white-basin-vanity-600mm.webp',
-      variants: [
-        {
-          id: 'C76473',
-          name: '600mm Cabinet',
-          image: 'assets/productImages/furniture/c76473-1000-avon-gloss-white-basin-vanity-600mm.webp',
-          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-600mm-c76473',
-          path: '../../models/furniture/basin/C76473.glb',
-          dimensions: { width: 61.4, height: 85, depth: 42.1 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76473',
-          price: '167.99',
-          title: 'Avon Gloss White Basin Vanity 600mm'
-        },
-        {
-          id: 'C76472',
-          name: '500mm Cabinet',
-          image: 'assets/productImages/furniture/c76472-1000-avon-gloss-white-basin-vanity-500mm.webp',
-          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-500mm-c76472',
-          path: '../../models/furniture/basin/C76472.glb',
-          dimensions: { width: 51.6, height: 85, depth: 42.9 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76472',
-          price: '159.00',
-          title: 'Avon Gloss White Basin Vanity 500mm'
-        },
-        {
-          id: 'C76476',
-          name: '800mm Cabinet',
-          image: 'assets/productImages/furniture/c76476-1000-avon-gloss-white-basin-vanity-800mm.webp',
-          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-800mm-c76476',
-          path: '../../models/furniture/basin/C76476.glb',
-          dimensions: { width: 81.6, height: 85, depth: 42.9 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76476',
-          price: '199.99',
-          title: 'Avon Gloss White Basin Vanity 800mm'
-        },
-        {
-          id: 'C76475',
-          name: '600mm Wall Hung',
-          image: 'assets/productImages/furniture/C76475-1000-Avon-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-wall-hung-basin-drawer-vanity-600mm',
-          path: '../../models/furniture/basin/C76475.glb',
-          dimensions: { width: 61.4, height: 45.3, depth: 42.3 },
-          floorOffset: 39.7,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76475',
-          price: '189.99',
-          title: 'Avon Gloss White Wall Hung Basin Drawer Vanity 600mm'
-        },
-        {
-          id: 'C76474',
-          name: '600mm Drawer',
-          image: 'assets/productImages/furniture/c76474-1000-avon-gloss-white-basin-drawer-vanity-600mm.webp',
-          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-drawer-vanity-600mm-c76474',
-          path: '../../models/furniture/basin/C76474.glb',
-          dimensions: { width: 61.4, height: 85, depth: 42.7 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76474',
-          price: '259.99',
-          title: 'Avon Gloss White Basin Drawer Vanity 600mm'
-        },
-        {
-          id: 'C77113',
-          name: '450mm Cabinet',
-          image: 'assets/productImages/furniture/c77113-1000-avon-gloss-white-basin-vanity-450mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-basin-vanity-450mm',
-          path: '../../models/furniture/basin/C77113.glb',
-          dimensions: { width: 45.8, height: 85.1, depth: 34 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C77113',
-          price: '179.99',
-          title: 'Avon Gloss White Basin Vanity 450mm'
-        },
-        {
-          id: 'C76471',
-          name: '400mm Cabinet',
-          image: 'assets/productImages/furniture/c76471-1000-gloss-white-cloakroom-floor-standing-basin-vanity-400mm.webp',
-          link: 'https://www.bathroommountain.co.uk/avon-gloss-white-cloakroom-floor-standing-basin-vanity-400mm',
-          path: '../../models/furniture/basin/C76471.glb',
-          dimensions: { width: 40.4, height: 85.1, depth: 26.4 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76471',
-          price: '105.00',
-          title: 'Avon Gloss White Cloakroom Floor Standing Basin Vanity 400mm'
-        },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_6',
-      link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-630mm-c76349',
-      name: 'Lucia Chalk White Basin Vanity 630mm',
-      price: '359.00',
-      image: 'assets/productImages/furniture/c76349-1000-lucia-chalk-white-basin-vanity-630mm_1.webp',
-      variants: [
-        {
-          id: 'C76349',
-          name: 'Traditional Basin',
-          image: 'assets/productImages/furniture/c76349-1000-lucia-chalk-white-basin-vanity-630mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-630mm-c76349',
-          path: '../../models/furniture/basin/C76349.glb',
-          dimensions: { width: 63, height: 86.2, depth: 47.6 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76349',
-          price: '359.00',
-          title: 'Lucia Chalk White Basin Vanity 630mm'
-        },
-        {
-          id: 'C76353',
-          name: 'Curved Basin',
-          image: 'assets/productImages/furniture/C76353-1000-Lucia-Chalk-White-Vanity-with-Oak-Top-and-Curved-Counter-Top-Basin-640mm_2.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-curved-counter-top-basin-640mm-c76353',
-          path: '../../models/furniture/basin/C76353.glb',
-          dimensions: { width: 64, height: 95.5, depth: 47.4 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76353',
-          price: '399.00',
-          title: 'Lucia Chalk White Vanity With Oak Effect Top & Curved Counter Top Basin 640mm'
-        },
-        {
-          id: 'C76448',
-          name: 'No Basin',
-          image: 'assets/productImages/furniture/c76448-1000-lucia-chalk-white-vanity-with-oak-top-640mm.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-cabinet-with-oak-top-640mm-excludes-counter-top-basin',
-          path: '../../models/furniture/basin/C76448.glb',
-          dimensions: { width: 64, height: 81.7, depth: 47.4 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76448',
-          price: '479.99',
-          title: 'Lucia Chalk White Cabinet with Oak Effect Top 640mm - Excludes Counter Top Basin'
-        },
-        {
-          id: 'C76352',
-          name: 'Oval Basin',
-          image: 'assets/productImages/furniture/C76352-1000-Lucia-Chalk-White-Vanity-with-Oak-Top-and-Oval-Counter-Top-Basin-640mm_2.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-oval-counter-top-basin-640mm-c76352',
-          path: '../../models/furniture/basin/C76352.glb',
-          dimensions: { width: 64, height: 98.7, depth: 47.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76352',
-          price: '499.99',
-          title: 'Lucia Chalk White Vanity With Oak Effect Top & Oval Counter Top Basin 640mm'
-        },
-        {
-          id: 'C76351',
-          name: 'Round Basin',
-          image: 'assets/productImages/furniture/C76351-1000-Lucia-Chalk-White-Vanity-with-Oak-Top-and-Round-Counter-Top-Basin-640mm_2.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-round-counter-top-basin-640mm-c76351',
-          path: '../../models/furniture/basin/C76351.glb',
-          dimensions: { width: 64, height: 97.2, depth: 47.4 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76351',
-          price: '499.99',
-          title: 'Lucia Chalk White Vanity With Oak Effect Top & Round Counter Top Basin 640mm'
-        },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_7',
-      link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-600mm-c77096',
-      name: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 600mm',
-      price: '285.00',
-      image: 'assets/productImages/furniture/C77096-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
-      variants: [
-        {
-          id: 'C77096',
-          name: 'Curved Basin',
-          image: 'assets/productImages/furniture/C77096-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-600mm-c77096',
-          path: '../../models/furniture/basin/C77096.glb',
-          dimensions: { width: 61, height: 95.3, depth: 41.2 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C77096',
-          price: '285.00',
-          title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 600mm'
-        },
-        {
-          id: 'C77095',
-          name: 'Oval Basin',
-          image: 'assets/productImages/furniture/C77095-1000-Chalk-White-Vanity-with-Marble-Top-_-Counter-Top-Basin-600mm_1_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-oval-counter-top-basin-600mm-c77095',
-          path: '../../models/furniture/basin/C77095.glb',
-          dimensions: { width: 61, height: 95.3, depth: 41.2 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C77095',
-          price: '275.00',
-          title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 600mm'
-        },
-        {
-          id: 'C77634',
-          name: 'No Basin',
-          image: 'assets/productImages/furniture/c77634-1000-chalk-white-cabinet-with-marble-top-exclude-counter-top-basin.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cabinet-with-marble-top-600mm-exclude-counter-top-basin-c77634',
-          path: '../../models/furniture/basin/C77634.glb',
-          dimensions: { width: 61, height: 95.3, depth: 41.2 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C77634',
-          price: '349.99',
-          title: 'Bermuda Chalk White Cabinet with Marble Top 600mm - Excludes Counter Top Basin'
-        },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_8',
-      link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-brushed-brass-accents-c78594',
-      name: 'Bermuda Chalk White Basin Vanity 600mm - Brushed Brass Accents',
-      price: '247.00',
-      image: 'assets/productImages/furniture/C78594-1000-Bermuda-Chalk-White-Basin-Vanity-600mm.webp',
-      variants: [
-        {
-          id: 'C78594',
-          name: '600mm',
-          image: 'assets/productImages/furniture/C78594-1000-Bermuda-Chalk-White-Basin-Vanity-600mm.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-600mm-brushed-brass-accents-c78594',
-          path: '../../models/furniture/basin/C78594.glb',
-          dimensions: { width: 61.4, height: 84, depth: 41.7 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C78594',
-          price: '247.00',
-          title: 'Bermuda Chalk White Basin Vanity 600mm - Brushed Brass Accents'
-        },
-        {
-          id: 'C78592',
-          name: '400mm',
-          image: 'assets/productImages/furniture/c78592-1000-bermuda-chalk-white-cloakroom-basin-vanity-400mm.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cloakroom-basin-vanity-400mm-brushed-brass-accents-c78592',
-          path: '../../models/furniture/basin/C78592.glb',
-          dimensions: { width: 40.4, height: 85.1, depth: 25.6 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C78592',
-          price: '199.99',
-          title: 'Bermuda Chalk White Cloakroom Basin Vanity 400mm - Brushed Brass Accents'
-        },
-        {
-          id: 'C78593',
-          name: '500mm',
-          image: 'assets/productImages/furniture/c78593-1000-bermuda-chalk-white-basin-vanity-500mm.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-500mm-brushed-brass-accents-c78593',
-          path: '../../models/furniture/basin/C78593.glb',
-          dimensions: { width: 51.3, height: 84, depth: 41.7 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C78593',
-          price: '279.99',
-          title: 'Bermuda Chalk White Basin Vanity 500mm - Brushed Brass Accents'
-        },
-        {
-          id: 'C78595',
-          name: '800mm',
-          image: 'assets/productImages/furniture/C78595-1000-Bermuda-Chalk-White-Basin-Vanity-800mm.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-basin-vanity-800mm-brushed-brass-accents-c78595',
-          path: '../../models/furniture/basin/C78595.glb',
-          dimensions: { width: 81.3, height: 84, depth: 41.8 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C78595',
-          price: '299.00',
-          title: 'Bermuda Chalk White Basin Vanity 800mm - Brushed Brass Accents'
-        },
-        {
-          id: 'C78596',
-          name: '1200mm',
-          image: 'assets/productImages/furniture/C78596-1000-Bermuda-Chalk-White-Double-Basin-Vanity-1200mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-double-basin-vanity-1200mm-brushed-brass-accents-c78596',
-          path: '../../models/furniture/basin/C78596.glb',
-          dimensions: { width: 121, height: 83.7, depth: 41.9 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C78596',
-          price: '689.99',
-          title: 'Bermuda Chalk White Double Basin Vanity 1200mm - Brushed Brass Accents'
-        },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_9',
-      link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-830mm',
-      name: 'Lucia Chalk White Basin Vanity 830mm',
-      price: '431.99',
-      image: 'assets/productImages/furniture/C76354-1000-Lucia-Chalk-White-Basin-Vanity-830mm_2.webp',
-      variants: [
-        {
-          id: 'C76354',
-          name: 'Traditional Basin',
-          image: 'assets/productImages/furniture/C76354-1000-Lucia-Chalk-White-Basin-Vanity-830mm_2.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-basin-vanity-830mm',
-          path: '../../models/furniture/basin/C76354.glb',
-          dimensions: { width: 82.9, height: 86.1, depth: 47.3 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76354',
-          price: '431.99',
-          title: 'Lucia Chalk White Basin Vanity 830mm'
-        },
-        {
-          id: 'C76358',
-          name: 'Curved Basin',
-          image: 'assets/productImages/furniture/c76358-1000-lucia-chalk-white-vanity-with-oak-top-_-curved-counter-t.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-curved-counter-top-basin-840mm',
-          path: '../../models/furniture/basin/C76358.glb',
-          dimensions: { width: 84, height: 95.6, depth: 47.1 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76358',
-          price: '479.00',
-          title: 'Lucia Chalk White Vanity With Oak Effect Top & Curved Counter Top Basin 840mm'
-        },
-        {
-          id: 'C76449',
-          name: 'No Basin',
-          image: 'assets/productImages/furniture/c76449-1000-lucia-chalk-white-vanity-with-oak-top-840mm.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-cabinet-with-oak-top-840mm-excludes-counter-top-basin',
-          path: '../../models/furniture/basin/C76449.glb',
-          dimensions: { width: 84, height: 82, depth: 47.1 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76449',
-          price: '569.99',
-          title: 'Lucia Chalk White Cabinet with Oak Effect Top 840mm - Excludes Counter Top Basin'
-        },
-        {
-          id: 'C76357',
-          name: 'Oval Basin',
-          image: 'assets/productImages/furniture/c76357-1000-lucia-chalk-white-vanity-with-oak-top-_-oval-counter-top.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-oval-counter-top-basin-840mm',
-          path: '../../models/furniture/basin/C76357.glb',
-          dimensions: { width: 84, height: 99, depth: 47.1 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76357',
-          price: '471.99',
-          title: 'Lucia Chalk White Vanity With Oak Effect Top & Oval Counter Top Basin 840mm'
-        },
-        {
-          id: 'C76356',
-          name: 'Traditional Basin',
-          image: 'assets/productImages/furniture/c76356-1000-lucia-chalk-white-vanity-with-oak-top-_-round-counter-to.webp',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-oak-top-round-counter-top-basin-840mm-c76356',
-          path: '../../models/furniture/basin/C76356.glb',
-          dimensions: { width: 84, height: 97.6, depth: 47.1 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76356',
-          price: '589.99',
-          title: 'Lucia Chalk White Vanity With Oak Top & Round Counter Top Basin 840mm'
-        },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_10',
-      link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
-      name: 'Bermuda Dove Grey Basin Vanity 600mm',
-      price: '225.00',
-      image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
-      variants: [
-        {
-          id: 'C76285',
-          name: '600mm Width',
-          image: 'assets/productImages/furniture/c76285-1000-bermuda-dove-grey-basin-vanity-600mm.webp',
-          link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-600mm-c76285',
-          path: '../../models/furniture/basin/C76285.glb',
-          dimensions: { width: 61.4, height: 84, depth: 41.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C76285',
-          price: '225.00',
-          title: 'Bermuda Dove Grey Basin Vanity 600mm'
-        },
-          {
-              id: 'C76286',
-              name: '800mm Width',
-              image: 'assets/productImages/furniture/C76286-1000-Bermuda-Dove-Grey-Basin-Vanity-800mm_3.webp',
-              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-800mm',
-              path: '../../models/furniture/basin/C76286.glb',
-              dimensions: { width: 81.3, height: 84, depth: 41.5 },
-              orientation: {
-                  type: 'face_into_room',
-                  wallBuffer: 0, // Flush with wall - no gap
-                  description: 'Item is part of wall opening'
-              },
-              sku: 'C76286',
-              price: '285.00',
-              title: 'Bermuda Dove Grey Basin Vanity 800mm'
-          },
-          {
-              id: 'C76283',
-              name: '400mm Width',
-              image: 'assets/productImages/furniture/c76283-1000-bermuda-dove-grey-cloakroom-basin-vanity-400mm.webp',
-              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-cloakroom-basin-vanity-400mm-c76283',
-              path: '../../models/furniture/basin/C76283.glb',
-              dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
-              orientation: {
-                  type: 'face_into_room',
-                  wallBuffer: 0, // Flush with wall - no gap
-                  description: 'Item is part of wall opening'
-              },
-              sku: 'C76283',
-              price: '189.99',
-              title: 'Bermuda Dove Grey Cloakroom Basin Vanity 400mm'
-          },
-          {
-              id: 'C76284',
-              name: '500mm Width',
-              image: 'assets/productImages/furniture/c76284-1000-bermuda-dove-grey-basin-vanity-500mm_1.webp',
-              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-500mm-c76284',
-              path: '../../models/furniture/basin/C76284.glb',
-              dimensions: { width: 51.3, height: 84, depth: 41.4 },
-              orientation: {
-                  type: 'face_into_room',
-                  wallBuffer: 0, // Flush with wall - no gap
-                  description: 'Item is part of wall opening'
-              },
-              sku: 'C76284',
-              price: '269.99',
-              title: 'Bermuda Dove Grey Basin Vanity 500mm'
-          },
-          {
-              id: 'C76287',
-              name: '1200mm Width',
-              image: 'assets/productImages/furniture/c76287-1000-bermuda-dove-grey-double-basin-vanity-1200mm.webp',
-              link: 'https://www.bathroommountain.co.uk/bermuda-dove-grey-basin-vanity-800mm',
-              path: '../../models/furniture/basin/C76287.glb',
-              dimensions: { width: 120.1, height: 83.7, depth: 41.6 },
-              orientation: {
-                  type: 'face_into_room',
-                  wallBuffer: 0, // Flush with wall - no gap
-                  description: 'Item is part of wall opening'
-              },
-              sku: 'C76287',
-              price: '649.99',
-              title: 'Bermuda Dove Grey Double Basin Vanity 1200mm'
-          },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-      id: 'furniture_variant_11',
-      link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
-      name: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles',
-      price: '207.00',
-      image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
-      variants: [
-        {
-          id: 'C81232',
-          name: 'Built-in Basin',
-          image: 'assets/productImages/furniture/C81232-1000-Cotton-White-Basin-Vanity-600mm-Chrome-Handles_1.webp',
-          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-chrome-handles-c81232',
-          path: '../../models/furniture/basin/C81232.glb',
-          dimensions: { width: 61.5, height: 81.8, depth: 49.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: 'C81232',
-          price: '207.00',
-          title: 'Milos Cotton White Basin Vanity 600mm - Chrome Handles'
-        },
-          {
-              id: 'C81234',
-              name: 'Oval Basin',
-              image: 'assets/productImages/furniture/C81234-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
-              link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-600mm-chrome-handles-c81234',
-              path: '../../models/furniture/basin/C81234.glb',
-              dimensions: { width: 60.9, height: 96.5, depth: 47.7 },
-              orientation: {
-                  type: 'face_into_room',
-                  wallBuffer: 0, // Flush with wall - no gap
-                  description: 'Item is part of wall opening'
-              },
-              sku: 'C81234',
-              price: '279.99',
-              title: 'Milos Cotton White Vanity with Oval Basin 600mm - Chrome Handles'
-          },
-          {
-              id: 'C81235',
-              name: 'Troy Basin',
-              image: 'assets/productImages/furniture/C81235-1000-Cotton-White-Vanity-Basin-600mm-Chrome-Handles_1.webp',
-              link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-600mm-chrome-handles-c81235',
-              path: '../../models/furniture/basin/C81235.glb',
-              dimensions: { width: 60.9, height: 95.1, depth: 47.7 },
-              orientation: {
-                  type: 'face_into_room',
-                  wallBuffer: 0, // Flush with wall - no gap
-                  description: 'Item is part of wall opening'
-              },
-              sku: 'C81235',
-              price: '279.99',
-              title: 'Milos Cotton White Vanity with Troy Basin 600mm - Chrome Handles'
-          },
-      ],
-      variantType: 'Width Options',
-      features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-    },
-
-    {
-          id: 'furniture_variant_12',
-          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
-          name: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles',
-          price: '191.00',
-          image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
-          variants: [
-              {
-                  id: 'C81206',
-                  name: 'Oval Basin',
-                  image: 'assets/productImages/furniture/C81206-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-500mm-brushed-handles-c81206',
-                  path: '../../models/furniture/basin/C81206.glb',
-                  dimensions: { width: 51, height: 96.5, depth: 42.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81206',
-                  price: '191.00',
-                  title: 'Milos Cotton White Vanity with Oval Basin 500mm - Brushed Handles'
-              },
-              {
-                  id: 'C81207',
-                  name: 'Mesa Basin',
-                  image: 'assets/productImages/furniture/C81207-1000-Cotton-White-Vanity-Basin-500mm-Brushed-Handles_3.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-brushed-handles-c81207',
-                  path: '../../models/furniture/basin/C81207.glb',
-                  dimensions: { width: 51, height: 97, depth: 46.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81207',
-                  price: '239.99',
-                  title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Brushed Handles'
-              },
-              {
-                  id: 'C81204',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C81204-1000-Cotton-White-Basin-Vanity-500mm-Brushed-Handles_3.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-500mm-brushed-handles-c81204',
-                  path: '../../models/furniture/basin/C81204.glb',
-                  dimensions: { width: 51.8, height: 81.8, depth: 42.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81204',
-                  price: '219.99',
-                  title: 'Milos Cotton White Basin Vanity 500mm - Brushed Handles'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-
-      {
-          id: 'furniture_variant_13',
-          link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
-          name: 'Bermuda Inky Blue Basin Vanity 600mm',
-          price: '225.00',
-          image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
-          variants: [
-              {
-                  id: 'C78439',
-                  name: '600mm',
-                  image: 'assets/productImages/furniture/C78439-1000-Bermuda-Inky-Blue-Basin-Vanity-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-600mm-c78439',
-                  path: '../../models/furniture/basin/C78439.glb',
-                  dimensions: { width: 61.4, height: 84.1, depth: 51.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C78439',
-                  price: '225',
-                  title: 'Bermuda Inky Blue Basin Vanity 600mm'
-              },
-              {
-                  id: 'C79848',
-                  name: '400mm',
-                  image: 'assets/productImages/furniture/c79848-1000-bermuda-inky-blue-cloakroom-basin-vanity-400mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-cloakroom-basin-vanity-400mm-c79848',
-                  path: '../../models/furniture/basin/C79848.glb',
-                  dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C79848',
-                  price: '189.99',
-                  title: 'Bermuda Inky Blue Cloakroom Basin Vanity 400mm'
-              },
-              {
-                  id: 'C79848',
-                  name: '400mm',
-                  image: 'assets/productImages/furniture/c79848-1000-bermuda-inky-blue-cloakroom-basin-vanity-400mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-cloakroom-basin-vanity-400mm-c79848',
-                  path: '../../models/furniture/basin/C79848.glb',
-                  dimensions: { width: 40.4, height: 85.1, depth: 25.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C79848',
-                  price: '189.99',
-                  title: 'Bermuda Inky Blue Cloakroom Basin Vanity 400mm'
-              },
-              {
-                  id: 'C78620',
-                  name: '800mm',
-                  image: 'assets/productImages/furniture/c78620-1000-bermuda-inky-blue-basin-vanity-800mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-basin-vanity-800mm-c78620',
-                  path: '../../models/furniture/basin/C78620.glb',
-                  dimensions: { width: 80.5, height: 84.1, depth: 41 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C78620',
-                  price: '287.00',
-                  title: 'Bermuda Inky Blue Basin Vanity 800mm'
-              },
-              {
-                  id: 'C78440',
-                  name: '1200mm',
-                  image: 'assets/productImages/furniture/C78440-1000-Bermuda-Inky-Blue-Double-Basin-Vanity-1200mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-inky-blue-double-basin-vanity-1200mm-c78440',
-                  path: '../../models/furniture/basin/C78440.glb',
-                  dimensions: { width: 121, height: 90.6, depth: 57.7 },
-                  floorOffset: 0,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C78440',
-                  price: '499.00',
-                  title: 'Bermuda Inky Blue Double Basin Vanity 1200mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-
-      {
-          id: 'furniture_variant_14',
-          link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
-          name: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm',
-          price: '179.00',
-          image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
-          variants: [
-              {
-                  id: 'C76246',
-                  name: '600mm Wall Hung',
-                  image: 'assets/productImages/furniture/c76246-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-600mm-c76246',
-                  path: '../../models/furniture/basin/C76246.glb',
-                  dimensions: { width: 60.4, height: 55, depth: 34.7 },
-                  floorOffset: 30.1,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C76246',
-                  price: '179',
-                  title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 600mm'
-              },
-              {
-                  id: 'C76247',
-                  name: '600mm Floorstanding',
-                  image: 'assets/productImages/furniture/c76247-1000-corsica-storm-grey-basin-drawer-vanity-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-basin-drawer-vanity-600mm-c76247',
-                  path: '../../models/furniture/basin/C76247.glb',
-                  dimensions: { width: 60.4, height: 85, depth: 34.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C76247',
-                  price: '219.00',
-                  title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 600mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-
-      {
-          id: 'furniture_variant_15',
-          link: 'https://www.bathroommountain.co.uk/monaco-chalk-white-basin-vanity-600mm-c76328',
-          name: 'Monaco Chalk White Basin Vanity 600mm',
-          price: '299.99',
-          image: 'assets/productImages/furniture/c76328-1000-chalk-white-basin-vanity-600mm.webp',
-          variants: [
-              {
-                  id: 'C76328',
-                  name: 'Chalk White',
-                  image: 'assets/productImages/furniture/c76328-1000-chalk-white-basin-vanity-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-chalk-white-basin-vanity-600mm-c76328',
-                  path: '../../models/furniture/basin/C76328.glb',
-                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76328',
-                  price: '299.99',
-                  title: 'Monaco Chalk White Basin Vanity 600mm'
-              },
-              {
-                  id: 'C77683',
-                  name: 'Dove Grey',
-                  image: 'assets/productImages/furniture/c77683-1000-dove-grey-basin-vanity-600mm-gold-accents_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-dove-grey-basin-vanity-600mm-c77683',
-                  path: '../../models/furniture/basin/C76283.glb',
-                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77683',
-                  price: '299.99',
-                  title: 'Monaco Dove Grey Basin Vanity 600mm'
-              },
-              {
-                  id: 'C77732',
-                  name: 'Graphite Grey',
-                  image: 'assets/productImages/furniture/c77732-1000-graphite-grey-basin-vanity-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-graphite-grey-basin-vanity-600mm-c77732',
-                  path: '../../models/furniture/basin/C77732.glb',
-                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77732',
-                  price: '239.00',
-                  title: 'Monaco Graphite Grey Basin Vanity 600mm'
-              },
-              {
-                  id: 'C78377',
-                  name: 'Inky Blue',
-                  image: 'assets/productImages/furniture/c78377-1000-inky-blue-basin-vanity-600mm-accents.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-basin-vanity-600mm-c78377',
-                  path: '../../models/furniture/basin/C78377.glb',
-                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78377',
-                  price: '299.99',
-                  title: 'Monaco Inky Blue Basin Vanity 600mm'
-              },
-              {
-                  id: 'C78704',
-                  name: 'Midnight Green',
-                  image: 'assets/productImages/furniture/c78704-1000-monaco-topaz-green-basin-vanity-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-midnight-green-basin-vanity-600mm-c78704',
-                  path: '../../models/furniture/basin/C78704.glb',
-                  dimensions: { width: 60, height: 83.9, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78704',
-                  price: '299.99',
-                  title: 'Monaco Midnight Green Basin Vanity 600mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-
-      {
-          id: 'furniture_variant_16',
-          link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-miami-toilet-1050mm-c79932',
-          name: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm',
-          price: '319.99',
-          image: 'assets/productImages/furniture/C79932-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
-          variants: [
-              {
-                  id: 'C79932',
-                  name: 'Denver Toilet',
-                  image: 'assets/productImages/furniture/C79932-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-miami-toilet-1050mm-c79932',
-                  path: '../../models/furniture/basin/C79932.glb',
-                  dimensions: { width: 103.3, height: 86.5, depth: 80.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79932',
-                  price: '319.99',
-                  title: 'Quartz Gloss White Combination Vanity Basin and Denver Toilet 1050mm'
-              },
-              {
-                  id: 'C79930',
-                  name: 'No Toilet & Cistern',
-                  image: 'assets/productImages/furniture/C79930-1000-White-Basin-Vanity-Back-To-Wall-Toilet-Unit-1050mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-basin-vanity-and-back-to-wall-toilet-unit-1050mm-excludes-toilet-c79930',
-                  path: '../../models/furniture/basin/C79930.glb',
-                  dimensions: { width: 103.3, height: 86.2, depth: 42.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79930',
-                  price: '219.99',
-                  title: 'Quartz Gloss White Basin Vanity and Back To Wall Toilet Unit 1050mm - Excludes Toilet'
-              },
-              {
-                  id: 'C79931',
-                  name: 'Austin Toilet',
-                  image: 'assets/productImages/furniture/C79931-1000-Gloss-White-Combination-Vanity-Basin-Toilet-1050mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-austin-toilet-1050mm-c79931',
-                  path: '../../models/furniture/basin/C79931.glb',
-                  dimensions: { width: 103.3, height: 86.4, depth: 82 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79931',
-                  price: '289.99',
-                  title: 'Quartz Gloss White Combination Vanity Basin and Austin Toilet 1050mm'
-              },
-              {
-                  id: 'C79933',
-                  name: 'Houston Toilet',
-                  image: 'assets/productImages/furniture/c79933-1000-gloss-white-combination-vanity-basin-toilet-1050mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-combination-vanity-basin-and-houston-toilet-1050mm-c79933',
-                  path: '../../models/furniture/basin/C79933.glb',
-                  dimensions: { width: 103.3, height: 86.5, depth: 84.4 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79933',
-                  price: '263.00',
-                  title: 'Quartz Gloss White Combination Vanity Basin and Houston Toilet 1050mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-
-      {
-          id: 'furniture_variant_17',
-          link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-floor-standing-basin-vanity-400mm-c79921',
-          name: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm',
-          price: '99.99',
-          image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
-          variants: [
-              {
-                  id: 'C79921',
-                  name: 'Floor Standing',
-                  image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-floor-standing-basin-vanity-400mm-c79921',
-                  path: '../../models/furniture/basin/C79921.glb',
-                  dimensions: { width: 40, height: 88, depth: 24.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79921',
-                  price: '99.99',
-                  title: 'Quartz Gloss White Cloakroom Floor Standing Basin Vanity 400mm'
-              },
-              {
-                  id: 'C79920',
-                  name: 'Wall Hung',
-                  image: 'assets/productImages/furniture/C79920-1000-Gloss-White-Cloakroom-Wall-Hung-Basin-Vanity-400mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-wall-hung-basin-vanity-400mm-c79920',
-                  path: '../../models/furniture/basin/C79920.glb',
-                  dimensions: { width: 40, height: 57.8, depth: 24.2 },
-                  floorOffset: 20,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79920',
-                  price: '89.99',
-                  title: 'Quartz Gloss White Cloakroom Wall Hung Basin Vanity 400mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_18',
-          link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
-          name: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm',
-          price: '269.99',
-          image: 'assets/productImages/furniture/C79921-1000-Gloss-White-Floor-Standing-Basin-Vanity-400mm_1.webp',
-          variants: [
-              {
-                  id: 'C79777',
-                  name: 'Floor Standing',
-                  image: 'assets/productImages/furniture/c79777-1000-inky-blue-basin-drawer-vanity-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-short-projection-basin-drawer-vanity-500mm-c79777',
-                  path: '../../models/furniture/basin/C79777.glb',
-                  dimensions: { width: 40, height: 57.8, depth: 24.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79777',
-                  price: '269.99',
-                  title: 'Corsica Inky Blue Slimline Basin Drawer Vanity 500mm'
-              },
-              {
-                  id: 'C78548',
-                  name: 'Wall Hung',
-                  image: 'assets/productImages/furniture/c78548-1000-inky-blue-wall-hung-basin-drawer-vanity-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-inky-blue-wall-hung-short-projection-basin-drawer-vanity-500mm-c78548',
-                  path: '../../models/furniture/basin/C78548.glb',
-                  dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
-                  floorOffset: 34.9,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78548',
-                  price: '229.99',
-                  title: 'Corsica Inky Blue Wall Hung Slimline Basin Drawer Vanity 500mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_19',
-          link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
-          name: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm',
-          price: '529.99',
-          image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
-          variants: [
-              {
-                  id: 'C77185',
-                  name: 'Miami Toilet',
-                  image: 'assets/productImages/furniture/C77185-1000-Stone-Grey-Combination-Vanity-Basin-Toilet-1300mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/avon-stone-grey-combination-vanity-basin-and-denver-toilet-1300mm',
-                  path: '../../models/furniture/basin/C77185.glb',
-                  dimensions: { width: 45.8, height: 85.1, depth: 34 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77185',
-                  price: '529.99',
-                  title: 'Avon Stone Grey Combination Vanity Basin and Miami Toilet 1300mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_20',
-          link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-600mm-c77065',
-          name: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm',
-          price: '269.99',
-          image: 'assets/productImages/furniture/C77065-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
-          variants: [
-              {
-                  id: 'C77065',
-                  name: '600mm Width',
-                  image: 'assets/productImages/furniture/C77065-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-600mm-c77065',
-                  path: '../../models/furniture/basin/C77065.glb',
-                  dimensions: { width: 61.4, height: 60.4, depth: 39.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77065',
-                  price: '269.99',
-                  title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 600mm'
-              },
-              {
-                  id: 'C77064',
-                  name: '500mm Width',
-                  image: 'assets/productImages/furniture/C77064-1000-Gloss-White-Wall-Hung-Basin-Drawer_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-500mm-c77064',
-                  path: '../../models/furniture/basin/C77064.glb',
-                  dimensions: { width: 50.7, height: 60.4, depth: 39.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77064',
-                  price: '185.00',
-                  title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 500mm'
-              },
-              {
-                  id: 'C77066',
-                  name: '800mm Width',
-                  image: 'assets/productImages/furniture/C77066-1000-Gloss-White-Wall-Hung-Basin-Drawer-_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/austin-gloss-white-wall-hung-basin-drawer-vanity-800mm-c77066',
-                  path: '../../models/furniture/basin/C77066.glb',
-                  dimensions: { width: 80.9, height: 60.5, depth: 39.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77066',
-                  price: '263.00',
-                  title: 'Austin Gloss White Wall Hung Basin Drawer Vanity 800mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_21',
-          link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-600mm',
-          name: 'Avon Stone Grey Basin Vanity 600mm',
-          price: '209.99',
-          image: 'assets/productImages/furniture/C76504-1000-Avon-Pebble-Grey-Basin-Vanity-600mm_1.webp',
-          variants: [
-              {
-                  id: 'C76504',
-                  name: '600mm Cabinet',
-                  image: 'assets/productImages/furniture/C76504-1000-Avon-Pebble-Grey-Basin-Vanity-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-600mm',
-                  path: '../../models/furniture/basin/C76504.glb',
-                  dimensions: { width: 61.4, height: 85, depth: 42.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76504',
-                  price: '209.99',
-                  title: 'Avon Stone Grey Basin Vanity 600mm'
-              },
-              {
-                  id: 'C76503',
-                  name: '500mm Cabinet',
-                  image: 'assets/productImages/furniture/C76503-1000-Avon-Pebble-Grey-Basin-Vanity-500mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/avon-stone-grey-basin-vanity-500mm',
-                  path: '../../models/furniture/basin/C76503.glb',
-                  dimensions: { width: 51.6, height: 85, depth: 42.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76503',
-                  price: '159.00',
-                  title: 'Avon Stone Grey Basin Vanity 500mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_22',
-          link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-austin-toilet-1050mm-c76749',
-          name: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm',
-          price: '339.99',
-          image: 'assets/productImages/furniture/C76749-1000-Grey-Vanity-Basin-and-Austin-Toilet-1050mm_1.webp',
-          variants: [
-              {
-                  id: 'C76749',
-                  name: 'Austin Toilet',
-                  image: 'assets/productImages/furniture/C76749-1000-Grey-Vanity-Basin-and-Austin-Toilet-1050mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-austin-toilet-1050mm-c76749',
-                  path: '../../models/furniture/basin/C76749.glb',
-                  dimensions: { width: 104, height: 81.7, depth: 81.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76749',
-                  price: '339.99',
-                  title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1050mm'
-              },
-              {
-                  id: 'C76751',
-                  name: 'Denver Toilet',
-                  image: 'assets/productImages/furniture/C76751-1000-Grey-Vanity-Basin-and-Denver-Toilet-1050mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-denver-toilet-1050mm-c76751',
-                  path: '../../models/furniture/basin/C76751.glb',
-                  dimensions: { width: 104, height: 81.6, depth: 80.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76751',
-                  price: '389.99',
-                  title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1050mm'
-              },
-              {
-                  id: 'C77020',
-                  name: 'No Toilet & Cistern',
-                  image: 'assets/productImages/furniture/c77020-1000-pebble-grey-basin-vanity-and-back-to-wall-toilet-unit.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-basin-vanity-and-back-to-wall-toilet-unit-1050mm-c77020',
-                  path: '../../models/furniture/basin/C77020.glb',
-                  dimensions: { width: 104, height: 81.6, depth: 42.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77020',
-                  price: '259.99',
-                  title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1050mm'
-              },
-              {
-                  id: 'C76750',
-                  name: 'Seattle Toilet',
-                  image: 'assets/productImages/furniture/C76750-1000-Grey-Vanity-Basin-and-Seattle-Toilet-1050mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-seattle-toilet-1050mm-c76750',
-                  path: '../../models/furniture/basin/C76750.glb',
-                  dimensions: { width: 104, height: 81.6, depth: 80.4 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76750',
-                  price: '369.99',
-                  title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1050mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_23',
-          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-brushed-handles-c81212',
-          name: 'Milos Cotton White Basin Vanity 800mm - Brushed Handles',
-          price: '299.99',
-          image: 'assets/productImages/furniture/C81212-1000-Cotton-White-Basin-Vanity-800mm-Brushed-Handles_1.webp',
-          variants: [
-              {
-                  id: 'C81212',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C81212-1000-Cotton-White-Basin-Vanity-800mm-Brushed-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-brushed-handles-c81212',
-                  path: '../../models/furniture/basin/C81212.glb',
-                  dimensions: { width: 82, height: 81.7, depth: 47.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81212',
-                  price: '299.99',
-                  title: 'Milos Cotton White Basin Vanity 800mm - Brushed Handles'
-              },
-              {
-                  id: 'C81214',
-                  name: 'Oval Basin',
-                  image: 'assets/productImages/furniture/C81214-1000-Cotton-White-Vanity-Basin-800mm-Brushed-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-800mm-brushed-handles-c81214',
-                  path: '../../models/furniture/basin/C81214.glb',
-                  dimensions: { width: 81.1, height: 96.1, depth: 47.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81214',
-                  price: '263.00',
-                  title: 'Milos Cotton White Vanity with Oval Basin 800mm - Brushed Handles'
-              },
-              {
-                  id: 'C81215',
-                  name: 'Troy Basin',
-                  image: 'assets/productImages/furniture/c77020-1000-pebble-grey-basin-vanity-and-back-to-wall-toilet-unit.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-800mm-brushed-handles-c81215',
-                  path: '../../models/furniture/basin/C81215.glb',
-                  dimensions: { width: 81.1, height: 95.1, depth: 47.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81215',
-                  price: '329.99',
-                  title: 'Milos Cotton White Vanity with Troy Basin 800mm - Brushed Handles'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_24',
-          link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-600mm-c79697',
-          name: 'Mersey Gloss White Basin Vanity 600mm',
-          price: '189.99',
-          image: 'assets/productImages/furniture/C79697-1000-Mersey-Gloss-White-Basin-Vanity-600mm_1.webp',
-          variants: [
-              {
-                  id: 'C79697',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C79697-1000-Mersey-Gloss-White-Basin-Vanity-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-600mm-c79697',
-                  path: '../../models/furniture/basin/C79697.glb',
-                  dimensions: { width: 61.5, height: 81.8, depth: 48.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79697',
-                  price: '189.99',
-                  title: 'Mersey Gloss White Basin Vanity 600mm'
-              },
-              {
-                  id: 'C81184',
-                  name: 'Oval Basin',
-                  image: 'assets/productImages/furniture/C81184-1000-Mersey-Gloss-White-Vanity-with-Oval-Basin-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-with-oval-basin-600mm-c81184',
-                  path: '../../models/furniture/basin/C81184.glb',
-                  dimensions: { width: 61, height: 95.1, depth: 48.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81184',
-                  price: '199.99',
-                  title: 'Mersey Gloss White Vanity with Oval Basin 600mm'
-              },
-              {
-                  id: 'C81185',
-                  name: 'Troy Basin',
-                  image: 'assets/productImages/furniture/C81185-1000-Mersey-Gloss-White-Vanity-with-Troy-Basin-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-with-troy-basin-600mm-c81185',
-                  path: '../../models/furniture/basin/C81185.glb',
-                  dimensions: { width: 61.1, height: 95.1, depth: 48.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81185',
-                  price: '199.99',
-                  title: 'Mersey Gloss White Vanity with Troy Basin 600mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_25',
-          link: 'https://www.bathroommountain.co.uk/capri-navy-blue-combination-vanity-basin-and-miami-toilet-1050mm-chrome-handles-c81113',
-          name: 'Capri Navy Blue Combination Vanity Basin and Denver Toilet 1050mm - Chrome Handles',
-          price: '189.99',
-          image: 'assets/productImages/furniture/c81113-1000-navy-blue-combination-vanity-basin-toilet-1050mm.webp',
-          variants: [
-              {
-                  id: 'C81113',
-                  name: 'Denver Toilet',
-                  image: 'assets/productImages/furniture/c81113-1000-navy-blue-combination-vanity-basin-toilet-1050mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/capri-navy-blue-combination-vanity-basin-and-miami-toilet-1050mm-chrome-handles-c81113',
-                  path: '../../models/furniture/basin/C81113.glb',
-                  dimensions: { width: 61, height: 81.6, depth: 48.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81113',
-                  price: '375.00',
-                  title: 'Capri Navy Blue Combination Vanity Basin and Denver Toilet 1050mm - Chrome Handles'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_26',
-          link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-vanity-with-semi-recessed-basin-550mm-c79923',
-          name: 'Quartz Gloss White Vanity with Semi Recessed Basin 550mm',
-          price: '124.99',
-          image: 'assets/productImages/furniture/C79923-1000-Gloss-White-Vanity-Semi-Recessed-Basin-550mm_1.webp',
-          variants: [
-              {
-                  id: 'C79923',
-                  name: '550mm',
-                  image: 'assets/productImages/furniture/C79923-1000-Gloss-White-Vanity-Semi-Recessed-Basin-550mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-vanity-with-semi-recessed-basin-550mm-c79923',
-                  path: '../../models/furniture/basin/C79923.glb',
-                  dimensions: { width: 54.8, height: 86.2, depth: 42.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79923',
-                  price: '124.99',
-                  title: 'Quartz Gloss White Vanity with Semi Recessed Basin 550mm'
-              },
-              {
-                  id: 'C79922',
-                  name: '450mm',
-                  image: 'assets/productImages/furniture/C79922-1000-Gloss-White-Vanity-Semi-Recessed-Basin-450mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-cloakroom-vanity-with-semi-recessed-basin-450mm-c79922',
-                  path: '../../models/furniture/basin/C79922.glb',
-                  dimensions: { width: 44.8, height: 83.5, depth: 44.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79922',
-                  price: '119.99',
-                  title: 'Quartz Gloss White Cloakroom Vanity with Semi Recessed Basin 450mm'
-              },
-              {
-                  id: 'C79924',
-                  name: '650mm',
-                  image: 'assets/productImages/furniture/C79924-1000-Gloss-White-Vanity-Semi-Recessed-Basin-650mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-gloss-white-vanity-with-semi-recessed-basin-650mm-c79924',
-                  path: '../../models/furniture/basin/C79924.glb',
-                  dimensions: { width: 64.3, height: 85.6, depth: 43.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79924',
-                  price: '149.99',
-                  title: 'Quartz Gloss White Vanity with Semi Recessed Basin 650mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_27',
-          link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-austin-toilet-1150mm-c76752',
-          name: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1150mm',
-          price: '289.00',
-          image: 'assets/productImages/furniture/C76752-1000-Grey-Vanity-Basin-and-Austin-Toilet-1150mm_1.webp',
-          variants: [
-              {
-                  id: 'C76752',
-                  name: 'Austin Toilet',
-                  image: 'assets/productImages/furniture/C76752-1000-Grey-Vanity-Basin-and-Austin-Toilet-1150mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-austin-toilet-1150mm-c76752',
-                  path: '../../models/furniture/basin/C76752.glb',
-                  dimensions: { width: 112.6, height: 82, depth: 82.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76752',
-                  price: '289.00',
-                  title: 'Quartz Stone Grey Combination Vanity Basin and Austin Toilet 1150mm'
-              },
-              {
-                  id: 'C76754',
-                  name: 'Denver Toilet',
-                  image: 'assets/productImages/furniture/C76754-1000-Grey-Vanity-Basin-and-Denver-Toilet-1150mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-combination-vanity-basin-and-denver-toilet-1150mm-c76754',
-                  path: '../../models/furniture/basin/C76754.glb',
-                  dimensions: { width: 112.6, height: 82, depth: 81.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76754',
-                  price: '335.00',
-                  title: 'Quartz Stone Grey Combination Vanity Basin and Denver Toilet 1150mm'
-              },
-              {
-                  id: 'C77021',
-                  name: 'No Toilet & Cistern',
-                  image: 'assets/productImages/furniture/C77021-1000-Pebble-Grey-Basin-Vanity-and-Back-To-Wall-Toilet-Unit_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-stone-grey-basin-vanity-and-back-to-wall-toilet-unit-1150mm-c77021',
-                  path: '../../models/furniture/basin/C77021.glb',
-                  dimensions: { width: 112.6, height: 81.7, depth: 43.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77021',
-                  price: '289.99',
-                  title: 'Quartz Stone Grey Basin Vanity and Back To Wall Toilet Unit 1150mm'
-              },
-              {
-                  id: 'C76753',
-                  name: 'Seattle Toilet',
-                  image: 'assets/productImages/furniture/C76753-1000-Grey-Vanity-Basin-and-Seattle-Toilet-1150mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/quartz-pebble-grey-combination-vanity-basin-and-seattle-toilet-1150mm-c76753',
-                  path: '../../models/furniture/basin/C76753.glb',
-                  dimensions: { width: 112.6, height: 81.7, depth: 81.4 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76753',
-                  price: '399.99',
-                  title: 'Quartz Stone Grey Combination Vanity Basin and Seattle Toilet 1150mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_28',
-          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-drawer-vanity-600mm-c81581',
-          name: 'Corsica Gloss White Basin Drawer Vanity 600mm',
-          price: '263.00',
-          image: 'assets/productImages/furniture/C81581-1000-Gloss-White-Basin-Drawer-Vanity-600mm_1.webp',
-          variants: [
-              {
-                  id: 'C81581',
-                  name: 'Build-in Basin',
-                  image: 'assets/productImages/furniture/C81581-1000-Gloss-White-Basin-Drawer-Vanity-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-basin-drawer-vanity-600mm-c81581',
-                  path: '../../models/furniture/basin/C81581.glb',
-                  dimensions: { width: 61.3, height: 86.6, depth: 46.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81581',
-                  price: '263.00',
-                  title: 'Corsica Gloss White Basin Drawer Vanity 600mm'
-              },
-              {
-                  id: 'C81584',
-                  name: 'Curved Basin',
-                  image: 'assets/productImages/furniture/C81584-1000-White-Vanity-Drawer-Marble-Top-Basin-600mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-drawer-with-marble-top-curved-counter-top-basin-600mm-c81584',
-                  path: '../../models/furniture/basin/C81584.glb',
-                  dimensions: { width: 60, height: 113.3, depth: 45.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81584',
-                  price: '379.99',
-                  title: 'Corsica Gloss White Vanity Drawer with Marble Top & Curved Counter Top Basin 600mm'
-              },
-              {
-                  id: 'C81585',
-                  name: 'Marin Basin',
-                  image: 'assets/productImages/furniture/C81585-1000-Gloss-White-Vanity-Drawer-Marble-Top-Basin-600mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-vanity-drawer-with-marble-top-marin-basin-600mm-c81585',
-                  path: '../../models/furniture/basin/C81585.glb',
-                  dimensions: { width: 60, height: 113.3, depth: 45.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81585',
-                  price: '389.99',
-                  title: 'Corsica Gloss White Vanity Drawer with Marble Top & Marin Basin 600mm'
-              },
-              {
-                  id: 'C81582',
-                  name: 'No Basin',
-                  image: 'assets/productImages/furniture/C81582-1000-White-Drawer-Vanity-Marble-600mm-Excludes-Basin_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c81582',
-                  path: '../../models/furniture/basin/C81582.glb',
-                  dimensions: { width: 60, height: 113.3, depth: 45.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81582',
-                  price: '349.99',
-                  title: 'Corsica Gloss White Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_29',
-          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-miami-toilet-1100mm-chrome-handles-c81246',
-          name: 'Milos Cotton White Combination Vanity Basin and Denver Toilet 1100mm - Chrome Handles',
-          price: '519.99',
-          image: 'assets/productImages/furniture/C81246-1000-White-Combination-Vanity-Basin-Toilet-1100mm.webp',
-          variants: [
-              {
-                  id: 'C81246',
-                  name: 'Denver Toilet',
-                  image: 'assets/productImages/furniture/C81246-1000-White-Combination-Vanity-Basin-Toilet-1100mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-miami-toilet-1100mm-chrome-handles-c81246',
-                  path: '../../models/furniture/basin/C81246.glb',
-                  dimensions: { width: 101.2, height: 81.8, depth: 75.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81246',
-                  price: '519.99',
-                  title: 'Milos Cotton White Combination Vanity Basin and Denver Toilet 1100mm - Chrome Handles'
-              },
-              {
-                  id: 'C81247',
-                  name: 'Houston Toilet',
-                  image: 'assets/productImages/furniture/c81247-1000-white-combination-vanity-basin-toilet-1100mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-houston-toilet-1100mm-chrome-handles-c81247',
-                  path: '../../models/furniture/basin/C81247.glb',
-                  dimensions: { width: 101.2, height: 81.8, depth: 78.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81247',
-                  price: '431.00',
-                  title: 'Milos Cotton White Combination Vanity Basin and Houston Toilet 1100mm - Chrome Handles'
-              },
-              {
-                  id: 'C81245',
-                  name: 'Austin Toilet',
-                  image: 'assets/productImages/furniture/C81245-1000-White-Combination-Vanity-Basin-Toilet-1100mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-combination-vanity-basin-and-austin-toilet-1100mm-chrome-handles-c81245',
-                  path: '../../models/furniture/basin/C81245.glb',
-                  dimensions: { width: 101.2, height: 81.8, depth: 76.4 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81245',
-                  price: '499.99',
-                  title: 'Milos Cotton White Combination Vanity Basin and Austin Toilet 1100mm - Chrome Handles'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_30',
-          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-chrome-handles-c81231',
-          name: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles',
-          price: '519.99',
-          image: 'assets/productImages/furniture/C81231-1000-Cotton-White-Vanity-Basin-500mm-Chrome-Handles_1.webp',
-          variants: [
-              {
-                  id: 'C81231',
-                  name: 'Mesa Basin',
-                  image: 'assets/productImages/furniture/C81231-1000-Cotton-White-Vanity-Basin-500mm-Chrome-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-mesa-basin-500mm-chrome-handles-c81231',
-                  path: '../../models/furniture/basin/C81231.glb',
-                  dimensions: { width: 51, height: 97, depth: 46.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81231',
-                  price: '191.99',
-                  title: 'Milos Cotton White Vanity with Mesa Basin 500mm - Chrome Handles'
-              },
-              {
-                  id: 'C81228',
-                  name: 'Build-in Basin',
-                  image: 'assets/productImages/furniture/C81228-1000-Cotton-White-Basin-Vanity-500mm-Chrome-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-500mm-chrome-handles-c81228',
-                  path: '../../models/furniture/basin/C81228.glb',
-                  dimensions: { width: 51.8, height: 81.8, depth: 42.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81228',
-                  price: '175.00',
-                  title: 'Milos Cotton White Basin Vanity 500mm - Chrome Handles'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_31',
-          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-brushed-handles-c81208',
-          name: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles',
-          price: '259.99',
-          image: 'assets/productImages/furniture/C81208-1000-Cotton-White-Basin-Vanity-600mm-Brushed-Handles_3.webp',
-          variants: [
-              {
-                  id: 'C81208',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C81208-1000-Cotton-White-Basin-Vanity-600mm-Brushed-Handles_3.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-600mm-brushed-handles-c81208',
-                  path: '../../models/furniture/basin/C81208.glb',
-                  dimensions: { width: 61.5, height: 81.8, depth: 47.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81208',
-                  price: '259.99',
-                  title: 'Milos Cotton White Basin Vanity 600mm - Brushed Handles'
-              },
-              {
-                  id: 'C81210',
-                  name: 'Oval Basin',
-                  image: 'assets/productImages/furniture/C81210-1000-Cotton-White-Vanity-Basin-600mm-Brushed-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-600mm-brushed-handles-c81210',
-                  path: '../../models/furniture/basin/C81210.glb',
-                  dimensions: { width: 60.9, height: 96.5, depth: 47.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81210',
-                  price: '223.00',
-                  title: 'Milos Cotton White Vanity with Oval Basin 600mm - Brushed Handles'
-              },
-              {
-                  id: 'C81211',
-                  name: 'Troy Basin',
-                  image: 'assets/productImages/furniture/C81211-1000-Cotton-White-Vanity-Basin-600mm-Brushed-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-600mm-brushed-handles-c81211',
-                  path: '../../models/furniture/basin/C81211.glb',
-                  dimensions: { width: 60.9, height: 95.1, depth: 47.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81211',
-                  price: '279.99',
-                  title: 'Milos Cotton White Vanity with Troy Basin 600mm - Brushed Handles'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_32',
-          link: 'https://www.bathroommountain.co.uk/harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm',
-          name: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm',
-          price: '179.00',
-          image: 'assets/productImages/furniture/c77479-1000-harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm.webp',
-          variants: [
-              {
-                  id: 'C77479',
-                  name: 'Charcoal Elm',
-                  image: 'assets/productImages/furniture/c77479-1000-harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/harper-charcoal-elm-vanity-with-semi-recessed-basin-500mm',
-                  path: '../../models/furniture/basin/C77479.glb',
-                  dimensions: { width: 50.1, height: 83.6, depth: 30 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77479',
-                  price: '179.00',
-                  title: 'Harper Charcoal Elm Vanity with Semi Recessed Basin 500mm'
-              },
-              {
-                  id: 'C79614',
-                  name: 'Navy Blue',
-                  image: 'assets/productImages/furniture/C79614-1000-Navy-Blue-Vanity-Semi-Recessed-Basin-500mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/harper-navy-blue-vanity-with-semi-recessed-basin-500mm-c79614',
-                  path: '../../models/furniture/basin/C79614.glb',
-                  dimensions: { width: 50.1, height: 83.6, depth: 30 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79614',
-                  price: '239.99',
-                  title: 'Harper Navy Blue Vanity with Semi Recessed Basin 500mm'
-              },
-              {
-                  id: 'C77016',
-                  name: 'Stone Grey',
-                  image: 'assets/productImages/furniture/C77016-1000-Pebble-Grey-Vanity-with-Semi-Recessed-Basin-500mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/harper-pebble-grey-vanity-with-semi-recessed-basin-marble-top-500mm-c77016',
-                  path: '../../models/furniture/basin/C77016.glb',
-                  dimensions: { width: 50, height: 83.6, depth: 30 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77016',
-                  price: '239.99',
-                  title: 'Harper Stone Grey Vanity with Semi Recessed Basin 500mm'
-              },
-              {
-                  id: 'C77012',
-                  name: 'Gloss White',
-                  image: 'assets/productImages/furniture/C77012-1000-Gloss-White-Vanity-500mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/harper-gloss-white-vanity-with-semi-recessed-basin-marble-top-500mm-c77012',
-                  path: '../../models/furniture/basin/C77012.glb',
-                  dimensions: { width: 50, height: 83.6, depth: 30 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77012',
-                  price: '179.00',
-                  title: 'Harper Gloss White Vanity with Semi Recessed Basin 500mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_33',
-          link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-denver-toilet-500mm-c78423',
-          name: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Denver Toilet 500mm',
-          price: '271.99',
-          image: 'assets/productImages/furniture/C78423-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
-          variants: [
-              {
-                  id: 'C78423',
-                  name: 'Denver Toilet',
-                  image: 'assets/productImages/furniture/C78423-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-denver-toilet-500mm-c78423',
-                  path: '../../models/furniture/basin/C78423.glb',
-                  dimensions: { width: 50.6, height: 89, depth: 85.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78423',
-                  price: '271.99',
-                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Denver Toilet 500mm'
-              },
-              {
-                  id: 'C78424',
-                  name: 'Atlanta Toilet',
-                  image: 'assets/productImages/furniture/C78424-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-atlanta-toilet-500mm-c78424',
-                  path: '../../models/furniture/basin/C78424.glb',
-                  dimensions: { width: 50.6, height: 89, depth: 85.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78424',
-                  price: '287.00',
-                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Atlanta Toilet 500mm'
-              },
-              {
-                  id: 'C78421',
-                  name: 'Austin Toilet',
-                  image: 'assets/productImages/furniture/C78421-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-austin-toilet-500mm-c78421',
-                  path: '../../models/furniture/basin/C78421.glb',
-                  dimensions: { width: 50.6, height: 89, depth: 87 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78421',
-                  price: '239.99',
-                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Austin Toilet 500mm'
-              },
-              {
-                  id: 'C78420',
-                  name: 'No Toilet',
-                  image: 'assets/productImages/furniture/C78420-1000-White-2-In-1-Combined-Wash-Basin-Back-To-Wall-Unit_3.webp',
-                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-back-to-wall-unit-500mm-c78420',
-                  path: '../../models/furniture/basin/C78420.glb',
-                  dimensions: { width: 50.6, height: 89, depth: 36 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78420',
-                  price: '151.99',
-                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Back To Wall Unit 500mm'
-              },
-              {
-                  id: 'C78422',
-                  name: 'Seattle Toilet',
-                  image: 'assets/productImages/furniture/C78422-1000-Gloss-White-2-In-1-Combined-Wash-Basin-Toilet-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/ohio-gloss-white-2-in-1-combined-wash-basin-seattle-toilet-500mm-c78422',
-                  path: '../../models/furniture/basin/C78422.glb',
-                  dimensions: { width: 50.6, height: 89, depth: 86.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78422',
-                  price: '319.99',
-                  title: 'Ohio Gloss White 2-In-1 Combined Wash Basin & Seattle Toilet 500mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_34',
-          link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-boston-v2-toilet-1500mm-c78397',
-          name: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Boston Toilet 1500mm',
-          price: '999.99',
-          image: 'assets/productImages/furniture/C78397-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
-          variants: [
-              {
-                  id: 'C78397',
-                  name: 'Boston Toilet',
-                  image: 'assets/productImages/furniture/C78397-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-boston-v2-toilet-1500mm-c78397',
-                  path: '../../models/furniture/basin/C78397.glb',
-                  dimensions: { width: 150.2, height: 95.5, depth: 85.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78397',
-                  price: '999.99',
-                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Boston Toilet 1500mm'
-              },
-              {
-                  id: 'C78396',
-                  name: 'Hudson Toilet With Wooden Seat',
-                  image: 'assets/productImages/furniture/c78396-1000-inky-blue-vanity-basin-top-toilet-wooden-1500mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-hudson-toilet-with-wooden-seat-1500mm-c78396',
-                  path: '../../models/furniture/basin/C78396.glb',
-                  dimensions: { width: 150.1, height: 95.1, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78396',
-                  price: '799.00',
-                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Hudson Toilet with Wooden Seat 1500mm'
-              },
-              {
-                  id: 'C78393',
-                  name: 'No Toilet',
-                  image: 'assets/productImages/furniture/c78393-1000-inky-blue-vanity-basin-marble-top-1500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-1500mm-excludes-pan-cistern-c78393',
-                  path: '../../models/furniture/basin/C78393.glb',
-                  dimensions: { width: 150.2, height: 95.5, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78393',
-                  price: '695.99',
-                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top 1500mm (Excludes Pan & Cistern)'
-              },
-              {
-                  id: 'C78394',
-                  name: 'Seattle Toilet',
-                  image: 'assets/productImages/furniture/C78394-1000-Inky-Blue-Vanity-Basin-Marble-Top-Toilet-1500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/monaco-inky-blue-combination-vanity-basin-with-marble-top-and-seattle-toilet-1500mm-c78394',
-                  path: '../../models/furniture/basin/C78394.glb',
-                  dimensions: { width: 150.2, height: 95.5, depth: 82.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C78394',
-                  price: '949.99',
-                  title: 'Monaco Inky Blue Combination Vanity Basin with Marble Top and Seattle Toilet 1500mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_35',
-          link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-800mm-c77098',
-          name: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm',
-          price: '367.00',
-          image: 'assets/productImages/furniture/C77098-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
-          variants: [
-              {
-                  id: 'C77098',
-                  name: 'Boston Toilet',
-                  image: 'assets/productImages/furniture/C77098-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-curved-counter-top-basin-800mm-c77098',
-                  path: '../../models/furniture/basin/C77098.glb',
-                  dimensions: { width: 81, height: 113.1, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77098',
-                  price: '367.00',
-                  title: 'Bermuda Chalk White Vanity with Marble Top & Curved Counter Top Basin 800mm'
-              },
-              {
-                  id: 'C77635',
-                  name: 'No Basin',
-                  image: 'assets/productImages/furniture/c77635-1000-chalk-white-cabinet-with-marble-top-exclude-counter-top-basin.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-cabinet-with-marble-top-800mm-exclude-counter-top-basin-c77635',
-                  path: '../../models/furniture/basin/C77635.glb',
-                  dimensions: { width: 81.1, height: 81.8, depth: 41.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77635',
-                  price: '335.99',
-                  title: 'Bermuda Chalk White Cabinet with Marble Top 800mm - Excludes Counter Top Basin'
-              },
-              {
-                  id: 'C77097',
-                  name: 'Oval Basin',
-                  image: 'assets/productImages/furniture/C77097-1000-Chalk-White-Vanity-with-Marble-Top-and-Counter-Top-Basin-800mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/bermuda-chalk-white-vanity-with-marble-top-oval-counter-top-basin-800mm-c77097',
-                  path: '../../models/furniture/basin/C77097.glb',
-                  dimensions: { width: 81, height: 113.1, depth: 43 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77097',
-                  price: '449.99',
-                  title: 'Bermuda Chalk White Vanity with Marble Top & Oval Counter Top Basin 800mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_36',
-          link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm-c76244',
-          name: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm',
-          price: '229.99',
-          image: 'assets/productImages/furniture/c76244-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm.webp',
-          variants: [
-              {
-                  id: 'C76244',
-                  name: '500mm Wall Hung',
-                  image: 'assets/productImages/furniture/c76244-1000-corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-wall-hung-basin-drawer-vanity-500mm-c76244',
-                  path: '../../models/furniture/basin/C76244.glb',
-                  dimensions: { width: 50.4, height: 50.1, depth: 34.7 },
-                  floorOffset: 35,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C77098',
-                  price: '229.99',
-                  title: 'Corsica Storm Grey Wall Hung Slimline Basin Drawer Vanity 500mm'
-              },
-              {
-                  id: 'C76245',
-                  name: '500mm Floorstanding',
-                  image: 'assets/productImages/furniture/c76245-1000-corsica-storm-grey-basin-drawer-vanity-500mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-storm-grey-short-projection-basin-drawer-vanity-500mm',
-                  path: '../../models/furniture/basin/C76245.glb',
-                  dimensions: { width: 50.4, height: 85, depth: 34.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76245',
-                  price: '199.00',
-                  title: 'Corsica Storm Grey Slimline Basin Drawer Vanity 500mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_37',
-          link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-double-vanity-with-marble-top-undermount-basins-1200mm-c76359v2',
-          name: 'Lucia Chalk White Double Vanity with Marble Top & Undermount Basins 1200mm',
-          price: '791.00',
-          image: 'assets/productImages/furniture/C76359V2-1000-White-Vanity-Marble-Top-Undermount-Basins-1200mm.webp',
-          variants: [
-              {
-                  id: 'C76359V2',
-                  name: '1200mm',
-                  image: 'assets/productImages/furniture/C76359V2-1000-White-Vanity-Marble-Top-Undermount-Basins-1200mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-double-vanity-with-marble-top-undermount-basins-1200mm-c76359v2',
-                  path: '../../models/furniture/basin/C76359V2.glb',
-                  dimensions: { width: 122.2, height: 91.6, depth: 47.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76359V2',
-                  price: '791.00',
-                  title: 'Lucia Chalk White Double Vanity with Marble Top & Undermount Basins 1200mm'
-              },
-              {
-                  id: 'C76350V2',
-                  name: '630mm',
-                  image: 'assets/productImages/furniture/C76350V2-1000-White-Vanity-Marble-Top-Undermount-Basin-630mm_5.webp',
-                  link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-marble-top-undermount-basin-630mm-c76350v2',
-                  path: '../../models/furniture/basin/C76350V2.glb',
-                  dimensions: { width: 63.4, height: 91.6, depth: 47.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76350V2',
-                  price: '455.00',
-                  title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 630mm'
-              },
-
-              {
-                  id: 'C76355V2',
-                  name: '830mm',
-                  image: 'assets/productImages/furniture/c76355v2-1000-white-vanity-marble-top-undermount-basin-830mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/lucia-chalk-white-vanity-with-marble-top-undermount-basin-830mm-c76355v2',
-                  path: '../../models/furniture/basin/C76355V2.glb',
-                  dimensions: { width: 83.1, height: 91.6, depth: 47.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C76355V2',
-                  price: '519.00',
-                  title: 'Lucia Chalk White Vanity with Marble Top & Undermount Basin 830mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_38',
-          link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-500mm-c79696',
-          name: 'Mersey Gloss White Basin Vanity 500mm',
-          price: '159.99',
-          image: 'assets/productImages/furniture/C79696-1000-Mersey-Gloss-White-Basin-Vanity-500mm_1.webp',
-          variants: [
-              {
-                  id: 'C79696',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C79696-1000-Mersey-Gloss-White-Basin-Vanity-500mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-basin-vanity-500mm-c79696',
-                  path: '../../models/furniture/basin/C79696.glb',
-                  dimensions: { width: 51.8, height: 82.1, depth: 44 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79696',
-                  price: '159.99',
-                  title: 'Mersey Gloss White Basin Vanity 500mm'
-              },
-              {
-                  id: 'C79944',
-                  name: 'Mesa Basin',
-                  image: 'assets/productImages/furniture/C79944-1000-Mersey-Gloss-White-Vanity-with-Mesa-Basin-500mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-with-mesa-basin-500mm-c79944',
-                  path: '../../models/furniture/basin/C79944.glb',
-                  dimensions: { width: 51, height: 96.7, depth: 41.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79944',
-                  price: '179.99',
-                  title: 'Mersey Gloss White Vanity with Mesa Basin 500mm'
-              },
-
-              {
-                  id: 'C79925',
-                  name: 'No Basin',
-                  image: 'assets/productImages/furniture/C79925-1000-Gloss-White-Vanity-Excludes-Counter-Top-Basin.webp',
-                  link: 'https://www.bathroommountain.co.uk/mersey-gloss-white-vanity-500mm-excludes-counter-top-basin-c79925',
-                  path: '../../models/furniture/basin/C79925.glb',
-                  dimensions: { width: 51, height: 81.9, depth: 41.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79925',
-                  price: '149.99',
-                  title: 'Mersey Gloss White Vanity 500mm - Excludes Counter Top Basin'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_39',
-          link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-basin-drawer-vanity-800mm-c79823',
-          name: 'Crete Fluted Linen White Wall Hung Basin Drawer Vanity 800mm',
-          price: '351.00',
-          image: 'assets/productImages/furniture/c79823-1000-linen-white-wall-hung-basin-drawer-vanity-800mm.webp',
-          variants: [
-              {
-                  id: 'C79823',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/c79823-1000-linen-white-wall-hung-basin-drawer-vanity-800mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-basin-drawer-vanity-800mm-c79823',
-                  path: '../../models/furniture/basin/C79823.glb',
-                  dimensions: { width: 81.3, height: 57, depth: 46.5 },
-                  floorOffset: 24.7,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79823',
-                  price: '351.00',
-                  title: 'Crete Fluted Linen White Wall Hung Basin Drawer Vanity 800mm'
-              },
-              {
-                  id: 'C79827',
-                  name: 'Cody Basin',
-                  image: 'assets/productImages/furniture/c79827-1000-linen-white-wall-hung-drawer-vanity-basin-800mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-cody-basin-800mm-c79827',
-                  path: '../../models/furniture/basin/C79827.glb',
-                  dimensions: { width: 81, height: 64.8, depth: 45.5 },
-                  floorOffset: 27.9,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79827',
-                  price: '509.99',
-                  title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Cody Basin 800mm'
-              },
-              {
-                  id: 'C79825',
-                  name: 'Curved Basin',
-                  image: 'assets/productImages/furniture/c79825-1000-white-wall-hung-anity-marble-top-basin-800mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-curved-basin-800mm-c79825',
-                  path: '../../models/furniture/basin/C79825.glb',
-                  dimensions: { width: 81, height: 67.2, depth: 45.2 },
-                  floorOffset: 27.7,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79825',
-                  price: '499.99',
-                  title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Curved Basin 800mm'
-              },
-              {
-                  id: 'C79826',
-                  name: 'Marin Basin',
-                  image: 'assets/productImages/furniture/c79826-1000-linen-white-wall-hung-drawer-vanity-basin-800mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-marin-basin-800mm-c79826',
-                  path: '../../models/furniture/basin/C79826.glb',
-                  dimensions: { width: 81, height: 64.8, depth: 45.5 },
-                  floorOffset: 27.9,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79826',
-                  price: '407.99',
-                  title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top & Marin Basin 800mm'
-              },
-              {
-                  id: 'C79824',
-                  name: 'No Basin',
-                  image: 'assets/productImages/furniture/c79824-1000-white-wall-hung-drawer-vanity-marble-top-800mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-linen-white-wall-hung-drawer-vanity-with-marble-top-800mm-excludes-counter-top-basin-c79824',
-                  path: '../../models/furniture/basin/C79824.glb',
-                  dimensions: { width: 81, height: 53.8, depth: 45.5 },
-                  floorOffset: 27.9,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C79824',
-                  price: '469.99',
-                  title: 'Crete Fluted Linen White Wall Hung Drawer Vanity with Marble Top 800mm - Excludes Counter Top Basin'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_40',
-          link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-chrome-handles-c81236',
-          name: 'Milos Cotton White Basin Vanity 800mm - Chrome Handles',
-          price: '239.00',
-          image: 'assets/productImages/furniture/C81236-1000-Cotton-White-Basin-Vanity-800mm-Chrome-Handles_1.webp',
-          variants: [
-              {
-                  id: 'C81236',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C81236-1000-Cotton-White-Basin-Vanity-800mm-Chrome-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-basin-vanity-800mm-chrome-handles-c81236',
-                  path: '../../models/furniture/basin/C81236.glb',
-                  dimensions: { width: 82, height: 81.9, depth: 47.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81236',
-                  price: '239.00',
-                  title: 'Milos Cotton White Basin Vanity 800mm - Chrome Handles'
-              },
-              {
-                  id: 'C81238',
-                  name: 'Oval Basin',
-                  image: 'assets/productImages/furniture/C81238-1000-Cotton-White-Vanity-Basin-800mm-Chrome-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-oval-basin-800mm-chrome-handles-c81238',
-                  path: '../../models/furniture/basin/C81238.glb',
-                  dimensions: { width: 81.1, height: 96.5, depth: 45.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81238',
-                  price: '329.99',
-                  title: 'Milos Cotton White Vanity with Oval Basin 800mm - Chrome Handles'
-              },
-              {
-                  id: 'C81239',
-                  name: 'Troy Basin',
-                  image: 'assets/productImages/furniture/C81239-1000-Cotton-White-Vanity-Basin-800mm-Chrome-Handles_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/milos-cotton-white-vanity-with-troy-basin-800mm-chrome-handles-c81239',
-                  path: '../../models/furniture/basin/C81239.glb',
-                  dimensions: { width: 81.1, height: 95.1, depth: 47.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81239',
-                  price: '263.99',
-                  title: 'Milos Cotton White Vanity with Troy Basin 800mm - Chrome Handles'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_41',
-          link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-600mm-c81576',
-          name: 'Corsica Gloss White Wall Hung Basin Drawer Vanity 600mm',
-          price: '279.99',
-          image: 'assets/productImages/furniture/C81576-1000-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
-          variants: [
-              {
-                  id: 'C81576',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C81576-1000-Gloss-White-Wall-Hung-Basin-Drawer-Vanity-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-basin-drawer-vanity-600mm-c81576',
-                  path: '../../models/furniture/basin/C81576.glb',
-                  dimensions: { width: 61.3, height: 56.6, depth: 46.5 },
-                  floorOffset: 38.1,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81576',
-                  price: '279.99',
-                  title: 'Corsica Gloss White Wall Hung Basin Drawer Vanity 600mm'
-              },
-              {
-                  id: 'C81579',
-                  name: 'Curved Basin',
-                  image: 'assets/productImages/furniture/C81579-1000-White-Wall-Hung-Drawer-Vanity-Marble-Basin-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-drawer-vanity-with-marble-top-curved-counter-top-basin-600mm-c81579',
-                  path: '../../models/furniture/basin/C81579.glb',
-                  dimensions: { width: 60, height: 65.4, depth: 45 },
-                  floorOffset: 38.4,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81579',
-                  price: '271.99',
-                  title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Curved Counter Top Basin 600mm'
-              },
-              {
-                  id: 'C81580',
-                  name: 'Marin Basin',
-                  image: 'assets/productImages/furniture/C81580-1000-White-Wall-Hung-Drawer-Vanity-Marble-Basin-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-drawer-vanity-with-marble-top-marin-basin-600mm-c81580',
-                  path: '../../models/furniture/basin/C81580.glb',
-                  dimensions: { width: 60, height: 63, depth: 45 },
-                  floorOffset: 32.1,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81580',
-                  price: '279.00',
-                  title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm'
-              },
-              {
-                  id: 'C81577',
-                  name: 'No Basin',
-                  image: 'assets/productImages/furniture/C81577-1000-White-Wall-Hung-Drawer-Vanity-Marble-Top-600mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/corsica-gloss-white-wall-hung-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c81577',
-                  path: '../../models/furniture/basin/C81577.glb',
-                  dimensions: { width: 60, height: 51.9, depth: 45 },
-                  floorOffset: 38.4,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C81577',
-                  price: '309.99',
-                  title: 'Corsica Gloss White Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-      {
-          id: 'furniture_variant_42',
-          link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-basin-drawer-vanity-600mm-c82105',
-          name: 'Crete Fluted Apex Oak Wall Hung Basin Drawer Vanity 600mm',
-          price: '159.99',
-          image: 'assets/productImages/furniture/C82105-1000-Fluted-Apex-Oak-Wall-Hung-Basin-Vanity-600mm.webp',
-          variants: [
-              {
-                  id: 'C82105',
-                  name: 'Built-in Basin',
-                  image: 'assets/productImages/furniture/C82105-1000-Fluted-Apex-Oak-Wall-Hung-Basin-Vanity-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-basin-drawer-vanity-600mm-c82105',
-                  path: '../../models/furniture/basin/C82105.glb',
-                  dimensions: { width: 61, height: 57, depth: 46.5 },
-                  floorOffset: 37.2,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C82105',
-                  price: '349.99',
-                  title: 'Crete Fluted Apex Oak Wall Hung Basin Drawer Vanity 600mm'
-              },
-              {
-                  id: 'C82106',
-                  name: 'No Basin',
-                  image: 'assets/productImages/furniture/C82106-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-600mm-excludes-counter-top-basin-c82106',
-                  path: '../../models/furniture/basin/C82106.glb',
-                  dimensions: { width: 61, height: 53.8, depth: 45.5 },
-                  floorOffset: 37.4,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C82106',
-                  price: '369.99',
-                  title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top 600mm - Excludes Counter Top Basin'
-              },
-              {
-                  id: 'C82108',
-                  name: 'Marin Basin',
-                  image: 'assets/productImages/furniture/C82108-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-Basin-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-marin-basin-600mm-c82108',
-                  path: '../../models/furniture/basin/C82108.glb',
-                  dimensions: { width: 61, height: 64.8, depth: 45.5 },
-                  floorOffset: 39.2,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C82108',
-                  price: '327.00',
-                  title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Marin Basin 600mm'
-              },
-              {
-                  id: 'C82107',
-                  name: 'Curved Basin',
-                  image: 'assets/productImages/furniture/C82107-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-Basin-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-curved-basin-600mm-c82107',
-                  path: '../../models/furniture/basin/C82107.glb',
-                  dimensions: { width: 61, height: 67.2, depth: 45.5 },
-                  floorOffset: 37.5,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C82107',
-                  price: '399.99',
-                  title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Curved Basin 600mm'
-              },
-              {
-                  id: 'C82109',
-                  name: 'Cody Basin',
-                  image: 'assets/productImages/furniture/C82109-1000-Fluted-Apex-Oak-Wall-Hung-Vanity-Top-Basin-600mm.webp',
-                  link: 'https://www.bathroommountain.co.uk/crete-fluted-apex-oak-wall-hung-drawer-vanity-with-marble-top-cody-basin-600mm-c82109',
-                  path: '../../models/furniture/basin/C82109.glb',
-                  dimensions: { width: 61, height: 64.8, depth: 45.5 },
-                  floorOffset: 37.3,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  sku: 'C82109',
-                  price: '409.99',
-                  title: 'Crete Fluted Apex Oak Wall Hung Drawer Vanity with Marble Top & Cody Basin 600mm'
-              },
-          ],
-          variantType: 'Width Options',
-          features: ['Multiple Sizes', 'Soft Close Drawers', 'Wall Mounted', 'Ceramic Basin']
-      },
-  ],
-
-  Mirror: [
-    // Mirror Variant 1 (3 variants)
-    {
-      id: 'mirror_variant_1',
-      link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-650x1200mm',
-      name: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker',
-      price: '499.99',
-      image: 'assets/productImages/mirror/73104v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp',
-      variants: [
-        {
-          id: '73189v2',
-          name: '650x1200mm',
-          image: 'assets/productImages/mirror/73189v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp',
-          link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-650x1200mm',
-          path: '../../models/mirror/73189V2.glb',
-          dimensions: { width: 119.8, height: 64.8, depth: 13.8 },
-          floorOffset: 110.1,
-          spawnHeight: 41.9,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: {
-            snapToWall: true,
-            allowVerticalMovement: true, // Vertical placement allowed (0..ceiling)
-            allowFreeRotation: false,
-            minHeight: 0, // Minimum height from floor
-            maxHeight: -1
-          },
-          sku: '73189V2',
-          price: '499.99',
-          title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 650x1200mm'
-        },
-        {
-          id: '73104v2',
-          name: '600x600mm',
-          image: 'assets/productImages/mirror/73104v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_2.webp',
-          link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-600x600mm-73104v2',
-          path: '../../models/mirror/73104V2.glb',
-          dimensions: { width: 59, height: 59.9, depth: 13.5 },
-          floorOffset: 110,
-          spawnHeight: 41.9,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: {
-            snapToWall: true,
-            allowVerticalMovement: true, // Fixed height
-            allowFreeRotation: false,
-            minHeight: 0, // Minimum height from floor
-            maxHeight: -1
-          },
-          sku: '73104V2',
-          price: '239.00',
-          title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x600mm'
-        },
-        {
-          id: '73103v2',
-          name: '600x450mm',
-          image: 'assets/productImages/mirror/73103v2-1000-illuminated-led-mirror-cabinet-with-bluetooth_1_1.webp',
-          link: 'https://www.bathroommountain.co.uk/haisley-illuminated-led-mirror-cabinet-with-bluetooth-speaker-600x450mm',
-          path: '../../models/mirror/73103V2.glb',
-          dimensions: { width: 45, height: 60, depth: 13 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: {
-            snapToWall: true,
-            allowVerticalMovement: true, // Fixed height
-            allowFreeRotation: false,
-          },
-          floorOffset: 0,
-          spawnHeight: 152,
-          sku: '73103V2',
-          price: '207.00',
-          title: 'Haisley Illuminated LED Mirror Cabinet With BLUETOOTH Speaker 600x450mm'
-        }
-      ],
-      variantType: 'Size Options',
-      features: ['LED Lighting', 'Bluetooth Speaker', 'Touch Controls', 'Mirror Cabinet']
-    },
-
-    // Mirror Variant 2 (4 variants)
-    {
-      id: 'mirror_variant_2',
-      link: 'https://www.bathroommountain.co.uk/evelyn-large-illuminated-led-mirror-500x1200mm',
-      name: 'Evelyn Illuminated LED Mirror',
-      price: '139.99',
-      image: 'assets/productImages/mirror/73153v2-1000-evelyn-illuminated-led-mirror-600x400mm_1.webp',
-      variants: [
-        {
-          id: '73035v2',
-          name: '500x1200mm',
-          image: 'assets/productImages/mirror/73035v2-1000-evelyn-large-illuminated-led-mirror-500x1200mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/evelyn-large-illuminated-led-mirror-500x1200mm',
-          dimensions: { width: 119.5, height: 49.9, depth: 5.1 },
-          floorOffset: 99.5,
-          spawnHeight: 52.5,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          path: '../../models/mirror/73035V2.glb',
-          sku: '73035V2',
-          price: '139.99',
-          title: 'Evelyn Large Illuminated LED Mirror 500x1200mm'
-        },
-        {
-          id: '73154v2',
-          name: '500x1000mm',
-          image: 'assets/productImages/mirror/73154v2-1000-evelyn-illuminated-led-mirror-500x1000mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/evelyn-illuminated-led-mirror-500x1000mm-v2',
-          path: '../../models/mirror/73154V2.glb',
-          dimensions: { width: 100, height: 50, depth: 5.3 },
-          floorOffset: 99.5,
-          spawnHeight: 52.5,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: '73154V2',
-          price: '125.99',
-          title: 'Evelyn Illuminated LED Mirror 500x1000mm'
-        },
-        {
-          id: '73153v2',
-          name: '600x400mm',
-          image: 'assets/productImages/mirror/73153v2-1000-evelyn-illuminated-led-mirror-600x400mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/evelyn-illuminated-led-mirror-600x400mm-73153v2',
-          path: '../../models/mirror/73153V2.glb',
-          dimensions: { width: 39.8, height: 59.9, depth: 5.3 },
-          floorOffset: 0,
-          spawnHeight: 152,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: '73153V2',
-          price: '83.99',
-          title: 'Evelyn Illuminated LED Mirror 600x400mm'
-        },
-        {
-          id: '73033v2',
-          name: '700x500mm',
-          image: 'assets/productImages/mirror/73033v2-1000-evelyn-illuminated-led-mirror-700x500mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/evelyn-illuminated-led-mirror-700x500mm-73033v2',
-          path: '../../models/mirror/73033V2.glb',
-          dimensions: { width: 50, height: 70, depth: 5.1 },
-          floorOffset: 99.5,
-          spawnHeight: 52.5,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          sku: '73033V2',
-          price: '97.99',
-          title: 'Evelyn Illuminated LED Mirror 700x500mm'
-        }
-      ],
-      variantType: 'Size Options',
-      features: ['LED Lighting', 'Touch Controls', 'Energy Efficient']
-    }
-  ],
-
-  Radiator: [
-    // Radiator Variant 1 (3 variants)
-    {
-      id: 'radiator_variant_1',
-      link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x560mm-31022',
-      name: 'Faro Anthracite Double Flat Panel Vertical Radiator',
-      price: '289.99',
-      image: 'assets/productImages/radiator/31019-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x350mm_1.webp',
-      variants: [
-        {
-          id: '31022',
-          name: '1600x560mm',
-          image: 'assets/productImages/radiator/31022-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x560mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x560mm-31022',
-          path: '../../models/radiator/31022.glb',
-          dimensions: { width: 65.8, height: 163.2, depth: 11.3 },
-          spawnHeight: -46,
-          floorOffset:61,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: true,
-            allowFreeRotation: false,
-            minHeight: 0,
-            maxHeight: 100
-          },
-          sku: '31022',
-          price: '231.00',
-          title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x560mm'
-        },
-        {
-          id: '31063',
-          name: '1800x560mm',
-          image: 'assets/productImages/radiator/31063-1000-anthracite-double-flat-panel-vertical-radiator-1800x560mm.webp',
-          link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1800x560mm-31063',
-          path: '../../models/radiator/31063.glb',
-          dimensions: { width: 65.8, height: 183.2, depth: 11.3 },
-          spawnHeight: -46,
-          floorOffset: 61,
-          sku: '31063',
-          price: '339.99',
-          title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1800x560mm'
-        },
-        {
-          id: '31019',
-          name: '1600x350mm',
-          image: 'assets/productImages/radiator/31019-1000-Anthracite-Double-Flat-Panel-Vertical-Radiator-1600x350mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/faro-anthracite-double-flat-panel-vertical-radiator-1600x350mm-31019',
-          path: '../../models/radiator/31019.glb',
-          dimensions: { width: 44.8, height: 163, depth: 11.3 },
-          spawnHeight: -46,
-          floorOffset: 61,
-          sku: '31019',
-          price: '209.99',
-          title: 'Faro Anthracite Double Flat Panel Vertical Radiator 1600x350mm'
-        }
-      ],
-      variantType: 'Size Options',
-      features: ['Double Panel', 'Vertical Design', 'High Heat Output']
-    },
-
-    // Radiator Variant 2 (2 variants)
-    {
-      id: 'radiator_variant_2',
-      link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x1190mm',
-      name: 'Faro Matt Black Double Flat Panel Horizontal Radiator',
-      price: '223.00',
-      image: 'assets/productImages/radiator/32124-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x420mm_1.webp',
-      variants: [
-        {
-          id: '32128',
-          name: '600x1190mm',
-          image: 'assets/productImages/radiator/32128-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x1190mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x1190mm',
-          path: '../../models/radiator/32128.glb',
-          dimensions: { width: 128.5, height: 63, depth: 11.3 },
-          spawnHeight: -16,
-          floorOffset: 30.5,
-          sku: '32128',
-          price: '223.00',
-          title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x1190mm'
-        },
-        {
-          id: '32124',
-          name: '600x420mm',
-          image: 'assets/productImages/radiator/32124-1000-Matt-Black-Double-Flat-Panel-Horizontal-Radiator-600x420mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/faro-matt-black-double-flat-panel-horizontal-radiator-600x420mm',
-          path: '../../models/radiator/32124.glb',
-          dimensions: { width: 51.5, height: 63, depth: 11.3 },
-          spawnHeight: -16,
-          floorOffset: 30.5,
-          sku: '32124',
-          price: '87.00',
-          title: 'Faro Matt Black Double Flat Panel Horizontal Radiator 600x420mm'
-        }
-      ],
-      variantType: 'Size Options',
-      features: ['Double Panel', 'Horizontal Design', 'Modern Styling']
-    }
-  ],
-
-  Shower: [
-    // Shower Variant 1 (4 variants)
-    {
-      id: 'shower_variant_1',
-      link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x700mm-c46247',
-      name: 'London Matt Black 6mm Sliding Shower Enclosure',
-      price: '219.99',
-      image: 'assets/productImages/shower/c46006-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x760mm.webp',
-      variants: [
-        {
-          id: 'c46247',
-          name: '1000x700mm',
-          image: 'assets/productImages/shower/C46247-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1000x700mm_3.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x700mm-c46247',
-          path: '../../models/shower/C46247.glb',
-          dimensions: { width: 100.4, height: 185.5, depth: 70 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Corner shower installation'
-          },
-          movement: {
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-              // Uses DefaultCornerObjectRotation from models.ts
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46247',
-          price: '219.99',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x700mm'
-        },
-        {
-          id: 'c46006',
-          name: '1000x760mm',
-          image: 'assets/productImages/shower/c46006-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x760mm.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x760mm-c46006',
-          path: '../../models/shower/C46006.glb',
-          dimensions: { width: 100.4, height: 185.5, depth: 76.1 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Corner shower installation'
-            // rotationOffset: Math.PI // Rotate to face into room
-          },
-          movement: {
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46006',
-          price: '183.00',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x760mm'
-        },
-        {
-          id: 'c46009',
-          name: '1200x800mm',
-          image: 'assets/productImages/shower/C46009-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x800mm_2.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x800mm-c46009',
-          path: '../../models/shower/C46009.glb',
-          dimensions: { width: 120.1, height: 185.5, depth: 80.2 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: {
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46009',
-          price: '203.00',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x800mm'
-        },
-        {
-          id: 'c46175',
-          name: '1400x900mm',
-          image: 'assets/productImages/shower/C46175-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1400x900mm_1_1.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1400x900mm-c46175',
-          path: '../../models/shower/C46175.glb',
-          dimensions: { width: 139.4, height: 185.5, depth: 90 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: {
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46175',
-          price: '289.99',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x900mm'
-        },
-          /////  new models here
-        {
-          id: 'C46007',
-          name: '1000x800mm',
-          image: 'assets/productImages/shower/c46007-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x800mm.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x800mm-c46007',
-          path: '../../models/shower/C46007.glb',
-          dimensions: { width: 96.3, height: 185.3, depth: 77 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: {
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46007',
-          price: '187.00',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x800mm'
-        },
-        {
-          id: 'C46008',
-          name: '1100x800mm',
-          image: 'assets/productImages/shower/c46008-1000-london-matt-black-6mm-sliding-shower-enclosure-1100x800mm.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x800mm-c46008',
-          path: '../../models/shower/C46008.glb',
-          dimensions: { width: 119.4, height: 185.5, depth: 85.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: {
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46008',
-          price: '239.99',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x800mm'
+            id: 'shower_variant_1',
+            link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x700mm-c46247',
+            name: 'London Matt Black 6mm Sliding Shower Enclosure',
+            price: '219.99',
+            image: 'assets/productImages/shower/c46006-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x760mm.webp',
+            variants: [
+                {
+                    id: 'c46247',
+                    name: '1000x700mm',
+                    image: 'assets/productImages/shower/C46247-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1000x700mm_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x700mm-c46247',
+                    path: '../../models/shower/C46247.glb',
+                    dimensions: { width: 100.4, height: 185.5, depth: 70 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                            // Uses DefaultCornerObjectRotation from models.ts
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46247',
+                    price: '219.99',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                {
+                    id: 'c46006',
+                    name: '1000x760mm',
+                    image: 'assets/productImages/shower/c46006-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x760mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x760mm-c46006',
+                    path: '../../models/shower/C46006.glb',
+                    dimensions: { width: 100.4, height: 185.5, depth: 76.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                        // rotationOffset: Math.PI // Rotate to face into room
+                    },
+                    movement: {
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46006',
+                    price: '183.00',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x760mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                {
+                    id: 'c46009',
+                    name: '1200x800mm',
+                    image: 'assets/productImages/shower/C46009-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x800mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x800mm-c46009',
+                    path: '../../models/shower/C46009.glb',
+                    dimensions: { width: 120.1, height: 185.5, depth: 80.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46009',
+                    price: '203.00',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x800mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1200mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                {
+                    id: 'c46175',
+                    name: '1400x900mm',
+                    image: 'assets/productImages/shower/C46175-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1400x900mm_1_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1400x900mm-c46175',
+                    path: '../../models/shower/C46175.glb',
+                    dimensions: { width: 139.4, height: 185.5, depth: 90 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46175',
+                    price: '289.99',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x900mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1400mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                /////  new models here
+                {
+                    id: 'C46007',
+                    name: '1000x800mm',
+                    image: 'assets/productImages/shower/c46007-1000-london-matt-black-6mm-sliding-shower-enclosure-1000x800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1000x800mm-c46007',
+                    path: '../../models/shower/C46007.glb',
+                    dimensions: { width: 96.3, height: 185.3, depth: 77 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46007',
+                    price: '187.00',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1000x800mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                {
+                    id: 'C46008',
+                    name: '1100x800mm',
+                    image: 'assets/productImages/shower/c46008-1000-london-matt-black-6mm-sliding-shower-enclosure-1100x800mm.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x800mm-c46008',
+                    path: '../../models/shower/C46008.glb',
+                    dimensions: { width: 119.4, height: 185.5, depth: 85.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: {
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46008',
+                    price: '239.99',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x800mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1100mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                // {
+                //   id: 'C46010',
+                //   name: '1200x900mm',
+                //   image: 'assets/productImages/shower/C46010-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x900mm_2.webp',
+                //   link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x900mm-c46010',
+                //   path: '../../models/shower/C46010.glb',
+                //   dimensions: { width: 139.4, height: 185.5, depth: 90 },
+                //   orientation: {
+                //     type: 'face_into_room',
+                //     wallBuffer: 0,
+                //     description: 'Corner shower installation'
+                //   },
+                //   movement: { // NEW: Sink movement configuration
+                //     snapToWall: true,
+                //     cornerInstallOnly: {
+                //       enabled: true
+                //     },
+                //     allowVerticalMovement: false,
+                //     allowFreeRotation: false
+                //   },
+                //   sku: 'C46010',
+                //   price: '207.00',
+                //   title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x900mm'
+                // },
+                {
+                    id: 'C46174',
+                    name: '1400x800mm',
+                    image: 'assets/productImages/shower/C46174-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1400x800mm_1_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1400x800mm-c46174',
+                    path: '../../models/shower/C46174.glb',
+                    dimensions: { width: 139.4, height: 185.5, depth: 88.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46174',
+                    price: '223.00',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x800mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1400mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                {
+                    id: 'C46248',
+                    name: '1100x700mm',
+                    image: 'assets/productImages/shower/C46248-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1100x700mm_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x700mm-c46248',
+                    path: '../../models/shower/C46248.glb',
+                    dimensions: { width: 106.3, height: 185.3, depth: 67 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46248',
+                    price: '234.99',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1100mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                {
+                    id: 'C46249',
+                    name: '1100x900mm',
+                    image: 'assets/productImages/shower/C46249-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1100x900mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x900mm-c46249',
+                    path: '../../models/shower/C46249.glb',
+                    dimensions: { width: 106.3, height: 185.3, depth: 87 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46249',
+                    price: '249.99',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x900mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1100mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                {
+                    id: 'C46250',
+                    name: '1200x700mm',
+                    image: 'assets/productImages/shower/C46250-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x700mm_3.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x700mm-c46250',
+                    path: '../../models/shower/C46250.glb',
+                    dimensions: { width: 116.3, height: 185.3, depth: 67 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46250',
+                    price: '244.99',
+                    title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1200mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Matt Black', range: 'London' }
+                },
+                // {
+                //   id: 'C46251',
+                //   name: '1200x760mm',
+                //   image: 'assets/productImages/shower/C46251-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x760mm_3.webp',
+                //   link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x760mm-c46251',
+                //   path: '../../models/shower/C46251.glb',
+                //   dimensions: { width: 139.4, height: 185.5, depth: 90 },
+                //   orientation: {
+                //     type: 'face_into_room',
+                //     wallBuffer: 0,
+                //     description: 'Corner shower installation'
+                //   },
+                //   movement: { // NEW: Sink movement configuration
+                //     snapToWall: true,
+                //     cornerInstallOnly: {
+                //       enabled: true
+                //     },
+                //     allowVerticalMovement: false,
+                //     allowFreeRotation: false
+                //   },
+                //   sku: 'C46251',
+                //   price: '249.99',
+                //   title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x760mm'
+                // },
+            ],
+            variantType: 'Size Options',
+            features: ['Thermostatic Control', 'Dual Outlet', 'Chrome Finish']
         },
         // {
-        //   id: 'C46010',
-        //   name: '1200x900mm',
-        //   image: 'assets/productImages/shower/C46010-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x900mm_2.webp',
-        //   link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x900mm-c46010',
-        //   path: '../../models/shower/C46010.glb',
-        //   dimensions: { width: 139.4, height: 185.5, depth: 90 },
-        //   orientation: {
-        //     type: 'face_into_room',
-        //     wallBuffer: 0,
-        //     description: 'Corner shower installation'
-        //   },
-        //   movement: { // NEW: Sink movement configuration
-        //     snapToWall: true,
-        //     cornerInstallOnly: {
-        //       enabled: true
+        //   id: 'shower_variant_2',
+        //   link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
+        //   name: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower',
+        //   price: '199.00',
+        //   image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //   variants: [
+        //     {
+        //       id: 'C27067',
+        //       name: '300mm + Hand Shower',
+        //       image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //       link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
+        //       path: '../../models/shower/C27067.glb',
+        //       dimensions: { width: 44.2, height: 122.2, depth: 56.3 },
+        //       orientation: {
+        //         type: 'face_into_room',
+        //         wallBuffer: 0, // Flush with wall - no gap
+        //         description: 'Corner shower installation'
+        //       },
+        //       movement: { // NEW: Sink movement configuration
+        //         snapToWall: true,
+        //         cornerInstallOnly: {
+        //           enabled: true
+        //         },
+        //         allowVerticalMovement: false,
+        //         allowFreeRotation: false
+        //       },
+        //       sku: 'C27067',
+        //       price: '199.00',
+        //       title: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower'
         //     },
-        //     allowVerticalMovement: false,
-        //     allowFreeRotation: false
-        //   },
-        //   sku: 'C46010',
-        //   price: '207.00',
-        //   title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x900mm'
+        //   ],
+        //   variantType: 'Size Options',
+        //   features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
+        // },
+        // {
+        //   id: 'shower_variant_3',
+        //   link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
+        //   name: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower',
+        //   price: '259.00',
+        //   image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //   variants: [
+        //     {
+        //       id: 'C27059',
+        //       name: '300mm + Hand Shower',
+        //       image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
+        //       path: '../../models/shower/C27059.glb',
+        //       dimensions: { width: 45.6, height: 162.8, depth: 52.2 },
+        //       floorOffset: 21.5,
+        //       orientation: {
+        //         type: 'face_into_room',
+        //         wallBuffer: 0, // Flush with wall - no gap
+        //         description: 'Corner shower installation'
+        //       },
+        //       movement: { // NEW: Sink movement configuration
+        //         snapToWall: true,
+        //         allowVerticalMovement: false,
+        //         allowFreeRotation: false
+        //       },
+        //       sku: 'C27059',
+        //       price: '259.00',
+        //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower'
+        //     },
+        //     {
+        //       id: 'C27054',
+        //       name: '200mm',
+        //       image: 'assets/productImages/shower/C27054-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
+        //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-c27054',
+        //       path: '../../models/shower/C27054.glb',
+        //       dimensions: { width: 20, height: 85.7, depth: 48.1 },
+        //       floorOffset: 98.6,
+        //       orientation: {
+        //         type: 'face_into_room',
+        //         wallBuffer: 0, // Flush with wall - no gap
+        //         description: 'Corner shower installation'
+        //       },
+        //       movement: { // NEW: Sink movement configuration
+        //         snapToWall: true,
+        //         allowVerticalMovement: false,
+        //         allowFreeRotation: false
+        //       },
+        //       sku: 'C27054',
+        //       price: '199.99',
+        //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head'
+        //     },
+        //     {
+        //       id: 'C27058',
+        //       name: '200mm + Hand Shower',
+        //       image: 'assets/productImages/shower/C27058-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
+        //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-hand-shower-c27058',
+        //       path: '../../models/shower/C27058.glb',
+        //       dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+        //       floorOffset: 40.5,
+        //       orientation: {
+        //         type: 'face_into_room',
+        //         wallBuffer: 0, // Flush with wall - no gap
+        //         description: 'Corner shower installation'
+        //       },
+        //       movement: { // NEW: Sink movement configuration
+        //         snapToWall: true,
+        //         allowVerticalMovement: false,
+        //         allowFreeRotation: false
+        //       },
+        //       sku: 'C27058',
+        //       price: '179.00',
+        //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head & Hand Shower'
+        //     },
+        //     {
+        //       id: 'C27055',
+        //       name: '300mm + Hand Shower',
+        //       image: 'assets/productImages/shower/C27055-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-c27055',
+        //       path: '../../models/shower/C27055.glb',
+        //       dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+        //       floorOffset: 98.6,
+        //       orientation: {
+        //         type: 'face_into_room',
+        //         wallBuffer: 0, // Flush with wall - no gap
+        //         description: 'Corner shower installation'
+        //       },
+        //       movement: { // NEW: Sink movement configuration
+        //         snapToWall: true,
+        //         allowVerticalMovement: false,
+        //         allowFreeRotation: false
+        //       },
+        //       sku: 'C27055',
+        //       price: '219.99',
+        //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head'
+        //     },
+        //   ],
+        //   variantType: 'Size Options',
+        //   features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
         // },
         {
-          id: 'C46174',
-          name: '1400x800mm',
-          image: 'assets/productImages/shower/C46174-1000-London-Matt-Black-6mm-Sliding-Shower-Enclosure-1400x800mm_1_1.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1400x800mm-c46174',
-          path: '../../models/shower/C46174.glb',
-          dimensions: { width: 139.4, height: 185.5, depth: 88.5 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46174',
-          price: '223.00',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1400x800mm'
-        },
-        {
-          id: 'C46248',
-          name: '1100x700mm',
-          image: 'assets/productImages/shower/C46248-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1100x700mm_3.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x700mm-c46248',
-          path: '../../models/shower/C46248.glb',
-          dimensions: { width: 106.3, height: 185.3, depth: 67 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46248',
-          price: '234.99',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x700mm'
-        },
-        {
-          id: 'C46249',
-          name: '1100x900mm',
-          image: 'assets/productImages/shower/C46249-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1100x900mm_1.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1100x900mm-c46249',
-          path: '../../models/shower/C46249.glb',
-          dimensions: { width: 106.3, height: 185.3, depth: 87 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46249',
-          price: '249.99',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1100x900mm'
-        },
-        {
-          id: 'C46250',
-          name: '1200x700mm',
-          image: 'assets/productImages/shower/C46250-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x700mm_3.webp',
-          link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x700mm-c46250',
-          path: '../../models/shower/C46250.glb',
-          dimensions: { width: 116.3, height: 185.3, depth: 67 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0,
-            description: 'Corner shower installation'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C46250',
-          price: '244.99',
-          title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x700mm'
+            id: 'shower_variant_4',
+            link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x800mm-c46004',
+            name: 'London 6mm Sliding Shower Enclosure 1200x800mm',
+            price: '175.00',
+            image: 'assets/productImages/shower/C46004-1000-London-6mm-Sliding-Shower-Enclosure-1200x800mm_1.webp',
+            variants: [
+                {
+                    id: 'C46004',
+                    name: '1200x800mm',
+                    image: 'assets/productImages/shower/C46004-1000-London-6mm-Sliding-Shower-Enclosure-1200x800mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x800mm-c46004',
+                    path: '../../models/shower/C46004.glb',
+                    dimensions: { width: 119.4, height: 185.5, depth: 80.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46004',
+                    price: '175.00',
+                    title: 'London 6mm Sliding Shower Enclosure 1200x800mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1200mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46241',
+                    name: '1000x700mm',
+                    image: 'assets/productImages/shower/C46241-1000-London-6mm-Sliding-Shower-Enclosure-1000x700mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x700mm-c46241',
+                    path: '../../models/shower/C46241.glb',
+                    dimensions: { width: 100.3, height: 185.2, depth: 76.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                        // rotationOffset: Math.PI // Rotate to face into room
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46241',
+                    price: '199.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1000x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46001',
+                    name: '1000x760mm',
+                    image: 'assets/productImages/shower/C46001-1000-London-6mm-Sliding-Shower-Enclosure-1000x760mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x760mm-c46001',
+                    path: '../../models/shower/C46001.glb',
+                    dimensions: { width: 100.3, height: 185.3, depth: 70.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46001',
+                    price: '204.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1000x760mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46002',
+                    name: '1000x800mm',
+                    image: 'assets/productImages/shower/C46002-1000-London-6mm-Sliding-Shower-Enclosure-1000x800mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x800mm-c46002',
+                    path: '../../models/shower/C46002.glb',
+                    dimensions: { width: 100.3, height: 185.3, depth: 80 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46002',
+                    price: '209.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1000x800mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46242',
+                    name: '1100x700mm',
+                    image: 'assets/productImages/shower/C46242-1000-London-6mm-Sliding-Shower-Enclosure-1100x700mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x700mm-c46242',
+                    path: '../../models/shower/C46242.glb',
+                    dimensions: { width: 110.1, height: 185.2, depth: 70.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46242',
+                    price: '204.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1100x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1100mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46243',
+                    name: '1100x760mm',
+                    image: 'assets/productImages/shower/C46243-1000-London-6mm-Sliding-Shower-Enclosure-1100x760mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x760mm-c46243',
+                    path: '../../models/shower/C46243.glb',
+                    dimensions: { width: 110.1, height: 185.2, depth: 76.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46243',
+                    price: '209.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1100x760mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1100mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46003',
+                    name: '1100x800mm',
+                    image: 'assets/productImages/shower/C46003-1000-London-6mm-Sliding-Shower-Enclosure-1100x800mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x800mm-c46003',
+                    path: '../../models/shower/C46003.glb',
+                    dimensions: { width: 110.1, height: 185.3, depth: 80.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46003',
+                    price: '171.00',
+                    title: 'London 6mm Sliding Shower Enclosure 1100x800mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1100mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46244',
+                    name: '1100x900mm',
+                    image: 'assets/productImages/shower/C46244-1000-London-6mm-Sliding-Shower-Enclosure-1100x900mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x900mm-c46244',
+                    path: '../../models/shower/C46244.glb',
+                    dimensions: { width: 110.1, height: 185.2, depth: 90.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46244',
+                    price: '219.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1100x900mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1100mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46245',
+                    name: '1200x700mm',
+                    image: 'assets/productImages/shower/C46245-1000-London-6mm-Sliding-Shower-Enclosure-1200x700mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x700mm-c46245',
+                    path: '../../models/shower/C46245.glb',
+                    dimensions: { width: 119.4, height: 185.5, depth: 69.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46245',
+                    price: '214.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1200x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1200mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46246',
+                    name: '1200x760mm',
+                    image: 'assets/productImages/shower/C46246-1000-London-6mm-Sliding-Shower-Enclosure-1200x760mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x760mm-c46246',
+                    path: '../../models/shower/C46246.glb',
+                    dimensions: { width: 119.4, height: 185.5, depth: 76.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46246',
+                    price: '175.00',
+                    title: 'London 6mm Sliding Shower Enclosure 1200x760mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1200mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46005',
+                    name: '1200x900mm',
+                    image: 'assets/productImages/shower/C46005-1000-London-6mm-Sliding-Shower-Enclosure-1200x900mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x900mm-c46005',
+                    path: '../../models/shower/C46005.glb',
+                    dimensions: { width: 119.4, height: 185.5, depth: 89.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0,
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46005',
+                    price: '234.99',
+                    title: 'London 6mm Sliding Shower Enclosure 1200x900mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1200mm', doorType: 'Sliding', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                }
+            ],
+            variantType: 'Size Options',
+            features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
         },
         // {
-        //   id: 'C46251',
-        //   name: '1200x760mm',
-        //   image: 'assets/productImages/shower/C46251-1000-Matt-Black-6mm-Sliding-Shower-Enclosure-1200x760mm_3.webp',
-        //   link: 'https://www.bathroommountain.co.uk/london-matt-black-6mm-sliding-shower-enclosure-1200x760mm-c46251',
-        //   path: '../../models/shower/C46251.glb',
-        //   dimensions: { width: 139.4, height: 185.5, depth: 90 },
-        //   orientation: {
-        //     type: 'face_into_room',
-        //     wallBuffer: 0,
-        //     description: 'Corner shower installation'
+        //       id: 'shower_variant_5',
+        //       link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
+        //       name: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower',
+        //       price: '199.99',
+        //       image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //       variants: [
+        //           {
+        //               id: 'C27038',
+        //               name: '300mm + Hand Shower',
+        //               image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
+        //               path: '../../models/shower/C27038.glb',
+        //               dimensions: { width: 54, height: 152.9, depth: 53.3 },
+        //               floorOffset: 32,
+        //               orientation: {
+        //                   type: 'face_into_room',
+        //                   wallBuffer: 0, // Flush with wall - no gap
+        //                   description: 'Corner shower installation'
+        //               },
+        //               movement: { // NEW: Sink movement configuration
+        //                   snapToWall: true,
+        //                   allowVerticalMovement: false,
+        //                   allowFreeRotation: false
+        //               },
+        //               sku: 'C27038',
+        //               price: '199.99',
+        //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower'
+        //           },
+        //           {
+        //               id: 'C27032',
+        //               name: '200mm',
+        //               image: 'assets/productImages/shower/C27032-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
+        //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-c27032',
+        //               path: '../../models/shower/C27032.glb',
+        //               dimensions: { width: 20, height: 86.4, depth: 47.5 },
+        //               floorOffset: 98.6,
+        //               orientation: {
+        //                   type: 'face_into_room',
+        //                   wallBuffer: 0, // Flush with wall - no gap
+        //                   description: 'Corner shower installation'
+        //               },
+        //               movement: { // NEW: Sink movement configuration
+        //                   snapToWall: true,
+        //                   allowVerticalMovement: false,
+        //                   allowFreeRotation: false
+        //               },
+        //               sku: 'C27032',
+        //               price: '149.99',
+        //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head'
+        //           },
+        //           {
+        //               id: 'C27036',
+        //               name: '200mm + Hand Shower',
+        //               image: 'assets/productImages/shower/C27036-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
+        //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-hand-shower-c27036',
+        //               path: '../../models/shower/C27036.glb',
+        //               dimensions: { width: 38.4, height: 153, depth: 47.5 },
+        //               floorOffset: 32,
+        //               orientation: {
+        //                   type: 'face_into_room',
+        //                   wallBuffer: 0, // Flush with wall - no gap
+        //                   description: 'Corner shower installation'
+        //               },
+        //               movement: { // NEW: Sink movement configuration
+        //                   snapToWall: true,
+        //                   allowVerticalMovement: false,
+        //                   allowFreeRotation: false
+        //               },
+        //               sku: 'C27036',
+        //               price: '145.00',
+        //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Hand Shower'
+        //           },
+        //           {
+        //               id: 'C27037',
+        //               name: '200mm + Slider Shower',
+        //               image: 'assets/productImages/shower/27037-1000-chrome-square-thermostatic-shower-set-200mm-head.webp',
+        //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-slider-hand-shower-c27037',
+        //               path: '../../models/shower/C27037.glb',
+        //               dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
+        //               floorOffset: 98.6,
+        //               orientation: {
+        //                   type: 'face_into_room',
+        //                   wallBuffer: 0, // Flush with wall - no gap
+        //                   description: 'Corner shower installation'
+        //               },
+        //               movement: { // NEW: Sink movement configuration
+        //                   snapToWall: true,
+        //                   allowVerticalMovement: false,
+        //                   allowFreeRotation: false
+        //               },
+        //               sku: 'C27037',
+        //               price: '199.99',
+        //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Slider Hand Shower'
+        //           },
+        //           {
+        //               id: 'C27033',
+        //               name: '300mm',
+        //               image: 'assets/productImages/shower/C27033-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
+        //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-c27033',
+        //               path: '../../models/shower/C27033.glb',
+        //               dimensions: { width: 30, height: 86.4, depth: 52.5 },
+        //               floorOffset: 98.6,
+        //               orientation: {
+        //                   type: 'face_into_room',
+        //                   wallBuffer: 0, // Flush with wall - no gap
+        //                   description: 'Corner shower installation'
+        //               },
+        //               movement: { // NEW: Sink movement configuration
+        //                   snapToWall: true,
+        //                   allowVerticalMovement: false,
+        //                   allowFreeRotation: false
+        //               },
+        //               sku: 'C27033',
+        //               price: '179.99',
+        //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head'
+        //           },
+        //       ],
+        //       variantType: 'Size Options',
+        //       features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
         //   },
-        //   movement: { // NEW: Sink movement configuration
-        //     snapToWall: true,
-        //     cornerInstallOnly: {
-        //       enabled: true
-        //     },
-        //     allowVerticalMovement: false,
-        //     allowFreeRotation: false
-        //   },
-        //   sku: 'C46251',
-        //   price: '249.99',
-        //   title: 'London Matt Black 6mm Sliding Shower Enclosure 1200x760mm'
-        // },
-      ],
-      variantType: 'Size Options',
-      features: ['Thermostatic Control', 'Dual Outlet', 'Chrome Finish']
-    },
-    // {
-    //   id: 'shower_variant_2',
-    //   link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
-    //   name: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower',
-    //   price: '199.00',
-    //   image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //   variants: [
-    //     {
-    //       id: 'C27067',
-    //       name: '300mm + Hand Shower',
-    //       image: 'assets/productImages/shower/C27067-1000-Black-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //       link: 'https://www.bathroommountain.co.uk/galway-premium-matt-black-square-thermostatic-shower-set-300mm-head-hand-shower-c27067',
-    //       path: '../../models/shower/C27067.glb',
-    //       dimensions: { width: 44.2, height: 122.2, depth: 56.3 },
-    //       orientation: {
-    //         type: 'face_into_room',
-    //         wallBuffer: 0, // Flush with wall - no gap
-    //         description: 'Corner shower installation'
-    //       },
-    //       movement: { // NEW: Sink movement configuration
-    //         snapToWall: true,
-    //         cornerInstallOnly: {
-    //           enabled: true
-    //         },
-    //         allowVerticalMovement: false,
-    //         allowFreeRotation: false
-    //       },
-    //       sku: 'C27067',
-    //       price: '199.00',
-    //       title: 'Galway Premium Matt Black Square Thermostatic Shower Set - 300mm Head & Hand Shower'
-    //     },
-    //   ],
-    //   variantType: 'Size Options',
-    //   features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-    // },
-    // {
-    //   id: 'shower_variant_3',
-    //   link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
-    //   name: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower',
-    //   price: '259.00',
-    //   image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //   variants: [
-    //     {
-    //       id: 'C27059',
-    //       name: '300mm + Hand Shower',
-    //       image: 'assets/productImages/shower/C27059-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-hand-shower-c27059',
-    //       path: '../../models/shower/C27059.glb',
-    //       dimensions: { width: 45.6, height: 162.8, depth: 52.2 },
-    //       floorOffset: 21.5,
-    //       orientation: {
-    //         type: 'face_into_room',
-    //         wallBuffer: 0, // Flush with wall - no gap
-    //         description: 'Corner shower installation'
-    //       },
-    //       movement: { // NEW: Sink movement configuration
-    //         snapToWall: true,
-    //         allowVerticalMovement: false,
-    //         allowFreeRotation: false
-    //       },
-    //       sku: 'C27059',
-    //       price: '259.00',
-    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head & Hand Shower'
-    //     },
-    //     {
-    //       id: 'C27054',
-    //       name: '200mm',
-    //       image: 'assets/productImages/shower/C27054-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
-    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-c27054',
-    //       path: '../../models/shower/C27054.glb',
-    //       dimensions: { width: 20, height: 85.7, depth: 48.1 },
-    //       floorOffset: 98.6,
-    //       orientation: {
-    //         type: 'face_into_room',
-    //         wallBuffer: 0, // Flush with wall - no gap
-    //         description: 'Corner shower installation'
-    //       },
-    //       movement: { // NEW: Sink movement configuration
-    //         snapToWall: true,
-    //         allowVerticalMovement: false,
-    //         allowFreeRotation: false
-    //       },
-    //       sku: 'C27054',
-    //       price: '199.99',
-    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head'
-    //     },
-    //     {
-    //       id: 'C27058',
-    //       name: '200mm + Hand Shower',
-    //       image: 'assets/productImages/shower/C27058-1000-Matt-Black-Round-Thermostatic-Shower-Set-200mm-Head_1.webp',
-    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-200mm-head-hand-shower-c27058',
-    //       path: '../../models/shower/C27058.glb',
-    //       dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
-    //       floorOffset: 40.5,
-    //       orientation: {
-    //         type: 'face_into_room',
-    //         wallBuffer: 0, // Flush with wall - no gap
-    //         description: 'Corner shower installation'
-    //       },
-    //       movement: { // NEW: Sink movement configuration
-    //         snapToWall: true,
-    //         allowVerticalMovement: false,
-    //         allowFreeRotation: false
-    //       },
-    //       sku: 'C27058',
-    //       price: '179.00',
-    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 200mm Head & Hand Shower'
-    //     },
-    //     {
-    //       id: 'C27055',
-    //       name: '300mm + Hand Shower',
-    //       image: 'assets/productImages/shower/C27055-1000-Matt-Black-Round-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //       link: 'https://www.bathroommountain.co.uk/ballina-premium-matt-black-round-thermostatic-shower-set-300mm-head-c27055',
-    //       path: '../../models/shower/C27055.glb',
-    //       dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
-    //       floorOffset: 98.6,
-    //       orientation: {
-    //         type: 'face_into_room',
-    //         wallBuffer: 0, // Flush with wall - no gap
-    //         description: 'Corner shower installation'
-    //       },
-    //       movement: { // NEW: Sink movement configuration
-    //         snapToWall: true,
-    //         allowVerticalMovement: false,
-    //         allowFreeRotation: false
-    //       },
-    //       sku: 'C27055',
-    //       price: '219.99',
-    //       title: 'Ballina Premium Matt Black Round Thermostatic Shower Set - 300mm Head'
-    //     },
-    //   ],
-    //   variantType: 'Size Options',
-    //   features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-    // },
-    {
-          id: 'shower_variant_4',
-          link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x800mm-c46004',
-          name: 'London 6mm Sliding Shower Enclosure 1200x800mm',
-          price: '175.00',
-          image: 'assets/productImages/shower/C46004-1000-London-6mm-Sliding-Shower-Enclosure-1200x800mm_1.webp',
-          variants: [
-              {
-                  id: 'C46004',
-                  name: '1200x800mm',
-                  image: 'assets/productImages/shower/C46004-1000-London-6mm-Sliding-Shower-Enclosure-1200x800mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x800mm-c46004',
-                  path: '../../models/shower/C46004.glb',
-                  dimensions: { width: 119.4, height: 185.5, depth: 80.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46004',
-                  price: '175.00',
-                  title: 'London 6mm Sliding Shower Enclosure 1200x800mm'
-              },
-              {
-                  id: 'C46241',
-                  name: '1000x700mm',
-                  image: 'assets/productImages/shower/C46241-1000-London-6mm-Sliding-Shower-Enclosure-1000x700mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x700mm-c46241',
-                  path: '../../models/shower/C46241.glb',
-                  dimensions: { width: 100.3, height: 185.2, depth: 76.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                      // rotationOffset: Math.PI // Rotate to face into room
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46241',
-                  price: '199.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1000x700mm'
-              },
-              {
-                  id: 'C46001',
-                  name: '1000x760mm',
-                  image: 'assets/productImages/shower/C46001-1000-London-6mm-Sliding-Shower-Enclosure-1000x760mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x760mm-c46001',
-                  path: '../../models/shower/C46001.glb',
-                  dimensions: { width: 100.3, height: 185.3, depth: 70.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46001',
-                  price: '204.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1000x760mm'
-              },
-              {
-                  id: 'C46002',
-                  name: '1000x800mm',
-                  image: 'assets/productImages/shower/C46002-1000-London-6mm-Sliding-Shower-Enclosure-1000x800mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1000x800mm-c46002',
-                  path: '../../models/shower/C46002.glb',
-                  dimensions: { width: 100.3, height: 185.3, depth: 80 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46002',
-                  price: '209.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1000x800mm'
-              },
-              {
-                  id: 'C46242',
-                  name: '1100x700mm',
-                  image: 'assets/productImages/shower/C46242-1000-London-6mm-Sliding-Shower-Enclosure-1100x700mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x700mm-c46242',
-                  path: '../../models/shower/C46242.glb',
-                  dimensions: { width: 110.1, height: 185.2, depth: 70.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46242',
-                  price: '204.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1100x700mm'
-              },
-              {
-                  id: 'C46243',
-                  name: '1100x760mm',
-                  image: 'assets/productImages/shower/C46243-1000-London-6mm-Sliding-Shower-Enclosure-1100x760mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x760mm-c46243',
-                  path: '../../models/shower/C46243.glb',
-                  dimensions: { width: 110.1, height: 185.2, depth: 76.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46243',
-                  price: '209.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1100x760mm'
-              },
-              {
-                  id: 'C46003',
-                  name: '1100x800mm',
-                  image: 'assets/productImages/shower/C46003-1000-London-6mm-Sliding-Shower-Enclosure-1100x800mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x800mm-c46003',
-                  path: '../../models/shower/C46003.glb',
-                  dimensions: { width: 110.1, height: 185.3, depth: 80.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46003',
-                  price: '171.00',
-                  title: 'London 6mm Sliding Shower Enclosure 1100x800mm'
-              },
-              {
-                  id: 'C46244',
-                  name: '1100x900mm',
-                  image: 'assets/productImages/shower/C46244-1000-London-6mm-Sliding-Shower-Enclosure-1100x900mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1100x900mm-c46244',
-                  path: '../../models/shower/C46244.glb',
-                  dimensions: { width: 110.1, height: 185.2, depth: 90.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46244',
-                  price: '219.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1100x900mm'
-              },
-              {
-                  id: 'C46245',
-                  name: '1200x700mm',
-                  image: 'assets/productImages/shower/C46245-1000-London-6mm-Sliding-Shower-Enclosure-1200x700mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x700mm-c46245',
-                  path: '../../models/shower/C46245.glb',
-                  dimensions: { width: 119.4, height: 185.5, depth: 69.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46245',
-                  price: '214.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1200x700mm'
-              },
-              {
-                  id: 'C46246',
-                  name: '1200x760mm',
-                  image: 'assets/productImages/shower/C46246-1000-London-6mm-Sliding-Shower-Enclosure-1200x760mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x760mm-c46246',
-                  path: '../../models/shower/C46246.glb',
-                  dimensions: { width: 119.4, height: 185.5, depth: 76.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46246',
-                  price: '175.00',
-                  title: 'London 6mm Sliding Shower Enclosure 1200x760mm'
-              },
-              {
-                  id: 'C46005',
-                  name: '1200x900mm',
-                  image: 'assets/productImages/shower/C46005-1000-London-6mm-Sliding-Shower-Enclosure-1200x900mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-sliding-shower-enclosure-1200x900mm-c46005',
-                  path: '../../models/shower/C46005.glb',
-                  dimensions: { width: 119.4, height: 185.5, depth: 89.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0,
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46005',
-                  price: '234.99',
-                  title: 'London 6mm Sliding Shower Enclosure 1200x900mm'
-              }
-          ],
-          variantType: 'Size Options',
-          features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-      },
-    // {
-    //       id: 'shower_variant_5',
-    //       link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
-    //       name: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower',
-    //       price: '199.99',
-    //       image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //       variants: [
-    //           {
-    //               id: 'C27038',
-    //               name: '300mm + Hand Shower',
-    //               image: 'assets/productImages/shower/C27038-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-hand-shower-c27038',
-    //               path: '../../models/shower/C27038.glb',
-    //               dimensions: { width: 54, height: 152.9, depth: 53.3 },
-    //               floorOffset: 32,
-    //               orientation: {
-    //                   type: 'face_into_room',
-    //                   wallBuffer: 0, // Flush with wall - no gap
-    //                   description: 'Corner shower installation'
-    //               },
-    //               movement: { // NEW: Sink movement configuration
-    //                   snapToWall: true,
-    //                   allowVerticalMovement: false,
-    //                   allowFreeRotation: false
-    //               },
-    //               sku: 'C27038',
-    //               price: '199.99',
-    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head & Hand Shower'
-    //           },
-    //           {
-    //               id: 'C27032',
-    //               name: '200mm',
-    //               image: 'assets/productImages/shower/C27032-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
-    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-c27032',
-    //               path: '../../models/shower/C27032.glb',
-    //               dimensions: { width: 20, height: 86.4, depth: 47.5 },
-    //               floorOffset: 98.6,
-    //               orientation: {
-    //                   type: 'face_into_room',
-    //                   wallBuffer: 0, // Flush with wall - no gap
-    //                   description: 'Corner shower installation'
-    //               },
-    //               movement: { // NEW: Sink movement configuration
-    //                   snapToWall: true,
-    //                   allowVerticalMovement: false,
-    //                   allowFreeRotation: false
-    //               },
-    //               sku: 'C27032',
-    //               price: '149.99',
-    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head'
-    //           },
-    //           {
-    //               id: 'C27036',
-    //               name: '200mm + Hand Shower',
-    //               image: 'assets/productImages/shower/C27036-1000-Chrome-Square-Thermostatic-Shower-Set-200mm-Head_1.webp',
-    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-hand-shower-c27036',
-    //               path: '../../models/shower/C27036.glb',
-    //               dimensions: { width: 38.4, height: 153, depth: 47.5 },
-    //               floorOffset: 32,
-    //               orientation: {
-    //                   type: 'face_into_room',
-    //                   wallBuffer: 0, // Flush with wall - no gap
-    //                   description: 'Corner shower installation'
-    //               },
-    //               movement: { // NEW: Sink movement configuration
-    //                   snapToWall: true,
-    //                   allowVerticalMovement: false,
-    //                   allowFreeRotation: false
-    //               },
-    //               sku: 'C27036',
-    //               price: '145.00',
-    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Hand Shower'
-    //           },
-    //           {
-    //               id: 'C27037',
-    //               name: '200mm + Slider Shower',
-    //               image: 'assets/productImages/shower/27037-1000-chrome-square-thermostatic-shower-set-200mm-head.webp',
-    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-200mm-head-slider-hand-shower-c27037',
-    //               path: '../../models/shower/C27037.glb',
-    //               dimensions: { width: 41.1, height: 143.8, depth: 47.4 },
-    //               floorOffset: 98.6,
-    //               orientation: {
-    //                   type: 'face_into_room',
-    //                   wallBuffer: 0, // Flush with wall - no gap
-    //                   description: 'Corner shower installation'
-    //               },
-    //               movement: { // NEW: Sink movement configuration
-    //                   snapToWall: true,
-    //                   allowVerticalMovement: false,
-    //                   allowFreeRotation: false
-    //               },
-    //               sku: 'C27037',
-    //               price: '199.99',
-    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 200mm Head & Slider Hand Shower'
-    //           },
-    //           {
-    //               id: 'C27033',
-    //               name: '300mm',
-    //               image: 'assets/productImages/shower/C27033-1000-Chrome-Square-Thermostatic-Shower-Set-300mm-Head_1.webp',
-    //               link: 'https://www.bathroommountain.co.uk/galway-premium-chrome-square-thermostatic-shower-set-300mm-head-c27033',
-    //               path: '../../models/shower/C27033.glb',
-    //               dimensions: { width: 30, height: 86.4, depth: 52.5 },
-    //               floorOffset: 98.6,
-    //               orientation: {
-    //                   type: 'face_into_room',
-    //                   wallBuffer: 0, // Flush with wall - no gap
-    //                   description: 'Corner shower installation'
-    //               },
-    //               movement: { // NEW: Sink movement configuration
-    //                   snapToWall: true,
-    //                   allowVerticalMovement: false,
-    //                   allowFreeRotation: false
-    //               },
-    //               sku: 'C27033',
-    //               price: '179.99',
-    //               title: 'Galway Premium Chrome Square Thermostatic Shower Set - 300mm Head'
-    //           },
-    //       ],
-    //       variantType: 'Size Options',
-    //       features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-    //   },
-      {
-          id: 'shower_variant_6',
-          link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-760x760mm-c46011',
-          name: 'London 6mm Pivot Shower Enclosure 760x760mm',
-          price: '209.99',
-          image: 'assets/productImages/shower/C46011-1000-London-6mm-Pivot-Shower-Enclosure-760x760mm_2.webp',
-          variants: [
-              {
-                  id: 'C46011',
-                  name: '760 x 760mm',
-                  image: 'assets/productImages/shower/C46011-1000-London-6mm-Pivot-Shower-Enclosure-760x760mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-760x760mm-c46011',
-                  path: '../../models/shower/C46011.glb',
-                  dimensions: { width: 76.9, height: 185.2, depth: 76.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46011',
-                  price: '209.99',
-                  title: 'London 6mm Pivot Shower Enclosure 760x760mm'
-              },
-              {
-                  id: 'C46252',
-                  name: '700 x 700mm',
-                  image: 'assets/productImages/shower/C46252-1000-London-6mm-Pivot-Shower-Enclosure-700x700mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-700x700mm-c46252',
-                  path: '../../models/shower/C46252.glb',
-                  dimensions: { width: 76.9, height: 185.2, depth: 76.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46252',
-                  price: '199.99',
-                  title: 'London 6mm Pivot Shower Enclosure 700x700mm'
-              },
-              {
-                  id: 'C46012',
-                  name: '800 x 800mm',
-                  image: 'assets/productImages/shower/C46012-1000-London-6mm-Pivot-Shower-Enclosure-800x800mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-800x800mm-c46012',
-                  path: '../../models/shower/C46012.glb',
-                  dimensions: { width: 79.9, height: 185.2, depth: 79.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46012',
-                  price: '219.99',
-                  title: 'London 6mm Pivot Shower Enclosure 800x800mm'
-              },
-              {
-                  id: 'C46253',
-                  name: '900 x 700',
-                  image: 'assets/productImages/shower/C46253-1000-London-6mm-Pivot-Shower-Enclosure-900x700mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-900x700mm-c46253',
-                  path: '../../models/shower/C46253.glb',
-                  dimensions: { width: 90.9, height: 185.2, depth: 76.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46253',
-                  price: '219.99',
-                  title: 'London 6mm Pivot Shower Enclosure 900x700mm'
-              },
-              {
-                  id: 'C46013',
-                  name: '900 x 900mm',
-                  image: 'assets/productImages/shower/C46013-1000-London-6mm-Pivot-Shower-Enclosure-900x900mm_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-900x900mm-c46013',
-                  path: '../../models/shower/C46013.glb',
-                  dimensions: { width: 91.7, height: 185.2, depth: 91.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46013',
-                  price: '183.00',
-                  title: 'London 6mm Pivot Shower Enclosure 900x900mm'
-              },
-              {
-                  id: 'C46255',
-                  name: '1000 x 700mm',
-                  image: 'assets/productImages/shower/C46255-1000-London-6mm-Pivot-Shower-Enclosure-1000x700mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-1000x700mm-c46255',
-                  path: '../../models/shower/C46255.glb',
-                  dimensions: { width: 101.1, height: 185.2, depth: 76.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46255',
-                  price: '187.00',
-                  title: 'London 6mm Pivot Shower Enclosure 1000x700mm'
-              },
-              {
-                  id: 'C46176',
-                  name: '1000 x 760mm',
-                  image: 'assets/productImages/shower/c46176-1000-london-6mm-pivot-shower-enclosure-1000x760mm_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-1000x760mm-c46176',
-                  path: '../../models/shower/C46176.glb',
-                  dimensions: { width: 101.3, height: 185.2, depth: 83.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Corner shower installation'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      cornerInstallOnly: {
-                          enabled: true
-                      },
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C46176',
-                  price: '239.99',
-                  title: 'London 6mm Pivot Shower Enclosure 1000x760mm'
-              },
-          ],
-          variantType: 'Size Options',
-          features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
-      },
-
-  ],
-
-  Bath: [
-    // Bath Variant 1 (3 variants)
-    {
-      id: 'bath_variant_1',
-      link: 'https://www.bathroommountain.co.uk/newham-1370mm-freestanding-bath-c51096',
-      name: 'Newham Freestanding Bath',
-      price: '479.99',
-      image: 'assets/productImages/bath/C51092-1000-Newham-V2-1500mm-Freestanding-Bath_6.webp',
-      variants: [
         {
-          id: 'c51096',
-          name: '1370mm Length',
-          image: 'assets/productImages/bath/C51096-1000-Newham-1370mm-Freestanding-Bath_1.webp',
-          link: 'https://www.bathroommountain.co.uk/newham-1370mm-freestanding-bath-c51096',
-          path: '../../models/bath/C51096.glb',
-          dimensions: { width: 136.9, height: 55, depth: 72.9 },
-          orientation: {
-            type: 'face_into_room',
-            description: 'Freestanding bath with buffer from wall'
-          },
-          movement: {
-            snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: true
-          },
-          sku: 'C51096',
-          price: '479.99',
-          title: 'Newham 1370mm Freestanding Bath'
+            id: 'shower_variant_6',
+            link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-760x760mm-c46011',
+            name: 'London 6mm Pivot Shower Enclosure 760x760mm',
+            price: '209.99',
+            image: 'assets/productImages/shower/C46011-1000-London-6mm-Pivot-Shower-Enclosure-760x760mm_2.webp',
+            variants: [
+                {
+                    id: 'C46011',
+                    name: '760 x 760mm',
+                    image: 'assets/productImages/shower/C46011-1000-London-6mm-Pivot-Shower-Enclosure-760x760mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-760x760mm-c46011',
+                    path: '../../models/shower/C46011.glb',
+                    dimensions: { width: 76.9, height: 185.2, depth: 76.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46011',
+                    price: '209.99',
+                    title: 'London 6mm Pivot Shower Enclosure 760x760mm',
+                    filterAttributes: { shape: 'Square', width: '800mm', doorType: 'Pivot', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46252',
+                    name: '700 x 700mm',
+                    image: 'assets/productImages/shower/C46252-1000-London-6mm-Pivot-Shower-Enclosure-700x700mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-700x700mm-c46252',
+                    path: '../../models/shower/C46252.glb',
+                    dimensions: { width: 76.9, height: 185.2, depth: 76.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46252',
+                    price: '199.99',
+                    title: 'London 6mm Pivot Shower Enclosure 700x700mm',
+                    filterAttributes: { shape: 'Square', width: '700mm', doorType: 'Pivot', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46012',
+                    name: '800 x 800mm',
+                    image: 'assets/productImages/shower/C46012-1000-London-6mm-Pivot-Shower-Enclosure-800x800mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-800x800mm-c46012',
+                    path: '../../models/shower/C46012.glb',
+                    dimensions: { width: 79.9, height: 185.2, depth: 79.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46012',
+                    price: '219.99',
+                    title: 'London 6mm Pivot Shower Enclosure 800x800mm',
+                    filterAttributes: { shape: 'Square', width: '800mm', doorType: 'Pivot', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46253',
+                    name: '900 x 700',
+                    image: 'assets/productImages/shower/C46253-1000-London-6mm-Pivot-Shower-Enclosure-900x700mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-900x700mm-c46253',
+                    path: '../../models/shower/C46253.glb',
+                    dimensions: { width: 90.9, height: 185.2, depth: 76.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46253',
+                    price: '219.99',
+                    title: 'London 6mm Pivot Shower Enclosure 900x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '900mm', doorType: 'Pivot', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46013',
+                    name: '900 x 900mm',
+                    image: 'assets/productImages/shower/C46013-1000-London-6mm-Pivot-Shower-Enclosure-900x900mm_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-900x900mm-c46013',
+                    path: '../../models/shower/C46013.glb',
+                    dimensions: { width: 91.7, height: 185.2, depth: 91.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46013',
+                    price: '183.00',
+                    title: 'London 6mm Pivot Shower Enclosure 900x900mm',
+                    filterAttributes: { shape: 'Square', width: '900mm', doorType: 'Pivot', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46255',
+                    name: '1000 x 700mm',
+                    image: 'assets/productImages/shower/C46255-1000-London-6mm-Pivot-Shower-Enclosure-1000x700mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-1000x700mm-c46255',
+                    path: '../../models/shower/C46255.glb',
+                    dimensions: { width: 101.1, height: 185.2, depth: 76.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46255',
+                    price: '187.00',
+                    title: 'London 6mm Pivot Shower Enclosure 1000x700mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Pivot', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+                {
+                    id: 'C46176',
+                    name: '1000 x 760mm',
+                    image: 'assets/productImages/shower/c46176-1000-london-6mm-pivot-shower-enclosure-1000x760mm_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/london-6mm-pivot-shower-enclosure-1000x760mm-c46176',
+                    path: '../../models/shower/C46176.glb',
+                    dimensions: { width: 101.3, height: 185.2, depth: 83.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Corner shower installation'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C46176',
+                    price: '239.99',
+                    title: 'London 6mm Pivot Shower Enclosure 1000x760mm',
+                    filterAttributes: { shape: 'Rectangular', width: '1000mm', doorType: 'Pivot', glassThickness: '6mm', frameType: 'Framed', frameFinish: 'Chrome', range: 'London' }
+                },
+            ],
+            variantType: 'Size Options',
+            features: ['Thermostatic Control', 'Dual Outlet', 'Matt Black Finish']
         },
-        {
-          id: 'c51092',
-          name: '1500mm Length',
-          image: 'assets/productImages/bath/C51092-1000-Newham-V2-1500mm-Freestanding-Bath_6.webp',
-          link: 'https://www.bathroommountain.co.uk/newham-v2-1500mm-freestanding-bath-c51092',
-          path: '../../models/bath/C51092.glb',
-          dimensions: { width: 151.7, height: 57.9, depth: 74.8 },
-          orientation: {
-            type: 'face_into_room',
-            description: 'Freestanding bath with buffer from wall'
-          },
-          movement: {
-            snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: true
-          },
-          sku: 'C51092',
-          price: '399.00',
-          title: 'Newham 1500mm Freestanding Bath'
-        },
-        {
-          id: 'c51093',
-          name: '1700mm Length',
-          image: 'assets/productImages/bath/C51093-1000-Newham-V2-1700mm-Freestanding-Bath_6.webp',
-          link: 'https://www.bathroommountain.co.uk/newham-v2-1700mm-freestanding-bath-c51093',
-          path: '../../models/bath/C51093.glb',
-          dimensions: { width: 169.7, height: 58, depth: 77.8 },
-          orientation: {
-            type: 'face_into_room',
-            description: 'Freestanding bath with buffer from wall'
-          },
-          movement: {
-            snapToWall: false,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west',
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: true
-          },
-          sku: 'C51093',
-          price: '499.99',
-          title: 'Newham 1700mm Freestanding Bath'
-        }
-      ],
-      variantType: 'Length Options',
-      features: ['Freestanding Design', 'Acrylic Construction', 'Modern Shape']
-    },
 
-    // Bath 2 (1 variant)
-    {
-      id: 'bath_2',
-      link: 'https://www.bathroommountain.co.uk/l-shaped-1700-shower-bath-with-front-panel-6mm-easy-clean-brushed-brass-bath-screen-right-handed-c57499',
-      name: 'L Shaped 1700 Shower Bath with Front Panel & Bath Screen',
-      price: '489.99',
-      image: 'assets/productImages/bath/C57499-1000-L-Shaped-Shower-Bath-Front-Panel-Bath-Screen-Right.webp',
-      variants: [
+    ],
+
+    Bath: [
+        // Bath Variant 1 (3 variants)
         {
-          id: 'c57499',
-          name: 'Right Handed',
-          image: 'assets/productImages/bath/C57499-1000-L-Shaped-Shower-Bath-Front-Panel-Bath-Screen-Right.webp',
-          link: 'https://www.bathroommountain.co.uk/l-shaped-1700-shower-bath-with-front-panel-6mm-easy-clean-brushed-brass-bath-screen-right-handed-c57499',
-          path: '../../models/bath/C57499.glb',
-          dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            cornerInstallOnly: {
-              enabled: true,
-              preferredCorner: 'north-west', // Default spawn corner for this right-handed bath
-              rotation: {
-                'north-west': 0,
-                'north-east': -Math.PI / 2,
-                'south-east': Math.PI,
-                'south-west': Math.PI / 2
-              }
-            },
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C57499',
-          price: '489.99',
-          title: 'L Shaped 1700 Shower Bath with Front Panel & 6mm Easy Clean Brushed Brass Bath Screen - Right Handed'
-        }
-      ],
-      variantType: 'Orientation',
-      features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
-    },
+            id: 'bath_variant_1',
+            link: 'https://www.bathroommountain.co.uk/newham-1370mm-freestanding-bath-c51096',
+            name: 'Newham Freestanding Bath',
+            price: '479.99',
+            image: 'assets/productImages/bath/C51092-1000-Newham-V2-1500mm-Freestanding-Bath_6.webp',
+            variants: [
+                {
+                    id: 'c51096',
+                    name: '1370mm Length',
+                    image: 'assets/productImages/bath/C51096-1000-Newham-1370mm-Freestanding-Bath_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/newham-1370mm-freestanding-bath-c51096',
+                    path: '../../models/bath/C51096.glb',
+                    dimensions: { width: 136.9, height: 55, depth: 72.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        description: 'Freestanding bath with buffer from wall'
+                    },
+                    movement: {
+                        snapToWall: false,
+                        cornerInstallOnly: false,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: true
+                    },
+                    sku: 'C51096',
+                    price: '479.99',
+                    title: 'Newham 1370mm Freestanding Bath',
+                    filterAttributes: { length: '1370mm', width: '730mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+                },
+                {
+                    id: 'c51092',
+                    name: '1500mm Length',
+                    image: 'assets/productImages/bath/C51092-1000-Newham-V2-1500mm-Freestanding-Bath_6.webp',
+                    link: 'https://www.bathroommountain.co.uk/newham-v2-1500mm-freestanding-bath-c51092',
+                    path: '../../models/bath/C51092.glb',
+                    dimensions: { width: 151.7, height: 57.9, depth: 74.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        description: 'Freestanding bath with buffer from wall'
+                    },
+                    movement: {
+                        snapToWall: false,
+                        cornerInstallOnly: false,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: true
+                    },
+                    sku: 'C51092',
+                    price: '399.00',
+                    title: 'Newham 1500mm Freestanding Bath',
+                    filterAttributes: { length: '1500mm', width: '750mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+                },
+                {
+                    id: 'c51093',
+                    name: '1700mm Length',
+                    image: 'assets/productImages/bath/C51093-1000-Newham-V2-1700mm-Freestanding-Bath_6.webp',
+                    link: 'https://www.bathroommountain.co.uk/newham-v2-1700mm-freestanding-bath-c51093',
+                    path: '../../models/bath/C51093.glb',
+                    dimensions: { width: 169.7, height: 58, depth: 77.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        description: 'Freestanding bath with buffer from wall'
+                    },
+                    movement: {
+                        snapToWall: false,
+                        cornerInstallOnly: false,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: true
+                    },
+                    sku: 'C51093',
+                    price: '499.99',
+                    title: 'Newham 1700mm Freestanding Bath',
+                    filterAttributes: { length: '1700mm', width: '780mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+                }
+            ],
+            variantType: 'Length Options',
+            features: ['Freestanding Design', 'Acrylic Construction', 'Modern Shape']
+        },
+
+        // Bath 2 (1 variant)
+        {
+            id: 'bath_2',
+            link: 'https://www.bathroommountain.co.uk/l-shaped-1700-shower-bath-with-front-panel-6mm-easy-clean-brushed-brass-bath-screen-right-handed-c57499',
+            name: 'L Shaped 1700 Shower Bath with Front Panel & Bath Screen',
+            price: '489.99',
+            image: 'assets/productImages/bath/C57499-1000-L-Shaped-Shower-Bath-Front-Panel-Bath-Screen-Right.webp',
+            variants: [
+                {
+                    id: 'c57499',
+                    name: 'Right Handed',
+                    image: 'assets/productImages/bath/C57499-1000-L-Shaped-Shower-Bath-Front-Panel-Bath-Screen-Right.webp',
+                    link: 'https://www.bathroommountain.co.uk/l-shaped-1700-shower-bath-with-front-panel-6mm-easy-clean-brushed-brass-bath-screen-right-handed-c57499',
+                    path: '../../models/bath/C57499.glb',
+                    dimensions: { width: 173.3, height: 195.4, depth: 85.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        cornerInstallOnly: {
+                            enabled: true,
+                            preferredCorner: 'north-west', // Default spawn corner for this right-handed bath
+                            rotation: {
+                                'north-west': 0,
+                                'north-east': -Math.PI / 2,
+                                'south-east': Math.PI,
+                                'south-west': Math.PI / 2
+                            }
+                        },
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C57499',
+                    price: '489.99',
+                    title: 'L Shaped 1700 Shower Bath with Front Panel & 6mm Easy Clean Brushed Brass Bath Screen - Right Handed',
+                    filterAttributes: { length: '1700mm', width: '850mm', type: 'Shower Bath', finish: 'White', style: 'Modern', handed: 'Right Hand' }
+                }
+            ],
+            variantType: 'Orientation',
+            features: ['L-Shaped Design', 'Shower Screen Included', 'Front Panel Included']
+        },
 
     {
       id: 'bath_3',
@@ -4397,7 +7038,8 @@ const productData: ProductData = {
           },
           sku: 'C51089',
           price: '599.99',
-          title: 'Kensington 1700mm Freestanding Slipper Bath'
+          title: 'Kensington 1700mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1700mm', width: '730mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
         {
           id: 'C51098',
@@ -4427,7 +7069,8 @@ const productData: ProductData = {
           },
           sku: 'C51098',
           price: '579.99',
-          title: 'Kensington 1370mm Freestanding Slipper Bath'
+          title: 'Kensington 1370mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1370mm', width: '717mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
         {
           id: 'C51088',
@@ -4457,7 +7100,8 @@ const productData: ProductData = {
           },
           sku: 'C51088',
           price: '589.99',
-          title: 'Kensington 1500mm Freestanding Slipper Bath'
+          title: 'Kensington 1500mm Freestanding Slipper Bath',
+          filterAttributes: { length: '1500mm', width: '731mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
         },
       ],
       variantType: 'Orientation',
@@ -4500,7 +7144,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53017',
                   price: '125.00',
-                  title: 'Stafford 1700x700 Round Single Ended bath'
+                  title: 'Stafford 1700x700 Round Single Ended bath',
+                  filterAttributes: { length: '1700mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53014',
@@ -4531,7 +7176,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53014',
                   price: '139.99',
-                  title: 'Stafford 1400x700 Round Single Ended Bath'
+                  title: 'Stafford 1400x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1400mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53015',
@@ -4562,7 +7208,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53015',
                   price: '139.99',
-                  title: 'Stafford 1500x700 Round Single Ended Bath'
+                  title: 'Stafford 1500x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1500mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53016',
@@ -4593,7 +7240,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53016',
                   price: '139.99',
-                  title: 'Stafford 1600x700 Round Single Ended Bath'
+                  title: 'Stafford 1600x700 Round Single Ended Bath',
+                  filterAttributes: { length: '1600mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
           ],
           variantType: 'Size Options',
@@ -4635,7 +7283,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53018',
                   price: '129.00',
-                  title: 'Hereford 1500x700 Square Single Ended Bath'
+                  title: 'Hereford 1500x700 Square Single Ended Bath',
+                  filterAttributes: { length: '1500mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53019',
@@ -4666,7 +7315,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53019',
                   price: '159.99',
-                  title: 'Hereford 1600x700 Square Single Ended Bath'
+                  title: 'Hereford 1600x700 Square Single Ended Bath',
+                  filterAttributes: { length: '1600mm', width: '700mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53021',
@@ -4697,7 +7347,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53021',
                   price: '184.99',
-                  title: 'Hereford 1700x750 Square Single Ended Bath'
+                  title: 'Hereford 1700x750 Square Single Ended Bath',
+                  filterAttributes: { length: '1700mm', width: '750mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
               {
                   id: 'C53022',
@@ -4728,7 +7379,8 @@ const productData: ProductData = {
                   },
                   sku: 'C53022',
                   price: '209.99',
-                  title: 'Hereford 1800x800 Square Single Ended Bath'
+                  title: 'Hereford 1800x800 Square Single Ended Bath',
+                  filterAttributes: { length: '1800mm', width: '800mm', type: 'Single Ended', finish: 'White', style: 'Modern', handed: 'N/A' }
               },
           ],
           variantType: 'Orientation',
@@ -4769,7 +7421,8 @@ const productData: ProductData = {
                   },
                   sku: 'C51090',
                   price: '449.00',
-                  title: 'Richmond 1500mm Freestanding Slipper Bath'
+                  title: 'Richmond 1500mm Freestanding Slipper Bath',
+                  filterAttributes: { length: '1500mm', width: '712mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
               },
               {
                   id: 'C51097',
@@ -4799,7 +7452,8 @@ const productData: ProductData = {
                   },
                   sku: 'C51097',
                   price: '439.99',
-                  title: 'Richmond 1370mm Freestanding Slipper Bath'
+                  title: 'Richmond 1370mm Freestanding Slipper Bath',
+                  filterAttributes: { length: '1370mm', width: '712mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
               },
               {
                   id: 'C51091',
@@ -4829,1332 +7483,2700 @@ const productData: ProductData = {
                   },
                   sku: 'C51091',
                   price: '579.99',
-                  title: 'Richmond 1700mm Freestanding Slipper Bath'
+                  title: 'Richmond 1700mm Freestanding Slipper Bath',
+                  filterAttributes: { length: '1700mm', width: '731mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
               },
           ],
           variantType: 'Orientation',
         features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
       },
+    {
+      id: 'bath_7',
+      link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-white-freestanding-bath-51125',
+      name: 'Ealing 1500mm Matt White Freestanding Bath',
+      price: '749.99',
+      image: 'assets/productImages/bath/51125-1000-Ealing-1500mm-Matt-White-Freestanding-Bath_2.webp',
+      variants: [
+        {
+          id: '51125',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51125-1000-Ealing-1500mm-Matt-White-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-white-freestanding-bath-51125',
+          path: '../../models/bath/51125.glb',
+          dimensions: { width: 149.7, height: 58, depth: 79.7 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51125',
+          price: '749.99',
+          title: 'Ealing 1500mm Matt White Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '797mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
+        },
+        {
+          id: '51126',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51126-1000-Ealing-1700mm-Matt-White-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1700mm-matt-white-freestanding-bath-51126',
+          path: '../../models/bath/51126.glb',
+          dimensions: { width: 170.1, height: 62.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51126',
+          price: '799.99',
+          title: 'Ealing 1700mm Matt White Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_8',
+      link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-black-freestanding-bath-51127',
+      name: 'Ealing 1500mm Matt Black Freestanding Bath',
+      price: '679.99',
+      image: 'assets/productImages/bath/51127-1000-Ealing-1500mm-Matt-Black-Freestanding-Bath_2.webp',
+      variants: [
+        {
+          id: '51127',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51127-1000-Ealing-1500mm-Matt-Black-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1500mm-matt-black-freestanding-bath-51127',
+          path: '../../models/bath/51127.glb',
+          dimensions: { width: 149.7, height: 58, depth: 79.7 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51127',
+          price: '679.99',
+          title: 'Ealing 1500mm Matt Black Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '797mm', type: 'Freestanding', finish: 'Matt Black', style: 'Modern', handed: 'N/A' }
+        },
+        {
+          id: '51128',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51128-1000-Ealing-1700mm-Matt-Black-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/ealing-1700mm-matt-black-freestanding-bath-51128',
+          path: '../../models/bath/51128.glb',
+          dimensions: { width: 170.1, height: 62.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51128',
+          price: '719.99',
+          title: 'Ealing 1700mm Matt Black Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '730mm', type: 'Freestanding', finish: 'Matt Black', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_9',
+      link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-freestanding-bath-51129',
+      name: 'Finchley 1500mm Fluted Freestanding Bath',
+      price: '495.99',
+      image: 'assets/productImages/bath/51129-1000-Finchley-1500mm-Fluted-Freestanding-Bath_2.webp',
+      variants: [
+        {
+          id: '51129',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51129-1000-Finchley-1500mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-freestanding-bath-51129',
+          path: '../../models/bath/51129.glb',
+          dimensions: { width: 150, height: 58.5, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51129',
+          price: '495.99',
+          title: 'Finchley 1700mm Fluted Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+        },
+        {
+          id: '51130',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51130-1000-Finchley-1700mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1700mm-fluted-freestanding-bath-51130',
+          path: '../../models/bath/51130.glb',
+          dimensions: { width: 170, height: 58.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51130',
+          price: '639.99',
+          title: 'Finchley 1700mm Fluted Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_10',
+      link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-back-to-wall-bath-51131',
+      name: 'Finchley 1500mm Fluted Back To Wall Bath',
+      price: '495.99',
+      image: 'assets/productImages/bath/51131-1000-Finchley-1500mm-Fluted-Back-To-Wall-Bath_2.webp',
+      variants: [
+        {
+          id: '51131',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51131-1000-Finchley-1500mm-Fluted-Back-To-Wall-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1500mm-fluted-back-to-wall-bath-51131',
+          path: '../../models/bath/51131.glb',
+          dimensions: { width: 150, height: 58.5, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: '51131',
+          price: '495.99',
+          title: 'Finchley 1500mm Fluted Back To Wall Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Back To Wall', finish: 'White', style: 'Modern', handed: 'N/A' }
+        },
+        {
+          id: '51132',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51132-1000-Finchley-1700mm-Fluted-Back-To-Wall-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/finchley-1700mm-fluted-back-to-wall-bath-51132',
+          path: '../../models/bath/51132.glb',
+          dimensions: { width: 170, height: 58.5, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51132',
+          price: '639.99',
+          title: 'Finchley 1700mm Fluted Back To Wall Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Back To Wall', finish: 'White', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_11',
+      link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-freestanding-bath-51137',
+      name: 'Brent 1500mm Fluted Matt White Freestanding Bath',
+      price: '749.99',
+      image: 'assets/productImages/bath/51137-1000-Brent-1500mm-Fluted-Freestanding-Bath_2.webp',
+      variants: [
+        {
+          id: '51137',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51137-1000-Brent-1500mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-freestanding-bath-51137',
+          path: '../../models/bath/51137.glb',
+          dimensions: { width: 150, height: 60, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51137',
+          price: '749.99',
+          title: 'Brent 1500mm Fluted Matt White Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
+        },
+        {
+          id: '51138',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51138-1000-Brent-1700mm-Fluted-Freestanding-Bath_2.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1700mm-fluted-matt-white-freestanding-bath-51138',
+          path: '../../models/bath/51138.glb',
+          dimensions: { width: 170, height: 60, depth: 80 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51138',
+          price: '639.99',
+          title: 'Brent 1700mm Fluted Matt White Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '800mm', type: 'Freestanding', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_12',
+      link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-back-to-wall-bath-51139',
+      name: 'Brent 1500mm Fluted Matt White Back To Wall Bath',
+      price: '749.99',
+      image: 'assets/productImages/bath/51139-1000-Brent-1500mm-Fluted-Back-To-Wall-Bath_1.webp',
+      variants: [
+        {
+          id: '51139',
+          name: '1500mm',
+          image: 'assets/productImages/bath/51139-1000-Brent-1500mm-Fluted-Back-To-Wall-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1500mm-fluted-matt-white-back-to-wall-bath-51139',
+          path: '../../models/bath/51139.glb',
+          dimensions: { width: 150, height: 58, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: true,
+            allowVerticalMovement: false,
+            allowFreeRotation: false
+          },
+          sku: '51139',
+          price: '749.99',
+          title: 'Brent 1500mm Fluted Matt White Back To Wall Bath',
+          filterAttributes: { length: '1500mm', width: '750mm', type: 'Back To Wall', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
+        },
+        {
+          id: '51140',
+          name: '1700mm',
+          image: 'assets/productImages/bath/51140-1000-Brent-1700mm-Fluted-Back-To-Wall-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/brent-1700mm-fluted-matt-white-back-to-wall-bath-51140',
+          path: '../../models/bath/51140.glb',
+          dimensions: { width: 170, height: 58, depth: 78 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: '51140',
+          price: '639.99',
+          title: 'Brent 1700mm Fluted Matt White Back To Wall Bath',
+          filterAttributes: { length: '1700mm', width: '780mm', type: 'Back To Wall', finish: 'Matt White', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_13',
+      link: 'https://www.bathroommountain.co.uk/belvoir-1700-fluted-freestanding-bath-c59005',
+      name: 'Belvoir 1700 Fluted Freestanding Bath',
+      price: '455.99',
+      image: 'assets/productImages/bath/C59005-1000-Belvoir-1700-Fluted-Freestanding-Bath_1.webp',
+      variants: [
+        {
+          id: 'C59005',
+          name: '1700',
+          image: 'assets/productImages/bath/C59005-1000-Belvoir-1700-Fluted-Freestanding-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/belvoir-1700-fluted-freestanding-bath-c59005',
+          path: '../../models/bath/C59005.glb',
+          dimensions: { width: 169.9, height: 58, depth: 78 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59005',
+          price: '455.99',
+          title: 'Belvoir 1700 Fluted Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '780mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_14',
+      link: 'https://www.bathroommountain.co.uk/somer-1500-freestanding-bath-c59006',
+      name: 'Somer 1500 Freestanding Bath',
+      price: '569.99',
+      image: 'assets/productImages/bath/C59006-1000-Somer-1500-Freestanding-Bath_1.webp',
+      variants: [
+        {
+          id: 'C59006',
+          name: '1500',
+          image: 'assets/productImages/bath/C59006-1000-Somer-1500-Freestanding-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/somer-1500-freestanding-bath-c59006',
+          path: '../../models/bath/C59006.glb',
+          dimensions: { width: 149.5, height: 67.7, depth: 77.7 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59006',
+          price: '569.99',
+          title: 'Somer 1500 Freestanding Bath',
+          filterAttributes: { length: '1500mm', width: '777mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+        },
+        {
+          id: 'C59007',
+          name: '1700',
+          image: 'assets/productImages/bath/C59007-1000-Somer-1700-Freestanding-Bath_1.webp',
+          link: 'https://www.bathroommountain.co.uk/somer-1700-freestanding-bath-c59007',
+          path: '../../models/bath/C59007.glb',
+          dimensions: { width: 169.5, height: 67.7, depth: 77.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59007',
+          price: '599.99',
+          title: 'Somer 1700 Freestanding Bath',
+          filterAttributes: { length: '1700mm', width: '778mm', type: 'Freestanding', finish: 'White', style: 'Modern', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_15',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-chrome-feet-c59008',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59008-1000-Gloss-White-1700-Freestanding-Bath-Chrome-Feet_1.webp',
+      variants: [
+        {
+          id: 'C59008',
+          name: '1700',
+          image: 'assets/productImages/bath/C59008-1000-Gloss-White-1700-Freestanding-Bath-Chrome-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-chrome-feet-c59008',
+          path: '../../models/bath/C59008.glb',
+          dimensions: { width: 170, height: 51.6, depth: 75 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59008',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Chrome Feet',
+          filterAttributes: { length: '1700mm', width: '750mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_16',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gunmetal-feet-c59009',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59009-1000-Gloss-White-1700-Freestanding-Bath-Gummetal-Feet_1.webp',
+      variants: [
+        {
+          id: 'C59009',
+          name: '1700',
+          image: 'assets/productImages/bath/C59009-1000-Gloss-White-1700-Freestanding-Bath-Gummetal-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gunmetal-feet-c59009',
+          path: '../../models/bath/C59009.glb',
+          dimensions: { width: 170, height: 60.6, depth: 83 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59009',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Gunmetal Feet',
+          filterAttributes: { length: '1700mm', width: '830mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_17',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-matt-black-feet-c59010',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59010-1000-Gloss-White-1700-Freestanding-Bath-Matt-Black-Feet_1.webp',
+      variants: [
+        {
+          id: 'C59010',
+          name: '1700',
+          image: 'assets/productImages/bath/C59010-1000-Gloss-White-1700-Freestanding-Bath-Matt-Black-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-matt-black-feet-c59010',
+          path: '../../models/bath/C59010.glb',
+          dimensions: { width: 170, height: 60.6, depth: 83 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59010',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Matt Black Feet',
+          filterAttributes: { length: '1700mm', width: '830mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_18',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gold-feet-c59011',
+      name: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet',
+      price: '679.99',
+      image: 'assets/productImages/bath/C59011-1000-Gloss-White-1700-Freestanding-Bath-Brushed-Brass_1.webp',
+      variants: [
+        {
+          id: 'C59011',
+          name: '1700',
+          image: 'assets/productImages/bath/C59011-1000-Gloss-White-1700-Freestanding-Bath-Brushed-Brass_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-gloss-white-freestanding-bath-gold-feet-c59011',
+          path: '../../models/bath/C59011.glb',
+          dimensions: { width: 170, height: 60.6, depth: 83 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59011',
+          price: '679.99',
+          title: 'Shore 1700 Gloss White Freestanding Bath - Gold Feet',
+          filterAttributes: { length: '1700mm', width: '830mm', type: 'Freestanding', finish: 'Gloss White', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_19',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-white-freestanding-bath-chrome-feet-c59012',
+      name: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet',
+      price: '899.99',
+      image: 'assets/productImages/bath/C59012-1000-1700-Matt-White-Freestanding-Bath-Chrome-Feet_1.webp',
+      variants: [
+        {
+          id: 'C59012',
+          name: '1700',
+          image: 'assets/productImages/bath/C59012-1000-1700-Matt-White-Freestanding-Bath-Chrome-Feet_1.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-white-freestanding-bath-chrome-feet-c59012',
+          path: '../../models/bath/C59012.glb',
+          dimensions: { width: 170, height: 60.6, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59012',
+          price: '899.99',
+          title: 'Shore 1700 Matt White Freestanding Bath - Chrome Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt White', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_20',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-chrome-feet-c59020',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/C59020-1000-Shore-1700-Green-Freestanding-Bath-Chrome-Feet.webp',
+      variants: [
+        {
+          id: 'C59020',
+          name: '1700',
+          image: 'assets/productImages/bath/C59020-1000-Shore-1700-Green-Freestanding-Bath-Chrome-Feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-chrome-feet-c59020',
+          path: '../../models/bath/C59020.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59020',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Chrome Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_21',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gunmetal-feet-c59021',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/C59021-1000-Shore-1700-Green-Freestanding-Bath-Gummetal-Feet.webp',
+      variants: [
+        {
+          id: 'C59021',
+          name: '1700',
+          image: 'assets/productImages/bath/C59021-1000-Shore-1700-Green-Freestanding-Bath-Gummetal-Feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gunmetal-feet-c59021',
+          path: '../../models/bath/C59021.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59021',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Gunmetal Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_22',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-matt-black-feet-c59022',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/c59022-1000-shore-1700-green-freestanding-bath-matt-black-feet.webp',
+      variants: [
+        {
+          id: 'C59022',
+          name: '1700',
+          image: 'assets/productImages/bath/c59022-1000-shore-1700-green-freestanding-bath-matt-black-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-matt-black-feet-c59022',
+          path: '../../models/bath/C59022.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59022',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Matt Black Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_23',
+      link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gold-feet-c59023',
+      name: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet',
+      price: '999.99',
+      image: 'assets/productImages/bath/c59023-1000-1700-green-freestanding-bath-brushed-brass-feet.webp',
+      variants: [
+        {
+          id: 'C59023',
+          name: '1700',
+          image: 'assets/productImages/bath/c59023-1000-1700-green-freestanding-bath-brushed-brass-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/shore-1700-matt-green-freestanding-bath-gold-feet-c59023',
+          path: '../../models/bath/C59023.glb',
+          dimensions: { width: 170, height: 59.9, depth: 82.8 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59023',
+          price: '999.99',
+          title: 'Shore 1700 Matt Green Freestanding Bath - Gold Feet',
+          filterAttributes: { length: '1700mm', width: '828mm', type: 'Freestanding', finish: 'Matt Green', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_24',
+      link: 'https://www.bathroommountain.co.uk/abingdon-1700mm-single-ended-roll-top-bath-grey-feet-c59024',
+      name: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet',
+      price: '419.99',
+      image: 'assets/productImages/bath/c59024-1000-1700mm-single-ended-roll-top-bath-grey-feet.webp',
+      variants: [
+        {
+          id: 'C59024',
+          name: '1700',
+          image: 'assets/productImages/bath/c59024-1000-1700mm-single-ended-roll-top-bath-grey-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/abingdon-1700mm-single-ended-roll-top-bath-grey-feet-c59024',
+          path: '../../models/bath/C59024.glb',
+          dimensions: { width: 153.2, height: 83, depth: 75.6 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59024',
+          price: '419.99',
+          title: 'Abingdon 1700mm Single Ended Roll Top Bath - Grey Feet',
+          filterAttributes: { length: '1700mm', width: '756mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
+    {
+      id: 'bath_25',
+      link: 'https://www.bathroommountain.co.uk/abingdon-1500mm-single-ended-roll-top-bath-grey-feet-c59025',
+      name: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet',
+      price: '419.99',
+      image: 'assets/productImages/bath/c59025-1000-1500mm-single-ended-roll-top-bath-grey-feet.webp',
+      variants: [
+        {
+          id: 'C59025',
+          name: '1500',
+          image: 'assets/productImages/bath/c59025-1000-1500mm-single-ended-roll-top-bath-grey-feet.webp',
+          link: 'https://www.bathroommountain.co.uk/abingdon-1500mm-single-ended-roll-top-bath-grey-feet-c59025',
+          path: '../../models/bath/C59025.glb',
+          dimensions: { width: 153.2, height: 83, depth: 75.6 },
+          floorOffset: 0,
+          orientation: {
+            type: 'face_into_room',
+            wallBuffer: 0, // Flush with wall - no gap
+            description: 'Item is part of wall opening'
+          },
+          movement: { // NEW: Sink movement configuration
+            snapToWall: false,
+            allowVerticalMovement: false,
+            allowFreeRotation: true
+          },
+          sku: 'C59025',
+          price: '419.99',
+          title: 'Abingdon 1500mm Single Ended Roll Top Bath - Grey Feet',
+          filterAttributes: { length: '1500mm', width: '756mm', type: 'Freestanding', finish: 'White', style: 'Traditional', handed: 'N/A' }
+        },
+      ],
+      variantType: 'Orientation',
+      features: ['Square Design', 'Single Ended', 'Acrylic Construction', 'Multiple Sizes']
+    },
   ],
 
-  Toilet: [
-    // Toilet Variant 1 (2 variants)
-    {
-      id: 'toilet_variant_1',
-      link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
-      name: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat',
-      price: '143.00',
-      image: 'assets/productImages/toilet/c66174-1000-rimless-wall-hung-toilet-with-soft-close-seat.webp',
-      variants: [
+    Toilet: [
+        // Toilet Variant 1 (2 variants)
         {
-          id: 'c66175',
-          name: 'Slim Seat',
-          image: 'assets/productImages/toilet/c66175-1000-rimless-wall-hung-toilet-with-soft-close-slim-seat.webp',
-          link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
-          path: '../../models/toilet/C66175.glb',
-          dimensions: { width: 35.2, height: 40.5, depth: 52.7 },
-          floorOffset: 5.7,
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C66175',
-          price: '143.00',
-          title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
+            id: 'toilet_variant_1',
+            link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
+            name: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat',
+            price: '143.00',
+            image: 'assets/productImages/toilet/c66174-1000-rimless-wall-hung-toilet-with-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'c66175',
+                    name: 'Slim Seat',
+                    image: 'assets/productImages/toilet/c66175-1000-rimless-wall-hung-toilet-with-soft-close-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat',
+                    path: '../../models/toilet/C66175.glb',
+                    dimensions: { width: 35.2, height: 40.5, depth: 52.7 },
+                    floorOffset: 5.7,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66175',
+                    price: '143.00',
+                    title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Wall Hung', projection: 'Short', shape: 'Round', rimless: true, cisternEntry: 'Side', style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'c66174',
+                    name: 'Standard Seat',
+                    image: 'assets/productImages/toilet/c66174-1000-rimless-wall-hung-toilet-with-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-seat',
+                    path: '../../models/toilet/C66174.glb',
+                    dimensions: { width: 36.2, height: 30.8, depth: 52.4 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66174',
+                    price: '143.00',
+                    title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat',
+                    filterAttributes: { type: 'Wall Hung', projection: 'Short', shape: 'Round', rimless: true, cisternEntry: 'Side', style: 'Modern', softCloseSeat: true }
+                }
+            ],
+            variantType: 'Seat Options',
+            features: ['Rimless Design', 'Soft Close Seat', 'Wall Hung', 'Premium Quality']
+        },
+
+        // Toilet Variant 2 (3 variants)
+        {
+            id: 'toilet_variant_2',
+            link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
+            name: 'Portland Close Coupled Toilet With Soft Close Seat',
+            price: '135.00',
+            image: 'assets/productImages/toilet/C66183-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
+            variants: [
+                {
+                    id: 'c66183',
+                    name: 'Slim Seat',
+                    image: 'assets/productImages/toilet/C66183-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-slim-seat-c66183',
+                    path: '../../models/toilet/C66183.glb',
+                    dimensions: { width: 37.1, height: 77.6, depth: 60.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66183',
+                    price: '135.00',
+                    title: 'Portland Close Coupled Toilet With Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Side', style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'c66185',
+                    name: 'Comfort Height',
+                    image: 'assets/productImages/toilet/C66185-1000-Comfort-Height-Close-Coupled-Toilet-Slim-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
+                    path: '../../models/toilet/C66185.glb',
+                    dimensions: { width: 37.1, height: 82.5, depth: 60.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66185',
+                    price: '167.00',
+                    title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: false, cisternEntry: 'Side', style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'c66184',
+                    name: 'Back to Wall',
+                    image: 'assets/productImages/toilet/C66184-1000-Back-to-Wall-Close-Coupled-Toilet-Slim-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-slim-seat-c66184',
+                    path: '../../models/toilet/C66184.glb',
+                    dimensions: { width: 37.1, height: 77.6, depth: 60.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66184',
+                    price: '151.99',
+                    title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Slim Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Side', style: 'Modern', softCloseSeat: true }
+                }
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+
+        {
+            id: 'toilet_variant_3',
+            link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66228',
+            name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
+            price: '115.99',
+            image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66228',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66228',
+                    path: '../../models/toilet/C66228.glb',
+                    dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66228',
+                    price: '115.99',
+                    title: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66229',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66229-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66229',
+                    path: '../../models/toilet/C66229.glb',
+                    dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66229',
+                    price: '115.00',
+                    title: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+
+        {
+            id: 'toilet_variant_4',
+            link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-seat-c66031',
+            name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
+            price: '119.00',
+            image: 'assets/productImages/toilet/C66031-1000-Denver-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+            variants: [
+                {
+                    id: 'C66031',
+                    name: 'Denver Close Coupled Toilet With Soft Close Seat',
+                    image: 'assets/productImages/toilet/C66031-1000-Denver-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-seat-c66031',
+                    path: '../../models/toilet/C66031.glb',
+                    dimensions: { width: 37.5, height: 18.6, depth: 63.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66031',
+                    price: '119.00',
+                    title: 'Denver Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66137',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/C66137-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-slim-seat-c66137',
+                    path: '../../models/toilet/C66137.glb',
+                    dimensions: { width: 37.5, height: 81.6, depth: 63.5 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66137',
+                    price: '135.00',
+                    title: 'Denver Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66220',
+                    name: 'Smart Seat',
+                    image: 'assets/productImages/toilet/C66220-1000-Denver-Close-Coupled-Toilet-With-Smart-Bidet-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-smart-bidet-seat-c66220',
+                    path: '../../models/toilet/C66220.glb',
+                    dimensions: { width: 45.5, height: 81.6, depth: 65.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66220',
+                    price: '529.99',
+                    title: 'Denver Close Coupled Toilet With Smart Bidet Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+
+        {
+            id: 'toilet_variant_5',
+            link: 'https://www.bathroommountain.co.uk/manhattan-slimline-560-depth-close-coupled-toilet-with-soft-close-seat-c66241',
+            name: 'Manhattan Slimline 560 Depth Close Coupled Toilet With Soft Close Seat',
+            price: '119.00',
+            image: 'assets/productImages/toilet/C66241-1000-Dallas-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+            variants: [
+                {
+                    id: 'C66241',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/C66241-1000-Dallas-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/manhattan-slimline-560-depth-close-coupled-toilet-with-soft-close-seat-c66241',
+                    path: '../../models/toilet/C66241.glb',
+                    dimensions: { width: 36, height: 79.6, depth: 55.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66241',
+                    price: '119.00',
+                    title: 'Manhattan Slimline 560 Depth Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Short', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+
+        {
+            id: 'toilet_variant_6',
+            link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
+            name: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
+            variants: [
+                {
+                    id: 'C66042V2',
+                    name: 'Fully Back To Wall',
+                    image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
+                    path: '../../models/toilet/C66042V2.glb',
+                    dimensions: { width: 38, height: 82.9, depth: 61.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66042V2',
+                    price: '159.99',
+                    title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66139V2',
+                    name: 'Standard',
+                    image: 'assets/productImages/toilet/c66139v2-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/boston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66139v2',
+                    path: '../../models/toilet/C66139V2.glb',
+                    dimensions: { width: 38, height: 83.5, depth: 61.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66139V2',
+                    price: '169.00',
+                    title: 'Boston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66226',
+                    name: 'Comfort Height With Soft Close Seat',
+                    image: 'assets/productImages/toilet/C66226-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-seat-c66226',
+                    path: '../../models/toilet/C66226.glb',
+                    dimensions: { width: 38, height: 82.9, depth: 61.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66226',
+                    price: '183.00',
+                    title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66227',
+                    name: 'Comfort Height With Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/C66227-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Slim-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-slim-seat-c66227',
+                    path: '../../models/toilet/C66227.glb',
+                    dimensions: { width: 89.2, height: 85.5, depth: 89.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66227',
+                    price: '183.99',
+                    title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
         },
         {
-          id: 'c66174',
-          name: 'Standard Seat',
-          image: 'assets/productImages/toilet/c66174-1000-rimless-wall-hung-toilet-with-soft-close-seat.webp',
-          link: 'https://www.bathroommountain.co.uk/nevada-v2-rimless-wall-hung-toilet-with-premium-soft-close-seat',
-          path: '../../models/toilet/C66174.glb',
-          dimensions: { width: 36.2, height: 30.8, depth: 52.4 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C66174',
-          price: '143.00',
-          title: 'Nevada Rimless Wall Hung Toilet With Premium Soft Close Seat'
-        }
-      ],
-      variantType: 'Seat Options',
-      features: ['Rimless Design', 'Soft Close Seat', 'Wall Hung', 'Premium Quality']
-    },
-
-    // Toilet Variant 2 (3 variants)
-    {
-      id: 'toilet_variant_2',
-      link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
-      name: 'Portland Close Coupled Toilet With Soft Close Seat',
-      price: '135.00',
-      image: 'assets/productImages/toilet/C66183-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
-      variants: [
-        {
-          id: 'c66183',
-          name: 'Slim Seat',
-          image: 'assets/productImages/toilet/C66183-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
-          link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-slim-seat-c66183',
-          path: '../../models/toilet/C66183.glb',
-          dimensions: { width: 37.1, height: 77.6, depth: 60.1 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C66183',
-          price: '135.00',
-          title: 'Portland Close Coupled Toilet With Soft Close Slim Seat'
+            id: 'toilet_variant_7',
+            link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66230',
+            name: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+            price: '115.00',
+            image: 'assets/productImages/toilet/c66230-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+            variants: [
+                {
+                    id: 'C66230',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66230-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66230',
+                    path: '../../models/toilet/C66230.glb',
+                    dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66230',
+                    price: '115.00',
+                    title: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66257',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66257-1000-rimless-close-coupled-toilet-soft-close-slim-seat-.webp',
+                    link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66257',
+                    path: '../../models/toilet/C66257.glb',
+                    dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66257',
+                    price: '115.99',
+                    title: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
         },
         {
-          id: 'c66185',
-          name: 'Comfort Height',
-          image: 'assets/productImages/toilet/C66185-1000-Comfort-Height-Close-Coupled-Toilet-Slim-Seat.webp',
-          link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-slim-seat-c66185',
-          path: '../../models/toilet/C66185.glb',
-          dimensions: { width: 37.1, height: 82.5, depth: 60.9 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C66185',
-          price: '167.00',
-          title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Slim Seat'
+            id: 'toilet_variant_8',
+            link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
+            name: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat',
+            price: '119.99',
+            image: 'assets/productImages/toilet/c66245-1000-rimless-close-coupled-toilet-with-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66245',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66245-1000-rimless-close-coupled-toilet-with-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
+                    path: '../../models/toilet/C66245.glb',
+                    dimensions: { width: 37, height: 81, depth: 60.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66245',
+                    price: '119.99',
+                    title: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66244',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66244-1000-rimless-close-coupled-toilet-slim-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-slim-soft-close-seat-c66244',
+                    path: '../../models/toilet/C66244.glb',
+                    dimensions: { width: 37, height: 81, depth: 60.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66244',
+                    price: '149.99',
+                    title: 'Dallas Rimless Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
         },
         {
-          id: 'c66184',
-          name: 'Back to Wall',
-          image: 'assets/productImages/toilet/C66184-1000-Back-to-Wall-Close-Coupled-Toilet-Slim-Seat.webp',
-          link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-slim-seat-c66184',
-          path: '../../models/toilet/C66184.glb',
-          dimensions: { width: 37.1, height: 77.6, depth: 60.2 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C66184',
-          price: '151.99',
-          title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Slim Seat'
-        }
-      ],
-      variantType: 'Style Options',
-      features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-    },
-
-    {
-      id: 'toilet_variant_3',
-      link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66228',
-      name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
-      price: '115.99',
-      image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
-      variants: [
-        {
-          id: 'C66228',
-          name: 'Soft Close Seat',
-          image: 'assets/productImages/toilet/c66228-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
-          link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66228',
-          path: '../../models/toilet/C66228.glb',
-          dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
-          orientation: {
-            type: 'face_into_room',
-            wallBuffer: 0, // Flush with wall - no gap
-            description: 'Item is part of wall opening'
-          },
-          movement: { // NEW: Sink movement configuration
-            snapToWall: true,
-            allowVerticalMovement: false,
-            allowFreeRotation: false
-          },
-          sku: 'C66228',
-          price: '115.99',
-          title: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat'
+            id: 'toilet_variant_9',
+            link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
+            name: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat',
+            price: '135.99',
+            image: 'assets/productImages/toilet/c66201-1000-traditional-close-coupled-toilet-soft-close-seat_1.webp',
+            variants: [
+                {
+                    id: 'C66201',
+                    name: 'Standard',
+                    image: 'assets/productImages/toilet/c66201-1000-traditional-close-coupled-toilet-soft-close-seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
+                    path: '../../models/toilet/C66201.glb',
+                    dimensions: { width: 37, height: 81, depth: 60.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66201',
+                    price: '135.99',
+                    title: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, style: 'Traditional', softCloseSeat: true }
+                },
+                {
+                    id: 'C66036',
+                    name: 'Low-Level Cistern',
+                    image: 'assets/productImages/toilet/C66036-1000-Traditional-Toilet-Low-Level-Cistern-Soft-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-soft-close-seat-c66036',
+                    path: '../../models/toilet/C66036.glb',
+                    dimensions: { width: 49, height: 119.8, depth: 67.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66036',
+                    price: '229.99',
+                    title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat',
+                    filterAttributes: { type: 'Low Level', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Side', style: 'Traditional', softCloseSeat: true }
+                },
+                {
+                    id: 'C66037',
+                    name: 'High-Level Cistern',
+                    image: 'assets/productImages/toilet/c66037-1000-traditional-toilet-high-level-cistern-soft-seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-high-level-cistern-and-soft-close-seat-c66037',
+                    path: '../../models/toilet/C66037.glb',
+                    dimensions: { width: 61, height: 207.8, depth: 62.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66037',
+                    price: '369.99',
+                    title: 'Hudson Traditional Toilet With High-level Cistern And Soft Close Seat',
+                    filterAttributes: { type: 'High Level', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Side', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
         },
         {
-          id: 'C66229',
-              name: 'Soft Close Slim Seat',
-              image: 'assets/productImages/toilet/c66229-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
-              link: 'https://www.bathroommountain.co.uk/tucson-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66229',
-              path: '../../models/toilet/C66229.glb',
-              dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
-              orientation: {
-                  type: 'face_into_room',
-                  wallBuffer: 0, // Flush with wall - no gap
-                  description: 'Item is part of wall opening'
-              },
-              movement: { // NEW: Sink movement configuration
-                  snapToWall: true,
-                  allowVerticalMovement: false,
-                  allowFreeRotation: false
-              },
-              sku: 'C66229',
-              price: '115.00',
-              title: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
-          },
-      ],
-      variantType: 'Style Options',
-      features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-    },
+            id: 'toilet_variant_10',
+            link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66247',
+            name: 'Dallas Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+            price: '143.00',
+            image: 'assets/productImages/toilet/c66247-1000-rimless-comfort-height-close-coupled-toilet.webp',
+            variants: [
+                {
+                    id: 'C66247',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66247-1000-rimless-comfort-height-close-coupled-toilet.webp',
+                    link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66247',
+                    path: '../../models/toilet/C66247.glb',
+                    dimensions: { width: 37, height: 86.5, depth: 60.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66247',
+                    price: '143.00',
+                    title: 'Dallas Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66246',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66246-1000-rimless-comfort-height-close-coupled-toilet.webp',
+                    link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-slim-soft-close-seat-c66246',
+                    path: '../../models/toilet/C66246.glb',
+                    dimensions: { width: 37, height: 86.5, depth: 60.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66246',
+                    price: '143.99',
+                    title: 'Dallas Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_11',
+            link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66181',
+            name: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat',
+            price: '143.00',
+            image: 'assets/productImages/toilet/C66181-1000-Back-to-Wall-Close-Coupled-Toilet-Soft-Close-Seat.webp',
+            variants: [
+                {
+                    id: 'C66181',
+                    name: 'Fully Back To Wall',
+                    image: 'assets/productImages/toilet/C66181-1000-Back-to-Wall-Close-Coupled-Toilet-Soft-Close-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66181',
+                    path: '../../models/toilet/C66181.glb',
+                    dimensions: { width: 37.1, height: 77.7, depth: 60.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66181',
+                    price: '143.00',
+                    title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66182',
+                    name: 'Comfort Height',
+                    image: 'assets/productImages/toilet/C66182-1000-Comfort-Height-Close-Coupled-Toilet-Soft-Close-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-seat-c66182',
+                    path: '../../models/toilet/C66182.glb',
+                    dimensions: { width: 77.5, height: 83.2, depth: 84.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66182',
+                    price: '159.00',
+                    title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66180',
+                    name: 'Standard',
+                    image: 'assets/productImages/toilet/C66180-1000-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-seat-c66180',
+                    path: '../../models/toilet/C66180.glb',
+                    dimensions: { width: 37.1, height: 78.2, depth: 63.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66180',
+                    price: '127.00',
+                    title: 'Portland Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_12',
+            link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-seat-c66131',
+            name: 'Orlando Close Coupled Toilet With Soft Close Seat',
+            price: '127.00',
+            image: 'assets/productImages/toilet/C66131-1000-Orlando-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+            variants: [
+                {
+                    id: 'C66131',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/C66131-1000-Orlando-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-seat-c66131',
+                    path: '../../models/toilet/C66131.glb',
+                    dimensions: { width: 37, height: 77.9, depth: 60.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66131',
+                    price: '127.00',
+                    title: 'Orlando Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Square', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66150',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/C66150-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-slim-seat-c66150',
+                    path: '../../models/toilet/C66150.glb',
+                    dimensions: { width: 37, height: 77.9, depth: 59.2 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66150',
+                    price: '179.99',
+                    title: 'Orlando Close Coupled Toilet With Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Square', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_13',
+            link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat',
+            name: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat',
+            price: '143.99',
+            image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66176',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat1',
+                    path: '../../models/toilet/C66176.glb',
+                    dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
+                    floorOffset: 5.7,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66176',
+                    price: '143.99',
+                    title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66177',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66177-1000-rimless-back-to-wall-toilet-soft-close-slim-seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/boston-rimless-back-to-wall-toilet-with-premium-soft-close-slim-seat',
+                    path: '../../models/toilet/C66177.glb',
+                    dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
+                    floorOffset: 3.8,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66177',
+                    price: '143.99',
+                    title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_14',
+            link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
+            name: 'Austin Close Coupled Toilet With Soft Close Seat',
+            price: '79.00',
+            image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66027',
+                    name: 'Austin Close Coupled',
+                    image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
+                    path: '../../models/toilet/C66027.glb',
+                    dimensions: { width: 42.9, height: 76.6, depth: 70.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66027',
+                    price: '79.00',
+                    title: 'Austin Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Square', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_15',
+            link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+            name: 'Austin Back To Wall Toilet With Soft Close Seat',
+            price: '89.99',
+            image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+            variants: [
+                {
+                    id: 'C66028',
+                    name: 'Austin Close Coupled',
+                    image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+                    path: '../../models/toilet/C66028.glb',
+                    dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66028',
+                    price: '89.99',
+                    title: 'Austin Back To Wall Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Square', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_16',
+            link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
+            name: 'Atlanta Close Coupled Toilet With Soft Close Seat',
+            price: '89.99',
+            image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+            variants: [
+                {
+                    id: 'C66127',
+                    name: 'Standard',
+                    image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
+                    path: '../../models/toilet/C66127.glb',
+                    dimensions: { width: 37, height: 78.2, depth: 59.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66127',
+                    price: '127.00',
+                    title: 'Atlanta Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66128',
+                    name: 'Comfort Height',
+                    image: 'assets/productImages/toilet/c66128-1000-comfort-close-coupled-toilet-with-soft-close-seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/atlanta-comfort-close-coupled-toilet-with-soft-close-seat-c66128',
+                    path: '../../models/toilet/C66128.glb',
+                    dimensions: { width: 37, height: 84.3, depth: 59.9 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66128',
+                    price: '199.99',
+                    title: 'Atlanta Comfort Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66129',
+                    name: 'Fully Back To Wall',
+                    image: 'assets/productImages/toilet/C66129-1000-Fully-Back-to-Wall-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
+                    path: '../../models/toilet/C66129.glb',
+                    dimensions: { width: 37, height: 78.2, depth: 60 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66129',
+                    price: '151.00',
+                    title: 'Atlanta Fully Back to Wall Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_17',
+            link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
+            name: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat',
+            price: '159.00',
+            image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
+            variants: [
+                {
+                    id: 'C66203',
+                    name: 'Standard',
+                    image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
+                    link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
+                    path: '../../models/toilet/C66203.glb',
+                    dimensions: { width: 49, height: 82.1, depth: 72.3 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66203',
+                    price: '159.00',
+                    title: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, style: 'Traditional', softCloseSeat: true }
+                },
+                {
+                    id: 'C66192',
+                    name: 'High-Level Cistern',
+                    image: 'assets/productImages/toilet/C66192-1000-Traditional-Toilet-High-Level-Cistern-Wooden-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-high-level-cistern-and-chalk-white-wooden-seat-c66192',
+                    path: '../../models/toilet/C66192.glb',
+                    dimensions: { width: 61, height: 207.8, depth: 62.8 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66192',
+                    price: '399.99',
+                    title: 'Hudson Traditional Toilet With High-Level Cistern and Chalk White Wooden Seat',
+                    filterAttributes: { type: 'High Level', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Side', style: 'Traditional', softCloseSeat: true }
+                },
+                {
+                    id: 'C66189',
+                    name: 'Low-Level Cistern',
+                    image: 'assets/productImages/toilet/C66189-1000-Traditional-Toilet-Low-Level-Cistern-Wooden-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-chalk-white-wooden-seat-c66189',
+                    path: '../../models/toilet/C66189.glb',
+                    dimensions: { width: 49, height: 119.8, depth: 66.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66129',
+                    price: '151.99',
+                    title: 'Hudson Traditional Toilet With Low-Level Cistern and Chalk White Wooden Seat',
+                    filterAttributes: { type: 'Low Level', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Side', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_18',
+            link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
+            name: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat',
+            price: '127.00',
+            image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
+            variants: [
+                {
+                    id: 'C66273',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
+                    path: '../../models/toilet/C66273.glb',
+                    dimensions: { width: 36.6, height: 40.8, depth: 48.8 },
+                    floorOffset: 7.4,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66273',
+                    price: '127.00',
+                    title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat',
+                    filterAttributes: { type: 'Wall Hung', projection: 'Standard', shape: 'Square', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66274',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/C66274-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Slim-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
+                    path: '../../models/toilet/C66274.glb',
+                    dimensions: { width: 36.4, height: 41.5, depth: 49 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66274',
+                    price: '159.99',
+                    title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Wall Hung', projection: 'Standard', shape: 'Square', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_19',
+            link: 'https://www.bathroommountain.co.uk/casper-rimless-close-coupled-toilet-with-soft-close-seat-c66286',
+            name: 'Casper Rimless Close Coupled Toilet With Soft Close Seat',
+            price: '95.00',
+            image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+            variants: [
+                {
+                    id: 'C66286',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
+                    path: '../../models/toilet/C66286.glb',
+                    dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66286',
+                    price: '95',
+                    title: 'Casper Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_20',
+            link: 'https://www.bathroommountain.co.uk/seattle-close-coupled-toilet-with-soft-close-seat-c66029',
+            name: 'Seattle Rimless Close Coupled Toilet With Soft Close Seat',
+            price: '124.99',
+            image: 'assets/productImages/toilet/c66029-1000-seattle-close-coupled-toilet-with-soft-close-seat_1.webp',
+            variants: [
+                {
+                    id: 'C66029',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66029-1000-seattle-close-coupled-toilet-with-soft-close-seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/seattle-close-coupled-toilet-with-soft-close-seat-c66029',
+                    path: '../../models/toilet/C66029.glb',
+                    dimensions: { width: 35.8, height: 80.2, depth: 60 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66029',
+                    price: '124.99',
+                    title: 'Seattle Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_21',
+            link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66271',
+            name: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Seat',
+            price: '175.00',
+            image: 'assets/productImages/toilet/c66271-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66271',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66271-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66271',
+                    path: '../../models/toilet/C66271.glb',
+                    dimensions: { width: 86.8, height: 82.8, depth: 87.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66271',
+                    price: '175.00',
+                    title: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Square', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66272',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66272-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66272',
+                    path: '../../models/toilet/C66272.glb',
+                    dimensions: { width: 86.7, height: 82.8, depth: 87.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66272',
+                    price: '219.99',
+                    title: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Square', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_22',
+            link: 'https://www.bathroommountain.co.uk/denver-back-to-wall-toilet-with-soft-close-seat-c66032',
+            name: 'Denver Back To Wall Toilet With Soft Close Seat',
+            price: '139.99',
+            image: 'assets/productImages/toilet/C66032-1000-Denver-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+            variants: [
+                {
+                    id: 'C66032',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/C66032-1000-Denver-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-back-to-wall-toilet-with-soft-close-seat-c66032',
+                    path: '../../models/toilet/C66032.glb',
+                    dimensions: { width: 36.3, height: 45.1, depth: 51.1 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66032',
+                    price: '139.99',
+                    title: 'Denver Back To Wall Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66138',
+                    name: 'Slim Soft Close Seat',
+                    image: 'assets/productImages/toilet/C66138-1000-Back-To-Wall-Toilet-With-Soft-Close-Slim-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-back-to-wall-toilet-with-soft-close-slim-seat-c66138',
+                    path: '../../models/toilet/C66138.glb',
+                    dimensions: { width: 35.9, height: 47, depth: 50.6 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66138',
+                    price: '159.99',
+                    title: 'Denver Back To Wall Toilet With Soft Close Slim Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: false, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Back To Wall', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_23',
+            link: 'https://www.bathroommountain.co.uk/denver-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66215',
+            name: 'Denver Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+            price: '199.99',
+            image: 'assets/productImages/toilet/C66215-1000-Rimless-Comfort-Height-Close-Coupled-Toilet_2.webp',
+            variants: [
+                {
+                    id: 'C66215',
+                    name: 'Comfort Height',
+                    image: 'assets/productImages/toilet/C66215-1000-Rimless-Comfort-Height-Close-Coupled-Toilet_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66215',
+                    path: '../../models/toilet/C66215.glb',
+                    dimensions: { width: 37.5, height: 86.2, depth: 65 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66215',
+                    price: '199.99',
+                    title: 'Denver Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66216',
+                    name: 'Fully Back To Wall',
+                    image: 'assets/productImages/toilet/C66216-1000-Rimless-Fully-Back-to-Wall-Close-Coupled-Toilet_2.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-rimless-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66216',
+                    path: '../../models/toilet/C66216.glb',
+                    dimensions: { width: 37.5, height: 83.4, depth: 65 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66216',
+                    price: '159.00',
+                    title: 'Denver Rimless Fully Back to Wall Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Back to Wall', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+                {
+                    id: 'C66214',
+                    name: 'Standard',
+                    image: 'assets/productImages/toilet/C66214-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/denver-rimless-close-coupled-toilet-with-soft-close-seat-c66214',
+                    path: '../../models/toilet/C66214.glb',
+                    dimensions: { width: 37.5, height: 82.2, depth: 65 },
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66214',
+                    price: '159.99',
+                    title: 'Denver Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_24',
+            link: 'https://www.bathroommountain.co.uk/boise-rimless-close-coupled-toilet-with-soft-close-seat-c66373',
+            name: 'Boise Rimless Close Coupled Toilet With Soft Close Seat',
+            price: '139.99',
+            image: 'assets/productImages/toilet/c66373-1000-rimless-close-coupled-toilet-soft-close-seat_1.webp',
+            variants: [
+                {
+                    id: 'C66373',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66373-1000-rimless-close-coupled-toilet-soft-close-seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/boise-rimless-close-coupled-toilet-with-soft-close-seat-c66373',
+                    path: '../../models/toilet/C66373.glb',
+                    dimensions: { width: 37.5, height: 79.1, depth: 60.3 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66373',
+                    price: '139.99',
+                    title: 'Boise Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_25',
+            link: 'https://www.bathroommountain.co.uk/boise-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66374',
+            name: 'Boise Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+            price: '139.99',
+            image: 'assets/productImages/toilet/c66374-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+            variants: [
+                {
+                    id: 'C66374',
+                    name: 'Soft Close Slim Seat',
+                    image: 'assets/productImages/toilet/c66374-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/boise-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66374',
+                    path: '../../models/toilet/C66374.glb',
+                    dimensions: { width: 37.5, height: 79.1, depth: 60.4 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66374',
+                    price: '139.99',
+                    title: 'Boise Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_26',
+            link: 'https://www.bathroommountain.co.uk/napa-rimless-close-coupled-toilet-with-slim-soft-close-seat-c66375',
+            name: 'Napa Rimless Close Coupled Toilet With Slim Soft Close Seat',
+            price: '129.99',
+            image: 'assets/productImages/toilet/c66375-1000-rimless-close-coupled-toilet-slim-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66375',
+                    name: 'Slim Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66375-1000-rimless-close-coupled-toilet-slim-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/napa-rimless-close-coupled-toilet-with-slim-soft-close-seat-c66375',
+                    path: '../../models/toilet/C66375.glb',
+                    dimensions: { width: 37.5, height: 80.2, depth: 61.2 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66375',
+                    price: '129.99',
+                    title: 'Napa Rimless Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_27',
+            link: 'https://www.bathroommountain.co.uk/napa-rimless-comfort-height-close-coupled-toilet-with-slim-soft-close-seat-c66376',
+            name: 'Napa Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66376-1000-comfort-height-close-coupled-toilet-slim-seat.webp',
+            variants: [
+                {
+                    id: 'C66376',
+                    name: 'Slim Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66376-1000-comfort-height-close-coupled-toilet-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/napa-rimless-comfort-height-close-coupled-toilet-with-slim-soft-close-seat-c66376',
+                    path: '../../models/toilet/C66376.glb',
+                    dimensions: { width: 37, height: 84, depth: 62.5 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66376',
+                    price: '159.99',
+                    title: 'Napa Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_28',
+            link: 'https://www.bathroommountain.co.uk/lodi-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66377',
+            name: 'Lodi Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+            price: '169.99',
+            image: 'assets/productImages/toilet/c66377-1000-comfort-height-close-coupled-toilet-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66377',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66377-1000-comfort-height-close-coupled-toilet-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lodi-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66377',
+                    path: '../../models/toilet/C66377.glb',
+                    dimensions: { width: 37.5, height: 86.5, depth: 65.2 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66377',
+                    price: '169.99',
+                    title: 'Lodi Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_29',
+            link: 'https://www.bathroommountain.co.uk/lodi-rimless-comfort-height-close-coupled-toilet-with-slim-soft-close-seat-c66378',
+            name: 'Lodi Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat',
+            price: '169.99',
+            image: 'assets/productImages/toilet/c66378-1000-comfort-height-close-coupled-toilet-slim-seat.webp',
+            variants: [
+                {
+                    id: 'C66378',
+                    name: 'Slim Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66378-1000-comfort-height-close-coupled-toilet-slim-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lodi-rimless-comfort-height-close-coupled-toilet-with-slim-soft-close-seat-c66378',
+                    path: '../../models/toilet/C66378.glb',
+                    dimensions: { width: 37.5, height: 86.5, depth: 65.3 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66378',
+                    price: '169.99',
+                    title: 'Lodi Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Comfort Height', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_30',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-soft-close-seat-c66379',
+            name: 'Lima Traditional Close Coupled Toilet With Soft Close Seat',
+            price: '129.99',
+            image: 'assets/productImages/toilet/c66379-1000-traditional-close-coupled-toilet-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66379',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66379-1000-traditional-close-coupled-toilet-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-soft-close-seat-c66379',
+                    path: '../../models/toilet/C66379.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66379',
+                    price: '129.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_31',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-dove-grey-wooden-seat-c66380',
+            name: 'Lima Traditional Close Coupled Toilet With Dove Grey Wooden Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66380-1000-traditional-close-coupled-toilet-grey-wooden-seat.webp',
+            variants: [
+                {
+                    id: 'C66380',
+                    name: 'Dove Grey Wooden Seat',
+                    image: 'assets/productImages/toilet/c66380-1000-traditional-close-coupled-toilet-grey-wooden-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-dove-grey-wooden-seat-c66380',
+                    path: '../../models/toilet/C66380.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0.1,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66380',
+                    price: '159.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Dove Grey Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_32',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66381',
+            name: 'Lima Traditional Close Coupled Toilet With Chalk White Wooden Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66381-1000-traditional-close-coupled-toilet-white-wooden-seat.webp',
+            variants: [
+                {
+                    id: 'C66381',
+                    name: 'Chalk White Wooden Seat',
+                    image: 'assets/productImages/toilet/c66381-1000-traditional-close-coupled-toilet-white-wooden-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66381',
+                    path: '../../models/toilet/C66381.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66381',
+                    price: '159.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Chalk White Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_33',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-graphite-grey-wooden-seat-c66382',
+            name: 'Lima Traditional Close Coupled Toilet With Graphite Grey Wooden Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66382-1000-traditional-close-coupled-toilet-grey-wooden-seat.webp',
+            variants: [
+                {
+                    id: 'C66382',
+                    name: 'Graphite Grey Wooden Seat',
+                    image: 'assets/productImages/toilet/c66382-1000-traditional-close-coupled-toilet-grey-wooden-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-graphite-grey-wooden-seat-c66382',
+                    path: '../../models/toilet/C66382.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66382',
+                    price: '159.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Graphite Grey Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_34',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-inky-blue-wooden-seat-c66383',
+            name: 'Lima Traditional Close Coupled Toilet With Inky Blue Wooden Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66383-1000-traditional-close-coupled-toilet-blue-wooden-seat.webp',
+            variants: [
+                {
+                    id: 'C66383',
+                    name: 'Inky Blue Wooden Seat',
+                    image: 'assets/productImages/toilet/c66383-1000-traditional-close-coupled-toilet-blue-wooden-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-inky-blue-wooden-seat-c66383',
+                    path: '../../models/toilet/C66383.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66383',
+                    price: '159.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Inky Blue Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_35',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-midnight-green-wooden-seat-c66384',
+            name: 'Lima Traditional Close Coupled Toilet With Midnight Green Wooden Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66384-1000-traditional-close-coupled-toilet-green-wooden-seat.webp',
+            variants: [
+                {
+                    id: 'C66384',
+                    name: 'Midnight Green Wooden Seat',
+                    image: 'assets/productImages/toilet/c66384-1000-traditional-close-coupled-toilet-green-wooden-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-midnight-green-wooden-seat-c66384',
+                    path: '../../models/toilet/C66384.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66384',
+                    price: '159.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Midnight Green Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_36',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-cotton-white-wooden-seat-c66385',
+            name: 'Lima Traditional Close Coupled Toilet With Cotton White Wooden Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66385-1000-traditional-close-coupled-toilet-white-wooden-seat.webp',
+            variants: [
+                {
+                    id: 'C66385',
+                    name: 'Cotton White Wooden Seat',
+                    image: 'assets/productImages/toilet/c66385-1000-traditional-close-coupled-toilet-white-wooden-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-cotton-white-wooden-seat-c66385',
+                    path: '../../models/toilet/C66385.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66385',
+                    price: '159.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Cotton White Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_37',
+            link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-cashmere-pink-wooden-seat-c66386',
+            name: 'Lima Traditional Close Coupled Toilet With Cashmere Pink Wooden Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66386-1000-traditional-close-coupled-toilet-pink-wooden-seat_1.webp',
+            variants: [
+                {
+                    id: 'C66386',
+                    name: 'Cashmere Pink Wooden Seat',
+                    image: 'assets/productImages/toilet/c66386-1000-traditional-close-coupled-toilet-pink-wooden-seat_1.webp',
+                    link: 'https://www.bathroommountain.co.uk/lima-traditional-close-coupled-toilet-with-cashmere-pink-wooden-seat-c66386',
+                    path: '../../models/toilet/C66386.glb',
+                    dimensions: { width: 49, height: 84.3, depth: 72.9 },
+                    floorOffset: 0.1,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66386',
+                    price: '159.99',
+                    title: 'Lima Traditional Close Coupled Toilet With Cashmere Pink Wooden Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Standard', shape: 'Round', rimless: false, cisternEntry: 'Bottom', style: 'Traditional', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+        {
+            id: 'toilet_variant_38',
+            link: 'https://www.bathroommountain.co.uk/portland-slimline-555-depth-rimless-close-coupled-toilet-with-soft-close-seat-c66387',
+            name: 'Portland Slimline 555 Depth Rimless Close Coupled Toilet With Soft Close Seat',
+            price: '159.99',
+            image: 'assets/productImages/toilet/c66387-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+            variants: [
+                {
+                    id: 'C66387',
+                    name: 'Soft Close Seat',
+                    image: 'assets/productImages/toilet/c66387-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
+                    link: 'https://www.bathroommountain.co.uk/portland-slimline-555-depth-rimless-close-coupled-toilet-with-soft-close-seat-c66387',
+                    path: '../../models/toilet/C66387.glb',
+                    dimensions: { width: 35.7, height: 73.3, depth: 55.2 },
+                    floorOffset: 0,
+                    orientation: {
+                        type: 'face_into_room',
+                        wallBuffer: 0, // Flush with wall - no gap
+                        description: 'Item is part of wall opening'
+                    },
+                    movement: { // NEW: Sink movement configuration
+                        snapToWall: true,
+                        allowVerticalMovement: false,
+                        allowFreeRotation: false
+                    },
+                    sku: 'C66387',
+                    price: '159.99',
+                    title: 'Portland Slimline 555 Depth Rimless Close Coupled Toilet With Soft Close Seat',
+                    filterAttributes: { type: 'Close Coupled', projection: 'Slimline', shape: 'Round', rimless: true, cisternEntry: 'Bottom', style: 'Modern', softCloseSeat: true }
+                },
+            ],
+            variantType: 'Style Options',
+            features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
+        },
+    ],
 
-    {
-          id: 'toilet_variant_4',
-          link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-seat-c66031',
-          name: 'Tucson Rimless Close Coupled Toilet With Premium Soft Close Seat',
-          price: '119.00',
-          image: 'assets/productImages/toilet/C66031-1000-Denver-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
-          variants: [
-              {
-                  id: 'C66031',
-                  name: 'Denver Close Coupled Toilet With Soft Close Seat',
-                  image: 'assets/productImages/toilet/C66031-1000-Denver-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-seat-c66031',
-                  path: '../../models/toilet/C66031.glb',
-                  dimensions: { width: 37.5, height: 18.6, depth: 63.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66031',
-                  price: '119.00',
-                  title: 'Denver Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66137',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/C66137-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-soft-close-slim-seat-c66137',
-                  path: '../../models/toilet/C66137.glb',
-                  dimensions: { width: 37.5, height: 81.6, depth: 63.5 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66137',
-                  price: '135.00',
-                  title: 'Denver Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66220',
-                  name: 'Smart Seat',
-                  image: 'assets/productImages/toilet/C66220-1000-Denver-Close-Coupled-Toilet-With-Smart-Bidet-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-close-coupled-toilet-with-smart-bidet-seat-c66220',
-                  path: '../../models/toilet/C66220.glb',
-                  dimensions: { width: 45.5, height: 81.6, depth: 65.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66220',
-                  price: '529.99',
-                  title: 'Denver Close Coupled Toilet With Smart Bidet Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-
-    {
-          id: 'toilet_variant_5',
-          link: 'https://www.bathroommountain.co.uk/manhattan-slimline-560-depth-close-coupled-toilet-with-soft-close-seat-c66241',
-          name: 'Manhattan Slimline 560 Depth Close Coupled Toilet With Soft Close Seat',
-          price: '119.00',
-          image: 'assets/productImages/toilet/C66241-1000-Dallas-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-          variants: [
-              {
-                  id: 'C66241',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/C66241-1000-Dallas-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/manhattan-slimline-560-depth-close-coupled-toilet-with-soft-close-seat-c66241',
-                  path: '../../models/toilet/C66241.glb',
-                  dimensions: { width: 36, height: 79.6, depth: 55.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66241',
-                  price: '119.00',
-                  title: 'Manhattan Slimline 560 Depth Close Coupled Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-
-    {
-          id: 'toilet_variant_6',
-          link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
-          name: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat',
-          price: '159.99',
-          image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
-          variants: [
-              {
-                  id: 'C66042V2',
-                  name: 'Fully Back To Wall',
-                  image: 'assets/productImages/toilet/c66042v2-1000-rimless-fully-back-to-wall-close-coupled-toilet_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-rimless-fully-back-to-wall-close-coupled-toilet-with-premium-soft-close-seat-c66042v2',
-                  path: '../../models/toilet/C66042V2.glb',
-                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66042V2',
-                  price: '159.99',
-                  title: 'Boston Rimless Fully Back To Wall Close Coupled Toilet With Premium Soft Close Seat'
-              },
-              {
-                  id: 'C66139V2',
-                  name: 'Standard',
-                  image: 'assets/productImages/toilet/c66139v2-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66139v2',
-                  path: '../../models/toilet/C66139V2.glb',
-                  dimensions: { width: 38, height: 83.5, depth: 61.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66139V2',
-                  price: '169.00',
-                  title: 'Boston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
-              },
-              {
-                  id: 'C66226',
-                  name: 'Comfort Height With Soft Close Seat',
-                  image: 'assets/productImages/toilet/C66226-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-seat-c66226',
-                  path: '../../models/toilet/C66226.glb',
-                  dimensions: { width: 38, height: 82.9, depth: 61.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66226',
-                  price: '183.00',
-                  title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Seat'
-              },
-              {
-                  id: 'C66227',
-                  name: 'Comfort Height With Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/C66227-1000-Rimless-Close-Coupled-Toilet-Soft-Close-Slim-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-rimless-comfort-height-close-coupled-toilet-with-premium-soft-close-slim-seat-c66227',
-                  path: '../../models/toilet/C66227.glb',
-                  dimensions: { width: 89.2, height: 85.5, depth: 89.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66227',
-                  price: '183.99',
-                  title: 'Boston Rimless Comfort Height Close Coupled Toilet With Premium Soft Close Slim Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_7',
-          link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66230',
-          name: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat',
-          price: '115.00',
-          image: 'assets/productImages/toilet/c66230-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
-          variants: [
-              {
-                  id: 'C66230',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/c66230-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66230',
-                  path: '../../models/toilet/C66230.glb',
-                  dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66230',
-                  price: '115.00',
-                  title: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
-              },
-              {
-                  id: 'C66257',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/c66257-1000-rimless-close-coupled-toilet-soft-close-slim-seat-.webp',
-                  link: 'https://www.bathroommountain.co.uk/houston-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66257',
-                  path: '../../models/toilet/C66257.glb',
-                  dimensions: { width: 38.3, height: 77.8, depth: 64.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66257',
-                  price: '115.99',
-                  title: 'Houston Rimless Close Coupled Toilet With Premium Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_8',
-          link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
-          name: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat',
-          price: '119.99',
-          image: 'assets/productImages/toilet/c66245-1000-rimless-close-coupled-toilet-with-soft-close-seat.webp',
-          variants: [
-              {
-                  id: 'C66245',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/c66245-1000-rimless-close-coupled-toilet-with-soft-close-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-soft-close-seat-c66245',
-                  path: '../../models/toilet/C66245.glb',
-                  dimensions: { width: 37, height: 81, depth: 60.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66245',
-                  price: '119.99',
-                  title: 'Dallas Rimless Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66244',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/c66244-1000-rimless-close-coupled-toilet-slim-soft-close-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/dallas-rimless-close-coupled-toilet-with-slim-soft-close-seat-c66244',
-                  path: '../../models/toilet/C66244.glb',
-                  dimensions: { width: 37, height: 81, depth: 60.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66244',
-                  price: '149.99',
-                  title: 'Dallas Rimless Close Coupled Toilet With Slim Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_9',
-          link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
-          name: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat',
-          price: '135.99',
-          image: 'assets/productImages/toilet/c66201-1000-traditional-close-coupled-toilet-soft-close-seat_1.webp',
-          variants: [
-              {
-                  id: 'C66201',
-                  name: 'Standard',
-                  image: 'assets/productImages/toilet/c66201-1000-traditional-close-coupled-toilet-soft-close-seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-soft-close-seat-c66201',
-                  path: '../../models/toilet/C66201.glb',
-                  dimensions: { width: 37, height: 81, depth: 60.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66201',
-                  price: '135.99',
-                  title: 'Hudson Traditional Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66036',
-                  name: 'Low-Level Cistern',
-                  image: 'assets/productImages/toilet/C66036-1000-Traditional-Toilet-Low-Level-Cistern-Soft-Seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-soft-close-seat-c66036',
-                  path: '../../models/toilet/C66036.glb',
-                  dimensions: { width: 49, height: 119.8, depth: 67.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66036',
-                  price: '229.99',
-                  title: 'Hudson Traditional Toilet With Low-level Cistern And Soft Close Seat'
-              },
-              {
-                  id: 'C66037',
-                  name: 'High-Level Cistern',
-                  image: 'assets/productImages/toilet/c66037-1000-traditional-toilet-high-level-cistern-soft-seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-high-level-cistern-and-soft-close-seat-c66037',
-                  path: '../../models/toilet/C66037.glb',
-                  dimensions: { width: 61, height: 207.8, depth: 62.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66037',
-                  price: '369.99',
-                  title: 'Hudson Traditional Toilet With High-level Cistern And Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_10',
-          link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66247',
-          name: 'Dallas Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
-          price: '143.00',
-          image: 'assets/productImages/toilet/c66247-1000-rimless-comfort-height-close-coupled-toilet.webp',
-          variants: [
-              {
-                  id: 'C66247',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/c66247-1000-rimless-comfort-height-close-coupled-toilet.webp',
-                  link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66247',
-                  path: '../../models/toilet/C66247.glb',
-                  dimensions: { width: 37, height: 86.5, depth: 60.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66247',
-                  price: '143.00',
-                  title: 'Dallas Rimless Comfort Height Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66246',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/c66246-1000-rimless-comfort-height-close-coupled-toilet.webp',
-                  link: 'https://www.bathroommountain.co.uk/dallas-rimless-comfort-height-close-coupled-toilet-with-slim-soft-close-seat-c66246',
-                  path: '../../models/toilet/C66246.glb',
-                  dimensions: { width: 37, height: 86.5, depth: 60.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66246',
-                  price: '143.99',
-                  title: 'Dallas Rimless Comfort Height Close Coupled Toilet With Slim Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_11',
-          link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66181',
-          name: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat',
-          price: '143.00',
-          image: 'assets/productImages/toilet/C66181-1000-Back-to-Wall-Close-Coupled-Toilet-Soft-Close-Seat.webp',
-          variants: [
-              {
-                  id: 'C66181',
-                  name: 'Fully Back To Wall',
-                  image: 'assets/productImages/toilet/C66181-1000-Back-to-Wall-Close-Coupled-Toilet-Soft-Close-Seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/portland-v2-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66181',
-                  path: '../../models/toilet/C66181.glb',
-                  dimensions: { width: 37.1, height: 77.7, depth: 60.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66181',
-                  price: '143.00',
-                  title: 'Portland Fully Back to Wall Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66182',
-                  name: 'Comfort Height',
-                  image: 'assets/productImages/toilet/C66182-1000-Comfort-Height-Close-Coupled-Toilet-Soft-Close-Seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/portland-v2-comfort-height-close-coupled-toilet-with-soft-close-seat-c66182',
-                  path: '../../models/toilet/C66182.glb',
-                  dimensions: { width: 77.5, height: 83.2, depth: 84.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66182',
-                  price: '159.00',
-                  title: 'Portland Comfort Height Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66180',
-                  name: 'Standard',
-                  image: 'assets/productImages/toilet/C66180-1000-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/portland-v2-close-coupled-toilet-with-soft-close-seat-c66180',
-                  path: '../../models/toilet/C66180.glb',
-                  dimensions: { width: 37.1, height: 78.2, depth: 63.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66180',
-                  price: '127.00',
-                  title: 'Portland Close Coupled Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_12',
-          link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-seat-c66131',
-          name: 'Orlando Close Coupled Toilet With Soft Close Seat',
-          price: '127.00',
-          image: 'assets/productImages/toilet/C66131-1000-Orlando-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-          variants: [
-              {
-                  id: 'C66131',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/C66131-1000-Orlando-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-seat-c66131',
-                  path: '../../models/toilet/C66131.glb',
-                  dimensions: { width: 37, height: 77.9, depth: 60.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66131',
-                  price: '127.00',
-                  title: 'Orlando Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66150',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/C66150-1000-Close-Coupled-Toilet-With-Soft-Close-Slim-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/orlando-close-coupled-toilet-with-soft-close-slim-seat-c66150',
-                  path: '../../models/toilet/C66150.glb',
-                  dimensions: { width: 37, height: 77.9, depth: 59.2 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66150',
-                  price: '179.99',
-                  title: 'Orlando Close Coupled Toilet With Soft Close Slim Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_13',
-          link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat',
-          name: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat',
-          price: '143.99',
-          image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
-          variants: [
-              {
-                  id: 'C66176',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/c66176-1000-rimless-back-to-wall-toilet-with-soft-close-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-v2-rimless-back-to-wall-toilet-with-premium-soft-close-seat1',
-                  path: '../../models/toilet/C66176.glb',
-                  dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
-                  floorOffset: 5.7,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66176',
-                  price: '143.99',
-                  title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Seat'
-              },
-              {
-                  id: 'C66177',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/c66177-1000-rimless-back-to-wall-toilet-soft-close-slim-seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/boston-rimless-back-to-wall-toilet-with-premium-soft-close-slim-seat',
-                  path: '../../models/toilet/C66177.glb',
-                  dimensions: { width: 36.9, height: 43.8, depth: 54.3 },
-                  floorOffset: 3.8,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66177',
-                  price: '143.99',
-                  title: 'Boston Rimless Back To Wall Toilet With Premium Soft Close Slim Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_14',
-          link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
-          name: 'Austin Close Coupled Toilet With Soft Close Seat',
-          price: '79.00',
-          image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
-          variants: [
-              {
-                  id: 'C66027',
-                  name: 'Austin Close Coupled',
-                  image: 'assets/productImages/toilet/c66027-1000-austin-close-coupled-toilet-with-soft-close-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/austin-close-coupled-toilet-with-soft-close-seat-c66027',
-                  path: '../../models/toilet/C66027.glb',
-                  dimensions: { width: 42.9, height: 76.6, depth: 70.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66027',
-                  price: '79.00',
-                  title: 'Austin Close Coupled Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_15',
-          link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
-          name: 'Austin Back To Wall Toilet With Soft Close Seat',
-          price: '89.99',
-          image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
-          variants: [
-              {
-                  id: 'C66028',
-                  name: 'Austin Close Coupled',
-                  image: 'assets/productImages/toilet/C66028-1000-Austin-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
-                  path: '../../models/toilet/C66028.glb',
-                  dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66028',
-                  price: '89.99',
-                  title: 'Austin Back To Wall Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_16',
-          link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
-          name: 'Atlanta Close Coupled Toilet With Soft Close Seat',
-          price: '89.99',
-          image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-          variants: [
-              {
-                  id: 'C66127',
-                  name: 'Standard',
-                  image: 'assets/productImages/toilet/C66127-1000-Atlanta-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/atlanta-close-coupled-toilet-with-soft-close-seat-c66127',
-                  path: '../../models/toilet/C66127.glb',
-                  dimensions: { width: 37, height: 78.2, depth: 59.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66127',
-                  price: '127.00',
-                  title: 'Atlanta Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66128',
-                  name: 'Comfort Height',
-                  image: 'assets/productImages/toilet/c66128-1000-comfort-close-coupled-toilet-with-soft-close-seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/atlanta-comfort-close-coupled-toilet-with-soft-close-seat-c66128',
-                  path: '../../models/toilet/C66128.glb',
-                  dimensions: { width: 37, height: 84.3, depth: 59.9 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66128',
-                  price: '199.99',
-                  title: 'Atlanta Comfort Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66129',
-                  name: 'Fully Back To Wall',
-                  image: 'assets/productImages/toilet/C66129-1000-Fully-Back-to-Wall-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/austin-back-to-wall-toilet-with-soft-close-seat-c66028',
-                  path: '../../models/toilet/C66129.glb',
-                  dimensions: { width: 37, height: 78.2, depth: 60 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66129',
-                  price: '151.00',
-                  title: 'Atlanta Fully Back to Wall Close Coupled Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_17',
-          link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
-          name: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat',
-          price: '159.00',
-          image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
-          variants: [
-              {
-                  id: 'C66203',
-                  name: 'Standard',
-                  image: 'assets/productImages/toilet/C66203-1000-Traditional-Close-Coupled-Toilet-White-Wooden-Seat_4.webp',
-                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-close-coupled-toilet-with-chalk-white-wooden-seat-c66203',
-                  path: '../../models/toilet/C66203.glb',
-                  dimensions: { width: 49, height: 82.1, depth: 72.3 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66203',
-                  price: '159.00',
-                  title: 'Hudson Traditional Close Coupled Toilet With Chalk White Wooden Seat'
-              },
-              {
-                  id: 'C66192',
-                  name: 'High-Level Cistern',
-                  image: 'assets/productImages/toilet/C66192-1000-Traditional-Toilet-High-Level-Cistern-Wooden-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-high-level-cistern-and-chalk-white-wooden-seat-c66192',
-                  path: '../../models/toilet/C66192.glb',
-                  dimensions: { width: 61, height: 207.8, depth: 62.8 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66192',
-                  price: '399.99',
-                  title: 'Hudson Traditional Toilet With High-Level Cistern and Chalk White Wooden Seat'
-              },
-              {
-                  id: 'C66189',
-                  name: 'Low-Level Cistern',
-                  image: 'assets/productImages/toilet/C66189-1000-Traditional-Toilet-Low-Level-Cistern-Wooden-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/hudson-traditional-toilet-with-low-level-cistern-and-chalk-white-wooden-seat-c66189',
-                  path: '../../models/toilet/C66189.glb',
-                  dimensions: { width: 49, height: 119.8, depth: 66.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66129',
-                  price: '151.99',
-                  title: 'Hudson Traditional Toilet With Low-Level Cistern and Chalk White Wooden Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_18',
-          link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
-          name: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat',
-          price: '127.00',
-          image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
-          variants: [
-              {
-                  id: 'C66273',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/C66273-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-seat-c66273',
-                  path: '../../models/toilet/C66273.glb',
-                  dimensions: { width: 36.6, height: 40.8, depth: 48.8 },
-                  floorOffset: 7.4,
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66273',
-                  price: '127.00',
-                  title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Seat'
-              },
-              {
-                  id: 'C66274',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/C66274-1000-Rimless-Wall-Hung-Toilet-Soft-Close-Slim-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
-                  path: '../../models/toilet/C66274.glb',
-                  dimensions: { width: 36.4, height: 41.5, depth: 49 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66274',
-                  price: '159.99',
-                  title: 'Utah Rimless Wall Hung Toilet With Premium Soft Close Slim Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_19',
-          link: 'https://www.bathroommountain.co.uk/casper-rimless-close-coupled-toilet-with-soft-close-seat-c66286',
-          name: 'Casper Rimless Close Coupled Toilet With Soft Close Seat',
-          price: '95.00',
-          image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
-          variants: [
-              {
-                  id: 'C66286',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/C66286-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/utah-rimless-wall-hung-toilet-with-premium-soft-close-slim-seat-c66274',
-                  path: '../../models/toilet/C66286.glb',
-                  dimensions: { width: 36.5, height: 46.1, depth: 51.7 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66286',
-                  price: '95',
-                  title: 'Casper Rimless Close Coupled Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_20',
-          link: 'https://www.bathroommountain.co.uk/seattle-close-coupled-toilet-with-soft-close-seat-c66029',
-          name: 'Seattle Rimless Close Coupled Toilet With Soft Close Seat',
-          price: '124.99',
-          image: 'assets/productImages/toilet/c66029-1000-seattle-close-coupled-toilet-with-soft-close-seat_1.webp',
-          variants: [
-              {
-                  id: 'C66029',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/c66029-1000-seattle-close-coupled-toilet-with-soft-close-seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/seattle-close-coupled-toilet-with-soft-close-seat-c66029',
-                  path: '../../models/toilet/C66029.glb',
-                  dimensions: { width: 35.8, height: 80.2, depth: 60 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66029',
-                  price: '124.99',
-                  title: 'Seattle Rimless Close Coupled Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_21',
-          link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66271',
-          name: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Seat',
-          price: '175.00',
-          image: 'assets/productImages/toilet/c66271-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
-          variants: [
-              {
-                  id: 'C66271',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/c66271-1000-rimless-close-coupled-toilet-soft-close-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-seat-c66271',
-                  path: '../../models/toilet/C66271.glb',
-                  dimensions: { width: 86.8, height: 82.8, depth: 87.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66271',
-                  price: '175.00',
-                  title: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
-              },
-              {
-                  id: 'C66272',
-                  name: 'Soft Close Slim Seat',
-                  image: 'assets/productImages/toilet/c66272-1000-rimless-close-coupled-toilet-soft-close-slim-seat.webp',
-                  link: 'https://www.bathroommountain.co.uk/utah-rimless-close-coupled-toilet-with-premium-soft-close-slim-seat-c66272',
-                  path: '../../models/toilet/C66272.glb',
-                  dimensions: { width: 86.7, height: 82.8, depth: 87.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66272',
-                  price: '219.99',
-                  title: 'Utah Rimless Close Coupled Toilet With Premium Soft Close Slim Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_22',
-          link: 'https://www.bathroommountain.co.uk/denver-back-to-wall-toilet-with-soft-close-seat-c66032',
-          name: 'Denver Back To Wall Toilet With Soft Close Seat',
-          price: '139.99',
-          image: 'assets/productImages/toilet/C66032-1000-Denver-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
-          variants: [
-              {
-                  id: 'C66032',
-                  name: 'Soft Close Seat',
-                  image: 'assets/productImages/toilet/C66032-1000-Denver-Back-To-Wall-Toilet-With-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-back-to-wall-toilet-with-soft-close-seat-c66032',
-                  path: '../../models/toilet/C66032.glb',
-                  dimensions: { width: 36.3, height: 45.1, depth: 51.1 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66032',
-                  price: '139.99',
-                  title: 'Denver Back To Wall Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66138',
-                  name: 'Slim Soft Close Seat',
-                  image: 'assets/productImages/toilet/C66138-1000-Back-To-Wall-Toilet-With-Soft-Close-Slim-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-back-to-wall-toilet-with-soft-close-slim-seat-c66138',
-                  path: '../../models/toilet/C66138.glb',
-                  dimensions: { width: 35.9, height: 47, depth: 50.6 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66138',
-                  price: '159.99',
-                  title: 'Denver Back To Wall Toilet With Soft Close Slim Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Back To Wall', 'Soft Close Seat', 'Multiple Styles']
-      },
-    {
-          id: 'toilet_variant_23',
-          link: 'https://www.bathroommountain.co.uk/denver-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66215',
-          name: 'Denver Rimless Comfort Height Close Coupled Toilet With Soft Close Seat',
-          price: '199.99',
-          image: 'assets/productImages/toilet/C66215-1000-Rimless-Comfort-Height-Close-Coupled-Toilet_2.webp',
-          variants: [
-              {
-                  id: 'C66215',
-                  name: 'Comfort Height',
-                  image: 'assets/productImages/toilet/C66215-1000-Rimless-Comfort-Height-Close-Coupled-Toilet_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-rimless-comfort-height-close-coupled-toilet-with-soft-close-seat-c66215',
-                  path: '../../models/toilet/C66215.glb',
-                  dimensions: { width: 37.5, height: 86.2, depth: 65 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66215',
-                  price: '199.99',
-                  title: 'Denver Rimless Comfort Height Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66216',
-                  name: 'Fully Back To Wall',
-                  image: 'assets/productImages/toilet/C66216-1000-Rimless-Fully-Back-to-Wall-Close-Coupled-Toilet_2.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-rimless-fully-back-to-wall-close-coupled-toilet-with-soft-close-seat-c66216',
-                  path: '../../models/toilet/C66216.glb',
-                  dimensions: { width: 37.5, height: 83.4, depth: 65 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66216',
-                  price: '159.00',
-                  title: 'Denver Rimless Fully Back to Wall Close Coupled Toilet With Soft Close Seat'
-              },
-              {
-                  id: 'C66214',
-                  name: 'Standard',
-                  image: 'assets/productImages/toilet/C66214-1000-Rimless-Close-Coupled-Toilet-With-Soft-Close-Seat_1.webp',
-                  link: 'https://www.bathroommountain.co.uk/denver-rimless-close-coupled-toilet-with-soft-close-seat-c66214',
-                  path: '../../models/toilet/C66214.glb',
-                  dimensions: { width: 37.5, height: 82.2, depth: 65 },
-                  orientation: {
-                      type: 'face_into_room',
-                      wallBuffer: 0, // Flush with wall - no gap
-                      description: 'Item is part of wall opening'
-                  },
-                  movement: { // NEW: Sink movement configuration
-                      snapToWall: true,
-                      allowVerticalMovement: false,
-                      allowFreeRotation: false
-                  },
-                  sku: 'C66214',
-                  price: '159.99',
-                  title: 'Denver Rimless Close Coupled Toilet With Soft Close Seat'
-              },
-          ],
-          variantType: 'Style Options',
-          features: ['Close Coupled', 'Soft Close Seat', 'Multiple Styles']
-      },
-  ],
-
-  TowelRails: [
+    TowelRails: [
         {
             id: 'heated_towel_rail_1',
             link: 'https://www.bathroommountain.co.uk/barcelona-electric-chrome-straight-heated-towel-rail-650x400mm-c36213',
@@ -6181,7 +10203,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36213',
                     price: '91.00',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 650x400mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 650x400mm',
+                    filterAttributes: { length: '855mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_2',
@@ -6202,7 +10225,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36214',
                     price: '119.99',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x400mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x400mm',
+                    filterAttributes: { length: '1004mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_3',
@@ -6223,7 +10247,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36215',
                     price: '103.00',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x500mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x500mm',
+                    filterAttributes: { length: '1004mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_4',
@@ -6244,7 +10269,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36216',
                     price: '139.99',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x600mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 800x600mm',
+                    filterAttributes: { length: '1005mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_5',
@@ -6265,7 +10291,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36217',
                     price: '134.99',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x400mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x400mm',
+                    filterAttributes: { length: '1204mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_6',
@@ -6286,7 +10313,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36218',
                     price: '115.00',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x500mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x500mm',
+                    filterAttributes: { length: '1204mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_7',
@@ -6307,7 +10335,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36219',
                     price: '154.99',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x600mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1000x600mm',
+                    filterAttributes: { length: '1204mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_8',
@@ -6328,7 +10357,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36220',
                     price: '119.00',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x400mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x400mm',
+                    filterAttributes: { length: '1405mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_9',
@@ -6349,7 +10379,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36221',
                     price: '159.99',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x500mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x500mm',
+                    filterAttributes: { length: '1405mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_10',
@@ -6370,7 +10401,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36222',
                     price: '135.00',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x600mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1200x600mm',
+                    filterAttributes: { length: '1405mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_11',
@@ -6391,7 +10423,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36223',
                     price: '135.00',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x400mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x400mm',
+                    filterAttributes: { length: '1613mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_12',
@@ -6412,7 +10445,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36224',
                     price: '184.99',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x500mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x500mm',
+                    filterAttributes: { length: '1613mm', finish: 'Chrome' }
                 },
                 {
                     id: 'heated_towel_rails_13',
@@ -6433,7 +10467,8 @@ const productData: ProductData = {
                     },
                     sku: 'C36225',
                     price: '91.00',
-                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x600mm'
+                    title: 'Barcelona Electric Chrome Straight Heated Towel Rail 1600x600mm',
+                    filterAttributes: { length: '1804mm', finish: 'Chrome' }
                 },
             ],
             variantType: 'Size Options',
@@ -6441,7 +10476,7 @@ const productData: ProductData = {
         },
     ],
 
-  Plumbing: [
+    Plumbing: [
         {
             id: 'soil_pipe_1',
             link: 'https://www.bathroommountain.co.uk/soil-pipe-connector',
@@ -6469,7 +10504,8 @@ const productData: ProductData = {
                     },
                     sku: 'SP110MM',
                     price: '89.99',
-                    title: '110mm Soil Pipe Connector with Inspection Cap'
+                    title: '110mm Soil Pipe Connector with Inspection Cap',
+                    filterAttributes: { type: 'Soil Pipe', diameter: '110mm', material: 'PVC' }
                 },
                 {
                     id: 'corner_column_150',
@@ -6496,13 +10532,15 @@ const productData: ProductData = {
                     },
                     sku: 'CC150X150',
                     price: '45.99',
-                    title: '150mm Corner Column Boxing - Tile Ready'
+                    title: '150mm Corner Column Boxing - Tile Ready',
+                    filterAttributes: { type: 'Boxing', size: '150x150mm', material: 'MDF' }
                 }
             ],
             variantType: 'Size Options',
             features: ['110mm Standard Size', '4 Screw Mounting Holes', 'Inspection Cap', 'PVC Construction']
         },
     ],
+
     WindowAndDoor: [
         {
             id: 'door',
@@ -6536,7 +10574,8 @@ const productData: ProductData = {
                     },
                     sku: 'DOOR-WHITE-800X2135',
                     price: '0.00',
-                    title: 'White Door 800×2100mm'
+                    title: 'White Door 800×2100mm',
+                    filterAttributes: { type: 'Door', colour: 'White', width: '800mm', height: '2135mm' }
                 },
                 {
                     id: 'brown_door',
@@ -6563,7 +10602,8 @@ const productData: ProductData = {
                     },
                     sku: 'DOOR-BROWN-800X2100',
                     price: '0.00',
-                    title: 'Brown Door 800×2100mm'
+                    title: 'Brown Door 800×2100mm',
+                    filterAttributes: { type: 'Door', colour: 'Brown', width: '800mm', height: '2100mm' }
                 },
             ],
             variantType: 'Color Options',
@@ -6602,7 +10642,8 @@ const productData: ProductData = {
                     },
                     sku: 'WIN-WHITE-800X600',
                     price: '0.00',
-                    title: 'White Window 800×600mm'
+                    title: 'White Window 800×600mm',
+                    filterAttributes: { type: 'Window', colour: 'White', width: '800mm', height: '600mm' }
                 },
                 {
                     id: 'brown_window',
@@ -6630,7 +10671,8 @@ const productData: ProductData = {
                     },
                     sku: 'WIN-BROWN-800X600',
                     price: '0.00',
-                    title: 'Brown Window 800×600mm'
+                    title: 'Brown Window 800×600mm',
+                    filterAttributes: { type: 'Window', colour: 'Brown', width: '800mm', height: '600mm' }
                 },
             ],
             variantType: 'Color Options',
