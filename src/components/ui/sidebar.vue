@@ -105,6 +105,12 @@
             ref="bathroomItemsContent"
         >
           <div :style="categoriesContainerStyle">
+            <!-- Loading indicator while fetching products from API -->
+            <div v-if="isLoadingProducts" :style="productsLoadingStyle">
+              <div :style="productsLoadingSpinnerStyle"></div>
+              <span>Loading products...</span>
+            </div>
+
             <!-- Category Items -->
             <template v-for="category in bathroomCategories" :key="category.id">
               <!-- Regular category (no children) -->
@@ -428,7 +434,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted, nextTick } from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import { FLOOR_TEXTURES, WALL_TEXTURES } from '../../constants/textures.js'
 import { COMPONENTS } from '../../constants/components.js'
@@ -441,9 +447,44 @@ import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 const gtm = useGtm()
 
 // NEW: Import selective preloading functions
-import productData from '../../mocks/productData.js'
+import localProductData from '../../mocks/productData.js'
+import { useCachedApi } from '../../composables/useCachedApi'
 import { CONFIG } from '../../constants/models'
 import { ModelManager, preloadCategoryModels, isCategoryPreloaded } from '../../models/bathroomFixtures'
+
+// Reactive product data - will be loaded from API
+const productData = ref(localProductData)
+const isLoadingProducts = ref(false)
+
+// Cached API instance for IndexedDB caching
+const cachedApi = useCachedApi()
+
+// Fetch products from database API (with IndexedDB caching)
+const fetchProductsFromAPI = async () => {
+  isLoadingProducts.value = true
+  try {
+    // Use cached API - checks IndexedDB first, then falls back to API
+    const data = await cachedApi.getEnabledProducts()
+    // API already returns data grouped by category
+    productData.value = data
+    if (import.meta.env.DEV) {
+      console.log('Loaded products (from cache or API):', Object.keys(productData.value))
+    }
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn('Failed to fetch from API/cache, using local product data:', message)
+    }
+    productData.value = localProductData
+  } finally {
+    isLoadingProducts.value = false
+  }
+}
+
+// Load products on mount
+onMounted(() => {
+  fetchProductsFromAPI()
+})
 
 
 
@@ -773,7 +814,7 @@ const addLoadedProduct = (productId) => {
 
 // FIXED: Add missing helper functions
 const getProductsForCategory = (category) => {
-  return productData[category] || []
+  return productData.value[category] || []
 }
 
 // Product drawer state
@@ -920,8 +961,8 @@ const isLShape = computed(() => {
 const getCategoryModelPaths = (category) => {
   const categoryModels = []
 
-  if (productData[category]) {
-    productData[category].forEach(product => {
+  if (productData.value[category]) {
+    productData.value[category].forEach(product => {
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach(variant => {
           if (variant.path && variant.sku) {
@@ -1005,7 +1046,9 @@ const productDrawerProps = computed(() => ({
   roomHeight: props.roomHeight,
   existingItems: props.existingItems,
   notchWidth: props.notchWidth,
-  notchHeight: props.notchHeight
+  notchHeight: props.notchHeight,
+  // Pass product data from API
+  productData: productData.value
 }))
 
 // 2. ADD these new helper functions (don't replace existing ones):
@@ -1433,6 +1476,31 @@ const searchTipsStyle = computed(() => ({
   borderRadius: '6px',
   border: '1px solid #e5e7eb'
 }));
+
+// Products loading indicator styles
+const productsLoadingStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '12px',
+  padding: '20px',
+  color: '#29275B',
+  fontSize: '14px',
+  fontWeight: '500',
+  backgroundColor: '#f8fafc',
+  borderRadius: '8px',
+  marginBottom: '12px',
+  border: '1px solid #e5e7eb'
+}))
+
+const productsLoadingSpinnerStyle = computed(() => ({
+  width: '20px',
+  height: '20px',
+  border: '2px solid #e5e7eb',
+  borderTop: '2px solid #29275B',
+  borderRadius: '50%',
+  animation: 'spin 1s linear infinite'
+}))
 
 // NEW: Tiny loading spinner style (barely visible)
 const tinyLoadingSpinnerStyle = {
@@ -2054,7 +2122,7 @@ const performSearch = (query) => {
   // Your existing search logic (exact SKU match first)
   let exactSkuMatch = null;
 
-  Object.entries(productData).forEach(([category, products]) => {
+  Object.entries(productData.value).forEach(([category, products]) => {
     products.forEach((product) => {
       if (product.variants && Array.isArray(product.variants)) {
         product.variants.forEach((variant) => {
@@ -2078,7 +2146,7 @@ const performSearch = (query) => {
   }
 
   // Regular search logic for partial matches
-  Object.entries(productData).forEach(([category, products]) => {
+  Object.entries(productData.value).forEach(([category, products]) => {
     products.forEach((product) => {
       // Search in product name
       const name = (product.name || '').toLowerCase()

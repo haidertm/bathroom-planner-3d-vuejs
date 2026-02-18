@@ -38,7 +38,7 @@ export type ObjectModel = {
     link?: string;
     sku?: string;
     scale?: number;
-    price?: number | string;
+    price?: string;
     rotation?: [number, number, number];
     position?: [number, number, number];
     movement?: MovementConfig;
@@ -1691,7 +1691,8 @@ export const findFreeWallPosition = (
     _floorOffset?: number,
     sku?: string,
     notchWidth?: number,
-    notchHeight?: number
+    notchHeight?: number,
+    model?: ObjectModel  // NEW: Accept model with dimensions directly (for database products)
 ): { position: Position; rotation: number } | null => {
 
     console.log('🎯 Finding free position on interior walls for:', objectType, movement);
@@ -1710,12 +1711,13 @@ export const findFreeWallPosition = (
             movementConfig,
             sku,
             notchWidth,
-            notchHeight
+            notchHeight,
+            model  // Pass model for direct dimension lookup
         );
 
         // Return null if no free corner is available
+        // Note: findFreeCornerPosition already logs specific warnings (missing dimensions, corners occupied, etc.)
         if (!cornerResult) {
-            console.warn('⚠️ Cannot add corner item - all corners are occupied');
             return null;
         }
 
@@ -1723,10 +1725,10 @@ export const findFreeWallPosition = (
     }
 
     if (!movementConfig.snapToWall) {
-        return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig, sku, notchWidth, notchHeight);
+        return findFreeStandingPosition(roomWidth, roomHeight, objectType, scale, existingItems, maxAttempts, movementConfig, sku, notchWidth, notchHeight, model);
     }
 
-    const dimensions = getDimensions(objectType, sku);
+    const dimensions = getDimensions(objectType, sku, model);
 
     // ✅ FIX: Add fallback dimensions to prevent placement outside room boundaries
     // If dimensions are not available, use a safe minimum size (30cm x 30cm)
@@ -1948,12 +1950,14 @@ export const findFreeCornerPosition = (
     movement?: MovementConfig,
     sku?: string,
     notchWidth?: number,
-    notchHeight?: number
+    notchHeight?: number,
+    model?: ObjectModel  // NEW: Accept model with dimensions directly (for database products)
 ): { position: Position; rotation: number } | null => {
 
     const corners = getRoomCorners(roomWidth, roomHeight, notchWidth, notchHeight);
 
-    const dimensions = getDimensions(objectType, sku);
+    // Pass model for direct dimension lookup (priority 1 in getDimensions)
+    const dimensions = getDimensions(objectType, sku, model);
 
     if (!dimensions || dimensions.width === 0 || dimensions.depth === 0) {
         console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeCornerPosition`);
@@ -1997,13 +2001,27 @@ export const findFreeCornerPosition = (
     // Try each corner
     for (const corner of cornersToTry) {
 
+        // Create temporary item with SKU and model for proper dimension lookup
+        const tempItem: BathroomItem = {
+            id: -1,
+            type: objectType,
+            position: [corner.position.x, corner.position.y, corner.position.z] as [number, number, number],
+            scale: scale,
+            sku: sku,
+            model: model
+        };
+
         const result = constrainToCorner(corner.position, roomWidth, roomHeight, {
             type: objectType,
             scale: 1.0,
             orientation,
             movement,
-            sku
+            sku,
+            item: tempItem  // Pass tempItem so constrainToCorner can use model for dimensions
         });
+
+        // Update tempItem position with constrained result
+        tempItem.position = [result.position.x, result.position.y, result.position.z] as [number, number, number];
 
         console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
         console.log(`🔍 Existing items count:`, existingItems.length);
@@ -2013,15 +2031,6 @@ export const findFreeCornerPosition = (
             position: item.position
         })));
 
-        // Create temporary item with SKU for proper collision detection
-        const tempItem: BathroomItem = {
-            id: -1,
-            type: objectType,
-            position: [result.position.x, result.position.y, result.position.z] as [number, number, number],
-            scale: scale,
-            sku: sku
-        };
-
         // Check if this corner position would collide with existing items
         const wouldCollide = wouldCollideWithExisting(
             result.position,
@@ -2029,7 +2038,7 @@ export const findFreeCornerPosition = (
             scale,
             -1, // New item, no ID yet
             existingItems,
-            tempItem // Pass temporary item for proper dimension lookup
+            tempItem // Pass temporary item with model for proper dimension lookup
         );
 
         console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
@@ -2056,13 +2065,14 @@ const findFreeStandingPosition = (
     movement?: MovementConfig,
     sku?: string,
     notchWidth?: number,
-    notchHeight?: number
+    notchHeight?: number,
+    model?: ObjectModel  // NEW: Accept model with dimensions directly (for database products)
 ): { position: Position; rotation: number } | null => {
 
     const movementConfig = movement ?? getMovementConfig(objectType);
 
-    // Get actual object dimensions
-    const dimensions = getDimensions(objectType, sku);
+    // Get actual object dimensions - pass model for direct lookup
+    const dimensions = getDimensions(objectType, sku, model);
     if (!dimensions) {
         console.warn(`No dimensions found for ${objectType} (SKU: ${sku}) in findFreeStandingPosition`);
         // Fallback to center if no dimensions
@@ -2098,13 +2108,14 @@ const findFreeStandingPosition = (
 
         const rotation = 0;
 
-        // Create temporary item for collision detection with SKU
+        // Create temporary item for collision detection with SKU and model
         const tempItem: BathroomItem = {
             id: -1,
             type: objectType,
             position: [position.x, position.y, position.z] as [number, number, number],
             scale: scale,
-            sku: sku
+            sku: sku,
+            model: model
         };
 
         // Check for collisions
@@ -2147,13 +2158,14 @@ const findFreeStandingPosition = (
         z: (interior.minZ + interior.maxZ) / 2
     };
 
-    // Create temporary item for collision detection
+    // Create temporary item for collision detection with model
     const fallbackTempItem: BathroomItem = {
         id: -1,
         type: objectType,
         position: [fallbackPosition.x, fallbackPosition.y, fallbackPosition.z] as [number, number, number],
         scale: scale,
-        sku: sku
+        sku: sku,
+        model: model
     };
 
     // Check if fallback position collides

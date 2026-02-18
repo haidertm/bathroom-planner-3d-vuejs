@@ -4,6 +4,8 @@ import RoomShapeSelector from '../pages/RoomShapeSelector.vue'
 import Planner from '../pages/Planner.vue' // Renamed from Home
 import MyDesigns from '../pages/MyDesigns.vue'
 import RoomDimensions from '../pages/RoomDimensions.vue'
+import NotFound from '../pages/NotFound.vue'
+import { loadSession } from '../composables/useAdminAuth'
 
 const routes = [
     {
@@ -30,12 +32,59 @@ const routes = [
         path: '/my-designs',
         name: 'MyDesigns',
         component: MyDesigns
+    },
+    // Admin Panel Routes (lazy-loaded)
+    {
+        path: '/vadmin',
+        name: 'AdminLogin',
+        component: () => import('../pages/admin/AdminLogin.vue')
+    },
+    {
+        path: '/vadmin/dashboard',
+        name: 'AdminDashboard',
+        component: () => import('../pages/admin/AdminDashboard.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/vadmin/products/:id/edit',
+        name: 'ProductEdit',
+        component: () => import('../pages/admin/ProductEdit.vue'),
+        meta: { requiresAuth: true }
+    },
+    // 404 - Catch all unmatched routes
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: NotFound
     }
 ]
 
 const router = createRouter({
     history: createWebHistory(),
     routes
+})
+
+// Navigation guard for admin routes
+router.beforeEach((to, _from, next) => {
+    // Check for authenticated user first
+    const session = loadSession()
+
+    // If authenticated user tries to go to login page, redirect to dashboard
+    if (session && (to.path === '/vadmin' || to.name === 'AdminLogin')) {
+        next('/vadmin/dashboard')
+        return
+    }
+
+    if (to.meta.requiresAuth) {
+        // Use shared session validation from useAdminAuth
+        if (session) {
+            next()
+        } else {
+            next('/vadmin')
+        }
+    } else {
+        next()
+    }
 })
 
 export default router

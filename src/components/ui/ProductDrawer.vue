@@ -398,7 +398,7 @@
 import {ref, computed, watch} from 'vue'
 import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
-import productData from '../../mocks/productData'
+import localProductData from '../../mocks/productData'
 import FilterChips from './FilterChips.vue'
 import AllFiltersDrawer from './AllFiltersDrawer.vue'
 import SearchFilterBar from './SearchFilterBar.vue'
@@ -541,6 +541,10 @@ const props = defineProps({
   notchHeight: {
     type: Number,
     default: 0
+  },
+  productData: {
+    type: Object,
+    default: () => JSON.parse(JSON.stringify(localProductData))
   }
 })
 
@@ -985,6 +989,7 @@ const isVariantTooLarge = (variant) => {
   if (!category || category === 'search' || !objectType) return false
 
   // Check if a valid position exists using findFreeWallPosition
+  // Pass variant as model so dimensions can be looked up directly (for database products)
   const freePosition = findFreeWallPosition(
     props.roomWidth,
     props.roomHeight,
@@ -998,7 +1003,8 @@ const isVariantTooLarge = (variant) => {
     variant.floorOffset,
     variant.sku,
     props.notchWidth,
-    props.notchHeight
+    props.notchHeight,
+    variant // Pass variant as model - it has dimensions property
   )
 
   // If no valid position found, variant is too large/no space
@@ -1237,7 +1243,7 @@ const isMobileDevice = computed(() => isMobile())
 
 // Methods
 const getProductsForCategory = (category) => {
-  return productData[category] || []
+  return props.productData[category] || []
 }
 
 const readyProducts = computed(() => {
@@ -1275,7 +1281,7 @@ const readyProducts = computed(() => {
       if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
         transformedResults.push({
           id: matchingVariant.id || matchingVariant.sku,
-          name: matchingVariant.title || matchingVariant.name || product.name,
+          name: product.name || matchingVariant.title || matchingVariant.name,
           price: matchingVariant.price || product.price,
           image: matchingVariant.image || product.image,
           link: matchingVariant.link || product.link,
@@ -1335,9 +1341,9 @@ const readyProducts = computed(() => {
       }
 
       // Create a card for EACH variant
-      variants.forEach(variant => {
+      variants.forEach((variant, variantIndex) => {
         transformedResults.push({
-          id: `${product.id}-${variant.id || variant.sku}`,
+          id: `${product.id}-${variant.id || variant.sku}-${variantIndex}`,
           // Show full variant name
           name: variant.title || `${product.name} - ${variant.name}`,
           price: variant.price || product.price,
@@ -1417,6 +1423,7 @@ const readyProducts = computed(() => {
     if (filtersActive) {
       const directAddItems = []
 
+      let variantCounter = 0
       for (const product of props.filteredProducts) {
         // Find all variants that match the filters
         const matchingVariants = filterProductVariants(product, props.selectedFilters)
@@ -1424,7 +1431,7 @@ const readyProducts = computed(() => {
         // Create a direct-add item for each matching variant
         for (const variant of matchingVariants) {
           directAddItems.push({
-            id: `${product.id}-${variant.id || variant.sku}`,
+            id: `${product.id}-${variant.id || variant.sku}-${variantCounter++}`,
             name: variant.title || `${product.name} - ${variant.name}`,
             price: variant.price || product.price,
             image: variant.image || product.image,
@@ -1689,13 +1696,19 @@ const getDisplayImage = () => {
 }
 
 const getDisplayName = () => {
+  // Always prioritize product.name for consistency with dashboard
+  // This ensures the name from the database is shown, not the variant title
+  if (selectedProduct.value?.name) {
+    return selectedProduct.value.name
+  }
+  // Fallback to variant title/name if product name not available
   if (selectedVariant.value && selectedVariant.value.title) {
     return selectedVariant.value.title
   }
   if (selectedVariant.value && selectedVariant.value.name) {
-    return `${selectedProduct.value?.name} - ${selectedVariant.value.name}`
+    return selectedVariant.value.name
   }
-  return selectedProduct.value?.name || ''
+  return ''
 }
 
 const getDisplaySku = () => {

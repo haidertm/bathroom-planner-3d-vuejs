@@ -331,8 +331,9 @@
           </div>
 
           <!-- Empty state when no filters available -->
-          <div v-if="primaryFilters.length === 0 && secondaryFilters.length === 0 && !hasProductsWithPrices" class="no-filters-message">
+          <div v-if="!hasVisibleFilterSections && !hasProductsWithPrices && !hasBackgroundFilters" class="no-filters-message">
             <p>No filters available for this category.</p>
+            <p class="no-filters-hint">Product data may still be loading or filter attributes are not configured.</p>
           </div>
         </div>
 
@@ -844,6 +845,27 @@ const hasProductsWithPrices = computed(() => {
     }
     return false
   })
+})
+
+// Check if any filter sections will actually render (have options/bounds)
+const hasVisibleFilterSections = computed(() => {
+  // Check primary filters
+  for (const filterKey of primaryFilters.value) {
+    if (isRangeFilter(filterKey)) {
+      if (hasRangeBounds(filterKey)) return true
+    } else {
+      if (getFilterOptions(filterKey).length > 0) return true
+    }
+  }
+  // Check secondary filters
+  for (const filterKey of secondaryFilters.value) {
+    if (isRangeFilter(filterKey)) {
+      if (hasRangeBounds(filterKey)) return true
+    } else {
+      if (getFilterOptions(filterKey).length > 0) return true
+    }
+  }
+  return false
 })
 
 // Background filters - check if any are active
@@ -1508,6 +1530,12 @@ const closeDrawer = () => {
   color: #6b7280;
   font-size: 14px;
   font-family: Arial, sans-serif;
+}
+
+.no-filters-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 8px;
 }
 
 .filters-footer {

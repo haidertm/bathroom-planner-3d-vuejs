@@ -66,7 +66,7 @@
               :value="category.value"
               v-model="localSelectedCategory"
               @change="applyCategory"
-              :ref="index === 0 ? 'firstCategoryOption' : undefined"
+              :ref="el => { if (index === 0) firstCategoryOption = el }"
             />
             <span class="option-label">{{ category.label }}</span>
             <span class="option-count">({{ category.count }})</span>
@@ -92,7 +92,7 @@
               <div class="price-input-wrapper">
                 <span class="currency">£</span>
                 <input
-                  ref="firstPriceOption"
+                  :ref="el => firstPriceOption = el"
                   type="number"
                   :value="displayPriceMin"
                   :min="priceRange.min"
@@ -189,7 +189,7 @@
               :value="style.value"
               v-model="localSelectedStyles"
               @change="applyStyle"
-              :ref="index === 0 ? 'firstStyleOption' : undefined"
+              :ref="el => { if (index === 0) firstStyleOption = el }"
             />
             <span class="option-label">{{ style.label }}</span>
             <span class="option-count">({{ style.count }})</span>
@@ -244,9 +244,9 @@ const priceChipRef = ref(null)
 const styleChipRef = ref(null)
 
 // Dropdown first option refs for focus management
-const firstCategoryOption = ref(null)
-const firstPriceOption = ref(null)
-const firstStyleOption = ref(null)
+let firstCategoryOption = null
+let firstPriceOption = null
+let firstStyleOption = null
 
 // Focus restoration - track which element opened the dropdown
 const lastFocusedElement = ref(null)
@@ -701,8 +701,8 @@ const toggleCategoryDropdown = async () => {
     categoryDropdownPos.value = getDropdownPosition(categoryChipRef.value)
 
     // Focus first option for accessibility
-    if (firstCategoryOption.value) {
-      firstCategoryOption.value.focus()
+    if (firstCategoryOption && firstCategoryOption.focus) {
+      firstCategoryOption.focus()
     }
   }
 }
@@ -722,8 +722,8 @@ const togglePriceDropdown = async () => {
     priceDropdownPos.value = getDropdownPosition(priceChipRef.value)
 
     // Focus first input for accessibility
-    if (firstPriceOption.value) {
-      firstPriceOption.value.focus()
+    if (firstPriceOption && firstPriceOption.focus) {
+      firstPriceOption.focus()
     }
   }
 }
@@ -743,8 +743,8 @@ const toggleStyleDropdown = async () => {
     styleDropdownPos.value = getDropdownPosition(styleChipRef.value)
 
     // Focus first checkbox for accessibility
-    if (firstStyleOption.value) {
-      firstStyleOption.value.focus()
+    if (firstStyleOption && firstStyleOption.focus) {
+      firstStyleOption.focus()
     }
   }
 }
