@@ -1489,7 +1489,6 @@ const getLink = () => {
 
 const selectColor = (colorId) => {
   selectedColor.value = colorId
-}
 
   // Track color selection in GTM
   if (gtm?.enabled()) {
