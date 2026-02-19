@@ -40,6 +40,7 @@
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
+        @update-door-config="handleDoorConfigUpdate"
         :show-rotation-toggle="showRotationToggle"
     />
 
@@ -399,6 +400,28 @@ const handleConfigureVariants = (config) => {
     isVariantDrawerOpen.value = true
   } else {
     console.warn('⚠️ Cannot configure variants: missing product or variant data')
+  }
+}
+
+// Handle door configuration updates from ItemConfigurationOverlay
+const handleDoorConfigUpdate = ({ itemId, doorConfig }) => {
+  console.log('🚪 Door config update:', { itemId, doorConfig })
+
+  // Update the item in the items array
+  const item = items.value.find(i => i.id === itemId)
+  if (item) {
+    item.doorConfig = doorConfig
+    console.log('✅ Updated door config for item:', itemId)
+
+    // Update the schematic in sceneManager (this refreshes the 2D arc)
+    if (sceneManagerRef.value) {
+      sceneManagerRef.value.updateDoorConfig(itemId, doorConfig)
+    }
+
+    // Save state for undo/redo
+    saveState()
+  } else {
+    console.warn('⚠️ Item not found for door config update:', itemId)
   }
 }
 
@@ -1287,12 +1310,22 @@ const addItem = async (type, productData = null) => {
   // - Otherwise, use variant's spawnHeight or fallback to freePosition.y
   const itemY = useAutoPositionedY ? freePosition.y : (selectedVariant?.spawnHeight ?? freePosition.y)
 
+  // Check if this is a door item (for adding default door config)
+  const isDoorItem = type === 'Door' || (type === 'WindowAndDoor' && sku?.toLowerCase().includes('door'))
+
   const newItem = {
     id: generateUniqueId(),
     type,
     position: [freePosition.x, itemY, freePosition.z],
     rotation: wallRotation,
     scale: 1.0,
+    // Add default door config for door items
+    ...(isDoorItem && {
+      doorConfig: {
+        hingeSide: 'right',
+        swingDirection: 'inward'
+      }
+    }),
     // FIXED: Only add product data if both productData and selectedVariant exist
     ...(productData && selectedVariant && {
       sku,

@@ -23,7 +23,7 @@ import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
 import { CameraTransition, Easing } from './cameraTransition';
-import { getSchematicTypeFromSku, type SchematicType } from '../constants/schematicPatterns';
+import { getSchematicTypeFromSku, type SchematicType, type DoorConfig, DEFAULT_DOOR_CONFIG } from '../constants/schematicPatterns';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -1063,6 +1063,14 @@ export class SceneManager {
       return 'furniture';
     }
 
+    // Check for doors (Door or WindowAndDoor category with door SKU)
+    if (itemType === 'Door' || itemType === 'WindowAndDoor') {
+      // Check if it's actually a door (not a window) by SKU pattern
+      if (sku.toLowerCase().includes('door')) {
+        return 'door';
+      }
+    }
+
     // Fallback: check SKU patterns from configuration
     // Patterns are defined in src/constants/schematicPatterns.ts for maintainability
     const skuMatch = getSchematicTypeFromSku(sku);
@@ -1142,6 +1150,10 @@ export class SceneManager {
       case 'furniture':
         this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
         break;
+      case 'door':
+        // Door schematic needs special handling - will be created in create2DSchematicOverlays
+        // with door config passed separately
+        break;
       case 'generic':
       default:
         this.createGenericSchematic(schematicGroup, width, depth, schematicHeight);
@@ -1199,7 +1211,13 @@ export class SceneManager {
       schematicGroup.name = `Schematic2D_${itemId}`;
 
       // Create schematic based on object type
-      this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+      // Door schematics need special handling with doorConfig
+      if (schematicType === 'door') {
+        const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+        this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig);
+      } else {
+        this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+      }
 
       // Position the schematic at the object's actual center (from bounding box)
       schematicGroup.position.set(center.x, 0, center.z); // At floor level, centered on object
@@ -1253,7 +1271,13 @@ export class SceneManager {
     schematicGroup.name = `Schematic2D_${itemId}`;
 
     // Create schematic based on object type
-    this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+    // Door schematics need special handling with doorConfig
+    if (schematicType === 'door') {
+      const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+      this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig);
+    } else {
+      this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+    }
 
     // Position and rotate
     schematicGroup.position.set(center.x, 0, center.z);
@@ -1293,6 +1317,31 @@ export class SceneManager {
       });
       this.schematic2DOverlays.delete(itemId);
       console.log(`🗑️ Removed schematic for Item ${itemId}`);
+    }
+  }
+
+  /**
+   * Update door configuration and refresh the schematic
+   * Called when user changes door swing direction or hinge side
+   */
+  public updateDoorConfig(itemId: number, doorConfig: DoorConfig): void {
+    const model = this.existingItems.get(itemId);
+    if (!model) {
+      console.warn(`⚠️ Model not found for item ${itemId} when updating door config`);
+      return;
+    }
+
+    // Update the model's userData with the new door config
+    model.userData.doorConfig = doorConfig;
+    console.log(`🚪 Updated door config for item ${itemId}:`, doorConfig);
+
+    // If in 2D mode, recreate the schematic with the new config
+    if (this.viewMode === '2d') {
+      // Remove existing schematic
+      this.removeSchematicForItem(itemId);
+      // Create new schematic with updated config
+      this.createSchematicForItem(itemId);
+      console.log(`📐 Refreshed door schematic for item ${itemId}`);
     }
   }
 
@@ -1553,6 +1602,195 @@ export class SceneManager {
   }
 
   /**
+   * Create door schematic with swing arc
+   * Shows a door panel and a 90-degree arc indicating the swing direction
+   *
+   * @param group - The THREE.Group to add schematic elements to
+   * @param width - Door width (in cm)
+   * @param depth - Door depth/thickness (in cm)
+   * @param height - Y position for the schematic
+   * @param doorConfig - Door configuration (hingeSide and swingDirection)
+   */
+  private createDoorSchematic(
+    group: THREE.Group,
+    width: number,
+    depth: number,
+    height: number,
+    doorConfig: DoorConfig = DEFAULT_DOOR_CONFIG
+  ): void {
+    const { hingeSide, swingDirection } = doorConfig;
+
+    // Door panel thickness for visualization (thin line)
+    const panelThickness = Math.max(depth, 5); // At least 5cm thick for visibility
+
+    // Colors
+    const doorColor = 0x8B4513; // Saddle brown for door
+    const arcColor = 0x4169e1; // Royal blue for arc
+    const hingeColor = 0x333333; // Dark gray for hinge indicator
+
+    // Create door panel (thin rectangle along one edge of the door frame)
+    const panelGeometry = new THREE.PlaneGeometry(width, panelThickness);
+    const panelMaterial = new THREE.MeshBasicMaterial({
+      color: doorColor,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+      depthWrite: false
+    });
+    const doorPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    doorPanel.rotation.x = -Math.PI / 2; // Lay flat
+    doorPanel.position.y = height;
+    doorPanel.renderOrder = 1000;
+
+    // Position door panel based on swing direction
+    // When door is closed, it sits at the wall edge
+    // inward: panel is at the far edge of depth (inside room)
+    // outward: panel is at the near edge of depth (outside room)
+    const panelZOffset = swingDirection === 'inward' ? -depth / 2 + panelThickness / 2 : depth / 2 - panelThickness / 2;
+    doorPanel.position.z = panelZOffset;
+
+    group.add(doorPanel);
+
+    // Create the 90-degree swing arc
+    const arcRadius = width; // Arc radius equals door width
+    const arcSegments = 32;
+
+    // Determine arc start and end angles based on hinge side and swing direction
+    let startAngle: number;
+    let endAngle: number;
+
+    // Arc angles are measured from the positive X-axis (right side)
+    // We need to calculate based on:
+    // - hingeSide: determines which side of the door frame the hinge is on
+    // - swingDirection: determines if arc sweeps into room (inward) or out (outward)
+
+    if (hingeSide === 'right') {
+      // Hinge on right side of door (when looking at door from inside room)
+      if (swingDirection === 'inward') {
+        // Door swings into the room, arc goes from closed (along wall) to open (perpendicular)
+        startAngle = Math.PI; // Closed position (pointing left, along wall)
+        endAngle = Math.PI / 2; // Open position (pointing away from viewer, into room)
+      } else {
+        // Door swings outward
+        startAngle = Math.PI; // Closed position
+        endAngle = Math.PI * 1.5; // Open position (pointing toward viewer, out of room)
+      }
+    } else {
+      // Hinge on left side of door
+      if (swingDirection === 'inward') {
+        startAngle = 0; // Closed position (pointing right, along wall)
+        endAngle = Math.PI / 2; // Open position (pointing away from viewer, into room)
+      } else {
+        // Door swings outward
+        startAngle = 0; // Closed position
+        endAngle = -Math.PI / 2; // Open position (pointing toward viewer, out of room)
+      }
+    }
+
+    // Create arc curve
+    const arcCurve = new THREE.EllipseCurve(
+      0, 0, // Center x, y (will be positioned later)
+      arcRadius, arcRadius, // X and Y radius (same for circular arc)
+      startAngle, endAngle, // Start and end angles
+      startAngle > endAngle, // Clockwise if start > end
+      0 // Rotation
+    );
+
+    const arcPoints = arcCurve.getPoints(arcSegments);
+    const arcGeometry = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const arcMaterial = new THREE.LineBasicMaterial({
+      color: arcColor,
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.8,
+      depthTest: false,
+      depthWrite: false
+    });
+    const arcLine = new THREE.Line(arcGeometry, arcMaterial);
+    arcLine.rotation.x = -Math.PI / 2; // Lay flat on floor
+    arcLine.position.y = height;
+    arcLine.renderOrder = 1001;
+
+    // Position arc center at the hinge location
+    const hingeX = hingeSide === 'right' ? width / 2 : -width / 2;
+    const hingeZ = swingDirection === 'inward' ? -depth / 2 : depth / 2;
+    arcLine.position.x = hingeX;
+    arcLine.position.z = hingeZ;
+
+    group.add(arcLine);
+
+    // Add small circle at hinge point
+    const hingeGeometry = new THREE.CircleGeometry(4, 16); // 4cm radius
+    const hingeMaterial = new THREE.MeshBasicMaterial({
+      color: hingeColor,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+      depthWrite: false
+    });
+    const hingeDot = new THREE.Mesh(hingeGeometry, hingeMaterial);
+    hingeDot.rotation.x = -Math.PI / 2;
+    hingeDot.position.set(hingeX, height + 1, panelZOffset);
+    hingeDot.renderOrder = 1002;
+
+    group.add(hingeDot);
+
+    // Add a dashed line showing the door in open position
+    const openDoorEndX = hingeSide === 'right'
+      ? hingeX // Hinge position X
+      : hingeX; // Hinge position X
+    const openDoorEndZ = swingDirection === 'inward'
+      ? hingeZ - arcRadius // Into the room
+      : hingeZ + arcRadius; // Out of the room
+
+    const openDoorPoints = [
+      new THREE.Vector3(hingeX, height, hingeZ),
+      new THREE.Vector3(openDoorEndX, height, openDoorEndZ)
+    ];
+
+    const openDoorGeometry = new THREE.BufferGeometry().setFromPoints(openDoorPoints);
+    const openDoorMaterial = new THREE.LineDashedMaterial({
+      color: doorColor,
+      linewidth: 1,
+      dashSize: 10,
+      gapSize: 5,
+      transparent: true,
+      opacity: 0.6,
+      depthTest: false,
+      depthWrite: false
+    });
+    const openDoorLine = new THREE.Line(openDoorGeometry, openDoorMaterial);
+    openDoorLine.computeLineDistances(); // Required for dashed lines
+    openDoorLine.renderOrder = 999;
+
+    group.add(openDoorLine);
+
+    // Add border around the door frame area
+    const framePoints = [
+      new THREE.Vector3(-width / 2, height, -depth / 2),
+      new THREE.Vector3(width / 2, height, -depth / 2),
+      new THREE.Vector3(width / 2, height, depth / 2),
+      new THREE.Vector3(-width / 2, height, depth / 2),
+      new THREE.Vector3(-width / 2, height, -depth / 2) // Close the rectangle
+    ];
+    const frameGeometry = new THREE.BufferGeometry().setFromPoints(framePoints);
+    const frameMaterial = new THREE.LineBasicMaterial({
+      color: 0x333333,
+      linewidth: 1,
+      transparent: true,
+      opacity: 0.5,
+      depthTest: false,
+      depthWrite: false
+    });
+    const frameLine = new THREE.Line(frameGeometry, frameMaterial);
+    frameLine.renderOrder = 998;
+
+    group.add(frameLine);
+  }
+
+  /**
    * Add a label/icon to the schematic (uses a sprite for visibility)
    */
   private addSchematicLabel(group: THREE.Group, icon: string, width: number, depth: number, height: number): void {
@@ -1760,6 +1998,11 @@ export class SceneManager {
       model.userData.model = item.model;
     }
 
+    // Update door configuration if item has it
+    if (item.doorConfig) {
+      model.userData.doorConfig = item.doorConfig;
+    }
+
     // Update schematic position if in 2D mode
     if (this.viewMode === '2d') {
       this.updateSchematicPosition(item.id);
@@ -1833,6 +2076,11 @@ export class SceneManager {
 
         if (item.model) {
           model.userData.model = item.model;
+        }
+
+        // Store door configuration for door items
+        if (item.doorConfig) {
+          model.userData.doorConfig = item.doorConfig;
         }
 
         console.log(`✅ Stored orientation in addSingleItem:`, model.userData.orientation);

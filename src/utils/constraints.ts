@@ -107,6 +107,10 @@ export interface BathroomItem {
     sku?: string;
     productName?: string;
     model?: ObjectModel;
+    doorConfig?: {
+        hingeSide: 'left' | 'right';
+        swingDirection: 'inward' | 'outward';
+    };
 }
 
 /**
