@@ -2,7 +2,7 @@
   <header :style="headerStyle">
     <div :style="logoContainerStyle">
       <router-link to="/" @click="trackLogoClick">
-        <img v-if="logo" :src="logo" :alt="logoAlt" :style="logoStyle" width="120" height="40" />
+        <img v-if="logo" :src="logo" :alt="logoAlt" :style="logoStyle" width="120" :height="parseInt(props.logoHeight)" />
         <span v-else :style="titleStyle">{{ title }}</span>
       </router-link>
     </div>

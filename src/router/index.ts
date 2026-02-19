@@ -34,4 +34,16 @@ const router = createRouter({
     routes
 })
 
+// Recover from stale chunk URLs after a new deployment
+router.onError((error, to) => {
+    const isChunkError =
+        error.message?.includes('Failed to fetch dynamically imported module') ||
+        error.message?.includes('Loading chunk') ||
+        error.message?.includes('failed to fetch')
+
+    if (isChunkError) {
+        window.location.assign(to.fullPath)
+    }
+})
+
 export default router
