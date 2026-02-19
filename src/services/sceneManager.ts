@@ -1335,6 +1335,12 @@ export class SceneManager {
     model.userData.doorConfig = doorConfig;
     console.log(`🚪 Updated door config for item ${itemId}:`, doorConfig);
 
+    // Flip the 3D model based on hinge side
+    // Default models have hinge on the right, so flip for left hinge
+    const flipX = doorConfig.hingeSide === 'left' ? -1 : 1;
+    model.scale.x = Math.abs(model.scale.x) * flipX;
+    console.log(`🚪 3D model scale.x set to ${model.scale.x} for hinge side: ${doorConfig.hingeSide}`);
+
     // If in 2D mode, recreate the schematic with the new config
     if (this.viewMode === '2d') {
       // Remove existing schematic
@@ -1998,9 +2004,12 @@ export class SceneManager {
       model.userData.model = item.model;
     }
 
-    // Update door configuration if item has it
+    // Update door configuration if item has it and apply 3D flip
     if (item.doorConfig) {
       model.userData.doorConfig = item.doorConfig;
+      // Flip the 3D model based on hinge side
+      const flipX = item.doorConfig.hingeSide === 'left' ? -1 : 1;
+      model.scale.x = Math.abs(model.scale.x) * flipX;
     }
 
     // Update schematic position if in 2D mode
@@ -2078,9 +2087,14 @@ export class SceneManager {
           model.userData.model = item.model;
         }
 
-        // Store door configuration for door items
+        // Store door configuration for door items and apply 3D flip if needed
         if (item.doorConfig) {
           model.userData.doorConfig = item.doorConfig;
+          // Flip the 3D model based on hinge side (left hinge = mirror)
+          if (item.doorConfig.hingeSide === 'left') {
+            model.scale.x = Math.abs(model.scale.x) * -1;
+            console.log(`🚪 Door model flipped for left hinge on add`);
+          }
         }
 
         console.log(`✅ Stored orientation in addSingleItem:`, model.userData.orientation);

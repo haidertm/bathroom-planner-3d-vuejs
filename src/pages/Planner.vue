@@ -419,7 +419,13 @@ const handleDoorConfigUpdate = ({ itemId, doorConfig }) => {
     }
 
     // Save state for undo/redo
-    saveState()
+    saveToHistory({
+      items: items.value,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value
+    })
   } else {
     console.warn('⚠️ Item not found for door config update:', itemId)
   }
