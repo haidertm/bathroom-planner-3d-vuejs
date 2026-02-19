@@ -1336,8 +1336,8 @@ export class SceneManager {
     console.log(`🚪 Updated door config for item ${itemId}:`, doorConfig);
 
     // Flip the 3D model based on hinge side
-    // Default models have hinge on the right, so flip for left hinge
-    const flipX = doorConfig.hingeSide === 'left' ? -1 : 1;
+    // Default models have hinge on the LEFT, so flip for RIGHT hinge
+    const flipX = doorConfig.hingeSide === 'right' ? -1 : 1;
     model.scale.x = Math.abs(model.scale.x) * flipX;
     console.log(`🚪 3D model scale.x set to ${model.scale.x} for hinge side: ${doorConfig.hingeSide}`);
 
@@ -1650,10 +1650,10 @@ export class SceneManager {
     doorPanel.renderOrder = 1000;
 
     // Position door panel based on swing direction
-    // When door is closed, it sits at the wall edge
-    // inward: panel is at the far edge of depth (inside room)
-    // outward: panel is at the near edge of depth (outside room)
-    const panelZOffset = swingDirection === 'inward' ? -depth / 2 + panelThickness / 2 : depth / 2 - panelThickness / 2;
+    // When door is closed, it sits at the wall edge where the hinge is
+    // inward: panel is at the inside edge of depth (room side)
+    // outward: panel is at the outside edge of depth (hallway side)
+    const panelZOffset = swingDirection === 'inward' ? depth / 2 - panelThickness / 2 : -depth / 2 + panelThickness / 2;
     doorPanel.position.z = panelZOffset;
 
     group.add(doorPanel);
@@ -1674,23 +1674,23 @@ export class SceneManager {
     if (hingeSide === 'right') {
       // Hinge on right side of door (when looking at door from inside room)
       if (swingDirection === 'inward') {
-        // Door swings into the room, arc goes from closed (along wall) to open (perpendicular)
+        // Door swings into the room, arc goes from closed (along wall) to open (perpendicular into room)
         startAngle = Math.PI; // Closed position (pointing left, along wall)
-        endAngle = Math.PI / 2; // Open position (pointing away from viewer, into room)
+        endAngle = Math.PI * 1.5; // Open position (into room, 270°)
       } else {
-        // Door swings outward
+        // Door swings outward (out of room)
         startAngle = Math.PI; // Closed position
-        endAngle = Math.PI * 1.5; // Open position (pointing toward viewer, out of room)
+        endAngle = Math.PI / 2; // Open position (out of room, 90°)
       }
     } else {
       // Hinge on left side of door
       if (swingDirection === 'inward') {
         startAngle = 0; // Closed position (pointing right, along wall)
-        endAngle = Math.PI / 2; // Open position (pointing away from viewer, into room)
+        endAngle = -Math.PI / 2; // Open position (into room, -90° / 270°)
       } else {
         // Door swings outward
         startAngle = 0; // Closed position
-        endAngle = -Math.PI / 2; // Open position (pointing toward viewer, out of room)
+        endAngle = Math.PI / 2; // Open position (out of room, 90°)
       }
     }
 
@@ -1720,7 +1720,7 @@ export class SceneManager {
 
     // Position arc center at the hinge location
     const hingeX = hingeSide === 'right' ? width / 2 : -width / 2;
-    const hingeZ = swingDirection === 'inward' ? -depth / 2 : depth / 2;
+    const hingeZ = swingDirection === 'inward' ? depth / 2 : -depth / 2;
     arcLine.position.x = hingeX;
     arcLine.position.z = hingeZ;
 
@@ -1744,12 +1744,12 @@ export class SceneManager {
     group.add(hingeDot);
 
     // Add a dashed line showing the door in open position
-    const openDoorEndX = hingeSide === 'right'
-      ? hingeX // Hinge position X
-      : hingeX; // Hinge position X
-    const openDoorEndZ = swingDirection === 'inward'
-      ? hingeZ - arcRadius // Into the room
-      : hingeZ + arcRadius; // Out of the room
+    // Get the arc's end point directly from the curve points
+    const lastArcPoint = arcPoints[arcPoints.length - 1];
+    // Arc points are 2D (x, y), after rotation.x = -PI/2 they become (x, 0, -y) relative to arc position
+    // So the 3D endpoint is: (hingeX + lastArcPoint.x, height, hingeZ - lastArcPoint.y)
+    const openDoorEndX = hingeX + lastArcPoint.x;
+    const openDoorEndZ = hingeZ - lastArcPoint.y;
 
     const openDoorPoints = [
       new THREE.Vector3(hingeX, height, hingeZ),
@@ -2008,7 +2008,8 @@ export class SceneManager {
     if (item.doorConfig) {
       model.userData.doorConfig = item.doorConfig;
       // Flip the 3D model based on hinge side
-      const flipX = item.doorConfig.hingeSide === 'left' ? -1 : 1;
+      // Default models have hinge on LEFT, so flip for RIGHT hinge
+      const flipX = item.doorConfig.hingeSide === 'right' ? -1 : 1;
       model.scale.x = Math.abs(model.scale.x) * flipX;
     }
 
@@ -2090,10 +2091,10 @@ export class SceneManager {
         // Store door configuration for door items and apply 3D flip if needed
         if (item.doorConfig) {
           model.userData.doorConfig = item.doorConfig;
-          // Flip the 3D model based on hinge side (left hinge = mirror)
-          if (item.doorConfig.hingeSide === 'left') {
+          // Flip the 3D model based on hinge side (default model has hinge on LEFT, flip for RIGHT)
+          if (item.doorConfig.hingeSide === 'right') {
             model.scale.x = Math.abs(model.scale.x) * -1;
-            console.log(`🚪 Door model flipped for left hinge on add`);
+            console.log(`🚪 Door model flipped for right hinge on add`);
           }
         }
 
