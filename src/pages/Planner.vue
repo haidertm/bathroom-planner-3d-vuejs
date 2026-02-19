@@ -405,13 +405,10 @@ const handleConfigureVariants = (config) => {
 
 // Handle door configuration updates from ItemConfigurationOverlay
 const handleDoorConfigUpdate = ({ itemId, doorConfig }) => {
-  console.log('🚪 Door config update:', { itemId, doorConfig })
-
   // Update the item in the items array
   const item = items.value.find(i => i.id === itemId)
   if (item) {
     item.doorConfig = doorConfig
-    console.log('✅ Updated door config for item:', itemId)
 
     // Update the schematic in sceneManager (this refreshes the 2D arc)
     if (sceneManagerRef.value) {
