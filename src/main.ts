@@ -57,8 +57,8 @@ function loadAnalytics() {
   eventListeners = [];
 
   // Dynamic imports so the analytics chunk is only fetched on first interaction
-  import("./plugins/gtm").then(({ initGTM }) => initGTM(app, router));
-  import("./plugins/openreplay").then(({ initOpenReplay }) => initOpenReplay(app, router));
+  import("./plugins/gtm").then(({ setupGTM }) => setupGTM(app, router));
+  import("./plugins/openreplay").then(({ setupOpenReplay }) => setupOpenReplay(app, router));
 }
 
 // Skip GTM on admin pages
