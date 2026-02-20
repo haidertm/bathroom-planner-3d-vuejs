@@ -1196,10 +1196,11 @@ export class SceneManager {
 
       // Get the bounding box center for positioning (excluding door shadow)
       const shadow = model.getObjectByName('doorSwingShadow');
+      const shadowWasVisible = shadow?.visible ?? false;
       if (shadow) shadow.visible = false;
       const box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
-      if (shadow) shadow.visible = true;
+      if (shadow) shadow.visible = shadowWasVisible;
 
       // Use the MODEL's original dimensions (not bounding box) so rotation works correctly
       // The schematic will be created with these dimensions and then rotated to match the model
@@ -1229,8 +1230,14 @@ export class SceneManager {
         this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
       }
 
-      // Position the schematic at the object's actual center (from bounding box)
-      schematicGroup.position.set(center.x, 0, center.z); // At floor level, centered on object
+      // Position the schematic
+      // For doors, use model.position to match the 3D shadow positioning (which is a child of the model)
+      // For other objects, use bounding box center for visual alignment
+      if (schematicType === 'door') {
+        schematicGroup.position.set(model.position.x, 0, model.position.z);
+      } else {
+        schematicGroup.position.set(center.x, 0, center.z);
+      }
 
       // Apply the model's rotation so the schematic matches the object's orientation
       schematicGroup.rotation.y = model.rotation.y;
@@ -1270,10 +1277,11 @@ export class SceneManager {
 
     // Get the bounding box center for positioning (excluding door shadow)
     const shadow = model.getObjectByName('doorSwingShadow');
+    const shadowWasVisible = shadow?.visible ?? false;
     if (shadow) shadow.visible = false;
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
-    if (shadow) shadow.visible = true;
+    if (shadow) shadow.visible = shadowWasVisible;
 
     const width = dimensions.width;
     const depth = dimensions.depth;
@@ -1293,8 +1301,13 @@ export class SceneManager {
       this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
     }
 
-    // Position and rotate
-    schematicGroup.position.set(center.x, 0, center.z);
+    // Position the schematic
+    // For doors, use model.position to match the 3D shadow positioning
+    if (schematicType === 'door') {
+      schematicGroup.position.set(model.position.x, 0, model.position.z);
+    } else {
+      schematicGroup.position.set(center.x, 0, center.z);
+    }
     schematicGroup.rotation.y = model.rotation.y;
 
     // Add userData to link schematic to its bathroom item
@@ -1357,6 +1370,7 @@ export class SceneManager {
     if (hingeChanged) {
       // Temporarily hide shadow to exclude from bounding box
       const existingShadow = model.getObjectByName('doorSwingShadow');
+      const shadowWasVisible = existingShadow?.visible ?? false;
       if (existingShadow) existingShadow.visible = false;
 
       // Get bounding box center before flip
@@ -1373,8 +1387,8 @@ export class SceneManager {
       const centerAfter = new THREE.Vector3();
       boxAfter.getCenter(centerAfter);
 
-      // Restore shadow visibility (will be updated below anyway)
-      if (existingShadow) existingShadow.visible = true;
+      // Restore shadow visibility to its original state
+      if (existingShadow) existingShadow.visible = shadowWasVisible;
 
       // Compensate for the position shift caused by flipping
       const shiftX = centerBefore.x - centerAfter.x;
