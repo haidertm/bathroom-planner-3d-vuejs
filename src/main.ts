@@ -7,34 +7,10 @@ const app = createApp(App);
 app.use(router);
 
 const interactionEvents = [
-  "mousedown",
-  "mousemove",
-  "mouseup",
-  "mouseenter",
   "click",
-  "wheel",
-  "touchstart",
-  "touchmove",
-  "touchend",
-  "touchcancel",
-  "keydown",
-  "keypress",
-  "keyup",
   "scroll",
-  "pointerdown",
-  "pointermove",
-  "pointerup",
-  "pointercancel",
-  "contextmenu",
-  "mouseleave",
-  "mouseover",
-  "mouseout",
-  "dblclick",
-  "dragstart",
-  "drop",
-  "input",
-  "change",
-  "submit",
+  "touchstart",
+  "keydown",
 ] as const;
 
 const windowEvents = new Set(["scroll"]);
