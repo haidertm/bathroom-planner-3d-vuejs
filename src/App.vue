@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <Header
-        logo="./assets/logo.svg"
+        logo="/assets/logo.svg"
         backgroundColor="#fff"
         logoHeight="45px"
         @save-design="handleSaveDesign"

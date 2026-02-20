@@ -63,7 +63,6 @@ export default defineConfig({
           if (id.includes('node_modules/vue/') || id.includes('node_modules/vue-router/')) {
             return 'vue-vendor';
           }
-          // Analytics/tracking - separate chunk (lazy loaded anyway)
           // Analytics/tracking - separate chunks so they load independently
           if (id.includes('node_modules/@gtm-support/')) {
             return 'gtm-vendor';
