@@ -1480,9 +1480,9 @@ export class SceneManager {
     // Create geometry and mesh
     const geometry = new THREE.ShapeGeometry(shape);
     const material = new THREE.MeshBasicMaterial({
-      color: 0x000000, // Black shadow color
+      color: 0x222222, // Dark shadow color
       transparent: true,
-      opacity: 0.15, // Very subtle shadow
+      opacity: 0.5, // More visible shadow
       side: THREE.DoubleSide,
       depthWrite: false,
     });
@@ -2194,15 +2194,27 @@ export class SceneManager {
       // Ensure matrix is up to date
       model.updateMatrixWorld(true);
 
-      // Recalculate position from bounding box to ensure correct centering
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
+      // Check if this is a door - doors use model.position for consistency with 3D shadow
+      const schematicType = this.getSchematicType(model);
 
-      // Update position immediately
-      schematic.position.set(center.x, 0, center.z);
+      if (schematicType === 'door') {
+        // For doors, use model.position to match the 3D shadow positioning
+        schematic.position.set(model.position.x, 0, model.position.z);
+      } else {
+        // For other objects, use bounding box center (excluding door shadow)
+        const shadow = model.getObjectByName('doorSwingShadow');
+        const shadowWasVisible = shadow?.visible ?? false;
+        if (shadow) shadow.visible = false;
+
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+
+        if (shadow) shadow.visible = shadowWasVisible;
+
+        schematic.position.set(center.x, 0, center.z);
+      }
+
       schematic.rotation.y = model.rotation.y;
-
-      // console.log(`🔄 Updated schematic ${itemId} to (${center.x.toFixed(1)}, ${center.z.toFixed(1)})`);
     }
   }
 

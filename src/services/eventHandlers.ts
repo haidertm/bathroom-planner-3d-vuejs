@@ -884,10 +884,12 @@ export class EventHandlers {
 
       // Only do this for wall-bound objects that are NOT corner-install (bathtubs, showers, etc.)
       // Corner-install objects should stay in their corners, not move to opposite walls
+      // Doors should also stay in place - they're placed on specific walls intentionally
       const isCornerInstall = movementConfig?.cornerInstallOnly &&
         (typeof movementConfig.cornerInstallOnly === 'boolean' || movementConfig.cornerInstallOnly.enabled);
+      const isDoor = objectType === 'Door' || objectType === 'WindowAndDoor';
 
-      if (movementConfig?.snapToWall && !isCornerInstall && !this.isMultiSelectMode) {
+      if (movementConfig?.snapToWall && !isCornerInstall && !isDoor && !this.isMultiSelectMode) {
         // Check which wall the object is currently on
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
