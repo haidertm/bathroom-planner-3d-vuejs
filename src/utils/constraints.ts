@@ -290,16 +290,19 @@ export const constrainToCorner = (
     const nearestCorner = getNearestCorner(position, roomWidth, roomHeight, notchWidth, notchHeight);
     const movementConfig = movement ?? getMovementConfig(objectType, item);
 
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+
     // Get the wall buffer (usually 0 for flush-mounted items)
     // Add a minimum visual buffer (2cm) to prevent model clipping into walls
     const configuredWallBuffer = (orientation?.wallBuffer !== undefined) ?
-        orientation.wallBuffer * scale : 0;
+        orientation.wallBuffer * absScale : 0;
     const minVisualBuffer = 2; // 2cm minimum to prevent visual wall clipping
     const wallBuffer = Math.max(configuredWallBuffer, minVisualBuffer);
 
     // For corner items, we position them flush in the corner
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     let constrainedPosition = { ...nearestCorner.position };
     let rotation = 0;
@@ -343,8 +346,8 @@ export const constrainToCorner = (
     const rotationDeg = Math.round((rotation * 180 / Math.PI));
 
     // Full dimensions (not half) for pivot offset calculation
-    const fullWidth = dimensions.width * scale;  // Long dimension
-    const fullDepth = dimensions.depth * scale;  // Short dimension
+    const fullWidth = dimensions.width * absScale;  // Long dimension
+    const fullDepth = dimensions.depth * absScale;  // Short dimension
 
     console.log(`🔧 rotation=${rotationDeg}°, fullWidth=${fullWidth.toFixed(1)}, fullDepth=${fullDepth.toFixed(1)}`);
 
@@ -593,16 +596,18 @@ export const checkWallCollision = (
     }
 
     // Calculate object bounds
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
     let objectMinX: number, objectMaxX: number, objectMinZ: number, objectMaxZ: number;
 
     // For rotated objects, calculate proper bounding box
     if (rotation !== undefined && rotation !== 0) {
         const cosAngle = Math.abs(Math.cos(rotation));
         const sinAngle = Math.abs(Math.sin(rotation));
-        const halfRotatedWidth = ((dimensions.width * scale * cosAngle) + (dimensions.depth * scale * sinAngle)) / 2;
-        const halfRotatedDepth = ((dimensions.width * scale * sinAngle) + (dimensions.depth * scale * cosAngle)) / 2;
+        const halfRotatedWidth = ((dimensions.width * absScale * cosAngle) + (dimensions.depth * absScale * sinAngle)) / 2;
+        const halfRotatedDepth = ((dimensions.width * absScale * sinAngle) + (dimensions.depth * absScale * cosAngle)) / 2;
 
         objectMinX = position.x - halfRotatedWidth;
         objectMaxX = position.x + halfRotatedWidth;
@@ -1258,8 +1263,10 @@ export const constrainToRoom = (
     const { interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // Use actual product dimensions
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     console.log(`🏠 Room constraint using productData for ${objectType}:`, {
         productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
@@ -1384,11 +1391,13 @@ export const constrainToWalls = (
     const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // Use actual product dimensions
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     // Use wallBuffer from productData orientation config, or 0 if not specified
-    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * absScale : 0;
     const isFlushMounted = wallBuffer === 0;
 
     console.log(`🔧 FIXED WALL CONSTRAINT for ${objectType}:`, {
@@ -1815,7 +1824,8 @@ export const findFreeWallPosition = (
 
     // ✅ Add notch walls for L-shaped rooms if object fits
     if (notch && dimensions) {
-        const objectWidth = dimensions.width * scale;
+        // Use Math.abs(scale) to handle flipped objects
+        const objectWidth = dimensions.width * Math.abs(scale);
 
         // Calculate notch wall lengths
         const notchEastWallLength = notch.maxZ - notch.minZ;
@@ -2082,8 +2092,10 @@ const findFreeStandingPosition = (
     }
 
     // Use actual object dimensions as buffer from walls
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
