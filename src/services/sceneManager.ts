@@ -18,7 +18,7 @@ import {
 } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
-import { setOutlinePass } from '../utils/helpers';
+import { setOutlinePass, highlightObject } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
@@ -1407,6 +1407,17 @@ export class SceneManager {
 
     // Update 3D swing shadow
     this.updateDoorSwingShadow(model, doorConfig);
+
+    // Ensure shadow is visible in 3D mode
+    if (this.viewMode === '3d') {
+      const shadow = model.getObjectByName('doorSwingShadow');
+      if (shadow) {
+        shadow.visible = true;
+      }
+    }
+
+    // Re-highlight the door to include the new shadow mesh in the outline pass
+    highlightObject(model, true);
   }
 
   /**
