@@ -47,8 +47,7 @@ export default defineConfig({
     // Exclude analytics chunks from modulepreload hints
     modulePreload: {
       resolveDependencies: (_filename, deps) => {
-        return deps.filter(dep => !dep.includes('analytics') && !dep.includes('gtm') && !dep.includes('openreplay'));
-      },
+        return deps.filter(dep => !dep.includes('gtm') && !dep.includes('openreplay'));      },
     },
     // Warn if chunks exceed 1MB
     chunkSizeWarningLimit: 1000,
@@ -64,12 +63,12 @@ export default defineConfig({
           if (id.includes('node_modules/vue/') || id.includes('node_modules/vue-router/')) {
             return 'vue-vendor';
           }
-          // Analytics/tracking - separate chunk (lazy loaded anyway)
-          if (
-            id.includes('node_modules/@gtm-support/') ||
-            id.includes('node_modules/@openreplay/')
-          ) {
-            return 'analytics';
+          // Analytics/tracking - separate chunks so they load independently
+          if (id.includes('node_modules/@gtm-support/')) {
+            return 'gtm-vendor';
+          }
+          if (id.includes('node_modules/@openreplay/')) {
+            return 'openreplay-vendor';
           }
           // Let Rollup handle other modules with default splitting
           return undefined;
