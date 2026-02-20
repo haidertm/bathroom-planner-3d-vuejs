@@ -306,6 +306,11 @@ const handleDragStart = () => {
 
 const handleDragEnd = () => {
   isDraggingObject.value = false
+
+  // Update door collision warnings in 2D mode
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
 }
 
 const handleRotationToggleFromOverlay = (enabled) => {
@@ -776,6 +781,12 @@ const handleVariantSwap = async (swapConfig) => {
               console.warn('⚠️ Could not find newly added model in scene')
             }
           }
+
+          // Update door collision warnings after variant swap
+          if (sceneManagerRef.value) {
+            sceneManagerRef.value.updateAllDoorCollisions()
+          }
+
           lastUpdateSource.value = 'variantSwap-complete'
           isSwappingVariant.value = false
         }, 100)
@@ -1407,6 +1418,11 @@ const addItem = async (type, productData = null) => {
   items.value = newItems
   lastUpdateSource.value = 'add'
 
+  // Update door collision warnings after adding new item
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
+
   saveToHistory({
     items: newItems,
     roomWidth: roomWidth.value,
@@ -1460,6 +1476,11 @@ const deleteItem = async (itemId) => {
     selectedObjectId.value = null
   }
 
+  // Update door collision warnings after deleting item
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
+
   saveToHistory({
     items: newItems,
     roomWidth: roomWidth.value,
@@ -1499,6 +1520,11 @@ const deleteMultipleItems = async (itemIds) => {
   // Clear selection state
   selectedItemId.value = null
   selectedObjectId.value = null
+
+  // Update door collision warnings after deleting items
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
 
   saveToHistory({
     items: newItems,

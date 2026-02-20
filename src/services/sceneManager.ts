@@ -1211,10 +1211,11 @@ export class SceneManager {
       schematicGroup.name = `Schematic2D_${itemId}`;
 
       // Create schematic based on object type
-      // Door schematics need special handling with doorConfig
+      // Door schematics need special handling with doorConfig and collision detection
       if (schematicType === 'door') {
         const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
-        this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig);
+        const hasCollision = this.checkDoorSwingCollision(itemId);
+        this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig, hasCollision);
       } else {
         this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
       }
@@ -1271,10 +1272,11 @@ export class SceneManager {
     schematicGroup.name = `Schematic2D_${itemId}`;
 
     // Create schematic based on object type
-    // Door schematics need special handling with doorConfig
+    // Door schematics need special handling with doorConfig and collision detection
     if (schematicType === 'door') {
       const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
-      this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig);
+      const hasCollision = this.checkDoorSwingCollision(itemId);
+      this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig, hasCollision);
     } else {
       this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
     }
@@ -1331,13 +1333,36 @@ export class SceneManager {
       return;
     }
 
+    // Get the previous hinge side to detect changes
+    const prevDoorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+    const hingeChanged = prevDoorConfig.hingeSide !== doorConfig.hingeSide;
+
     // Update the model's userData with the new door config
     model.userData.doorConfig = doorConfig;
 
     // Flip the 3D model based on hinge side
     // Default models have hinge on the LEFT, so flip for RIGHT hinge
-    const flipX = doorConfig.hingeSide === 'right' ? -1 : 1;
-    model.scale.x = Math.abs(model.scale.x) * flipX;
+    if (hingeChanged) {
+      // Get bounding box center before flip
+      const boxBefore = new THREE.Box3().setFromObject(model);
+      const centerBefore = new THREE.Vector3();
+      boxBefore.getCenter(centerBefore);
+
+      // Apply the flip
+      const flipX = doorConfig.hingeSide === 'right' ? -1 : 1;
+      model.scale.x = Math.abs(model.scale.x) * flipX;
+
+      // Get bounding box center after flip
+      const boxAfter = new THREE.Box3().setFromObject(model);
+      const centerAfter = new THREE.Vector3();
+      boxAfter.getCenter(centerAfter);
+
+      // Compensate for the position shift caused by flipping
+      const shiftX = centerBefore.x - centerAfter.x;
+      const shiftZ = centerBefore.z - centerAfter.z;
+      model.position.x += shiftX;
+      model.position.z += shiftZ;
+    }
 
     // If in 2D mode, recreate the schematic with the new config
     if (this.viewMode === '2d') {
@@ -1613,22 +1638,24 @@ export class SceneManager {
    * @param depth - Door depth/thickness (in cm)
    * @param height - Y position for the schematic
    * @param doorConfig - Door configuration (hingeSide and swingDirection)
+   * @param hasCollision - Whether there's an object collision in the swing path
    */
   private createDoorSchematic(
     group: THREE.Group,
     width: number,
     depth: number,
     height: number,
-    doorConfig: DoorConfig = DEFAULT_DOOR_CONFIG
+    doorConfig: DoorConfig = DEFAULT_DOOR_CONFIG,
+    hasCollision: boolean = false
   ): void {
     const { hingeSide, swingDirection } = doorConfig;
 
     // Door panel thickness for visualization (thin line)
     const panelThickness = Math.max(depth, 5); // At least 5cm thick for visibility
 
-    // Colors
+    // Colors - arc turns red when there's a collision
     const doorColor = 0x8B4513; // Saddle brown for door
-    const arcColor = 0x4169e1; // Royal blue for arc
+    const arcColor = hasCollision ? 0xff0000 : 0x4169e1; // Red for collision, Royal blue otherwise
     const hingeColor = 0x333333; // Dark gray for hinge indicator
 
     // Create door panel (thin rectangle along one edge of the door frame)
@@ -1669,13 +1696,12 @@ export class SceneManager {
     // - swingDirection: determines if arc sweeps into room (inward) or out (outward)
 
     if (hingeSide === 'right') {
-      // Hinge on right side of door (when looking at door from inside room)
+      // Hinge on right side of door
       if (swingDirection === 'inward') {
-        // Door swings into the room, arc goes from closed (along wall) to open (perpendicular into room)
         startAngle = Math.PI; // Closed position (pointing left, along wall)
         endAngle = Math.PI * 1.5; // Open position (into room, 270°)
       } else {
-        // Door swings outward (out of room)
+        // Door swings outward
         startAngle = Math.PI; // Closed position
         endAngle = Math.PI / 2; // Open position (out of room, 90°)
       }
@@ -1683,7 +1709,7 @@ export class SceneManager {
       // Hinge on left side of door
       if (swingDirection === 'inward') {
         startAngle = 0; // Closed position (pointing right, along wall)
-        endAngle = -Math.PI / 2; // Open position (into room, -90° / 270°)
+        endAngle = -Math.PI / 2; // Open position (into room, -90°)
       } else {
         // Door swings outward
         startAngle = 0; // Closed position
@@ -1791,6 +1817,176 @@ export class SceneManager {
     frameLine.renderOrder = 998;
 
     group.add(frameLine);
+  }
+
+  /**
+   * Check if any object collides with a door's swing path
+   * The swing path is a 90-degree arc sector from the hinge point
+   *
+   * @param doorId - The door item's ID
+   * @returns true if any object is in the door's swing path
+   */
+  public checkDoorSwingCollision(doorId: number): boolean {
+    const doorModel = this.existingItems.get(doorId);
+    if (!doorModel) return false;
+
+    const doorConfig = doorModel.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+    const { hingeSide, swingDirection } = doorConfig;
+
+    // Get door dimensions from bounding box
+    const doorBox = new THREE.Box3().setFromObject(doorModel);
+    const doorSize = new THREE.Vector3();
+    doorBox.getSize(doorSize);
+    const doorWidth = Math.max(doorSize.x, doorSize.z);
+    const doorDepth = Math.min(doorSize.x, doorSize.z);
+
+    // Get door world position
+    const doorWorldPos = new THREE.Vector3();
+    doorModel.getWorldPosition(doorWorldPos);
+
+    // Calculate hinge position in world coordinates
+    const doorRotation = doorModel.rotation.y;
+    const localHingeX = hingeSide === 'right' ? doorWidth / 2 : -doorWidth / 2;
+    const localHingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
+
+    // Rotate local hinge position by door's rotation
+    const cosR = Math.cos(doorRotation);
+    const sinR = Math.sin(doorRotation);
+    const hingeWorldX = doorWorldPos.x + (localHingeX * cosR - localHingeZ * sinR);
+    const hingeWorldZ = doorWorldPos.z + (localHingeX * sinR + localHingeZ * cosR);
+
+    // Arc radius is the door width
+    const arcRadius = doorWidth;
+
+    // Calculate arc angle range in world coordinates
+    let startAngle: number;
+    let endAngle: number;
+
+    if (hingeSide === 'right') {
+      if (swingDirection === 'inward') {
+        startAngle = Math.PI;
+        endAngle = Math.PI * 1.5;
+      } else {
+        startAngle = Math.PI;
+        endAngle = Math.PI / 2;
+      }
+    } else {
+      if (swingDirection === 'inward') {
+        startAngle = 0;
+        endAngle = -Math.PI / 2;
+      } else {
+        startAngle = 0;
+        endAngle = Math.PI / 2;
+      }
+    }
+
+    // Adjust angles by door rotation
+    startAngle += doorRotation;
+    endAngle += doorRotation;
+
+    // Normalize angles to [0, 2*PI)
+    const normalizeAngle = (angle: number): number => {
+      while (angle < 0) angle += Math.PI * 2;
+      while (angle >= Math.PI * 2) angle -= Math.PI * 2;
+      return angle;
+    };
+
+    const normStart = normalizeAngle(startAngle);
+    const normEnd = normalizeAngle(endAngle);
+
+    // Check if a point is within the arc sector
+    const isPointInArcSector = (px: number, pz: number): boolean => {
+      // Calculate distance from hinge
+      const dx = px - hingeWorldX;
+      const dz = pz - hingeWorldZ;
+      const distance = Math.sqrt(dx * dx + dz * dz);
+
+      // If point is outside the arc radius, no collision
+      if (distance > arcRadius) return false;
+
+      // Calculate angle of point from hinge
+      let pointAngle = Math.atan2(dz, dx);
+      pointAngle = normalizeAngle(pointAngle);
+
+      // Check if angle is within arc range
+      // Handle wrap-around cases
+      if (normStart <= normEnd) {
+        return pointAngle >= normStart && pointAngle <= normEnd;
+      } else {
+        // Arc wraps around 0/2PI
+        return pointAngle >= normStart || pointAngle <= normEnd;
+      }
+    };
+
+    // Check all other objects in the scene
+    for (const [itemId, model] of this.existingItems) {
+      // Skip the door itself
+      if (itemId === doorId) continue;
+
+      // Skip non-bathroom items
+      if (!model.userData.isBathroomItem) continue;
+
+      // Get object's bounding box
+      const objBox = new THREE.Box3().setFromObject(model);
+      const objMin = objBox.min;
+      const objMax = objBox.max;
+
+      // Check corners of the bounding box (on floor level, Y doesn't matter for 2D check)
+      const corners = [
+        { x: objMin.x, z: objMin.z },
+        { x: objMin.x, z: objMax.z },
+        { x: objMax.x, z: objMin.z },
+        { x: objMax.x, z: objMax.z },
+      ];
+
+      // Also check center
+      const center = new THREE.Vector3();
+      objBox.getCenter(center);
+      corners.push({ x: center.x, z: center.z });
+
+      // If any corner or center is in the arc sector, there's a collision
+      for (const corner of corners) {
+        if (isPointInArcSector(corner.x, corner.z)) {
+          return true;
+        }
+      }
+
+      // Additional check: if the arc passes through the object's bounding box
+      // Sample points along the arc and check if they're inside the object's XZ bounds
+      const arcSamples = 8;
+      const angleRange = normEnd >= normStart ? normEnd - normStart : (Math.PI * 2 - normStart + normEnd);
+      const angleStep = angleRange / arcSamples;
+
+      for (let i = 0; i <= arcSamples; i++) {
+        const sampleAngle = normStart + i * angleStep;
+        const arcX = hingeWorldX + arcRadius * Math.cos(sampleAngle);
+        const arcZ = hingeWorldZ + arcRadius * Math.sin(sampleAngle);
+
+        if (arcX >= objMin.x && arcX <= objMax.x && arcZ >= objMin.z && arcZ <= objMax.z) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Update all door schematics to reflect current collision states
+   * Called when objects are moved or placed
+   */
+  public updateAllDoorCollisions(): void {
+    if (this.viewMode !== '2d') return;
+
+    // Find all doors and update their schematics
+    for (const [itemId, model] of this.existingItems) {
+      const schematicType = this.getSchematicType(model);
+      if (schematicType === 'door') {
+        // Remove and recreate the schematic with updated collision state
+        this.removeSchematicForItem(itemId);
+        this.createSchematicForItem(itemId);
+      }
+    }
   }
 
   /**
@@ -2004,10 +2200,35 @@ export class SceneManager {
     // Update door configuration if item has it and apply 3D flip
     if (item.doorConfig) {
       model.userData.doorConfig = item.doorConfig;
+
       // Flip the 3D model based on hinge side
       // Default models have hinge on LEFT, so flip for RIGHT hinge
       const flipX = item.doorConfig.hingeSide === 'right' ? -1 : 1;
-      model.scale.x = Math.abs(model.scale.x) * flipX;
+      const currentFlipX = model.scale.x < 0 ? -1 : 1;
+
+      // Only compensate position if the flip state actually changes
+      if (currentFlipX !== flipX) {
+        // Get bounding box center before flip
+        const boxBefore = new THREE.Box3().setFromObject(model);
+        const centerBefore = new THREE.Vector3();
+        boxBefore.getCenter(centerBefore);
+
+        // Apply the flip
+        model.scale.x = Math.abs(model.scale.x) * flipX;
+
+        // Get bounding box center after flip
+        const boxAfter = new THREE.Box3().setFromObject(model);
+        const centerAfter = new THREE.Vector3();
+        boxAfter.getCenter(centerAfter);
+
+        // Compensate for the position shift caused by flipping
+        const shiftX = centerBefore.x - centerAfter.x;
+        const shiftZ = centerBefore.z - centerAfter.z;
+        model.position.x += shiftX;
+        model.position.z += shiftZ;
+      } else {
+        model.scale.x = Math.abs(model.scale.x) * flipX;
+      }
     }
 
     // Update schematic position if in 2D mode
@@ -2090,7 +2311,24 @@ export class SceneManager {
           model.userData.doorConfig = item.doorConfig;
           // Flip the 3D model based on hinge side (default model has hinge on LEFT, flip for RIGHT)
           if (item.doorConfig.hingeSide === 'right') {
+            // Get bounding box center before flip
+            const boxBefore = new THREE.Box3().setFromObject(model);
+            const centerBefore = new THREE.Vector3();
+            boxBefore.getCenter(centerBefore);
+
+            // Apply the flip
             model.scale.x = Math.abs(model.scale.x) * -1;
+
+            // Get bounding box center after flip
+            const boxAfter = new THREE.Box3().setFromObject(model);
+            const centerAfter = new THREE.Vector3();
+            boxAfter.getCenter(centerAfter);
+
+            // Compensate for the position shift caused by flipping
+            const shiftX = centerBefore.x - centerAfter.x;
+            const shiftZ = centerBefore.z - centerAfter.z;
+            model.position.x += shiftX;
+            model.position.z += shiftZ;
           }
         }
 

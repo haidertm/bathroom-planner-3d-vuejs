@@ -34,7 +34,7 @@ export interface DoorConfig {
  * Default door configuration
  */
 export const DEFAULT_DOOR_CONFIG: DoorConfig = {
-  hingeSide: 'right',
+  hingeSide: 'left',
   swingDirection: 'inward'
 };
 
