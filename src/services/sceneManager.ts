@@ -506,6 +506,9 @@ export class SceneManager {
       // Create 2D schematic overlays for thin objects (shower screens, mirrors)
       this.create2DSchematicOverlays();
 
+      // Hide door swing shadows in 2D mode (they have their own 2D arc)
+      this.toggleDoorSwingShadows(false);
+
       // Notify event handlers of mode change and pass orthographic camera
       if (this.eventHandlers) {
         if (typeof this.eventHandlers.setViewMode === 'function') {
@@ -603,6 +606,9 @@ export class SceneManager {
 
       // Remove 2D schematic overlays
       this.remove2DSchematicOverlays();
+
+      // Show door swing shadows in 3D mode
+      this.toggleDoorSwingShadows(true);
 
       // Hide wall dimension labels in 3D mode
       if (this.measurementSystem) {
@@ -1188,9 +1194,12 @@ export class SceneManager {
       const schematicType = this.getSchematicType(model);
       console.log(`  🔍 Item ${itemId} schematic type: ${schematicType}`);
 
-      // Get the bounding box center for positioning
+      // Get the bounding box center for positioning (excluding door shadow)
+      const shadow = model.getObjectByName('doorSwingShadow');
+      if (shadow) shadow.visible = false;
       const box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
+      if (shadow) shadow.visible = true;
 
       // Use the MODEL's original dimensions (not bounding box) so rotation works correctly
       // The schematic will be created with these dimensions and then rotated to match the model
@@ -1259,9 +1268,12 @@ export class SceneManager {
 
     const schematicType = this.getSchematicType(model);
 
-    // Get the bounding box center for positioning
+    // Get the bounding box center for positioning (excluding door shadow)
+    const shadow = model.getObjectByName('doorSwingShadow');
+    if (shadow) shadow.visible = false;
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
+    if (shadow) shadow.visible = true;
 
     const width = dimensions.width;
     const depth = dimensions.depth;
@@ -1343,6 +1355,10 @@ export class SceneManager {
     // Flip the 3D model based on hinge side
     // Default models have hinge on the LEFT, so flip for RIGHT hinge
     if (hingeChanged) {
+      // Temporarily hide shadow to exclude from bounding box
+      const existingShadow = model.getObjectByName('doorSwingShadow');
+      if (existingShadow) existingShadow.visible = false;
+
       // Get bounding box center before flip
       const boxBefore = new THREE.Box3().setFromObject(model);
       const centerBefore = new THREE.Vector3();
@@ -1356,6 +1372,9 @@ export class SceneManager {
       const boxAfter = new THREE.Box3().setFromObject(model);
       const centerAfter = new THREE.Vector3();
       boxAfter.getCenter(centerAfter);
+
+      // Restore shadow visibility (will be updated below anyway)
+      if (existingShadow) existingShadow.visible = true;
 
       // Compensate for the position shift caused by flipping
       const shiftX = centerBefore.x - centerAfter.x;
@@ -1371,6 +1390,116 @@ export class SceneManager {
       // Create new schematic with updated config
       this.createSchematicForItem(itemId);
     }
+
+    // Update 3D swing shadow
+    this.updateDoorSwingShadow(model, doorConfig);
+  }
+
+  /**
+   * Create or update the 3D door swing shadow (arc on floor showing door path)
+   */
+  private updateDoorSwingShadow(model: THREE.Object3D, doorConfig: DoorConfig): void {
+    // Remove existing shadow if any
+    const existingShadow = model.getObjectByName('doorSwingShadow');
+    if (existingShadow) {
+      model.remove(existingShadow);
+      if (existingShadow instanceof THREE.Mesh) {
+        existingShadow.geometry.dispose();
+        if (existingShadow.material instanceof THREE.Material) {
+          existingShadow.material.dispose();
+        }
+      }
+    }
+
+    const { swingDirection } = doorConfig;
+
+    // Get door dimensions from userData (original dimensions, not affected by shadow)
+    const dimensions = model.userData.dimensions || model.userData.model?.dimensions;
+    let doorWidth: number;
+    let doorDepth: number;
+
+    if (dimensions) {
+      doorWidth = dimensions.width;
+      doorDepth = dimensions.depth;
+    } else {
+      // Fallback to bounding box (shadow already removed above)
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      doorWidth = Math.max(size.x, size.z);
+      doorDepth = Math.min(size.x, size.z);
+    }
+
+    // Arc radius equals door width
+    const arcRadius = doorWidth;
+
+    // Calculate arc angles based on swing direction
+    // Since the shadow is a child of the model, when model.scale.x = -1 (right hinge),
+    // the shadow gets mirrored automatically. So we always use LEFT hinge angles
+    // and let the model's scale handle the mirroring for right hinge.
+    let startAngle: number;
+    let endAngle: number;
+
+    if (swingDirection === 'inward') {
+      startAngle = 0;
+      endAngle = -Math.PI / 2;
+    } else {
+      startAngle = 0;
+      endAngle = Math.PI / 2;
+    }
+
+    // Create a filled arc sector (pie shape) using THREE.Shape
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0); // Start at center (hinge point)
+
+    // Draw arc
+    const segments = 32;
+    const angleRange = endAngle - startAngle;
+    for (let i = 0; i <= segments; i++) {
+      const angle = startAngle + (i / segments) * angleRange;
+      const x = arcRadius * Math.cos(angle);
+      const y = arcRadius * Math.sin(angle);
+      shape.lineTo(x, y);
+    }
+    shape.lineTo(0, 0); // Close the shape back to center
+
+    // Create geometry and mesh
+    const geometry = new THREE.ShapeGeometry(shape);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x000000, // Black shadow color
+      transparent: true,
+      opacity: 0.15, // Very subtle shadow
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+
+    const shadowMesh = new THREE.Mesh(geometry, material);
+    shadowMesh.name = 'doorSwingShadow';
+    shadowMesh.rotation.x = -Math.PI / 2; // Lay flat on floor
+
+    // Position at hinge location - always use left hinge position since model flip handles right hinge
+    const hingeX = -doorWidth / 2;
+    const hingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
+
+    shadowMesh.position.set(hingeX, 0.5, hingeZ);
+
+    // Only visible in 3D mode
+    shadowMesh.visible = this.viewMode === '3d';
+
+    model.add(shadowMesh);
+  }
+
+  /**
+   * Toggle visibility of all door swing shadows
+   * Used when switching between 2D and 3D modes
+   */
+  private toggleDoorSwingShadows(visible: boolean): void {
+    this.existingItems.forEach((model) => {
+      const shadow = model.getObjectByName('doorSwingShadow');
+      if (shadow) {
+        shadow.visible = visible;
+      }
+    });
   }
 
   /**
@@ -2229,6 +2358,9 @@ export class SceneManager {
       } else {
         model.scale.x = Math.abs(model.scale.x) * flipX;
       }
+
+      // Update 3D swing shadow for door
+      this.updateDoorSwingShadow(model, item.doorConfig);
     }
 
     // Update schematic position if in 2D mode
@@ -2330,6 +2462,9 @@ export class SceneManager {
             model.position.x += shiftX;
             model.position.z += shiftZ;
           }
+
+          // Add 3D swing shadow for door
+          this.updateDoorSwingShadow(model, item.doorConfig);
         }
 
         console.log(`✅ Stored orientation in addSingleItem:`, model.userData.orientation);
@@ -3642,7 +3777,20 @@ export class SceneManager {
   }
 
   private getModelBoundingBox(model: THREE.Object3D): any {
+    // Temporarily hide the door swing shadow if it exists to exclude it from bounding box
+    const shadow = model.getObjectByName('doorSwingShadow');
+    const shadowWasVisible = shadow?.visible ?? false;
+    if (shadow) {
+      shadow.visible = false;
+    }
+
     const box = new THREE.Box3().setFromObject(model);
+
+    // Restore shadow visibility
+    if (shadow) {
+      shadow.visible = shadowWasVisible;
+    }
+
     return {
       min: box.min,
       max: box.max,
