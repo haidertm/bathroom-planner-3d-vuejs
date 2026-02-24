@@ -2,7 +2,7 @@
   <div class="product-summary" :class="{ 'product-summary--mobile': isMobile }">
     <!-- Product Image -->
     <div class="product-summary__image">
-      <img :src="image" :alt="name" loading="lazy" />
+      <img :src="image" :alt="name" width="120" height="120" loading="lazy" />
     </div>
 
     <!-- Product Info -->
