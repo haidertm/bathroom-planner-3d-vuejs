@@ -128,11 +128,16 @@ export class SceneManager {
     // Initialize orthographic camera for 2D Blueprint view
     this.initializeOrthographicCamera();
 
+    // Check if PostHog session recording needs canvas buffer preservation
+    const needsBufferPreservation = typeof window !== 'undefined' &&
+      (window as any).__POSTHOG_RECORDING_ACTIVE__ === true
+
     // Create renderer with enhanced settings
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
-      logarithmicDepthBuffer: true  // Set it in the constructor options
+      logarithmicDepthBuffer: true,  // Set it in the constructor options
+      preserveDrawingBuffer: needsBufferPreservation,
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -2465,7 +2470,7 @@ export class SceneManager {
         window.innerHeight * pixelRatio,
         {
           format: THREE.RGBAFormat,
-          type: THREE.FloatType, // Use FloatType for better precision
+          type: THREE.HalfFloatType, // Use HalfFloatType for better GPU compatibility
           colorSpace: THREE.SRGBColorSpace,
           // Add multisampling for smoother outlines
           samples: 8,
