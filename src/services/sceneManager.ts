@@ -1423,7 +1423,7 @@ export class SceneManager {
   /**
    * Create or update the 3D door swing shadow (arc on floor showing door path)
    */
-  private updateDoorSwingShadow(model: THREE.Object3D, doorConfig: DoorConfig): void {
+  private updateDoorSwingShadow(model: THREE.Object3D, doorConfig: DoorConfig, hasCollision: boolean = false): void {
     // Remove existing shadow if any
     const existingShadow = model.getObjectByName('doorSwingShadow');
     if (existingShadow) {
@@ -1490,10 +1490,12 @@ export class SceneManager {
 
     // Create geometry and mesh
     const geometry = new THREE.ShapeGeometry(shape);
+    // Use red color when there's a collision, dark gray otherwise
+    const shadowColor = hasCollision ? 0xff0000 : 0x222222;
     const material = new THREE.MeshBasicMaterial({
-      color: 0x222222, // Dark shadow color
+      color: shadowColor,
       transparent: true,
-      opacity: 0.5, // More visible shadow
+      opacity: hasCollision ? 0.6 : 0.5, // Slightly more opaque when collision
       side: THREE.DoubleSide,
       depthWrite: false,
     });
@@ -1512,6 +1514,69 @@ export class SceneManager {
     shadowMesh.visible = this.viewMode === '3d';
 
     model.add(shadowMesh);
+
+    // Remove existing warning icon if any
+    const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+    if (existingWarning) {
+      model.remove(existingWarning);
+      if (existingWarning instanceof THREE.Sprite) {
+        existingWarning.material.map?.dispose();
+        existingWarning.material.dispose();
+      }
+    }
+
+    // Add warning icon if there's a collision
+    if (hasCollision) {
+      // Calculate position at the middle of the arc (45 degrees)
+      const midAngle = (startAngle + endAngle) / 2;
+      const iconDistance = arcRadius * 0.6; // Position at 60% of arc radius
+      const iconX = hingeX + iconDistance * Math.cos(midAngle);
+      const iconZ = hingeZ - iconDistance * Math.sin(midAngle);
+
+      // Create warning icon using canvas
+      const canvas = document.createElement('canvas');
+      const size = 128;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Draw red circle background
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw white border
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Draw warning icon (⚠)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${size * 0.6}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚠', size / 2, size / 2 + 2);
+
+        // Create sprite
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+          depthTest: false,
+          depthWrite: false
+        });
+        const warningSprite = new THREE.Sprite(spriteMaterial);
+        warningSprite.name = 'doorCollisionWarning3D';
+        warningSprite.position.set(iconX, 15, iconZ); // Slightly above the floor
+        warningSprite.scale.set(20, 20, 1); // 20cm size
+
+        // Only visible in 3D mode
+        warningSprite.visible = this.viewMode === '3d';
+
+        model.add(warningSprite);
+      }
+    }
   }
 
   /**
@@ -1523,6 +1588,11 @@ export class SceneManager {
       const shadow = model.getObjectByName('doorSwingShadow');
       if (shadow) {
         shadow.visible = visible;
+      }
+      // Also toggle the warning icon visibility
+      const warningIcon = model.getObjectByName('doorCollisionWarning3D');
+      if (warningIcon) {
+        warningIcon.visible = visible;
       }
     });
   }
@@ -1971,6 +2041,57 @@ export class SceneManager {
     frameLine.renderOrder = 998;
 
     group.add(frameLine);
+
+    // Add warning icon if there's a collision
+    if (hasCollision) {
+      // Calculate position at the middle of the arc (45 degrees from start)
+      const midAngle = (startAngle + endAngle) / 2;
+      const iconDistance = arcRadius * 0.6; // Position at 60% of arc radius
+      const iconX = hingeX + iconDistance * Math.cos(midAngle);
+      const iconZ = hingeZ - iconDistance * Math.sin(midAngle); // Negative because of coordinate system
+
+      // Create warning icon using canvas
+      const canvas = document.createElement('canvas');
+      const size = 128;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Draw red circle background
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw white border
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Draw warning icon (⚠)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${size * 0.6}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚠', size / 2, size / 2 + 2);
+
+        // Create sprite
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMaterial = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+          depthTest: false,
+          depthWrite: false
+        });
+        const warningSprite = new THREE.Sprite(spriteMaterial);
+        warningSprite.name = 'doorCollisionWarning';
+        warningSprite.position.set(iconX, height + 5, iconZ);
+        warningSprite.scale.set(20, 20, 1); // 20cm size
+        warningSprite.renderOrder = 1003;
+
+        group.add(warningSprite);
+      }
+    }
   }
 
   /**
@@ -1985,58 +2106,59 @@ export class SceneManager {
     if (!doorModel) return false;
 
     const doorConfig = doorModel.userData.doorConfig || DEFAULT_DOOR_CONFIG;
-    const { hingeSide, swingDirection } = doorConfig;
+    const { swingDirection } = doorConfig;
 
-    // Get door dimensions from bounding box
-    const doorBox = new THREE.Box3().setFromObject(doorModel);
-    const doorSize = new THREE.Vector3();
-    doorBox.getSize(doorSize);
-    const doorWidth = Math.max(doorSize.x, doorSize.z);
-    const doorDepth = Math.min(doorSize.x, doorSize.z);
 
-    // Get door world position
-    const doorWorldPos = new THREE.Vector3();
-    doorModel.getWorldPosition(doorWorldPos);
+    // Get door dimensions from userData (not bounding box, which includes shadow)
+    const dimensions = doorModel.userData.dimensions || doorModel.userData.model?.dimensions;
+    let doorWidth: number;
+    let doorDepth: number;
 
-    // Calculate hinge position in world coordinates
-    const doorRotation = doorModel.rotation.y;
-    const localHingeX = hingeSide === 'right' ? doorWidth / 2 : -doorWidth / 2;
+    if (dimensions) {
+      doorWidth = dimensions.width;
+      doorDepth = dimensions.depth;
+    } else {
+      // Fallback: temporarily hide shadow to get accurate bounding box
+      const shadow = doorModel.getObjectByName('doorSwingShadow');
+      const warningIcon = doorModel.getObjectByName('doorCollisionWarning3D');
+      const shadowWasVisible = shadow?.visible ?? false;
+      const warningWasVisible = warningIcon?.visible ?? false;
+      if (shadow) shadow.visible = false;
+      if (warningIcon) warningIcon.visible = false;
+
+      const doorBox = new THREE.Box3().setFromObject(doorModel);
+      const doorSize = new THREE.Vector3();
+      doorBox.getSize(doorSize);
+      doorWidth = Math.max(doorSize.x, doorSize.z);
+      doorDepth = Math.min(doorSize.x, doorSize.z);
+
+      // Restore visibility
+      if (shadow) shadow.visible = shadowWasVisible;
+      if (warningIcon) warningIcon.visible = warningWasVisible;
+    }
+
+    // Calculate hinge position in door's local coordinates
+    // The 3D shadow always uses left hinge position (-doorWidth/2) and relies on
+    // model.scale.x = -1 to flip for right hinge. We match this behavior.
+    const localHingeX = -doorWidth / 2; // Always use left hinge (same as 3D shadow)
     const localHingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
-
-    // Rotate local hinge position by door's rotation
-    const cosR = Math.cos(doorRotation);
-    const sinR = Math.sin(doorRotation);
-    const hingeWorldX = doorWorldPos.x + (localHingeX * cosR - localHingeZ * sinR);
-    const hingeWorldZ = doorWorldPos.z + (localHingeX * sinR + localHingeZ * cosR);
 
     // Arc radius is the door width
     const arcRadius = doorWidth;
 
-    // Calculate arc angle range in world coordinates
+
+    // Calculate arc angle range in door's LOCAL coordinate system
+    // Always use left hinge angles (same as 3D shadow) - scale.x=-1 handles right hinge
     let startAngle: number;
     let endAngle: number;
 
-    if (hingeSide === 'right') {
-      if (swingDirection === 'inward') {
-        startAngle = Math.PI;
-        endAngle = Math.PI * 1.5;
-      } else {
-        startAngle = Math.PI;
-        endAngle = Math.PI / 2;
-      }
+    if (swingDirection === 'inward') {
+      startAngle = 0;
+      endAngle = -Math.PI / 2;
     } else {
-      if (swingDirection === 'inward') {
-        startAngle = 0;
-        endAngle = -Math.PI / 2;
-      } else {
-        startAngle = 0;
-        endAngle = Math.PI / 2;
-      }
+      startAngle = 0;
+      endAngle = Math.PI / 2;
     }
-
-    // Adjust angles by door rotation
-    startAngle += doorRotation;
-    endAngle += doorRotation;
 
     // Normalize angles to [0, 2*PI)
     const normalizeAngle = (angle: number): number => {
@@ -2048,31 +2170,9 @@ export class SceneManager {
     const normStart = normalizeAngle(startAngle);
     const normEnd = normalizeAngle(endAngle);
 
-    // Check if a point is within the arc sector
-    const isPointInArcSector = (px: number, pz: number): boolean => {
-      // Calculate distance from hinge
-      const dx = px - hingeWorldX;
-      const dz = pz - hingeWorldZ;
-      const distance = Math.sqrt(dx * dx + dz * dz);
-
-      // If point is outside the arc radius, no collision
-      if (distance > arcRadius) return false;
-
-      // Calculate angle of point from hinge
-      let pointAngle = Math.atan2(dz, dx);
-      pointAngle = normalizeAngle(pointAngle);
-
-      // Check if angle is within arc range
-      // Handle wrap-around cases
-      if (normStart <= normEnd) {
-        return pointAngle >= normStart && pointAngle <= normEnd;
-      } else {
-        // Arc wraps around 0/2PI
-        return pointAngle >= normStart || pointAngle <= normEnd;
-      }
-    };
-
-    // Check all other objects in the scene
+    // Check all other objects in the scene using arc sampling
+    // Arc sampling traces points along the arc using localToWorld transform,
+    // which properly handles all door transforms including scale.x = -1 for right hinge doors
     for (const [itemId, model] of this.existingItems) {
       // Skip the door itself
       if (itemId === doorId) continue;
@@ -2080,44 +2180,93 @@ export class SceneManager {
       // Skip non-bathroom items
       if (!model.userData.isBathroomItem) continue;
 
-      // Get object's bounding box
-      const objBox = new THREE.Box3().setFromObject(model);
-      const objMin = objBox.min;
-      const objMax = objBox.max;
+      // Skip other doors (they don't collide with door swing paths)
+      const itemType = model.userData.type;
+      if (itemType === 'Door' || itemType === 'WindowAndDoor') continue;
 
-      // Check corners of the bounding box (on floor level, Y doesn't matter for 2D check)
-      const corners = [
-        { x: objMin.x, z: objMin.z },
-        { x: objMin.x, z: objMax.z },
-        { x: objMax.x, z: objMin.z },
-        { x: objMax.x, z: objMax.z },
-      ];
+      // Get object's bounding box - use dimensions from userData if available
+      const objDimensions = model.userData.dimensions || model.userData.model?.dimensions;
+      let objMin: THREE.Vector3;
+      let objMax: THREE.Vector3;
 
-      // Also check center
-      const center = new THREE.Vector3();
-      objBox.getCenter(center);
-      corners.push({ x: center.x, z: center.z });
+      if (objDimensions) {
+        // Calculate bounding box from known dimensions
+        const halfWidth = objDimensions.width / 2;
+        const halfDepth = objDimensions.depth / 2;
+        const pos = model.position;
+        const rot = model.rotation.y;
+        const cos = Math.cos(rot);
+        const sin = Math.sin(rot);
 
-      // If any corner or center is in the arc sector, there's a collision
-      for (const corner of corners) {
-        if (isPointInArcSector(corner.x, corner.z)) {
-          return true;
-        }
+        // Calculate rotated extents
+        const extentX = Math.abs(halfWidth * cos) + Math.abs(halfDepth * sin);
+        const extentZ = Math.abs(halfWidth * sin) + Math.abs(halfDepth * cos);
+
+        objMin = new THREE.Vector3(pos.x - extentX, pos.y, pos.z - extentZ);
+        objMax = new THREE.Vector3(pos.x + extentX, pos.y + objDimensions.height, pos.z + extentZ);
+      } else {
+        // Fallback to bounding box
+        const objBox = new THREE.Box3().setFromObject(model);
+        objMin = objBox.min;
+        objMax = objBox.max;
       }
 
-      // Additional check: if the arc passes through the object's bounding box
-      // Sample points along the arc and check if they're inside the object's XZ bounds
-      const arcSamples = 8;
-      const angleRange = normEnd >= normStart ? normEnd - normStart : (Math.PI * 2 - normStart + normEnd);
+      // Arc sampling: trace points along the arc and check if they're inside the object
+      // This uses the same localToWorld transform as the visual arc, ensuring accuracy
+      const arcSamples = 30; // More samples for better accuracy
+      const radiusSamples = [1.0, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.3]; // Sample at different radii
+      const tolerance = 2; // 2cm tolerance for edge detection
+
+      // Expand bounding box by tolerance to catch edge cases
+      const checkMinX = objMin.x - tolerance;
+      const checkMaxX = objMax.x + tolerance;
+      const checkMinZ = objMin.z - tolerance;
+      const checkMaxZ = objMax.z + tolerance;
+
+      // Calculate the actual 90-degree arc range
+      const minAngle = Math.min(normStart, normEnd);
+      const maxAngle = Math.max(normStart, normEnd);
+      const arcSpan = maxAngle - minAngle;
+
+      // Determine actual start and step for sampling
+      let sampleStart: number;
+      let angleRange: number;
+
+      if (arcSpan <= Math.PI) {
+        // Normal case: arc from minAngle to maxAngle
+        sampleStart = minAngle;
+        angleRange = arcSpan;
+      } else {
+        // Wrap-around case: arc goes through 0/2PI
+        sampleStart = maxAngle;
+        angleRange = (Math.PI * 2) - arcSpan;
+      }
+
       const angleStep = angleRange / arcSamples;
 
-      for (let i = 0; i <= arcSamples; i++) {
-        const sampleAngle = normStart + i * angleStep;
-        const arcX = hingeWorldX + arcRadius * Math.cos(sampleAngle);
-        const arcZ = hingeWorldZ + arcRadius * Math.sin(sampleAngle);
+      // Sample at multiple radii for better coverage
+      for (const radiusFactor of radiusSamples) {
+        const sampleRadius = arcRadius * radiusFactor;
 
-        if (arcX >= objMin.x && arcX <= objMax.x && arcZ >= objMin.z && arcZ <= objMax.z) {
-          return true;
+        for (let i = 0; i <= arcSamples; i++) {
+          let sampleAngle = sampleStart + i * angleStep;
+          // Normalize angle to [0, 2PI)
+          while (sampleAngle >= Math.PI * 2) sampleAngle -= Math.PI * 2;
+
+          // Compute arc point in door's local coordinates
+          // (with -sin for Z because the visual arc maps Y to -Z via rotation.x = -PI/2)
+          const localArcX = sampleRadius * Math.cos(sampleAngle);
+          const localArcZ = -sampleRadius * Math.sin(sampleAngle);
+
+          // Transform to world coordinates using localToWorld
+          // This properly accounts for the model's scale (including scale.x = -1 for right hinge)
+          const localArcPoint = new THREE.Vector3(localHingeX + localArcX, 0, localHingeZ + localArcZ);
+          const worldArcPoint = doorModel.localToWorld(localArcPoint.clone());
+
+          if (worldArcPoint.x >= checkMinX && worldArcPoint.x <= checkMaxX &&
+              worldArcPoint.z >= checkMinZ && worldArcPoint.z <= checkMaxZ) {
+            return true;
+          }
         }
       }
     }
@@ -2130,15 +2279,21 @@ export class SceneManager {
    * Called when objects are moved or placed
    */
   public updateAllDoorCollisions(): void {
-    if (this.viewMode !== '2d') return;
-
-    // Find all doors and update their schematics
+    // Find all doors and update their visuals based on collision state
     for (const [itemId, model] of this.existingItems) {
       const schematicType = this.getSchematicType(model);
       if (schematicType === 'door') {
-        // Remove and recreate the schematic with updated collision state
-        this.removeSchematicForItem(itemId);
-        this.createSchematicForItem(itemId);
+        const hasCollision = this.checkDoorSwingCollision(itemId);
+        const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+
+        if (this.viewMode === '2d') {
+          // Remove and recreate the schematic with updated collision state
+          this.removeSchematicForItem(itemId);
+          this.createSchematicForItem(itemId);
+        } else {
+          // In 3D mode, update the door swing shadow
+          this.updateDoorSwingShadow(model, doorConfig, hasCollision);
+        }
       }
     }
   }
