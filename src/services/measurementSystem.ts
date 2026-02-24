@@ -188,7 +188,12 @@ export class MeasurementSystem {
     const scaledSpawnHeight = dimensions.spawnHeight * objectScale; // ✅ CRITICAL: Scale the floor offset too
 
     // ✅ FIX: Account for current object's rotation - at 90° or 270°, width and depth are swapped
-    const objectRotation = currentItem?.rotation || this.selectedObject.rotation.y || 0;
+    // ✅ CRITICAL: Use selectedObject.rotation.y as the PRIMARY source for live rotation during drag
+    // The existingItems array may have stale rotation data that hasn't been updated yet
+    // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+    // The || operator treats 0 as falsy, causing it to fall back to stale rotation data
+    // This caused the "extra 17cm line" bug when dragging corner objects between corners
+    const objectRotation = this.selectedObject.rotation.y ?? currentItem?.rotation ?? 0;
     // Normalize rotation to [0, 2π) range
     const normalizedObjectRotation = ((objectRotation % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
     const rotationEpsilon = 0.01;
@@ -202,13 +207,34 @@ export class MeasurementSystem {
     const isWallBound = this.isObjectWallBound(objectPosition, scaledWidth, scaledDepth);
     const wallDirection = this.getWallDirection(objectPosition, scaledWidth, scaledDepth);
 
-    // Calculate available space
+    // ✅ CRITICAL FIX: Calculate bounding box FIRST, then pass to calculateAvailableSpace
+    // This ensures space calculations use the same bounding box edges as measurement lines
+    let boundingBox: { minX: number; maxX: number; minZ: number; maxZ: number };
+    if (currentItem) {
+      // Create a modified item with live rotation for accurate bounding box calculation
+      const itemWithLiveRotation = {
+        ...currentItem,
+        rotation: this.selectedObject.rotation.y
+      };
+      boundingBox = this.getItemBoundingBoxEdges(itemWithLiveRotation, objectPosition, scaledWidth, scaledDepth);
+    } else {
+      // Fallback to center-pivot calculation if item not found
+      boundingBox = {
+        minX: objectPosition.x - scaledWidth / 2,
+        maxX: objectPosition.x + scaledWidth / 2,
+        minZ: objectPosition.z - scaledDepth / 2,
+        maxZ: objectPosition.z + scaledDepth / 2
+      };
+    }
+
+    // Calculate available space - now passing bounding box for accurate edge calculations
     const spaceCalculations = this.calculateAvailableSpace(
       objectPosition,
       scaledWidth,
-      scaledDepth,  // ✅ FIX: Pass depth for Z-axis calculations
+      scaledDepth,
       scaledHeight,
-      this.selectedObject.userData.itemId
+      this.selectedObject.userData.itemId,
+      boundingBox  // ✅ NEW: Pass bounding box for corner object accuracy
     );
 
     // ✅ Adjust space calculations for notch walls - limit by wall boundaries
@@ -224,18 +250,7 @@ export class MeasurementSystem {
         const backEdge = objectPosition.z + scaledWidth / 2;
         const wallOuterEdge = notch.maxZ + wallThickness;
         const spaceToEndOfWall = Math.max(0, wallOuterEdge - backEdge);
-        console.log(`📏 Calculating spaceBack for notch-east wall:`, {
-          objectPosition: objectPosition.z.toFixed(1),
-          scaledWidth: scaledWidth.toFixed(1),
-          backEdge: backEdge.toFixed(1),
-          notchMaxZ: notch.maxZ.toFixed(1),
-          wallThickness: wallThickness.toFixed(1),
-          wallOuterEdge: wallOuterEdge.toFixed(1),
-          spaceToEndOfWall: spaceToEndOfWall.toFixed(1),
-          originalSpaceBack: spaceCalculations.spaceBack.toFixed(1)
-        });
         adjustedSpaceCalculations.spaceBack = Math.min(spaceCalculations.spaceBack, spaceToEndOfWall);
-        console.log(`📏 Final spaceBack: ${adjustedSpaceCalculations.spaceBack.toFixed(1)}cm (line will end at ${(backEdge + adjustedSpaceCalculations.spaceBack).toFixed(1)})`);
       }
     } else if (wallDirection === 'notch-south') {
       // For notch-south wall objects, limit spaceRight to the end of the wall (notch.maxX + wall thickness)
@@ -247,38 +262,16 @@ export class MeasurementSystem {
         const rightEdge = objectPosition.x + scaledWidth / 2;
         const wallOuterEdge = notch.maxX + wallThickness;
         const spaceToEndOfWall = Math.max(0, wallOuterEdge - rightEdge);
-        console.log(`📏 Calculating spaceRight for notch-south wall:`, {
-          objectPosition: objectPosition.x.toFixed(1),
-          scaledWidth: scaledWidth.toFixed(1),
-          rightEdge: rightEdge.toFixed(1),
-          notchMaxX: notch.maxX.toFixed(1),
-          wallThickness: wallThickness.toFixed(1),
-          wallOuterEdge: wallOuterEdge.toFixed(1),
-          spaceToEndOfWall: spaceToEndOfWall.toFixed(1),
-          originalSpaceRight: spaceCalculations.spaceRight.toFixed(1)
-        });
         adjustedSpaceCalculations.spaceRight = Math.min(spaceCalculations.spaceRight, spaceToEndOfWall);
-        console.log(`📏 Final spaceRight: ${adjustedSpaceCalculations.spaceRight.toFixed(1)}cm (line will end at ${(rightEdge + adjustedSpaceCalculations.spaceRight).toFixed(1)})`);
       }
     }
 
-    // ✅ Calculate current object's bounding box edges for accurate line positioning
-    let boundingBox: { minX: number; maxX: number; minZ: number; maxZ: number };
-    if (currentItem) {
-      boundingBox = this.getItemBoundingBoxEdges(currentItem, objectPosition, scaledWidth, scaledDepth);
-    } else {
-      // Fallback to center-pivot calculation if item not found
-      boundingBox = {
-        minX: objectPosition.x - scaledWidth / 2,
-        maxX: objectPosition.x + scaledWidth / 2,
-        minZ: objectPosition.z - scaledDepth / 2,
-        maxZ: objectPosition.z + scaledDepth / 2
-      };
-    }
-
     return {
-      objectWidth: scaledWidth,
-      objectDepth: scaledDepth,
+      // ✅ FIX: Return ORIGINAL product dimensions for UI display
+      // On east/west walls (90°/270° rotation), effective dimensions are swapped for bounding box calculations,
+      // but users expect to see the actual product specs (width/depth) in the measurement panel
+      objectWidth: scaledBaseWidth,
+      objectDepth: scaledBaseDepth,
       objectHeight: scaledHeight,
       floorOffset: scaledFloorOffset, // ✅ NEW: Include floorOffset in measurement data
       spawnHeight: scaledSpawnHeight, // ✅ NEW: Include spawnHeight in measurement data
@@ -316,10 +309,6 @@ export class MeasurementSystem {
                               position.z <= notch.maxZ + tolerance;
 
         if (nearNotchSouth || nearNotchEast) {
-          console.log(`✅ Object is wall-bound to notch wall:`, {
-            nearNotchSouth,
-            nearNotchEast
-          });
           return true;
         }
       }
@@ -333,27 +322,11 @@ export class MeasurementSystem {
     const roomHalfHeight = this.roomHeight / 2;
     const tolerance = 30; // ✅ Increased tolerance from 20 to 30 for better detection
 
-    console.log(`🔍 Detecting wall for object at position:`, {
-      x: position.x.toFixed(1),
-      z: position.z.toFixed(1),
-      roomHalfWidth: roomHalfWidth.toFixed(1),
-      roomHalfHeight: roomHalfHeight.toFixed(1),
-      notchWidth: this.notchWidth,
-      notchHeight: this.notchHeight
-    });
-
     // ✅ Check for notch walls first (if L-shaped room)
     if (this.notchWidth > 0 && this.notchHeight > 0) {
       const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
 
       if (notch) {
-        console.log(`🔍 Notch boundaries:`, {
-          minX: notch.minX.toFixed(1),
-          maxX: notch.maxX.toFixed(1),
-          minZ: notch.minZ.toFixed(1),
-          maxZ: notch.maxZ.toFixed(1)
-        });
-
         // Check distances to both notch walls
         const distToNotchSouth = Math.abs(position.z - notch.maxZ);
         const isInNotchXRange = position.x >= notch.minX - tolerance && position.x <= notch.maxX + tolerance;
@@ -363,30 +336,21 @@ export class MeasurementSystem {
         const isInNotchZRange = position.z >= notch.minZ - tolerance && position.z <= notch.maxZ + tolerance;
         const isNearNotchEast = distToNotchEast < tolerance && isInNotchZRange;
 
-        console.log(`🔍 Checking notch walls:`, {
-          notchSouth: { dist: distToNotchSouth.toFixed(1), inRange: isInNotchXRange, detected: isNearNotchSouth },
-          notchEast: { dist: distToNotchEast.toFixed(1), inRange: isInNotchZRange, detected: isNearNotchEast }
-        });
-
         // ✅ If near BOTH walls (at corner), choose the CLOSER one
         if (isNearNotchSouth && isNearNotchEast) {
           if (distToNotchEast < distToNotchSouth) {
-            console.log(`✅ Object at CORNER - closer to NOTCH-EAST wall (${distToNotchEast.toFixed(1)}cm vs ${distToNotchSouth.toFixed(1)}cm)`);
             return 'notch-east';
           } else {
-            console.log(`✅ Object at CORNER - closer to NOTCH-SOUTH wall (${distToNotchSouth.toFixed(1)}cm vs ${distToNotchEast.toFixed(1)}cm)`);
             return 'notch-south';
           }
         }
 
         // If near only one wall, use that
         if (isNearNotchSouth) {
-          console.log(`✅ Object detected on NOTCH-SOUTH wall`);
           return 'notch-south';
         }
 
         if (isNearNotchEast) {
-          console.log(`✅ Object detected on NOTCH-EAST wall`);
           return 'notch-east';
         }
       }
@@ -398,31 +362,19 @@ export class MeasurementSystem {
     const distToEast = Math.abs(position.x - roomHalfWidth);
     const distToWest = Math.abs(position.x + roomHalfWidth);
 
-    console.log(`🔍 Distances to main walls:`, {
-      north: distToNorth.toFixed(1),
-      south: distToSouth.toFixed(1),
-      east: distToEast.toFixed(1),
-      west: distToWest.toFixed(1)
-    });
-
     if (distToNorth < tolerance) {
-      console.log(`✅ Object detected on NORTH wall`);
       return 'north';
     }
     if (distToSouth < tolerance) {
-      console.log(`✅ Object detected on SOUTH wall`);
       return 'south';
     }
     if (distToEast < tolerance) {
-      console.log(`✅ Object detected on EAST wall`);
       return 'east';
     }
     if (distToWest < tolerance) {
-      console.log(`✅ Object detected on WEST wall`);
       return 'west';
     }
 
-    console.log(`❌ Object not detected on any wall`);
     return undefined;
   }
 
@@ -431,41 +383,104 @@ export class MeasurementSystem {
       width: number,
       depth: number, // ✅ FIX: Added depth parameter for Z-axis calculations
       height: number,
-      excludeItemId: number
+      excludeItemId: number,
+      boundingBox?: { minX: number; maxX: number; minZ: number; maxZ: number } // ✅ NEW: Pass bounding box for accurate edge calculation
   ): SpaceCalculations {
-    const roomHalfWidth = this.roomWidth / 2;
-    const roomHalfHeight = this.roomHeight / 2;
-    const wallThickness = WALL_SETTINGS.THICKNESS + 1; // Use wall width from WALL_SETTINGS
+    // ✅ CRITICAL FIX: Use getInteriorBoundaries for consistent wall face calculation
+    // This ensures measurement system uses same wall positions as constraint system
+    const { wallFaces, notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
 
-    // Get interior boundaries including notch information
-    const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+    // ✅ CRITICAL FIX: Use bounding box edges for corner objects instead of center-pivot assumptions
+    // For corner-install objects, position is NOT at center, so we must use actual bounding box
+    const leftEdge = boundingBox ? boundingBox.minX : (position.x - width / 2);
+    const rightEdge = boundingBox ? boundingBox.maxX : (position.x + width / 2);
+    const frontEdge = boundingBox ? boundingBox.minZ : (position.z - depth / 2);
+    const backEdge = boundingBox ? boundingBox.maxZ : (position.z + depth / 2);
 
-    // ✅ FIX: Use width for X-axis (left/right) and depth for Z-axis (front/back)
-    let spaceToWestWall = (position.x + roomHalfWidth) - width / 2 - wallThickness;
-    let spaceToEastWall = (roomHalfWidth - position.x) - width / 2 - wallThickness;
-    let spaceToNorthWall = (position.z + roomHalfHeight) - depth / 2 - wallThickness;
-    let spaceToSouthWall = (roomHalfHeight - position.z) - depth / 2 - wallThickness;
+    // ✅ Use consistent wall faces from getInteriorBoundaries (same as constraint system)
+    const westWallFace = wallFaces.west;
+    const eastWallFace = wallFaces.east;
+    const northWallFace = wallFaces.north;
+    const southWallFace = wallFaces.south;
+
+    // Calculate space from object edges to wall faces
+    let spaceToWestWall = leftEdge - westWallFace;
+    let spaceToEastWall = eastWallFace - rightEdge;
+    let spaceToNorthWall = frontEdge - northWallFace;
+    let spaceToSouthWall = southWallFace - backEdge;
 
     // ✅ NEW: Consider notch walls as boundaries for L-shaped rooms
     if (notch) {
+      const wallThickness = WALL_SETTINGS.THICKNESS; // Consistent with getInteriorBoundaries
+
       // Check if object is near the notch-east wall (vertical wall at notch.maxX)
       // This wall blocks movement to the LEFT (west direction) for objects east of it
       // ✅ CRITICAL FIX: Only apply if object Z is within notch Z range (actually near the notch wall)
       if (position.x > notch.maxX && position.z >= notch.minZ && position.z <= notch.maxZ) {
+        // ✅ CRITICAL FIX: Use bounding box leftEdge instead of center-pivot math
         // notch.maxX is interior face - add wallThickness to get exterior face
-        const spaceToNotchEastWall = position.x - width / 2 - notch.maxX - wallThickness;
+        const spaceToNotchEastWall = leftEdge - notch.maxX - wallThickness;
         spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
-        console.log(`📏 Object near notch-east wall: spaceToNotchEastWall=${spaceToNotchEastWall.toFixed(1)}cm (interior face at ${notch.maxX.toFixed(1)}, exterior at ${(notch.maxX + wallThickness).toFixed(1)})`);
+
+        // ✅ KEY FIX: For objects ON the notch-east wall, limit spaceBack to the END of that wall
+        // The notch-east wall ends at notch.maxZ, so spaceBack should not extend past it to the main south wall
+        // This fixes the 318cm line issue - it should end at the notch corner, not the south wall
+        // ⚠️ IMPORTANT: Only apply this if object is actually NEAR the notch-east wall, not on the main east wall
+        // Check if object's left edge is close to the notch-east wall (within tolerance)
+        const notchEastWallExterior = notch.maxX + wallThickness;
+        const distanceToNotchEastWall = Math.abs(leftEdge - notchEastWallExterior);
+        const proximityTolerance = 50; // 50cm tolerance to consider object "on" the notch-east wall
+
+        if (distanceToNotchEastWall < proximityTolerance) {
+          const notchSouthWallFace = notch.maxZ + wallThickness;
+          const spaceToNotchSouthWall = notchSouthWallFace - backEdge;
+          if (spaceToNotchSouthWall >= 0) {
+            spaceToSouthWall = Math.min(spaceToSouthWall, spaceToNotchSouthWall);
+          }
+        }
       }
 
       // Check if object is near the notch-south wall (horizontal wall at notch.maxZ)
       // This wall blocks movement to the FRONT (north direction) for objects south of it
       // ✅ CRITICAL FIX: Only apply if object X is within notch X range (actually near the notch wall)
       if (position.z > notch.maxZ && position.x >= notch.minX && position.x <= notch.maxX) {
+        // ✅ CRITICAL FIX: Use bounding box frontEdge instead of center-pivot math
         // notch.maxZ is interior face - add wallThickness to get exterior face
-        const spaceToNotchSouthWall = position.z - depth / 2 - notch.maxZ - wallThickness;
+        const spaceToNotchSouthWall = frontEdge - notch.maxZ - wallThickness;
         spaceToNorthWall = Math.min(spaceToNorthWall, spaceToNotchSouthWall);
-        console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm (interior face at ${notch.maxZ.toFixed(1)}, exterior at ${(notch.maxZ + wallThickness).toFixed(1)})`);
+        console.log(`📏 Object near notch-south wall: spaceToNotchSouthWall=${spaceToNotchSouthWall.toFixed(1)}cm (frontEdge at ${frontEdge.toFixed(1)}, notch exterior at ${(notch.maxZ + wallThickness).toFixed(1)})`);
+      }
+
+      // ✅ NEW: Handle interior corner case - object is SOUTH of notch but near notch-east wall
+      // When object extends south past the notch area (position.z > notch.maxZ),
+      // the spaceLeft (west) measurement line would visually pass through the notch cut-out area
+      // The line should stop at the notch-east wall, not extend to the main west wall
+      // This is the KEY FIX for the 318cm line issue shown in screenshot
+      // ⚠️ IMPORTANT: Only apply if object is close to the notch area (within notch Z range + tolerance)
+      // Objects far south (like on the south wall) should NOT be affected
+      const notchProximityTolerance = 50; // 50cm tolerance beyond notch.maxZ
+      const isNearNotchZRange = position.z <= notch.maxZ + notchProximityTolerance;
+      // ✅ FIX: Exclude objects ON the notch-south wall (within notch X range) - they should measure to main west wall
+      const isOnNotchSouthWall = position.x >= notch.minX && position.x <= notch.maxX;
+
+      if (position.z > notch.maxZ && isNearNotchZRange && !isOnNotchSouthWall) {
+        // Object's center is south of the notch-south wall but close to the notch area
+        // The notch-east wall exterior face (facing into main room)
+        const notchEastWallFace = notch.maxX + wallThickness;
+
+        // Calculate space from left edge to the notch-east wall
+        const spaceToNotchEastWall = leftEdge - notchEastWallFace;
+
+
+        if (spaceToNotchEastWall >= 0) {
+          // leftEdge is EAST of the notch-east wall - limit to that distance
+          spaceToWestWall = Math.min(spaceToWestWall, spaceToNotchEastWall);
+        } else {
+          // leftEdge is WEST of the notch-east wall - object already extends past the reference point
+          // The user wants the line to END at the notch corner, so set spaceToWestWall to 0
+          // This will prevent the 318cm line from appearing
+          spaceToWestWall = 0;
+        }
       }
     }
 
@@ -546,7 +561,6 @@ export class MeasurementSystem {
         itemTopY + verticalOverlapBuffer < currentBottomY);
       if (!hasVerticalOverlap) {
         // Objects are at different heights - skip this object
-        console.log(`⏭️ Skipping ${item.type} - different height level (${Math.abs(currentBottomY - itemBottomY).toFixed(1)}cm apart)`);
         return;
       }
 
@@ -555,10 +569,17 @@ export class MeasurementSystem {
 
       // Calculate current object's bounding box edges
       // Also check if current object is corner-installed
+      // ✅ CRITICAL FIX: Use live rotation from selectedObject, not stale rotation from existingItems
       let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
 
       if (currentItem) {
-        const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, width, depth);
+        // Create a modified item with live rotation for accurate bounding box calculation
+        // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+        const itemWithLiveRotation = {
+          ...currentItem,
+          rotation: this.selectedObject?.rotation.y ?? currentItem.rotation ?? 0
+        };
+        const currentBounds = this.getItemBoundingBoxEdges(itemWithLiveRotation, position, width, depth);
         currentMinX = currentBounds.minX;
         currentMaxX = currentBounds.maxX;
         currentMinZ = currentBounds.minZ;
@@ -577,13 +598,6 @@ export class MeasurementSystem {
       const frontDistance = Math.abs(currentMinZ - itemBounds.maxZ);  // Current's front edge to item's back edge
       const backDistance = Math.abs(currentMaxZ - itemBounds.minZ);   // Current's back edge to item's front edge
 
-      // Calculate centers for logging and direction comparison
-      const currentCenterXLog = (currentMinX + currentMaxX) / 2;
-      const currentCenterZLog = (currentMinZ + currentMaxZ) / 2;
-      const itemCenterXLog = (itemBounds.minX + itemBounds.maxX) / 2;
-      const itemCenterZLog = (itemBounds.minZ + itemBounds.maxZ) / 2;
-
-      // Debug logging
       // ✅ FIX: Use bounding-box-overlap test instead of center/position math
       // For X-axis alignment (left/right distance): check if Z ranges overlap
       // For Z-axis alignment (front/back distance): check if X ranges overlap
@@ -592,29 +606,6 @@ export class MeasurementSystem {
                        (itemBounds.maxZ + alignmentTolerance) >= currentMinZ;
       const zAligned = (currentMaxX + alignmentTolerance) >= itemBounds.minX &&
                        (itemBounds.maxX + alignmentTolerance) >= currentMinX;
-      console.log(`📐 Distance to ${item.type}:`, {
-        currentPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        currentBounds: {
-          minX: currentMinX.toFixed(1), maxX: currentMaxX.toFixed(1),
-          minZ: currentMinZ.toFixed(1), maxZ: currentMaxZ.toFixed(1),
-          centerX: currentCenterXLog.toFixed(1), centerZ: currentCenterZLog.toFixed(1)
-        },
-        itemPos: { x: itemPos.x.toFixed(1), z: itemPos.z.toFixed(1) },
-        itemBounds: {
-          minX: itemBounds.minX.toFixed(1), maxX: itemBounds.maxX.toFixed(1),
-          minZ: itemBounds.minZ.toFixed(1), maxZ: itemBounds.maxZ.toFixed(1),
-          centerX: itemCenterXLog.toFixed(1), centerZ: itemCenterZLog.toFixed(1)
-        },
-        itemRotation: (itemRotation * 180 / Math.PI).toFixed(1) + '°',
-        xAligned,
-        zAligned,
-        distances: {
-          left: leftDistance.toFixed(1),
-          right: rightDistance.toFixed(1),
-          front: frontDistance.toFixed(1),
-          back: backDistance.toFixed(1)
-        }
-      });
 
       // Update minimum distances (using bounding box centers for direction comparison)
       // Use actual bounding box centers for both objects
@@ -714,21 +705,11 @@ export class MeasurementSystem {
         break;
       default:
         // Fallback to center-pivot for non-standard rotations
-        console.warn(`⚠️ Unexpected corner rotation ${rotationDeg}°, using center-pivot fallback`);
         minX = itemPos.x - effectiveWidth / 2;
         maxX = itemPos.x + effectiveWidth / 2;
         minZ = itemPos.z - effectiveDepth / 2;
         maxZ = itemPos.z + effectiveDepth / 2;
     }
-
-    console.log(`🔧 Corner object ${item.type} bounding box:`, {
-      rotation: rotationDeg + '°',
-      position: { x: itemPos.x.toFixed(1), z: itemPos.z.toFixed(1) },
-      boundingBox: {
-        minX: minX.toFixed(1), maxX: maxX.toFixed(1),
-        minZ: minZ.toFixed(1), maxZ: maxZ.toFixed(1)
-      }
-    });
 
     return { minX, maxX, minZ, maxZ };
   }
@@ -788,10 +769,6 @@ export class MeasurementSystem {
         color: '#007BFF',
         isObjectDimension: false
       });
-
-      console.log(`✅ Showing top space line: Object mounted at ${mountingHeightPercentage.toFixed(1)}% of wall height`);
-    } else if (!movementConfig.allowFreeRotation && !isObjectHighlyMounted) {
-      console.log(`🚫 Hiding top space line: Object mounted at only ${mountingHeightPercentage.toFixed(1)}% of wall height < ${MOUNT_THRESHOLD_PERCENT}%)`);
     }
 
     // Existing logic for wall-bound or free-standing measurements
@@ -802,15 +779,10 @@ export class MeasurementSystem {
     }
 
     // Create visual elements for each label
-    console.log(`🎨 Creating visual elements for ${labels.length} labels:`, labels.map(l => ({ id: l.id, text: l.text })));
-
     labels.forEach(label => {
-      console.log(`🎨 Processing label: ${label.id} - "${label.text}"`);
       this.createMeasurementLabel(label);
       this.createMeasurementLine(label, measurements);
     });
-
-    console.log(`✅ Finished creating measurements for ${measurements.wallDirection || 'free-standing'} object`);
   }
 
 
@@ -822,11 +794,18 @@ export class MeasurementSystem {
     let nearestObjectBelowTopY = 0; // Start from floor level (Y=0)
 
     // Get current object's horizontal bounds using getItemBoundingBoxEdges for accurate corner object handling
+    // ✅ CRITICAL FIX: Use live rotation from selectedObject, not stale rotation from existingItems
     const currentItem = this.existingItems.find(item => item.id === excludeItemId);
     let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
 
     if (currentItem) {
-      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      // Create a modified item with live rotation for accurate bounding box calculation
+      // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+      const itemWithLiveRotation = {
+        ...currentItem,
+        rotation: this.selectedObject?.rotation.y ?? currentItem.rotation ?? 0
+      };
+      const currentBounds = this.getItemBoundingBoxEdges(itemWithLiveRotation, position, measurements.objectWidth, measurements.objectDepth);
       currentMinX = currentBounds.minX;
       currentMaxX = currentBounds.maxX;
       currentMinZ = currentBounds.minZ;
@@ -880,19 +859,11 @@ export class MeasurementSystem {
       if (overlapX && overlapZ) {
         // Objects overlap horizontally and other object is below
         nearestObjectBelowTopY = Math.max(nearestObjectBelowTopY, itemTopY);
-        console.log(`📏 Found object below: ${item.type} at top Y=${itemTopY.toFixed(1)}cm`);
       }
     });
 
     // Calculate space: from current object bottom to top of nearest object below (or floor)
     const spaceBelow = objectBottomY - nearestObjectBelowTopY;
-
-    console.log(`📏 Space below calculation:`, {
-      objectBottomY: objectBottomY.toFixed(1),
-      nearestObjectBelowTopY: nearestObjectBelowTopY.toFixed(1),
-      spaceBelow: spaceBelow.toFixed(1),
-      hasObjectBelow: nearestObjectBelowTopY > 0
-    });
 
     return Math.max(0, spaceBelow);
   }
@@ -909,7 +880,14 @@ export class MeasurementSystem {
     let currentMinX: number, currentMaxX: number, currentMinZ: number, currentMaxZ: number;
 
     if (currentItem) {
-      const currentBounds = this.getItemBoundingBoxEdges(currentItem, position, measurements.objectWidth, measurements.objectDepth);
+      // Create a modified item with live rotation for accurate bounding box calculation
+      // existingItems array may have stale rotation data during drag operations
+      // ✅ CRITICAL FIX: Use ?? instead of || to handle 0° rotation correctly
+      const itemWithLiveRotation = {
+        ...currentItem,
+        rotation: this.selectedObject?.rotation.y ?? currentItem.rotation ?? 0
+      };
+      const currentBounds = this.getItemBoundingBoxEdges(itemWithLiveRotation, position, measurements.objectWidth, measurements.objectDepth);
       currentMinX = currentBounds.minX;
       currentMaxX = currentBounds.maxX;
       currentMinZ = currentBounds.minZ;
@@ -961,19 +939,11 @@ export class MeasurementSystem {
       if (overlapX && overlapZ) {
         // Objects overlap horizontally and other object is above
         nearestObjectAboveBottomY = Math.min(nearestObjectAboveBottomY, itemBottomY);
-        console.log(`📏 Found object above: ${item.type} at bottom Y=${itemBottomY.toFixed(1)}cm`);
       }
     });
 
     // Calculate space: from current object top to bottom of nearest object above (or ceiling)
     const spaceAbove = nearestObjectAboveBottomY - objectTopY;
-
-    console.log(`📏 Space above calculation:`, {
-      objectTopY: objectTopY.toFixed(1),
-      nearestObjectAboveBottomY: nearestObjectAboveBottomY.toFixed(1),
-      spaceAbove: spaceAbove.toFixed(1),
-      hasObjectAbove: nearestObjectAboveBottomY < ceilingHeight
-    });
 
     return Math.max(0, spaceAbove);
   }
@@ -1000,24 +970,220 @@ export class MeasurementSystem {
     return position.y + measurements.floorOffset + measurements.objectHeight;
   }
 
-// REPLACE your entire createWallBoundMeasurements method with this version
-// This completely eliminates room-extension measurements for wall-mounted objects
+// Wall-bound measurement creation
+// Corner-install objects show distances to BOTH opposite walls
+// Regular wall-mounted objects show only parallel-to-wall measurements
 
   private createWallBoundMeasurements (
     measurements: MeasurementData,
     position: THREE.Vector3,
     labels: MeasurementLabel[]
   ): void {
-    const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection } = measurements;
+    const { objectWidth, objectDepth: _objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack, wallDirection, boundingBox } = measurements;
 
     // Calculate object center height for lines and label positions
     const objectTopY = this.getObjectTopY(measurements, position);
 
+    // ✅ CRITICAL: Use bounding box edges for label positioning (not center-pivot math)
+    // This ensures labels are positioned correctly for corner-install objects
+    const leftEdge = boundingBox.minX;
+    const rightEdge = boundingBox.maxX;
+    const frontEdge = boundingBox.minZ;
+    const backEdge = boundingBox.maxZ;
+
     // Position labels ABOVE the object
-    // const labelHeightOffset = 40; // 40cm above top of object
     const spaceHeightOffset = 20; // 20cm above top of object for space labels
 
-    console.log(`📏 RESTRICTIVE wall-mounted measurements for ${wallDirection} wall:`, {
+    // ✅ CHECK: Is this a corner-install object?
+    const itemId = this.selectedObject?.userData.itemId;
+    const currentItem = this.existingItems.find(item => item.id === itemId);
+    const movementConfig = getMovementConfig(currentItem?.type || 'Furniture', currentItem);
+    const isCornerInstall = movementConfig.cornerInstallOnly &&
+      typeof movementConfig.cornerInstallOnly === 'object' &&
+      movementConfig.cornerInstallOnly.enabled;
+
+    // ✅ CORNER-INSTALL OBJECTS: Show distances to BOTH opposite walls
+    if (isCornerInstall) {
+      // Determine corner based on rotation
+      const rotation = this.selectedObject?.rotation.y ?? currentItem?.rotation ?? 0;
+      const rotationDeg = Math.round((rotation * 180 / Math.PI + 360) % 360);
+
+      console.log(`📐 CORNER-INSTALL object measurements:`, {
+        rotationDeg: rotationDeg + '°',
+        corner: rotationDeg === 0 ? 'NW' : rotationDeg === 90 ? 'SW' : rotationDeg === 180 ? 'SE' : 'NE',
+        boundingBox: {
+          minX: leftEdge.toFixed(1), maxX: rightEdge.toFixed(1),
+          minZ: frontEdge.toFixed(1), maxZ: backEdge.toFixed(1)
+        },
+        spaces: {
+          left: spaceLeft.toFixed(1), right: spaceRight.toFixed(1),
+          front: spaceFront.toFixed(1), back: spaceBack.toFixed(1)
+        }
+      });
+
+      // Corner objects show:
+      // - Object width dimension ONLY (not depth - user requested)
+      // - Distance to both opposite walls
+
+      // Add object WIDTH label (horizontal dimension along wall)
+      labels.push({
+        id: 'object-width',
+        text: `${objectWidth} cm`,
+        position: new THREE.Vector3(position.x, this.getObjectCenterY(measurements, position), frontEdge),
+        direction: 'horizontal',
+        color: '#ff6b35',
+        isObjectDimension: true
+      });
+
+      // ❌ REMOVED: Object depth label - user requested only width for corner objects
+
+      // Based on corner, show distances to the TWO opposite walls:
+      // NW (0°): touches North + West → show East (space-right) + South (space-back)
+      // NE (270°): touches North + East → show West (space-left) + South (space-back)
+      // SW (90°): touches South + West → show East (space-right) + North (space-front)
+      // SE (180°): touches South + East → show West (space-left) + North (space-front)
+
+      switch (rotationDeg) {
+        case 0: // NW corner
+          // Show distance to East wall (space-right)
+          if (spaceRight > 5) {
+            labels.push({
+              id: 'space-right',
+              text: `${Math.round(spaceRight)} cm`,
+              position: new THREE.Vector3(
+                rightEdge + spaceRight / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to South wall (space-back)
+          if (spaceBack > 5) {
+            labels.push({
+              id: 'space-back',
+              text: `${Math.round(spaceBack)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                backEdge + spaceBack / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+
+        case 270: // NE corner (or -90°)
+        case -90:
+          // Show distance to West wall (space-left)
+          if (spaceLeft > 5) {
+            labels.push({
+              id: 'space-left',
+              text: `${Math.round(spaceLeft)} cm`,
+              position: new THREE.Vector3(
+                leftEdge - spaceLeft / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to South wall (space-back)
+          if (spaceBack > 5) {
+            labels.push({
+              id: 'space-back',
+              text: `${Math.round(spaceBack)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                backEdge + spaceBack / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+
+        case 90: // SW corner
+          // Show distance to East wall (space-right)
+          if (spaceRight > 5) {
+            labels.push({
+              id: 'space-right',
+              text: `${Math.round(spaceRight)} cm`,
+              position: new THREE.Vector3(
+                rightEdge + spaceRight / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to North wall (space-front)
+          if (spaceFront > 5) {
+            labels.push({
+              id: 'space-front',
+              text: `${Math.round(spaceFront)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                frontEdge - spaceFront / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+
+        case 180: // SE corner
+          // Show distance to West wall (space-left)
+          if (spaceLeft > 5) {
+            labels.push({
+              id: 'space-left',
+              text: `${Math.round(spaceLeft)} cm`,
+              position: new THREE.Vector3(
+                leftEdge - spaceLeft / 2,
+                objectTopY + spaceHeightOffset,
+                position.z
+              ),
+              direction: 'horizontal',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          // Show distance to North wall (space-front)
+          if (spaceFront > 5) {
+            labels.push({
+              id: 'space-front',
+              text: `${Math.round(spaceFront)} cm`,
+              position: new THREE.Vector3(
+                position.x,
+                objectTopY + spaceHeightOffset,
+                frontEdge - spaceFront / 2
+              ),
+              direction: 'vertical',
+              color: '#4CAF50',
+              isObjectDimension: false
+            });
+          }
+          break;
+      }
+
+      console.log(`✅ Corner-install object: Created ${labels.length} labels (width + depth + 2 wall distances)`);
+      return; // Exit early - corner objects handled separately
+    }
+
+    // ✅ REGULAR WALL-MOUNTED OBJECTS: Show only parallel-to-wall measurements
+    console.log(`📏 Wall-mounted measurements for ${wallDirection} wall:`, {
       wallDirection,
       position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
       availableSpaces: {
@@ -1029,7 +1195,6 @@ export class MeasurementSystem {
       labelsToCreate: 'ONLY parallel-to-wall measurements'
     });
 
-    // ✅ RESTRICTIVE APPROACH: Wall-mounted objects show ONLY parallel-to-wall measurements
     if (wallDirection === 'north' || wallDirection === 'south') {
       // Object against north/south wall - show ONLY width and left/right clearances
       // ❌ NO front/back measurements (no room extension lines)
@@ -1049,7 +1214,7 @@ export class MeasurementSystem {
           id: 'space-left',
           text: `${Math.round(spaceLeft)} cm`,
           position: new THREE.Vector3(
-            position.x - objectWidth / 2 - spaceLeft / 2,
+            leftEdge - spaceLeft / 2,  // ✅ Use bounding box edge, not center-pivot
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1064,7 +1229,7 @@ export class MeasurementSystem {
           id: 'space-right',
           text: `${Math.round(spaceRight)} cm`,
           position: new THREE.Vector3(
-            position.x + objectWidth / 2 + spaceRight / 2,
+            rightEdge + spaceRight / 2,  // ✅ Use bounding box edge, not center-pivot
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1074,13 +1239,10 @@ export class MeasurementSystem {
         });
       }
 
-      console.log(`✅ North/South wall object: Created ${labels.length} labels (width + left/right only)`);
-
     } else if (wallDirection === 'notch-south') {
       // ✅ Object on notch-south wall - behave like north/south wall
       // Show width and left/right clearances, BUT NOT space-back (distance to main south wall)
       // space-right now shows distance to END of notch-south wall (notch.maxX), not main east wall
-      console.log(`📍 Creating measurements for NOTCH-SOUTH wall object`);
 
       labels.push({
         id: 'object-width',
@@ -1097,7 +1259,7 @@ export class MeasurementSystem {
           id: 'space-left',
           text: `${Math.round(spaceLeft)} cm`,
           position: new THREE.Vector3(
-            position.x - objectWidth / 2 - spaceLeft / 2,
+            leftEdge - spaceLeft / 2,  // ✅ Use bounding box edge
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1113,7 +1275,7 @@ export class MeasurementSystem {
           id: 'space-right',
           text: `${Math.round(spaceRight)} cm`,
           position: new THREE.Vector3(
-            position.x + objectWidth / 2 + spaceRight / 2,
+            rightEdge + spaceRight / 2,  // ✅ Use bounding box edge
             objectTopY + spaceHeightOffset,
             position.z
           ),
@@ -1121,13 +1283,10 @@ export class MeasurementSystem {
           color: '#4CAF50',
           isObjectDimension: false
         });
-        console.log(`✅ Showing space-right (distance to end of notch-south wall)`);
       }
 
       // ❌ SKIP space-back (distance to main south wall)
       // ❌ SKIP space-front as well (perpendicular to wall)
-      console.log(`✅ Notch-south wall object: Created ${labels.length} labels`);
-      console.log(`📋 Labels created:`, labels.map(l => l.id));
 
     } else if (wallDirection === 'east' || wallDirection === 'west') {
       // Object against east/west wall - show ONLY depth and front/back clearances
@@ -1150,7 +1309,7 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z - objectDepth / 2 - spaceFront / 2
+            frontEdge - spaceFront / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
@@ -1165,7 +1324,7 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z + objectDepth / 2 + spaceBack / 2
+            backEdge + spaceBack / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
@@ -1173,13 +1332,10 @@ export class MeasurementSystem {
         });
       }
 
-      console.log(`✅ East/West wall object: Created ${labels.length} labels (depth + front/back only)`);
-
     } else if (wallDirection === 'notch-east') {
       // ✅ Object on notch-east wall - behave like east/west wall
       // Show depth and front/back clearances, BUT NOT space-right (distance to main east wall)
       // space-back now shows distance to END of notch-east wall (notch.maxZ), not main south wall
-      console.log(`📍 Creating measurements for NOTCH-EAST wall object`);
 
       labels.push({
         id: 'object-width',
@@ -1198,7 +1354,7 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z - objectDepth / 2 - spaceFront / 2
+            frontEdge - spaceFront / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
@@ -1214,21 +1370,16 @@ export class MeasurementSystem {
           position: new THREE.Vector3(
             position.x,
             objectTopY + spaceHeightOffset,
-            position.z + objectDepth / 2 + spaceBack / 2
+            backEdge + spaceBack / 2  // ✅ Use bounding box edge
           ),
           direction: 'vertical',
           color: '#4CAF50',
           isObjectDimension: false
         });
-        console.log(`✅ Showing space-back (distance to end of notch-east wall)`);
       }
 
       // ❌ SKIP space-right (distance to main east wall)
-      console.log(`✅ Notch-east wall object: Created ${labels.length} labels`);
-      console.log(`📋 Labels created:`, labels.map(l => l.id));
     }
-
-    console.log(`🎯 FINAL: Created ${labels.length} total labels for wall-mounted object`);
   }
 
   private createFreeStandingMeasurements (
@@ -1238,24 +1389,11 @@ export class MeasurementSystem {
   ): void {
     const { objectWidth, objectDepth, spaceLeft, spaceRight, spaceFront, spaceBack } = measurements;
 
-    // ✅ CRITICAL: Calculate object center height for lines and label positions
-    const objectCenterY = this.getObjectCenterY(measurements, position);
+    // ✅ CRITICAL: Calculate object top for label positioning
     const objectTopY = this.getObjectTopY(measurements, position);
-    const objectBottomY = this.getObjectBottomY(measurements, position);
 
-    // ✅ Position labels ABOVE the object, but lines at object center
-    const labelHeightOffset = 50; // 50cm above top of object for main labels
+    // ✅ Position labels ABOVE the object
     const spaceHeightOffset = 30; // 30cm above top of object for space labels
-
-    console.log(`📏 Free-standing measurements:`, {
-      scenePositionY: position.y.toFixed(1) + 'cm',
-      floorOffset: measurements.floorOffset.toFixed(1) + 'cm',
-      objectHeight: measurements.objectHeight.toFixed(1) + 'cm',
-      objectBottomY: objectBottomY.toFixed(1) + 'cm',
-      objectCenterY: objectCenterY.toFixed(1) + 'cm',
-      objectTopY: objectTopY.toFixed(1) + 'cm',
-      labelHeight: (objectTopY + labelHeightOffset).toFixed(1) + 'cm'
-    });
 
     // Show space in all four directions
     if (spaceLeft > 10) {
@@ -1405,21 +1543,25 @@ export class MeasurementSystem {
 
     const shouldSkip = restrictedLines[wallDirection]?.includes(labelId) || false;
 
-    if (shouldSkip) {
-      console.log(`🚫 Skipping room-extension line: ${labelId} for ${wallDirection} wall object`);
-    }
-
     return shouldSkip;
   }
 
   private createMeasurementLine (label: MeasurementLabel, measurements: MeasurementData): void {
     if (!this.selectedObject) return;
 
+    // ✅ CHECK: Is this a corner-install object?
+    const itemId = this.selectedObject.userData.itemId;
+    const currentItem = this.existingItems.find(item => item.id === itemId);
+    const movementConfig = getMovementConfig(currentItem?.type || 'Furniture', currentItem);
+    const isCornerInstall = movementConfig.cornerInstallOnly &&
+      typeof movementConfig.cornerInstallOnly === 'object' &&
+      movementConfig.cornerInstallOnly.enabled;
+
     // ✅ SAFEGUARD: For wall-bound objects, don't create lines going into walls
-    if (measurements.isWallBound && measurements.wallDirection) {
+    // ✅ EXCEPTION: Corner-install objects show lines to BOTH opposite walls, so don't skip for them
+    if (measurements.isWallBound && measurements.wallDirection && !isCornerInstall) {
       const shouldSkipLine = this.shouldSkipWallFacingLine(label.id, measurements.wallDirection);
       if (shouldSkipLine) {
-        console.log(`🚫 Skipping wall-facing line: ${label.id} for ${measurements.wallDirection} wall`);
         return; // Don't create this line
       }
     }
@@ -1430,12 +1572,16 @@ export class MeasurementSystem {
     // ✅ CRITICAL: Lines positioned at the CENTER of the object (middle height)
     const objectCenterY = this.getObjectCenterY(measurements, position);
 
-    console.log(`📐 Line positioning for ${label.id}:`, {
-      objectCenterY: objectCenterY.toFixed(1) + 'cm',
-      labelType: label.isObjectDimension ? 'OBJECT DIMENSION' : 'SPACE'
-    });
       // Lines showing available space AT CENTER HEIGHT - these extend FROM object TO walls/obstacles
       // ✅ FIX: Use bounding box edges for accurate line positioning (especially for corner objects)
+
+      // ✅ For corner objects, determine the corner rotation for proper line positioning
+      let cornerRotationDeg = 0;
+      if (isCornerInstall) {
+        const rotation = this.selectedObject?.rotation.y ?? currentItem?.rotation ?? 0;
+        cornerRotationDeg = Math.round((rotation * 180 / Math.PI + 360) % 360);
+      }
+
       if (label.id === 'space-left') {
         const startX = measurements.boundingBox.minX;  // Left edge of object
         let endX = startX - measurements.spaceLeft;
@@ -1444,36 +1590,60 @@ export class MeasurementSystem {
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
         let lineY = objectCenterY;
 
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // NE (270°) shows space-left - line should be at NORTH wall face (minZ) where object touches
+        // SE (180°) shows space-left - line should be at SOUTH wall face (maxZ) where object touches
         let lineZ = position.z;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 270 || cornerRotationDeg === -90) {
+            lineZ = measurements.boundingBox.minZ; // NE corner: line at north wall face (where object touches)
+          } else if (cornerRotationDeg === 180) {
+            lineZ = measurements.boundingBox.maxZ; // SE corner: line at south wall face (where object touches)
+          }
+        }
+
+        // ✅ FIX: For corner objects at the notch-east + notch-south corner,
+        // the line's Z position (boundingBox.minZ) is flush against the notch-south wall,
+        // causing the horizontal line to render inside the notch-east wall.
+        // Offset the line south (into the room) so it's visible.
+        //
+        // IMPORTANT: Don't rely on wallDirection - it uses position (pivot) which for corner objects
+        // can be far from the actual edge. Instead, check if the object's LEFT EDGE (minX) is
+        // close to the notch-east wall (notch.maxX).
+        if (isCornerInstall && notch) {
+          const wallThickness = WALL_SETTINGS.THICKNESS;
+          const notchEastWallExterior = notch.maxX + wallThickness;
+          const distanceFromLeftEdgeToNotchEast = Math.abs(measurements.boundingBox.minX - notchEastWallExterior);
+
+          // If object's left edge is within 15cm of the notch-east wall exterior
+          if (distanceFromLeftEdgeToNotchEast < 15) {
+            lineZ = notch.maxZ + wallThickness + 15; // 15cm past notch-south wall exterior
+          }
+        }
+
         let notchLineAdjusted = false;
 
-        console.log(`📏 space-left DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
         if (notch) {
-          console.log(`📏 space-left DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
-
           // Check if line ends at notch-east wall (object is east of it)
           if (position.x > notch.maxX) {
             const distanceToNotchWall = Math.abs(endX - notch.maxX);
-            console.log(`📏 space-left: Object east of notch-east wall! endX=${endX.toFixed(1)}, notch.maxX=${notch.maxX.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
 
             if (distanceToNotchWall < 20) {
               // Don't override endX - let the space calculation handle it
               lineY = objectCenterY + 5;
               lineZ = position.z + 20;
               notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-left adjustment for notch-east wall: lineZ offset by 20cm, endX=${endX.toFixed(1)}`);
             }
           }
 
           // ✅ NEW: Check if object is near notch-south wall - offset horizontal lines away from wall
-          if (position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
-            lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
-            console.log(`📏 ✅ APPLYING space-left Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)} (20cm from wall at ${notch.maxZ.toFixed(1)})`);
+          if (!isCornerInstall && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
+            lineZ = notch.maxZ + 10; // Move south of notch-south wall
           }
         }
 
-        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
-        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
+        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch and not corner)
+        if (!notchLineAdjusted && !isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5; // 5cm away from wall face
 
@@ -1496,13 +1666,23 @@ export class MeasurementSystem {
 
         // ✅ Check if object is near notch-south wall
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
+
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // NW (0°) shows space-right - line should be at NORTH wall face (minZ) where object touches
+        // SW (90°) shows space-right - line should be at SOUTH wall face (maxZ) where object touches
         let lineZ = position.z;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 0) {
+            lineZ = measurements.boundingBox.minZ; // NW corner: line at north wall face (where object touches)
+          } else if (cornerRotationDeg === 90) {
+            lineZ = measurements.boundingBox.maxZ; // SW corner: line at south wall face (where object touches)
+          }
+        }
 
         if (notch && position.z > notch.maxZ && Math.abs(position.z - notch.maxZ) < 30) {
-          lineZ = notch.maxZ + 10; // Move 20cm south of notch-south wall
-          console.log(`📏 ✅ APPLYING space-right Z-offset for notch-south wall: lineZ=${lineZ.toFixed(1)}`);
-        } else if (measurements.isWallBound && measurements.wallDirection) {
-          // Apply standard wall offset
+          lineZ = notch.maxZ + 10; // Move south of notch-south wall
+        } else if (!isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
+          // Apply standard wall offset (only for non-corner objects)
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
@@ -1526,36 +1706,42 @@ export class MeasurementSystem {
         // ✅ Check if object is in notch-affected area
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
         let lineY = objectCenterY;
+
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // SW (90°) shows space-front - line should be at WEST wall face (minX) where object touches
+        // SE (180°) shows space-front - line should be at EAST wall face (maxX) where object touches
         let lineX = position.x;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 90) {
+            lineX = measurements.boundingBox.minX; // SW corner: line at west wall face (where object touches)
+          } else if (cornerRotationDeg === 180) {
+            lineX = measurements.boundingBox.maxX; // SE corner: line at east wall face (where object touches)
+          }
+        }
+
         let notchLineAdjusted = false;
 
-        console.log(`📏 space-front DEBUG: notch=${notch ? 'EXISTS' : 'NULL'}, notchWidth=${this.notchWidth}, notchHeight=${this.notchHeight}`);
         if (notch) {
-          console.log(`📏 space-front DEBUG: notch.maxX=${notch.maxX.toFixed(1)}, position.x=${position.x.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, position.z=${position.z.toFixed(1)}`);
-
           // Check if line ends at notch-south wall (object is south of it)
           if (position.z > notch.maxZ) {
             const distanceToNotchWall = Math.abs(endZ - notch.maxZ);
-            console.log(`📏 space-front: Object south of notch-south wall! endZ=${endZ.toFixed(1)}, notch.maxZ=${notch.maxZ.toFixed(1)}, distance=${distanceToNotchWall.toFixed(1)}`);
 
             if (distanceToNotchWall < 20) {
               // Don't override endZ - let the space calculation handle it
               lineY = objectCenterY + 5;
-              lineX = position.x + 20;
+              if (!isCornerInstall) lineX = position.x + 20;
               notchLineAdjusted = true;
-              console.log(`📏 ✅ APPLYING space-front adjustment for notch-south wall: lineX offset by 20cm, endZ=${endZ.toFixed(1)}`);
             }
           }
 
-          // ✅ NEW: Check if object is near notch-east wall - offset vertical lines away from wall
-          if (position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
-            lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
-            console.log(`📏 ✅ APPLYING space-front X-offset for notch-east wall: lineX=${lineX.toFixed(1)} (20cm from wall at ${notch.maxX.toFixed(1)})`);
+          // Check if object is near notch-east wall - offset vertical lines away from wall
+          if (!isCornerInstall && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+            lineX = notch.maxX + 10; // Move east of notch-east wall
           }
         }
 
-        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch)
-        if (!notchLineAdjusted && measurements.isWallBound && measurements.wallDirection) {
+        // ✅ Apply wall offset for consistent positioning (only if not already adjusted for notch and not corner)
+        if (!notchLineAdjusted && !isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
@@ -1578,13 +1764,48 @@ export class MeasurementSystem {
 
         // ✅ Check if object is near notch-east wall - offset vertical lines away from wall
         const { notch } = getInteriorBoundaries(this.roomWidth, this.roomHeight, this.notchWidth, this.notchHeight);
-        let lineX = position.x;
 
-        if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
-          lineX = notch.maxX + 10; // Move 20cm east of notch-east wall
-          console.log(`📏 ✅ APPLYING space-back X-offset for notch-east wall: lineX=${lineX.toFixed(1)}`);
-        } else if (measurements.isWallBound && measurements.wallDirection) {
-          // Apply standard wall offset
+        // ✅ FIX: For corner objects, position line FLUSH against the wall (at wall face, not object edge)
+        // NW (0°) shows space-back - line should be at WEST wall face (minX) where object touches
+        // NE (270°) shows space-back - line should be at EAST wall face (maxX) where object touches
+        let lineX = position.x;
+        if (isCornerInstall) {
+          if (cornerRotationDeg === 0) {
+            lineX = measurements.boundingBox.minX; // NW corner: line at west wall face (where object touches)
+          } else if (cornerRotationDeg === 270 || cornerRotationDeg === -90) {
+            lineX = measurements.boundingBox.maxX; // NE corner: line at east wall face (where object touches)
+          }
+        }
+
+        // ✅ CRITICAL FIX: For corner objects at the notch corner, offset the line into the room
+        // The line would otherwise be drawn inside the wall
+        // Use bounding box edge distance check instead of wallDirection (wallDirection uses pivot which is far from wall)
+        if (isCornerInstall && notch) {
+          const wallThickness = WALL_SETTINGS.THICKNESS;
+          const notchEastWallExterior = notch.maxX + wallThickness;
+
+          // For different rotations, the space-back line is at different edges:
+          // - NW (0°): line is at minX (left edge, where object touches west/notch-east wall)
+          // - NE (270°): line is at maxX (right edge, where object touches east/notch-east wall)
+          let edgeToCheck: number;
+          if (cornerRotationDeg === 0) {
+            edgeToCheck = measurements.boundingBox.minX;
+          } else if (cornerRotationDeg === 270 || cornerRotationDeg === -90) {
+            edgeToCheck = measurements.boundingBox.maxX;
+          } else {
+            edgeToCheck = lineX;
+          }
+
+          const distanceToNotchEast = Math.abs(edgeToCheck - notchEastWallExterior);
+
+          if (distanceToNotchEast < 15) {
+            // Object's edge is at/near the notch-east wall - offset line into the room
+            lineX = notchEastWallExterior + 15; // 15cm into the room (east of the wall)
+          }
+        } else if (notch && position.x > notch.maxX && Math.abs(position.x - notch.maxX) < 30) {
+          lineX = notch.maxX + 10; // Move 10cm east of notch-east wall
+        } else if (!isCornerInstall && measurements.isWallBound && measurements.wallDirection) {
+          // Apply standard wall offset (only for non-corner objects)
           const { wallFaces } = getInteriorBoundaries(this.roomWidth, this.roomHeight);
           const offset = 5;
 
