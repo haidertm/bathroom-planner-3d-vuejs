@@ -2,7 +2,7 @@ import { createApp } from "vue";
 import "./style.css";
 import App from "./App.vue";
 import router from "./router";
-
+import { setupPostHog } from "./plugins/posthog";
 const app = createApp(App);
 app.use(router);
 
@@ -64,7 +64,6 @@ function loadAnalytics() {
 
   // Dynamic imports so the analytics chunk is only fetched on first interaction
   import("./plugins/gtm").then(({ initGTM }) => initGTM(app, router));
-  import("./plugins/openreplay").then(({ initOpenReplay }) => initOpenReplay(app, router));
 }
 
 // Skip GTM on admin pages
@@ -85,5 +84,5 @@ if (href.includes("vueAdmin") || href.includes("vueadmin")) {
     }
   });
 }
-
+setupPostHog(app);
 app.mount("#app");
