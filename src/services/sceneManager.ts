@@ -1350,12 +1350,13 @@ export class SceneManager {
   /**
    * Update door configuration and refresh the schematic
    * Called when user changes door swing direction or hinge side
+   * @returns The position shift applied to the model (for syncing item.position)
    */
-  public updateDoorConfig(itemId: number, doorConfig: DoorConfig): void {
+  public updateDoorConfig(itemId: number, doorConfig: DoorConfig): { shiftX: number; shiftZ: number } {
     const model = this.existingItems.get(itemId);
     if (!model) {
       console.warn(`⚠️ Model not found for item ${itemId} when updating door config`);
-      return;
+      return { shiftX: 0, shiftZ: 0 };
     }
 
     // Get the previous hinge side to detect changes
@@ -1364,6 +1365,10 @@ export class SceneManager {
 
     // Update the model's userData with the new door config
     model.userData.doorConfig = doorConfig;
+
+    // Track the position shift for return value
+    let shiftX = 0;
+    let shiftZ = 0;
 
     // Flip the 3D model based on hinge side
     // Default models have hinge on the LEFT, so flip for RIGHT hinge
@@ -1391,10 +1396,12 @@ export class SceneManager {
       if (existingShadow) existingShadow.visible = shadowWasVisible;
 
       // Compensate for the position shift caused by flipping
-      const shiftX = centerBefore.x - centerAfter.x;
-      const shiftZ = centerBefore.z - centerAfter.z;
+      shiftX = centerBefore.x - centerAfter.x;
+      shiftZ = centerBefore.z - centerAfter.z;
       model.position.x += shiftX;
       model.position.z += shiftZ;
+
+      console.log('🚪 Door hinge changed, position shift:', { shiftX, shiftZ });
     }
 
     // If in 2D mode, recreate the schematic with the new config
@@ -1418,6 +1425,9 @@ export class SceneManager {
 
     // Re-highlight the door to include the new shadow mesh in the outline pass
     highlightObject(model, true);
+
+    // Return the shift so the caller can update item.position
+    return { shiftX, shiftZ };
   }
 
   /**

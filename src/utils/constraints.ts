@@ -835,10 +835,12 @@ export const checkCollision = (
     };
 
     // Object 1 bounding box (scaled dimensions, accounting for rotation)
-    const obj1BaseWidth = dims1.width * scale1;
-    const obj1BaseDepth = dims1.depth * scale1;
-    const obj1Height = dims1.height * scale1;
-    const obj1FloorOffset = dims1.floorOffset * scale1;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale1 = Math.abs(scale1);
+    const obj1BaseWidth = dims1.width * absScale1;
+    const obj1BaseDepth = dims1.depth * absScale1;
+    const obj1Height = dims1.height * absScale1;
+    const obj1FloorOffset = dims1.floorOffset * absScale1;
 
     // Swap width/depth if object is rotated 90°
     // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)
@@ -865,10 +867,12 @@ export const checkCollision = (
     }
 
     // Object 2 bounding box (scaled dimensions, accounting for rotation)
-    const obj2BaseWidth = dims2.width * scale2;
-    const obj2BaseDepth = dims2.depth * scale2;
-    const obj2Height = dims2.height * scale2;
-    const obj2FloorOffset = dims2.floorOffset * scale2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale2 = Math.abs(scale2);
+    const obj2BaseWidth = dims2.width * absScale2;
+    const obj2BaseDepth = dims2.depth * absScale2;
+    const obj2Height = dims2.height * absScale2;
+    const obj2FloorOffset = dims2.floorOffset * absScale2;
 
     // Swap width/depth if object is rotated 90°
     // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)

@@ -416,8 +416,20 @@ const handleDoorConfigUpdate = ({ itemId, doorConfig }) => {
     item.doorConfig = doorConfig
 
     // Update the schematic in sceneManager (this refreshes the 2D arc)
+    // Also get the position shift from model flipping
     if (sceneManagerRef.value) {
-      sceneManagerRef.value.updateDoorConfig(itemId, doorConfig)
+      const { shiftX, shiftZ } = sceneManagerRef.value.updateDoorConfig(itemId, doorConfig)
+
+      // CRITICAL: Update item.position with the shift so collision detection uses correct position
+      // The 3D model position is shifted when the door is flipped, so item.position must match
+      if (shiftX !== 0 || shiftZ !== 0) {
+        item.position = [
+          item.position[0] + shiftX,
+          item.position[1],
+          item.position[2] + shiftZ
+        ]
+        console.log('🚪 Updated item.position after hinge change:', item.position)
+      }
     }
 
     // Save state for undo/redo
