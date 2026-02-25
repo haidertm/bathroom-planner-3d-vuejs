@@ -1096,6 +1096,10 @@ export class SceneManager {
    * Helper method to create the appropriate schematic based on object type.
    * Centralizes the switch statement logic for schematic type dispatch.
    *
+   * Note: Door schematics are handled externally in create2DSchematicOverlays
+   * and updateSingle2DSchematicOverlay, which guard schematicType === 'door'
+   * before calling this function to pass doorConfig and collision state.
+   *
    * @param schematicType - The type of schematic to create (e.g., 'shower', 'toilet', 'generic')
    * @param schematicGroup - The THREE.Group to add schematic elements to
    * @param width - Width of the schematic
@@ -1130,10 +1134,6 @@ export class SceneManager {
         break;
       case 'furniture':
         this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'door':
-        // Door schematic needs special handling - will be created in create2DSchematicOverlays
-        // with door config passed separately
         break;
       case 'generic':
       default:
@@ -2217,6 +2217,10 @@ export class SceneManager {
 
       const angleStep = angleRange / arcSamples;
 
+      // Pre-allocate vectors outside loops to avoid allocations per iteration
+      const localArcPoint = new THREE.Vector3();
+      const worldArcPoint = new THREE.Vector3();
+
       // Sample at multiple radii for better coverage
       for (const radiusFactor of radiusSamples) {
         const sampleRadius = arcRadius * radiusFactor;
@@ -2233,8 +2237,10 @@ export class SceneManager {
 
           // Transform to world coordinates using localToWorld
           // This properly accounts for the model's scale (including scale.x = -1 for right hinge)
-          const localArcPoint = new THREE.Vector3(localHingeX + localArcX, 0, localHingeZ + localArcZ);
-          const worldArcPoint = doorModel.localToWorld(localArcPoint.clone());
+          // Reuse pre-allocated vectors to avoid allocations per iteration
+          localArcPoint.set(localHingeX + localArcX, 0, localHingeZ + localArcZ);
+          worldArcPoint.copy(localArcPoint);
+          doorModel.localToWorld(worldArcPoint);
 
           if (worldArcPoint.x >= checkMinX && worldArcPoint.x <= checkMaxX &&
               worldArcPoint.z >= checkMinZ && worldArcPoint.z <= checkMaxZ) {
