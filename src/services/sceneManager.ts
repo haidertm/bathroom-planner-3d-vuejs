@@ -2207,32 +2207,13 @@ export class SceneManager {
       const itemType = model.userData.type;
       if (itemType === 'Door' || itemType === 'WindowAndDoor') continue;
 
-      // Get object's bounding box - use dimensions from userData if available
-      const objDimensions = model.userData.dimensions || model.userData.model?.dimensions;
-      let objMin: THREE.Vector3;
-      let objMax: THREE.Vector3;
-
-      if (objDimensions) {
-        // Calculate bounding box from known dimensions
-        const halfWidth = objDimensions.width / 2;
-        const halfDepth = objDimensions.depth / 2;
-        const pos = model.position;
-        const rot = model.rotation.y;
-        const cos = Math.cos(rot);
-        const sin = Math.sin(rot);
-
-        // Calculate rotated extents
-        const extentX = Math.abs(halfWidth * cos) + Math.abs(halfDepth * sin);
-        const extentZ = Math.abs(halfWidth * sin) + Math.abs(halfDepth * cos);
-
-        objMin = new THREE.Vector3(pos.x - extentX, pos.y, pos.z - extentZ);
-        objMax = new THREE.Vector3(pos.x + extentX, pos.y + objDimensions.height, pos.z + extentZ);
-      } else {
-        // Fallback to bounding box
-        const objBox = new THREE.Box3().setFromObject(model);
-        objMin = objBox.min;
-        objMax = objBox.max;
-      }
+      // Get object's bounding box from actual mesh positions
+      // IMPORTANT: Always use setFromObject() instead of calculating from dimensions,
+      // because wall-mounted items (toilets, sinks, vanities) have their pivot at the wall,
+      // not at the center. Dimension-based calculation incorrectly assumes center positioning.
+      const objBox = new THREE.Box3().setFromObject(model);
+      const objMin = objBox.min;
+      const objMax = objBox.max;
 
       // Arc sampling: trace points along the arc and check if they're inside the object
       // This uses the same localToWorld transform as the visual arc, ensuring accuracy
