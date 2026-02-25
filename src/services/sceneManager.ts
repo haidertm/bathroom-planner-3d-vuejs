@@ -1096,6 +1096,10 @@ export class SceneManager {
    * Helper method to create the appropriate schematic based on object type.
    * Centralizes the switch statement logic for schematic type dispatch.
    *
+   * Note: Door schematics are handled externally in create2DSchematicOverlays
+   * and updateSingle2DSchematicOverlay, which guard schematicType === 'door'
+   * before calling this function to pass doorConfig and collision state.
+   *
    * @param schematicType - The type of schematic to create (e.g., 'shower', 'toilet', 'generic')
    * @param schematicGroup - The THREE.Group to add schematic elements to
    * @param width - Width of the schematic
@@ -1130,10 +1134,6 @@ export class SceneManager {
         break;
       case 'furniture':
         this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
-        break;
-      case 'door':
-        // Door schematic needs special handling - will be created in create2DSchematicOverlays
-        // with door config passed separately
         break;
       case 'generic':
       default:
@@ -1522,8 +1522,8 @@ export class SceneManager {
     const shape = new THREE.Shape();
     shape.moveTo(0, 0); // Start at center (hinge point)
 
-    // Draw arc
-    const segments = 32;
+    // Draw arc with high segment count for smooth curve
+    const segments = 64;
     const angleRange = endAngle - startAngle;
     for (let i = 0; i <= segments; i++) {
       const angle = startAngle + (i / segments) * angleRange;
@@ -1543,17 +1543,23 @@ export class SceneManager {
       opacity: hasCollision ? 0.6 : 0.5, // Slightly more opaque when collision
       side: THREE.DoubleSide,
       depthWrite: false,
+      // Polygon offset prevents z-fighting with floor (especially L-shaped ExtrudeGeometry floors)
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
     });
 
     const shadowMesh = new THREE.Mesh(geometry, material);
     shadowMesh.name = 'doorSwingShadow';
     shadowMesh.rotation.x = -Math.PI / 2; // Lay flat on floor
+    shadowMesh.renderOrder = 1; // Render after floor to prevent z-fighting
 
     // Position at hinge location - always use left hinge position since model flip handles right hinge
     const hingeX = -doorWidth / 2;
     const hingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
 
-    shadowMesh.position.set(hingeX, 0.5, hingeZ);
+    // Y position slightly above floor to prevent z-fighting (especially with L-shaped rooms)
+    shadowMesh.position.set(hingeX, 1, hingeZ);
 
     // Only visible in 3D mode
     shadowMesh.visible = this.viewMode === '3d';
@@ -2217,6 +2223,10 @@ export class SceneManager {
 
       const angleStep = angleRange / arcSamples;
 
+      // Pre-allocate vectors outside loops to avoid allocations per iteration
+      const localArcPoint = new THREE.Vector3();
+      const worldArcPoint = new THREE.Vector3();
+
       // Sample at multiple radii for better coverage
       for (const radiusFactor of radiusSamples) {
         const sampleRadius = arcRadius * radiusFactor;
@@ -2233,8 +2243,10 @@ export class SceneManager {
 
           // Transform to world coordinates using localToWorld
           // This properly accounts for the model's scale (including scale.x = -1 for right hinge)
-          const localArcPoint = new THREE.Vector3(localHingeX + localArcX, 0, localHingeZ + localArcZ);
-          const worldArcPoint = doorModel.localToWorld(localArcPoint.clone());
+          // Reuse pre-allocated vectors to avoid allocations per iteration
+          localArcPoint.set(localHingeX + localArcX, 0, localHingeZ + localArcZ);
+          worldArcPoint.copy(localArcPoint);
+          doorModel.localToWorld(worldArcPoint);
 
           if (worldArcPoint.x >= checkMinX && worldArcPoint.x <= checkMaxX &&
               worldArcPoint.z >= checkMinZ && worldArcPoint.z <= checkMaxZ) {
