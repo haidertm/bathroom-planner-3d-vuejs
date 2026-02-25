@@ -1522,8 +1522,8 @@ export class SceneManager {
     const shape = new THREE.Shape();
     shape.moveTo(0, 0); // Start at center (hinge point)
 
-    // Draw arc
-    const segments = 32;
+    // Draw arc with high segment count for smooth curve
+    const segments = 64;
     const angleRange = endAngle - startAngle;
     for (let i = 0; i <= segments; i++) {
       const angle = startAngle + (i / segments) * angleRange;
@@ -1543,17 +1543,23 @@ export class SceneManager {
       opacity: hasCollision ? 0.6 : 0.5, // Slightly more opaque when collision
       side: THREE.DoubleSide,
       depthWrite: false,
+      // Polygon offset prevents z-fighting with floor (especially L-shaped ExtrudeGeometry floors)
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
     });
 
     const shadowMesh = new THREE.Mesh(geometry, material);
     shadowMesh.name = 'doorSwingShadow';
     shadowMesh.rotation.x = -Math.PI / 2; // Lay flat on floor
+    shadowMesh.renderOrder = 1; // Render after floor to prevent z-fighting
 
     // Position at hinge location - always use left hinge position since model flip handles right hinge
     const hingeX = -doorWidth / 2;
     const hingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
 
-    shadowMesh.position.set(hingeX, 0.5, hingeZ);
+    // Y position slightly above floor to prevent z-fighting (especially with L-shaped rooms)
+    shadowMesh.position.set(hingeX, 1, hingeZ);
 
     // Only visible in 3D mode
     shadowMesh.visible = this.viewMode === '3d';
