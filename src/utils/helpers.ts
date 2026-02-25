@@ -32,6 +32,10 @@ const isMesh = (obj: THREE.Object3D): obj is THREE.Mesh => {
   return obj.type === 'Mesh';
 };
 
+// Names of objects to exclude from outline highlighting
+// These are visual indicators with transparency/depthWrite:false that can cause outline issues
+const EXCLUDED_OUTLINE_NAMES = ['doorSwingShadow', 'doorCollisionWarning3D'];
+
 // Store reference to outline pass for external access
 let outlinePassRef: any = null;
 
@@ -52,7 +56,10 @@ export const highlightObjects = (objects: THREE.Object3D[], highlight: boolean):
     objects.forEach(obj => {
       obj.traverse((child) => {
         if (isMesh(child)) {
-          allMeshes.push(child);
+          // Exclude door swing shadow and warning icon from outline
+          if (!EXCLUDED_OUTLINE_NAMES.includes(child.name)) {
+            allMeshes.push(child);
+          }
         }
       });
     });

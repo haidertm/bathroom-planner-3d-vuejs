@@ -40,6 +40,7 @@
         @configure-variants="handleConfigureVariants"
         @delete-item="deleteItem"
         @toggle-rotation="handleRotationToggleFromOverlay"
+        @update-door-config="handleDoorConfigUpdate"
         :show-rotation-toggle="showRotationToggle"
     />
 
@@ -300,6 +301,11 @@ const handleDragStart = () => {
 
 const handleDragEnd = () => {
   isDraggingObject.value = false
+
+  // Update door collision warnings in 2D mode
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
 }
 
 // Handler for window resize (needs stable reference for cleanup)
@@ -396,6 +402,43 @@ const handleConfigureVariants = (config) => {
     isVariantDrawerOpen.value = true
   } else {
     console.warn('⚠️ Cannot configure variants: missing product or variant data')
+  }
+}
+
+// Handle door configuration updates from ItemConfigurationOverlay
+const handleDoorConfigUpdate = ({ itemId, doorConfig }) => {
+  // Update the item in the items array
+  const item = items.value.find(i => i.id === itemId)
+  if (item) {
+    item.doorConfig = doorConfig
+
+    // Update the schematic in sceneManager (this refreshes the 2D arc)
+    // Also get the position shift from model flipping
+    if (sceneManagerRef.value) {
+      const { shiftX, shiftZ } = sceneManagerRef.value.updateDoorConfig(itemId, doorConfig)
+
+      // CRITICAL: Update item.position with the shift so collision detection uses correct position
+      // The 3D model position is shifted when the door is flipped, so item.position must match
+      if (shiftX !== 0 || shiftZ !== 0) {
+        item.position = [
+          item.position[0] + shiftX,
+          item.position[1],
+          item.position[2] + shiftZ
+        ]
+        console.log('🚪 Updated item.position after hinge change:', item.position)
+      }
+    }
+
+    // Save state for undo/redo
+    saveToHistory({
+      items: items.value,
+      roomWidth: roomWidth.value,
+      roomHeight: roomHeight.value,
+      currentFloorTexture: currentFloorTexture.value,
+      currentWallTexture: currentWallTexture.value
+    })
+  } else {
+    console.warn('⚠️ Item not found for door config update:', itemId)
   }
 }
 
@@ -788,6 +831,12 @@ const handleVariantSwap = async (swapConfig) => {
               console.warn('⚠️ Could not find newly added model in scene')
             }
           }
+
+          // Update door collision warnings after variant swap
+          if (sceneManagerRef.value) {
+            sceneManagerRef.value.updateAllDoorCollisions()
+          }
+
           lastUpdateSource.value = 'variantSwap-complete'
           isSwappingVariant.value = false
         }, 100)
@@ -1319,12 +1368,22 @@ const addItem = async (type, productData = null) => {
   // - Otherwise, use variant's spawnHeight or fallback to freePosition.y
   const itemY = useAutoPositionedY ? freePosition.y : (selectedVariant?.spawnHeight ?? freePosition.y)
 
+  // Check if this is a door item (for adding default door config)
+  const isDoorItem = type === 'Door' || (type === 'WindowAndDoor' && sku?.toLowerCase().includes('door'))
+
   const newItem = {
     id: generateUniqueId(),
     type,
     position: [freePosition.x, itemY, freePosition.z],
     rotation: wallRotation,
     scale: 1.0,
+    // Add default door config for door items
+    ...(isDoorItem && {
+      doorConfig: {
+        hingeSide: 'right',
+        swingDirection: 'inward'
+      }
+    }),
     // FIXED: Only add product data if both productData and selectedVariant exist
     ...(productData && selectedVariant && {
       sku,
@@ -1379,6 +1438,11 @@ const addItem = async (type, productData = null) => {
   items.value = newItems
   lastUpdateSource.value = 'add'
 
+  // Update door collision warnings after adding new item
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
+
   saveToHistory({
     items: newItems,
     roomWidth: roomWidth.value,
@@ -1429,6 +1493,11 @@ const deleteItem = async (itemId) => {
     selectedObjectId.value = null
   }
 
+  // Update door collision warnings after deleting item
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
+
   saveToHistory({
     items: newItems,
     roomWidth: roomWidth.value,
@@ -1466,6 +1535,11 @@ const deleteMultipleItems = async (itemIds) => {
   // Clear selection state
   selectedItemId.value = null
   selectedObjectId.value = null
+
+  // Update door collision warnings after deleting items
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateAllDoorCollisions()
+  }
 
   saveToHistory({
     items: newItems,

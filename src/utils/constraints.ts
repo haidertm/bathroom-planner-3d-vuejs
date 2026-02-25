@@ -1,6 +1,7 @@
 // src/utils/constraints.ts - ENHANCED with proper movement integration
 import { WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
+import type { DoorConfig } from '../constants/schematicPatterns';
 import { getMovementConfig } from '../utils/models';
 import {
     type OrientationConfig,
@@ -107,6 +108,7 @@ export interface BathroomItem {
     sku?: string;
     productName?: string;
     model?: ObjectModel;
+    doorConfig?: DoorConfig;
 }
 
 /**
@@ -286,16 +288,19 @@ export const constrainToCorner = (
     const nearestCorner = getNearestCorner(position, roomWidth, roomHeight, notchWidth, notchHeight);
     const movementConfig = movement ?? getMovementConfig(objectType, item);
 
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+
     // Get the wall buffer (usually 0 for flush-mounted items)
     // Add a minimum visual buffer (2cm) to prevent model clipping into walls
     const configuredWallBuffer = (orientation?.wallBuffer !== undefined) ?
-        orientation.wallBuffer * scale : 0;
+        orientation.wallBuffer * absScale : 0;
     const minVisualBuffer = 2; // 2cm minimum to prevent visual wall clipping
     const wallBuffer = Math.max(configuredWallBuffer, minVisualBuffer);
 
     // For corner items, we position them flush in the corner
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     let constrainedPosition = { ...nearestCorner.position };
     let rotation = 0;
@@ -537,7 +542,8 @@ export const checkWallCollision = (
     if (!dimensions) return false;
 
     const orientationConfig = item?.model?.orientation || getOrientationFromProductData(item?.sku, objectType) || DEFAULT_ORIENTATION;
-    const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
+    // Use Math.abs(scale) to handle flipped objects (negative scale)
+    const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * Math.abs(scale) : 0;
 
     const { interior, wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
@@ -573,16 +579,18 @@ export const checkWallCollision = (
     }
 
     // Calculate object bounds
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
     let objectMinX: number, objectMaxX: number, objectMinZ: number, objectMaxZ: number;
 
     // For rotated objects, calculate proper bounding box
     if (rotation !== undefined && rotation !== 0) {
         const cosAngle = Math.abs(Math.cos(rotation));
         const sinAngle = Math.abs(Math.sin(rotation));
-        const halfRotatedWidth = ((dimensions.width * scale * cosAngle) + (dimensions.depth * scale * sinAngle)) / 2;
-        const halfRotatedDepth = ((dimensions.width * scale * sinAngle) + (dimensions.depth * scale * cosAngle)) / 2;
+        const halfRotatedWidth = ((dimensions.width * absScale * cosAngle) + (dimensions.depth * absScale * sinAngle)) / 2;
+        const halfRotatedDepth = ((dimensions.width * absScale * sinAngle) + (dimensions.depth * absScale * cosAngle)) / 2;
 
         objectMinX = position.x - halfRotatedWidth;
         objectMaxX = position.x + halfRotatedWidth;
@@ -801,10 +809,12 @@ export const checkCollision = (
     };
 
     // Object 1 bounding box (scaled dimensions, accounting for rotation)
-    const obj1BaseWidth = dims1.width * scale1;
-    const obj1BaseDepth = dims1.depth * scale1;
-    const obj1Height = dims1.height * scale1;
-    const obj1FloorOffset = dims1.floorOffset * scale1;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale1 = Math.abs(scale1);
+    const obj1BaseWidth = dims1.width * absScale1;
+    const obj1BaseDepth = dims1.depth * absScale1;
+    const obj1Height = dims1.height * absScale1;
+    const obj1FloorOffset = dims1.floorOffset * absScale1;
 
     // Swap width/depth if object is rotated 90°
     // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)
@@ -825,10 +835,12 @@ export const checkCollision = (
     }
 
     // Object 2 bounding box (scaled dimensions, accounting for rotation)
-    const obj2BaseWidth = dims2.width * scale2;
-    const obj2BaseDepth = dims2.depth * scale2;
-    const obj2Height = dims2.height * scale2;
-    const obj2FloorOffset = dims2.floorOffset * scale2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale2 = Math.abs(scale2);
+    const obj2BaseWidth = dims2.width * absScale2;
+    const obj2BaseDepth = dims2.depth * absScale2;
+    const obj2Height = dims2.height * absScale2;
+    const obj2FloorOffset = dims2.floorOffset * absScale2;
 
     // Swap width/depth if object is rotated 90°
     // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)
@@ -1181,8 +1193,10 @@ export const constrainToRoom = (
     const { interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // Use actual product dimensions
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     // Calculate initial constrained position within main room boundaries
     let constrainedX = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, position.x));
@@ -1294,11 +1308,13 @@ export const constrainToWalls = (
     const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // Use actual product dimensions
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     // Use wallBuffer from productData orientation config, or 0 if not specified
-    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * absScale : 0;
     const isFlushMounted = wallBuffer === 0;
 
     // ✅ NEW: Calculate distances to all walls including notch walls
@@ -1605,7 +1621,8 @@ export const findFreeWallPosition = (
     const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // ✅ FIX: Check if object is flush-mounted BEFORE creating walls
-    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+    // Use Math.abs(scale) to handle flipped objects (negative scale)
+    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * Math.abs(scale) : 0;
     const isFlushMounted = wallBuffer === 0;
 
     // Define walls with proper interior positioning
@@ -1676,7 +1693,8 @@ export const findFreeWallPosition = (
 
     // ✅ Add notch walls for L-shaped rooms if object fits
     if (notch && dimensions) {
-        const objectWidth = dimensions.width * scale;
+        // Use Math.abs(scale) to handle flipped objects
+        const objectWidth = dimensions.width * Math.abs(scale);
 
         // Calculate notch wall lengths
         const notchEastWallLength = notch.maxZ - notch.minZ;
@@ -1911,8 +1929,10 @@ const findFreeStandingPosition = (
     }
 
     // Use actual object dimensions as buffer from walls
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 

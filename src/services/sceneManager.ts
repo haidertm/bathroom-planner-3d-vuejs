@@ -18,12 +18,12 @@ import {
 } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
-import { setOutlinePass } from '../utils/helpers';
+import { setOutlinePass, highlightObject } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
 import { CameraTransition, Easing } from './cameraTransition';
-import { getSchematicTypeFromSku, type SchematicType } from '../constants/schematicPatterns';
+import { getSchematicTypeFromSku, type SchematicType, type DoorConfig, DEFAULT_DOOR_CONFIG } from '../constants/schematicPatterns';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -494,6 +494,9 @@ export class SceneManager {
       // Create 2D schematic overlays for thin objects (shower screens, mirrors)
       this.create2DSchematicOverlays();
 
+      // Hide door swing shadows in 2D mode (they have their own 2D arc)
+      this.toggleDoorSwingShadows(false);
+
       // Notify event handlers of mode change and pass orthographic camera
       if (this.eventHandlers) {
         if (typeof this.eventHandlers.setViewMode === 'function') {
@@ -587,6 +590,9 @@ export class SceneManager {
 
       // Remove 2D schematic overlays
       this.remove2DSchematicOverlays();
+
+      // Show door swing shadows in 3D mode
+      this.toggleDoorSwingShadows(true);
 
       // Hide wall dimension labels in 3D mode
       if (this.measurementSystem) {
@@ -1033,6 +1039,19 @@ export class SceneManager {
       return 'furniture';
     }
 
+    // Check for doors
+    if (itemType === 'Door') {
+      // Door type is always a door
+      return 'door';
+    }
+
+    // WindowAndDoor category can contain both windows and doors - check SKU to distinguish
+    if (itemType === 'WindowAndDoor') {
+      if (sku.toLowerCase().includes('door')) {
+        return 'door';
+      }
+    }
+
     // Fallback: check SKU patterns from configuration
     // Patterns are defined in src/constants/schematicPatterns.ts for maintainability
     const skuMatch = getSchematicTypeFromSku(sku);
@@ -1112,6 +1131,10 @@ export class SceneManager {
       case 'furniture':
         this.createFurnitureSchematic(schematicGroup, width, depth, schematicHeight);
         break;
+      case 'door':
+        // Door schematic needs special handling - will be created in create2DSchematicOverlays
+        // with door config passed separately
+        break;
       case 'generic':
       default:
         this.createGenericSchematic(schematicGroup, width, depth, schematicHeight);
@@ -1133,9 +1156,13 @@ export class SceneManager {
 
       const schematicType = this.getSchematicType(model);
 
-      // Get the bounding box center for positioning
+      // Get the bounding box center for positioning (excluding door shadow)
+      const shadow = model.getObjectByName('doorSwingShadow');
+      const shadowWasVisible = shadow?.visible ?? false;
+      if (shadow) shadow.visible = false;
       const box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
+      if (shadow) shadow.visible = shadowWasVisible;
 
       // Use the MODEL's original dimensions (not bounding box) so rotation works correctly
       // The schematic will be created with these dimensions and then rotated to match the model
@@ -1148,10 +1175,23 @@ export class SceneManager {
       schematicGroup.name = `Schematic2D_${itemId}`;
 
       // Create schematic based on object type
-      this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+      // Door schematics need special handling with doorConfig and collision detection
+      if (schematicType === 'door') {
+        const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+        const hasCollision = this.checkDoorSwingCollision(itemId);
+        this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig, hasCollision);
+      } else {
+        this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+      }
 
-      // Position the schematic at the object's actual center (from bounding box)
-      schematicGroup.position.set(center.x, 0, center.z); // At floor level, centered on object
+      // Position the schematic
+      // For doors, use model.position to match the 3D shadow positioning (which is a child of the model)
+      // For other objects, use bounding box center for visual alignment
+      if (schematicType === 'door') {
+        schematicGroup.position.set(model.position.x, 0, model.position.z);
+      } else {
+        schematicGroup.position.set(center.x, 0, center.z);
+      }
 
       // Apply the model's rotation so the schematic matches the object's orientation
       schematicGroup.rotation.y = model.rotation.y;
@@ -1186,9 +1226,13 @@ export class SceneManager {
 
     const schematicType = this.getSchematicType(model);
 
-    // Get the bounding box center for positioning
+    // Get the bounding box center for positioning (excluding door shadow)
+    const shadow = model.getObjectByName('doorSwingShadow');
+    const shadowWasVisible = shadow?.visible ?? false;
+    if (shadow) shadow.visible = false;
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
+    if (shadow) shadow.visible = shadowWasVisible;
 
     const width = dimensions.width;
     const depth = dimensions.depth;
@@ -1199,10 +1243,22 @@ export class SceneManager {
     schematicGroup.name = `Schematic2D_${itemId}`;
 
     // Create schematic based on object type
-    this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+    // Door schematics need special handling with doorConfig and collision detection
+    if (schematicType === 'door') {
+      const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+      const hasCollision = this.checkDoorSwingCollision(itemId);
+      this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig, hasCollision);
+    } else {
+      this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+    }
 
-    // Position and rotate
-    schematicGroup.position.set(center.x, 0, center.z);
+    // Position the schematic
+    // For doors, use model.position to match the 3D shadow positioning
+    if (schematicType === 'door') {
+      schematicGroup.position.set(model.position.x, 0, model.position.z);
+    } else {
+      schematicGroup.position.set(center.x, 0, center.z);
+    }
     schematicGroup.rotation.y = model.rotation.y;
 
     // Add userData to link schematic to its bathroom item
@@ -1238,6 +1294,314 @@ export class SceneManager {
       });
       this.schematic2DOverlays.delete(itemId);
     }
+  }
+
+  /**
+   * Update door configuration and refresh the schematic
+   * Called when user changes door swing direction or hinge side
+   * @param itemId - The door item's ID
+   * @param doorConfig - The new door configuration
+   * @param isSelected - Whether the door is currently selected (controls outline highlighting)
+   * @returns The position shift applied to the model (for syncing item.position)
+   */
+  public updateDoorConfig(itemId: number, doorConfig: DoorConfig, isSelected: boolean = true): { shiftX: number; shiftZ: number } {
+    const model = this.existingItems.get(itemId);
+    if (!model) {
+      console.warn(`⚠️ Model not found for item ${itemId} when updating door config`);
+      return { shiftX: 0, shiftZ: 0 };
+    }
+
+    // Get the previous hinge side to detect changes
+    const prevDoorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+    const hingeChanged = prevDoorConfig.hingeSide !== doorConfig.hingeSide;
+
+    // Update the model's userData with the new door config
+    model.userData.doorConfig = doorConfig;
+
+    // Track the position shift for return value
+    let shiftX = 0;
+    let shiftZ = 0;
+
+    // Flip the 3D model based on hinge side
+    // Default models have hinge on the LEFT, so flip for RIGHT hinge
+    if (hingeChanged) {
+      // Temporarily hide shadow to exclude from bounding box
+      const existingShadow = model.getObjectByName('doorSwingShadow');
+      const shadowWasVisible = existingShadow?.visible ?? false;
+      if (existingShadow) existingShadow.visible = false;
+
+      // Temporarily hide warning sprite to exclude from bounding box
+      const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+      const warningWasVisible = existingWarning?.visible ?? false;
+      if (existingWarning) existingWarning.visible = false;
+
+      // Get bounding box center before flip
+      const boxBefore = new THREE.Box3().setFromObject(model);
+      const centerBefore = new THREE.Vector3();
+      boxBefore.getCenter(centerBefore);
+
+      // Apply the flip
+      const flipX = doorConfig.hingeSide === 'right' ? -1 : 1;
+      model.scale.x = Math.abs(model.scale.x) * flipX;
+
+      // Get bounding box center after flip
+      const boxAfter = new THREE.Box3().setFromObject(model);
+      const centerAfter = new THREE.Vector3();
+      boxAfter.getCenter(centerAfter);
+
+      // Restore shadow visibility to its original state
+      if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+      // Restore warning sprite visibility to its original state
+      if (existingWarning) existingWarning.visible = warningWasVisible;
+
+      // Compensate for the position shift caused by flipping
+      shiftX = centerBefore.x - centerAfter.x;
+      shiftZ = centerBefore.z - centerAfter.z;
+      model.position.x += shiftX;
+      model.position.z += shiftZ;
+
+      console.log('🚪 Door hinge changed, position shift:', { shiftX, shiftZ });
+    }
+
+    // If in 2D mode, recreate the schematic with the new config
+    if (this.viewMode === '2d') {
+      // Remove existing schematic
+      this.removeSchematicForItem(itemId);
+      // Create new schematic with updated config
+      this.createSchematicForItem(itemId);
+    }
+
+    // Update 3D swing shadow with collision state
+    const hasCollision = this.checkDoorSwingCollision(itemId);
+    this.updateDoorSwingShadow(model, doorConfig, hasCollision);
+
+    // Ensure shadow is visible in 3D mode
+    if (this.viewMode === '3d') {
+      const shadow = model.getObjectByName('doorSwingShadow');
+      if (shadow) {
+        shadow.visible = true;
+      }
+    }
+
+    // Re-highlight the door to include the new shadow mesh in the outline pass
+    // Only highlight if the door is currently selected to avoid stale outlines
+    if (isSelected) {
+      highlightObject(model, true);
+    }
+
+    // Return the shift so the caller can update item.position
+    return { shiftX, shiftZ };
+  }
+
+  /**
+   * Create a warning sprite for door collision indication
+   * Used by both 3D door swing shadow and 2D door schematic
+   *
+   * @param iconX - X position of the sprite
+   * @param iconY - Y position of the sprite
+   * @param iconZ - Z position of the sprite
+   * @param options - Configuration options
+   * @returns Configured THREE.Sprite with warning icon
+   */
+  private createDoorCollisionWarningSprite(
+    iconX: number,
+    iconY: number,
+    iconZ: number,
+    options: {
+      name: string;
+      visible?: boolean;
+      renderOrder?: number;
+    }
+  ): THREE.Sprite {
+    // Create warning icon using canvas
+    const canvas = document.createElement('canvas');
+    const size = 128;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx) {
+      // Draw red circle background
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw white border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Draw warning icon (⚠)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⚠', size / 2, size / 2 + 2);
+    }
+
+    // Create sprite
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false
+    });
+    const warningSprite = new THREE.Sprite(spriteMaterial);
+    warningSprite.name = options.name;
+    warningSprite.position.set(iconX, iconY, iconZ);
+    warningSprite.scale.set(20, 20, 1); // 20cm size
+
+    if (options.visible !== undefined) {
+      warningSprite.visible = options.visible;
+    }
+
+    if (options.renderOrder !== undefined) {
+      warningSprite.renderOrder = options.renderOrder;
+    }
+
+    return warningSprite;
+  }
+
+  /**
+   * Create or update the 3D door swing shadow (arc on floor showing door path)
+   */
+  private updateDoorSwingShadow(model: THREE.Object3D, doorConfig: DoorConfig, hasCollision: boolean = false): void {
+    // Remove existing shadow if any
+    const existingShadow = model.getObjectByName('doorSwingShadow');
+    if (existingShadow) {
+      model.remove(existingShadow);
+      if (existingShadow instanceof THREE.Mesh) {
+        existingShadow.geometry.dispose();
+        if (existingShadow.material instanceof THREE.Material) {
+          existingShadow.material.dispose();
+        }
+      }
+    }
+
+    const { swingDirection } = doorConfig;
+
+    // Get door dimensions from userData (original dimensions, not affected by shadow)
+    const dimensions = model.userData.dimensions || model.userData.model?.dimensions;
+    let doorWidth: number;
+    let doorDepth: number;
+
+    if (dimensions) {
+      doorWidth = dimensions.width;
+      doorDepth = dimensions.depth;
+    } else {
+      // Fallback to bounding box (shadow already removed above)
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      doorWidth = Math.max(size.x, size.z);
+      doorDepth = Math.min(size.x, size.z);
+    }
+
+    // Arc radius equals door width
+    const arcRadius = doorWidth;
+
+    // Calculate arc angles based on swing direction
+    // Since the shadow is a child of the model, when model.scale.x = -1 (right hinge),
+    // the shadow gets mirrored automatically. So we always use LEFT hinge angles
+    // and let the model's scale handle the mirroring for right hinge.
+    let startAngle: number;
+    let endAngle: number;
+
+    if (swingDirection === 'inward') {
+      startAngle = 0;
+      endAngle = -Math.PI / 2;
+    } else {
+      startAngle = 0;
+      endAngle = Math.PI / 2;
+    }
+
+    // Create a filled arc sector (pie shape) using THREE.Shape
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0); // Start at center (hinge point)
+
+    // Draw arc
+    const segments = 32;
+    const angleRange = endAngle - startAngle;
+    for (let i = 0; i <= segments; i++) {
+      const angle = startAngle + (i / segments) * angleRange;
+      const x = arcRadius * Math.cos(angle);
+      const y = arcRadius * Math.sin(angle);
+      shape.lineTo(x, y);
+    }
+    shape.lineTo(0, 0); // Close the shape back to center
+
+    // Create geometry and mesh
+    const geometry = new THREE.ShapeGeometry(shape);
+    // Use red color when there's a collision, dark gray otherwise
+    const shadowColor = hasCollision ? 0xff0000 : 0x222222;
+    const material = new THREE.MeshBasicMaterial({
+      color: shadowColor,
+      transparent: true,
+      opacity: hasCollision ? 0.6 : 0.5, // Slightly more opaque when collision
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+
+    const shadowMesh = new THREE.Mesh(geometry, material);
+    shadowMesh.name = 'doorSwingShadow';
+    shadowMesh.rotation.x = -Math.PI / 2; // Lay flat on floor
+
+    // Position at hinge location - always use left hinge position since model flip handles right hinge
+    const hingeX = -doorWidth / 2;
+    const hingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
+
+    shadowMesh.position.set(hingeX, 0.5, hingeZ);
+
+    // Only visible in 3D mode
+    shadowMesh.visible = this.viewMode === '3d';
+
+    model.add(shadowMesh);
+
+    // Remove existing warning icon if any
+    const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+    if (existingWarning) {
+      model.remove(existingWarning);
+      if (existingWarning instanceof THREE.Sprite) {
+        existingWarning.material.map?.dispose();
+        existingWarning.material.dispose();
+      }
+    }
+
+    // Add warning icon if there's a collision
+    if (hasCollision) {
+      // Calculate position at the middle of the arc (45 degrees)
+      const midAngle = (startAngle + endAngle) / 2;
+      const iconDistance = arcRadius * 0.6; // Position at 60% of arc radius
+      const iconX = hingeX + iconDistance * Math.cos(midAngle);
+      const iconZ = hingeZ - iconDistance * Math.sin(midAngle);
+
+      const warningSprite = this.createDoorCollisionWarningSprite(iconX, 15, iconZ, {
+        name: 'doorCollisionWarning3D',
+        visible: this.viewMode === '3d'
+      });
+      model.add(warningSprite);
+    }
+  }
+
+  /**
+   * Toggle visibility of all door swing shadows
+   * Used when switching between 2D and 3D modes
+   */
+  private toggleDoorSwingShadows(visible: boolean): void {
+    this.existingItems.forEach((model) => {
+      const shadow = model.getObjectByName('doorSwingShadow');
+      if (shadow) {
+        shadow.visible = visible;
+      }
+      // Also toggle the warning icon visibility
+      const warningIcon = model.getObjectByName('doorCollisionWarning3D');
+      if (warningIcon) {
+        warningIcon.visible = visible;
+      }
+    });
   }
 
   /**
@@ -1497,6 +1861,417 @@ export class SceneManager {
   }
 
   /**
+   * Create door schematic with swing arc
+   * Shows a door panel and a 90-degree arc indicating the swing direction
+   *
+   * @param group - The THREE.Group to add schematic elements to
+   * @param width - Door width (in cm)
+   * @param depth - Door depth/thickness (in cm)
+   * @param height - Y position for the schematic
+   * @param doorConfig - Door configuration (hingeSide and swingDirection)
+   * @param hasCollision - Whether there's an object collision in the swing path
+   */
+  private createDoorSchematic(
+    group: THREE.Group,
+    width: number,
+    depth: number,
+    height: number,
+    doorConfig: DoorConfig = DEFAULT_DOOR_CONFIG,
+    hasCollision: boolean = false
+  ): void {
+    const { hingeSide, swingDirection } = doorConfig;
+
+    // Door panel thickness for visualization (thin line)
+    const panelThickness = Math.max(depth, 5); // At least 5cm thick for visibility
+
+    // Colors - arc turns red when there's a collision
+    const doorColor = 0x8B4513; // Saddle brown for door
+    const arcColor = hasCollision ? 0xff0000 : 0x4169e1; // Red for collision, Royal blue otherwise
+    const hingeColor = 0x333333; // Dark gray for hinge indicator
+
+    // Create door panel (thin rectangle along one edge of the door frame)
+    const panelGeometry = new THREE.PlaneGeometry(width, panelThickness);
+    const panelMaterial = new THREE.MeshBasicMaterial({
+      color: doorColor,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+      depthWrite: false
+    });
+    const doorPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    doorPanel.rotation.x = -Math.PI / 2; // Lay flat
+    doorPanel.position.y = height;
+    doorPanel.renderOrder = 1000;
+
+    // Position door panel based on swing direction
+    // When door is closed, it sits at the wall edge where the hinge is
+    // inward: panel is at the inside edge of depth (room side)
+    // outward: panel is at the outside edge of depth (hallway side)
+    const panelZOffset = swingDirection === 'inward' ? depth / 2 - panelThickness / 2 : -depth / 2 + panelThickness / 2;
+    doorPanel.position.z = panelZOffset;
+
+    group.add(doorPanel);
+
+    // Create the 90-degree swing arc
+    const arcRadius = width; // Arc radius equals door width
+    const arcSegments = 32;
+
+    // Determine arc start and end angles based on hinge side and swing direction
+    let startAngle: number;
+    let endAngle: number;
+
+    // Arc angles are measured from the positive X-axis (right side)
+    // We need to calculate based on:
+    // - hingeSide: determines which side of the door frame the hinge is on
+    // - swingDirection: determines if arc sweeps into room (inward) or out (outward)
+
+    if (hingeSide === 'right') {
+      // Hinge on right side of door
+      if (swingDirection === 'inward') {
+        startAngle = Math.PI; // Closed position (pointing left, along wall)
+        endAngle = Math.PI * 1.5; // Open position (into room, 270°)
+      } else {
+        // Door swings outward
+        startAngle = Math.PI; // Closed position
+        endAngle = Math.PI / 2; // Open position (out of room, 90°)
+      }
+    } else {
+      // Hinge on left side of door
+      if (swingDirection === 'inward') {
+        startAngle = 0; // Closed position (pointing right, along wall)
+        endAngle = -Math.PI / 2; // Open position (into room, -90°)
+      } else {
+        // Door swings outward
+        startAngle = 0; // Closed position
+        endAngle = Math.PI / 2; // Open position (out of room, 90°)
+      }
+    }
+
+    // Create arc curve
+    const arcCurve = new THREE.EllipseCurve(
+      0, 0, // Center x, y (will be positioned later)
+      arcRadius, arcRadius, // X and Y radius (same for circular arc)
+      startAngle, endAngle, // Start and end angles
+      startAngle > endAngle, // Clockwise if start > end
+      0 // Rotation
+    );
+
+    const arcPoints = arcCurve.getPoints(arcSegments);
+    const arcGeometry = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const arcMaterial = new THREE.LineBasicMaterial({
+      color: arcColor,
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.8,
+      depthTest: false,
+      depthWrite: false
+    });
+    const arcLine = new THREE.Line(arcGeometry, arcMaterial);
+    arcLine.rotation.x = -Math.PI / 2; // Lay flat on floor
+    arcLine.position.y = height;
+    arcLine.renderOrder = 1001;
+
+    // Position arc center at the hinge location
+    const hingeX = hingeSide === 'right' ? width / 2 : -width / 2;
+    const hingeZ = swingDirection === 'inward' ? depth / 2 : -depth / 2;
+    arcLine.position.x = hingeX;
+    arcLine.position.z = hingeZ;
+
+    group.add(arcLine);
+
+    // Add small circle at hinge point
+    const hingeGeometry = new THREE.CircleGeometry(4, 16); // 4cm radius
+    const hingeMaterial = new THREE.MeshBasicMaterial({
+      color: hingeColor,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+      depthWrite: false
+    });
+    const hingeDot = new THREE.Mesh(hingeGeometry, hingeMaterial);
+    hingeDot.rotation.x = -Math.PI / 2;
+    hingeDot.position.set(hingeX, height + 1, panelZOffset);
+    hingeDot.renderOrder = 1002;
+
+    group.add(hingeDot);
+
+    // Add a dashed line showing the door in open position
+    // Get the arc's end point directly from the curve points
+    const lastArcPoint = arcPoints[arcPoints.length - 1];
+    // Arc points are 2D (x, y), after rotation.x = -PI/2 they become (x, 0, -y) relative to arc position
+    // So the 3D endpoint is: (hingeX + lastArcPoint.x, height, hingeZ - lastArcPoint.y)
+    const openDoorEndX = hingeX + lastArcPoint.x;
+    const openDoorEndZ = hingeZ - lastArcPoint.y;
+
+    const openDoorPoints = [
+      new THREE.Vector3(hingeX, height, hingeZ),
+      new THREE.Vector3(openDoorEndX, height, openDoorEndZ)
+    ];
+
+    const openDoorGeometry = new THREE.BufferGeometry().setFromPoints(openDoorPoints);
+    const openDoorMaterial = new THREE.LineDashedMaterial({
+      color: doorColor,
+      linewidth: 1,
+      dashSize: 10,
+      gapSize: 5,
+      transparent: true,
+      opacity: 0.6,
+      depthTest: false,
+      depthWrite: false
+    });
+    const openDoorLine = new THREE.Line(openDoorGeometry, openDoorMaterial);
+    openDoorLine.computeLineDistances(); // Required for dashed lines
+    openDoorLine.renderOrder = 999;
+
+    group.add(openDoorLine);
+
+    // Add border around the door frame area
+    const framePoints = [
+      new THREE.Vector3(-width / 2, height, -depth / 2),
+      new THREE.Vector3(width / 2, height, -depth / 2),
+      new THREE.Vector3(width / 2, height, depth / 2),
+      new THREE.Vector3(-width / 2, height, depth / 2),
+      new THREE.Vector3(-width / 2, height, -depth / 2) // Close the rectangle
+    ];
+    const frameGeometry = new THREE.BufferGeometry().setFromPoints(framePoints);
+    const frameMaterial = new THREE.LineBasicMaterial({
+      color: 0x333333,
+      linewidth: 1,
+      transparent: true,
+      opacity: 0.5,
+      depthTest: false,
+      depthWrite: false
+    });
+    const frameLine = new THREE.Line(frameGeometry, frameMaterial);
+    frameLine.renderOrder = 998;
+
+    group.add(frameLine);
+
+    // Add warning icon if there's a collision
+    if (hasCollision) {
+      // Calculate position at the middle of the arc (45 degrees from start)
+      const midAngle = (startAngle + endAngle) / 2;
+      const iconDistance = arcRadius * 0.6; // Position at 60% of arc radius
+      const iconX = hingeX + iconDistance * Math.cos(midAngle);
+      const iconZ = hingeZ - iconDistance * Math.sin(midAngle); // Negative because of coordinate system
+
+      const warningSprite = this.createDoorCollisionWarningSprite(iconX, height + 5, iconZ, {
+        name: 'doorCollisionWarning',
+        renderOrder: 1003
+      });
+      group.add(warningSprite);
+    }
+  }
+
+  /**
+   * Check if any object collides with a door's swing path
+   * The swing path is a 90-degree arc sector from the hinge point
+   *
+   * @param doorId - The door item's ID
+   * @returns true if any object is in the door's swing path
+   */
+  public checkDoorSwingCollision(doorId: number): boolean {
+    const doorModel = this.existingItems.get(doorId);
+    if (!doorModel) return false;
+
+    const doorConfig = doorModel.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+    const { swingDirection } = doorConfig;
+
+
+    // Get door dimensions from userData (not bounding box, which includes shadow)
+    const dimensions = doorModel.userData.dimensions || doorModel.userData.model?.dimensions;
+    let doorWidth: number;
+    let doorDepth: number;
+    let doorHeight: number;
+
+    if (dimensions) {
+      doorWidth = dimensions.width;
+      doorDepth = dimensions.depth;
+      doorHeight = dimensions.height;
+    } else {
+      // Fallback: temporarily hide shadow to get accurate bounding box
+      const shadow = doorModel.getObjectByName('doorSwingShadow');
+      const warningIcon = doorModel.getObjectByName('doorCollisionWarning3D');
+      const shadowWasVisible = shadow?.visible ?? false;
+      const warningWasVisible = warningIcon?.visible ?? false;
+      if (shadow) shadow.visible = false;
+      if (warningIcon) warningIcon.visible = false;
+
+      const doorBox = new THREE.Box3().setFromObject(doorModel);
+      const doorSize = new THREE.Vector3();
+      doorBox.getSize(doorSize);
+      doorWidth = Math.max(doorSize.x, doorSize.z);
+      doorDepth = Math.min(doorSize.x, doorSize.z);
+      doorHeight = doorSize.y;
+
+      // Restore visibility
+      if (shadow) shadow.visible = shadowWasVisible;
+      if (warningIcon) warningIcon.visible = warningWasVisible;
+    }
+
+    // Calculate door's swing vertical range (from floor to top of door)
+    // The swing arc sweeps from Y=0 (floor) to Y=doorHeight
+    const doorSwingMinY = 0;
+    const doorSwingMaxY = doorHeight;
+
+    // Calculate hinge position in door's local coordinates
+    // The 3D shadow always uses left hinge position (-doorWidth/2) and relies on
+    // model.scale.x = -1 to flip for right hinge. We match this behavior.
+    const localHingeX = -doorWidth / 2; // Always use left hinge (same as 3D shadow)
+    const localHingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
+
+    // Arc radius is the door width
+    const arcRadius = doorWidth;
+
+
+    // Calculate arc angle range in door's LOCAL coordinate system
+    // Always use left hinge angles (same as 3D shadow) - scale.x=-1 handles right hinge
+    let startAngle: number;
+    let endAngle: number;
+
+    if (swingDirection === 'inward') {
+      startAngle = 0;
+      endAngle = -Math.PI / 2;
+    } else {
+      startAngle = 0;
+      endAngle = Math.PI / 2;
+    }
+
+    // Normalize angles to [0, 2*PI)
+    const normalizeAngle = (angle: number): number => {
+      while (angle < 0) angle += Math.PI * 2;
+      while (angle >= Math.PI * 2) angle -= Math.PI * 2;
+      return angle;
+    };
+
+    const normStart = normalizeAngle(startAngle);
+    const normEnd = normalizeAngle(endAngle);
+
+    // Check all other objects in the scene using arc sampling
+    // Arc sampling traces points along the arc using localToWorld transform,
+    // which properly handles all door transforms including scale.x = -1 for right hinge doors
+    for (const [itemId, model] of this.existingItems) {
+      // Skip the door itself
+      if (itemId === doorId) continue;
+
+      // Skip non-bathroom items
+      if (!model.userData.isBathroomItem) continue;
+
+      // Skip other doors (they don't collide with door swing paths)
+      const itemType = model.userData.type;
+      if (itemType === 'Door' || itemType === 'WindowAndDoor') continue;
+
+      // Get object's bounding box from actual mesh positions
+      // IMPORTANT: Always use setFromObject() instead of calculating from dimensions,
+      // because wall-mounted items (toilets, sinks, vanities) have their pivot at the wall,
+      // not at the center. Dimension-based calculation incorrectly assumes center positioning.
+      const objBox = new THREE.Box3().setFromObject(model);
+      const objMin = objBox.min;
+      const objMax = objBox.max;
+
+      // Arc sampling: trace points along the arc and check if they're inside the object
+      // This uses the same localToWorld transform as the visual arc, ensuring accuracy
+      const arcSamples = 30; // More samples for better accuracy
+      const radiusSamples = [1.0, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.3]; // Sample at different radii
+      const tolerance = 2; // 2cm tolerance for edge detection
+
+      // Expand bounding box by tolerance to catch edge cases
+      const checkMinX = objMin.x - tolerance;
+      const checkMaxX = objMax.x + tolerance;
+      const checkMinZ = objMin.z - tolerance;
+      const checkMaxZ = objMax.z + tolerance;
+
+      // Check Y-range overlap: object must be within door's swing vertical range
+      // This prevents false positives for tall wall-mounted items above the door height
+      const objMinY = objMin.y - tolerance;
+      const objMaxY = objMax.y + tolerance;
+
+      // Check if object's Y range overlaps with door's swing Y range
+      // No overlap means the object is entirely above or below the door's swing path
+      const yOverlap = objMaxY > doorSwingMinY && objMinY < doorSwingMaxY;
+      if (!yOverlap) {
+        // Object is entirely above the door height or below floor - no collision possible
+        continue;
+      }
+
+      // Calculate the actual 90-degree arc range
+      const minAngle = Math.min(normStart, normEnd);
+      const maxAngle = Math.max(normStart, normEnd);
+      const arcSpan = maxAngle - minAngle;
+
+      // Determine actual start and step for sampling
+      let sampleStart: number;
+      let angleRange: number;
+
+      if (arcSpan <= Math.PI) {
+        // Normal case: arc from minAngle to maxAngle
+        sampleStart = minAngle;
+        angleRange = arcSpan;
+      } else {
+        // Wrap-around case: arc goes through 0/2PI
+        sampleStart = maxAngle;
+        angleRange = (Math.PI * 2) - arcSpan;
+      }
+
+      const angleStep = angleRange / arcSamples;
+
+      // Sample at multiple radii for better coverage
+      for (const radiusFactor of radiusSamples) {
+        const sampleRadius = arcRadius * radiusFactor;
+
+        for (let i = 0; i <= arcSamples; i++) {
+          let sampleAngle = sampleStart + i * angleStep;
+          // Normalize angle to [0, 2PI)
+          while (sampleAngle >= Math.PI * 2) sampleAngle -= Math.PI * 2;
+
+          // Compute arc point in door's local coordinates
+          // (with -sin for Z because the visual arc maps Y to -Z via rotation.x = -PI/2)
+          const localArcX = sampleRadius * Math.cos(sampleAngle);
+          const localArcZ = -sampleRadius * Math.sin(sampleAngle);
+
+          // Transform to world coordinates using localToWorld
+          // This properly accounts for the model's scale (including scale.x = -1 for right hinge)
+          const localArcPoint = new THREE.Vector3(localHingeX + localArcX, 0, localHingeZ + localArcZ);
+          const worldArcPoint = doorModel.localToWorld(localArcPoint.clone());
+
+          if (worldArcPoint.x >= checkMinX && worldArcPoint.x <= checkMaxX &&
+              worldArcPoint.z >= checkMinZ && worldArcPoint.z <= checkMaxZ) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Update all door schematics to reflect current collision states
+   * Called when objects are moved or placed
+   */
+  public updateAllDoorCollisions(): void {
+    // Find all doors and update their visuals based on collision state
+    for (const [itemId, model] of this.existingItems) {
+      const schematicType = this.getSchematicType(model);
+      if (schematicType === 'door') {
+        const hasCollision = this.checkDoorSwingCollision(itemId);
+        const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+
+        if (this.viewMode === '2d') {
+          // Remove and recreate the schematic with updated collision state
+          this.removeSchematicForItem(itemId);
+          this.createSchematicForItem(itemId);
+        } else {
+          // In 3D mode, update the door swing shadow
+          this.updateDoorSwingShadow(model, doorConfig, hasCollision);
+        }
+      }
+    }
+  }
+
+  /**
    * Add a label/icon to the schematic (uses a sprite for visibility)
    */
   private addSchematicLabel(group: THREE.Group, icon: string, width: number, depth: number, height: number): void {
@@ -1558,15 +2333,27 @@ export class SceneManager {
       // Ensure matrix is up to date
       model.updateMatrixWorld(true);
 
-      // Recalculate position from bounding box to ensure correct centering
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
+      // Check if this is a door - doors use model.position for consistency with 3D shadow
+      const schematicType = this.getSchematicType(model);
 
-      // Update position immediately
-      schematic.position.set(center.x, 0, center.z);
+      if (schematicType === 'door') {
+        // For doors, use model.position to match the 3D shadow positioning
+        schematic.position.set(model.position.x, 0, model.position.z);
+      } else {
+        // For other objects, use bounding box center (excluding door shadow)
+        const shadow = model.getObjectByName('doorSwingShadow');
+        const shadowWasVisible = shadow?.visible ?? false;
+        if (shadow) shadow.visible = false;
+
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+
+        if (shadow) shadow.visible = shadowWasVisible;
+
+        schematic.position.set(center.x, 0, center.z);
+      }
+
       schematic.rotation.y = model.rotation.y;
-
-      // console.log(`🔄 Updated schematic ${itemId} to (${center.x.toFixed(1)}, ${center.z.toFixed(1)})`);
     }
   }
 
@@ -1699,6 +2486,60 @@ export class SceneManager {
 
     if (!model.userData.model && item.model) {
       model.userData.model = item.model;
+    }
+
+    // Update door configuration if item has it and apply 3D flip
+    if (item.doorConfig) {
+      model.userData.doorConfig = item.doorConfig;
+
+      // Flip the 3D model based on hinge side
+      // Default models have hinge on LEFT, so flip for RIGHT hinge
+      const flipX = item.doorConfig.hingeSide === 'right' ? -1 : 1;
+      const currentFlipX = model.scale.x < 0 ? -1 : 1;
+
+      // Only compensate position if the flip state actually changes
+      if (currentFlipX !== flipX) {
+        // Temporarily hide shadow to exclude from bounding box
+        const existingShadow = model.getObjectByName('doorSwingShadow');
+        const shadowWasVisible = existingShadow?.visible ?? false;
+        if (existingShadow) existingShadow.visible = false;
+
+        // Temporarily hide warning sprite to exclude from bounding box
+        const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+        const warningWasVisible = existingWarning?.visible ?? false;
+        if (existingWarning) existingWarning.visible = false;
+
+        // Get bounding box center before flip
+        const boxBefore = new THREE.Box3().setFromObject(model);
+        const centerBefore = new THREE.Vector3();
+        boxBefore.getCenter(centerBefore);
+
+        // Apply the flip
+        model.scale.x = Math.abs(model.scale.x) * flipX;
+
+        // Get bounding box center after flip
+        const boxAfter = new THREE.Box3().setFromObject(model);
+        const centerAfter = new THREE.Vector3();
+        boxAfter.getCenter(centerAfter);
+
+        // Restore shadow visibility to its original state
+        if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+        // Restore warning sprite visibility to its original state
+        if (existingWarning) existingWarning.visible = warningWasVisible;
+
+        // Compensate for the position shift caused by flipping
+        const shiftX = centerBefore.x - centerAfter.x;
+        const shiftZ = centerBefore.z - centerAfter.z;
+        model.position.x += shiftX;
+        model.position.z += shiftZ;
+      } else {
+        model.scale.x = Math.abs(model.scale.x) * flipX;
+      }
+
+      // Update 3D swing shadow for door with collision state
+      const hasCollision = this.checkDoorSwingCollision(item.id);
+      this.updateDoorSwingShadow(model, item.doorConfig, hasCollision);
     }
 
     // Update schematic position if in 2D mode
@@ -1850,6 +2691,39 @@ export class SceneManager {
 
         if (item.model) {
           model.userData.model = item.model;
+        }
+
+        // Store door configuration for door items and apply 3D flip if needed
+        if (item.doorConfig) {
+          model.userData.doorConfig = item.doorConfig;
+          // Flip the 3D model based on hinge side (default model has hinge on LEFT, flip for RIGHT)
+          if (item.doorConfig.hingeSide === 'right') {
+            // Get bounding box center before flip
+            const boxBefore = new THREE.Box3().setFromObject(model);
+            const centerBefore = new THREE.Vector3();
+            boxBefore.getCenter(centerBefore);
+
+            // Apply the flip
+            model.scale.x = Math.abs(model.scale.x) * -1;
+
+            // Get bounding box center after flip
+            const boxAfter = new THREE.Box3().setFromObject(model);
+            const centerAfter = new THREE.Vector3();
+            boxAfter.getCenter(centerAfter);
+
+            // Compensate for the position shift caused by flipping
+            const shiftX = centerBefore.x - centerAfter.x;
+            const shiftZ = centerBefore.z - centerAfter.z;
+            model.position.x += shiftX;
+            model.position.z += shiftZ;
+          }
+
+          // Add to existingItems early so checkDoorSwingCollision can find this door
+          this.existingItems.set(item.id, model);
+
+          // Add 3D swing shadow for door with collision state
+          const hasCollision = this.checkDoorSwingCollision(item.id);
+          this.updateDoorSwingShadow(model, item.doorConfig, hasCollision);
         }
 
         this.enhanceModelMaterials(model);
