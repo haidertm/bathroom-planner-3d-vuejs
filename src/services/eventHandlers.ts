@@ -884,10 +884,12 @@ export class EventHandlers {
 
       // Only do this for wall-bound objects that are NOT corner-install (bathtubs, showers, etc.)
       // Corner-install objects should stay in their corners, not move to opposite walls
+      // Doors should also stay in place - they're placed on specific walls intentionally
       const isCornerInstall = movementConfig?.cornerInstallOnly &&
         (typeof movementConfig.cornerInstallOnly === 'boolean' || movementConfig.cornerInstallOnly.enabled);
+      const isDoor = objectType === 'Door' || objectType === 'WindowAndDoor';
 
-      if (movementConfig?.snapToWall && !isCornerInstall && !this.isMultiSelectMode) {
+      if (movementConfig?.snapToWall && !isCornerInstall && !isDoor && !this.isMultiSelectMode) {
         // Check which wall the object is currently on
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
 
@@ -1229,9 +1231,11 @@ export class EventHandlers {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    const halfWidth = ((dimensions?.width || 50) * objectScale) / 2;
-    const halfDepth = ((dimensions?.depth || 50) * objectScale) / 2;
-    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(objectScale);
+    const halfWidth = ((dimensions?.width || 50) * absScale) / 2;
+    const halfDepth = ((dimensions?.depth || 50) * absScale) / 2;
+    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * absScale;
 
     console.log('111>> object wallBuffer', wallBuffer);
 
@@ -2421,8 +2425,9 @@ export class EventHandlers {
         if (this.selectedObjects.size <= 1) {
           const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
           if (dims) {
-            const hW = (dims.width * objectScale) / 2;
-            const hD = (dims.depth * objectScale) / 2;
+            // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+            const hW = (dims.width * Math.abs(objectScale)) / 2;
+            const hD = (dims.depth * Math.abs(objectScale)) / 2;
             // For single object, use width for X and depth for Z based on rotation
             // rotation 0 or PI = facing north/south, width along X
             // rotation ±PI/2 = facing east/west, width along Z
@@ -2439,7 +2444,7 @@ export class EventHandlers {
           if (localOffset) {
             const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotation);
             const itemType = obj.userData.type as ComponentType;
-            const itemScale = obj.scale.x;
+            const itemScale = Math.abs(obj.scale.x); // Use abs to handle flipped objects
             const itemData = this.getCurrentItemData(id);
             const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
 
@@ -2473,7 +2478,7 @@ export class EventHandlers {
         // Get room and object dimensions
         const roomHalfWidth = this.roomWidthRef.value / 2;
         const roomHalfHeight = this.roomHeightRef.value / 2;
-        const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+        const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * Math.abs(objectScale);
 
         // ✅ NEW: Track current wall to prevent jumping
         const currentWall = this.determineCurrentWall(this.selectedObject.position);
@@ -2518,7 +2523,7 @@ export class EventHandlers {
               // Offset position by half depth based on wall direction
               const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
               if (dims) {
-                const halfDepth = (dims.depth * objectScale) / 2;
+                const halfDepth = (dims.depth * Math.abs(objectScale)) / 2;
                 // Determine which wall based on rotation and offset accordingly
                 const normalizedRot = ((constrainedRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
                 if (normalizedRot < Math.PI / 4 || normalizedRot > 7 * Math.PI / 4) {
@@ -2564,7 +2569,7 @@ export class EventHandlers {
                   // Rotate the offset by the constrained rotation
                   const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), constrainedRotation);
                   const itemType = obj.userData.type as ComponentType;
-                  const itemScale = obj.scale.x;
+                  const itemScale = Math.abs(obj.scale.x); // Use abs to handle flipped objects
                   const itemData = this.getCurrentItemData(id);
                   const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
 
@@ -3146,7 +3151,7 @@ export class EventHandlers {
             // Offset position by half depth based on wall direction
             const dims = getDimensions(objectType, currentItem?.sku, currentItem?.model);
             if (dims) {
-              const halfDepth = (dims.depth * objectScale) / 2;
+              const halfDepth = (dims.depth * Math.abs(objectScale)) / 2;
               // Offset based on which wall - move center away from wall by half depth
               switch (closestWall) {
                 case 'north':
@@ -4564,8 +4569,10 @@ export class EventHandlers {
     const roomHalfWidth = this.roomWidthRef.value / 2;
     const roomHalfHeight = this.roomHeightRef.value / 2;
     const dimensions = getDimensions(objectType, currentItem?.sku, currentItem?.model);
-    const halfWidth = dimensions && dimensions.width ? ((dimensions.width) * objectScale) / 2 : 0;
-    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * objectScale;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(objectScale);
+    const halfWidth = dimensions && dimensions.width ? ((dimensions.width) * absScale) / 2 : 0;
+    const wallBuffer = (currentItem?.model?.orientation?.wallBuffer ?? 0) * absScale;
 
     // ✅ ADD: Wall switching threshold - balanced stickiness
     const WALL_SWITCH_THRESHOLD = 40; // Reduced from 150cm to 40cm
@@ -4602,7 +4609,7 @@ export class EventHandlers {
           const worldOffset = localOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), primaryRot);
 
           const itemType = obj.userData.type as ComponentType;
-          const itemScale = obj.scale.x;
+          const itemScale = Math.abs(obj.scale.x); // Use abs to handle flipped objects
           const itemData = this.getCurrentItemData(id);
           const dims = getDimensions(itemType, itemData?.sku, itemData?.model);
 
