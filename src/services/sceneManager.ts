@@ -1069,9 +1069,14 @@ export class SceneManager {
       return 'furniture';
     }
 
-    // Check for doors (Door or WindowAndDoor category with door SKU)
-    if (itemType === 'Door' || itemType === 'WindowAndDoor') {
-      // Check if it's actually a door (not a window) by SKU pattern
+    // Check for doors
+    if (itemType === 'Door') {
+      // Door type is always a door
+      return 'door';
+    }
+
+    // WindowAndDoor category can contain both windows and doors - check SKU to distinguish
+    if (itemType === 'WindowAndDoor') {
       if (sku.toLowerCase().includes('door')) {
         return 'door';
       }
@@ -1378,6 +1383,11 @@ export class SceneManager {
       const shadowWasVisible = existingShadow?.visible ?? false;
       if (existingShadow) existingShadow.visible = false;
 
+      // Temporarily hide warning sprite to exclude from bounding box
+      const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+      const warningWasVisible = existingWarning?.visible ?? false;
+      if (existingWarning) existingWarning.visible = false;
+
       // Get bounding box center before flip
       const boxBefore = new THREE.Box3().setFromObject(model);
       const centerBefore = new THREE.Vector3();
@@ -1394,6 +1404,9 @@ export class SceneManager {
 
       // Restore shadow visibility to its original state
       if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+      // Restore warning sprite visibility to its original state
+      if (existingWarning) existingWarning.visible = warningWasVisible;
 
       // Compensate for the position shift caused by flipping
       shiftX = centerBefore.x - centerAfter.x;
@@ -2539,6 +2552,16 @@ export class SceneManager {
 
       // Only compensate position if the flip state actually changes
       if (currentFlipX !== flipX) {
+        // Temporarily hide shadow to exclude from bounding box
+        const existingShadow = model.getObjectByName('doorSwingShadow');
+        const shadowWasVisible = existingShadow?.visible ?? false;
+        if (existingShadow) existingShadow.visible = false;
+
+        // Temporarily hide warning sprite to exclude from bounding box
+        const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+        const warningWasVisible = existingWarning?.visible ?? false;
+        if (existingWarning) existingWarning.visible = false;
+
         // Get bounding box center before flip
         const boxBefore = new THREE.Box3().setFromObject(model);
         const centerBefore = new THREE.Vector3();
@@ -2551,6 +2574,12 @@ export class SceneManager {
         const boxAfter = new THREE.Box3().setFromObject(model);
         const centerAfter = new THREE.Vector3();
         boxAfter.getCenter(centerAfter);
+
+        // Restore shadow visibility to its original state
+        if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+        // Restore warning sprite visibility to its original state
+        if (existingWarning) existingWarning.visible = warningWasVisible;
 
         // Compensate for the position shift caused by flipping
         const shiftX = centerBefore.x - centerAfter.x;

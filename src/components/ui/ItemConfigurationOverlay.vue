@@ -9,6 +9,7 @@
               type="button"
               @click="setHingeSide('left')"
               :style="hingeSide === 'left' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="hingeSide === 'left'"
           >
             Left
           </button>
@@ -16,6 +17,7 @@
               type="button"
               @click="setHingeSide('right')"
               :style="hingeSide === 'right' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="hingeSide === 'right'"
           >
             Right
           </button>
@@ -26,6 +28,7 @@
               type="button"
               @click="setSwingDirection('inward')"
               :style="swingDirection === 'inward' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="swingDirection === 'inward'"
           >
             Inward
           </button>
@@ -33,6 +36,7 @@
               type="button"
               @click="setSwingDirection('outward')"
               :style="swingDirection === 'outward' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="swingDirection === 'outward'"
           >
             Outward
           </button>
@@ -64,8 +68,11 @@
 
 <script setup>
 import {computed, ref, watch, onMounted, onBeforeUnmount} from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import productData from '../../mocks/productData'
 import * as THREE from 'three'
+
+const gtm = useGtm()
 
 const props = defineProps({
   selectedItem: {
@@ -153,6 +160,19 @@ const emitDoorConfigUpdate = () => {
         swingDirection: swingDirection.value
       }
     })
+
+    // Track door config change in GTM
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'door_config_changed',
+        category: 'Door Configuration',
+        action: 'Config Changed',
+        label: `Item ${props.selectedItem.id}`,
+        itemId: props.selectedItem.id,
+        hingeSide: hingeSide.value,
+        swingDirection: swingDirection.value
+      })
+    }
   }
 }
 

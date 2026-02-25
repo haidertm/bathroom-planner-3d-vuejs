@@ -1,6 +1,7 @@
 // src/utils/constraints.ts - ENHANCED with proper movement integration
 import { WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
+import type { DoorConfig } from '../constants/schematicPatterns';
 import { getMovementConfig } from '../utils/models';
 import {
     type OrientationConfig,
@@ -107,10 +108,7 @@ export interface BathroomItem {
     sku?: string;
     productName?: string;
     model?: ObjectModel;
-    doorConfig?: {
-        hingeSide: 'left' | 'right';
-        swingDirection: 'inward' | 'outward';
-    };
+    doorConfig?: DoorConfig;
 }
 
 /**
