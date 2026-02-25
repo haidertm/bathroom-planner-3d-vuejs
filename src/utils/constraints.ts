@@ -558,7 +558,8 @@ export const checkWallCollision = (
     if (!dimensions) return false;
 
     const orientationConfig = item?.model?.orientation || getOrientationFromProductData(item?.sku, objectType) || DEFAULT_ORIENTATION;
-    const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
+    // Use Math.abs(scale) to handle flipped objects (negative scale)
+    const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * Math.abs(scale) : 0;
 
     const { interior, wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
@@ -1758,7 +1759,8 @@ export const findFreeWallPosition = (
     const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // ✅ FIX: Check if object is flush-mounted BEFORE creating walls
-    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+    // Use Math.abs(scale) to handle flipped objects (negative scale)
+    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * Math.abs(scale) : 0;
     const isFlushMounted = wallBuffer === 0;
 
     console.log(`🔧 Initial placement flush check: ${isFlushMounted ? 'FLUSH-MOUNTED' : 'OFFSET'} (wallBuffer: ${wallBuffer})`);
