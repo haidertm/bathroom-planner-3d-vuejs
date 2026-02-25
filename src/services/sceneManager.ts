@@ -1039,9 +1039,14 @@ export class SceneManager {
       return 'furniture';
     }
 
-    // Check for doors (Door or WindowAndDoor category with door SKU)
-    if (itemType === 'Door' || itemType === 'WindowAndDoor') {
-      // Check if it's actually a door (not a window) by SKU pattern
+    // Check for doors
+    if (itemType === 'Door') {
+      // Door type is always a door
+      return 'door';
+    }
+
+    // WindowAndDoor category can contain both windows and doors - check SKU to distinguish
+    if (itemType === 'WindowAndDoor') {
       if (sku.toLowerCase().includes('door')) {
         return 'door';
       }
@@ -1294,9 +1299,12 @@ export class SceneManager {
   /**
    * Update door configuration and refresh the schematic
    * Called when user changes door swing direction or hinge side
+   * @param itemId - The door item's ID
+   * @param doorConfig - The new door configuration
+   * @param isSelected - Whether the door is currently selected (controls outline highlighting)
    * @returns The position shift applied to the model (for syncing item.position)
    */
-  public updateDoorConfig(itemId: number, doorConfig: DoorConfig): { shiftX: number; shiftZ: number } {
+  public updateDoorConfig(itemId: number, doorConfig: DoorConfig, isSelected: boolean = true): { shiftX: number; shiftZ: number } {
     const model = this.existingItems.get(itemId);
     if (!model) {
       console.warn(`⚠️ Model not found for item ${itemId} when updating door config`);
@@ -1322,6 +1330,11 @@ export class SceneManager {
       const shadowWasVisible = existingShadow?.visible ?? false;
       if (existingShadow) existingShadow.visible = false;
 
+      // Temporarily hide warning sprite to exclude from bounding box
+      const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+      const warningWasVisible = existingWarning?.visible ?? false;
+      if (existingWarning) existingWarning.visible = false;
+
       // Get bounding box center before flip
       const boxBefore = new THREE.Box3().setFromObject(model);
       const centerBefore = new THREE.Vector3();
@@ -1338,6 +1351,9 @@ export class SceneManager {
 
       // Restore shadow visibility to its original state
       if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+      // Restore warning sprite visibility to its original state
+      if (existingWarning) existingWarning.visible = warningWasVisible;
 
       // Compensate for the position shift caused by flipping
       shiftX = centerBefore.x - centerAfter.x;
@@ -1356,8 +1372,9 @@ export class SceneManager {
       this.createSchematicForItem(itemId);
     }
 
-    // Update 3D swing shadow
-    this.updateDoorSwingShadow(model, doorConfig);
+    // Update 3D swing shadow with collision state
+    const hasCollision = this.checkDoorSwingCollision(itemId);
+    this.updateDoorSwingShadow(model, doorConfig, hasCollision);
 
     // Ensure shadow is visible in 3D mode
     if (this.viewMode === '3d') {
@@ -1368,10 +1385,84 @@ export class SceneManager {
     }
 
     // Re-highlight the door to include the new shadow mesh in the outline pass
-    highlightObject(model, true);
+    // Only highlight if the door is currently selected to avoid stale outlines
+    if (isSelected) {
+      highlightObject(model, true);
+    }
 
     // Return the shift so the caller can update item.position
     return { shiftX, shiftZ };
+  }
+
+  /**
+   * Create a warning sprite for door collision indication
+   * Used by both 3D door swing shadow and 2D door schematic
+   *
+   * @param iconX - X position of the sprite
+   * @param iconY - Y position of the sprite
+   * @param iconZ - Z position of the sprite
+   * @param options - Configuration options
+   * @returns Configured THREE.Sprite with warning icon
+   */
+  private createDoorCollisionWarningSprite(
+    iconX: number,
+    iconY: number,
+    iconZ: number,
+    options: {
+      name: string;
+      visible?: boolean;
+      renderOrder?: number;
+    }
+  ): THREE.Sprite {
+    // Create warning icon using canvas
+    const canvas = document.createElement('canvas');
+    const size = 128;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx) {
+      // Draw red circle background
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw white border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Draw warning icon (⚠)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⚠', size / 2, size / 2 + 2);
+    }
+
+    // Create sprite
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false
+    });
+    const warningSprite = new THREE.Sprite(spriteMaterial);
+    warningSprite.name = options.name;
+    warningSprite.position.set(iconX, iconY, iconZ);
+    warningSprite.scale.set(20, 20, 1); // 20cm size
+
+    if (options.visible !== undefined) {
+      warningSprite.visible = options.visible;
+    }
+
+    if (options.renderOrder !== undefined) {
+      warningSprite.renderOrder = options.renderOrder;
+    }
+
+    return warningSprite;
   }
 
   /**
@@ -1487,49 +1578,11 @@ export class SceneManager {
       const iconX = hingeX + iconDistance * Math.cos(midAngle);
       const iconZ = hingeZ - iconDistance * Math.sin(midAngle);
 
-      // Create warning icon using canvas
-      const canvas = document.createElement('canvas');
-      const size = 128;
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Draw red circle background
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Draw white border
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        // Draw warning icon (⚠)
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${size * 0.6}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('⚠', size / 2, size / 2 + 2);
-
-        // Create sprite
-        const texture = new THREE.CanvasTexture(canvas);
-        const spriteMaterial = new THREE.SpriteMaterial({
-          map: texture,
-          transparent: true,
-          depthTest: false,
-          depthWrite: false
-        });
-        const warningSprite = new THREE.Sprite(spriteMaterial);
-        warningSprite.name = 'doorCollisionWarning3D';
-        warningSprite.position.set(iconX, 15, iconZ); // Slightly above the floor
-        warningSprite.scale.set(20, 20, 1); // 20cm size
-
-        // Only visible in 3D mode
-        warningSprite.visible = this.viewMode === '3d';
-
-        model.add(warningSprite);
-      }
+      const warningSprite = this.createDoorCollisionWarningSprite(iconX, 15, iconZ, {
+        name: 'doorCollisionWarning3D',
+        visible: this.viewMode === '3d'
+      });
+      model.add(warningSprite);
     }
   }
 
@@ -2004,47 +2057,11 @@ export class SceneManager {
       const iconX = hingeX + iconDistance * Math.cos(midAngle);
       const iconZ = hingeZ - iconDistance * Math.sin(midAngle); // Negative because of coordinate system
 
-      // Create warning icon using canvas
-      const canvas = document.createElement('canvas');
-      const size = 128;
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Draw red circle background
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Draw white border
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        // Draw warning icon (⚠)
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${size * 0.6}px Arial`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('⚠', size / 2, size / 2 + 2);
-
-        // Create sprite
-        const texture = new THREE.CanvasTexture(canvas);
-        const spriteMaterial = new THREE.SpriteMaterial({
-          map: texture,
-          transparent: true,
-          depthTest: false,
-          depthWrite: false
-        });
-        const warningSprite = new THREE.Sprite(spriteMaterial);
-        warningSprite.name = 'doorCollisionWarning';
-        warningSprite.position.set(iconX, height + 5, iconZ);
-        warningSprite.scale.set(20, 20, 1); // 20cm size
-        warningSprite.renderOrder = 1003;
-
-        group.add(warningSprite);
-      }
+      const warningSprite = this.createDoorCollisionWarningSprite(iconX, height + 5, iconZ, {
+        name: 'doorCollisionWarning',
+        renderOrder: 1003
+      });
+      group.add(warningSprite);
     }
   }
 
@@ -2067,10 +2084,12 @@ export class SceneManager {
     const dimensions = doorModel.userData.dimensions || doorModel.userData.model?.dimensions;
     let doorWidth: number;
     let doorDepth: number;
+    let doorHeight: number;
 
     if (dimensions) {
       doorWidth = dimensions.width;
       doorDepth = dimensions.depth;
+      doorHeight = dimensions.height;
     } else {
       // Fallback: temporarily hide shadow to get accurate bounding box
       const shadow = doorModel.getObjectByName('doorSwingShadow');
@@ -2085,11 +2104,17 @@ export class SceneManager {
       doorBox.getSize(doorSize);
       doorWidth = Math.max(doorSize.x, doorSize.z);
       doorDepth = Math.min(doorSize.x, doorSize.z);
+      doorHeight = doorSize.y;
 
       // Restore visibility
       if (shadow) shadow.visible = shadowWasVisible;
       if (warningIcon) warningIcon.visible = warningWasVisible;
     }
+
+    // Calculate door's swing vertical range (from floor to top of door)
+    // The swing arc sweeps from Y=0 (floor) to Y=doorHeight
+    const doorSwingMinY = 0;
+    const doorSwingMaxY = doorHeight;
 
     // Calculate hinge position in door's local coordinates
     // The 3D shadow always uses left hinge position (-doorWidth/2) and relies on
@@ -2138,32 +2163,13 @@ export class SceneManager {
       const itemType = model.userData.type;
       if (itemType === 'Door' || itemType === 'WindowAndDoor') continue;
 
-      // Get object's bounding box - use dimensions from userData if available
-      const objDimensions = model.userData.dimensions || model.userData.model?.dimensions;
-      let objMin: THREE.Vector3;
-      let objMax: THREE.Vector3;
-
-      if (objDimensions) {
-        // Calculate bounding box from known dimensions
-        const halfWidth = objDimensions.width / 2;
-        const halfDepth = objDimensions.depth / 2;
-        const pos = model.position;
-        const rot = model.rotation.y;
-        const cos = Math.cos(rot);
-        const sin = Math.sin(rot);
-
-        // Calculate rotated extents
-        const extentX = Math.abs(halfWidth * cos) + Math.abs(halfDepth * sin);
-        const extentZ = Math.abs(halfWidth * sin) + Math.abs(halfDepth * cos);
-
-        objMin = new THREE.Vector3(pos.x - extentX, pos.y, pos.z - extentZ);
-        objMax = new THREE.Vector3(pos.x + extentX, pos.y + objDimensions.height, pos.z + extentZ);
-      } else {
-        // Fallback to bounding box
-        const objBox = new THREE.Box3().setFromObject(model);
-        objMin = objBox.min;
-        objMax = objBox.max;
-      }
+      // Get object's bounding box from actual mesh positions
+      // IMPORTANT: Always use setFromObject() instead of calculating from dimensions,
+      // because wall-mounted items (toilets, sinks, vanities) have their pivot at the wall,
+      // not at the center. Dimension-based calculation incorrectly assumes center positioning.
+      const objBox = new THREE.Box3().setFromObject(model);
+      const objMin = objBox.min;
+      const objMax = objBox.max;
 
       // Arc sampling: trace points along the arc and check if they're inside the object
       // This uses the same localToWorld transform as the visual arc, ensuring accuracy
@@ -2176,6 +2182,19 @@ export class SceneManager {
       const checkMaxX = objMax.x + tolerance;
       const checkMinZ = objMin.z - tolerance;
       const checkMaxZ = objMax.z + tolerance;
+
+      // Check Y-range overlap: object must be within door's swing vertical range
+      // This prevents false positives for tall wall-mounted items above the door height
+      const objMinY = objMin.y - tolerance;
+      const objMaxY = objMax.y + tolerance;
+
+      // Check if object's Y range overlaps with door's swing Y range
+      // No overlap means the object is entirely above or below the door's swing path
+      const yOverlap = objMaxY > doorSwingMinY && objMinY < doorSwingMaxY;
+      if (!yOverlap) {
+        // Object is entirely above the door height or below floor - no collision possible
+        continue;
+      }
 
       // Calculate the actual 90-degree arc range
       const minAngle = Math.min(normStart, normEnd);
@@ -2480,6 +2499,16 @@ export class SceneManager {
 
       // Only compensate position if the flip state actually changes
       if (currentFlipX !== flipX) {
+        // Temporarily hide shadow to exclude from bounding box
+        const existingShadow = model.getObjectByName('doorSwingShadow');
+        const shadowWasVisible = existingShadow?.visible ?? false;
+        if (existingShadow) existingShadow.visible = false;
+
+        // Temporarily hide warning sprite to exclude from bounding box
+        const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+        const warningWasVisible = existingWarning?.visible ?? false;
+        if (existingWarning) existingWarning.visible = false;
+
         // Get bounding box center before flip
         const boxBefore = new THREE.Box3().setFromObject(model);
         const centerBefore = new THREE.Vector3();
@@ -2493,6 +2522,12 @@ export class SceneManager {
         const centerAfter = new THREE.Vector3();
         boxAfter.getCenter(centerAfter);
 
+        // Restore shadow visibility to its original state
+        if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+        // Restore warning sprite visibility to its original state
+        if (existingWarning) existingWarning.visible = warningWasVisible;
+
         // Compensate for the position shift caused by flipping
         const shiftX = centerBefore.x - centerAfter.x;
         const shiftZ = centerBefore.z - centerAfter.z;
@@ -2502,8 +2537,9 @@ export class SceneManager {
         model.scale.x = Math.abs(model.scale.x) * flipX;
       }
 
-      // Update 3D swing shadow for door
-      this.updateDoorSwingShadow(model, item.doorConfig);
+      // Update 3D swing shadow for door with collision state
+      const hasCollision = this.checkDoorSwingCollision(item.id);
+      this.updateDoorSwingShadow(model, item.doorConfig, hasCollision);
     }
 
     // Update schematic position if in 2D mode
@@ -2682,8 +2718,12 @@ export class SceneManager {
             model.position.z += shiftZ;
           }
 
-          // Add 3D swing shadow for door
-          this.updateDoorSwingShadow(model, item.doorConfig);
+          // Add to existingItems early so checkDoorSwingCollision can find this door
+          this.existingItems.set(item.id, model);
+
+          // Add 3D swing shadow for door with collision state
+          const hasCollision = this.checkDoorSwingCollision(item.id);
+          this.updateDoorSwingShadow(model, item.doorConfig, hasCollision);
         }
 
         this.enhanceModelMaterials(model);
