@@ -21,9 +21,7 @@ export function setupPostHog(app: App) {
         capture_pageleave: true,
         capture_exceptions: true,
         session_recording: {
-            recordHeaders: true,
-            recordBody: true,
-            maskAllInputs: false,
+            maskAllInputs: true,
         },
         mask_personal_data_properties: true,
         custom_personal_data_properties: ['email'],
