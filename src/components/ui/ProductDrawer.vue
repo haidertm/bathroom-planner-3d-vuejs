@@ -305,8 +305,8 @@ import {
   isVariantModelLoadedWithCache,
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
-import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
-import { createEmptyFilters } from '../../constants/filters'
+import { filterProductVariants, hasActiveFilters, PRICE_EPS } from '../../utils/filters'
+import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
 
@@ -316,6 +316,32 @@ const INITIAL_SEARCH_FILTERS = {
   priceMin: null,
   priceMax: null,
   styles: []
+}
+
+// Helper: Normalize price string by removing currency symbols, commas, and whitespace
+const normalizePrice = (price) => {
+  if (typeof price === 'number') return price
+  if (typeof price === 'string') {
+    // Remove currency symbols (£, $, €, etc.), commas, and whitespace
+    // Keep only digits, decimal point, and optional leading minus sign
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
+    return isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
+// Helper: Merge product-level and variant-level filterAttributes
+// Variant attributes override product attributes, but product attributes are retained if not overridden
+const mergeFilterAttributes = (productAttrs, variantAttrs) => {
+  const product = productAttrs || {}
+  const variant = variantAttrs || {}
+
+  // Merge with variant taking precedence
+  return {
+    ...product,
+    ...variant
+  }
 }
 
 // Initialize GTM
@@ -569,6 +595,19 @@ const clearBackgroundFilters = () => {
 
 // Clear search filters
 const clearSearchFilters = () => {
+  // Track clear filters in GTM when in search mode
+  if (gtm?.enabled() && props.selectedCategory === 'search') {
+    gtm.trackEvent({
+      event: 'search_clear_filters',
+      category: 'Search',
+      action: 'Clear Filters',
+      label: 'Empty State',
+      source: 'empty_state',
+      hasActiveFilters: hasActiveSearchFilters.value,
+      resultCount: readyProducts.value?.length || 0
+    })
+  }
+
   searchFilters.value = { ...INITIAL_SEARCH_FILTERS }
 }
 
@@ -616,7 +655,7 @@ const unfilteredSearchResults = computed(() => {
         id: matchingVariant.id || matchingVariant.sku,
         price: matchingVariant.price || product.price,
         category: category,
-        filterAttributes: matchingVariant.filterAttributes || {}
+        filterAttributes: mergeFilterAttributes(product.filterAttributes, matchingVariant.filterAttributes)
       })
       return
     }
@@ -629,7 +668,7 @@ const unfilteredSearchResults = computed(() => {
           id: `${product.id}-${variant.id || variant.sku}`,
           price: variant.price || product.price,
           category: category,
-          filterAttributes: variant.filterAttributes || {}
+          filterAttributes: mergeFilterAttributes(product.filterAttributes, variant.filterAttributes)
         })
       })
     } else {
@@ -916,6 +955,103 @@ const categoryDisplayLabels = {
 
 
 
+// 4. FIXED search result highlighting that properly handles Vue refs
+const getHighlightedName = (product) => {
+  const escapeHtml = (s = '') =>
+      String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  if (props.selectedCategory === 'search') {
+    let searchQuery = props.searchQuery
+
+    if (searchQuery && typeof searchQuery === 'object' && 'value' in searchQuery) {
+      searchQuery = searchQuery.value
+    }
+
+    if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      const rawName = product.name || ''
+      let result = escapeHtml(rawName)
+
+      const searchTerms = query.split(/\s+/).filter(term => term.length > 0)
+
+      if (searchTerms.length === 1) {
+        // Single word - highlight normally
+        const term = searchTerms[0]
+        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`(${escapedTerm})`, 'gi')
+
+        result = result.replace(regex, (match) => {
+          return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
+        })
+      } else {
+        // Multiple words - look for phrase patterns
+
+        // Try exact phrase first
+        const exactPhrase = query
+        const exactRegex = new RegExp(`(${exactPhrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+
+        if (rawName.toLowerCase().includes(exactPhrase.toLowerCase())) {
+          result = result.replace(exactRegex, (match) => {
+            return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
+          })
+        } else {
+          // Try phrase with up to 2 words between search terms
+          const firstWord = searchTerms[0]
+          const lastWord = searchTerms[searchTerms.length - 1]
+
+          // Pattern: word1 (0-2 words) word2
+          const flexiblePattern = `(${firstWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s+\\w+){0,2}\\s+${lastWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`
+          const flexibleRegex = new RegExp(flexiblePattern, 'gi')
+
+          const flexibleMatch = rawName.match(flexibleRegex)
+          if (flexibleMatch) {
+            result = result.replace(flexibleRegex, (match) => {
+              return `<span style="color: #EC048C; font-weight: 600;">${match}</span>`
+            })
+          }
+          // If no flexible match found, don't highlight individual scattered words
+        }
+      }
+
+      return result
+    }
+  }
+
+  return escapeHtml(product.name || '')
+}
+
+
+// Get the lowest price from all variants
+const getLowestVariantPrice = (product) => {
+  if (!product.variants || product.variants.length === 0) {
+    return product.price
+  }
+
+  const prices = product.variants
+      .map(variant => normalizePrice(variant.price))
+      .filter(price => price > 0)
+
+  if (prices.length === 0) {
+    return product.price
+  }
+
+  return Math.min(...prices).toFixed(2)
+}
+
+// Check if product has multiple different prices across variants
+const hasMultiplePrices = (product) => {
+  if (!product.variants || product.variants.length <= 1) {
+    return false
+  }
+
+  const prices = product.variants
+      .map(variant => normalizePrice(variant.price))
+      .filter(price => price > 0)
+
+  const uniquePrices = [...new Set(prices)]
+  return uniquePrices.length > 1
+}
+
 // Initialize selections when product changes
 watch(() => selectedProduct.value, (newProduct) => {
   if (newProduct) {
@@ -982,6 +1118,9 @@ const readyProducts = computed(() => {
           link: matchingVariant.link || product.link,
           category: category,
 
+          // Store filter attributes for search filtering
+          filterAttributes: mergeFilterAttributes(product.filterAttributes, matchingVariant.filterAttributes),
+
           // Enhanced search context for exact SKU matches
           searchContext: {
             isExactMatch: true,
@@ -1046,7 +1185,7 @@ const readyProducts = computed(() => {
           isFilteredVariant: true, // Mark as flattened variant
 
           // Store filter attributes for search filtering
-          filterAttributes: variant.filterAttributes || {},
+          filterAttributes: mergeFilterAttributes(product.filterAttributes, variant.filterAttributes),
 
           searchContext: {
             isExactMatch: false,
@@ -1083,12 +1222,11 @@ const readyProducts = computed(() => {
     // Use epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
     // Only apply if user has actually set a price filter (not just default range)
     if (searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null) {
-      const EPS = 0.01
       filteredResults = filteredResults.filter(item => {
-        const price = parseFloat(item.price) || 0
+        const price = normalizePrice(item.price)
         // Include items with no valid price (price = 0) - don't filter them out
         if (price === 0) return true
-        return price + EPS >= searchFilters.value.priceMin && price - EPS <= searchFilters.value.priceMax
+        return price + PRICE_EPS >= searchFilters.value.priceMin && price - PRICE_EPS <= searchFilters.value.priceMax
       })
     }
 
@@ -1415,11 +1553,11 @@ const selectColor = (colorId) => {
 const calculateTotalPrice = () => {
   if (!selectedProduct.value) return '0.00'
 
-  let total = parseFloat(selectedProduct.value.price)
+  let total = normalizePrice(selectedProduct.value.price)
 
   if (selectedProduct.value.hardware) {
     selectedProduct.value.hardware.forEach(hw => {
-      total += parseFloat(hw.price)
+      total += normalizePrice(hw.price)
     })
   }
 
