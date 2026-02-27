@@ -124,9 +124,8 @@
             </div>
             <div v-else>
               <p><strong>Left click + drag:</strong> Move objects along walls</p>
-              <p><strong>Right click + drag:</strong> Rotate objects</p>
+              <p><strong>Rotation arrows:</strong> Rotate selected object (click and drag)</p>
               <p><strong>Ctrl + drag:</strong> Adjust object height</p>
-              <p><strong>Alt + drag:</strong> Scale/Resize objects</p>
               <p><strong>Left click empty space:</strong> Rotate camera view</p>
               <p><strong>Mouse wheel:</strong> Zoom In/Out</p>
               <p><strong>DELETE key:</strong> Delete selected object</p>

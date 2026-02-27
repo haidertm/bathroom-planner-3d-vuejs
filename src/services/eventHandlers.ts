@@ -19,7 +19,7 @@ import {
   wouldCollideWithExisting,
   wouldCollideWithExistingOrWalls
 } from '../utils/constraints';
-import { SCALE_LIMITS, WALL_SETTINGS, WallType } from '../constants/dimensions';
+import { WALL_SETTINGS, WallType } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
 import { CAMERA_CONTROLS, LOOK_AT, type ViewMode } from '../constants/camera';
 import { canMoveVertically, canRotateFreely, getMovementConfig } from '../utils/models';
@@ -91,13 +91,11 @@ export class EventHandlers {
   private isRotating: boolean;
   private isObjectRotating: boolean;
   private isHeightAdjusting: boolean;
-  private isScaling: boolean;
   private dragPlane: THREE.Plane;
   private dragOffset: THREE.Vector3;
   private rotationStartAngle: number;
   private objectStartRotation: number;
   private heightStartY: number;
-  private scaleStart: number;
   private mouseStartY: number;
   private mouseX: number;
   private mouseY: number;
@@ -273,13 +271,11 @@ export class EventHandlers {
     this.isRotating = false;
     this.isObjectRotating = false;
     this.isHeightAdjusting = false;
-    this.isScaling = false;
     this.dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     this.dragOffset = new THREE.Vector3();
     this.rotationStartAngle = 0;
     this.objectStartRotation = 0;
     this.heightStartY = 0;
-    this.scaleStart = 1;
     this.mouseStartY = 0;
     this.mouseX = 0;
     this.mouseY = 0;
@@ -989,12 +985,6 @@ export class EventHandlers {
         this.heightStartY = this.selectedObject.position.y;
         this.mouseStartY = event.clientY;
         this.renderer.domElement.style.cursor = 'row-resize';
-      } else if (event.altKey) { // Alt + click for scaling
-        this.isScaling = true;
-        this.isDragOperation = true; // Mark as drag operation
-        this.scaleStart = this.selectedObject.scale.x;
-        this.mouseStartY = event.clientY;
-        this.renderer.domElement.style.cursor = 'nw-resize';
       } else { // Left click for dragging
         this.isDragging = true;
         this.isDragOperation = true; // Mark as drag operation
@@ -2195,7 +2185,7 @@ export class EventHandlers {
 
     // Safety check - if no mouse buttons are pressed, stop dragging
     if (event.buttons === 0) {
-      if (this.isDragging || this.isRotating || this.isObjectRotating || this.isHeightAdjusting || this.isScaling) {
+      if (this.isDragging || this.isRotating || this.isObjectRotating || this.isHeightAdjusting) {
         console.log('🛑 No mouse buttons pressed, stopping drag operations');
         this.stopAllDragOperations();
         return;
@@ -2212,18 +2202,7 @@ export class EventHandlers {
       }
     }
 
-    if (this.isScaling && this.selectedObject) {
-      // Scale object
-      const deltaY = (this.mouseStartY - event.clientY) * 0.001;
-      const newScale = Math.max(SCALE_LIMITS.MIN, Math.min(SCALE_LIMITS.MAX, this.scaleStart + deltaY));
-
-      this.selectedObject.scale.set(newScale, newScale, newScale);
-
-      const itemId = this.selectedObject.userData.itemId as number;
-      // Queue update instead of applying immediately
-      this.queueUpdate(itemId, { scale: newScale });
-
-    } else if (this.isHeightAdjusting && this.selectedObject) {
+    if (this.isHeightAdjusting && this.selectedObject) {
       // 🆕 ENHANCED: Height adjustment with movement configuration
       const objectType = this.selectedObject.userData.type as ComponentType;
       const itemId = this.selectedObject.userData.itemId as number;
@@ -3782,7 +3761,6 @@ export class EventHandlers {
     this.isRotating = false;
     this.isObjectRotating = false;
     this.isHeightAdjusting = false;
-    this.isScaling = false;
     this.hasMouseMoved = false;
     this.wasEmptySpaceClicked = false;
     this.wasAlreadySelected = false;
@@ -4372,7 +4350,6 @@ export class EventHandlers {
     this.isRotating = false;
     this.isObjectRotating = false;
     this.isHeightAdjusting = false;
-    this.isScaling = false;
     this.hasMouseMoved = false; // Reset movement tracking
     this.wasEmptySpaceClicked = false; // Reset empty space flag
     this.wasAlreadySelected = false; // Reset already selected flag
@@ -4411,7 +4388,6 @@ export class EventHandlers {
     this.isRotating = false;
     this.isObjectRotating = false;
     this.isHeightAdjusting = false;
-    this.isScaling = false;
 
     // Reset cursor
     this.renderer.domElement.style.cursor = 'default';
