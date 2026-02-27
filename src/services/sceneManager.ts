@@ -18,12 +18,12 @@ import {
 } from '../models/roomGeometry';
 import textureManager from './textureManager';
 import { SimpleWallCulling } from './simpleWallCulling';
-import { setOutlinePass } from '../utils/helpers';
+import { setOutlinePass, highlightObject } from '../utils/helpers';
 import type { BathroomItem } from '../utils/constraints';
 import type { TextureConfig } from '../constants/textures';
 import { LOOK_AT, CAMERA_SETTINGS, CAMERA_PRESETS, ORTHOGRAPHIC_SETTINGS, type ViewMode } from '../constants/camera';
 import { CameraTransition, Easing } from './cameraTransition';
-import { getSchematicTypeFromSku, type SchematicType } from '../constants/schematicPatterns';
+import { getSchematicTypeFromSku, type SchematicType, type DoorConfig, DEFAULT_DOOR_CONFIG } from '../constants/schematicPatterns';
 
 // Import post-processing modules
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -129,10 +129,15 @@ export class SceneManager {
     this.initializeOrthographicCamera();
 
     // Create renderer with enhanced settings
+    // preserveDrawingBuffer is needed for canvas captureStream()/toDataURL()
+    // used by session recording tools (e.g. PostHog). Disabled by default for
+    // better GPU/memory performance; enable when session recording is active.
+    const needsBufferPreservation = Boolean(import.meta.env.VITE_POSTHOG_KEY);
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
-      logarithmicDepthBuffer: true  // Set it in the constructor options
+      logarithmicDepthBuffer: true,
+      preserveDrawingBuffer: needsBufferPreservation,
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -159,7 +164,6 @@ export class SceneManager {
     // Initialize measurement system after scene, camera, and renderer are ready
     if (this.scene && this.camera && this.renderer) {
       this.measurementSystem = new MeasurementSystem(this.scene, this.camera, this.renderer);
-      console.log('Measurement system initialized');
     }
 
     // this.renderer = new THREE.WebGLRenderer({
@@ -167,14 +171,6 @@ export class SceneManager {
     //   powerPreference: 'high-performance',
     //   logarithmicDepthBuffer: true  // Set it in the constructor options
     // });
-
-    // Check renderer capabilities
-    // FIXED: Log scene initialization
-    console.log('✅ Scene initialized successfully:', {
-      sceneBackground: this.scene.background,
-      hasFog: !!this.scene.fog,
-      rendererSize: { width: window.innerWidth, height: window.innerHeight }
-    });
 
     return {
       scene: this.scene,
@@ -299,8 +295,6 @@ export class SceneManager {
     this.orthographicCamera.up.set(0, 0, -1);
     this.orthographicCamera.zoom = ORTHOGRAPHIC_SETTINGS.INITIAL_ZOOM;
     this.orthographicCamera.updateProjectionMatrix();
-
-    console.log('✅ Orthographic camera initialized for 2D Blueprint view');
   }
 
   /**
@@ -365,8 +359,6 @@ export class SceneManager {
     // Clamp to valid zoom range
     optimalZoom = Math.max(ORTHOGRAPHIC_SETTINGS.MIN_ZOOM, Math.min(optimalZoom, ORTHOGRAPHIC_SETTINGS.MAX_ZOOM));
 
-    console.log(`📐 Calculated optimal 2D zoom: ${optimalZoom.toFixed(3)} for room ${this.roomWidth}x${this.roomHeight}cm`);
-
     return optimalZoom;
   }
 
@@ -429,7 +421,6 @@ export class SceneManager {
     if (this.viewMode === '2d' || !this.camera || !this.orthographicCamera) return;
     if (this.isViewTransitioning) return; // Prevent double-clicks during animation
 
-    console.log('🔄 Starting animated transition to 2D Blueprint view...');
     this.isViewTransitioning = true;
 
     try {
@@ -445,7 +436,6 @@ export class SceneManager {
       // Get validated L-shape corner from localStorage to determine camera rotation
       const lShapeCorner = this.getValidatedLShapeCorner();
       const targetUp = this.getUpVectorForCorner(lShapeCorner);
-      console.log('🔄 L-shape corner:', lShapeCorner ?? 'default (nw)', '-> Target up vector:', targetUp);
 
       // Animate the perspective camera to top-down view with correct rotation
       await this.cameraTransition.animateToTopDown(this.camera, roomCenter, {
@@ -462,8 +452,6 @@ export class SceneManager {
       }, targetUp);
 
       // Now switch to orthographic camera and apply 2D settings
-      console.log('🔄 Camera flyover complete, switching to orthographic...');
-
       // Update orthographic frustum to current room size
       this.updateOrthographicFrustum();
 
@@ -506,6 +494,9 @@ export class SceneManager {
       // Create 2D schematic overlays for thin objects (shower screens, mirrors)
       this.create2DSchematicOverlays();
 
+      // Hide door swing shadows in 2D mode (they have their own 2D arc)
+      this.toggleDoorSwingShadows(false);
+
       // Notify event handlers of mode change and pass orthographic camera
       if (this.eventHandlers) {
         if (typeof this.eventHandlers.setViewMode === 'function') {
@@ -523,8 +514,6 @@ export class SceneManager {
       if (this.measurementSystem) {
         this.measurementSystem.setWallLabelsVisible(true);
       }
-
-      console.log('✅ Animated transition to 2D Blueprint view complete');
     } catch (error) {
       console.error('❌ Error during 2D view transition:', error);
       throw error;
@@ -541,7 +530,6 @@ export class SceneManager {
     if (this.viewMode === '3d' || !this.camera) return;
     if (this.isViewTransitioning) return; // Prevent double-clicks during animation
 
-    console.log('🔄 Starting animated transition to 3D view...');
     this.isViewTransitioning = true;
 
     try {
@@ -551,7 +539,6 @@ export class SceneManager {
       // Get validated L-shape corner to determine starting camera rotation (matches 2D view orientation)
       const lShapeCorner = this.getValidatedLShapeCorner();
       const startUpVector = this.getUpVectorForCorner(lShapeCorner);
-      console.log('🔄 L-shape corner:', lShapeCorner ?? 'default (nw)', '-> Start up vector:', startUpVector);
 
       // Determine target camera state (restored position or default)
       const targetState = {
@@ -604,6 +591,9 @@ export class SceneManager {
       // Remove 2D schematic overlays
       this.remove2DSchematicOverlays();
 
+      // Show door swing shadows in 3D mode
+      this.toggleDoorSwingShadows(true);
+
       // Hide wall dimension labels in 3D mode
       if (this.measurementSystem) {
         this.measurementSystem.setWallLabelsVisible(false);
@@ -634,8 +624,6 @@ export class SceneManager {
       if (this.eventHandlers && typeof this.eventHandlers.syncTargetCameraPosition === 'function') {
         this.eventHandlers.syncTargetCameraPosition();
       }
-
-      console.log('✅ Animated transition to 3D view complete');
     } catch (error) {
       console.error('❌ Error during 3D view transition:', error);
       throw error;
@@ -843,17 +831,13 @@ export class SceneManager {
    * This prevents tall objects like shower screens from obscuring shorter floor items
    */
   private adjustTallObjectsForBlueprintView(): void {
-    console.log('📐 Adjusting tall objects for 2D Blueprint view...');
-
-    this.existingItems.forEach((model, itemId) => {
+    this.existingItems.forEach((model, _itemId) => {
       const dimensions = model.userData.dimensions;
       if (!dimensions) return;
 
       // Check if object is taller than threshold
       const objectHeight = dimensions.height * (model.scale.y || 1);
       if (objectHeight > SceneManager.TALL_OBJECT_HEIGHT_THRESHOLD) {
-        console.log(`  🔍 Tall object found: Item ${itemId} (height: ${objectHeight.toFixed(0)}cm)`);
-
         // Traverse all meshes in the model and apply transparency
         model.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material) {
@@ -885,8 +869,6 @@ export class SceneManager {
    * Restore full opacity to all objects when returning to 3D view
    */
   private restoreTallObjectsOpacity(): void {
-    console.log('🔄 Restoring tall objects opacity for 3D view...');
-
     // Restore all materials to their original states
     this.originalMaterialStates.forEach((originalState, material) => {
       material.opacity = originalState.opacity;
@@ -903,8 +885,6 @@ export class SceneManager {
    * This makes the plan view cleaner and edges easier to see
    */
   private switchTo2DLighting(): void {
-    console.log('💡 Switching to flat 2D lighting mode...');
-
     // Disable shadow rendering for clean 2D view
     if (this.renderer) {
       this.shadowsEnabled = this.renderer.shadowMap.enabled;
@@ -937,16 +917,12 @@ export class SceneManager {
     this.wallRefs.forEach(wall => {
       wall.receiveShadow = false;
     });
-
-    console.log('✅ 2D lighting mode enabled - shadows disabled, ambient light increased');
   }
 
   /**
    * Restore 3D lighting with shadows
    */
   private switchTo3DLighting(): void {
-    console.log('💡 Restoring 3D lighting mode...');
-
     // Re-enable shadow rendering
     if (this.renderer) {
       this.renderer.shadowMap.enabled = this.shadowsEnabled;
@@ -976,8 +952,6 @@ export class SceneManager {
     this.wallRefs.forEach(wall => {
       wall.receiveShadow = true;
     });
-
-    console.log('✅ 3D lighting mode restored');
   }
 
   /**
@@ -999,7 +973,6 @@ export class SceneManager {
     });
 
     this.floorRef.material = blueprintFloorMaterial;
-    console.log('✅ 2D floor appearance applied - light blueprint style');
   }
 
   /**
@@ -1016,7 +989,10 @@ export class SceneManager {
 
     // Restore original material
     this.floorRef.material = this.originalFloorMaterial;
-    console.log('✅ 3D floor appearance restored');
+
+    // Clear reference to prevent double-disposal in dispose()
+    // (floorRef.material and originalFloorMaterial would be the same object)
+    this.originalFloorMaterial = null;
   }
 
   /**
@@ -1063,6 +1039,19 @@ export class SceneManager {
       return 'furniture';
     }
 
+    // Check for doors
+    if (itemType === 'Door') {
+      // Door type is always a door
+      return 'door';
+    }
+
+    // WindowAndDoor category can contain both windows and doors - check SKU to distinguish
+    if (itemType === 'WindowAndDoor') {
+      if (sku.toLowerCase().includes('door')) {
+        return 'door';
+      }
+    }
+
     // Fallback: check SKU patterns from configuration
     // Patterns are defined in src/constants/schematicPatterns.ts for maintainability
     const skuMatch = getSchematicTypeFromSku(sku);
@@ -1106,6 +1095,10 @@ export class SceneManager {
   /**
    * Helper method to create the appropriate schematic based on object type.
    * Centralizes the switch statement logic for schematic type dispatch.
+   *
+   * Note: Door schematics are handled externally in create2DSchematicOverlays
+   * and updateSingle2DSchematicOverlay, which guard schematicType === 'door'
+   * before calling this function to pass doorConfig and collision state.
    *
    * @param schematicType - The type of schematic to create (e.g., 'shower', 'toilet', 'generic')
    * @param schematicGroup - The THREE.Group to add schematic elements to
@@ -1154,31 +1147,22 @@ export class SceneManager {
    * These are architectural-style floor plan symbols
    */
   private create2DSchematicOverlays(): void {
-    console.log('📐 Creating 2D schematic overlays...');
-    console.log(`📐 Total items in existingItems: ${this.existingItems.size}`);
-
     this.existingItems.forEach((model, itemId) => {
       const dimensions = this.getModelDimensions(model);
 
-      console.log(`📐 Processing Item ${itemId}:`, {
-        type: model.userData.type,
-        sku: model.userData.sku,
-        hasDimensions: !!dimensions,
-        dimensions: dimensions,
-        position: model.position.toArray()
-      });
-
       if (!dimensions) {
-        console.log(`  ⚠️ Item ${itemId} has no dimensions, skipping`);
         return;
       }
 
       const schematicType = this.getSchematicType(model);
-      console.log(`  🔍 Item ${itemId} schematic type: ${schematicType}`);
 
-      // Get the bounding box center for positioning
+      // Get the bounding box center for positioning (excluding door shadow)
+      const shadow = model.getObjectByName('doorSwingShadow');
+      const shadowWasVisible = shadow?.visible ?? false;
+      if (shadow) shadow.visible = false;
       const box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
+      if (shadow) shadow.visible = shadowWasVisible;
 
       // Use the MODEL's original dimensions (not bounding box) so rotation works correctly
       // The schematic will be created with these dimensions and then rotated to match the model
@@ -1186,23 +1170,28 @@ export class SceneManager {
       const depth = dimensions.depth;
       const schematicHeight = 50; // Height above floor for visibility
 
-      console.log(`  📐 Creating ${schematicType} schematic for Item ${itemId}`, {
-        originalDimensions: dimensions,
-        center: { x: center.x, z: center.z },
-        rotation: model.rotation.y,
-        type: model.userData.type,
-        sku: model.userData.sku
-      });
-
       // Create a schematic overlay group
       const schematicGroup = new THREE.Group();
       schematicGroup.name = `Schematic2D_${itemId}`;
 
       // Create schematic based on object type
-      this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+      // Door schematics need special handling with doorConfig and collision detection
+      if (schematicType === 'door') {
+        const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+        const hasCollision = this.checkDoorSwingCollision(itemId);
+        this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig, hasCollision);
+      } else {
+        this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+      }
 
-      // Position the schematic at the object's actual center (from bounding box)
-      schematicGroup.position.set(center.x, 0, center.z); // At floor level, centered on object
+      // Position the schematic
+      // For doors, use model.position to match the 3D shadow positioning (which is a child of the model)
+      // For other objects, use bounding box center for visual alignment
+      if (schematicType === 'door') {
+        schematicGroup.position.set(model.position.x, 0, model.position.z);
+      } else {
+        schematicGroup.position.set(center.x, 0, center.z);
+      }
 
       // Apply the model's rotation so the schematic matches the object's orientation
       schematicGroup.rotation.y = model.rotation.y;
@@ -1216,11 +1205,8 @@ export class SceneManager {
       if (this.scene) {
         this.scene.add(schematicGroup);
         this.schematic2DOverlays.set(itemId, schematicGroup);
-        console.log(`  ✅ Schematic added for Item ${itemId}`);
       }
     });
-
-    console.log(`📐 Total schematics created: ${this.schematic2DOverlays.size}`);
   }
 
   /**
@@ -1240,9 +1226,13 @@ export class SceneManager {
 
     const schematicType = this.getSchematicType(model);
 
-    // Get the bounding box center for positioning
+    // Get the bounding box center for positioning (excluding door shadow)
+    const shadow = model.getObjectByName('doorSwingShadow');
+    const shadowWasVisible = shadow?.visible ?? false;
+    if (shadow) shadow.visible = false;
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
+    if (shadow) shadow.visible = shadowWasVisible;
 
     const width = dimensions.width;
     const depth = dimensions.depth;
@@ -1253,10 +1243,22 @@ export class SceneManager {
     schematicGroup.name = `Schematic2D_${itemId}`;
 
     // Create schematic based on object type
-    this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+    // Door schematics need special handling with doorConfig and collision detection
+    if (schematicType === 'door') {
+      const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+      const hasCollision = this.checkDoorSwingCollision(itemId);
+      this.createDoorSchematic(schematicGroup, width, depth, schematicHeight, doorConfig, hasCollision);
+    } else {
+      this.createSchematicByType(schematicType, schematicGroup, width, depth, schematicHeight);
+    }
 
-    // Position and rotate
-    schematicGroup.position.set(center.x, 0, center.z);
+    // Position the schematic
+    // For doors, use model.position to match the 3D shadow positioning
+    if (schematicType === 'door') {
+      schematicGroup.position.set(model.position.x, 0, model.position.z);
+    } else {
+      schematicGroup.position.set(center.x, 0, center.z);
+    }
     schematicGroup.rotation.y = model.rotation.y;
 
     // Add userData to link schematic to its bathroom item
@@ -1268,7 +1270,6 @@ export class SceneManager {
     if (this.scene) {
       this.scene.add(schematicGroup);
       this.schematic2DOverlays.set(itemId, schematicGroup);
-      console.log(`📐 Created schematic for newly added Item ${itemId}`);
     }
   }
 
@@ -1292,8 +1293,321 @@ export class SceneManager {
         }
       });
       this.schematic2DOverlays.delete(itemId);
-      console.log(`🗑️ Removed schematic for Item ${itemId}`);
     }
+  }
+
+  /**
+   * Update door configuration and refresh the schematic
+   * Called when user changes door swing direction or hinge side
+   * @param itemId - The door item's ID
+   * @param doorConfig - The new door configuration
+   * @param isSelected - Whether the door is currently selected (controls outline highlighting)
+   * @returns The position shift applied to the model (for syncing item.position)
+   */
+  public updateDoorConfig(itemId: number, doorConfig: DoorConfig, isSelected: boolean = true): { shiftX: number; shiftZ: number } {
+    const model = this.existingItems.get(itemId);
+    if (!model) {
+      console.warn(`⚠️ Model not found for item ${itemId} when updating door config`);
+      return { shiftX: 0, shiftZ: 0 };
+    }
+
+    // Get the previous hinge side to detect changes
+    const prevDoorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+    const hingeChanged = prevDoorConfig.hingeSide !== doorConfig.hingeSide;
+
+    // Update the model's userData with the new door config
+    model.userData.doorConfig = doorConfig;
+
+    // Track the position shift for return value
+    let shiftX = 0;
+    let shiftZ = 0;
+
+    // Flip the 3D model based on hinge side
+    // Default models have hinge on the LEFT, so flip for RIGHT hinge
+    if (hingeChanged) {
+      // Temporarily hide shadow to exclude from bounding box
+      const existingShadow = model.getObjectByName('doorSwingShadow');
+      const shadowWasVisible = existingShadow?.visible ?? false;
+      if (existingShadow) existingShadow.visible = false;
+
+      // Temporarily hide warning sprite to exclude from bounding box
+      const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+      const warningWasVisible = existingWarning?.visible ?? false;
+      if (existingWarning) existingWarning.visible = false;
+
+      // Get bounding box center before flip
+      const boxBefore = new THREE.Box3().setFromObject(model);
+      const centerBefore = new THREE.Vector3();
+      boxBefore.getCenter(centerBefore);
+
+      // Apply the flip
+      const flipX = doorConfig.hingeSide === 'right' ? -1 : 1;
+      model.scale.x = Math.abs(model.scale.x) * flipX;
+
+      // Get bounding box center after flip
+      const boxAfter = new THREE.Box3().setFromObject(model);
+      const centerAfter = new THREE.Vector3();
+      boxAfter.getCenter(centerAfter);
+
+      // Restore shadow visibility to its original state
+      if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+      // Restore warning sprite visibility to its original state
+      if (existingWarning) existingWarning.visible = warningWasVisible;
+
+      // Compensate for the position shift caused by flipping
+      shiftX = centerBefore.x - centerAfter.x;
+      shiftZ = centerBefore.z - centerAfter.z;
+      model.position.x += shiftX;
+      model.position.z += shiftZ;
+
+      console.log('🚪 Door hinge changed, position shift:', { shiftX, shiftZ });
+    }
+
+    // If in 2D mode, recreate the schematic with the new config
+    if (this.viewMode === '2d') {
+      // Remove existing schematic
+      this.removeSchematicForItem(itemId);
+      // Create new schematic with updated config
+      this.createSchematicForItem(itemId);
+    }
+
+    // Update 3D swing shadow with collision state
+    const hasCollision = this.checkDoorSwingCollision(itemId);
+    this.updateDoorSwingShadow(model, doorConfig, hasCollision);
+
+    // Ensure shadow is visible in 3D mode
+    if (this.viewMode === '3d') {
+      const shadow = model.getObjectByName('doorSwingShadow');
+      if (shadow) {
+        shadow.visible = true;
+      }
+    }
+
+    // Re-highlight the door to include the new shadow mesh in the outline pass
+    // Only highlight if the door is currently selected to avoid stale outlines
+    if (isSelected) {
+      highlightObject(model, true);
+    }
+
+    // Return the shift so the caller can update item.position
+    return { shiftX, shiftZ };
+  }
+
+  /**
+   * Create a warning sprite for door collision indication
+   * Used by both 3D door swing shadow and 2D door schematic
+   *
+   * @param iconX - X position of the sprite
+   * @param iconY - Y position of the sprite
+   * @param iconZ - Z position of the sprite
+   * @param options - Configuration options
+   * @returns Configured THREE.Sprite with warning icon
+   */
+  private createDoorCollisionWarningSprite(
+    iconX: number,
+    iconY: number,
+    iconZ: number,
+    options: {
+      name: string;
+      visible?: boolean;
+      renderOrder?: number;
+    }
+  ): THREE.Sprite {
+    // Create warning icon using canvas
+    const canvas = document.createElement('canvas');
+    const size = 128;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    if (ctx) {
+      // Draw red circle background
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2 - 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw white border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Draw warning icon (⚠)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⚠', size / 2, size / 2 + 2);
+    }
+
+    // Create sprite
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false
+    });
+    const warningSprite = new THREE.Sprite(spriteMaterial);
+    warningSprite.name = options.name;
+    warningSprite.position.set(iconX, iconY, iconZ);
+    warningSprite.scale.set(20, 20, 1); // 20cm size
+
+    if (options.visible !== undefined) {
+      warningSprite.visible = options.visible;
+    }
+
+    if (options.renderOrder !== undefined) {
+      warningSprite.renderOrder = options.renderOrder;
+    }
+
+    return warningSprite;
+  }
+
+  /**
+   * Create or update the 3D door swing shadow (arc on floor showing door path)
+   */
+  private updateDoorSwingShadow(model: THREE.Object3D, doorConfig: DoorConfig, hasCollision: boolean = false): void {
+    // Remove existing shadow if any
+    const existingShadow = model.getObjectByName('doorSwingShadow');
+    if (existingShadow) {
+      model.remove(existingShadow);
+      if (existingShadow instanceof THREE.Mesh) {
+        existingShadow.geometry.dispose();
+        if (existingShadow.material instanceof THREE.Material) {
+          existingShadow.material.dispose();
+        }
+      }
+    }
+
+    const { swingDirection } = doorConfig;
+
+    // Get door dimensions from userData (original dimensions, not affected by shadow)
+    const dimensions = model.userData.dimensions || model.userData.model?.dimensions;
+    let doorWidth: number;
+    let doorDepth: number;
+
+    if (dimensions) {
+      doorWidth = dimensions.width;
+      doorDepth = dimensions.depth;
+    } else {
+      // Fallback to bounding box (shadow already removed above)
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      doorWidth = Math.max(size.x, size.z);
+      doorDepth = Math.min(size.x, size.z);
+    }
+
+    // Arc radius equals door width
+    const arcRadius = doorWidth;
+
+    // Calculate arc angles based on swing direction
+    // Since the shadow is a child of the model, when model.scale.x = -1 (right hinge),
+    // the shadow gets mirrored automatically. So we always use LEFT hinge angles
+    // and let the model's scale handle the mirroring for right hinge.
+    let startAngle: number;
+    let endAngle: number;
+
+    if (swingDirection === 'inward') {
+      startAngle = 0;
+      endAngle = -Math.PI / 2;
+    } else {
+      startAngle = 0;
+      endAngle = Math.PI / 2;
+    }
+
+    // Create a filled arc sector (pie shape) using THREE.Shape
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0); // Start at center (hinge point)
+
+    // Draw arc with high segment count for smooth curve
+    const segments = 64;
+    const angleRange = endAngle - startAngle;
+    for (let i = 0; i <= segments; i++) {
+      const angle = startAngle + (i / segments) * angleRange;
+      const x = arcRadius * Math.cos(angle);
+      const y = arcRadius * Math.sin(angle);
+      shape.lineTo(x, y);
+    }
+    shape.lineTo(0, 0); // Close the shape back to center
+
+    // Create geometry and mesh
+    const geometry = new THREE.ShapeGeometry(shape);
+    // Use red color when there's a collision, dark gray otherwise
+    const shadowColor = hasCollision ? 0xff0000 : 0x222222;
+    const material = new THREE.MeshBasicMaterial({
+      color: shadowColor,
+      transparent: true,
+      opacity: hasCollision ? 0.6 : 0.5, // Slightly more opaque when collision
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      // Polygon offset prevents z-fighting with floor (especially L-shaped ExtrudeGeometry floors)
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
+
+    const shadowMesh = new THREE.Mesh(geometry, material);
+    shadowMesh.name = 'doorSwingShadow';
+    shadowMesh.rotation.x = -Math.PI / 2; // Lay flat on floor
+    shadowMesh.renderOrder = 1; // Render after floor to prevent z-fighting
+
+    // Position at hinge location - always use left hinge position since model flip handles right hinge
+    const hingeX = -doorWidth / 2;
+    const hingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
+
+    // Y position slightly above floor to prevent z-fighting (especially with L-shaped rooms)
+    shadowMesh.position.set(hingeX, 1, hingeZ);
+
+    // Only visible in 3D mode
+    shadowMesh.visible = this.viewMode === '3d';
+
+    model.add(shadowMesh);
+
+    // Remove existing warning icon if any
+    const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+    if (existingWarning) {
+      model.remove(existingWarning);
+      if (existingWarning instanceof THREE.Sprite) {
+        existingWarning.material.map?.dispose();
+        existingWarning.material.dispose();
+      }
+    }
+
+    // Add warning icon if there's a collision
+    if (hasCollision) {
+      // Calculate position at the middle of the arc (45 degrees)
+      const midAngle = (startAngle + endAngle) / 2;
+      const iconDistance = arcRadius * 0.6; // Position at 60% of arc radius
+      const iconX = hingeX + iconDistance * Math.cos(midAngle);
+      const iconZ = hingeZ - iconDistance * Math.sin(midAngle);
+
+      const warningSprite = this.createDoorCollisionWarningSprite(iconX, 15, iconZ, {
+        name: 'doorCollisionWarning3D',
+        visible: this.viewMode === '3d'
+      });
+      model.add(warningSprite);
+    }
+  }
+
+  /**
+   * Toggle visibility of all door swing shadows
+   * Used when switching between 2D and 3D modes
+   */
+  private toggleDoorSwingShadows(visible: boolean): void {
+    this.existingItems.forEach((model) => {
+      const shadow = model.getObjectByName('doorSwingShadow');
+      if (shadow) {
+        shadow.visible = visible;
+      }
+      // Also toggle the warning icon visibility
+      const warningIcon = model.getObjectByName('doorCollisionWarning3D');
+      if (warningIcon) {
+        warningIcon.visible = visible;
+      }
+    });
   }
 
   /**
@@ -1553,6 +1867,423 @@ export class SceneManager {
   }
 
   /**
+   * Create door schematic with swing arc
+   * Shows a door panel and a 90-degree arc indicating the swing direction
+   *
+   * @param group - The THREE.Group to add schematic elements to
+   * @param width - Door width (in cm)
+   * @param depth - Door depth/thickness (in cm)
+   * @param height - Y position for the schematic
+   * @param doorConfig - Door configuration (hingeSide and swingDirection)
+   * @param hasCollision - Whether there's an object collision in the swing path
+   */
+  private createDoorSchematic(
+    group: THREE.Group,
+    width: number,
+    depth: number,
+    height: number,
+    doorConfig: DoorConfig = DEFAULT_DOOR_CONFIG,
+    hasCollision: boolean = false
+  ): void {
+    const { hingeSide, swingDirection } = doorConfig;
+
+    // Door panel thickness for visualization (thin line)
+    const panelThickness = Math.max(depth, 5); // At least 5cm thick for visibility
+
+    // Colors - arc turns red when there's a collision
+    const doorColor = 0x8B4513; // Saddle brown for door
+    const arcColor = hasCollision ? 0xff0000 : 0x4169e1; // Red for collision, Royal blue otherwise
+    const hingeColor = 0x333333; // Dark gray for hinge indicator
+
+    // Create door panel (thin rectangle along one edge of the door frame)
+    const panelGeometry = new THREE.PlaneGeometry(width, panelThickness);
+    const panelMaterial = new THREE.MeshBasicMaterial({
+      color: doorColor,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+      depthWrite: false
+    });
+    const doorPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    doorPanel.rotation.x = -Math.PI / 2; // Lay flat
+    doorPanel.position.y = height;
+    doorPanel.renderOrder = 1000;
+
+    // Position door panel based on swing direction
+    // When door is closed, it sits at the wall edge where the hinge is
+    // inward: panel is at the inside edge of depth (room side)
+    // outward: panel is at the outside edge of depth (hallway side)
+    const panelZOffset = swingDirection === 'inward' ? depth / 2 - panelThickness / 2 : -depth / 2 + panelThickness / 2;
+    doorPanel.position.z = panelZOffset;
+
+    group.add(doorPanel);
+
+    // Create the 90-degree swing arc
+    const arcRadius = width; // Arc radius equals door width
+    const arcSegments = 32;
+
+    // Determine arc start and end angles based on hinge side and swing direction
+    let startAngle: number;
+    let endAngle: number;
+
+    // Arc angles are measured from the positive X-axis (right side)
+    // We need to calculate based on:
+    // - hingeSide: determines which side of the door frame the hinge is on
+    // - swingDirection: determines if arc sweeps into room (inward) or out (outward)
+
+    if (hingeSide === 'right') {
+      // Hinge on right side of door
+      if (swingDirection === 'inward') {
+        startAngle = Math.PI; // Closed position (pointing left, along wall)
+        endAngle = Math.PI * 1.5; // Open position (into room, 270°)
+      } else {
+        // Door swings outward
+        startAngle = Math.PI; // Closed position
+        endAngle = Math.PI / 2; // Open position (out of room, 90°)
+      }
+    } else {
+      // Hinge on left side of door
+      if (swingDirection === 'inward') {
+        startAngle = 0; // Closed position (pointing right, along wall)
+        endAngle = -Math.PI / 2; // Open position (into room, -90°)
+      } else {
+        // Door swings outward
+        startAngle = 0; // Closed position
+        endAngle = Math.PI / 2; // Open position (out of room, 90°)
+      }
+    }
+
+    // Create arc curve
+    const arcCurve = new THREE.EllipseCurve(
+      0, 0, // Center x, y (will be positioned later)
+      arcRadius, arcRadius, // X and Y radius (same for circular arc)
+      startAngle, endAngle, // Start and end angles
+      startAngle > endAngle, // Clockwise if start > end
+      0 // Rotation
+    );
+
+    const arcPoints = arcCurve.getPoints(arcSegments);
+    const arcGeometry = new THREE.BufferGeometry().setFromPoints(arcPoints);
+    const arcMaterial = new THREE.LineBasicMaterial({
+      color: arcColor,
+      linewidth: 2,
+      transparent: true,
+      opacity: 0.8,
+      depthTest: false,
+      depthWrite: false
+    });
+    const arcLine = new THREE.Line(arcGeometry, arcMaterial);
+    arcLine.rotation.x = -Math.PI / 2; // Lay flat on floor
+    arcLine.position.y = height;
+    arcLine.renderOrder = 1001;
+
+    // Position arc center at the hinge location
+    const hingeX = hingeSide === 'right' ? width / 2 : -width / 2;
+    const hingeZ = swingDirection === 'inward' ? depth / 2 : -depth / 2;
+    arcLine.position.x = hingeX;
+    arcLine.position.z = hingeZ;
+
+    group.add(arcLine);
+
+    // Add small circle at hinge point
+    const hingeGeometry = new THREE.CircleGeometry(4, 16); // 4cm radius
+    const hingeMaterial = new THREE.MeshBasicMaterial({
+      color: hingeColor,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      depthTest: false,
+      depthWrite: false
+    });
+    const hingeDot = new THREE.Mesh(hingeGeometry, hingeMaterial);
+    hingeDot.rotation.x = -Math.PI / 2;
+    hingeDot.position.set(hingeX, height + 1, panelZOffset);
+    hingeDot.renderOrder = 1002;
+
+    group.add(hingeDot);
+
+    // Add a dashed line showing the door in open position
+    // Get the arc's end point directly from the curve points
+    const lastArcPoint = arcPoints[arcPoints.length - 1];
+    // Arc points are 2D (x, y), after rotation.x = -PI/2 they become (x, 0, -y) relative to arc position
+    // So the 3D endpoint is: (hingeX + lastArcPoint.x, height, hingeZ - lastArcPoint.y)
+    const openDoorEndX = hingeX + lastArcPoint.x;
+    const openDoorEndZ = hingeZ - lastArcPoint.y;
+
+    const openDoorPoints = [
+      new THREE.Vector3(hingeX, height, hingeZ),
+      new THREE.Vector3(openDoorEndX, height, openDoorEndZ)
+    ];
+
+    const openDoorGeometry = new THREE.BufferGeometry().setFromPoints(openDoorPoints);
+    const openDoorMaterial = new THREE.LineDashedMaterial({
+      color: doorColor,
+      linewidth: 1,
+      dashSize: 10,
+      gapSize: 5,
+      transparent: true,
+      opacity: 0.6,
+      depthTest: false,
+      depthWrite: false
+    });
+    const openDoorLine = new THREE.Line(openDoorGeometry, openDoorMaterial);
+    openDoorLine.computeLineDistances(); // Required for dashed lines
+    openDoorLine.renderOrder = 999;
+
+    group.add(openDoorLine);
+
+    // Add border around the door frame area
+    const framePoints = [
+      new THREE.Vector3(-width / 2, height, -depth / 2),
+      new THREE.Vector3(width / 2, height, -depth / 2),
+      new THREE.Vector3(width / 2, height, depth / 2),
+      new THREE.Vector3(-width / 2, height, depth / 2),
+      new THREE.Vector3(-width / 2, height, -depth / 2) // Close the rectangle
+    ];
+    const frameGeometry = new THREE.BufferGeometry().setFromPoints(framePoints);
+    const frameMaterial = new THREE.LineBasicMaterial({
+      color: 0x333333,
+      linewidth: 1,
+      transparent: true,
+      opacity: 0.5,
+      depthTest: false,
+      depthWrite: false
+    });
+    const frameLine = new THREE.Line(frameGeometry, frameMaterial);
+    frameLine.renderOrder = 998;
+
+    group.add(frameLine);
+
+    // Add warning icon if there's a collision
+    if (hasCollision) {
+      // Calculate position at the middle of the arc (45 degrees from start)
+      const midAngle = (startAngle + endAngle) / 2;
+      const iconDistance = arcRadius * 0.6; // Position at 60% of arc radius
+      const iconX = hingeX + iconDistance * Math.cos(midAngle);
+      const iconZ = hingeZ - iconDistance * Math.sin(midAngle); // Negative because of coordinate system
+
+      const warningSprite = this.createDoorCollisionWarningSprite(iconX, height + 5, iconZ, {
+        name: 'doorCollisionWarning',
+        renderOrder: 1003
+      });
+      group.add(warningSprite);
+    }
+  }
+
+  /**
+   * Check if any object collides with a door's swing path
+   * The swing path is a 90-degree arc sector from the hinge point
+   *
+   * @param doorId - The door item's ID
+   * @returns true if any object is in the door's swing path
+   */
+  public checkDoorSwingCollision(doorId: number): boolean {
+    const doorModel = this.existingItems.get(doorId);
+    if (!doorModel) return false;
+
+    const doorConfig = doorModel.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+    const { swingDirection } = doorConfig;
+
+
+    // Get door dimensions from userData (not bounding box, which includes shadow)
+    const dimensions = doorModel.userData.dimensions || doorModel.userData.model?.dimensions;
+    let doorWidth: number;
+    let doorDepth: number;
+    let doorHeight: number;
+
+    if (dimensions) {
+      doorWidth = dimensions.width;
+      doorDepth = dimensions.depth;
+      doorHeight = dimensions.height;
+    } else {
+      // Fallback: temporarily hide shadow to get accurate bounding box
+      const shadow = doorModel.getObjectByName('doorSwingShadow');
+      const warningIcon = doorModel.getObjectByName('doorCollisionWarning3D');
+      const shadowWasVisible = shadow?.visible ?? false;
+      const warningWasVisible = warningIcon?.visible ?? false;
+      if (shadow) shadow.visible = false;
+      if (warningIcon) warningIcon.visible = false;
+
+      const doorBox = new THREE.Box3().setFromObject(doorModel);
+      const doorSize = new THREE.Vector3();
+      doorBox.getSize(doorSize);
+      doorWidth = Math.max(doorSize.x, doorSize.z);
+      doorDepth = Math.min(doorSize.x, doorSize.z);
+      doorHeight = doorSize.y;
+
+      // Restore visibility
+      if (shadow) shadow.visible = shadowWasVisible;
+      if (warningIcon) warningIcon.visible = warningWasVisible;
+    }
+
+    // Calculate door's swing vertical range (from floor to top of door)
+    // The swing arc sweeps from Y=0 (floor) to Y=doorHeight
+    const doorSwingMinY = 0;
+    const doorSwingMaxY = doorHeight;
+
+    // Calculate hinge position in door's local coordinates
+    // The 3D shadow always uses left hinge position (-doorWidth/2) and relies on
+    // model.scale.x = -1 to flip for right hinge. We match this behavior.
+    const localHingeX = -doorWidth / 2; // Always use left hinge (same as 3D shadow)
+    const localHingeZ = swingDirection === 'inward' ? doorDepth / 2 : -doorDepth / 2;
+
+    // Arc radius is the door width
+    const arcRadius = doorWidth;
+
+
+    // Calculate arc angle range in door's LOCAL coordinate system
+    // Always use left hinge angles (same as 3D shadow) - scale.x=-1 handles right hinge
+    let startAngle: number;
+    let endAngle: number;
+
+    if (swingDirection === 'inward') {
+      startAngle = 0;
+      endAngle = -Math.PI / 2;
+    } else {
+      startAngle = 0;
+      endAngle = Math.PI / 2;
+    }
+
+    // Normalize angles to [0, 2*PI)
+    const normalizeAngle = (angle: number): number => {
+      while (angle < 0) angle += Math.PI * 2;
+      while (angle >= Math.PI * 2) angle -= Math.PI * 2;
+      return angle;
+    };
+
+    const normStart = normalizeAngle(startAngle);
+    const normEnd = normalizeAngle(endAngle);
+
+    // Check all other objects in the scene using arc sampling
+    // Arc sampling traces points along the arc using localToWorld transform,
+    // which properly handles all door transforms including scale.x = -1 for right hinge doors
+    for (const [itemId, model] of this.existingItems) {
+      // Skip the door itself
+      if (itemId === doorId) continue;
+
+      // Skip non-bathroom items
+      if (!model.userData.isBathroomItem) continue;
+
+      // Skip other doors (they don't collide with door swing paths)
+      const itemType = model.userData.type;
+      if (itemType === 'Door' || itemType === 'WindowAndDoor') continue;
+
+      // Get object's bounding box from actual mesh positions
+      // IMPORTANT: Always use setFromObject() instead of calculating from dimensions,
+      // because wall-mounted items (toilets, sinks, vanities) have their pivot at the wall,
+      // not at the center. Dimension-based calculation incorrectly assumes center positioning.
+      const objBox = new THREE.Box3().setFromObject(model);
+      const objMin = objBox.min;
+      const objMax = objBox.max;
+
+      // Arc sampling: trace points along the arc and check if they're inside the object
+      // This uses the same localToWorld transform as the visual arc, ensuring accuracy
+      const arcSamples = 30; // More samples for better accuracy
+      const radiusSamples = [1.0, 0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.3]; // Sample at different radii
+      const tolerance = 2; // 2cm tolerance for edge detection
+
+      // Expand bounding box by tolerance to catch edge cases
+      const checkMinX = objMin.x - tolerance;
+      const checkMaxX = objMax.x + tolerance;
+      const checkMinZ = objMin.z - tolerance;
+      const checkMaxZ = objMax.z + tolerance;
+
+      // Check Y-range overlap: object must be within door's swing vertical range
+      // This prevents false positives for tall wall-mounted items above the door height
+      const objMinY = objMin.y - tolerance;
+      const objMaxY = objMax.y + tolerance;
+
+      // Check if object's Y range overlaps with door's swing Y range
+      // No overlap means the object is entirely above or below the door's swing path
+      const yOverlap = objMaxY > doorSwingMinY && objMinY < doorSwingMaxY;
+      if (!yOverlap) {
+        // Object is entirely above the door height or below floor - no collision possible
+        continue;
+      }
+
+      // Calculate the actual 90-degree arc range
+      const minAngle = Math.min(normStart, normEnd);
+      const maxAngle = Math.max(normStart, normEnd);
+      const arcSpan = maxAngle - minAngle;
+
+      // Determine actual start and step for sampling
+      let sampleStart: number;
+      let angleRange: number;
+
+      if (arcSpan <= Math.PI) {
+        // Normal case: arc from minAngle to maxAngle
+        sampleStart = minAngle;
+        angleRange = arcSpan;
+      } else {
+        // Wrap-around case: arc goes through 0/2PI
+        sampleStart = maxAngle;
+        angleRange = (Math.PI * 2) - arcSpan;
+      }
+
+      const angleStep = angleRange / arcSamples;
+
+      // Pre-allocate vectors outside loops to avoid allocations per iteration
+      const localArcPoint = new THREE.Vector3();
+      const worldArcPoint = new THREE.Vector3();
+
+      // Sample at multiple radii for better coverage
+      for (const radiusFactor of radiusSamples) {
+        const sampleRadius = arcRadius * radiusFactor;
+
+        for (let i = 0; i <= arcSamples; i++) {
+          let sampleAngle = sampleStart + i * angleStep;
+          // Normalize angle to [0, 2PI)
+          while (sampleAngle >= Math.PI * 2) sampleAngle -= Math.PI * 2;
+
+          // Compute arc point in door's local coordinates
+          // (with -sin for Z because the visual arc maps Y to -Z via rotation.x = -PI/2)
+          const localArcX = sampleRadius * Math.cos(sampleAngle);
+          const localArcZ = -sampleRadius * Math.sin(sampleAngle);
+
+          // Transform to world coordinates using localToWorld
+          // This properly accounts for the model's scale (including scale.x = -1 for right hinge)
+          // Reuse pre-allocated vectors to avoid allocations per iteration
+          localArcPoint.set(localHingeX + localArcX, 0, localHingeZ + localArcZ);
+          worldArcPoint.copy(localArcPoint);
+          doorModel.localToWorld(worldArcPoint);
+
+          if (worldArcPoint.x >= checkMinX && worldArcPoint.x <= checkMaxX &&
+              worldArcPoint.z >= checkMinZ && worldArcPoint.z <= checkMaxZ) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Update all door schematics to reflect current collision states
+   * Called when objects are moved or placed
+   */
+  public updateAllDoorCollisions(): void {
+    // Find all doors and update their visuals based on collision state
+    for (const [itemId, model] of this.existingItems) {
+      const schematicType = this.getSchematicType(model);
+      if (schematicType === 'door') {
+        const hasCollision = this.checkDoorSwingCollision(itemId);
+        const doorConfig = model.userData.doorConfig || DEFAULT_DOOR_CONFIG;
+
+        if (this.viewMode === '2d') {
+          // Remove and recreate the schematic with updated collision state
+          this.removeSchematicForItem(itemId);
+          this.createSchematicForItem(itemId);
+        } else {
+          // In 3D mode, update the door swing shadow
+          this.updateDoorSwingShadow(model, doorConfig, hasCollision);
+        }
+      }
+    }
+  }
+
+  /**
    * Add a label/icon to the schematic (uses a sprite for visibility)
    */
   private addSchematicLabel(group: THREE.Group, icon: string, width: number, depth: number, height: number): void {
@@ -1614,15 +2345,27 @@ export class SceneManager {
       // Ensure matrix is up to date
       model.updateMatrixWorld(true);
 
-      // Recalculate position from bounding box to ensure correct centering
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
+      // Check if this is a door - doors use model.position for consistency with 3D shadow
+      const schematicType = this.getSchematicType(model);
 
-      // Update position immediately
-      schematic.position.set(center.x, 0, center.z);
+      if (schematicType === 'door') {
+        // For doors, use model.position to match the 3D shadow positioning
+        schematic.position.set(model.position.x, 0, model.position.z);
+      } else {
+        // For other objects, use bounding box center (excluding door shadow)
+        const shadow = model.getObjectByName('doorSwingShadow');
+        const shadowWasVisible = shadow?.visible ?? false;
+        if (shadow) shadow.visible = false;
+
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+
+        if (shadow) shadow.visible = shadowWasVisible;
+
+        schematic.position.set(center.x, 0, center.z);
+      }
+
       schematic.rotation.y = model.rotation.y;
-
-      // console.log(`🔄 Updated schematic ${itemId} to (${center.x.toFixed(1)}, ${center.z.toFixed(1)})`);
     }
   }
 
@@ -1683,8 +2426,6 @@ export class SceneManager {
    * Remove all 2D schematic overlays when switching to 3D view
    */
   private remove2DSchematicOverlays(): void {
-    console.log('🗑️ Removing 2D schematic overlays...');
-
     this.schematic2DOverlays.forEach((overlay, _itemId) => {
       if (this.scene) {
         this.scene.remove(overlay);
@@ -1748,7 +2489,6 @@ export class SceneManager {
     // ✅ CRITICAL FIX: Ensure orientation data is maintained in userData
     if (!model.userData.orientation && item.model?.orientation) {
       model.userData.orientation = item.model.orientation;
-      console.log(`✅ Restored orientation data to existing model ${item.id}:`, model.userData.orientation);
     }
 
     // ✅ Also ensure other critical userData is maintained
@@ -1760,20 +2500,132 @@ export class SceneManager {
       model.userData.model = item.model;
     }
 
+    // Update door configuration if item has it and apply 3D flip
+    if (item.doorConfig) {
+      model.userData.doorConfig = item.doorConfig;
+
+      // Flip the 3D model based on hinge side
+      // Default models have hinge on LEFT, so flip for RIGHT hinge
+      const flipX = item.doorConfig.hingeSide === 'right' ? -1 : 1;
+      const currentFlipX = model.scale.x < 0 ? -1 : 1;
+
+      // Only compensate position if the flip state actually changes
+      if (currentFlipX !== flipX) {
+        // Temporarily hide shadow to exclude from bounding box
+        const existingShadow = model.getObjectByName('doorSwingShadow');
+        const shadowWasVisible = existingShadow?.visible ?? false;
+        if (existingShadow) existingShadow.visible = false;
+
+        // Temporarily hide warning sprite to exclude from bounding box
+        const existingWarning = model.getObjectByName('doorCollisionWarning3D');
+        const warningWasVisible = existingWarning?.visible ?? false;
+        if (existingWarning) existingWarning.visible = false;
+
+        // Get bounding box center before flip
+        const boxBefore = new THREE.Box3().setFromObject(model);
+        const centerBefore = new THREE.Vector3();
+        boxBefore.getCenter(centerBefore);
+
+        // Apply the flip
+        model.scale.x = Math.abs(model.scale.x) * flipX;
+
+        // Get bounding box center after flip
+        const boxAfter = new THREE.Box3().setFromObject(model);
+        const centerAfter = new THREE.Vector3();
+        boxAfter.getCenter(centerAfter);
+
+        // Restore shadow visibility to its original state
+        if (existingShadow) existingShadow.visible = shadowWasVisible;
+
+        // Restore warning sprite visibility to its original state
+        if (existingWarning) existingWarning.visible = warningWasVisible;
+
+        // Compensate for the position shift caused by flipping
+        const shiftX = centerBefore.x - centerAfter.x;
+        const shiftZ = centerBefore.z - centerAfter.z;
+        model.position.x += shiftX;
+        model.position.z += shiftZ;
+      } else {
+        model.scale.x = Math.abs(model.scale.x) * flipX;
+      }
+
+      // Update 3D swing shadow for door with collision state
+      const hasCollision = this.checkDoorSwingCollision(item.id);
+      this.updateDoorSwingShadow(model, item.doorConfig, hasCollision);
+    }
+
     // Update schematic position if in 2D mode
     if (this.viewMode === '2d') {
       this.updateSchematicPosition(item.id);
     }
+  }
 
-    console.log(`✅ Updated item ${item.id} properties with preserved orientation:`, {
-      position: model.position,
-      rotation: model.rotation.y,
-      scale: model.scale.x,
-      orientation: model.userData.orientation
+  // Helper method to properly dispose of a single material and its textures
+  private disposeMaterial(material: THREE.Material): void {
+    // Dispose all texture maps on the material
+    const textureProps = [
+      'map', 'lightMap', 'bumpMap', 'normalMap', 'specularMap',
+      'envMap', 'alphaMap', 'aoMap', 'displacementMap',
+      'emissiveMap', 'gradientMap', 'metalnessMap', 'roughnessMap'
+    ];
+
+    for (const prop of textureProps) {
+      const texture = (material as any)[prop];
+      if (texture instanceof THREE.Texture) {
+        texture.dispose();
+      }
+    }
+
+    // Dispose the material itself
+    material.dispose();
+  }
+
+  // Helper method to dispose a single mesh (geometry + material + textures)
+  private disposeMesh(mesh: THREE.Mesh): void {
+    if (mesh.geometry) {
+      mesh.geometry.dispose();
+    }
+    if (mesh.material) {
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat) => {
+          this.disposeMaterial(mat);
+        });
+      } else {
+        this.disposeMaterial(mesh.material);
+      }
+    }
+  }
+
+  // Helper method to dispose a group and all its children
+  private disposeGroup(group: THREE.Group | THREE.Object3D): void {
+    group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        this.disposeMesh(child);
+      }
+      if (child instanceof THREE.Line || child instanceof THREE.LineSegments) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((mat) => {
+              this.disposeMaterial(mat);
+            });
+          } else {
+            this.disposeMaterial(child.material);
+          }
+        }
+      }
+      if (child instanceof THREE.Sprite) {
+        if (child.material.map) {
+          child.material.map.dispose();
+        }
+        child.material.dispose();
+      }
     });
   }
 
-  // Helper method to properly dispose of models
+  // Helper method to properly dispose of models (geometry, materials, and textures)
   private disposeModel(model: THREE.Object3D): void {
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -1782,11 +2634,35 @@ export class SceneManager {
         }
         if (child.material) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(material => material.dispose());
+            child.material.forEach((material) => {
+              this.disposeMaterial(material);
+            });
           } else {
-            child.material.dispose();
+            this.disposeMaterial(child.material);
           }
         }
+      }
+      // Also handle Line and LineSegments (used in grids/schematics)
+      if (child instanceof THREE.Line || child instanceof THREE.LineSegments) {
+        if (child.geometry) {
+          child.geometry.dispose();
+        }
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach((material) => {
+              this.disposeMaterial(material);
+            });
+          } else {
+            this.disposeMaterial(child.material);
+          }
+        }
+      }
+      // Handle Sprites (used in labels)
+      if (child instanceof THREE.Sprite) {
+        if (child.material.map) {
+          child.material.map.dispose();
+        }
+        child.material.dispose();
       }
     });
   }
@@ -1794,19 +2670,13 @@ export class SceneManager {
   // Add method to add single item (for real-time adding)
   // Method to add single item (for real-time adding from Planner.vue)
   async addSingleItem(item: BathroomItem): Promise<void> {
-
-    console.log('addSingleItem called with item:', item);
-
     if (this.existingItems.has(item.id)) {
-      console.log(`Item ${item.id} already exists, updating instead`);
       const existingModel = this.existingItems.get(item.id);
       if (existingModel) {
         this.updateExistingModel(existingModel, item);
       }
       return;
     }
-
-    console.log(`➕ Adding single item ${item.id} to scene`);
 
     try {
       const model = await createModel(
@@ -1835,20 +2705,43 @@ export class SceneManager {
           model.userData.model = item.model;
         }
 
-        console.log(`✅ Stored orientation in addSingleItem:`, model.userData.orientation);
-        console.log(`✅ All userData stored:`, {
-          itemId: model.userData.itemId,
-          type: model.userData.type,
-          sku: model.userData.sku,
-          orientation: model.userData.orientation
-        });
+        // Store door configuration for door items and apply 3D flip if needed
+        if (item.doorConfig) {
+          model.userData.doorConfig = item.doorConfig;
+          // Flip the 3D model based on hinge side (default model has hinge on LEFT, flip for RIGHT)
+          if (item.doorConfig.hingeSide === 'right') {
+            // Get bounding box center before flip
+            const boxBefore = new THREE.Box3().setFromObject(model);
+            const centerBefore = new THREE.Vector3();
+            boxBefore.getCenter(centerBefore);
 
-        this.debugModelVisibility(model, item);
+            // Apply the flip
+            model.scale.x = Math.abs(model.scale.x) * -1;
+
+            // Get bounding box center after flip
+            const boxAfter = new THREE.Box3().setFromObject(model);
+            const centerAfter = new THREE.Vector3();
+            boxAfter.getCenter(centerAfter);
+
+            // Compensate for the position shift caused by flipping
+            const shiftX = centerBefore.x - centerAfter.x;
+            const shiftZ = centerBefore.z - centerAfter.z;
+            model.position.x += shiftX;
+            model.position.z += shiftZ;
+          }
+
+          // Add to existingItems early so checkDoorSwingCollision can find this door
+          this.existingItems.set(item.id, model);
+
+          // Add 3D swing shadow for door with collision state
+          const hasCollision = this.checkDoorSwingCollision(item.id);
+          this.updateDoorSwingShadow(model, item.doorConfig, hasCollision);
+        }
+
         this.enhanceModelMaterials(model);
 
         this.bathroomItemsGroup.add(model);
         this.existingItems.set(item.id, model);
-        console.log(`✅ Successfully added item ${item.id}`);
 
         // Create schematic if in 2D mode
         if (this.viewMode === '2d') {
@@ -1865,17 +2758,12 @@ export class SceneManager {
   removeSingleItem(itemId: number): void {
     const existingModel = this.existingItems.get(itemId);
     if (existingModel) {
-      console.log(`🗑️ Removing single item ${itemId} from scene`);
-
       // Remove schematic if it exists
       this.removeSchematicForItem(itemId);
 
       this.bathroomItemsGroup.remove(existingModel);
       this.existingItems.delete(itemId);
       this.disposeModel(existingModel);
-      console.log(`✅ Successfully removed item ${itemId}`);
-    } else {
-      console.warn(`⚠️ Item ${itemId} not found in scene for removal`);
     }
   }
 
@@ -1895,15 +2783,8 @@ export class SceneManager {
       onProgress?: (progress: number) => void;
     }
   ): Promise<THREE.Group> {
-    console.log('🔄 SceneManager.addSingleItemProgressively called:', {
-      itemId: item.id,
-      sku: item.sku,
-      modelName: item.model?.name
-    });
-
     // Check if item already exists
     if (this.existingItems.has(item.id)) {
-      console.log(`⚠️ Progressive: Item ${item.id} already exists, updating instead`);
       const existingModel = this.existingItems.get(item.id);
       if (existingModel) {
         this.updateExistingModel(existingModel, item);
@@ -1915,22 +2796,16 @@ export class SceneManager {
     const modelManager = ModelManager.getInstance();
     const sku = item.sku || item.model?.name || `item_${item.id}`;
 
-    console.log('🔍 SceneManager - Checking cache for SKU:', sku);
-
     // Check if model is already cached - use fast path
     const isCached = modelManager.isModelCached(sku);
-    console.log('🔍 SceneManager - Model cached?', isCached);
 
     if (isCached) {
-      console.log(`✅ Progressive: Model ${sku} cached, using fast path (no placeholder)`);
       await this.addSingleItem(item);
       const model = this.existingItems.get(item.id) as THREE.Group;
       callbacks?.onProgress?.(100);
       callbacks?.onFullModelAdded?.(model);
       return model;
     }
-
-    console.log('🔲 SceneManager - Model NOT cached, will show placeholder for:', sku);
 
     // Model not cached - use progressive loading
     // Ensure dimensions are always defined for placeholder creation
@@ -1945,13 +2820,6 @@ export class SceneManager {
         path: '',
         dimensions: defaultDimensions
       };
-
-    console.log('🔲 SceneManager - Progressive loading config:', {
-      dimensions: modelConfig.dimensions,
-      itemPosition: item.position,
-      itemRotation: item.rotation,
-      modelScale: modelConfig.scale
-    });
 
     let placeholderInScene: THREE.Group | null = null;
 
@@ -2000,23 +2868,6 @@ export class SceneManager {
           placeholderInScene = placeholder;
 
           // Calculate placeholder world bounds for logging
-          const placeholderBox = new THREE.Box3().setFromObject(placeholder);
-          const placeholderSize = placeholderBox.getSize(new THREE.Vector3());
-
-          console.log(`🔲 Progressive: Placeholder added to scene for item ${item.id}`, {
-            itemPosition: [item.position[0], item.position[1], item.position[2]],
-            spawnHeight: spawnHeight,
-            floorOffset: floorOffset,
-            placeholderY: placeholderY,
-            calculation: `spawnHeight(${spawnHeight}) + floorOffset(${floorOffset}) = ${placeholderY}`,
-            rotation: item.rotation,
-            configDimensions: modelConfig.dimensions,
-            actualPlaceholderSize: {
-              width: placeholderSize.x,
-              height: placeholderSize.y,
-              depth: placeholderSize.z
-            }
-          });
           callbacks?.onPlaceholderAdded?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
@@ -2046,24 +2897,6 @@ export class SceneManager {
             wrapper.userData.sku = item.sku;
             wrapper.userData.model = item.model;
 
-            // Calculate model bounds for debugging
-            const modelBox = new THREE.Box3().setFromObject(wrapper);
-            const modelSize = modelBox.getSize(new THREE.Vector3());
-            const modelCenter = modelBox.getCenter(new THREE.Vector3());
-
-            console.log(`🔄 Progressive: Swapping placeholder with full model for item ${item.id}`, {
-              originalItemPosition: [item.position[0], item.position[1], item.position[2]],
-              placeholderPosition: placeholderInScene.position.toArray(),
-              placeholderDimensions: placeholderInScene.userData.dimensions,
-              wrapperPosition: wrapper.position.toArray(),
-              fullModelScale: fullModel.scale.toArray(),
-              fullModelBounds: {
-                size: { x: modelSize.x, y: modelSize.y, z: modelSize.z },
-                center: { x: modelCenter.x, y: modelCenter.y, z: modelCenter.z }
-              },
-              placeholderParent: !!placeholderInScene.parent
-            });
-
             // Add wrapper (containing full model) and remove placeholder
             this.bathroomItemsGroup.add(wrapper);
             this.bathroomItemsGroup.remove(placeholderInScene);
@@ -2080,7 +2913,6 @@ export class SceneManager {
               this.createSchematicForItem(item.id);
             }
 
-            console.log(`✅ Progressive: Full model swapped in for item ${item.id}`);
             callbacks?.onFullModelAdded?.(wrapper);
           } else {
             console.warn(`⚠️ Progressive: Cannot swap - placeholder missing or no parent`, {
@@ -2122,8 +2954,6 @@ export class SceneManager {
       return null;
     }
 
-    console.log(`🔄 Progressive: Starting variant swap for item ${itemId}`);
-
     const progressiveLoader = ProgressiveModelLoader.getInstance();
     const modelManager = ModelManager.getInstance();
     const sku = newVariant.sku || newVariant.name;
@@ -2142,8 +2972,6 @@ export class SceneManager {
 
     // Check if new variant is cached - use fast path
     if (modelManager.isModelCached(sku)) {
-      console.log(`✅ Progressive: Variant ${sku} cached, using fast path`);
-
       // Load the cached model
       const modelConfig = {
         name: newVariant.name || sku,
@@ -2247,26 +3075,11 @@ export class SceneManager {
           this.existingItems.set(itemId, placeholder);
           placeholderInScene = placeholder;
 
-          console.log(`🔲 Progressive: Placeholder swapped for variant ${sku}`, {
-            spawnHeight,
-            floorOffset,
-            placeholderY,
-            calculation: `spawnHeight(${spawnHeight}) + floorOffset(${floorOffset}) = ${placeholderY}`
-          });
           callbacks?.onPlaceholderSwapped?.(placeholder);
         },
         onFullModelReady: (fullModel) => {
           // Get positioning parameters from new variant
           const spawnHeight = newVariant.spawnHeight || 0;
-          const floorOffset = newVariant.floorOffset || 0;
-
-          console.log(`🔄 onFullModelReady called for item ${itemId}:`, {
-            hasPlaceholderInScene: !!placeholderInScene,
-            placeholderHasParent: placeholderInScene?.parent ? true : false,
-            fullModelName: fullModel.name,
-            spawnHeight,
-            floorOffset
-          });
 
           // Get the current model in the scene (could be placeholder or original)
           const currentModel = this.existingItems.get(itemId);
@@ -2285,17 +3098,9 @@ export class SceneManager {
             sourcePosition.y = spawnHeight; // NOT placeholder.position.y which has floorOffset added
             sourcePosition.z = placeholderInScene.position.z;
             sourceRotation = placeholderInScene.rotation.clone();
-            console.log(`📍 Using placeholder X/Z with calculated Y for item ${itemId}:`, {
-              placeholderY: placeholderInScene.position.y,
-              wrapperY: spawnHeight,
-              note: 'Model handles floorOffset internally'
-            });
           } else if (currentModel) {
             sourcePosition = currentModel.position.clone();
             sourceRotation = currentModel.rotation.clone();
-            console.log(`📍 Using currentModel transform for item ${itemId}`);
-          } else {
-            console.log(`📍 Using original transform for item ${itemId}`);
           }
 
           // IMPORTANT: Wrap the model in a Group for consistent drag behavior
@@ -2325,26 +3130,17 @@ export class SceneManager {
           };
 
           // Add wrapper to scene
-          console.log(`➕ Adding wrapped fullModel to scene for item ${itemId}`, {
-            wrapperPosition: [wrapper.position.x, wrapper.position.y, wrapper.position.z],
-            fullModelScale: [fullModel.scale.x, fullModel.scale.y, fullModel.scale.z],
-            visible: wrapper.visible,
-            childrenCount: wrapper.children.length
-          });
           this.bathroomItemsGroup.add(wrapper);
-          console.log(`➕ Wrapper added. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
 
           // Remove placeholder if it exists
           if (placeholderInScene && placeholderInScene.parent) {
             this.bathroomItemsGroup.remove(placeholderInScene);
             progressiveLoader.disposePlaceholder(placeholderInScene);
-            console.log(`🗑️ Removed placeholder for item ${itemId}. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
           }
           // Remove current model if different from placeholder
           else if (currentModel && currentModel.parent && currentModel !== placeholderInScene) {
             this.bathroomItemsGroup.remove(currentModel);
             this.disposeModel(currentModel);
-            console.log(`🗑️ Removed current model for item ${itemId}. bathroomItemsGroup now has ${this.bathroomItemsGroup.children.length} children`);
           }
 
           // Update tracking with the WRAPPER (not the inner model)
@@ -2353,14 +3149,6 @@ export class SceneManager {
           // Enhance materials on the inner model
           this.enhanceModelMaterials(fullModel);
 
-          // Verify wrapper is in scene
-          console.log(`🔍 Verification for item ${itemId}:`, {
-            wrapperParent: wrapper.parent?.name || wrapper.parent?.type || 'none',
-            wrapperInGroup: this.bathroomItemsGroup.children.includes(wrapper),
-            existingItemsHasId: this.existingItems.has(itemId)
-          });
-
-          console.log(`✅ Progressive: Full variant model swapped for item ${itemId}`);
           callbacks?.onFullModelSwapped?.(wrapper);
         },
         onProgress: (progress) => {
@@ -2392,8 +3180,6 @@ export class SceneManager {
 
   // Method to clear all items efficiently
   clearAllItems(): void {
-    console.log('🧹 Clearing all bathroom items');
-
     // Dispose of all 3D models
     this.existingItems.forEach((model) => {
       this.bathroomItemsGroup.remove(model);
@@ -2432,8 +3218,6 @@ export class SceneManager {
     // Clear any pending schematic updates
     this.pendingSchematicUpdates.clear();
     this.schematicUpdateScheduled = false;
-
-    console.log('✅ All items cleared efficiently (3D models and 2D schematics)');
   }
 
 
@@ -2446,9 +3230,6 @@ export class SceneManager {
     const cube = new THREE.Mesh(geometry, material);
     cube.position.set(position[0], position[1], position[2]);
     this.scene.add(cube);
-
-    console.log('🔴 Debug cube added at position:', position);
-    console.log('🔴 Camera info:', this.getCameraInfo());
   }
 
   private setupPostProcessing(): void {
@@ -2465,7 +3246,10 @@ export class SceneManager {
         window.innerHeight * pixelRatio,
         {
           format: THREE.RGBAFormat,
-          type: THREE.FloatType, // Use FloatType for better precision
+          // HalfFloatType keeps high precision for post-processing while staying
+          // compatible with canvas captureStream()/toDataURL() used by session
+          // recording tools. FloatType causes blank canvas captures on many GPUs.
+          type: THREE.HalfFloatType,
           colorSpace: THREE.SRGBColorSpace,
           // Add multisampling for smoother outlines
           samples: 8,
@@ -2525,8 +3309,6 @@ export class SceneManager {
 
       // Set outline pass reference
       setOutlinePass(this.outlinePass);
-
-      console.log('Enhanced post-processing setup successful with SSAO');
     } catch (error) {
       console.warn('Post-processing setup failed:', error);
       this.composer = null;
@@ -2606,8 +3388,11 @@ export class SceneManager {
     this.roomWidth = roomWidth;
     this.roomHeight = roomHeight;
 
+    // Dispose old floor geometry and materials before creating new
     if (this.floorRef) {
       this.scene.remove(this.floorRef);
+      this.disposeMesh(this.floorRef);
+      this.floorRef = null;
     }
 
     // FIX: Pass room dimensions to material creation
@@ -2617,7 +3402,6 @@ export class SceneManager {
     const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
 
     if (isLShape) {
-      console.log('Creating L-shaped floor with notch dimensions:', { notchWidth, notchHeight });
       this.floorRef = createLShapeFloor(roomWidth, roomHeight, notchWidth!, notchHeight!, floorMaterial);
     } else {
       this.floorRef = createFloor(roomWidth, roomHeight, floorMaterial);
@@ -2662,9 +3446,10 @@ export class SceneManager {
     this.roomWidth = roomWidth;
     this.roomHeight = roomHeight;
 
-    // Remove existing walls
+    // Dispose and remove existing walls
     this.wallRefs.forEach(wall => {
       if (wall.parent) wall.parent.remove(wall);
+      this.disposeMesh(wall);
     });
     this.wallRefs = [];
 
@@ -2675,7 +3460,6 @@ export class SceneManager {
     const isLShape = notchWidth !== undefined && notchHeight !== undefined && notchWidth > 0 && notchHeight > 0;
 
     if (isLShape) {
-      console.log('Creating L-shaped walls with notch dimensions:', { notchWidth, notchHeight });
       this.wallRefs = createLShapeWalls(roomWidth, roomHeight, notchWidth!, notchHeight!, wallMaterial);
     } else {
       this.wallRefs = createWalls(roomWidth, roomHeight, wallMaterial);
@@ -2794,15 +3578,6 @@ export class SceneManager {
   }
 
   updateGrid(roomWidth: number, roomHeight: number, showGrid: boolean, showWallGrid: boolean = true, notchWidth?: number, notchHeight?: number): void {
-    console.log('🔄 SceneManager.updateGrid called with:', {
-      roomWidth,
-      roomHeight,
-      showGrid,
-      showWallGrid,
-      notchWidth,
-      notchHeight
-    });
-
     if (!this.scene) {
       console.error('❌ Scene is null, cannot update grid');
       return;
@@ -2812,59 +3587,40 @@ export class SceneManager {
     this.showGridEnabled = showGrid;
     this.wallGridVisible = showWallGrid;
 
-    // Remove existing grid
+    // Dispose and remove existing grid
     if (this.gridRef) {
-      console.log('🗑️ Removing existing grid from scene');
       this.scene.remove(this.gridRef);
+      this.disposeGroup(this.gridRef);
       this.gridRef = null;
     }
 
-    // Remove existing blueprint grid
+    // Dispose and remove existing blueprint grid
     if (this.blueprintGridRef) {
-      console.log('🗑️ Removing existing blueprint grid from scene');
       this.scene.remove(this.blueprintGridRef);
+      this.disposeGroup(this.blueprintGridRef);
       this.blueprintGridRef = null;
     }
 
-    // Remove existing wall grid group
+    // Dispose and remove existing wall grid group
     if (this.wallGridGroup) {
-      console.log('🗑️ Removing existing wall grid group from scene');
       this.scene.remove(this.wallGridGroup);
+      this.disposeGroup(this.wallGridGroup);
       this.wallGridGroup = null;
     }
 
     // Clear existing wall grid associations
-    console.log('🧹 Clearing wall grid associations');
     this.wallCullingManager.clearWallGridLines();
 
     // Create floor grid if showGrid is enabled
     if (showGrid) {
-      console.log('🏗️ Creating floor grid...');
       try {
         // FIXED: Simplified - createCustomGrid now returns THREE.Group directly
         this.gridRef = createCustomGrid(roomWidth, roomHeight);
         // Visibility will be set by updateGridVisibility() at the end
-
-        console.log('✅ Floor grid created:', {
-          children: this.gridRef.children.length,
-          position: this.gridRef.position,
-          name: this.gridRef.name,
-          visible: this.gridRef.visible
-        });
-
         this.scene.add(this.gridRef);
-
-        console.log('✅ Floor grid added to scene');
-
-        // Verify it's in the scene
-        const gridInScene = this.scene.children.find(child => child === this.gridRef);
-        console.log('🔍 Grid found in scene:', !!gridInScene);
-
       } catch (error) {
         console.error('❌ Error creating floor grid:', error);
       }
-    } else {
-      console.log('⏭️ Skipping floor grid creation (showGrid = false)');
     }
 
     // Create blueprint grid for 2D mode (10cm spacing)
@@ -2872,98 +3628,52 @@ export class SceneManager {
       this.blueprintGridRef = createBlueprintGrid(roomWidth, roomHeight, notchWidth, notchHeight);
       // Visibility will be set by updateGridVisibility() at the end
       this.scene.add(this.blueprintGridRef);
-      console.log(`✅ Blueprint grid created (viewMode: ${this.viewMode})`);
     } catch (error) {
       console.error('❌ Error creating blueprint grid:', error);
     }
 
     // Create wall grid group and lines
-    console.log('🧱 Creating wall grid group...');
     this.wallGridGroup = new THREE.Group();
     this.wallGridGroup.name = 'WallGridGroup';
-    // wallGridVisible already set at the start of the method
 
     if (this.wallRefs.length > 0) {
-      // console.log('📊 Available walls:', this.wallRefs.map(wall => ({
-      //   name: wall.name,
-      //   direction: wall.userData.wallDirection,
-      //   position: wall.position
-      // })));
-
       try {
-        let totalWallGridLines = 0;
-
-        this.wallRefs.forEach((wall, index) => {
+        this.wallRefs.forEach((wall) => {
           const wallDirection = wall.userData.wallDirection as 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
 
           if (wallDirection) {
-            console.log(`🔨 Creating grid for ${wallDirection} wall...`);
-
             const wallGridLines = createWallGridLines(wallDirection, roomWidth, roomHeight, notchWidth, notchHeight);
-
-            console.log(`📏 Wall grid lines created for ${wallDirection}:`, wallGridLines.length);
 
             // Add wall grid lines to the scene
             wallGridLines.forEach((line, lineIndex) => {
               if (line && line.isObject3D) {
                 line.name = `WallGrid_${wallDirection}_${lineIndex}`;
-                this.wallGridGroup!.add(line); // Add to group, not directly to scene
-                totalWallGridLines++;
-              } else {
-                console.error(`❌ Invalid wall grid line at index ${lineIndex}:`, line);
+                this.wallGridGroup!.add(line);
               }
             });
 
             // Register the grid lines with the wall culling manager
             this.wallCullingManager.registerWallGridLines(wall, wallGridLines);
-
-            // console.log(`✅ Registered ${wallGridLines.length} grid lines for ${wallDirection} wall`);
-          } else {
-            console.warn(`⚠️ Wall at index ${index} has no wallDirection:`, wall.userData);
           }
         });
 
-        console.log(`✅ Total wall grid lines added to group: ${totalWallGridLines}`);
-
         // Add the wall grid group to the scene (visibility set below)
         this.scene.add(this.wallGridGroup);
-        console.log('✅ Wall grid group added to scene');
-
       } catch (error) {
         console.error('❌ Error creating wall grids:', error);
       }
-    } else {
-      console.log('⏭️ No walls available for wall grid creation');
     }
 
     // Apply centralized visibility settings based on current view mode
     this.updateGridVisibility();
-
-    // Final scene debugging
-    console.log('🎬 Final scene state:', {
-      totalChildren: this.scene.children.length,
-      gridRef: this.gridRef ? 'present' : 'null',
-      wallGridGroup: this.wallGridGroup ? 'present' : 'null',
-      wallGridVisible: this.wallGridVisible,
-      showGridEnabled: this.showGridEnabled,
-      sceneChildren: this.scene.children.map(child => ({
-        name: child.name || 'unnamed',
-        type: child.type,
-        visible: child.visible,
-        children: child.children ? child.children.length : 0
-      }))
-    });
   }
 
   // Method to toggle wall grid visibility
   setWallGridVisible(visible: boolean): void {
-    console.log(`🔄 Setting wall grid visibility to: ${visible}`);
-
     this.wallGridVisible = visible;
 
     if (this.wallGridGroup) {
       this.wallGridGroup.visible = visible;
-      console.log(`✅ Wall grid group visibility updated to: ${visible}`);
 
       // Also update individual line visibility for wall culling
       this.wallGridGroup.children.forEach(child => {
@@ -2971,59 +3681,11 @@ export class SceneManager {
           child.visible = visible;
         }
       });
-    } else {
-      console.warn('⚠️ Wall grid group not found - cannot toggle visibility');
     }
   }
 
   getWallGridVisible(): boolean {
     return this.wallGridVisible;
-  }
-
-  private debugModelVisibility(model: THREE.Object3D, item: any): void {
-    console.log('📍📍 selectedModelIs>>>>', model);
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-
-    console.log('🔍 MODEL DEBUG INFO:');
-    console.log('  Item ID:', item.id);
-    console.log('  Item Type:', item.type);
-    console.log('  Model Position:', model.position);
-    console.log('  Model Scale:', model.scale);
-    console.log('  Model Visible:', model.visible);
-    console.log('  Bounding Box Size:', size);
-    console.log('  Bounding Box Center:', center);
-    console.log('  Children Count:', model.children.length);
-
-    // Check if model is too small
-    const maxSize = Math.max(size.x, size.y, size.z);
-    if (maxSize < 0.01) {
-      console.warn('⚠️ Model might be too small to see (max dimension:', maxSize, ')');
-    }
-
-    // Check if model is too far from origin
-    const distanceFromOrigin = model.position.length();
-    if (distanceFromOrigin > 200) {
-      console.warn('⚠️ Model might be too far from camera (distance:', distanceFromOrigin, ')');
-    }
-
-    // Check children visibility
-    let visibleChildren = 0;
-    model.traverse((child) => {
-      if (child.visible) visibleChildren++;
-    });
-    console.log('  Visible Children:', visibleChildren);
-
-    // Check materials
-    model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        console.log('  Mesh Material:', child.material?.type || 'No material');
-        if (child.material?.transparent && child.material?.opacity < 0.1) {
-          console.warn('⚠️ Material might be too transparent');
-        }
-      }
-    });
   }
 
   // Replace the current updateBathroomItems method with this optimized version
@@ -3033,10 +3695,6 @@ export class SceneManager {
     this.isUpdatingItems = true;
 
     try {
-      console.log('=== INCREMENTAL BATHROOM ITEMS UPDATE ===');
-      console.log('>>>111 Items to process:', items.length);
-      console.log('>>>111 Existing items in scene:', this.existingItems.size);
-
       // Get current item IDs
       const newItemIds = new Set(items.map(item => item.id));
       const existingIds = new Set(this.existingItems.keys());
@@ -3046,7 +3704,6 @@ export class SceneManager {
       for (const itemId of itemsToRemove) {
         const existingModel = this.existingItems.get(itemId);
         if (existingModel) {
-          console.log(`🗑️ Removing item ${itemId} from scene`);
           this.bathroomItemsGroup.remove(existingModel);
           this.existingItems.delete(itemId);
 
@@ -3056,29 +3713,17 @@ export class SceneManager {
       }
 
       // 2. ADD new items or UPDATE existing ones
-      const updatePromises = items.map(async (item, index) => {
+      const updatePromises = items.map(async (item) => {
         const existingModel = this.existingItems.get(item.id);
 
         if (existingModel) {
           // UPDATE existing item if position/rotation/scale changed
           const hasChanged = this.hasItemChanged(existingModel, item);
           if (hasChanged) {
-            console.log(`🔄 Updating existing item ${item.id}`);
             this.updateExistingModel(existingModel, item);
           }
         } else {
           // ADD new item (using your existing createModel function)
-          console.log(`>>>111 ➕ Adding new item ${item.id} to scene`);
-          console.log(`>>>111 Creating model for item [${index}]:`, {
-            id: item.id,
-            type: item.type,
-            position: item.position,
-            rotation: item.rotation,
-            orientation: item.model?.orientation,
-            scale: item.scale,
-            path: item.model?.path
-          });
-
           try {
             const model = await createModel(
               item.type,
@@ -3097,24 +3742,12 @@ export class SceneManager {
               // NEW: Add orientation data directly to userData
               model.userData.orientation = getOrientationForItem(item);
 
-              this.debugModelVisibility(model, items[index]);
-
-              console.log(`✅ Model created successfully:`, {
-                type: item.type,
-                worldPosition: model.position,
-                worldScale: model.scale,
-                visible: model.visible,
-                boundingBox: this.getModelBoundingBox(model)
-              });
-
               // Enhance model materials
               this.enhanceModelMaterials(model);
 
               // Add to scene and track it
               this.bathroomItemsGroup.add(model);
               this.existingItems.set(item.id, model);
-
-              console.log(`Created model with userData:`, model.userData);
             }
           } catch (error) {
             console.error(`Failed to create model for item ${item.id}:`, error);
@@ -3129,29 +3762,11 @@ export class SceneManager {
         this.measurementSystem.updateExistingItems(items);
       }
 
-      console.log('=== INCREMENTAL UPDATE COMPLETE ===');
-      console.log(`Scene now has ${this.existingItems.size} items`);
-      console.log('Bathroom items group:', {
-        children: this.bathroomItemsGroup.children.length,
-        position: this.bathroomItemsGroup.position,
-        scale: this.bathroomItemsGroup.scale
-      });
-
     } catch (error) {
       console.error('Error updating bathroom items:', error);
     } finally {
       this.isUpdatingItems = false;
     }
-  }
-
-  private getModelBoundingBox(model: THREE.Object3D): any {
-    const box = new THREE.Box3().setFromObject(model);
-    return {
-      min: box.min,
-      max: box.max,
-      size: box.getSize(new THREE.Vector3()),
-      center: box.getCenter(new THREE.Vector3())
-    };
   }
 
   private enhanceModelMaterials(model: THREE.Object3D): void {
@@ -3288,7 +3903,7 @@ export class SceneManager {
     return this.wallCullingManager.enabled;
   }
 
-  // Cleanup method - enhanced
+  // Cleanup method - enhanced with full disposal of geometries, materials, and textures
   dispose(): void {
     // Restore original material states before clearing (prevents leak if disposed while in 2D mode)
     this.originalMaterialStates.forEach((originalState, material) => {
@@ -3298,7 +3913,7 @@ export class SceneManager {
     });
     this.originalMaterialStates.clear();
 
-    // Clear all items first
+    // Clear all items first (disposes models, schematics, etc.)
     this.clearAllItems();
 
     // Stop animation loop
@@ -3314,13 +3929,61 @@ export class SceneManager {
     }
 
     if (this.bathroomItemsGroup) {
+      this.disposeGroup(this.bathroomItemsGroup);
       this.bathroomItemsGroup.clear();
+    }
+
+    // Dispose floor geometry and materials
+    if (this.floorRef) {
+      if (this.scene) this.scene.remove(this.floorRef);
+      this.disposeMesh(this.floorRef);
+      this.floorRef = null;
+    }
+
+    // Dispose original floor material if stored (for 2D/3D switching)
+    if (this.originalFloorMaterial) {
+      this.disposeMaterial(this.originalFloorMaterial);
+      this.originalFloorMaterial = null;
+    }
+
+    // Dispose wall geometries and materials
+    this.wallRefs.forEach(wall => {
+      if (this.scene) this.scene.remove(wall);
+      this.disposeMesh(wall);
+    });
+    this.wallRefs = [];
+
+    // Dispose grid
+    if (this.gridRef) {
+      if (this.scene) this.scene.remove(this.gridRef);
+      this.disposeGroup(this.gridRef);
+      this.gridRef = null;
+    }
+
+    // Dispose blueprint grid
+    if (this.blueprintGridRef) {
+      if (this.scene) this.scene.remove(this.blueprintGridRef);
+      this.disposeGroup(this.blueprintGridRef);
+      this.blueprintGridRef = null;
+    }
+
+    // Dispose wall grid group
+    if (this.wallGridGroup) {
+      if (this.scene) this.scene.remove(this.wallGridGroup);
+      this.disposeGroup(this.wallGridGroup);
+      this.wallGridGroup = null;
     }
 
     // Clean up lights
     this.lights.forEach(light => {
       if (light.parent) {
         light.parent.remove(light);
+      }
+      // Dispose shadow map if present
+      if (light instanceof THREE.DirectionalLight || light instanceof THREE.SpotLight) {
+        if (light.shadow?.map) {
+          light.shadow.map.dispose();
+        }
       }
     });
     this.lights = [];
@@ -3331,17 +3994,17 @@ export class SceneManager {
 
     if (this.renderer) {
       this.renderer.dispose();
+      this.renderer.forceContextLoss();
     }
 
     // Clear references
     this.scene = null;
     this.camera = null;
+    this.orthographicCamera = null;
     this.renderer = null;
     this.composer = null;
     this.outlinePass = null;
-    this.floorRef = null;
-    this.wallRefs = [];
-    this.gridRef = null;
+    this.ssaoPass = null;
 
     if (this.measurementSystem) {
       this.measurementSystem.dispose();
@@ -3417,6 +4080,7 @@ export class SceneManager {
     currentRotation?: number;
     newDimensions: { width: number; height: number; depth: number };
     currentDimensions?: { width: number; height: number; depth: number };
+    newFloorOffset?: number;
     reason: string;
     roomWidth?: number;
     roomHeight?: number;
@@ -3427,25 +4091,30 @@ export class SceneManager {
     this.clearCollisionPreview();
 
     const { itemId, currentPosition, currentRotation, newDimensions } = config;
+    const newFloorOffset = config.newFloorOffset ?? 0;
 
-    // Try to get actual position from Three.js object (more accurate than stored data)
+    // Use the passed position (which already has the expected Y calculated)
     let posX = currentPosition[0];
     let posZ = currentPosition[2];
     let rotation = currentRotation;
 
-    // Find the actual object in the scene to get its real position
+    // Find the actual object in the scene to get accurate X, Z and rotation
     const actualObject = this.bathroomItemsGroup.children.find(
       child => child.userData.itemId === itemId || child.userData.itemId === Number(itemId)
     );
 
     if (actualObject) {
+      // Use actual X, Z from the object (more accurate for horizontal position)
       posX = actualObject.position.x;
       posZ = actualObject.position.z;
       rotation = actualObject.rotation.y;
-      console.log('🔴 Using actual 3D object position:', { x: posX, z: posZ, rotation });
-    } else {
-      console.log('🔴 Object not found in scene, using passed position');
     }
+
+    // Calculate the visual center Y for the collision preview box
+    // The box should be centered at: expectedY + floorOffset + height/2
+    const expectedY = currentPosition[1];
+    const visualCenterY = expectedY + newFloorOffset + newDimensions.height / 2;
+    console.log('🔴 Collision preview Y calculation:', { expectedY, newFloorOffset, height: newDimensions.height, visualCenterY });
 
     // Get room dimensions (passed from Planner or use defaults)
     const roomWidth = config.roomWidth || 300;
@@ -3490,19 +4159,6 @@ export class SceneManager {
     posX = constrainedX;
     posZ = constrainedZ;
 
-    const posY = newDimensions.height / 2;  // Center the box vertically (sitting on floor)
-
-    console.log('🔴 Creating collision preview:', {
-      itemId,
-      itemPosition: currentPosition,
-      constrainedPosition: [posX, posY, posZ],
-      dimensions: newDimensions,
-      rotatedHalfDims: { width: rotatedHalfWidth, depth: rotatedHalfDepth },
-      rotation: rotation,
-      roomSize: { width: roomWidth, height: roomHeight },
-      interiorBounds: { minX: interiorMinX, maxX: interiorMaxX, minZ: interiorMinZ, maxZ: interiorMaxZ }
-    });
-
     // Create a wireframe box showing the new size
     const geometry = new THREE.BoxGeometry(
       newDimensions.width,
@@ -3528,7 +4184,7 @@ export class SceneManager {
 
     // Create wireframe mesh
     const wireframeMesh = new THREE.Mesh(geometry, material);
-    wireframeMesh.position.set(posX, posY, posZ);
+    wireframeMesh.position.set(posX, visualCenterY, posZ);
     if (rotation !== undefined) {
       wireframeMesh.rotation.y = rotation;
     }
@@ -3541,7 +4197,7 @@ export class SceneManager {
       newDimensions.depth
     );
     const solidMesh = new THREE.Mesh(solidGeometry, solidMaterial);
-    solidMesh.position.set(posX, posY, posZ);
+    solidMesh.position.set(posX, visualCenterY, posZ);
     if (rotation !== undefined) {
       solidMesh.rotation.y = rotation;
     }
@@ -3564,8 +4220,6 @@ export class SceneManager {
 
     this.scene.add(previewGroup);
     this._collisionPreviewMesh = previewGroup as any;
-
-    console.log('🔴 Collision preview shown at position:', [posX, posY, posZ], 'with dimensions:', newDimensions);
   }
 
   // Clear collision preview

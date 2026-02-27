@@ -1,6 +1,7 @@
 // src/utils/constraints.ts - ENHANCED with proper movement integration
 import { WALL_SETTINGS } from '../constants/dimensions';
 import type { ComponentType } from '../constants/components';
+import type { DoorConfig } from '../constants/schematicPatterns';
 import { getMovementConfig } from '../utils/models';
 import {
     type OrientationConfig,
@@ -107,6 +108,7 @@ export interface BathroomItem {
     sku?: string;
     productName?: string;
     model?: ObjectModel;
+    doorConfig?: DoorConfig;
 }
 
 /**
@@ -286,16 +288,19 @@ export const constrainToCorner = (
     const nearestCorner = getNearestCorner(position, roomWidth, roomHeight, notchWidth, notchHeight);
     const movementConfig = movement ?? getMovementConfig(objectType, item);
 
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+
     // Get the wall buffer (usually 0 for flush-mounted items)
     // Add a minimum visual buffer (2cm) to prevent model clipping into walls
     const configuredWallBuffer = (orientation?.wallBuffer !== undefined) ?
-        orientation.wallBuffer * scale : 0;
+        orientation.wallBuffer * absScale : 0;
     const minVisualBuffer = 2; // 2cm minimum to prevent visual wall clipping
     const wallBuffer = Math.max(configuredWallBuffer, minVisualBuffer);
 
     // For corner items, we position them flush in the corner
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     let constrainedPosition = { ...nearestCorner.position };
     let rotation = 0;
@@ -315,7 +320,6 @@ export const constrainToCorner = (
     // Check if this is a center-pivot model (freestanding items with snapToWall: false)
     // Center-pivot models need halfX/halfZ added to positioning to prevent wall clipping
     const isCenterPivot = movementConfig.snapToWall === false;
-    console.log(`🔧 constrainToCorner: isCenterPivot=${isCenterPivot}, snapToWall=${movementConfig.snapToWall}`);
 
     // Position object flush in corner based on corner type
     // CORNER POSITIONING WITH PIVOT OFFSET COMPENSATION
@@ -336,14 +340,6 @@ export const constrainToCorner = (
     // - SE: 180° → pivot at north edge → place pivot at north wall position
     // - SW: 90° → pivot at west edge → place pivot at west wall position
 
-    const rotationDeg = Math.round((rotation * 180 / Math.PI));
-
-    // Full dimensions (not half) for pivot offset calculation
-    const fullWidth = dimensions.width * scale;  // Long dimension
-    const fullDepth = dimensions.depth * scale;  // Short dimension
-
-    console.log(`🔧 rotation=${rotationDeg}°, fullWidth=${fullWidth.toFixed(1)}, fullDepth=${fullDepth.toFixed(1)}`);
-
     // For each corner, place pivot at the appropriate wall face
     // The geometry will extend INTO the room from the pivot
     //
@@ -362,7 +358,6 @@ export const constrainToCorner = (
                 constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
                 constrainedPosition.z = nearestCorner.position.z + wallBuffer;
             }
-            console.log(`🔧 NW corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'north-east':
             // Center-pivot positioning
@@ -376,7 +371,6 @@ export const constrainToCorner = (
                 constrainedPosition.x = nearestCorner.position.x - wallBuffer;
                 constrainedPosition.z = nearestCorner.position.z + halfWidth + wallBuffer;
             }
-            console.log(`🔧 NE corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'south-east':
             // Center-pivot positioning
@@ -390,7 +384,6 @@ export const constrainToCorner = (
                 constrainedPosition.x = nearestCorner.position.x - halfWidth - wallBuffer;
                 constrainedPosition.z = nearestCorner.position.z - wallBuffer;
             }
-            console.log(`🔧 SE corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'south-west':
             // Center-pivot positioning
@@ -404,7 +397,6 @@ export const constrainToCorner = (
                 constrainedPosition.x = nearestCorner.position.x + wallBuffer;
                 constrainedPosition.z = nearestCorner.position.z - halfWidth - wallBuffer;
             }
-            console.log(`🔧 SW corner (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
         case 'notch-interior':
             // Center-pivot positioning
@@ -416,7 +408,6 @@ export const constrainToCorner = (
                 constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
                 constrainedPosition.z = nearestCorner.position.z + wallBuffer;
             }
-            console.log(`🔧 notch-interior (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
 
         case 'notch-east-north':
@@ -429,7 +420,6 @@ export const constrainToCorner = (
                 constrainedPosition.x = nearestCorner.position.x + halfWidth + wallBuffer;
                 constrainedPosition.z = nearestCorner.position.z + wallBuffer;
             }
-            console.log(`🔧 notch-east-north (centerPivot=${isCenterPivot}): pos=(${constrainedPosition.x.toFixed(1)}, ${constrainedPosition.z.toFixed(1)})`);
             break;
     }
 
@@ -501,7 +491,6 @@ export const getDimensions = (
     if (sku) {
         const productDims = getProductDimensions(sku, type);
         if (productDims) {
-            console.log(`🔍 Found specific dimensions for SKU ${sku}:`, productDims);
             return productDims;
         }
     }
@@ -553,7 +542,8 @@ export const checkWallCollision = (
     if (!dimensions) return false;
 
     const orientationConfig = item?.model?.orientation || getOrientationFromProductData(item?.sku, objectType) || DEFAULT_ORIENTATION;
-    const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * scale : 0;
+    // Use Math.abs(scale) to handle flipped objects (negative scale)
+    const wallBuffer = (orientationConfig?.wallBuffer !== undefined) ? orientationConfig.wallBuffer * Math.abs(scale) : 0;
 
     const { interior, wallFaces, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
@@ -589,16 +579,18 @@ export const checkWallCollision = (
     }
 
     // Calculate object bounds
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
     let objectMinX: number, objectMaxX: number, objectMinZ: number, objectMaxZ: number;
 
     // For rotated objects, calculate proper bounding box
     if (rotation !== undefined && rotation !== 0) {
         const cosAngle = Math.abs(Math.cos(rotation));
         const sinAngle = Math.abs(Math.sin(rotation));
-        const halfRotatedWidth = ((dimensions.width * scale * cosAngle) + (dimensions.depth * scale * sinAngle)) / 2;
-        const halfRotatedDepth = ((dimensions.width * scale * sinAngle) + (dimensions.depth * scale * cosAngle)) / 2;
+        const halfRotatedWidth = ((dimensions.width * absScale * cosAngle) + (dimensions.depth * absScale * sinAngle)) / 2;
+        const halfRotatedDepth = ((dimensions.width * absScale * sinAngle) + (dimensions.depth * absScale * cosAngle)) / 2;
 
         objectMinX = position.x - halfRotatedWidth;
         objectMaxX = position.x + halfRotatedWidth;
@@ -743,7 +735,6 @@ export const checkCollision = (
                 // notch-interior: similar to NW (0°) - no swap
                 const needsSwap = cornerType === 'north-east' ||
                     cornerType === 'south-west';
-                console.log(`🔧 Corner-install collision check: corner=${cornerType}, needsSwap=${needsSwap}`);
                 return needsSwap;
             }
             return false;
@@ -772,14 +763,11 @@ export const checkCollision = (
             const tolerance = 30; // 30cm tolerance for notch wall detection
 
             // Check if on notch-east wall (vertical edge of notch) - needs dimension swap (like east/west walls)
+            // FIXED: notch-east wall only exists from notchMinZ to notchMaxZ (not all the way to roomHalfHeight)
+            // Use same tolerance strategy as checkWallCollision for consistent behavior near notchMaxZ
             if (Math.abs(pos.x - notchMaxX) < tolerance &&
                 pos.z >= notchMinZ &&
-                pos.z <= roomHalfHeight - wallThickness) {
-                console.log('🔧 checkCollision: Item detected on NOTCH-EAST wall (needs swap)', {
-                    position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
-                    notchMaxX: notchMaxX.toFixed(1),
-                    distance: Math.abs(pos.x - notchMaxX).toFixed(1)
-                });
+                pos.z <= notchMaxZ + tolerance) {
                 return true; // Notch-east is vertical like east/west walls, needs swap
             }
 
@@ -787,11 +775,6 @@ export const checkCollision = (
             if (Math.abs(pos.z - notchMaxZ) < tolerance &&
                 pos.x >= notchMinX &&
                 pos.x <= notchMaxX) {
-                console.log('🔧 checkCollision: Item detected on NOTCH-SOUTH wall (no swap)', {
-                    position: { x: pos.x.toFixed(1), z: pos.z.toFixed(1) },
-                    notchMaxZ: notchMaxZ.toFixed(1),
-                    distance: Math.abs(pos.z - notchMaxZ).toFixed(1)
-                });
                 return false; // Notch-south is horizontal like north/south walls, no swap
             }
         }
@@ -826,10 +809,12 @@ export const checkCollision = (
     };
 
     // Object 1 bounding box (scaled dimensions, accounting for rotation)
-    const obj1BaseWidth = dims1.width * scale1;
-    const obj1BaseDepth = dims1.depth * scale1;
-    const obj1Height = dims1.height * scale1;
-    const obj1FloorOffset = dims1.floorOffset * scale1;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale1 = Math.abs(scale1);
+    const obj1BaseWidth = dims1.width * absScale1;
+    const obj1BaseDepth = dims1.depth * absScale1;
+    const obj1Height = dims1.height * absScale1;
+    const obj1FloorOffset = dims1.floorOffset * absScale1;
 
     // Swap width/depth if object is rotated 90°
     // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)
@@ -844,22 +829,18 @@ export const checkCollision = (
     } else if (obj1IsFreeRotation && item1?.rotation !== undefined && item1.rotation !== 0) {
         // Free-rotation object with any rotation - compute proper AABB
         [obj1Width, obj1Depth] = getRotatedAABB(obj1BaseWidth, obj1BaseDepth, item1.rotation);
-        console.log('🔄 Computing AABB for free-rotation object 1:', {
-            sku: item1?.sku,
-            rotation: item1?.rotation?.toFixed(2),
-            baseDims: `${obj1BaseWidth.toFixed(1)} × ${obj1BaseDepth.toFixed(1)}`,
-            aabbDims: `${obj1Width.toFixed(1)} × ${obj1Depth.toFixed(1)}`
-        });
     } else {
         obj1Width = obj1BaseWidth;
         obj1Depth = obj1BaseDepth;
     }
 
     // Object 2 bounding box (scaled dimensions, accounting for rotation)
-    const obj2BaseWidth = dims2.width * scale2;
-    const obj2BaseDepth = dims2.depth * scale2;
-    const obj2Height = dims2.height * scale2;
-    const obj2FloorOffset = dims2.floorOffset * scale2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale2 = Math.abs(scale2);
+    const obj2BaseWidth = dims2.width * absScale2;
+    const obj2BaseDepth = dims2.depth * absScale2;
+    const obj2Height = dims2.height * absScale2;
+    const obj2FloorOffset = dims2.floorOffset * absScale2;
 
     // Swap width/depth if object is rotated 90°
     // Calculate AABB dimensions accounting for rotation (wall-snapped OR free-rotation objects)
@@ -874,12 +855,6 @@ export const checkCollision = (
     } else if (obj2IsFreeRotation && item2?.rotation !== undefined && item2.rotation !== 0) {
         // Free-rotation object with any rotation - compute proper AABB
         [obj2Width, obj2Depth] = getRotatedAABB(obj2BaseWidth, obj2BaseDepth, item2.rotation);
-        console.log('🔄 Computing AABB for free-rotation object 2:', {
-            sku: item2?.sku,
-            rotation: item2?.rotation?.toFixed(2),
-            baseDims: `${obj2BaseWidth.toFixed(1)} × ${obj2BaseDepth.toFixed(1)}`,
-            aabbDims: `${obj2Width.toFixed(1)} × ${obj2Depth.toFixed(1)}`
-        });
     } else {
         obj2Width = obj2BaseWidth;
         obj2Depth = obj2BaseDepth;
@@ -921,8 +896,45 @@ export const checkCollision = (
         const distToEast = Math.abs(pos.x - eastWall);
         const distToWest = Math.abs(pos.x - westWall);
 
-        const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
         const wallTolerance = 10; // 10cm tolerance for wall detection
+
+        // Check notch walls FIRST for L-shaped rooms (they take priority)
+        if (notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0) {
+            const notchMaxX = -rw / 2 + notchWidth - wallThickness;
+            const notchMaxZ = -rh / 2 + notchHeight - wallThickness;
+            const notchMinX = -rw / 2 + wallThickness;
+            const notchMinZ = -rh / 2 + wallThickness;
+
+            const distToNotchEast = Math.abs(pos.x - notchMaxX);
+            const distToNotchSouth = Math.abs(pos.z - notchMaxZ);
+
+            // Check if on notch-east wall (vertical edge at x = notchMaxX)
+            // Only valid if z is within the notch's z range
+            if (distToNotchEast <= wallTolerance &&
+                pos.z >= notchMinZ &&
+                pos.z <= notchMaxZ) {
+                const adjustedPos = { ...pos };
+                // Notch-east wall - item extends in +x direction (into room, away from notch void)
+                // This matches constrainToWalls behavior: notch.maxX + halfDepth + wallBuffer
+                const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
+                adjustedPos.x = pos.x + effectiveHalfDepth;
+                return adjustedPos;
+            }
+
+            // Check if on notch-south wall (horizontal edge at z = notchMaxZ)
+            // Only valid if x is within the notch's x range
+            if (distToNotchSouth <= wallTolerance &&
+                pos.x >= notchMinX &&
+                pos.x <= notchMaxX) {
+                const adjustedPos = { ...pos };
+                // Notch-south wall - item extends in +z direction (into room)
+                const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
+                adjustedPos.z = pos.z + effectiveHalfDepth;
+                return adjustedPos;
+            }
+        }
+
+        const minDist = Math.min(distToNorth, distToSouth, distToEast, distToWest);
 
         // Only adjust if item is very close to a wall (within tolerance)
         if (minDist > wallTolerance) return pos;
@@ -1013,44 +1025,6 @@ export const checkCollision = (
 
     const hasCollision = overlapX && overlapZ && overlapY;
 
-    // ✅ ENHANCED: Detailed logging for debugging
-    if (hasCollision) {
-        console.log('🔴 3D COLLISION DETECTED (with floorOffset):', {
-            item1: {
-                type: type1,
-                sku: item1?.sku,
-                originalPos: { x: pos1.x.toFixed(1), y: pos1.y.toFixed(1), z: pos1.z.toFixed(1) },
-                adjustedPos: { x: obj1AdjustedPos.x.toFixed(1), z: obj1AdjustedPos.z.toFixed(1) },
-                actualYRange: `${obj1MinY.toFixed(1)}cm to ${obj1MaxY.toFixed(1)}cm`,
-                floorOffset: obj1FloorOffset.toFixed(1) + 'cm',
-                dimensions: `${obj1Width.toFixed(1)} × ${obj1Height.toFixed(1)} × ${obj1Depth.toFixed(1)}`
-            },
-            item2: {
-                type: type2,
-                sku: item2?.sku,
-                originalPos: { x: pos2.x.toFixed(1), y: pos2.y.toFixed(1), z: pos2.z.toFixed(1) },
-                adjustedPos: { x: obj2AdjustedPos.x.toFixed(1), z: obj2AdjustedPos.z.toFixed(1) },
-                actualYRange: `${obj2MinY.toFixed(1)}cm to ${obj2MaxY.toFixed(1)}cm`,
-                floorOffset: obj2FloorOffset.toFixed(1) + 'cm',
-                dimensions: `${obj2Width.toFixed(1)} × ${obj2Height.toFixed(1)} × ${obj2Depth.toFixed(1)}`
-            },
-            overlaps: { x: overlapX, z: overlapZ, y: overlapY },
-            verticalGap: Math.max(obj1MinY - obj2MaxY, obj2MinY - obj1MaxY).toFixed(1) + 'cm'
-        });
-    } else {
-        // ✅ Debug log for successful non-collisions (helps verify the fix)
-        const verticalGap = Math.max(obj1MinY - obj2MaxY, obj2MinY - obj1MaxY);
-        if (overlapX && overlapZ && verticalGap < 50) { // Log near-misses within 50cm
-            console.log('🟢 NO COLLISION (vertical clearance):', {
-                items: `${type1} & ${type2}`,
-                obj1YRange: `${obj1MinY.toFixed(1)} to ${obj1MaxY.toFixed(1)}cm`,
-                obj2YRange: `${obj2MinY.toFixed(1)} to ${obj2MaxY.toFixed(1)}cm`,
-                verticalGap: verticalGap.toFixed(1) + 'cm',
-                floorOffsets: `${obj1FloorOffset.toFixed(1)}cm, ${obj2FloorOffset.toFixed(1)}cm`
-            });
-        }
-    }
-
     return hasCollision;
 };
 
@@ -1134,26 +1108,6 @@ export const isPositionInNotch = (
 
     const isInNotch = xOverlap && zOverlap;
 
-    // 🔍 DEBUG: Log detailed notch check
-    console.log('🔍 isPositionInNotch check:', {
-        position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        objectHalfDims: { width: objectHalfWidth.toFixed(1), depth: objectHalfDepth.toFixed(1) },
-        objectBounds: {
-            minX: objMinX.toFixed(1),
-            maxX: objMaxX.toFixed(1),
-            minZ: objMinZ.toFixed(1),
-            maxZ: objMaxZ.toFixed(1)
-        },
-        notchBounds: {
-            minX: notchMinX.toFixed(1),
-            maxX: notchMaxX.toFixed(1),
-            minZ: notchMinZ.toFixed(1),
-            maxZ: notchMaxZ.toFixed(1)
-        },
-        overlap: { x: xOverlap, z: zOverlap },
-        result: isInNotch ? '❌ IN NOTCH' : '✅ NOT IN NOTCH'
-    });
-
     return isInNotch;
 };
 
@@ -1195,11 +1149,6 @@ export const wouldCollideWithExisting = (
         );
 
         if (hasCollision) {
-            console.log('🔴 Collision detected in wouldCollideWithExisting:', {
-                movingObject: { type: objectType, sku: currentItem?.sku },
-                existingObject: { type: item.type, sku: item.sku },
-                positions: { moving: position, existing: itemPosition }
-            });
             return true;
         }
     }
@@ -1218,7 +1167,7 @@ export const constrainToRoom = (
     {
         type: objectType,
         scale = 1.0,
-        orientation = DEFAULT_ORIENTATION,
+        orientation: _orientation = DEFAULT_ORIENTATION,
         item,
         notchWidth,
         notchHeight
@@ -1232,17 +1181,7 @@ export const constrainToRoom = (
     }
 ): { position: Position; rotation: number } => {
 
-    console.log('🎯 constrainToRoom CALLED:', {
-        objectType,
-        position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        notchWidth: notchWidth || 'NOT PROVIDED',
-        notchHeight: notchHeight || 'NOT PROVIDED',
-        hasNotch: !!(notchWidth && notchHeight && notchWidth > 0 && notchHeight > 0)
-    });
-
     if (!objectType) return { position, rotation: 0 };
-
-    console.warn(`orientation`, orientation);
 
     const dimensions = getDimensions(objectType, item?.sku, item?.model);
     if (!dimensions) {
@@ -1254,15 +1193,10 @@ export const constrainToRoom = (
     const { interior } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // Use actual product dimensions
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
-
-    console.log(`🏠 Room constraint using productData for ${objectType}:`, {
-        productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
-        scaledHalfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
-        sku: item?.sku,
-        isLShape: notchWidth && notchHeight ? true : false
-    });
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     // Calculate initial constrained position within main room boundaries
     let constrainedX = Math.max(interior.minX + halfWidth, Math.min(interior.maxX - halfWidth, position.x));
@@ -1320,12 +1254,6 @@ export const constrainToRoom = (
         }
     }
 
-    console.log(`🏠 Room constraint result:`, {
-        originalPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        constrainedPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
-        objectBounds: `${halfWidth.toFixed(1)}cm from center`
-    });
-
     return { position: constrainedPosition, rotation: 0 };
 };
 
@@ -1380,22 +1308,14 @@ export const constrainToWalls = (
     const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // Use actual product dimensions
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     // Use wallBuffer from productData orientation config, or 0 if not specified
-    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * absScale : 0;
     const isFlushMounted = wallBuffer === 0;
-
-    console.log(`🔧 FIXED WALL CONSTRAINT for ${objectType}:`, {
-        originalPosition: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        productDimensions: `${dimensions.width} × ${dimensions.depth}cm`,
-        halfSize: `${halfWidth.toFixed(1)} × ${halfDepth.toFixed(1)}cm`,
-        wallBuffer: wallBuffer.toFixed(1) + 'cm',
-        isFlushMounted,
-        isLShape: !!notch,
-        sku: item?.sku
-    });
 
     // ✅ NEW: Calculate distances to all walls including notch walls
     const wallDistances: Record<string, number> = {
@@ -1446,14 +1366,11 @@ export const constrainToWalls = (
     switch (nearestWall) {
         case 'north':
             // ✅ Only modify Z coordinate for north wall
-            console.log(':::: isFlushMounted>>>>', isFlushMounted);
             if (isFlushMounted) {
                 constrainedPosition.z = wallFaces.north;
             } else {
                 constrainedPosition.z = wallFaces.north + halfDepth + wallBuffer;
             }
-
-            console.log(' :::: constrainedPosition.z>>>>>', constrainedPosition.z, constrainedPosition);
 
             // ✅ CRITICAL FIX: Only constrain X if object would actually extend beyond room bounds
             // AND respect notch boundaries if present
@@ -1467,11 +1384,9 @@ export const constrainToWalls = (
                     northMinX + halfWidth,
                     Math.min(interior.maxX - halfWidth, position.x)
                 );
-                console.log(`🔧 :::: X constrained due to room bounds (North): ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
             } else {
                 // ✅ PRESERVE original X coordinate
                 constrainedPosition.x = position.x;
-                console.log(`🎯 :::: X preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
             }
 
             wallRotation = getObjectRotationForWall(objectType, 'north', orientation);
@@ -1494,10 +1409,8 @@ export const constrainToWalls = (
                     interior.minX + halfWidth,
                     Math.min(interior.maxX - halfWidth, position.x)
                 );
-                console.log(`🔧 X :::: constrained due to room bounds: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
             } else {
                 constrainedPosition.x = position.x;
-                console.log(`🎯 X :::: preserved: ${position.x.toFixed(1)} (no room boundary conflict)`);
             }
 
             wallRotation = getObjectRotationForWall(objectType, 'south', orientation);
@@ -1520,10 +1433,8 @@ export const constrainToWalls = (
                     interior.minZ + halfWidth,
                     Math.min(interior.maxZ - halfWidth, position.z)
                 );
-                console.log(`🔧 :::: Z constrained due to room bounds: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
             } else {
                 constrainedPosition.z = position.z;
-                console.log(`🎯 :::: Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
             }
 
             wallRotation = getObjectRotationForWall(objectType, 'east', orientation);
@@ -1549,10 +1460,8 @@ export const constrainToWalls = (
                     westMinZ + halfWidth,
                     Math.min(interior.maxZ - halfWidth, position.z)
                 );
-                console.log(`🔧 :::: Z constrained due to room bounds (West): ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
             } else {
                 constrainedPosition.z = position.z;
-                console.log(`🎯 :::: Z preserved: ${position.z.toFixed(1)} (no room boundary conflict)`);
             }
 
             wallRotation = getObjectRotationForWall(objectType, 'west', orientation);
@@ -1579,14 +1488,11 @@ export const constrainToWalls = (
                     notch.minZ + halfWidth,
                     Math.min(notch.maxZ - halfWidth, position.z) // Corrected from interior.maxZ
                 );
-                console.log(`🔧 NOTCH-EAST: Z constrained: ${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}`);
             } else {
                 constrainedPosition.z = position.z;
-                console.log(`🎯 NOTCH-EAST: Z preserved for smooth sliding: ${position.z.toFixed(1)}`);
             }
 
             wallRotation = getObjectRotationForWall(objectType, 'west', orientation);
-            console.log(`✅ NOTCH-EAST wall constraint applied: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
             break;
 
         // ✅ NEW: Handle notch-south wall (horizontal edge of L-shape notch)
@@ -1610,14 +1516,11 @@ export const constrainToWalls = (
                     notch.minX + halfWidth,
                     Math.min(notch.maxX - halfWidth, position.x) // Corrected from interior.maxX
                 );
-                console.log(`🔧 NOTCH-SOUTH: X constrained: ${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}`);
             } else {
                 constrainedPosition.x = position.x;
-                console.log(`🎯 NOTCH-SOUTH: X preserved for smooth sliding: ${position.x.toFixed(1)}`);
             }
 
             wallRotation = getObjectRotationForWall(objectType, 'north', orientation);
-            console.log(`✅ NOTCH-SOUTH wall constraint applied: X=${constrainedPosition.x.toFixed(1)}, Z=${constrainedPosition.z.toFixed(1)}`);
             break;
     }
 
@@ -1630,29 +1533,6 @@ export const constrainToWalls = (
     } else {
         constrainedPosition.y = movementConfig.minHeight || 0;
     }
-
-    // Get wall face position (handle notch walls)
-    const getWallFacePosition = () => {
-        if (nearestWall === 'notch-east' && notch) return notch.maxX;
-        if (nearestWall === 'notch-south' && notch) return notch.maxZ;
-        return wallFaces[nearestWall as keyof typeof wallFaces];
-    };
-    const wallFacePos = getWallFacePosition();
-
-    console.log(`🔧 :::: FIXED CONSTRAINT result for ${objectType}:`, {
-        nearestWall,
-        isFlushMounted,
-        originalPos: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-        finalPos: { x: constrainedPosition.x.toFixed(1), z: constrainedPosition.z.toFixed(1) },
-        coordinateChanges: {
-            x: position.x !== constrainedPosition.x ? `${position.x.toFixed(1)} → ${constrainedPosition.x.toFixed(1)}` : 'preserved',
-            z: position.z !== constrainedPosition.z ? `${position.z.toFixed(1)} → ${constrainedPosition.z.toFixed(1)}` : 'preserved'
-        },
-        wallFacePosition: wallFacePos !== undefined ? wallFacePos.toFixed(1) + 'cm' : 'N/A',
-        backEdgePosition: nearestWall === 'north' || nearestWall === 'south' || nearestWall === 'notch-south' ?
-            (nearestWall === 'north' ? (constrainedPosition.z - halfDepth).toFixed(1) : (constrainedPosition.z + halfDepth).toFixed(1)) + 'cm' :
-            (nearestWall === 'east' || nearestWall === 'notch-east' ? (constrainedPosition.x + halfDepth).toFixed(1) : (constrainedPosition.x - halfDepth).toFixed(1)) + 'cm'
-    });
 
     return { position: constrainedPosition, rotation: wallRotation };
 };
@@ -1693,8 +1573,6 @@ export const findFreeWallPosition = (
     notchWidth?: number,
     notchHeight?: number
 ): { position: Position; rotation: number } | null => {
-
-    console.log('🎯 Finding free position on interior walls for:', objectType, movement);
 
     const movementConfig = movement ?? getMovementConfig(objectType);
 
@@ -1743,18 +1621,20 @@ export const findFreeWallPosition = (
     const { wallFaces, interior, notch } = getInteriorBoundaries(roomWidth, roomHeight, notchWidth, notchHeight);
 
     // ✅ FIX: Check if object is flush-mounted BEFORE creating walls
-    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * scale : 0;
+    // Use Math.abs(scale) to handle flipped objects (negative scale)
+    const wallBuffer = (orientation?.wallBuffer !== undefined) ? orientation.wallBuffer * Math.abs(scale) : 0;
     const isFlushMounted = wallBuffer === 0;
 
-    console.log(`🔧 Initial placement flush check: ${isFlushMounted ? 'FLUSH-MOUNTED' : 'OFFSET'} (wallBuffer: ${wallBuffer})`);
-
     // Define walls with proper interior positioning
+    // For L-shaped rooms, north and west walls are shortened to exclude the notch area
     const walls = [
         {
             name: 'north',
             getPosition: (t: number) => {
                 // Calculate position along wall
-                const minX = interior.minX + halfWidth;  // Don't go past west corner
+                // For L-shaped rooms, north wall starts at notch.maxX + wall thickness (notch cuts off northwest corner)
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+                const minX = notch ? (notch.maxX + wallThickness + halfWidth) : (interior.minX + halfWidth);
                 const maxX = interior.maxX - halfWidth;  // Don't go past east corner
                 return {
                     x: minX + t * (maxX - minX),
@@ -1796,7 +1676,9 @@ export const findFreeWallPosition = (
         {
             name: 'west',
             getPosition: (t: number) => {
-                const minZ = interior.minZ + halfWidth;
+                // For L-shaped rooms, west wall starts at notch.maxZ + wall thickness (notch cuts off northwest corner)
+                const wallThickness = WALL_SETTINGS.THICKNESS;
+                const minZ = notch ? (notch.maxZ + wallThickness + halfWidth) : (interior.minZ + halfWidth);
                 const maxZ = interior.maxZ - halfWidth;
                 return {
                     // ✅ FIX: Flush-mounted objects go directly at wall
@@ -1811,21 +1693,15 @@ export const findFreeWallPosition = (
 
     // ✅ Add notch walls for L-shaped rooms if object fits
     if (notch && dimensions) {
-        const objectWidth = dimensions.width * scale;
+        // Use Math.abs(scale) to handle flipped objects
+        const objectWidth = dimensions.width * Math.abs(scale);
 
         // Calculate notch wall lengths
         const notchEastWallLength = notch.maxZ - notch.minZ;
         const notchSouthWallLength = notch.maxX - notch.minX;
 
-        console.log('🔍 Checking notch wall fit:', {
-            objectWidth: objectWidth.toFixed(1),
-            notchEastLength: notchEastWallLength.toFixed(1),
-            notchSouthLength: notchSouthWallLength.toFixed(1)
-        });
-
         // Add notch-east wall if object fits
         if (objectWidth <= notchEastWallLength) {
-            console.log('✅ Object fits on notch-east wall');
             walls.push({
                 name: 'notch-east',
                 getPosition: (t: number) => {
@@ -1839,13 +1715,10 @@ export const findFreeWallPosition = (
                 },
                 rotation: getObjectRotationForWall(objectType, 'east', orientation)
             });
-        } else {
-            console.log('⚠️ Object too wide for notch-east wall');
         }
 
         // Add notch-south wall if object fits
         if (objectWidth <= notchSouthWallLength) {
-            console.log('✅ Object fits on notch-south wall');
             walls.push({
                 name: 'notch-south',
                 getPosition: (t: number) => {
@@ -1859,8 +1732,6 @@ export const findFreeWallPosition = (
                 },
                 rotation: getObjectRotationForWall(objectType, 'south', orientation)
             });
-        } else {
-            console.log('⚠️ Object too wide for notch-south wall');
         }
     }
 
@@ -1924,10 +1795,6 @@ export const findFreeWallPosition = (
         }
 
         if (!hasCollision) {
-            console.log(`✅ Found valid position on ${wall.name} wall:`, {
-                position: { x: position.x.toFixed(1), z: position.z.toFixed(1) },
-                attempt: attempt + 1
-            });
             return { position, rotation: wall.rotation };
         }
     }
@@ -1962,11 +1829,9 @@ export const findFreeCornerPosition = (
     }
 
     // Check for preferred corner from movement config
-    console.log('🔍 findFreeCornerPosition called with movement:', movement);
     const preferredCorner = movement?.cornerInstallOnly &&
         typeof movement.cornerInstallOnly === 'object' ?
         movement.cornerInstallOnly.preferredCorner : undefined;
-    console.log('🔍 findFreeCornerPosition preferredCorner:', preferredCorner);
 
     // Reorder corners: preferred corner first, north-east second, then others
     let cornersToTry = corners;
@@ -1988,11 +1853,8 @@ export const findFreeCornerPosition = (
                 c.type !== preferredCorner && c.type !== 'north-east'
             );
             cornersToTry = [...priorityCorners, ...remainingCorners];
-
-            console.log(`🎯 findFreeCornerPosition: Priority order set`);
         }
     }
-    console.log('🔍 findFreeCornerPosition corners order:', cornersToTry.map(c => c.type));
 
     // Try each corner
     for (const corner of cornersToTry) {
@@ -2004,14 +1866,6 @@ export const findFreeCornerPosition = (
             movement,
             sku
         });
-
-        console.log(`🔍 Checking corner ${corner.type} at position:`, result.position);
-        console.log(`🔍 Existing items count:`, existingItems.length);
-        console.log(`🔍 Existing items:`, existingItems.map(item => ({
-            type: item.type,
-            sku: item.sku,
-            position: item.position
-        })));
 
         // Create temporary item with SKU for proper collision detection
         const tempItem: BathroomItem = {
@@ -2032,10 +1886,7 @@ export const findFreeCornerPosition = (
             tempItem // Pass temporary item for proper dimension lookup
         );
 
-        console.log(`🔍 Corner ${corner.type} collision check result: ${wouldCollide ? '❌ OCCUPIED' : '✅ FREE'}`);
-
         if (!wouldCollide) {
-            console.log(`>>>111 ✅ Found free corner: ${corner.type}`);
             return result;
         }
     }
@@ -2078,8 +1929,10 @@ const findFreeStandingPosition = (
     }
 
     // Use actual object dimensions as buffer from walls
-    const halfWidth = (dimensions.width * scale) / 2;
-    const halfDepth = (dimensions.depth * scale) / 2;
+    // Use Math.abs(scale) to handle flipped objects (e.g., doors with right hinge have scale.x = -1)
+    const absScale = Math.abs(scale);
+    const halfWidth = (dimensions.width * absScale) / 2;
+    const halfDepth = (dimensions.depth * absScale) / 2;
 
     const { interior } = getInteriorBoundaries(roomWidth, roomHeight);
 
@@ -2130,12 +1983,6 @@ const findFreeStandingPosition = (
         }
 
         if (!hasCollision) {
-            console.log(`🏊 Found free-standing position in interior space for ${objectType}:`, {
-                position: { x: position.x.toFixed(1), y: position.y.toFixed(1), z: position.z.toFixed(1) },
-                rotation: `${(rotation * 180 / Math.PI).toFixed(0)}°`,
-                interiorSpace: `${interior.width.toFixed(1)}x${interior.height.toFixed(1)}cm`,
-                attempt: attempt + 1
-            });
             return { position, rotation };
         }
     }
@@ -2185,7 +2032,6 @@ const findFreeStandingPosition = (
     }
 
     // Fallback position is free, use it
-    console.log(`⚠️ Using fallback center position in interior space for ${objectType}`);
     return {
         position: fallbackPosition,
         rotation: 0
@@ -2309,7 +2155,6 @@ export const constrainAllObjectsToRoom = (
         );
 
         if (hasCollision) {
-            console.log(`⚠️ Collision detected for ${item.type} (id: ${item.id}) after resize. Attempting to resolve...`);
             const originalConstrainedPos = { ...constrainedPosition };
 
             // Expanded search pattern to handle larger items
@@ -2384,13 +2229,11 @@ export const constrainAllObjectsToRoom = (
                     constrainedPosition = reConstrained.position;
                     constrainedRotation = reConstrained.rotation;
                     resolved = true;
-                    console.log(`✅ Collision resolved for ${item.type} with offset ${offset} on ${axis} axis`);
                     break;
                 }
             }
 
             if (!resolved) {
-                console.warn(`❌ Could not resolve collision for ${item.type} on ${targetWall || 'current wall'}. Trying other walls...`);
 
                 // If we couldn't find a spot on the current wall, try to find a free spot on ANY wall
                 // using the existing findFreeWallPosition logic (but simplified here for direct use)
@@ -2437,7 +2280,6 @@ export const constrainAllObjectsToRoom = (
                         constrainedPosition = reConstrained.position;
                         constrainedRotation = reConstrained.rotation;
                         resolved = true;
-                        console.log(`✅ Moved ${item.type} to ${wall} wall to avoid collision.`);
                         break;
                     }
 

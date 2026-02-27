@@ -19,7 +19,24 @@ export type SchematicType =
   | 'sink'
   | 'radiator'
   | 'furniture'
+  | 'door'
   | 'generic';
+
+/**
+ * Door configuration for swing direction and hinge side
+ */
+export interface DoorConfig {
+  hingeSide: 'left' | 'right';
+  swingDirection: 'inward' | 'outward';
+}
+
+/**
+ * Default door configuration
+ */
+export const DEFAULT_DOOR_CONFIG: DoorConfig = {
+  hingeSide: 'left',
+  swingDirection: 'inward'
+};
 
 /**
  * Defines how a SKU pattern should be matched against product SKUs

@@ -6,7 +6,9 @@
         logoHeight="45px"
         @save-design="handleSaveDesign"
     />
-    <router-view @save-design="handleSaveDesign" />
+    <main>
+      <router-view @save-design="handleSaveDesign" />
+    </main>
   </div>
 </template>
 

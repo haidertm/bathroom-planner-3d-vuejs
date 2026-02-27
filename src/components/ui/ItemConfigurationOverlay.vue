@@ -1,6 +1,48 @@
 <template>
   <div v-if="selectedItem && screenPosition && hasVisibleButtons" ref="overlayRef" :style="overlayStyle">
     <div :style="controlsContainerStyle">
+      <!-- Door configuration controls -->
+      <div v-if="isDoorItem" :style="doorConfigContainerStyle">
+        <div :style="doorConfigRowStyle">
+          <span :style="doorConfigLabelStyle">Hinge:</span>
+          <button
+              type="button"
+              @click="setHingeSide('left')"
+              :style="hingeSide === 'left' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="hingeSide === 'left'"
+          >
+            Left
+          </button>
+          <button
+              type="button"
+              @click="setHingeSide('right')"
+              :style="hingeSide === 'right' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="hingeSide === 'right'"
+          >
+            Right
+          </button>
+        </div>
+        <div :style="doorConfigRowStyle">
+          <span :style="doorConfigLabelStyle">Swing:</span>
+          <button
+              type="button"
+              @click="setSwingDirection('inward')"
+              :style="swingDirection === 'inward' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="swingDirection === 'inward'"
+          >
+            Inward
+          </button>
+          <button
+              type="button"
+              @click="setSwingDirection('outward')"
+              :style="swingDirection === 'outward' ? activeToggleStyle : inactiveToggleStyle"
+              :aria-pressed="swingDirection === 'outward'"
+          >
+            Outward
+          </button>
+        </div>
+      </div>
+
       <div :style="buttonsContainerStyle">
         <button
             v-if="showRotationToggle"
@@ -26,8 +68,11 @@
 
 <script setup>
 import {computed, ref, watch, onMounted, onBeforeUnmount} from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import productData from '../../mocks/productData'
 import * as THREE from 'three'
+
+const gtm = useGtm()
 
 const props = defineProps({
   selectedItem: {
@@ -68,7 +113,68 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation'])
+const emit = defineEmits(['configure-variants', 'delete-item', 'toggle-rotation', 'update-door-config'])
+
+// Door configuration state
+const hingeSide = ref('right')
+const swingDirection = ref('inward')
+
+// Check if the selected item is a door
+const isDoorItem = computed(() => {
+  if (!props.selectedItem) return false
+  const sku = props.selectedItem.sku || ''
+  const type = props.selectedItem.type || ''
+  // Check if it's a door by type or SKU
+  return type === 'Door' || type === 'WindowAndDoor' && sku.toLowerCase().includes('door')
+})
+
+// Initialize door config from selectedItem when selection changes
+watch(() => props.selectedItem, (newItem) => {
+  if (newItem?.doorConfig) {
+    hingeSide.value = newItem.doorConfig.hingeSide || 'right'
+    swingDirection.value = newItem.doorConfig.swingDirection || 'inward'
+  } else {
+    // Reset to defaults
+    hingeSide.value = 'right'
+    swingDirection.value = 'inward'
+  }
+}, { immediate: true })
+
+// Update door config handlers
+const setHingeSide = (side) => {
+  hingeSide.value = side
+  emitDoorConfigUpdate()
+}
+
+const setSwingDirection = (direction) => {
+  swingDirection.value = direction
+  emitDoorConfigUpdate()
+}
+
+const emitDoorConfigUpdate = () => {
+  if (props.selectedItem?.id) {
+    emit('update-door-config', {
+      itemId: props.selectedItem.id,
+      doorConfig: {
+        hingeSide: hingeSide.value,
+        swingDirection: swingDirection.value
+      }
+    })
+
+    // Track door config change in GTM
+    if (gtm?.enabled()) {
+      gtm.trackEvent({
+        event: 'door_config_changed',
+        category: 'Door Configuration',
+        action: 'Config Changed',
+        label: `Item ${props.selectedItem.id}`,
+        itemId: props.selectedItem.id,
+        hingeSide: hingeSide.value,
+        swingDirection: swingDirection.value
+      })
+    }
+  }
+}
 
 // Reusable objects to avoid allocations every frame
 const boundingBox = new THREE.Box3()
@@ -412,5 +518,52 @@ const deleteButtonStyle = computed(() => ({
   cursor: 'pointer',
   transition: 'background-color 0.2s ease',
   whiteSpace: 'nowrap'
+}))
+
+// Door configuration styles
+const doorConfigContainerStyle = computed(() => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  paddingRight: '12px',
+  borderRight: '1px solid #e1e5e9',
+  marginRight: '4px'
+}))
+
+const doorConfigRowStyle = computed(() => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px'
+}))
+
+const doorConfigLabelStyle = computed(() => ({
+  fontSize: '11px',
+  fontWeight: '500',
+  color: '#666',
+  minWidth: '40px'
+}))
+
+const activeToggleStyle = computed(() => ({
+  backgroundColor: '#0078d4',
+  color: 'white',
+  border: 'none',
+  borderRadius: '4px',
+  padding: '4px 8px',
+  fontSize: '11px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease'
+}))
+
+const inactiveToggleStyle = computed(() => ({
+  backgroundColor: '#e1e5e9',
+  color: '#333',
+  border: 'none',
+  borderRadius: '4px',
+  padding: '4px 8px',
+  fontSize: '11px',
+  fontWeight: '500',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s ease'
 }))
 </script>
