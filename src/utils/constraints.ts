@@ -1664,9 +1664,8 @@ export const findFreeWallPosition = (
         {
             name: 'west',
             getPosition: (t: number) => {
-                // For L-shaped rooms, west wall starts at notch.maxZ + wall thickness (notch cuts off northwest corner)
-                const wallThickness = WALL_SETTINGS.THICKNESS;
-                const minZ = notch ? (notch.maxZ + wallThickness + halfWidth) : (interior.minZ + halfWidth);
+                // For L-shaped rooms, west wall starts at notch.maxZ (matches constrainToWalls' westMinZ)
+                const minZ = notch ? (notch.maxZ + halfWidth) : (interior.minZ + halfWidth);
                 const maxZ = interior.maxZ - halfWidth;
                 return {
                     // ✅ FIX: Flush-mounted objects go directly at wall

@@ -1340,12 +1340,6 @@ export class EventHandlers {
         // Clamp to wall boundaries with proper half-width
         testX = Math.max(minX, Math.min(maxX, testX));
 
-        // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
-        if ((direction > 0 && testX > maxX) ||
-          (direction < 0 && testX < minX)) {
-          continue;
-        }
-
         testPosition = {
           x: testX,
           y: basePosition.y,
@@ -1364,12 +1358,6 @@ export class EventHandlers {
 
         // For east/west walls, the object rotates, so we need to use halfWidth for Z constraint
         testZ = Math.max(minZ, Math.min(maxZ, testZ));
-
-        // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
-        if ((direction > 0 && testZ > maxZ) ||
-          (direction < 0 && testZ < minZ)) {
-          continue;
-        }
 
         testPosition = {
           x: basePosition.x,
@@ -1502,12 +1490,6 @@ export class EventHandlers {
           const maxX = roomHalfWidth - WALL_SETTINGS.THICKNESS - halfWidth;
 
           testX = Math.max(minX, Math.min(maxX, testX));
-
-          // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
-          if ((direction > 0 && testX > maxX) ||
-            (direction < 0 && testX < minX)) {
-            continue;
-          }
         } else { // east or west
           testZ = basePosition.z + offset;
 
@@ -1518,12 +1500,6 @@ export class EventHandlers {
           const maxZ = roomHalfHeight - WALL_SETTINGS.THICKNESS - halfWidth;
 
           testZ = Math.max(minZ, Math.min(maxZ, testZ));
-
-          // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
-          if ((direction > 0 && testZ > maxZ) ||
-            (direction < 0 && testZ < minZ)) {
-            continue;
-          }
         }
 
         const testPosition = {

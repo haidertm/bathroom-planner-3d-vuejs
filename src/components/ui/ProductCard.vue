@@ -34,10 +34,8 @@
       <!-- Action Button -->
       <button
         type="button"
-        `@click`="$emit('select', product)"
+        @click="$emit('select', product)"
         class="product-card__button"
-        :class="{ 'product-card__button--direct-add': showDirectAdd }"
-      >
         :class="{ 'product-card__button--direct-add': showDirectAdd }"
       >
         {{ buttonText }}
