@@ -17,6 +17,7 @@
         class="product-summary__more-info"
         target="_blank"
         rel="noopener noreferrer"
+        @click="trackMoreInfoClick"
       >
         More info
       </a>
@@ -26,7 +27,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile as isMobileUtil } from '../../utils/helpers.js'
+
+const gtm = useGtm()
 
 const props = defineProps({
   image: {
@@ -57,6 +61,17 @@ const formattedPrice = computed(() => {
   const price = typeof props.price === 'string' ? parseFloat(props.price) : props.price
   return `£${price.toFixed(2)}`
 })
+
+const trackMoreInfoClick = () => {
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'navigation_click',
+      category: 'Product',
+      action: 'more_info_click',
+      label: props.link
+    })
+  }
+}
 </script>
 
 <style scoped>

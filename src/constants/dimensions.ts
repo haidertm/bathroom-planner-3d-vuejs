@@ -6,6 +6,7 @@ export interface RoomDefaults {
   readonly MIN_SIZE: number;
   readonly MAX_SIZE: number;
   readonly STEP: number;
+  readonly MIN_WALL_GAP: number;
 }
 
 export type WallType = 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
@@ -15,7 +16,8 @@ export const ROOM_DEFAULTS: RoomDefaults = {
   HEIGHT: 250, // default Length/Depth
   MIN_SIZE: 100,
   MAX_SIZE: 600,
-  STEP: 10
+  STEP: 10,
+  MIN_WALL_GAP: 50 // Minimum gap (cm) between notch and room walls to prevent walls touching
 } as const;
 
 // Shape-specific default dimensions

@@ -897,10 +897,10 @@ export const checkCollision = (
             const distToNotchSouth = Math.abs(pos.z - notchMaxZ);
 
             // Check if on notch-east wall (vertical edge at x = notchMaxX)
-            // Only valid if z is within the notch's z range
+            // Only valid if z is within the notch's z range (with tolerance for edge cases)
             if (distToNotchEast <= wallTolerance &&
-                pos.z >= notchMinZ &&
-                pos.z <= notchMaxZ) {
+                pos.z >= notchMinZ - wallTolerance &&
+                pos.z <= notchMaxZ + wallTolerance) {
                 const adjustedPos = { ...pos };
                 // Notch-east wall - item extends in +x direction (into room, away from notch void)
                 // This matches constrainToWalls behavior: notch.maxX + halfDepth + wallBuffer
@@ -910,10 +910,10 @@ export const checkCollision = (
             }
 
             // Check if on notch-south wall (horizontal edge at z = notchMaxZ)
-            // Only valid if x is within the notch's x range
+            // Only valid if x is within the notch's x range (with tolerance for edge cases)
             if (distToNotchSouth <= wallTolerance &&
-                pos.x >= notchMinX &&
-                pos.x <= notchMaxX) {
+                pos.x >= notchMinX - wallTolerance &&
+                pos.x <= notchMaxX + wallTolerance) {
                 const adjustedPos = { ...pos };
                 // Notch-south wall - item extends in +z direction (into room)
                 const effectiveHalfDepth = needsSwap ? halfWidth : halfDepth;
@@ -1147,6 +1147,11 @@ export const wouldCollideWithExisting = (
 /**
  * Clean room constraint using ONLY productData.ts values
  * Updated to handle L-shaped rooms with notch areas
+ *
+ * Note: The `orientation` parameter (_orientation) is accepted for API consistency
+ * with constrainToWalls but intentionally unused here. constrainToRoom handles
+ * free-standing objects that only need boundary containment, while constrainToWalls
+ * uses orientation.wallBuffer for wall-offset positioning of wall-snapped items.
  */
 export const constrainToRoom = (
     position: Position,
@@ -1155,6 +1160,7 @@ export const constrainToRoom = (
     {
         type: objectType,
         scale = 1.0,
+        // Accepted for API consistency but unused - see JSDoc above
         orientation: _orientation = DEFAULT_ORIENTATION,
         item,
         notchWidth,

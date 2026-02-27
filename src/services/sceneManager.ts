@@ -1738,74 +1738,42 @@ export class SceneManager {
     }
   }
 
+  // Helper method to dispose a single Three.js object (Mesh, Line, LineSegments, or Sprite)
+  private disposeObject(object: THREE.Object3D): void {
+    if (object instanceof THREE.Mesh) {
+      this.disposeMesh(object);
+    } else if (object instanceof THREE.Line || object instanceof THREE.LineSegments) {
+      if (object.geometry) {
+        object.geometry.dispose();
+      }
+      if (object.material) {
+        if (Array.isArray(object.material)) {
+          object.material.forEach((mat) => {
+            this.disposeMaterial(mat);
+          });
+        } else {
+          this.disposeMaterial(object.material);
+        }
+      }
+    } else if (object instanceof THREE.Sprite) {
+      if (object.material.map) {
+        object.material.map.dispose();
+      }
+      object.material.dispose();
+    }
+  }
+
   // Helper method to dispose a group and all its children
   private disposeGroup(group: THREE.Group | THREE.Object3D): void {
     group.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        this.disposeMesh(child);
-      }
-      if (child instanceof THREE.Line || child instanceof THREE.LineSegments) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((mat) => {
-              this.disposeMaterial(mat);
-            });
-          } else {
-            this.disposeMaterial(child.material);
-          }
-        }
-      }
-      if (child instanceof THREE.Sprite) {
-        if (child.material.map) {
-          child.material.map.dispose();
-        }
-        child.material.dispose();
-      }
+      this.disposeObject(child);
     });
   }
 
   // Helper method to properly dispose of models (geometry, materials, and textures)
   private disposeModel(model: THREE.Object3D): void {
     model.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((material) => {
-              this.disposeMaterial(material);
-            });
-          } else {
-            this.disposeMaterial(child.material);
-          }
-        }
-      }
-      // Also handle Line and LineSegments (used in grids/schematics)
-      if (child instanceof THREE.Line || child instanceof THREE.LineSegments) {
-        if (child.geometry) {
-          child.geometry.dispose();
-        }
-        if (child.material) {
-          if (Array.isArray(child.material)) {
-            child.material.forEach((material) => {
-              this.disposeMaterial(material);
-            });
-          } else {
-            this.disposeMaterial(child.material);
-          }
-        }
-      }
-      // Handle Sprites (used in labels)
-      if (child instanceof THREE.Sprite) {
-        if (child.material.map) {
-          child.material.map.dispose();
-        }
-        child.material.dispose();
-      }
+      this.disposeObject(child);
     });
   }
 
@@ -2517,6 +2485,10 @@ export class SceneManager {
 
     // If we're in 2D mode, store the new textured material and apply 2D appearance
     if (this.viewMode === '2d') {
+      // Dispose previous originalFloorMaterial if it exists to prevent memory leak
+      if (this.originalFloorMaterial) {
+        this.disposeMaterial(this.originalFloorMaterial);
+      }
       // Store the new textured material as the original (for when we switch back to 3D)
       this.originalFloorMaterial = floorMaterial;
       // Apply the 2D blueprint appearance

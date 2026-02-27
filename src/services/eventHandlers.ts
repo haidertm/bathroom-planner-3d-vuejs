@@ -377,9 +377,9 @@ export class EventHandlers {
 
 
     this.rotationArrows.setRotationCompleteCallback(() => {
+      this.isDragOperation = false;
       if (this.selectedObject) {
         this.applyPendingUpdates();
-        this.isDragOperation = false;
       }
     });
   }

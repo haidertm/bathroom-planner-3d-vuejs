@@ -44,8 +44,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import type { PropType } from 'vue'
+import { isMobile as isMobileUtil } from '../../utils/helpers'
 
 // Type definitions for ProductCard
 interface ProductVariant {
@@ -102,22 +103,7 @@ defineEmits<{
   (e: 'select', product: Product): void
 }>()
 
-// Reactive window width for responsive behavior
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
-
-const handleResize = () => {
-  windowWidth.value = window.innerWidth
-}
-
-onMounted(() => {
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
-
-const isMobile = computed<boolean>(() => windowWidth.value <= 768)
+const isMobile = computed<boolean>(() => isMobileUtil())
 
 const showDirectAdd = computed<boolean | undefined>(() => props.product.searchContext?.showDirectAdd)
 

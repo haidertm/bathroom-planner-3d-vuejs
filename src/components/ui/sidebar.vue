@@ -998,9 +998,9 @@ const toggleWallSection = () => {
   isWallExpanded.value = !isWallExpanded.value
 }
 
-// Computed max values for notch sliders (must leave at least 50cm gap to prevent walls touching)
-const maxNotchWidth = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomWidth.value - 50))
-const maxNotchHeight = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomHeight.value - 50))
+// Computed max values for notch sliders (must leave minimum gap to prevent walls touching)
+const maxNotchWidth = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomWidth.value - ROOM_DEFAULTS.MIN_WALL_GAP))
+const maxNotchHeight = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomHeight.value - ROOM_DEFAULTS.MIN_WALL_GAP))
 
 // Handler functions for RoomDimensionControl component
 const handleWidthChange = (newValue) => {
@@ -1035,17 +1035,17 @@ const handleNotchHeightChange = (newValue) => {
   }, 100)
 }
 
-// Computed min values for room dimensions (must be at least notch + 50cm buffer when L-shaped)
+// Computed min values for room dimensions (must be at least notch + minimum gap buffer when L-shaped)
 const minRoomWidth = computed(() => {
   if (isLShape.value && localNotchWidth.value > 0) {
-    return Math.max(ROOM_DEFAULTS.MIN_SIZE, localNotchWidth.value + 50)
+    return Math.max(ROOM_DEFAULTS.MIN_SIZE, localNotchWidth.value + ROOM_DEFAULTS.MIN_WALL_GAP)
   }
   return ROOM_DEFAULTS.MIN_SIZE
 })
 
 const minRoomHeight = computed(() => {
   if (isLShape.value && localNotchHeight.value > 0) {
-    return Math.max(ROOM_DEFAULTS.MIN_SIZE, localNotchHeight.value + 50)
+    return Math.max(ROOM_DEFAULTS.MIN_SIZE, localNotchHeight.value + ROOM_DEFAULTS.MIN_WALL_GAP)
   }
   return ROOM_DEFAULTS.MIN_SIZE
 })
@@ -1207,23 +1207,23 @@ const mobileCloseButtonStyle = computed(() => ({
 // Main panel styles
 const panelStyle = computed(() => ({
   position: isMobileDevice.value ? 'fixed' : 'absolute',
-  top: isMobileDevice.value ? '130px' : '130px',
+  top: '130px',
   left: '0',
   backgroundColor: 'rgba(255, 255, 255, 0.98)',
-  padding: isMobileDevice.value ? '20px' : '20px',
+  padding: '20px',
   boxShadow: isMobileDevice.value ? 'none' : '0 8px 32px rgba(0, 0, 0, 0.15)',
   width: isMobileDevice.value ? '100vw' : '480px',
   maxWidth: isMobileDevice.value ? '100vw' : '500px',
   zIndex: isMobileDevice.value ? 1600 : 1000,
   backdropFilter: 'blur(12px)',
-  maxHeight: isMobileDevice.value ? 'calc(100vh - 130px)' : 'calc(100vh - 130px)',
-  height: isMobileDevice.value ? 'calc(100vh - 130px)' : 'calc(100vh - 130px)',
+  maxHeight: 'calc(100vh - 130px)',
+  height: 'calc(100vh - 130px)',
   overflowY: 'auto',
   fontFamily: 'Arial, sans-serif',
   border: isMobileDevice.value ? 'none' : '1px solid rgba(16, 185, 129, 0.2)',
   transform: isMobileDevice.value ? (isSidebarVisible.value ? 'translateX(0)' : 'translateX(-100%)') : 'translateX(0)',
   transition: 'transform 0.3s ease',
-  display: isMobileDevice.value ? 'block' : 'block'
+  display: 'block'
 }))
 
 const accordionSectionStyle = computed(() => ({
