@@ -1340,9 +1340,9 @@ export class EventHandlers {
         // Clamp to wall boundaries with proper half-width
         testX = Math.max(minX, Math.min(maxX, testX));
 
-        // Skip if we've hit the wall boundary and can't move further
-        if ((direction > 0 && testX >= maxX) ||
-          (direction < 0 && testX <= minX)) {
+        // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
+        if ((direction > 0 && testX > maxX) ||
+          (direction < 0 && testX < minX)) {
           continue;
         }
 
@@ -1365,9 +1365,9 @@ export class EventHandlers {
         // For east/west walls, the object rotates, so we need to use halfWidth for Z constraint
         testZ = Math.max(minZ, Math.min(maxZ, testZ));
 
-        // Skip if we've hit the wall boundary and can't move further
-        if ((direction > 0 && testZ >= maxZ) ||
-          (direction < 0 && testZ <= minZ)) {
+        // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
+        if ((direction > 0 && testZ > maxZ) ||
+          (direction < 0 && testZ < minZ)) {
           continue;
         }
 
@@ -1503,8 +1503,9 @@ export class EventHandlers {
 
           testX = Math.max(minX, Math.min(maxX, testX));
 
-          if ((direction > 0 && testX >= maxX) ||
-            (direction < 0 && testX <= minX)) {
+          // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
+          if ((direction > 0 && testX > maxX) ||
+            (direction < 0 && testX < minX)) {
             continue;
           }
         } else { // east or west
@@ -1518,8 +1519,9 @@ export class EventHandlers {
 
           testZ = Math.max(minZ, Math.min(maxZ, testZ));
 
-          if ((direction > 0 && testZ >= maxZ) ||
-            (direction < 0 && testZ <= minZ)) {
+          // Skip only if position is strictly outside boundaries (after clamping, positions at boundaries are valid)
+          if ((direction > 0 && testZ > maxZ) ||
+            (direction < 0 && testZ < minZ)) {
             continue;
           }
         }

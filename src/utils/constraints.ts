@@ -1621,9 +1621,8 @@ export const findFreeWallPosition = (
             name: 'north',
             getPosition: (t: number) => {
                 // Calculate position along wall
-                // For L-shaped rooms, north wall starts at notch.maxX + wall thickness (notch cuts off northwest corner)
-                const wallThickness = WALL_SETTINGS.THICKNESS;
-                const minX = notch ? (notch.maxX + wallThickness + halfWidth) : (interior.minX + halfWidth);
+                // For L-shaped rooms, north wall starts at notch.maxX (matches constrainToWalls' northMinX)
+                const minX = notch ? (notch.maxX + halfWidth) : (interior.minX + halfWidth);
                 const maxX = interior.maxX - halfWidth;  // Don't go past east corner
                 return {
                     x: minX + t * (maxX - minX),

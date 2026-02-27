@@ -20,10 +20,10 @@
         {{ formattedPrice }}
       </div>
 
-      <!-- More Info Link (only render when link is available) -->
+      <!-- More Info Link (only render when link is available and safe) -->
       <a
-        v-if="product.link"
-        :href="product.link"
+        v-if="sanitizedLink"
+        :href="sanitizedLink"
         class="product-card__more-info"
         target="_blank"
         rel="noopener noreferrer"
@@ -104,6 +104,39 @@ defineEmits<{
 }>()
 
 const isMobile = computed<boolean>(() => isMobileUtil())
+
+/**
+ * Validates that a URL uses a safe scheme (https, http, mailto) or is a safe relative path.
+ * Prevents javascript:, data:, vbscript: and other potentially dangerous URL schemes.
+ */
+const isSafeUrl = (url: string | undefined): boolean => {
+  if (!url) return false
+
+  const trimmedUrl = url.trim()
+  if (!trimmedUrl) return false
+
+  // Allow safe relative paths (starting with /)
+  if (trimmedUrl.startsWith('/')) return true
+
+  // Parse URL to check scheme
+  try {
+    const parsed = new URL(trimmedUrl, window.location.origin)
+    const safeSchemes = ['https:', 'http:', 'mailto:']
+    return safeSchemes.includes(parsed.protocol.toLowerCase())
+  } catch {
+    // If URL parsing fails, reject it
+    return false
+  }
+}
+
+/**
+ * Returns the product link only if it passes URL safety validation.
+ * Returns null for unsafe URLs to prevent rendering the anchor.
+ */
+const sanitizedLink = computed<string | null>(() => {
+  const link = props.product.link
+  return isSafeUrl(link) ? link! : null
+})
 
 const showDirectAdd = computed<boolean | undefined>(() => props.product.searchContext?.showDirectAdd)
 

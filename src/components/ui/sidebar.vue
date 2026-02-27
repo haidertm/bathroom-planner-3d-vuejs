@@ -1002,37 +1002,30 @@ const toggleWallSection = () => {
 const maxNotchWidth = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomWidth.value - ROOM_DEFAULTS.MIN_WALL_GAP))
 const maxNotchHeight = computed(() => Math.max(ROOM_DEFAULTS.MIN_SIZE, localRoomHeight.value - ROOM_DEFAULTS.MIN_WALL_GAP))
 
-// Handler functions for RoomDimensionControl component
-const handleWidthChange = (newValue) => {
+// Helper to emit dimension changes with internal update lock
+const emitWithInternalLock = (eventName, arg1, arg2) => {
   isInternalUpdate.value = true
-  emit('room-size-change', newValue, localRoomHeight.value)
+  emit(eventName, arg1, arg2)
   setTimeout(() => {
     isInternalUpdate.value = false
   }, 100)
+}
+
+// Handler functions for RoomDimensionControl component
+const handleWidthChange = (newValue) => {
+  emitWithInternalLock('room-size-change', newValue, localRoomHeight.value)
 }
 
 const handleHeightChange = (newValue) => {
-  isInternalUpdate.value = true
-  emit('room-size-change', localRoomWidth.value, newValue)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
+  emitWithInternalLock('room-size-change', localRoomWidth.value, newValue)
 }
 
 const handleNotchWidthChange = (newValue) => {
-  isInternalUpdate.value = true
-  emit('notch-size-change', newValue, localNotchHeight.value)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
+  emitWithInternalLock('notch-size-change', newValue, localNotchHeight.value)
 }
 
 const handleNotchHeightChange = (newValue) => {
-  isInternalUpdate.value = true
-  emit('notch-size-change', localNotchWidth.value, newValue)
-  setTimeout(() => {
-    isInternalUpdate.value = false
-  }, 100)
+  emitWithInternalLock('notch-size-change', localNotchWidth.value, newValue)
 }
 
 // Computed min values for room dimensions (must be at least notch + minimum gap buffer when L-shaped)

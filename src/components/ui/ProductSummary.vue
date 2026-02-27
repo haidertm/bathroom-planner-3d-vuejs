@@ -59,6 +59,9 @@ const isMobile = computed(() => isMobileUtil())
 
 const formattedPrice = computed(() => {
   const price = typeof props.price === 'string' ? parseFloat(props.price) : props.price
+  if (!Number.isFinite(price)) {
+    return '£0.00'
+  }
   return `£${price.toFixed(2)}`
 })
 
