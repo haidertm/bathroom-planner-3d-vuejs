@@ -151,12 +151,8 @@ import { loadRoomDimensionsFromStorage, saveRoomDimensionsToStorage } from '../c
 import { preloadModels, getModelCacheStatus } from '../models/bathroomFixtures'
 import * as THREE from 'three';
 import MeasurementPanel from '../components/ui/MeasurementPanel.vue'
-import RotationArrowsToggle from '../components/ui/RotationArrowsToggle.vue'
 
 // Components
-import Toolbar from '../components/ui/Toolbar.vue'
-import TexturePanel from '../components/ui/TexturePanel.vue'
-import RoomSizePanel from '../components/ui/RoomSizePanel.vue'
 import UnifiedToolbar from '../components/ui/UnifiedToolbar.vue'
 
 // Constants
