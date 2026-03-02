@@ -163,11 +163,7 @@ class TextureManager {
           );
         }
       },
-      (progress: ProgressEvent<EventTarget>) => {
-        if (progress.lengthComputable) {
-          console.log(`Loading texture: ${(progress.loaded / progress.total * 100).toFixed(1)}%`);
-        }
-      },
+      undefined,
       (error: unknown) => {
         console.warn(`Failed to load texture: ${textureConfig.file}, falling back to color`, error);
         // Enhanced fallback with color variations
@@ -347,7 +343,6 @@ class TextureManager {
     });
 
     await Promise.all(promises);
-    console.log(`Preloaded ${promises.length} textures`);
   }
 
   // Method to update material quality based on performance

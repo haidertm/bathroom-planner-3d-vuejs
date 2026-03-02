@@ -67,11 +67,6 @@ export const saveRoomDimensions = (dimensions) => {
 
         localStorage.setItem('room-dimensions', JSON.stringify(dimensionsInMeters));
 
-        console.log('✅ Room dimensions saved successfully:', {
-            original: `${dimensions.width}cm × ${dimensions.height}cm`,
-            converted: `${dimensionsInMeters.width}m × ${dimensionsInMeters.height}m`
-        });
-
         return { success: true };
 
     } catch (error) {
@@ -91,7 +86,6 @@ export const loadRoomDimensions = () => {
     try {
         const savedData = localStorage.getItem('room-dimensions');
         if (!savedData) {
-            console.log('🔍 No saved room dimensions found');
             return { success: false, dimensions: null };
         }
 
@@ -105,11 +99,6 @@ export const loadRoomDimensions = () => {
             localStorage.removeItem('room-dimensions');
             return { success: false, dimensions: null, error: 'Invalid saved dimensions' };
         }
-
-        console.log('✅ Room dimensions loaded successfully:', {
-            dimensions: `${dimensions.width}m × ${dimensions.height}m`,
-            age: dimensions.timestamp ? `${Math.round((Date.now() - dimensions.timestamp) / 1000)}s ago` : 'unknown'
-        });
 
         return { success: true, dimensions };
 
@@ -126,7 +115,6 @@ export const loadRoomDimensions = () => {
  */
 export const clearRoomDimensions = () => {
     localStorage.removeItem('room-dimensions');
-    console.log('🧹 Room dimensions cleared from storage');
 };
 
 /**
