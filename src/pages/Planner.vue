@@ -223,7 +223,6 @@ const showRotationToggle = computed(() => {
 
 const selectedItemId = ref(null)
 const selectedBathroomItem = computed(() => {
-  console.log('>>> who is here', selectedItemId.value)
   if (!selectedItemId.value) return null
   return items.value.find(item => item.id === selectedItemId.value)
 })
@@ -307,8 +306,14 @@ const handleDragEnd = () => {
   isDraggingObject.value = false
 }
 
+// Handler for window resize (needs stable reference for cleanup)
+const handleWindowResize = () => {
+  if (sceneManagerRef.value) {
+    sceneManagerRef.value.updateComposerSize()
+  }
+}
+
 const handleRotationToggleFromOverlay = (enabled) => {
-  console.log('Rotation toggle from overlay:', enabled);
   rotationArrowsEnabled.value = enabled;
 
   if (eventHandlersRef.value && eventHandlersRef.value.setRotationArrowsEnabled) {
@@ -341,7 +346,6 @@ const variantConfigCurrentItem = computed(() => {
 
 // 3. Add these event handlers to your existing methods
 const handleItemSelection = (itemId) => {
-  console.log('🎯 Item selected:', itemId)
   const numericId = Number(itemId)
   selectedItemId.value = numericId
 
@@ -362,7 +366,6 @@ const handleItemSelection = (itemId) => {
 const isSwappingVariant = ref(false)
 
 const handleItemDeselection = () => {
-  console.log('🎯 Item deselected')
   selectedItemId.value = null
 
   // Don't close drawer if we're in the middle of a variant swap
@@ -378,8 +381,6 @@ const handleItemDeselection = () => {
 }
 
 const handleConfigureVariants = (config) => {
-  console.log('⚙️ Configure variants:', config)
-
   // If called from overlay, find the product data
   if (!config.product && config.itemId) {
     const item = items.value.find(item => item.id === config.itemId)
@@ -423,7 +424,6 @@ const handleDeselectItem = () => {
 
 // Handle collision preview - show red outline for "Too Large" variant
 const handlePreviewCollision = (previewConfig) => {
-  console.log('🔴 Showing collision preview:', previewConfig)
   const { itemId, variant, currentItem, fitInfo } = previewConfig
 
   if (!sceneManagerRef.value || !currentItem) {
@@ -446,15 +446,12 @@ const handlePreviewCollision = (previewConfig) => {
 
 // Handle clearing collision preview (e.g., when colliding item is removed)
 const handleClearCollisionPreview = () => {
-  console.log('🔄 Clearing collision preview (items changed)')
   if (sceneManagerRef.value) {
     sceneManagerRef.value.clearCollisionPreview()
   }
 }
 
 const handleVariantSwap = async (swapConfig) => {
-  console.log('🔄 Starting variant swap:', swapConfig)
-
   // Clear any collision preview when starting a valid swap
   if (sceneManagerRef.value) {
     sceneManagerRef.value.clearCollisionPreview()
@@ -474,7 +471,6 @@ const handleVariantSwap = async (swapConfig) => {
     }
 
     const currentItem = items.value[currentItemIndex]
-    console.log('Current item found:', currentItem)
 
     // ✅ VALIDATION: Check if the new variant fits in the room
     if (newVariant.dimensions) {
@@ -535,14 +531,6 @@ const handleVariantSwap = async (swapConfig) => {
         const newMirrorY = desiredVisualBottom - newFloorOffset
 
         swappedItem.position = [swappedItem.position[0], newMirrorY, swappedItem.position[2]]
-        console.log('🪞 Mirror variant swap: Adjusted Y for vanity placement', {
-          vanityTopY,
-          oldFloorOffset,
-          newFloorOffset,
-          desiredVisualBottom,
-          newMirrorY,
-          actualVisualBottom: newMirrorY + newFloorOffset
-        })
       } else {
         // No vanity - maintain the same visual bottom position
         // oldVisualBottom = oldY + oldFloorOffset
@@ -552,17 +540,8 @@ const handleVariantSwap = async (swapConfig) => {
         const newMirrorY = oldY + oldFloorOffset - newFloorOffset
 
         swappedItem.position = [swappedItem.position[0], newMirrorY, swappedItem.position[2]]
-        console.log('🪞 Mirror variant swap: Adjusted Y to maintain visual position', {
-          oldY,
-          oldFloorOffset,
-          newFloorOffset,
-          newMirrorY,
-          visualBottom: newMirrorY + newFloorOffset
-        })
       }
     }
-
-    console.log('Swapped item created:', swappedItem)
 
     // Calculate the correct Y position based on new variant's spawnHeight
     const oldSpawnHeight = currentItem.model?.spawnHeight || 0
@@ -635,20 +614,15 @@ const handleVariantSwap = async (swapConfig) => {
 
     // Handle scene update directly - DON'T let the watcher do it
     if (sceneManagerRef.value) {
-      console.log('🔄 Handling variant swap scene update directly')
-      console.log('🔄 Progressive loading enabled:', useProgressiveLoading)
-
       try {
         if (useProgressiveLoading) {
           // Use PROGRESSIVE loading - shows placeholder immediately
-          console.log('🔲 Using progressive variant swap with placeholder')
 
           await sceneManagerRef.value.swapItemVariantProgressively(
             itemId,
             newVariant,
             {
               onPlaceholderSwapped: (placeholder) => {
-                console.log('🔲 Placeholder swapped into scene')
                 // Update selection to placeholder for immediate visual feedback
                 if (eventHandlersRef.value) {
                   eventHandlersRef.value.selectedObject = placeholder
@@ -658,7 +632,6 @@ const handleVariantSwap = async (swapConfig) => {
                 }
               },
               onFullModelSwapped: (fullModel) => {
-                console.log('✅ Full model swapped into scene')
                 // Update selection to full model
                 if (eventHandlersRef.value) {
                   eventHandlersRef.value.selectedObject = fullModel
@@ -681,37 +654,27 @@ const handleVariantSwap = async (swapConfig) => {
                   handleObjectSelectionChange()
                 }
                 lastUpdateSource.value = 'variantSwap-complete'
-              },
-              onProgress: (progress) => {
-                console.log(`📈 Progressive swap progress: ${progress}%`)
               }
             },
             { x: swappedItem.position[0], y: swappedItem.position[1], z: swappedItem.position[2] },
             swappedItem.rotation
           )
-          console.log('✅ Progressive variant swap initiated')
         } else {
           // Standard loading path (model is already cached)
           usedStandardLoadingPath = true
           // Remove old item first
           await sceneManagerRef.value.removeSingleItem(itemId)
-        console.log('✅ Old item removed')
 
         // Add new variant
         await sceneManagerRef.value.addSingleItem(swappedItem)
-        console.log('✅ New variant added')
 
         // IMPORTANT: Wait for the scene to update, then reselect the new object
         setTimeout(async () => {
           if (sceneManagerRef.value && sceneManagerRef.value.existingItems) {
             const addedModel = sceneManagerRef.value.existingItems.get(swappedItem.id)
             if (addedModel) {
-              console.log('🔍 New model found in scene:', addedModel)
-              console.log('🔍 Model userData:', addedModel.userData)
-
               // CRITICAL: Reselect the new object in the event handler
               if (eventHandlersRef.value) {
-                console.log('🎯 Reselecting swapped object...')
 
                 // Clear current selection first
                 if (eventHandlersRef.value.selectedObject) {
@@ -747,8 +710,6 @@ const handleVariantSwap = async (swapConfig) => {
 
                 // Trigger selection change handler to update UI
                 handleObjectSelectionChange()
-
-                console.log('✅ Object reselected after variant swap')
               }
             } else {
               console.warn('⚠️ Could not find newly added model in scene')
@@ -777,8 +738,6 @@ const handleVariantSwap = async (swapConfig) => {
       currentFloorTexture: currentFloorTexture.value,
       currentWallTexture: currentWallTexture.value
     })
-
-    console.log('✅ Variant swap completed successfully')
 
     // Update the variant drawer with the new current variant
     variantConfigCurrentVariant.value = newVariant
@@ -868,7 +827,6 @@ const getDefaultItems = () => {
 const measurementsEnabled = ref(false)
 
 const handleMeasurementChange = (enabled) => {
-  console.log('Measurements toggled:', enabled)
   // Add your measurement logic here
 }
 
@@ -1248,13 +1206,10 @@ const addItem = async (type, productData = null) => {
   let useAutoPositionedY = false
 
   if (autoResult.placementMethod !== 'none') {
-    console.log(`✅ Smart auto-position for ${type}:`, autoResult.placementMethod, autoResult.anchorItem?.type || '')
     freePosition = autoResult.position
     wallRotation = autoResult.rotation
     // Use auto-positioned Y when placement is relative to an anchor item
     useAutoPositionedY = autoResult.placementMethod === 'anchor'
-  } else {
-    console.log(`⚠️ Auto-position returned no-op for ${type}:`, autoResult.reason)
   }
 
   // Final fallback: Generic wall position finding
@@ -1330,31 +1285,9 @@ const addItem = async (type, productData = null) => {
       // Use progressive loading if model isn't cached (shows placeholder first)
       const useProgressive = productData?.useProgressiveLoading === true
 
-      console.log('🎯 Planner addItem - Progressive loading check:', {
-        useProgressiveLoading: productData?.useProgressiveLoading,
-        useProgressive,
-        itemId: newItem.id,
-        sku: newItem.sku,
-        isFirstItem: isInitialLoad.value
-      })
-
       if (useProgressive) {
-        console.log('🔲 Using progressive loading with placeholder for new item:', newItem.id)
-        await sceneManagerRef.value.addSingleItemProgressively(newItem, {
-          onPlaceholderAdded: (placeholder) => {
-            console.log('🔲 PLACEHOLDER ADDED to scene for item:', newItem.id)
-          },
-          onFullModelAdded: (model) => {
-            console.log('✅ Full model REPLACED placeholder for item:', newItem.id)
-          },
-          onProgress: (progress) => {
-            if (progress % 20 === 0) { // Log every 20%
-              console.log(`📈 Loading progress: ${progress}%`)
-            }
-          }
-        })
+        await sceneManagerRef.value.addSingleItemProgressively(newItem)
       } else {
-        console.log('⚡ Using direct add (no placeholder) for item:', newItem.id)
         await sceneManagerRef.value.addSingleItem(newItem)
       }
 
@@ -1363,8 +1296,6 @@ const addItem = async (type, productData = null) => {
         isInitialLoad.value = false
         previousItems.value = [newItem]
       }
-
-      console.log(`✅ Added item ${ newItem.id } to scene`)
     } catch (error) {
       console.error('❌ Failed to add item directly:', error)
       // Will fall back to full update via watcher
@@ -1390,20 +1321,17 @@ const deleteItem = async (itemId) => {
   if (isMultiSelectMode.value && eventHandlersRef.value) {
     const selectedIds = eventHandlersRef.value.getSelectedItemIds()
     if (selectedIds && selectedIds.length > 1) {
-      console.log('🗑️ Deleting multiple items:', selectedIds)
       await deleteMultipleItems(selectedIds)
       return
     }
   }
 
-  console.log('🗑️ Deleting item:', itemId)
   hasUnsavedChanges.value = true
 
   // CRITICAL: Remove from 3D scene first
   if (sceneManagerRef.value) {
     try {
       await sceneManagerRef.value.removeSingleItem(itemId)
-      console.log('✅ Item removed from 3D scene')
     } catch (error) {
       console.error('❌ Failed to remove item from scene:', error)
     }
@@ -1435,8 +1363,6 @@ const deleteItem = async (itemId) => {
     currentFloorTexture: currentFloorTexture.value,
     currentWallTexture: currentWallTexture.value
   })
-
-  console.log('✅ Item deleted successfully')
 }
 
 // Delete multiple selected items
@@ -1475,8 +1401,6 @@ const deleteMultipleItems = async (itemIds) => {
     currentFloorTexture: currentFloorTexture.value,
     currentWallTexture: currentWallTexture.value
   })
-
-  console.log(`✅ ${itemIds.length} items deleted successfully`)
 }
 
 const handleUndo = () => {
@@ -1519,7 +1443,6 @@ const handleWallChange = (texture) => {
 }
 
 const handleTextureClose = () => {
-  console.log('Texture panel closing')
   showTexturePanel.value = false
 }
 
@@ -1532,7 +1455,6 @@ const setShowWallGrid = (value) => {
 }
 
 const handleShowTexturePanel = () => {
-  console.log('Show texture panel')
   showTexturePanel.value = true
 }
 
@@ -1577,8 +1499,6 @@ const handleMeasurementToggle = () => {
 
 // Handle 2D/3D View Mode Change
 const handleViewModeChange = async (mode) => {
-  console.log('🔄 View mode changing to:', mode)
-
   if (!sceneManagerRef.value) {
     console.warn('SceneManager not initialized yet')
     return
@@ -1629,13 +1549,6 @@ const loadSavedRoomDimensions = () => {
       notchHeight.value = dimensions.notchHeight
     }
 
-    console.log('Room dimensions loaded (CM):', {
-      width: dimensions.width + 'cm',
-      height: dimensions.height + 'cm',
-      notchWidth: dimensions.notchWidth ? dimensions.notchWidth + 'cm' : 'N/A',
-      notchHeight: dimensions.notchHeight ? dimensions.notchHeight + 'cm' : 'N/A'
-    })
-
     return true
   }
 
@@ -1661,7 +1574,6 @@ const checkForDesignToLoad = () => {
       // Load the design
       loadDesignData(design)
 
-      console.log('✅ Design loaded from MyDesigns:', design.name)
       return true
     }
   } catch (error) {
@@ -1690,7 +1602,6 @@ const checkForTemplateToLoad = () => {
       // Load template data
       loadTemplateData(template)
 
-      console.log('✅ Template loaded:', template.name)
       return true
     }
   } catch (error) {
@@ -1812,11 +1723,8 @@ const calculateWallPosition = (
  */
 const loadTemplateData = async (template) => {
   try {
-    console.log('🔲 loadTemplateData started for:', template.name)
-
     // Clear existing items from scene first
     if (sceneManagerRef.value) {
-      console.log('🧹 Clearing existing items before loading template...')
       sceneManagerRef.value.clearAllItems()
     }
 
@@ -1828,8 +1736,6 @@ const loadTemplateData = async (template) => {
     roomHeight.value = template.roomHeight
     roomWidthRef.value = template.roomWidth
     roomHeightRef.value = template.roomHeight
-
-    console.log('📐 Room dimensions set:', template.roomWidth, 'x', template.roomHeight)
 
     // ============================================================================
     // VALIDATION: Check if all template items fit in the room
@@ -1921,14 +1827,6 @@ const loadTemplateData = async (template) => {
         return null
       }
 
-      console.log(`📍 Template item ${templateItem.type} (${templateItem.sku}):`, {
-        wall: templateItem.wall,
-        wallPosition: templateItem.wallPosition,
-        calculatedPosition: position,
-        rotation: rotation,
-        dimensions: variant.dimensions
-      })
-
       // Create the item in the format expected by the planner
       const newItem = {
         id: generateUniqueId(),
@@ -1974,8 +1872,6 @@ const loadTemplateData = async (template) => {
 
     // Use progressive loading for each item - shows placeholder while model loads
     if (sceneManagerRef.value && plannerItems.length > 0) {
-      console.log('🔲 Loading template items with placeholders...', plannerItems.length, 'items')
-
       // Mark as not initial load to prevent watcher from double-loading
       isInitialLoad.value = false
 
@@ -1983,10 +1879,10 @@ const loadTemplateData = async (template) => {
       const loadPromises = plannerItems.map((item) => {
         return sceneManagerRef.value.addSingleItemProgressively(item, {
           onPlaceholderAdded: (placeholder) => {
-            console.log(`🔲 Placeholder shown for ${item.type} (${item.sku})`)
+            // Placeholder shown
           },
           onFullModelAdded: (model) => {
-            console.log(`✅ Full model loaded for ${item.type} (${item.sku})`)
+            // Full model loaded
           }
         }).catch(error => {
           console.error(`❌ Failed to load item ${item.sku}:`, error)
@@ -2010,12 +1906,6 @@ const loadTemplateData = async (template) => {
         currentWallTexture: currentWallTexture.value
       })
     }, 100)
-
-    console.log('Template loaded successfully:', {
-      templateName: template.name,
-      itemCount: plannerItems.length,
-      roomSize: `${template.roomWidth}x${template.roomHeight}cm`
-    })
 
   } catch (error) {
     console.error('❌ Failed to load template data:', error)
@@ -2067,13 +1957,6 @@ const loadDesignData = (designData) => {
         currentWallTexture: currentWallTexture.value
       })
     }, 100)
-
-    console.log('Design loaded successfully:', {
-      itemCount: items.value.length,
-      roomSize: `${ roomWidth.value }x${ roomHeight.value }cm`,
-      floorTexture: currentFloorTexture.value,
-      wallTexture: currentWallTexture.value
-    })
 
   } catch (error) {
     console.error('❌ Failed to load design data:', error)
@@ -2129,15 +2012,12 @@ onMounted(async () => {
       roomHeight.value = template.roomHeight
       roomWidthRef.value = template.roomWidth
       roomHeightRef.value = template.roomHeight
-      console.log('📐 Pre-setting template room dimensions:', template.roomWidth, 'x', template.roomHeight)
 
       // Store camera settings to apply after scene init
       if (template.customCamera) {
         pendingCameraPosition = template.customCamera
-        console.log('📷 Pre-setting template custom camera:', template.customCamera)
       } else if (template.cameraPreset) {
         pendingCameraPreset = template.cameraPreset
-        console.log('📷 Pre-setting template camera preset:', template.cameraPreset)
       }
 
       // Clear stale L-shape corner when loading template (templates don't support L-shape yet)
@@ -2148,17 +2028,6 @@ onMounted(async () => {
   } else if (!hasDesignToLoad) {
     // No template or design, load saved room dimensions
     const dimensionsLoaded = loadSavedRoomDimensions()
-    if (dimensionsLoaded) {
-      console.log('Using saved room dimensions (CM):', {
-        width: roomWidth.value + 'cm',
-        height: roomHeight.value + 'cm'
-      })
-    } else {
-      console.log('Using default room dimensions (CM):', {
-        width: ROOM_DEFAULTS.WIDTH + 'cm',
-        height: ROOM_DEFAULTS.HEIGHT + 'cm'
-      })
-    }
 
     // Check for L-shape corner selection and set camera angle
     // Detect L-shape by checking if notch dimensions are > 0 (since selected-room-shape was consumed by RoomDimensions)
@@ -2179,7 +2048,6 @@ onMounted(async () => {
       }
 
       pendingCameraPosition = cornerCameraPositions[lShapeCorner] || cornerCameraPositions['nw']
-      console.log('📷 L-shape corner camera position:', lShapeCorner, pendingCameraPosition)
 
       // Persist corner for 2D/3D view transitions (sceneManager needs this)
       localStorage.setItem('l-shape-corner-active', lShapeCorner)
@@ -2217,7 +2085,6 @@ onMounted(async () => {
 
 // ADD THESE LINES RIGHT AFTER THE ABOVE CODE:
   if (eventHandlersRef.value) {
-    console.log('🔗 Connecting variant configuration to EventHandlers')
     eventHandlersRef.value.onItemSelected = handleItemSelection
     eventHandlersRef.value.onItemDeselected = handleItemDeselection
     // Connect drag state handlers
@@ -2231,10 +2098,8 @@ onMounted(async () => {
 
   // Apply pending camera position BEFORE rendering starts (to avoid visual jump)
   if (pendingCameraPosition) {
-    console.log('📷 Applying custom camera position immediately:', pendingCameraPosition)
     sceneManagerRef.value.setCustomCameraPosition(pendingCameraPosition)
   } else if (pendingCameraPreset) {
-    console.log('📷 Applying camera preset immediately:', pendingCameraPreset)
     sceneManagerRef.value.setCameraPreset(pendingCameraPreset)
   }
 
@@ -2260,28 +2125,19 @@ onMounted(async () => {
   eventHandlersRef.value.addEventListeners()
 
   // Add window resize handler for post-processing
-  window.addEventListener('resize', () => {
-    if (sceneManagerRef.value) {
-      sceneManagerRef.value.updateComposerSize();
-    }
-  })
+  window.addEventListener('resize', handleWindowResize)
 
   // Start animation loop
   sceneManagerRef.value.startAnimationLoop()
 
   if (sceneManagerRef.value) {
     sceneManagerRef.value.setWallGridVisible(showWallGrid.value)
-    console.log('🔄 Initial wall grid visibility synchronized:', showWallGrid.value)
   }
 
   // PRELOAD MODELS - This will load all models defined in constants
-  console.log('Starting model preloading...', CONFIG)
-
   if (CONFIG && CONFIG.preloadModels) {
     try {
       await preloadModels()
-      console.log('Model preloading completed!')
-      console.log('Cache status:', getModelCacheStatus())
     } catch (error) {
       console.error('Error during model preloading:', error)
     }
@@ -2292,13 +2148,11 @@ onMounted(async () => {
 
   if (!wasDesignLoaded && templateId) {
     // Template selected - load with progressive loading (shows placeholders)
-    console.log('🔲 Loading template with placeholders...')
     localStorage.removeItem('selected-template') // Clear flag
     const template = getTemplateById(templateId)
     if (template) {
       try {
         await loadTemplateData(template)
-        console.log('✅ Template loaded with placeholders:', template.name)
       } catch (error) {
         console.error('❌ Failed to load template:', error)
       }
@@ -2353,17 +2207,13 @@ watch([currentFloorTexture, currentWallTexture], () => {
 watch([items, lastUpdateSource], ([newItems, updateSource]) => {
   if (!sceneManagerRef.value) return
 
-  console.log(`🔍 Items changed: ${ updateSource }, ${ newItems.length } items`)
-
   // Skip scene updates during drag operations
   if (updateSource === 'drag') {
-    console.log('⏭️ Skipping scene update during drag')
     return
   }
 
   // For initial load, use the full update method
   if (isInitialLoad.value) {
-    console.log('🚀 Initial load - using full update')
     sceneManagerRef.value.updateBathroomItems(newItems)
     previousItems.value = [...newItems]
     isInitialLoad.value = false
@@ -2375,8 +2225,6 @@ watch([items, lastUpdateSource], ([newItems, updateSource]) => {
 }, { deep: true })
 
 watch([showWallGrid], ([newShowWallGrid]) => {
-  console.log('👀 Wall grid visibility changed:', newShowWallGrid);
-
   if (sceneManagerRef.value) {
     sceneManagerRef.value.setWallGridVisible(newShowWallGrid);
   }
@@ -2402,11 +2250,7 @@ onUnmounted(() => {
   window.removeEventListener('object-moved', handleMeasurementUpdate)
 
   // Remove resize listener
-  window.removeEventListener('resize', () => {
-    if (sceneManagerRef.value) {
-      sceneManagerRef.value.updateComposerSize();
-    }
-  })
+  window.removeEventListener('resize', handleWindowResize)
 
   if (mountRef.value && sceneManagerRef.value) {
     const renderer = sceneManagerRef.value.renderer
@@ -2426,27 +2270,18 @@ const handleIncrementalUpdate = async (newItems, updateSource) => {
 
   const prevItems = previousItems.value
 
-  console.log('🔄 Performing incremental update:', {
-    source: updateSource,
-    prevCount: prevItems.length,
-    newCount: newItems.length
-  })
-
   try {
     switch (updateSource) {
       case 'add':
         // Scene update already handled in addItem method
-        console.log('➕ Add operation - scene already updated directly')
         break
 
       case 'delete':
         // Scene update already handled in deleteItem method
-        console.log('🗑️ Delete operation - scene already updated directly')
         break
 
       case 'clear':
         // Scene update already handled in handleClearAll method
-        console.log('🧹 Clear operation - scene already updated directly')
         break
 
       case 'move':
@@ -2457,13 +2292,11 @@ const handleIncrementalUpdate = async (newItems, updateSource) => {
       case 'roomSize':
       case 'constrain':
         // Use the incremental update for these operations
-        console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
         break
 
       default:
         // Fallback to incremental update
-        console.log('🔄 Default incremental update')
         await sceneManagerRef.value.updateBathroomItems(newItems)
     }
 
@@ -2489,18 +2322,12 @@ const updateCurrentMeasurements = () => {
 const handleSmartUpdate = async (newItems, updateSource) => {
   if (!sceneManagerRef.value) return
 
-  console.log('🔄 Handling smart update:', {
-    source: updateSource,
-    itemCount: newItems.length
-  })
-
   try {
     switch (updateSource) {
       case 'add':
       case 'delete':
       case 'clear':
         // Scene already updated directly in the respective methods
-        console.log(`✅ ${ updateSource } operation - scene already updated directly`)
         break
 
       case 'undo':
@@ -2512,32 +2339,28 @@ const handleSmartUpdate = async (newItems, updateSource) => {
       case 'constrain':
       case 'notchSize':
         // Use incremental update for these operations
-        console.log(`🔄 Updating scene for ${ updateSource }`)
         await sceneManagerRef.value.updateBathroomItems(newItems)
         break
       case 'variantSwap-processing':
         // Skip scene update while variant swap is processing
-        console.log('⏭️ Skipping scene update during variant swap processing')
         break
 
       case 'variantSwap-complete':
         // Scene already updated directly
-        console.log('✅ Variant swap scene already updated directly')
         break
 
       case 'initial':
         // Skip - initial load is handled separately
-        console.log('⏭️ Skipping initial source - handled elsewhere')
         break
 
       case 'drag':
         // Skip - drag operations should not trigger scene updates
-        console.log('⏭️ Skipping drag source in handleSmartUpdate')
         break
 
       default:
-        // Log unexpected source but skip to avoid duplication
-        console.warn(`⚠️ Unexpected update source: ${updateSource} - skipping scene update to prevent duplication`)
+        // Unexpected source - log warning and update scene to prevent stale 3D state
+        console.warn(`⚠️ Unknown updateSource "${updateSource}" - falling back to full scene update`)
+        await sceneManagerRef.value.updateBathroomItems(newItems)
         break
     }
 
@@ -2556,13 +2379,10 @@ const handleSmartUpdate = async (newItems, updateSource) => {
 }
 
 const handleClearAll = () => {
-  console.log('🧹 Starting clear all operation...')
-
   // CRITICAL: Clear items from Three.js scene FIRST
   if (sceneManagerRef.value) {
     try {
       sceneManagerRef.value.clearAllItems()
-      console.log('✅ Items cleared from Three.js scene')
     } catch (error) {
       console.error('❌ Error clearing items from scene:', error)
     }
@@ -2590,8 +2410,6 @@ const handleClearAll = () => {
     currentFloorTexture: currentFloorTexture.value,
     currentWallTexture: currentWallTexture.value
   })
-
-  console.log('🧹 All items cleared from bathroom planner')
 }
 
 </script>

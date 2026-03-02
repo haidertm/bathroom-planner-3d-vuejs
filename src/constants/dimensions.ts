@@ -6,6 +6,7 @@ export interface RoomDefaults {
   readonly MIN_SIZE: number;
   readonly MAX_SIZE: number;
   readonly STEP: number;
+  readonly MIN_WALL_GAP: number;
 }
 
 export type WallType = 'north' | 'south' | 'east' | 'west' | 'notch-east' | 'notch-south';
@@ -15,7 +16,8 @@ export const ROOM_DEFAULTS: RoomDefaults = {
   HEIGHT: 250, // default Length/Depth
   MIN_SIZE: 100,
   MAX_SIZE: 600,
-  STEP: 10
+  STEP: 10,
+  MIN_WALL_GAP: 50 // Minimum gap (cm) between notch and room walls to prevent walls touching
 } as const;
 
 // Shape-specific default dimensions
@@ -101,7 +103,6 @@ export const MEASUREMENT_SETTINGS = {
 // Helper function to get default dimensions for a shape
 export const getShapeDefaultDimensions = (shape: RoomShape | string): ShapeDimensions => {
     if (shape === 'square' || shape === 'rectangular' || shape === 'l-shape') {
-        console.log('>>> room shape default', SHAPE_DEFAULTS[shape]);
         return SHAPE_DEFAULTS[shape];
     }
 
@@ -133,13 +134,6 @@ export const saveRoomDimensionsToStorage = (
     }
 
     localStorage.setItem('room-dimensions', JSON.stringify(roomDimensionsInMeters));
-    console.log('Room dimensions saved to localStorage:', roomDimensionsInMeters);
-    console.log('Original values in CM:', {
-      width: widthCm + 'cm',
-      height: heightCm + 'cm',
-      notchWidth: notchWidthCm ? notchWidthCm + 'cm' : 'N/A',
-      notchHeight: notchHeightCm ? notchHeightCm + 'cm' : 'N/A'
-    });
   } catch (error) {
     console.warn('Failed to save room dimensions:', error);
   }
@@ -171,7 +165,6 @@ export const loadRoomDimensionsFromStorage = (): {
           dimensions.notchHeight = Math.round(parsed.notchHeight * 100);
         }
 
-        console.log('📂 Room dimensions loaded from localStorage (converted to cm):', dimensions);
         return dimensions;
     } catch (error) {
         console.error('❌ Failed to load room dimensions:', error);

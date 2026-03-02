@@ -119,27 +119,48 @@
       >
         <FilterChips
             :category="props.selectedCategory"
-            :products="props.categoryProducts"
+            :products="props.allCategoryProducts.length > 0 ? props.allCategoryProducts : props.filteredProducts"
             :selected-filters="props.selectedFilters"
+            :background-filter-count="backgroundFilterCount"
+            :background-filters="backgroundFilters"
             @update:filters="handleFilterUpdate"
             @open-all-filters="openAllFiltersDrawer"
+            @clear-background-filters="clearBackgroundFilters"
         />
       </div>
 
-      <!-- All Filters Drawer -->
+      <!-- Search Filter Bar (shown only in search mode) -->
+      <div
+        v-if="currentView === 'products' && props.selectedCategory === 'search' && !isSingleProductSearchMode"
+        :style="searchFilterBarContainerStyle"
+        class="search-filter-bar-container"
+      >
+        <SearchFilterBar
+            :search-results="unfilteredSearchResults"
+            :selected-filters="searchFilters"
+            :search-query="props.searchQuery"
+            @update:filters="handleSearchFilterUpdate"
+            @category-transition="handleCategoryTransition"
+        />
+      </div>
+
+      <!-- All Filters Drawer (hidden in search mode) -->
       <AllFiltersDrawer
+          v-if="props.selectedCategory !== 'search'"
           :is-open="isAllFiltersOpen"
           :category="props.selectedCategory"
-          :products="props.categoryProducts"
+          :products="props.allCategoryProducts.length > 0 ? props.allCategoryProducts : props.filteredProducts"
           :selected-filters="props.selectedFilters"
+          :background-filters="backgroundFilters"
           @close="closeAllFiltersDrawer"
           @update:filters="handleFilterUpdate"
+          @clear-background-filters="clearBackgroundFilters"
       />
 
       <!-- PROGRESSIVE LOADING: Show ready products + skeletons for loading ones -->
       <div v-if="currentView === 'products'" :style="contentStyle">
 
-        <!-- Empty state when no products match filters -->
+        <!-- Empty state when no products match filters (category mode) -->
         <div v-if="readyProducts.length === 0 && hasActiveFilters(props.selectedFilters) && !isAnythingLoading() && props.selectedCategory !== 'search'" class="no-products-state">
           <div class="no-products-icon">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -155,68 +176,37 @@
           </button>
         </div>
 
+        <!-- Empty state when no products match search filters (search mode) -->
+        <div v-if="readyProducts.length === 0 && hasActiveSearchFilters && props.selectedCategory === 'search'" class="no-products-state">
+          <div class="no-products-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+              <path d="M8 8l6 6"></path>
+              <path d="M14 8l-6 6"></path>
+            </svg>
+          </div>
+          <p class="no-products-message">No results match the selected filters.</p>
+          <button class="clear-filters-btn" @click="clearSearchFilters">
+            Clear Filters
+          </button>
+        </div>
+
         <!-- Show products that are ready (models loaded) -->
-        <div
+        <ProductCard
             v-for="product in readyProducts"
             :key="product.id"
-            :style="productCardStyle"
-            class="product-card"
-        >
-          <!-- Product Image -->
-          <div :style="productImageStyle">
-            <img :src="product.image" :alt="product.name" :style="imageStyle" />
-          </div>
-
-          <!-- Product Info -->
-          <div :style="productInfoStyle">
-            <h3 :style="productNameStyle" v-html="getHighlightedName(product)">
-            </h3>
-            <div v-if="product.searchContext" :style="searchContextStyle">
-              <div v-if="product.searchContext.matchingVariant" :style="searchVariantStyle">
-                SKU: {{ product.searchContext.matchingVariant.sku }}
-              </div>
-            </div>
-            <div :style="priceStyle">
-              <span v-if="hasMultiplePrices(product)" style="font-size: 18px; font-weight: normal; color: #666; margin-right: 4px;">From</span>£{{ getLowestVariantPrice(product) }}
-            </div>
-
-            <!-- More Info Link -->
-            <a :href="product.link" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
-              More info ↗
-            </a>
-
-            <!-- SELECT Button (original functionality) -->
-            <button
-                @click="selectProduct(product)"
-                :style="getSearchAwareButtonStyle(product)"
-                class="select-button"
-            >
-              {{ getButtonText(product) }}
-            </button>
-          </div>
-        </div>
+            :product="product"
+            :search-query="props.searchQuery"
+            :is-search-mode="props.selectedCategory === 'search'"
+            @select="selectProduct"
+        />
 
         <!-- Show skeleton loaders for products still loading -->
-        <div
+        <SkeletonProductCard
             v-for="n in getLoadingProductCount()"
             :key="`skeleton-${n}`"
-            :style="skeletonCardStyle"
-            class="skeleton-card"
-        >
-          <!-- Skeleton Image -->
-          <div :style="skeletonImageStyle">
-            <div :style="skeletonShimmerStyle"></div>
-          </div>
-
-          <!-- Skeleton Content -->
-          <div :style="skeletonContentStyle">
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonLineStyle"></div>
-            <div :style="skeletonButtonStyle"></div>
-          </div>
-        </div>
+        />
 
         <!-- Loading progress indicator (optional) -->
         <div v-if="isAnythingLoading()" :style="loadingProgressStyle">
@@ -230,94 +220,39 @@
       <!-- VARIANTS VIEW - Original Design -->
       <div v-else-if="currentView === 'variants'" :style="variantsContentStyle">
         <!-- Product Summary -->
-        <div :style="productSummaryStyle">
-          <div :style="productImageStyle">
-            <img :src="getDisplayImage()" :alt="getDisplayName()" :style="imageStyle" />
-          </div>
-          <div :style="productInfoStyle">
-            <h3 :style="productNameStyle">{{ getDisplayName() }}</h3>
-            <div :style="brandStyle"><span style="font-weight: bold;">sku:</span> {{ getDisplaySku() }}</div>
-            <div :style="priceStyle">£{{ getDisplayPrice() }}</div>
-            <a :href="getLink()" :style="moreInfoStyle" class="more-info-link" target="_blank" rel="noopener noreferrer">
-              More info ↗
-            </a>
-          </div>
-        </div>
+        <ProductSummary
+            :image="getDisplayImage()"
+            :name="getDisplayName()"
+            :sku="getDisplaySku()"
+            :price="getDisplayPrice()"
+            :link="getLink()"
+        />
 
         <!-- Variants Selection (if product has variants) -->
-        <div v-if="selectedProduct.variants && selectedProduct.variants.length > 0" :style="sectionStyle">
-          <!-- Single filtered variant - show simplified view -->
-          <template v-if="hasOnlyOneFilteredVariant">
-            <h4 :style="sectionTitleStyle">Selected {{ selectedProduct.variantType || 'Size' }}</h4>
-            <div :style="singleVariantInfoStyle">
-              <span :style="singleVariantNameStyle">{{ selectedVariant?.name }}</span>
-              <span v-if="isVariantTooLarge(selectedVariant)" :style="tooLargeBadgeStyle">
-                ⚠ Too Large
-              </span>
-            </div>
-          </template>
-
-          <!-- Multiple variants - show selection buttons -->
-          <template v-else>
-            <h4 :style="sectionTitleStyle">{{ selectedProduct.variantType || 'Size' }}</h4>
-            <div :style="variantOptionsStyle">
-              <button
-                  v-for="(variant, index) in displayedVariants"
-                  :key="variant.id || variant.sku || variant.name || index"
-                  @click="selectVariant(variant)"
-                  :style="getVariantButtonStyle(variant)"
-                  class="variant-button"
-                  :title="isVariantTooLarge(variant) ? getTooLargeTooltip(variant) : ''"
-              >
-                <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
-                  <span>{{ variant.name }}</span>
-                  <!-- Show too large badge for variants that don't fit -->
-                  <span v-if="isVariantTooLarge(variant)" :style="tooLargeBadgeStyle">
-                    ⚠ Too Large
-                  </span>
-                </span>
-              </button>
-            </div>
-
-            <!-- See More / See Less Button -->
-            <div
-                v-if="shouldShowSeeMoreButton"
-                :style="seeMoreContainerStyle"
-            >
-              <button
-                  @click="toggleShowAllVariants"
-                  :style="seeMoreButtonStyle"
-                  class="see-more-button"
-              >
-                {{ showAllVariants ? 'See Less' : `See More (${filteredVariants.length - 5} more)` }}
-                <span :style="{ marginLeft: '8px' }">
-              {{ showAllVariants ? '↑' : '↓' }}
-            </span>
-              </button>
-            </div>
-          </template>
-
-        </div>
+        <VariantSelector
+            v-if="selectedProduct.variants && selectedProduct.variants.length > 0"
+            :variants="filteredVariants"
+            :selected-variant="selectedVariant"
+            :title="selectedProduct.variantType || 'Size'"
+            :room-width="props.roomWidth"
+            :room-height="props.roomHeight"
+            :has-only-one-variant="hasOnlyOneFilteredVariant"
+            :product-id="selectedProduct.id || ''"
+            :product-name="selectedProduct.name || ''"
+            :category="resolvedCategory"
+            :check-too-large="isVariantTooLarge"
+            @select="selectVariant"
+        />
 
         <!-- Color Selection (if product has colors) -->
-        <div v-if="selectedProduct.colors && selectedProduct.colors.length > 0" :style="sectionStyle">
-          <h4 :style="sectionTitleStyle">Color: {{ getSelectedColorName() }}</h4>
-          <div :style="colorOptionsStyle">
-            <div
-                v-for="color in selectedProduct.colors"
-                :key="color.id"
-                @click="selectColor(color.id)"
-                :style="getColorSwatchStyle(color)"
-                class="color-swatch"
-                :title="color.name"
-            >
-              <div :style="colorInnerStyle(color)"></div>
-              <span :style="colorNameStyle">{{ color.name }}</span>
-            </div>
-          </div>
-        </div>
+        <ColorSelector
+            v-if="selectedProduct.colors && selectedProduct.colors.length > 0"
+            :colors="selectedProduct.colors"
+            :selected-color="selectedColor"
+            @select="selectColor"
+        />
 
-        <!-- Hardware Section (if product has hardware) -->
+        <!-- Hardware Section (if product has hardware) - Display only, no change functionality -->
         <div v-if="selectedProduct.hardware && selectedProduct.hardware.length > 0" :style="sectionStyle">
           <h4 :style="sectionTitleStyle">Included Hardware</h4>
           <div
@@ -330,13 +265,6 @@
               <h5 :style="hardwareNameStyle">{{ hardware.name }}</h5>
               <div :style="hardwareBrandStyle">{{ hardware.brand }}</div>
               <div :style="hardwarePriceStyle">£{{ hardware.price }}</div>
-              <button
-                  @click="toggleHardwareChange(hardware.id)"
-                  :style="hardwareChangeButtonStyle"
-                  class="hardware-change-button"
-              >
-                🔄 Change
-              </button>
             </div>
           </div>
         </div>
@@ -359,10 +287,17 @@
 
 <script setup>
 import {ref, computed, watch} from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile } from '../../utils/helpers.js'
 import productData from '../../mocks/productData'
 import FilterChips from './FilterChips.vue'
 import AllFiltersDrawer from './AllFiltersDrawer.vue'
+import SearchFilterBar from './SearchFilterBar.vue'
+import ProductCard from './ProductCard.vue'
+import SkeletonProductCard from './SkeletonProductCard.vue'
+import VariantSelector from './VariantSelector.vue'
+import ColorSelector from './ColorSelector.vue'
+import ProductSummary from './ProductSummary.vue'
 import { ModelManager } from '../../models/bathroomFixtures'
 import {
   isVariantModelLoaded,
@@ -370,10 +305,47 @@ import {
   isVariantModelLoadedWithCache,
   loadVariantModelProgressively
 } from '../../utils/modelLoader'
-import { filterProductVariants, hasActiveFilters } from '../../utils/filters'
+import { filterProductVariants, hasActiveFilters, PRICE_EPS } from '../../utils/filters'
 import { EMPTY_FILTERS, createEmptyFilters } from '../../constants/filters'
 import { findFreeWallPosition } from '../../utils/constraints'
 import { getMovementConfig } from '../../utils/models'
+
+// Default search filter state - used for initialization and reset
+const INITIAL_SEARCH_FILTERS = {
+  category: null,
+  priceMin: null,
+  priceMax: null,
+  styles: []
+}
+
+// Helper: Normalize price string by removing currency symbols, commas, and whitespace
+const normalizePrice = (price) => {
+  if (typeof price === 'number') return price
+  if (typeof price === 'string') {
+    // Remove currency symbols (£, $, €, etc.), commas, and whitespace
+    // Keep only digits, decimal point, and optional leading minus sign
+    const normalized = price.trim().replace(/[^0-9.\-]/g, '')
+    const parsed = parseFloat(normalized)
+    return isNaN(parsed) ? 0 : parsed
+  }
+  return 0
+}
+
+// Helper: Merge product-level and variant-level filterAttributes
+// Variant attributes override product attributes, but product attributes are retained if not overridden
+const mergeFilterAttributes = (productAttrs, variantAttrs) => {
+  const product = productAttrs || {}
+  const variant = variantAttrs || {}
+
+  // Merge with variant taking precedence
+  return {
+    ...product,
+    ...variant
+  }
+}
+
+// Initialize GTM
+const gtm = useGtm()
 
 // Props
 const props = defineProps({
@@ -441,6 +413,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  allCategoryProducts: {
+    type: Array,
+    default: () => []
+  },
   // Constraint checking props
   roomWidth: {
     type: Number,
@@ -465,10 +441,17 @@ const props = defineProps({
 })
 
 // Emits - ADD 'back' event for better control
-const emit = defineEmits(['close', 'add-to-room', 'retry-loading', 'update:filters'])
+const emit = defineEmits(['close', 'add-to-room', 'retry-loading', 'update:filters', 'category-transition', 'clear-background-filters', 'expand-search-constraint'])
 
 // Handle filter updates from FilterChips component
 const handleFilterUpdate = (newFilters) => {
+  // If we have search result constraint active and user is changing filters,
+  // expand to show all category products
+  if (searchResultProductIds.value.size > 0) {
+    emit('expand-search-constraint')
+    searchResultProductIds.value = new Set()
+  }
+
   emit('update:filters', newFilters)
 }
 
@@ -487,6 +470,220 @@ const openAllFiltersDrawer = () => {
 const closeAllFiltersDrawer = () => {
   isAllFiltersOpen.value = false
 }
+
+// Search filter state (for SearchFilterBar)
+const searchFilters = ref({ ...INITIAL_SEARCH_FILTERS })
+
+// Background filters state - preserved from search view when transitioning to category
+// These filters (style, price) remain active but are hidden from the main chip row
+const backgroundFilters = ref({
+  style: [],
+  priceMin: null,
+  priceMax: null
+})
+
+// Store search result product IDs when transitioning from search to category
+// This limits the category view to only show products that were in the search results
+const searchResultProductIds = ref(new Set())
+
+// Handle search filter updates from SearchFilterBar
+const handleSearchFilterUpdate = (newFilters) => {
+  searchFilters.value = { ...newFilters }
+
+  // Track search filter updates in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'search_filters_updated',
+      category: 'Search Filters',
+      action: 'Update',
+      searchQuery: props.searchQuery || '',
+      selectedCategory: props.selectedCategory || 'search',
+      isSingleProductSearchMode: isSingleProductSearchMode.value,
+      filters: {
+        category: newFilters.category,
+        priceMin: newFilters.priceMin,
+        priceMax: newFilters.priceMax,
+        stylesCount: newFilters.styles?.length || 0
+      }
+    })
+  }
+}
+
+// Handle category transition from search view - preserves style/price as background filters
+const handleCategoryTransition = (transitionData) => {
+  const { category, preservedFilters } = transitionData
+
+  // Use preservedFilters from the event - SearchFilterBar computes these at click time
+  // Store the preserved filters (style, price) as background filters
+  backgroundFilters.value = {
+    style: preservedFilters.styles || [],
+    priceMin: preservedFilters.priceMin,
+    priceMax: preservedFilters.priceMax
+  }
+
+  // CRITICAL: Capture the product IDs from current search results for the selected category
+  // This ensures category view only shows products that were in the search results
+  const productIds = new Set()
+  const currentSearchResults = readyProducts.value || []
+
+  currentSearchResults.forEach(item => {
+    // Extract product ID from search context
+    const productId = item.searchContext?.originalProduct?.id || item.id
+    if (productId) {
+      productIds.add(productId)
+    }
+  })
+
+  searchResultProductIds.value = productIds
+
+  // Track category transition in GTM
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'category_transition',
+      category: 'Search Filters',
+      action: 'Category Transition',
+      selectedCategory: category,
+      searchResultCount: productIds.size,
+      backgroundFilters: {
+        stylesCount: backgroundFilters.value.style?.length || 0,
+        priceMin: backgroundFilters.value.priceMin,
+        priceMax: backgroundFilters.value.priceMax
+      },
+      preservedFilters: {
+        styles: preservedFilters.styles || [],
+        priceMin: preservedFilters.priceMin,
+        priceMax: preservedFilters.priceMax
+      }
+    })
+  }
+
+  // Emit to parent to handle the category change
+  emit('category-transition', {
+    category,
+    backgroundFilters: backgroundFilters.value,
+    searchResultProductIds: Array.from(productIds) // Send as array for easier handling
+  })
+}
+
+// Get count of active background filters (for badge display)
+const backgroundFilterCount = computed(() => {
+  let count = 0
+
+  // Count style filters
+  if (backgroundFilters.value.style && backgroundFilters.value.style.length > 0) {
+    count += backgroundFilters.value.style.length
+  }
+
+  // Count price filter (as 1 if either min or max is set)
+  if (backgroundFilters.value.priceMin !== null || backgroundFilters.value.priceMax !== null) {
+    count += 1
+  }
+
+  return count
+})
+
+// Clear background filters
+const clearBackgroundFilters = () => {
+  backgroundFilters.value = {
+    style: [],
+    priceMin: null,
+    priceMax: null
+  }
+  // Emit to parent (sidebar) to also clear the filters from selectedFilters
+  emit('clear-background-filters')
+}
+
+// Clear search filters
+const clearSearchFilters = () => {
+  // Track clear filters in GTM when in search mode
+  if (gtm?.enabled() && props.selectedCategory === 'search') {
+    gtm.trackEvent({
+      event: 'search_clear_filters',
+      category: 'Search',
+      action: 'Clear Filters',
+      label: 'Empty State',
+      source: 'empty_state',
+      hasActiveFilters: hasActiveSearchFilters.value,
+      resultCount: readyProducts.value?.length || 0
+    })
+  }
+
+  searchFilters.value = { ...INITIAL_SEARCH_FILTERS }
+}
+
+// Check if search filters are active
+// Note: SearchFilterBar emits null for priceMin/priceMax when no price filter is active,
+// so we only need to check if they are non-null to know if a price filter is applied
+const hasActiveSearchFilters = computed(() => {
+  const hasCategoryFilter = searchFilters.value.category !== null
+  const hasPriceFilter = searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null
+  const hasStyleFilter = searchFilters.value.styles.length > 0
+
+  return hasCategoryFilter || hasPriceFilter || hasStyleFilter
+})
+
+// Unfiltered search results for SearchFilterBar (to calculate filter options)
+const unfilteredSearchResults = computed(() => {
+  if (props.selectedCategory !== 'search') return []
+
+  // Get search results array safely
+  let searchResultsArray = []
+  try {
+    let unwrapped = props.searchResults
+    if (unwrapped && typeof unwrapped === 'object' && 'value' in unwrapped) {
+      unwrapped = unwrapped.value
+    }
+    if (Array.isArray(unwrapped)) {
+      searchResultsArray = unwrapped
+    } else if (unwrapped && typeof unwrapped === 'object' && unwrapped.length !== undefined) {
+      searchResultsArray = Array.from(unwrapped)
+    }
+  } catch (error) {
+    console.warn('Error processing searchResults for filter bar:', error)
+    searchResultsArray = []
+  }
+
+  // Transform to flat list for filter calculation
+  const transformedResults = []
+
+  searchResultsArray.forEach((result) => {
+    const { category, product, matchingVariant, matchType, isExactMatch } = result
+
+    // For exact SKU matches
+    if (isExactMatch && matchType === 'exact_sku' && matchingVariant) {
+      transformedResults.push({
+        id: matchingVariant.id || matchingVariant.sku,
+        price: matchingVariant.price || product.price,
+        category: category,
+        filterAttributes: mergeFilterAttributes(product.filterAttributes, matchingVariant.filterAttributes)
+      })
+      return
+    }
+
+    // For other matches - add each variant
+    const variants = product.variants || []
+    if (variants.length > 0) {
+      variants.forEach(variant => {
+        transformedResults.push({
+          id: `${product.id}-${variant.id || variant.sku}`,
+          price: variant.price || product.price,
+          category: category,
+          filterAttributes: mergeFilterAttributes(product.filterAttributes, variant.filterAttributes)
+        })
+      })
+    } else {
+      // Product has no variants - add product-level entry
+      transformedResults.push({
+        id: product.id || product.sku,
+        price: product.price,
+        category: category,
+        filterAttributes: product.filterAttributes || {}
+      })
+    }
+  })
+
+  return transformedResults
+})
 
 // Filter scroll container ref and horizontal scroll handler
 const filterScrollContainer = ref(null)
@@ -542,38 +739,16 @@ const showAllVariants = ref(false)
 const filteredVariants = computed(() => {
   if (!selectedProduct.value?.variants) return []
 
-  // Debug: Log all filter details
   const allVariants = selectedProduct.value.variants
-  const lengthFilter = props.selectedFilters?.length
   const hasActive = hasActiveFilters(props.selectedFilters)
-
-  console.log('🔍 ====== FILTERING VARIANTS ======')
-  console.log('🔍 Product:', selectedProduct.value.name)
-  console.log('🔍 Total variants:', allVariants.length)
-  console.log('🔍 All variant lengths:', allVariants.map(v => ({
-    name: v.name,
-    sku: v.sku,
-    filterLength: v.filterAttributes?.length
-  })))
-  console.log('🔍 Selected filters:', JSON.stringify(props.selectedFilters, null, 2))
-  console.log('🔍 Length filter array:', lengthFilter)
-  console.log('🔍 hasActiveFilters result:', hasActive)
 
   // If no active filters, return all variants
   if (!hasActive) {
-    console.log('🔍 ❌ No active filters detected, returning ALL variants')
     return allVariants
   }
 
   // Filter variants based on selected filters
   const filtered = filterProductVariants(selectedProduct.value, props.selectedFilters)
-  console.log('🔍 ✅ Active filters detected!')
-  console.log('🔍 Filtered result:', filtered.map(v => ({
-    name: v.name,
-    sku: v.sku,
-    filterLength: v.filterAttributes?.length
-  })))
-  console.log('🔍 ====== END FILTERING ======')
   return filtered
 })
 
@@ -581,36 +756,6 @@ const filteredVariants = computed(() => {
 const hasOnlyOneFilteredVariant = computed(() => {
   return filteredVariants.value.length === 1 && hasActiveFilters(props.selectedFilters)
 })
-
-// Add this computed property for displayed variants (with pagination)
-const displayedVariants = computed(() => {
-  const variants = filteredVariants.value
-
-  if (variants.length === 0) return []
-
-  // If we have 5 or fewer variants, show all
-  if (variants.length <= 5) {
-    return variants
-  }
-
-  // If "See More" hasn't been clicked, show only first 5
-  if (!showAllVariants.value) {
-    return variants.slice(0, 5)
-  }
-
-  // Otherwise show all variants
-  return variants
-})
-
-// Check if we should show the "See More" button (based on filtered variants)
-const shouldShowSeeMoreButton = computed(() => {
-  return filteredVariants.value.length > 5
-})
-
-// Function to toggle showing all variants
-const toggleShowAllVariants = () => {
-  showAllVariants.value = !showAllVariants.value
-}
 
 // Reset showAllVariants when product changes
 watch(() => selectedProduct.value, () => {
@@ -704,20 +849,6 @@ const isVariantTooLarge = (variant) => {
   return freePosition === null
 }
 
-const getTooLargeTooltip = (variant) => {
-  if (!variant?.dimensions) return ''
-  if (!isVariantTooLarge(variant)) return ''
-
-  const maxVariantDim = Math.max(variant.dimensions.width || 0, variant.dimensions.depth || 0)
-  const maxWallLength = Math.max(props.roomWidth, props.roomHeight)
-
-  if (maxVariantDim > maxWallLength) {
-    return `Item exceeds room size (Requires ${maxVariantDim * 10}mm, Available ${maxWallLength * 10}mm).`
-  }
-
-  return 'Not enough space - room is too crowded with existing items.'
-}
-
 watch(() => props.searchTriggered, (newValue, oldValue) => {
   if (newValue > oldValue && newValue > 0) {
     // Force reset to products view when search is triggered
@@ -725,6 +856,8 @@ watch(() => props.searchTriggered, (newValue, oldValue) => {
     selectedProduct.value = null;
     selectedVariant.value = '';
     selectedColor.value = '';
+    // Reset search filters for new search
+    searchFilters.value = { ...INITIAL_SEARCH_FILTERS };
   }
 });
 
@@ -742,6 +875,16 @@ watch(() => props.isOpen, (isOpen) => {
     // Close AllFiltersDrawer when ProductDrawer closes
     isAllFiltersOpen.value = false;
     productPreloading.value.clear();
+    // Reset search filters when drawer closes
+    searchFilters.value = { ...INITIAL_SEARCH_FILTERS };
+    // Reset background filters when drawer closes
+    backgroundFilters.value = {
+      style: [],
+      priceMin: null,
+      priceMax: null
+    };
+    // Clear search result constraint to avoid stale constraints
+    searchResultProductIds.value = new Set();
   }
 });
 
@@ -794,7 +937,6 @@ const handleDirectAddToRoom = async (product) => {
     useProgressiveLoading: !alreadyLoaded
   })
 
-  console.log('✅ Product added directly from search:', variantKey)
   emit('close')
 }
 
@@ -886,8 +1028,8 @@ const getLowestVariantPrice = (product) => {
   }
 
   const prices = product.variants
-      .map(variant => parseFloat(variant.price))
-      .filter(price => !isNaN(price))
+      .map(variant => normalizePrice(variant.price))
+      .filter(price => price > 0)
 
   if (prices.length === 0) {
     return product.price
@@ -903,8 +1045,8 @@ const hasMultiplePrices = (product) => {
   }
 
   const prices = product.variants
-      .map(variant => parseFloat(variant.price))
-      .filter(price => !isNaN(price))
+      .map(variant => normalizePrice(variant.price))
+      .filter(price => price > 0)
 
   const uniquePrices = [...new Set(prices)]
   return uniquePrices.length > 1
@@ -921,6 +1063,14 @@ watch(() => selectedProduct.value, (newProduct) => {
 
 // Computed
 const isMobileDevice = computed(() => isMobile())
+
+// Resolved category - consistent logic for both VariantSelector prop and cache key lookups
+// Uses selectedCategory directly when not in search mode, otherwise falls back to product's category
+const resolvedCategory = computed(() => {
+  return props.selectedCategory !== 'search'
+    ? props.selectedCategory
+    : (selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || '')
+})
 
 // Methods
 const getProductsForCategory = (category) => {
@@ -967,6 +1117,9 @@ const readyProducts = computed(() => {
           image: matchingVariant.image || product.image,
           link: matchingVariant.link || product.link,
           category: category,
+
+          // Store filter attributes for search filtering
+          filterAttributes: mergeFilterAttributes(product.filterAttributes, matchingVariant.filterAttributes),
 
           // Enhanced search context for exact SKU matches
           searchContext: {
@@ -1028,9 +1181,12 @@ const readyProducts = computed(() => {
           image: variant.image || product.image, // Variant image or product image fallback
           link: variant.link || product.link,
           category: category,
-          
+
           isFilteredVariant: true, // Mark as flattened variant
-          
+
+          // Store filter attributes for search filtering
+          filterAttributes: mergeFilterAttributes(product.filterAttributes, variant.filterAttributes),
+
           searchContext: {
             isExactMatch: false,
             matchType: 'flattened_variant',
@@ -1051,7 +1207,39 @@ const readyProducts = computed(() => {
       })
     })
 
-    return transformedResults
+    // Apply search filters if any are active
+    let filteredResults = transformedResults
+
+    // Filter by category
+    if (searchFilters.value.category) {
+      filteredResults = filteredResults.filter(item => {
+        const itemCategory = item.category || item.searchContext?.category
+        return itemCategory === searchFilters.value.category
+      })
+    }
+
+    // Filter by price range
+    // Use epsilon comparison to handle floating point boundary values (e.g., 419.99 vs 420)
+    // Only apply if user has actually set a price filter (not just default range)
+    if (searchFilters.value.priceMin !== null && searchFilters.value.priceMax !== null) {
+      filteredResults = filteredResults.filter(item => {
+        const price = normalizePrice(item.price)
+        // Include items with no valid price (price = 0) - don't filter them out
+        if (price === 0) return true
+        return price + PRICE_EPS >= searchFilters.value.priceMin && price - PRICE_EPS <= searchFilters.value.priceMax
+      })
+    }
+
+    // Filter by style
+    if (searchFilters.value.styles && searchFilters.value.styles.length > 0) {
+      filteredResults = filteredResults.filter(item => {
+        const itemStyle = item.filterAttributes?.style ||
+                          item.searchContext?.matchingVariant?.filterAttributes?.style
+        return itemStyle && searchFilters.value.styles.includes(itemStyle)
+      })
+    }
+
+    return filteredResults
   }
 
   // Handle regular category products - use filtered products if available
@@ -1060,8 +1248,10 @@ const readyProducts = computed(() => {
     // If filteredProducts is empty but filters are active, show "no results" message
     // If filteredProducts has items, show them
 
+    const filtersActive = hasActiveFilters(props.selectedFilters)
+
     // When filters are active, show each matching variant as a direct-add item
-    if (hasActiveFilters(props.selectedFilters)) {
+    if (filtersActive) {
       const directAddItems = []
 
       for (const product of props.filteredProducts) {
@@ -1149,12 +1339,6 @@ const isAnythingLoading = () => {
 
 // Methods - Original functionality
 const selectProduct = async (product) => {
-  console.log('🔍 ====== PRODUCT SELECTED ======')
-  console.log('🔍 Product name:', product.name)
-  console.log('🔍 Product has', product.variants?.length || 0, 'variants')
-  console.log('🔍 Variant SKUs:', product.variants?.map(v => v.sku))
-  console.log('🔍 Current selectedFilters prop:', JSON.stringify(props.selectedFilters))
-
   // If it's a direct add product (exact SKU match), add directly
   if (product.searchContext?.showDirectAdd) {
     handleDirectAddToRoom(product)
@@ -1167,32 +1351,24 @@ const selectProduct = async (product) => {
   // Determine which variant to pre-select
   if (product.searchContext?.highlightedVariant) {
     // If there's a highlighted variant from search, pre-select it
-    console.log('🔍 Pre-selecting highlighted variant from search')
     selectedVariant.value = product.searchContext.highlightedVariant
   } else if (hasActiveFilters(props.selectedFilters) && product.variants) {
     // If filters are active, get filtered variants and select appropriately
-    console.log('🔍 Filters are active, filtering variants...')
     const filtered = filterProductVariants(product, props.selectedFilters)
-    console.log('🔍 Filtered variants:', filtered.map(v => ({ sku: v.sku, name: v.name })))
     if (filtered.length === 1) {
       // Only one variant matches filters - select it directly
-      console.log('🔍 Single variant match, selecting:', filtered[0].sku)
       selectedVariant.value = filtered[0]
     } else if (filtered.length > 0) {
       // Multiple variants match - select the first filtered one
-      console.log('🔍 Multiple matches, selecting first:', filtered[0].sku)
       selectedVariant.value = filtered[0]
     } else {
       // No variants match (shouldn't happen if product was shown) - fallback to first
-      console.log('🔍 No variants match filters, falling back to first variant')
       selectedVariant.value = product.variants?.[0] || ''
     }
   } else {
     // No filters active - default to first variant
-    console.log('🔍 No active filters, selecting first variant')
     selectedVariant.value = product.variants?.[0] || ''
   }
-  console.log('🔍 ====== END PRODUCT SELECTED ======')
 
   selectedColor.value = product.colors?.[0]?.id || ''
   currentView.value = 'variants'
@@ -1202,10 +1378,8 @@ const selectProduct = async (product) => {
     const firstVariant = selectedVariant.value
     const variantKey = firstVariant.id || firstVariant.sku || firstVariant.name
 
-    // Get the component type for consistent cache key checking
-    const componentType = props.selectedCategory !== 'search'
-      ? props.selectedCategory
-      : (product.category || product.searchContext?.category || '')
+    // Use resolvedCategory for consistent cache key checking
+    const componentType = resolvedCategory.value
 
     // Check if already loaded/cached - use full key format
     const isAlreadyLoaded = isVariantModelLoaded(firstVariant) || isModelCached(firstVariant, componentType)
@@ -1231,17 +1405,16 @@ const selectProduct = async (product) => {
             variantKey: fullCacheKey,
             status: 'loaded'
           })
-          console.log('✅ First variant preloaded:', fullCacheKey)
         },
         onError: (error) => {
-          console.error('❌ Failed to preload first variant:', error)
+          console.error('Failed to preload first variant:', error)
           productPreloading.value.set(product.id, {
             variantKey: fullCacheKey,
             status: 'failed'
           })
         }
       }, componentType).catch(error => {
-        console.error('❌ Progressive loading failed:', error)
+        console.error('Progressive loading failed:', error)
       })
     } else {
       // Already loaded, mark it
@@ -1264,24 +1437,19 @@ const goBackToProductList = () => {
 const selectVariant = async (variant) => {
   // Don't allow selection of variants that are too large
   if (isVariantTooLarge(variant)) {
-    console.log('⚠️ Cannot select variant - too large for available space')
     return
   }
 
   const variantKey = variant.id || variant.sku || variant.name
-  console.log('🔄 Selecting variant...', variant.name || variant.sku)
 
   // Always select immediately - no blocking
   selectedVariant.value = variant
 
-  // Get the component type for consistent cache key checking
-  const componentType = props.selectedCategory !== 'search'
-    ? props.selectedCategory
-    : (selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || '')
+  // Use resolvedCategory for consistent cache key checking
+  const componentType = resolvedCategory.value
 
   // Check if model is already cached - no need to load
   if (isModelCached(variant, componentType)) {
-    console.log('✅ Model already cached')
     return
   }
 
@@ -1290,29 +1458,25 @@ const selectVariant = async (variant) => {
       selectedProduct.value.variants &&
       selectedProduct.value.variants[0] === variant &&
       firstVariantPreloaded.value.has(selectedProduct.value.id)) {
-    console.log('✅ First variant already preloaded')
     return
   }
 
   // Check if already loaded
   const isLoaded = isVariantModelLoadedWithCache(variant, selectedProduct.value, firstVariantPreloaded.value)
   if (isLoaded) {
-    console.log('✅ Model already loaded')
     return
   }
 
   // Preload in background (non-blocking) for faster add-to-room later
   // Pass the type for consistent cache keys
-  console.log('🔄 Preloading variant in background')
   loadVariantModelProgressively(variant, {
     onFullModelReady: () => {
-      console.log('✅ Background preload completed:', componentType ? `${componentType}-${variantKey}` : variantKey)
     },
     onError: (error) => {
-      console.error('❌ Background preload error:', error)
+      console.error('Background preload error:', error)
     }
   }, componentType).catch(error => {
-    console.error('❌ Failed to preload variant:', error)
+    console.error('Failed to preload variant:', error)
   })
 }
 
@@ -1368,26 +1532,32 @@ const getLink = () => {
 
 const selectColor = (colorId) => {
   selectedColor.value = colorId
-}
 
-const getSelectedColorName = () => {
-  if (!selectedProduct.value || !selectedProduct.value.colors) return ''
-  const color = selectedProduct.value.colors.find(c => c.id === selectedColor.value)
-  return color?.name || ''
-}
-
-const toggleHardwareChange = (hardwareId) => {
-  console.log('Toggle hardware change for:', hardwareId)
+  // Track color selection in GTM
+  if (gtm?.enabled()) {
+    const colorName = selectedProduct.value?.colors?.find(c => c.id === colorId)?.name || ''
+    gtm.trackEvent({
+      event: 'product_color_selected',
+      category: 'Product Configuration',
+      action: 'Color Selected',
+      colorId: colorId,
+      colorName: colorName,
+      productId: selectedProduct.value?.id || '',
+      productName: selectedProduct.value?.name || '',
+      productSku: selectedVariant.value?.sku || '',
+      productCategory: selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || ''
+    })
+  }
 }
 
 const calculateTotalPrice = () => {
   if (!selectedProduct.value) return '0.00'
 
-  let total = parseFloat(selectedProduct.value.price)
+  let total = normalizePrice(selectedProduct.value.price)
 
   if (selectedProduct.value.hardware) {
     selectedProduct.value.hardware.forEach(hw => {
-      total += parseFloat(hw.price)
+      total += normalizePrice(hw.price)
     })
   }
 
@@ -1396,23 +1566,19 @@ const calculateTotalPrice = () => {
 
 const confirmAddToRoom = async () => {
   if (!selectedProduct.value || !selectedVariant.value) {
-    console.log('No product or variant selected')
     return
   }
 
   // Hard stop - prevent adding if variant is too large
   if (isVariantTooLarge(selectedVariant.value)) {
-    console.log('⚠️ Cannot add - variant too large for room')
     return
   }
 
   const variant = selectedVariant.value
   const variantKey = variant.id || variant.sku || variant.name
 
-  // Get the component type for consistent cache key checking
-  const componentType = props.selectedCategory !== 'search'
-    ? props.selectedCategory
-    : (selectedProduct.value?.category || selectedProduct.value?.searchContext?.category || '')
+  // Use resolvedCategory for consistent cache key checking
+  const componentType = resolvedCategory.value
   const fullCacheKey = componentType ? `${componentType}-${variantKey}` : variantKey
 
   // Check if model is cached (instant add) - use type for full key check
@@ -1424,35 +1590,20 @@ const confirmAddToRoom = async () => {
   // Determine if progressive loading is needed
   const needsProgressiveLoading = !isCached && !isLoaded
 
-  console.log('🔍 Add to Room - Loading Status:', {
-    variantKey,
-    fullCacheKey,
-    componentType,
-    isCached,
-    isLoaded,
-    needsProgressiveLoading,
-    message: needsProgressiveLoading
-      ? '🔲 Will use progressive loading with placeholder'
-      : '⚡ Model ready - instant add (no placeholder needed)'
-  })
-
   // Add to room - progressive loading shows placeholder if model isn't ready
   addProductToRoom(needsProgressiveLoading)
 }
 
 const addProductToRoom = (useProgressiveLoading = false) => {
   if (!selectedProduct.value) {
-    console.log('No Product has been selected')
     return
   }
 
   if (!selectedVariant.value) {
-    console.log('No Variant for the product has been selected')
     return
   }
 
   if (typeof selectedVariant.value === 'string') {
-    console.log('select variant type is string')
     return
   }
 
@@ -1480,161 +1631,15 @@ const addProductToRoom = (useProgressiveLoading = false) => {
     useProgressiveLoading: useProgressiveLoading
   }
 
-  console.log('📦 ProductDrawer - Emitting add-to-room:', {
-    type: componentType,
-    useProgressiveLoading: useProgressiveLoading,
-    variantSku: selectedVariant.value?.sku
-  })
-
   // Emit the add-to-room event
   emit('add-to-room', productData)
 }
-
-const getButtonText = (product) => {
-  if (product.searchContext?.showDirectAdd) {
-    return 'Add to Room'
-  }
-  return 'SELECT'
-}
-
-const getSearchAwareButtonStyle = (product) => {
-  const baseStyle = addToRoomButtonStyle.value
-
-  if (product.searchContext?.showDirectAdd) {
-    return {
-      ...baseStyle,
-      backgroundColor: '#29275B',
-    }
-  }
-
-  return baseStyle // Regular purple for SELECT
-}
-
 
 const closeDrawer = () => {
   // Close the AllFiltersDrawer when going back
   isAllFiltersOpen.value = false
   emit('close')
 }
-
-// Add these styles to your existing styles object
-const seeMoreContainerStyle = {
-  marginTop: '16px',
-  display: 'flex',
-  justifyContent: 'center',
-  width: '100%'
-}
-
-const seeMoreButtonStyle = {
-  padding: '12px 24px',
-  backgroundColor: '#f5f5f5',
-  border: '1px solid #e0e0e0',
-  borderRadius: '8px',
-  fontSize: '14px',
-  fontWeight: '500',
-  color: '#333',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-}
-
-// Style for variants that are too large to fit
-const tooLargeBadgeStyle = computed(() => ({
-  fontSize: '11px',
-  fontWeight: '600',
-  color: '#dc2626',
-  backgroundColor: '#fef2f2',
-  padding: '2px 8px',
-  borderRadius: '4px',
-  border: '1px solid #fecaca'
-}))
-
-// Dynamic styles methods for variants
-const getVariantButtonStyle = (variant) => {
-  const isSelected = selectedVariant.value === variant
-  const isCached = isModelCached(variant)
-  const isTooLarge = isVariantTooLarge(variant)
-
-  // Disabled style for variants that are too large
-  if (isTooLarge) {
-    return {
-      padding: '12px 16px',
-      border: '1px solid #e5e7eb',
-      borderRadius: '6px',
-      backgroundColor: '#f3f4f6',
-      color: '#9ca3af',
-      fontSize: '14px',
-      fontWeight: '400',
-      transition: 'all 0.2s ease',
-      position: 'relative',
-      overflow: 'hidden',
-      fontFamily: 'Arial, sans-serif',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      minHeight: '44px',
-      minWidth: '60px',
-      boxShadow: 'none',
-      transform: 'none',
-      cursor: 'not-allowed',
-      opacity: '0.7'
-    }
-  }
-
-  return {
-    padding: '12px 16px',
-    border: isSelected
-        ? '2px solid #29275B'
-        : (isCached ? '1px solid #10b981' : '2px solid #e0e0e0'),
-    borderRadius: '6px',
-    backgroundColor: isSelected
-        ? '#29275B'
-        : '#ffffff',
-    color: isSelected
-        ? '#ffffff'
-        : '#333',
-    fontSize: '14px',
-    fontWeight: isSelected ? '600' : '500',
-    transition: 'all 0.2s ease',
-    position: 'relative',
-    overflow: 'hidden',
-    fontFamily: 'Arial, sans-serif',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: '44px',
-    minWidth: '60px',
-    boxShadow: isSelected
-        ? '0 2px 8px rgba(41, 39, 91, 0.3)'
-        : 'none',
-    transform: isSelected ? 'translateY(-1px)' : 'translateY(0px)',
-    cursor: 'pointer'
-  }
-}
-
-const getColorSwatchStyle = (color) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '8px',
-  padding: '12px',
-  border: selectedColor.value === color.id ? '2px solid #29275B' : '2px solid #e0e0e0',
-  borderRadius: '8px',
-  backgroundColor: selectedColor.value === color.id ? '#f0f8f0' : '#ffffff',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease'
-})
-
-const colorInnerStyle = (color) => ({
-  width: '40px',
-  height: '40px',
-  borderRadius: '50%',
-  backgroundColor: color.color,
-  border: '2px solid #e0e0e0',
-  boxShadow: selectedColor.value === color.id ? '0 0 0 2px rgba(76, 175, 80, 0.2)' : 'none'
-})
 
 // ORIGINAL STYLES - Keeping your exact design
 const overlayStyle = computed(() => ({
@@ -1697,6 +1702,18 @@ const filterChipsContainerStyle = computed(() => ({
   userSelect: 'none' /* Prevent text selection while dragging */
 }))
 
+// Search filter bar container style - allows dropdowns to overflow
+const searchFilterBarContainerStyle = computed(() => ({
+  padding: '12px 0',
+  backgroundColor: '#ffffff',
+  borderBottom: '1px solid #e5e7eb',
+  overflowX: 'auto',
+  overflowY: 'visible',
+  flexShrink: 0,
+  position: 'relative',
+  zIndex: 100
+}))
+
 const backButtonStyle = computed(() => ({
   backgroundColor: 'transparent',
   border: currentView.value === 'variants' ? '1px solid rgba(255, 255, 255, 0.3)' : 'none',
@@ -1746,144 +1763,6 @@ const contentStyle = computed(() => ({
   gap: currentView.value === 'variants' ? '25px' : '20px'
 }))
 
-// Product List Styles
-const productCardStyle = computed(() => ({
-  backgroundColor: '#ffffff',
-  borderRadius: '8px',
-  padding: '20px',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-  display: 'flex',
-  gap: '15px',
-  position: 'relative',
-  transition: 'box-shadow 0.2s ease',
-  flexDirection: isMobileDevice.value ? 'column' : 'row'
-}))
-
-const productImageStyle = computed(() => ({
-  width: isMobileDevice.value ? '100%' : currentView.value === 'variants' ? '120px' : '200px',
-  height: isMobileDevice.value ? '150px' : currentView.value === 'variants' ? '120px' : '150px',
-  flexShrink: 0,
-  borderRadius: '4px',
-  overflow: 'hidden',
-  backgroundColor: '#f8f8f8'
-}))
-
-const imageStyle = computed(() => ({
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover'
-}))
-
-const productInfoStyle = computed(() => ({
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: currentView.value === 'variants' ? '8px' : '10px'
-}))
-
-const brandStyle = computed(() => ({
-  fontSize: currentView.value === 'variants' ? '12px' : '14px',
-  color: '#666',
-  fontWeight: '500',
-  textTransform: 'uppercase',
-  letterSpacing: '0.5px',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const productNameStyle = computed(() => ({
-  fontSize: isMobileDevice.value ? '16px' : '18px',
-  fontWeight: 'bold',
-  color: '#333',
-  margin: '0',
-  lineHeight: currentView.value === 'variants' ? '1.3' : '1.4',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const priceStyle = computed(() => ({
-  fontSize: currentView.value === 'variants' ? '18px' : '16px',
-  fontWeight: 'bold',
-  color: '#e74c3c',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const moreInfoStyle = computed(() => ({
-  fontSize: '14px',
-  color: '#007bff',
-  textDecoration: 'none',
-  fontWeight: '500',
-  alignSelf: 'flex-start',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const addToRoomButtonStyle = computed(() => ({
-  backgroundColor: '#29275B',
-  color: 'white',
-  border: 'none',
-  padding: '12px 24px',
-  borderRadius: '6px',
-  fontSize: '14px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  transition: 'background-color 0.2s ease',
-  marginTop: '10px',
-  alignSelf: 'flex-start',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const skeletonCardStyle = computed(() => ({
-  backgroundColor: '#ffffff',
-  borderRadius: '8px',
-  padding: '20px',
-  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-  display: 'flex',
-  flexDirection: isMobileDevice.value ? 'column' : 'row',
-  gap: '15px',
-  position: 'relative',
-  overflow: 'hidden'
-}))
-
-const skeletonImageStyle = computed(() => ({
-  width: isMobileDevice.value ? '100%' : '200px',
-  height: '150px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '8px',
-  position: 'relative',
-  overflow: 'hidden'
-}))
-
-const skeletonShimmerStyle = computed(() => ({
-  position: 'absolute',
-  top: '0',
-  left: '-100%',
-  width: '100%',
-  height: '100%',
-  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-  animation: 'shimmer 1.5s infinite'
-}))
-
-const skeletonContentStyle = computed(() => ({
-  flex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '12px'
-}))
-
-const skeletonLineStyle = computed(() => ({
-  height: '20px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '6px',
-  width: isMobileDevice.value ? '70%' : '90%',
-  marginTop: '8px'
-}))
-
-const skeletonButtonStyle = computed(() => ({
-  height: '36px',
-  backgroundColor: '#f0f0f0',
-  borderRadius: '4px',
-  width: '135px',
-  marginTop: '8px'
-}))
-
 const loadingSpinnerStyle = computed(() => ({
   width: '20px',
   height: '20px',
@@ -1904,36 +1783,6 @@ const loadingProgressStyle = computed(() => ({
   color: '#666',
   justifyContent: 'center',
   marginTop: '10px'
-}))
-
-// No Results Styles (for when filters have no matches)
-const noResultsStyle = computed(() => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '60px 20px',
-  textAlign: 'center'
-}))
-
-const noResultsIconStyle = computed(() => ({
-  color: '#9ca3af',
-  marginBottom: '16px'
-}))
-
-const noResultsTitleStyle = computed(() => ({
-  fontSize: '18px',
-  fontWeight: '600',
-  color: '#374151',
-  margin: '0 0 8px 0',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const noResultsTextStyle = computed(() => ({
-  fontSize: '14px',
-  color: '#6b7280',
-  margin: '0',
-  fontFamily: 'Arial, sans-serif'
 }))
 
 // Error Styles
@@ -1968,16 +1817,6 @@ const variantsContentStyle = computed(() => ({
   gap: '25px'
 }))
 
-const productSummaryStyle = computed(() => ({
-  display: 'flex',
-  gap: '15px',
-  padding: '15px',
-  backgroundColor: '#f8f9fa',
-  borderRadius: '8px',
-  border: '1px solid #e9ecef',
-  flexDirection: isMobileDevice.value ? 'column' : 'row'
-}))
-
 const sectionStyle = computed(() => ({
   padding: '0'
 }))
@@ -1987,44 +1826,6 @@ const sectionTitleStyle = computed(() => ({
   fontWeight: 'bold',
   color: '#333',
   margin: '0 0 15px 0',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const variantOptionsStyle = computed(() => ({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px'
-}))
-
-// Styles for single filtered variant display
-const singleVariantInfoStyle = computed(() => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '14px 16px',
-  backgroundColor: '#f0f9f0',
-  borderRadius: '8px',
-  border: '2px solid #29275B'
-}))
-
-const singleVariantNameStyle = computed(() => ({
-  fontSize: '15px',
-  fontWeight: '600',
-  color: '#29275B',
-  fontFamily: 'Arial, sans-serif'
-}))
-
-const colorOptionsStyle = computed(() => ({
-  display: 'grid',
-  gridTemplateColumns: isMobileDevice.value ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-  gap: '12px'
-}))
-
-const colorNameStyle = computed(() => ({
-  fontSize: '12px',
-  color: '#333',
-  fontWeight: '500',
-  textAlign: 'center',
   fontFamily: 'Arial, sans-serif'
 }))
 
@@ -2074,21 +1875,6 @@ const hardwarePriceStyle = computed(() => ({
   fontFamily: 'Arial, sans-serif'
 }))
 
-const hardwareChangeButtonStyle = computed(() => ({
-  backgroundColor: 'transparent',
-  border: '1px solid #29275B',
-  color: '#29275B',
-  padding: '4px 8px',
-  borderRadius: '4px',
-  fontSize: '11px',
-  fontWeight: '500',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease',
-  alignSelf: 'flex-start',
-  marginTop: '5px',
-  fontFamily: 'Arial, sans-serif'
-}))
-
 const actionButtonsStyle = computed(() => ({
   display: 'flex',
   gap: '10px',
@@ -2130,38 +1916,6 @@ const confirmAddButtonStyle = computed(() => {
     fontFamily: 'Arial, sans-serif'
   }
 })
-
-const modalOverlayStyle = computed(() => ({
-  position: 'fixed',
-  top: '0',
-  left: '0',
-  right: '0',
-  bottom: '0',
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  zIndex: '9999',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-}))
-
-// 6. Add these styles for search results
-const searchContextStyle = computed(() => ({
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'center',
-  marginTop: '8px',
-  flexWrap: 'wrap'
-}))
-
-const searchVariantStyle = computed(() => ({
-  backgroundColor: '#f0f0f0',
-  color: '#666',
-  padding: '4px 8px',
-  borderRadius: '12px',
-  fontSize: '11px',
-  fontWeight: '500'
-}))
-
 
 </script>
 
@@ -2206,11 +1960,6 @@ const searchVariantStyle = computed(() => ({
 .color-swatch:hover {
   transform: translateY(-2px) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
-.hardware-change-button:hover {
-  background-color: #29275B !important;
-  color: white !important;
 }
 
 .confirm-add-button:hover:not(:disabled) {

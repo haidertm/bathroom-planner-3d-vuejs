@@ -59,15 +59,6 @@ export class AxisIndicatorsDebug {
 
     // Z-AXIS INDICATORS ON EAST AND WEST WALLS
     this.createZAxisIndicators(scene, interior, notch, roomWidth, wallOffset, indicatorHeight, lineHeight);
-
-    console.log('📏 Axis indicators created:', {
-      roomDimensions: `${roomWidth} × ${roomHeight}cm`,
-      interiorBounds: {
-        xRange: `${interior.minX.toFixed(1)} to ${interior.maxX.toFixed(1)}cm`,
-        zRange: `${interior.minZ.toFixed(1)} to ${interior.maxZ.toFixed(1)}cm`
-      },
-      indicatorCount: this.indicators.length
-    });
   }
 
   /**
