@@ -27,6 +27,7 @@
         class="product-card__more-info"
         target="_blank"
         rel="noopener noreferrer"
+        @click="handleMoreInfoClick"
       >
         More info
       </a>
@@ -34,7 +35,7 @@
       <!-- Action Button -->
       <button
         type="button"
-        @click="$emit('select', product)"
+        @click="handleSelectClick"
         class="product-card__button"
         :class="{ 'product-card__button--direct-add': showDirectAdd }"
       >
@@ -47,6 +48,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PropType } from 'vue'
+import { useGtm } from '@gtm-support/vue-gtm'
 import { isMobile as isMobileUtil } from '../../utils/helpers'
 
 // Type definitions for ProductCard
@@ -100,11 +102,73 @@ const props = defineProps({
   }
 })
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'select', product: Product): void
 }>()
 
+const gtm = useGtm()
+
 const isMobile = computed<boolean>(() => isMobileUtil())
+
+const getLowestVariantPrice = (product: Product): number | string => {
+  if (!product.variants || product.variants.length === 0) {
+    return product.price ?? 0
+  }
+
+  // Parse prices and filter out NaN, zero, and negative values
+  const prices = product.variants
+    .map(variant => parseFloat(String(variant.price)))
+    .filter(price => !isNaN(price) && price > 0)
+
+  if (prices.length === 0) {
+    return product.price ?? 0
+  }
+
+  return Math.min(...prices)
+}
+
+/**
+ * Tracks "More info" link click in GTM and allows navigation to proceed
+ */
+const handleMoreInfoClick = (): void => {
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'product_more_info_click',
+      category: 'Product Card',
+      action: 'More Info Click',
+      label: `${props.product.id} - ${props.product.name}`,
+      productId: props.product.id,
+      productName: props.product.name,
+      destinationUrl: sanitizedLink.value
+    })
+  }
+}
+
+/**
+ * Handles product selection/direct-add button click with GTM tracking
+ */
+const handleSelectClick = (): void => {
+  const isDirectAdd = props.product.searchContext?.showDirectAdd === true
+  const actionType = isDirectAdd ? 'direct_add' : 'select'
+  const lowestPrice = getLowestVariantPrice(props.product)
+  const price = typeof lowestPrice === 'number' ? lowestPrice : parseFloat(String(lowestPrice)) || 0
+
+  if (gtm?.enabled()) {
+    gtm.trackEvent({
+      event: 'product_action',
+      category: 'Product Card',
+      action: isDirectAdd ? 'Direct Add' : 'Select',
+      label: `${props.product.id} - ${props.product.name}`,
+      actionType,
+      productId: props.product.id,
+      productName: props.product.name,
+      productPrice: price,
+      directAdd: isDirectAdd
+    })
+  }
+
+  emit('select', props.product)
+}
 
 /**
  * Validates that a URL uses a safe scheme (https, http, mailto) or is a safe relative path.
@@ -116,8 +180,8 @@ const isSafeUrl = (url: string | undefined): boolean => {
   const trimmedUrl = url.trim()
   if (!trimmedUrl) return false
 
-  // Allow safe relative paths (starting with /)
-  if (trimmedUrl.startsWith('/')) return true
+  // Allow safe relative paths (starting with / but not // to block protocol-relative URLs)
+  if (trimmedUrl.startsWith('/') && !trimmedUrl.startsWith('//')) return true
 
   // Parse URL to check scheme
   try {
@@ -147,23 +211,6 @@ const buttonText = computed<string>(() => {
   }
   return 'SELECT'
 })
-
-const getLowestVariantPrice = (product: Product): number | string => {
-  if (!product.variants || product.variants.length === 0) {
-    return product.price ?? 0
-  }
-
-  // Parse prices and filter out NaN, zero, and negative values
-  const prices = product.variants
-    .map(variant => parseFloat(String(variant.price)))
-    .filter(price => !isNaN(price) && price > 0)
-
-  if (prices.length === 0) {
-    return product.price ?? 0
-  }
-
-  return Math.min(...prices)
-}
 
 const hasMultiplePrices = computed<boolean>(() => {
   if (!props.product.variants || props.product.variants.length <= 1) {

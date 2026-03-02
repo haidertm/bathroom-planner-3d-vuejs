@@ -1768,7 +1768,13 @@ export class EventHandlers {
       if (visibleWalls.has(wall)) return wall;
     }
 
-    // Last resort: return north
+    // If no main walls are visible, pick the first available wall from visibleWalls
+    const firstVisibleWall = visibleWalls.values().next().value;
+    if (firstVisibleWall) {
+      return firstVisibleWall as WallType;
+    }
+
+    // Last resort: return north (only if visibleWalls is empty)
     return 'north';
   }
 
