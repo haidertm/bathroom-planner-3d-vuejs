@@ -129,11 +129,13 @@ export class SceneManager {
     this.initializeOrthographicCamera();
 
     // Create renderer with enhanced settings
-    this.renderer = new THREE.WebGLRenderer({
+    // Use markRaw to prevent Vue reactivity overhead on Three.js objects
+    this.renderer = markRaw(new THREE.WebGLRenderer({
       antialias: true,
       powerPreference: 'high-performance',
-      logarithmicDepthBuffer: true  // Set it in the constructor options
-    });
+      logarithmicDepthBuffer: true,  // Set it in the constructor options
+      preserveDrawingBuffer: true,   // Required for PostHog session recording canvas capture
+    }));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -2323,7 +2325,7 @@ export class SceneManager {
         window.innerHeight * pixelRatio,
         {
           format: THREE.RGBAFormat,
-          type: THREE.FloatType, // Use FloatType for better precision
+          type: THREE.HalfFloatType, // Use HalfFloatType for better GPU compatibility
           colorSpace: THREE.SRGBColorSpace,
           // Add multisampling for smoother outlines
           samples: 8,
